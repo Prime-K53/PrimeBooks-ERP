@@ -210,7 +210,7 @@ app.use((req, res, next) => {
     }
     res.header('Access-Control-Allow-Origin', allowed && origin ? origin : (origin ? origin : '*'));
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-user-id, x-user-role, x-user-email, x-correlation-id, x-dev-bypass, x-company-id, x-idempotency-key, x-financial-year-id');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-auth-mode, x-user-id, x-user-role, x-user-email, x-correlation-id, x-dev-bypass, x-company-id, x-idempotency-key, x-financial-year-id, x-user-is-super-admin');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Max-Age', '86400');
     return res.sendStatus(204);
