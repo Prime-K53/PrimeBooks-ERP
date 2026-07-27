@@ -170,7 +170,7 @@ const corsOptions = {
     return callback(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id', 'x-company-id', 'x-idempotency-key', 'x-user-id', 'x-user-role', 'x-user-email', 'x-user-is-super-admin', 'x-dev-bypass'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-mode', 'x-correlation-id', 'x-company-id', 'x-idempotency-key', 'x-user-id', 'x-user-role', 'x-user-email', 'x-user-is-super-admin', 'x-dev-bypass'],
   credentials: true
 };
 
