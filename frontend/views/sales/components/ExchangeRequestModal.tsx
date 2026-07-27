@@ -4,7 +4,6 @@ import {
   Search, AlertTriangle, Plus, Minus, X,
   ChevronRight, Info, CheckCircle2, ShoppingCart, FileText, RefreshCw 
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/Dialog';
 import { useSalesStore } from '../../../stores/salesStore';
 import { useFinanceStore } from '../../../stores/financeStore';
 import { useAuth } from '../../../context/AuthContext';
@@ -15,6 +14,22 @@ interface ExchangeRequestModalProps {
   onClose: () => void;
   initialInvoice?: any;
 }
+
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const inputRest: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  padding: '9px 12px', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
 
 export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onClose, initialInvoice }) => {
   const { createSalesExchange, customers } = useSalesStore();
@@ -46,38 +61,30 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
         setShowDropdown(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const filteredResults = useMemo(() => {
     if (!searchTerm) return { invoices: [], customers: [] };
-    
     const searchLower = searchTerm.toLowerCase();
-    
     const matchedCustomers = customers.filter(c => 
       (c.name || '').toLowerCase().includes(searchLower) ||
       (c.email || '').toLowerCase().includes(searchLower) ||
       (c.phone || '').toLowerCase().includes(searchLower)
     ).slice(0, 3);
-
     const matchedInvoices = invoices.filter(inv => {
       const matchesSearch = (inv.id || '').toLowerCase().includes(searchLower) ||
         (inv.customerName || '').toLowerCase().includes(searchLower);
-      
       const matchesCustomer = selectedCustomer ? inv.customerId === selectedCustomer.id : true;
-      
       return matchesSearch && matchesCustomer;
     }).slice(0, 5);
-
     return { invoices: matchedInvoices, customers: matchedCustomers };
   }, [invoices, customers, searchTerm, selectedCustomer]);
 
   const handleSelectInvoice = (inv: any) => {
     setSelectedInvoice(inv);
     setShowDropdown(false);
-    // Initialize return items from invoice items
     const items = inv.items?.map((item: any) => ({
       ...item,
       qty_to_return: 0,
@@ -105,7 +112,6 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
       alert('Please provide a reason and at least one item to return');
       return;
     }
-
     setIsSubmitting(true);
     try {
       const exchangeData = {
@@ -138,7 +144,6 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
           .filter(i => i.qty_to_return > 0)
           .reduce((acc, i) => acc + ((i.qty_to_replace - i.qty_to_return) * (i.rate || i.price || 0)), 0)
       };
-
       await createSalesExchange(exchangeData);
       onClose();
     } catch (error: any) {
@@ -151,11 +156,65 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
   };
 
   return (
-    <Dialog open={true} onClose={onClose} title="New Sales Exchange Request" className="max-w-4xl">
-      <p className="text-sm text-slate-500 -mt-2 mb-2">Step {step} of 2: {step === 1 ? 'Select Invoice' : 'Exchange Details'}</p>
-      <div className="flex-1 overflow-y-auto">
-        {step === 1 ? (
-            <div className="space-y-6">
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(15, 23, 42, 0.6)',
+      padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+    }}>
+      <div style={{
+        width: 920, maxWidth: '100%', maxHeight: '92vh',
+        background: paper, borderRadius: 14,
+        boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+          background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+        }} />
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '22px 28px 18px',
+          borderBottom: `1px solid ${hairline}`, background: paper
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+            }}>
+              <ShoppingCart size={19} color="#fff" />
+            </div>
+            <div>
+              <h1 style={{
+                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+              }}>
+                New Sales Exchange Request
+              </h1>
+              <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+                Step {step} of 2: {step === 1 ? 'Select Invoice' : 'Exchange Details'}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{
+            width: 32, height: 32, borderRadius: 8,
+            border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        <div style={{ padding: '24px 28px 8px', overflowY: 'auto', flex: 1 }}>
+          {step === 1 ? (
+            <div>
               <div className="relative" ref={dropdownRef}>
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -183,7 +242,6 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
                   </button>
                 )}
 
-                {/* Search Dropdown */}
                 {showDropdown && (filteredResults.invoices.length > 0 || filteredResults.customers.length > 0) && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 z-[110] max-h-[400px] overflow-y-auto">
                     {filteredResults.customers.length > 0 && (
@@ -238,7 +296,7 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
               </div>
 
               {selectedCustomer && (
-                <div className="flex items-center justify-between p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-indigo-50 border border-indigo-100 rounded-xl mt-4">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-indigo-600 text-white rounded-lg">
                       <ShoppingCart className="w-5 h-5" />
@@ -260,9 +318,8 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
                 </div>
               )}
 
-              {/* Grid View for filtered results when no dropdown or as background */}
               {!showDropdown && filteredResults.invoices.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   {filteredResults.invoices.map((inv) => (
                     <div 
                       key={inv.id}
@@ -285,7 +342,6 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
                           {inv.status}
                         </div>
                       </div>
-                      
                       <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
                         <div>
                           <div className="text-xs text-gray-400">Customer</div>
@@ -300,48 +356,54 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
                   ))}
                 </div>
               ) : !searchTerm ? (
-                <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-2xl">
+                <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-2xl mt-4">
                   <ShoppingCart className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                   <p className="text-gray-400 text-lg">Enter an invoice number or customer name to start</p>
                 </div>
               ) : !showDropdown && filteredResults.invoices.length === 0 && (
-                <div className="text-center py-12">
+                <div className="text-center py-12 mt-4">
                   <Info className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500">No invoices found matching "{searchTerm}"</p>
                 </div>
               )}
             </div>
           ) : (
-            <div className="space-y-6">
+            <div>
               {/* Selected Invoice Summary */}
-              <div className="bg-indigo-50 rounded-xl p-4 flex justify-between items-center border border-indigo-100">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-white p-2 rounded-lg shadow-sm">
-                    <FileText className="w-5 h-5 text-indigo-600" />
+              <div style={{
+                padding: 16, background: teal[50], borderRadius: 12, border: `1px solid ${teal[100]}`,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ padding: 8, borderRadius: 8, background: paper }}>
+                    <FileText size={20} color={teal[600]} />
                   </div>
                   <div>
-                    <div className="text-xs text-indigo-600 font-semibold uppercase tracking-wider">Original Invoice</div>
-                    <div className="font-bold text-indigo-900">#{selectedInvoice.id} - {selectedInvoice.customerName}</div>
+                    <div style={{ fontSize: 11, color: teal[600], fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.06 }}>Original Invoice</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: teal[800] }}>#{selectedInvoice.id} - {selectedInvoice.customerName}</div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setStep(1)}
-                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline"
-                >
+                <button onClick={() => setStep(1)}
+                  style={{
+                    fontSize: 12, color: teal[600], fontWeight: 600, background: 'none', border: 'none',
+                    textDecoration: 'underline', cursor: 'pointer'
+                  }}>
                   Change Invoice
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Reason for Exchange <span className="text-red-500">*</span></label>
-                    <select 
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      required
-                    >
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+                <div>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: teal[800], marginBottom: 6, letterSpacing: 0.01 }}>
+                      Reason for Exchange <span style={{ color: danger, fontWeight: 700 }}>*</span>
+                    </label>
+                    <select value={reason} onChange={(e) => setReason(e.target.value)}
+                      style={{
+                        ...inputRest, appearance: 'none',
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 30, cursor: 'pointer'
+                      }}>
                       <option value="">Select a reason...</option>
                       <option value="Color mismatch">Color mismatch</option>
                       <option value="Poor print quality">Poor print quality</option>
@@ -353,22 +415,21 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Additional Remarks</label>
-                    <textarea 
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none"
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: teal[800], marginBottom: 6, letterSpacing: 0.01 }}>
+                      Additional Remarks
+                    </label>
+                    <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)}
                       placeholder="Provide more details about the exchange..."
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                    />
+                      style={{ ...inputRest, resize: 'none', minHeight: 80, lineHeight: 1.5 }} />
                   </div>
                 </div>
 
-                <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
-                  <div className="flex items-start space-x-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div style={{ padding: 16, borderRadius: 12, background: `${amber[100]}80`, border: `1px solid ${amber[300]}` }}>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <AlertTriangle size={20} color={amber[600]} style={{ flexShrink: 0, marginTop: 2 }} />
                     <div>
-                      <h4 className="font-bold text-amber-900 text-sm mb-1">Exchange Policy Note</h4>
-                      <p className="text-xs text-amber-800 leading-relaxed">
+                      <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#92400e' }}>Exchange Policy Note</h4>
+                      <p style={{ margin: '4px 0 0', fontSize: 11, color: '#92400e', lineHeight: 1.5 }}>
                         Exchanges require supervisor approval. Returned items should be verified for quantity and condition. 
                         Reprints will be auto-queued once approved.
                       </p>
@@ -378,63 +439,60 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
               </div>
 
               {/* Items Table */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3">Product Item</th>
-                      <th className="px-4 py-3 text-center">Original Qty</th>
-                      <th className="px-4 py-3 text-center">Qty to Return</th>
-                      <th className="px-4 py-3 text-center">Qty to Replace</th>
-                      <th className="px-4 py-3">Condition</th>
+              <div style={{ borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', background: paper }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: hairline, borderBottom: `1px solid ${hairline}` }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: inkSoft }}>Product Item</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: inkSoft }}>Original Qty</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: inkSoft }}>Qty to Return</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: inkSoft }}>Qty to Replace</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: inkSoft }}>Condition</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody>
                     {returnItems.map((item, idx) => (
-                      <tr key={idx} className={item.qty_to_return > 0 ? 'bg-indigo-50/30' : ''}>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-gray-900">{item.description || item.name}</div>
-                          <div className="text-xs text-gray-500">Unit Price: ${item.rate?.toLocaleString()}</div>
+                      <tr key={idx} style={{ background: item.qty_to_return > 0 ? `${teal[50]}80` : 'transparent', borderBottom: `1px solid ${hairline}` }}>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: 500, color: ink }}>{item.description || item.name}</div>
+                          <div style={{ fontSize: 11, color: inkSoft }}>Unit Price: ${item.rate?.toLocaleString()}</div>
                         </td>
-                        <td className="px-4 py-3 text-center font-medium">{item.quantity}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center space-x-2">
-                            <button 
-                              onClick={() => updateItem(idx, 'qty_to_return', Math.max(0, item.qty_to_return - 1))}
-                              className="p-1 hover:bg-gray-200 rounded-md text-gray-500"
-                            >
-                              <Minus className="w-4 h-4" />
+                        <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 500 }}>{item.quantity}</td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <button onClick={() => updateItem(idx, 'qty_to_return', Math.max(0, item.qty_to_return - 1))}
+                              style={{ padding: 4, borderRadius: 4, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28 }}>
+                              <Minus size={14} />
                             </button>
-                            <input 
-                              type="number"
-                              className="w-16 text-center border border-gray-300 rounded-md py-1 focus:ring-1 focus:ring-indigo-500 outline-none"
-                              value={item.qty_to_return}
+                            <input type="number" value={item.qty_to_return}
                               onChange={(e) => updateItem(idx, 'qty_to_return', Math.min(item.quantity, parseInt(e.target.value) || 0))}
-                            />
-                            <button 
-                              onClick={() => updateItem(idx, 'qty_to_return', Math.min(item.quantity, item.qty_to_return + 1))}
-                              className="p-1 hover:bg-gray-200 rounded-md text-gray-500"
-                            >
-                              <Plus className="w-4 h-4" />
+                              style={{
+                                width: 56, textAlign: 'center', padding: '4px 6px', fontSize: 13,
+                                border: `1.4px solid ${hairline}`, borderRadius: 6, outline: 'none',
+                                fontFamily: "'JetBrains Mono', monospace"
+                              }} />
+                            <button onClick={() => updateItem(idx, 'qty_to_return', Math.min(item.quantity, item.qty_to_return + 1))}
+                              style={{ padding: 4, borderRadius: 4, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28 }}>
+                              <Plus size={14} />
                             </button>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center space-x-2">
-                            <input 
-                              type="number"
-                              className="w-16 text-center border border-gray-300 rounded-md py-1 focus:ring-1 focus:ring-indigo-500 outline-none"
-                              value={item.qty_to_replace}
-                              onChange={(e) => updateItem(idx, 'qty_to_replace', parseInt(e.target.value) || 0)}
-                            />
-                          </div>
+                        <td style={{ padding: '12px 16px' }}>
+                          <input type="number" value={item.qty_to_replace}
+                            onChange={(e) => updateItem(idx, 'qty_to_replace', parseInt(e.target.value) || 0)}
+                            style={{
+                              width: 56, textAlign: 'center', padding: '4px 6px', fontSize: 13,
+                              border: `1.4px solid ${hairline}`, borderRadius: 6, outline: 'none',
+                              fontFamily: "'JetBrains Mono', monospace", display: 'block', margin: '0 auto'
+                            }} />
                         </td>
-                        <td className="px-4 py-3">
-                          <select 
-                            className="w-full border border-gray-300 rounded-md py-1 px-2 focus:ring-1 focus:ring-indigo-500 outline-none"
-                            value={item.condition}
-                            onChange={(e) => updateItem(idx, 'condition', e.target.value)}
-                          >
+                        <td style={{ padding: '12px 16px' }}>
+                          <select value={item.condition} onChange={(e) => updateItem(idx, 'condition', e.target.value)}
+                            style={{
+                              ...inputRest, appearance: 'none',
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+                              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 28, cursor: 'pointer', fontSize: 12
+                            }}>
                             <option value="damaged">Damaged</option>
                             <option value="wrong_color">Wrong Color</option>
                             <option value="wrong_size">Wrong Size</option>
@@ -449,38 +507,46 @@ export const ExchangeRequestModal: React.FC<ExchangeRequestModalProps> = ({ onCl
               </div>
             </div>
           )}
-          </div>
+        </div>
 
-        <DialogFooter className="bg-gray-50/50">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-          >
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+          gap: 10, padding: '16px 28px',
+          borderTop: `1px solid ${hairline}`, background: paper
+        }}>
+          <button type="button" onClick={onClose}
+            style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+              padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+              background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+              display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
             Cancel
           </button>
-          
           {step === 2 && (
-            <button
-              onClick={handleSubmit}
+            <button type="button" onClick={handleSubmit}
               disabled={isSubmitting || !reason || returnItems.filter(i => i.qty_to_return > 0).length === 0}
-              className="px-8 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-200 transition-all flex items-center"
-            >
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+                transition: 'all .15s ease', opacity: (isSubmitting || !reason || returnItems.filter(i => i.qty_to_return > 0).length === 0) ? 0.6 : 1
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}>
               {isSubmitting ? (
-                <>
-                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                  Creating...
-                </>
+                <><RefreshCw size={14} className="animate-spin" /> Creating...</>
               ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5 mr-2" />
-                  Submit Exchange Request
-                </>
+                <><CheckCircle2 size={14} /> Submit Exchange Request <ChevronRight size={14} /></>
               )}
             </button>
           )}
-        </DialogFooter>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   );
 };
-
-

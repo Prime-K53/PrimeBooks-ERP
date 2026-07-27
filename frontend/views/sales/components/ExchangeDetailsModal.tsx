@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import {
   CheckCircle, XCircle, Printer, Clock,
   User, Calendar, MessageSquare, AlertCircle,
-  FileText, ArrowRight, Package, TrendingDown, RefreshCw
+  FileText, ArrowRight, Package, X, ChevronRight
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/Dialog';
 import { useSalesStore } from '../../../stores/salesStore';
 import { useDocumentPreview } from '../../../hooks/useDocumentPreview';
 import { SalesExchange } from '../../../types';
@@ -15,8 +14,16 @@ interface ExchangeDetailsModalProps {
   onClose: () => void;
 }
 
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
 export const ExchangeDetailsModal: React.FC<ExchangeDetailsModalProps> = ({ exchange, onClose }) => {
-  const { approveSalesExchange, cancelSalesExchange, updateReprintJob, isLoading } = useSalesStore();
+  const { approveSalesExchange, cancelSalesExchange, isLoading } = useSalesStore();
   const { handlePreview } = useDocumentPreview();
   const [approvalComments, setApprovalComments] = useState('');
   const [showApprovalForm, setShowApprovalForm] = useState(false);
@@ -59,85 +66,137 @@ export const ExchangeDetailsModal: React.FC<ExchangeDetailsModalProps> = ({ exch
   };
 
   return (
-    <Dialog open={true} onClose={onClose} title={`EXCHANGE ${exchange.exchange_number}`} className="max-w-5xl">
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center space-x-3">
-          {getStatusBadge(exchange.status)}
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(15, 23, 42, 0.6)',
+      padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+    }}>
+      <div style={{
+        width: 960, maxWidth: '100%', maxHeight: '92vh',
+        background: paper, borderRadius: 14,
+        boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+          background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+        }} />
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '22px 28px 18px',
+          borderBottom: `1px solid ${hairline}`, background: paper
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+            }}>
+              <FileText size={19} color="#fff" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h1 style={{
+                  fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                  fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                }}>
+                  EXCHANGE {exchange.exchange_number}
+                </h1>
+                {getStatusBadge(exchange.status)}
+              </div>
+              <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Calendar size={12} />
+                Requested on {format(new Date(exchange.exchange_date), 'MMMM dd, yyyy HH:mm')}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{
+            width: 32, height: 32, borderRadius: 8,
+            border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+          >
+            <X size={15} />
+          </button>
         </div>
-        <p className="text-slate-500 flex items-center text-sm">
-          <Calendar className="w-4 h-4 mr-1.5" />
-          Requested on {format(new Date(exchange.exchange_date), 'MMMM dd, yyyy HH:mm')}
-        </p>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <div style={{ padding: '24px 28px 8px', overflowY: 'auto', flex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
             {/* Left Column: Details & Items */}
-            <div className="lg:col-span-2 space-y-8">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Info Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm">
-                  <div className="text-xs font-bold text-gray-400 uppercase mb-2 tracking-widest">Customer</div>
-                  <div className="font-bold text-gray-900 text-lg">{exchange.customer_name}</div>
-                  <div className="text-sm text-gray-500 mt-1 flex items-center">
-                    <User className="w-3 h-3 mr-1" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div style={{ padding: 16, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 8 }}>Customer</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: ink }}>{exchange.customer_name}</div>
+                  <div style={{ fontSize: 12, color: inkSoft, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <User size={12} />
                     ID: {exchange.customer_id || 'N/A'}
                   </div>
                 </div>
-                <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm">
-                  <div className="text-xs font-bold text-gray-400 uppercase mb-2 tracking-widest">Original Document</div>
-                  <div className="font-bold text-indigo-600 text-lg">Invoice #{exchange.invoice_id}</div>
-                  <div className="text-sm text-gray-500 mt-1 flex items-center">
-                    <FileText className="w-3 h-3 mr-1" />
+                <div style={{ padding: 16, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 8 }}>Original Document</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: teal[600] }}>Invoice #{exchange.invoice_id}</div>
+                  <div style={{ fontSize: 12, color: inkSoft, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <FileText size={12} />
                     View Original
                   </div>
                 </div>
               </div>
 
               {/* Reason Section */}
-              <div className="bg-amber-50/50 border border-amber-100 p-6 rounded-2xl">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-amber-100 p-3 rounded-xl">
-                    <MessageSquare className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-amber-900 mb-1">Exchange Reason: {exchange.reason}</h3>
-                    <p className="text-amber-800 text-sm leading-relaxed">
-                      {exchange.remarks || 'No additional remarks provided.'}
-                    </p>
-                  </div>
+              <div style={{
+                padding: 16, borderRadius: 12, border: `1px solid ${amber[300]}`, background: `${amber[100]}80`,
+                display: 'flex', gap: 14
+              }}>
+                <div style={{ padding: 8, borderRadius: 8, background: amber[100], color: amber[500], flexShrink: 0 }}>
+                  <MessageSquare size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#92400e' }}>Exchange Reason: {exchange.reason}</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
+                    {exchange.remarks || 'No additional remarks provided.'}
+                  </p>
                 </div>
               </div>
 
               {/* Items Table */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                  <Package className="w-5 h-5 mr-2 text-indigo-600" />
+              <div>
+                <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Package size={18} color={teal[600]} />
                   Exchange Items
                 </h3>
-                <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider">
-                      <tr>
-                        <th className="px-6 py-4">Returned Item</th>
-                        <th className="px-6 py-4">Replacement Item</th>
-                        <th className="px-6 py-4 text-center">Returned</th>
-                        <th className="px-6 py-4 text-center">Replaced</th>
-                        <th className="px-6 py-4">Condition</th>
+                <div style={{ borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', background: paper }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Returned Item</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Replacement Item</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Returned</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Replaced</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Condition</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody>
                       {(exchange.items || []).map((item, idx) => (
-                        <tr key={item.id || idx} className="hover:bg-gray-50/50">
-                          <td className="px-6 py-4 font-bold text-gray-900">{getItemName(item)}</td>
-                          <td className="px-6 py-4 font-medium text-green-700">
+                        <tr key={item.id || idx} style={{ borderBottom: `1px solid ${hairline}` }}>
+                          <td style={{ padding: '12px 16px', fontWeight: 600, color: ink }}>{getItemName(item)}</td>
+                          <td style={{ padding: '12px 16px', fontWeight: 500, color: '#059669' }}>
                             {toNum(item.qty_replaced ?? item.qtyReplaced) > 0
                               ? getReplacementName(item)
-                              : <span className="text-gray-400 italic">No replacement</span>
+                              : <span style={{ color: inkSoft, fontStyle: 'italic' }}>No replacement</span>
                             }
                           </td>
-                          <td className="px-6 py-4 text-center font-bold text-red-600">-{toNum(item.qty_returned ?? item.qtyReturned)}</td>
-                          <td className="px-6 py-4 text-center font-bold text-green-600">+{toNum(item.qty_replaced ?? item.qtyReplaced)}</td>
-                          <td className="px-6 py-4">
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-[10px] font-bold uppercase">
+                          <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 700, color: danger }}>-{toNum(item.qty_returned ?? item.qtyReturned)}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 700, color: '#059669' }}>+{toNum(item.qty_replaced ?? item.qtyReplaced)}</td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <span style={{ padding: '2px 8px', borderRadius: 4, background: hairline, color: inkSoft, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>
                               {item.condition?.replace('_', ' ') || 'N/A'}
                             </span>
                           </td>
@@ -145,7 +204,7 @@ export const ExchangeDetailsModal: React.FC<ExchangeDetailsModalProps> = ({ exch
                       ))}
                       {(exchange.items || []).length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-6 py-6 text-center text-sm text-gray-500 italic">
+                          <td colSpan={5} style={{ padding: '24px 16px', textAlign: 'center', fontSize: 12, color: inkSoft, fontStyle: 'italic' }}>
                             No exchange items were found for this record.
                           </td>
                         </tr>
@@ -157,46 +216,53 @@ export const ExchangeDetailsModal: React.FC<ExchangeDetailsModalProps> = ({ exch
             </div>
 
             {/* Right Column: Workflow & Actions */}
-            <div className="space-y-6">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Workflow Status */}
-              <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-6 flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-indigo-600" />
+              <div style={{ padding: 20, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                <h3 style={{ margin: '0 0 20px', fontSize: 14, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Clock size={18} color={teal[600]} />
                   Workflow Status
                 </h3>
 
-                <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
-                  <div className="relative pl-8">
-                    <div className="absolute left-0 top-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center ring-4 ring-white shadow-sm">
-                      <CheckCircle className="w-4 h-4 text-white" />
+                <div style={{ position: 'relative', paddingLeft: 28 }}>
+                  {/* Timeline line */}
+                  <div style={{ position: 'absolute', left: 11, top: 8, bottom: 8, width: 2, background: hairline }} />
+
+                  <div style={{ position: 'relative', marginBottom: 24 }}>
+                    <div style={{ position: 'absolute', left: -28 + 4, top: 2, width: 22, height: 22, borderRadius: '50%', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 4px #fff' }}>
+                      <CheckCircle size={14} color="#fff" />
                     </div>
-                    <div className="font-bold text-sm text-gray-900">Request Initiated</div>
-                    <div className="text-xs text-gray-500">by Sales Clerk • {format(new Date(exchange.exchange_date), 'HH:mm')}</div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: ink }}>Request Initiated</div>
+                    <div style={{ fontSize: 11, color: inkSoft }}>by Sales Clerk &bull; {format(new Date(exchange.exchange_date), 'HH:mm')}</div>
                   </div>
 
-                  <div className="relative pl-8">
-                    <div className={`absolute left-0 top-1 w-6 h-6 rounded-full flex items-center justify-center ring-4 ring-white shadow-sm ${exchange.status === 'pending' ? 'bg-yellow-400 animate-pulse' :
-                        exchange.status === 'rejected' ? 'bg-red-500' : 'bg-green-500'
-                      }`}>
-                      {exchange.status === 'pending' ? <Clock className="w-4 h-4 text-white" /> :
-                        exchange.status === 'rejected' ? <XCircle className="w-4 h-4 text-white" /> :
-                          <CheckCircle className="w-4 h-4 text-white" />}
+                  <div style={{ position: 'relative', marginBottom: 24 }}>
+                    <div style={{
+                      position: 'absolute', left: -28 + 4, top: 2, width: 22, height: 22, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 4px #fff',
+                      background: exchange.status === 'pending' ? amber[400] : exchange.status === 'rejected' ? danger : '#059669'
+                    }}>
+                      {exchange.status === 'pending' ? <Clock size={14} color="#fff" /> :
+                        exchange.status === 'rejected' ? <XCircle size={14} color="#fff" /> :
+                          <CheckCircle size={14} color="#fff" />}
                     </div>
-                    <div className="font-bold text-sm text-gray-900">Supervisor Approval</div>
-                    <div className="text-xs text-gray-500">
+                    <div style={{ fontWeight: 600, fontSize: 13, color: ink }}>Supervisor Approval</div>
+                    <div style={{ fontSize: 11, color: inkSoft }}>
                       {exchange.status === 'pending' ? 'Awaiting review...' :
                         exchange.status === 'rejected' ? 'Rejected' : 'Approved'}
                     </div>
                   </div>
 
-                  <div className="relative pl-8">
-                    <div className={`absolute left-0 top-1 w-6 h-6 rounded-full flex items-center justify-center ring-4 ring-white shadow-sm ${exchange.status === 'approved' ? 'bg-indigo-500 animate-pulse' :
-                        exchange.status === 'completed' ? 'bg-green-500' : 'bg-gray-200'
-                      }`}>
-                      <Printer className="w-4 h-4 text-white" />
+                  <div style={{ position: 'relative' }}>
+                    <div style={{
+                      position: 'absolute', left: -28 + 4, top: 2, width: 22, height: 22, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 4px #fff',
+                      background: exchange.status === 'approved' ? teal[500] : exchange.status === 'completed' ? '#059669' : hairline
+                    }}>
+                      <Printer size={14} color="#fff" />
                     </div>
-                    <div className="font-bold text-sm text-gray-900">Reprint Execution</div>
-                    <div className="text-xs text-gray-500">
+                    <div style={{ fontWeight: 600, fontSize: 13, color: ink }}>Reprint Execution</div>
+                    <div style={{ fontSize: 11, color: inkSoft }}>
                       {exchange.status === 'approved' ? 'Job in queue' :
                         exchange.status === 'completed' ? 'Job completed' : 'Pending approval'}
                     </div>
@@ -205,64 +271,104 @@ export const ExchangeDetailsModal: React.FC<ExchangeDetailsModalProps> = ({ exch
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {exchange.status === 'pending' && !showApprovalForm && (
-                  <button
-                    onClick={() => setShowApprovalForm(true)}
-                    className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all flex items-center justify-center group"
-                  >
+                  <button onClick={() => setShowApprovalForm(true)}
+                    style={{
+                      width: '100%', padding: 16, border: 'none', borderRadius: 12, cursor: 'pointer',
+                      background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                      color: '#fff', fontWeight: 700, fontSize: 12,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+                      letterSpacing: 0.08, textTransform: 'uppercase',
+                      transition: 'all .15s ease'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}>
                     REVIEW REQUEST
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight size={16} />
                   </button>
                 )}
 
                 {showApprovalForm && (
-                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 space-y-4 animate-in slide-in-from-top-4 duration-200">
-                    <h4 className="font-bold text-gray-900 text-sm">Review Comments</h4>
-                    <textarea
-                      className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none bg-white font-normal"
-                      placeholder="Enter approval/rejection notes (required for rejection)..."
-                      value={approvalComments}
+                  <div style={{ padding: 16, background: teal[50], borderRadius: 12, border: `1px solid ${teal[100]}` }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: teal[800] }}>Review Comments</h4>
+                    <textarea value={approvalComments}
                       onChange={(e) => setApprovalComments(e.target.value)}
-                    />
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleApproval('approved')}
-                        disabled={isLoading}
-                        className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold text-xs hover:bg-green-700 shadow-lg shadow-green-100 transition-all uppercase tracking-wider"
-                      >
+                      placeholder="Enter approval/rejection notes (required for rejection)..."
+                      style={{
+                        width: '100%', padding: 10, border: `1.4px solid ${hairline}`, borderRadius: 8,
+                        fontSize: 12, outline: 'none', resize: 'none', minHeight: 80, lineHeight: 1.5,
+                        background: paper, color: ink, fontFamily: "'Inter', sans-serif"
+                      }} />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <button onClick={() => handleApproval('approved')} disabled={isLoading}
+                        style={{
+                          flex: 1, padding: 10, border: 'none', borderRadius: 8,
+                          background: '#059669', color: '#fff', fontWeight: 700, fontSize: 11,
+                          cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 0.06
+                        }}>
                         APPROVE
                       </button>
-                      <button
-                        onClick={() => handleApproval('rejected')}
-                        disabled={isLoading}
-                        className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs hover:bg-red-700 shadow-lg shadow-red-100 transition-all uppercase tracking-wider"
-                      >
+                      <button onClick={() => handleApproval('rejected')} disabled={isLoading}
+                        style={{
+                          flex: 1, padding: 10, border: 'none', borderRadius: 8,
+                          background: danger, color: '#fff', fontWeight: 700, fontSize: 11,
+                          cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 0.06
+                        }}>
                         REJECT
                       </button>
                     </div>
-                    <button
-                      onClick={() => setShowApprovalForm(false)}
-                      className="w-full text-xs text-gray-500 font-bold hover:text-gray-700 uppercase tracking-tight"
-                    >
+                    <button onClick={() => setShowApprovalForm(false)}
+                      style={{
+                        width: '100%', marginTop: 8, padding: 8, border: 'none', borderRadius: 8,
+                        background: 'transparent', color: inkSoft, fontWeight: 600, fontSize: 11,
+                        cursor: 'pointer', textTransform: 'uppercase'
+                      }}>
                       CANCEL REVIEW
                     </button>
                   </div>
                 )}
 
                 {(exchange.status === 'approved' || exchange.status === 'completed') && (
-                  <button
-                    onClick={() => { onClose(); handlePreview('SALES_EXCHANGE', exchange); }}
-                    className="w-full py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl font-black text-sm tracking-widest hover:bg-indigo-50 transition-all flex items-center justify-center group"
-                  >
+                  <button onClick={() => { onClose(); handlePreview('SALES_EXCHANGE', exchange); }}
+                    style={{
+                      width: '100%', padding: 14, borderRadius: 12, cursor: 'pointer',
+                      border: `2px solid ${teal[500]}`, background: paper, color: teal[600],
+                      fontWeight: 700, fontSize: 12,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      textTransform: 'uppercase', letterSpacing: 0.06, transition: 'all .15s ease'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = paper; }}>
                     PRINT EXCHANGE NOTE
-                    <Printer className="w-5 h-5 ml-2" />
+                    <Printer size={16} />
                   </button>
                 )}
               </div>
             </div>
           </div>
-    </Dialog>
+        </div>
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+          gap: 10, padding: '16px 28px',
+          borderTop: `1px solid ${hairline}`, background: paper
+        }}>
+          <button type="button" onClick={onClose}
+            style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+              padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+              background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+              display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+            Close
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
-
