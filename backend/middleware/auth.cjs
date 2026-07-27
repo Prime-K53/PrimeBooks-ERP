@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 
 // JWT Secret - must be set via environment variable
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -6,6 +7,11 @@ if (!JWT_SECRET) {
   console.error('FATAL: JWT_SECRET environment variable is not set. Exiting.');
   process.exit(1);
 }
+
+// Supabase config for verifying Supabase JWTs
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_URL.includes('placeholder'));
 
 // Token expiration time
 const TOKEN_EXPIRATION = '8h';
@@ -90,7 +96,7 @@ const generateToken = (user) => {
  * Verify JWT token middleware
  * Extracts token from Authorization header and verifies it
  */
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   // Skip authentication for public endpoints
   // Since this middleware is mounted at /api, req.path is relative to /api
   const publicEndpoints = ['/auth/login', '/auth/register'];
@@ -118,13 +124,38 @@ const verifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
-    next();
+    return next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ 
         error: 'Token expired',
         message: 'Your session has expired. Please login again.' 
       });
+    }
+    // Fall back to Supabase JWT verification if configured
+    if (SUPABASE_ENABLED) {
+      try {
+        const sbRes = await axios.get(`${SUPABASE_URL}/auth/v1/user`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: SUPABASE_ANON_KEY
+          },
+          timeout: 5000
+        });
+        const sbUser = sbRes.data;
+        if (sbUser && sbUser.id) {
+          req.user = {
+            id: sbUser.id,
+            username: sbUser.email || sbUser.id,
+            role: sbUser.user_metadata?.role || 'User',
+            email: sbUser.email,
+            isSuperAdmin: sbUser.user_metadata?.is_super_admin === true,
+            permissions: sbUser.user_metadata?.is_super_admin ? ['*'] : []
+          };
+          req.authMode = 'supabase';
+          return next();
+        }
+      } catch { /* Supabase verification also failed — fall through to 403 */ }
     }
     return res.status(403).json({ 
       error: 'Invalid token',

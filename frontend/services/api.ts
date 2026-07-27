@@ -77,6 +77,16 @@ apiClient.interceptors.request.use((config) => {
       config.params = { ...(config.params || {}), financial_year_id: fyId };
     }
   } catch { /* non-fatal */ }
+  try {
+    const sbSession = localStorage.getItem('prime-erp-supabase-auth');
+    if (sbSession) {
+      const parsed = JSON.parse(sbSession);
+      if (parsed?.access_token) {
+        config.headers['Authorization'] = `Bearer ${parsed.access_token}`;
+        config.headers['x-auth-mode'] = 'supabase';
+      }
+    }
+  } catch { /* non-fatal */ }
   if (import.meta.env?.DEV) {
     config.headers['x-dev-bypass'] = 'true';
   }
