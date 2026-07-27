@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { logger } from '@/services/logger';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../../components/Dialog';
-import { Button } from '../../../components/Button';
+
+import { ChevronRight } from 'lucide-react';
 import { examinationBatchService } from '../../../services/examinationBatchService';
 import { dbService } from '../../../services/db';
 import { examFeatureFlags } from '../../../services/featureFlags';
@@ -10,6 +10,7 @@ import { downloadBlob } from '../../../utils/helpers';
 import { ExaminationBatch, Item, MarketAdjustment } from '../../../types';
 import {
   AlertTriangle,
+  X as XIcon,
   ChevronDown,
   ChevronRight,
   Download,
@@ -492,75 +493,89 @@ export const BOMDialog: React.FC<BOMDialogProps> = ({ isOpen, onClose, batch }) 
     setTimeout(() => { w.focus(); w.print(); w.close(); }, 250);
   }, [previewHtml]);
 
+  const teal = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+  const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+  const paper = '#FEFDFB';
+
+  const btnStyle: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 500,
+    padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
+    transition: 'all .15s ease', display: 'inline-flex', alignItems: 'center', gap: 6
+  };
+
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="flex w-full max-w-4xl max-h-[80vh] flex-col overflow-hidden">
-          <DialogHeader className="!px-4 !py-3 md:!px-6 md:!py-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-1.5">
-                <DialogTitle className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
-                    <TrendingUp className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-semibold tracking-tight text-slate-900">Cost Breakdown</div>
-                    <div className="text-[13.5px] font-medium leading-[1.45] text-slate-600">{batch.name}</div>
-                  </div>
-                </DialogTitle>
-                <div className="flex items-center gap-2 text-[13px] leading-[1.45] text-slate-500">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <span>Last synchronized: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : 'Not synced yet'}</span>
-                </div>
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(15, 23, 42, 0.6)',
+        padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: '#23282A',
+      }} onClick={onClose}>
+        <div style={{
+          width: 980, maxWidth: '100%', maxHeight: '92vh',
+          background: paper, borderRadius: 14,
+          boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+        }} onClick={(e) => e.stopPropagation()}>
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+            background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+          }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '20px 24px 16px',
+            borderBottom: `1px solid #e4ddd1`, background: paper
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+              }}>
+                <TrendingUp size={19} color="#fff" />
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void syncBreakdown(true, false)}
-                  disabled={refreshing || reconciling}
-                  aria-label="Refresh cost breakdown"
-                  className="h-9 px-3 text-[13.5px] font-medium leading-[1.45] shadow-sm hover:shadow-md transition-all duration-200 border-slate-200 hover:border-blue-300 hover:bg-blue-50"
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-                {!isLocked && (
-                  <Button
-                    size="sm"
-                    onClick={() => void reconcileWithBackendAdjustments()}
-                    disabled={reconciling || refreshing}
-                    aria-label="Recalculate batch with current backend adjustments"
-                    className="h-9 px-3 text-[13.5px] font-medium leading-[1.45] shadow-sm hover:shadow-md transition-all duration-200 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${reconciling ? 'animate-spin' : ''}`} />
-                    Recalculate
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={exportCsv}
-                  aria-label="Export cost breakdown as CSV"
-                  className="h-9 px-3 text-[13.5px] font-medium leading-[1.45] shadow-sm hover:shadow-md transition-all duration-200 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50"
-                >
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={openPreview}
-                  aria-label="Preview examination job card"
-                  className="h-9 px-3 text-[13.5px] font-medium leading-[1.45] shadow-sm hover:shadow-md transition-all duration-200 border-slate-200 hover:border-purple-300 hover:bg-purple-50"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview
-                </Button>
+              <div>
+                <h1 style={{
+                  fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                  fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                }}>
+                  Cost Breakdown
+                </h1>
+                <p style={{ margin: '2px 0 0', fontSize: 11.5, color: '#5c6567', letterSpacing: 0.02 }}>
+                  {batch.name} &mdash; Last synced: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : 'Not synced yet'}
+                </p>
               </div>
             </div>
-          </DialogHeader>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button type="button" onClick={() => void syncBreakdown(true, false)} disabled={refreshing || reconciling}
+                style={{ ...btnStyle, background: paper, border: '1.4px solid #e4ddd1', color: '#5c6567' }}>
+                <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} /> Refresh
+              </button>
+              {!isLocked && (
+                <button type="button" onClick={() => void reconcileWithBackendAdjustments()} disabled={reconciling || refreshing}
+                  style={{ ...btnStyle, background: teal[500], border: '1.4px solid transparent', color: '#fff' }}>
+                  <RefreshCw size={13} className={reconciling ? 'animate-spin' : ''} /> Recalculate
+                </button>
+              )}
+              <button type="button" onClick={exportCsv}
+                style={{ ...btnStyle, background: paper, border: '1.4px solid #e4ddd1', color: '#5c6567' }}>
+                <FileSpreadsheet size={13} /> Export CSV
+              </button>
+              <button type="button" onClick={openPreview}
+                style={{ ...btnStyle, background: paper, border: '1.4px solid #e4ddd1', color: '#5c6567' }}>
+                <Eye size={13} /> Preview
+              </button>
+              <button onClick={onClose} aria-label="Close" style={{
+                width: 28, height: 28, borderRadius: 8,
+                border: '1.4px solid #e4ddd1', background: paper, color: '#5c6567',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all .15s ease', fontSize: 16, marginLeft: 6
+              }}>
+                <XIcon size={14} />
+              </button>
+            </div>
+          </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-4">
@@ -1132,37 +1147,105 @@ export const BOMDialog: React.FC<BOMDialogProps> = ({ isOpen, onClose, batch }) 
             </div>
           )}
 
-          <DialogFooter className="!px-4 !py-3 bg-gradient-to-r from-white/50 to-slate-50/50 md:!px-6">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onClose}
-              className="h-10 px-6 font-medium shadow-sm hover:shadow-md transition-all duration-200"
-            >
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+            gap: 10, padding: '14px 24px',
+            borderTop: '1px solid #e4ddd1', background: paper
+          }}>
+            <button type="button" onClick={onClose}
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+                background: paper, border: '1.4px solid #e4ddd1', color: '#5c6567',
+                display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+              }}>
               Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </button>
+          </div>
+        </div>
+      </div>
 
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="w-[90vw] max-w-[1100px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <DialogTitle>Examination Job Card Preview</DialogTitle>
-                <p className="mt-0.5 text-xs text-slate-500">Generated: {previewAt ? new Date(previewAt).toLocaleString() : new Date().toLocaleString()}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Button size="sm" variant="outline" onClick={exportJobCardHtml} className="inline-flex items-center gap-1.5 h-7"><Download className="h-3.5 w-3.5" />Export HTML</Button>
-                <Button size="sm" onClick={printJobCard} className="inline-flex items-center gap-1.5 h-7"><Printer className="h-3.5 w-3.5" />Print Job Card</Button>
-              </div>
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 10000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(15, 23, 42, 0.6)',
+        padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5,
+      }} onClick={() => setPreviewOpen(false)}>
+        <div style={{
+          width: 1100, maxWidth: '100%', maxHeight: '92vh',
+          background: '#FEFDFB', borderRadius: 14,
+          boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+        }} onClick={(e) => e.stopPropagation()}>
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+            background: 'linear-gradient(90deg, #146b60, #3fa294 40%, #d99a3f 100%)'
+          }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '20px 24px 16px',
+            borderBottom: '1px solid #e4ddd1', background: '#FEFDFB'
+          }}>
+            <div>
+              <h2 style={{
+                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                fontSize: 22, margin: 0, color: '#0b3e39', letterSpacing: 0.2
+              }}>
+                Examination Job Card Preview
+              </h2>
+              <p style={{ margin: '2px 0 0', fontSize: 11.5, color: '#5c6567' }}>
+                Generated: {previewAt ? new Date(previewAt).toLocaleString() : new Date().toLocaleString()}
+              </p>
             </div>
-          </DialogHeader>
-          <div className="p-3 bg-slate-100"><iframe title="Exam Job Card Preview" srcDoc={previewHtml} className="h-[65vh] w-full rounded border border-slate-300 bg-white" /></div>
-          <DialogFooter><Button variant="outline" size="sm" onClick={() => setPreviewOpen(false)}>Close Preview</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button type="button" onClick={exportJobCardHtml}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500,
+                  padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
+                  background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567',
+                  display: 'inline-flex', alignItems: 'center', gap: 5
+                }}>
+                <Download size={13} /> Export HTML
+              </button>
+              <button type="button" onClick={printJobCard}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500,
+                  padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
+                  background: '#146b60', border: '1.4px solid transparent', color: '#fff',
+                  display: 'inline-flex', alignItems: 'center', gap: 5
+                }}>
+                <Printer size={13} /> Print Job Card
+              </button>
+              <button onClick={() => setPreviewOpen(false)} aria-label="Close" style={{
+                width: 28, height: 28, borderRadius: 8,
+                border: '1.4px solid #e4ddd1', background: '#FEFDFB', color: '#5c6567',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', fontSize: 14
+              }}>
+                <XIcon size={13} />
+              </button>
+            </div>
+          </div>
+          <div style={{ padding: 12, background: '#eef7f6', flex: 1 }}>
+            <iframe title="Exam Job Card Preview" srcDoc={previewHtml}
+              style={{ height: '100%', width: '100%', borderRadius: 8, border: '1px solid #d3ece9', background: '#fff' }} />
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+            gap: 10, padding: '12px 24px',
+            borderTop: '1px solid #e4ddd1', background: '#FEFDFB'
+          }}>
+            <button type="button" onClick={() => setPreviewOpen(false)}
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                padding: '8px 16px', borderRadius: 9, cursor: 'pointer',
+                background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567'
+              }}>
+              Close Preview
+            </button>
+          </div>
+        </div>
+      </div>
     </>
   );
 };

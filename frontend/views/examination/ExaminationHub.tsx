@@ -834,50 +834,72 @@ const ExaminationHub: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center">
-                <Trash2 className="w-6 h-6 text-rose-600" />
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(15, 23, 42, 0.6)',
+          padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5,
+        }} onClick={() => { if (!isDeleting) setShowDeleteConfirm(false); }}>
+          <div style={{
+            width: 480, maxWidth: '100%',
+            background: '#FEFDFB', borderRadius: 14, padding: 28,
+            boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
+            position: 'relative'
+          }} onClick={(e) => e.stopPropagation()}>
+            {/* accent stripe */}
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+              borderRadius: '14px 14px 0 0',
+              background: 'linear-gradient(90deg, #146b60, #3fa294 40%, #d99a3f 100%)'
+            }} />
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginTop: 8 }}>
+              <div style={{
+                flexShrink: 0, width: 44, height: 44, borderRadius: 10,
+                background: 'rgba(213,43,30,.12)', color: '#b5493f',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Trash2 size={22} />
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-slate-900">Delete Batches</h3>
-                <p className="text-sm text-slate-600 mt-2">
+              <div style={{ flex: 1 }}>
+                <h2 style={{
+                  fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                  fontSize: 20, margin: 0, color: '#0b3e39', letterSpacing: 0.2
+                }}>
+                  Delete Batches
+                </h2>
+                <p style={{ fontSize: 13, color: '#5c6567', marginTop: 8, lineHeight: 1.5 }}>
                   Are you sure you want to delete <strong>{selectedBatchIds.size} batch{selectedBatchIds.size !== 1 ? 'es' : ''}</strong>?
                   This action cannot be undone.
                 </p>
-                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-xs text-amber-800">
-                    <strong>Note:</strong> Only Draft or Calculated batches can be deleted. 
-                    Approved and Invoiced batches will remain.
-                  </p>
+                <div style={{
+                  marginTop: 12, padding: 12, borderRadius: 9,
+                  background: '#fbead080', border: '1px solid #eec27a',
+                  fontSize: 12, color: '#92400e'
+                }}>
+                  <strong>Note:</strong> Only Draft or Calculated batches can be deleted. 
+                  Approved and Invoiced batches will remain.
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-              >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
+              <button onClick={() => setShowDeleteConfirm(false)} disabled={isDeleting}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+                  background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567',
+                  transition: 'all .15s ease'
+                }}>
                 Cancel
               </button>
-              <button
-                onClick={handleBulkDelete}
-                disabled={isDeleting}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors disabled:opacity-60 flex items-center gap-2"
-              >
-                {isDeleting ? (
-                  <>
-                    <RefreshCw size={14} className="animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={14} />
-                    Delete {selectedBatchIds.size} Batch{selectedBatchIds.size !== 1 ? 'es' : ''}
-                  </>
-                )}
+              <button onClick={handleBulkDelete} disabled={isDeleting}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                  background: '#b5493f', color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                  opacity: isDeleting ? 0.6 : 1, transition: 'all .15s ease'
+                }}>
+                <RefreshCw size={14} className={isDeleting ? 'animate-spin' : ''} />
+                {isDeleting ? 'Deleting...' : `Delete ${selectedBatchIds.size} Batch${selectedBatchIds.size !== 1 ? 'es' : ''}`}
               </button>
             </div>
           </div>

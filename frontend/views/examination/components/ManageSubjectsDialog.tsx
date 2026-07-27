@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { logger } from '@/services/logger';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/Dialog';
 import { Input } from '../../../components/Input';
 import { ExaminationClass, ExaminationSubject, Item } from '../../../types';
-import { Trash2, FileText, Copy, Layout, RotateCw, Calculator, Hash, Truck, ChevronDown, ChevronUp, Pencil, X, AlertTriangle, Users, Plus, Minus, Loader2, TrendingUp, Info } from 'lucide-react';
+import { Trash2, FileText, Copy, Layout, RotateCw, Calculator, Hash, Truck, ChevronDown, ChevronUp, Pencil, X as XIcon, AlertTriangle, Users, Plus, Minus, Loader2, TrendingUp, Info, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { currencyService } from '../../../services/currencyService';
 import { useInventory } from '../../../context/InventoryContext';
@@ -703,14 +702,71 @@ export const ManageSubjectsDialog: React.FC<ManageSubjectsDialogProps> = ({
     }
   };
 
+  const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+  const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+  const paper = '#FEFDFB';
+  const ink = '#23282A';
+  const inkSoft = '#5c6567';
+  const hairline = '#e4ddd1';
+  const danger = '#b5493f';
+
   if (!examinationClass) return null;
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Manage Subjects for {examinationClass.class_name}</DialogTitle>
-        </DialogHeader>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(15, 23, 42, 0.6)',
+      padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+    }} onClick={() => handleDialogOpenChange(false)}>
+      <div style={{
+        width: 820, maxWidth: '100%', maxHeight: '92vh',
+        background: paper, borderRadius: 14,
+        boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+          background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+        }} />
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '22px 28px 18px',
+          borderBottom: `1px solid ${hairline}`, background: paper
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+            }}>
+              <FileText size={19} color="#fff" />
+            </div>
+            <div>
+              <h1 style={{
+                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+              }}>
+                Manage Subjects
+              </h1>
+              <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+                {examinationClass.class_name}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => handleDialogOpenChange(false)} aria-label="Close" style={{
+            width: 32, height: 32, borderRadius: 8,
+            border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+          >
+            <XIcon size={15} />
+          </button>
+        </div>
 
         {/* Learner Count Adjustment Section */}
         <div className="bg-slate-50/50 border-b border-slate-200 px-8 py-4 flex items-center justify-between">
@@ -1157,32 +1213,50 @@ export const ManageSubjectsDialog: React.FC<ManageSubjectsDialogProps> = ({
           </div>
         </div>
 
-        <DialogFooter>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+          gap: 10, padding: '16px 28px',
+          borderTop: `1px solid ${hairline}`, background: paper
+        }}>
           {selectionPersistError && (
-            <div className="w-full mb-2 bg-red-100 border border-red-300 rounded-lg px-3 py-2 text-xs text-red-800">
+            <div style={{
+              flex: 1, marginRight: 10, padding: '8px 12px', borderRadius: 8,
+              background: `${danger}15`, border: `1px solid ${danger}30`, fontSize: 11, color: danger
+            }}>
               {selectionPersistError}
             </div>
           )}
-          {!isLocked && preview && (
-            <button
-              type="button"
-              onClick={() => void handleSavePricing()}
-              disabled={isPersistingSelections || isApplyingOverride || isSavingPricing || loading}
-              className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700 text-sm shadow-sm transition-all disabled:opacity-60"
-            >
-              {isSavingPricing ? 'Saving...' : 'Save Pricing'}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => handleDialogOpenChange(false)}
+          <button type="button" onClick={() => handleDialogOpenChange(false)}
             disabled={isPersistingSelections || isApplyingOverride || isSavingPricing}
-            className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 px-6 py-2 rounded-xl font-medium hover:bg-slate-200 text-sm shadow-sm transition-all"
-          >
+            style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+              padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+              background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+              display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
             Close
           </button>
-        </DialogFooter>
-      </DialogContent>
+          {!isLocked && preview && (
+            <button type="button" onClick={() => void handleSavePricing()}
+              disabled={isPersistingSelections || isApplyingOverride || isSavingPricing || loading}
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+                transition: 'all .15s ease', opacity: (isPersistingSelections || isSavingPricing) ? 0.6 : 1
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}>
+              {isSavingPricing ? 'Saving...' : 'Save Pricing'}
+              <ChevronRight size={14} />
+            </button>
+          )}
+        </div>
+      </div>
       <OverrideDialog
         isOpen={isOverrideDialogOpen}
         onClose={() => setIsOverrideDialogOpen(false)}
@@ -1191,6 +1265,6 @@ export const ManageSubjectsDialog: React.FC<ManageSubjectsDialogProps> = ({
         expectedPrice={expectedFeePerLearner}
         currencySymbol={currencySymbol}
       />
-    </Dialog>
+    </div>
   );
 };

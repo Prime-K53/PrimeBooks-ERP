@@ -4,13 +4,39 @@ import { useNavigate } from 'react-router-dom';
 import { useExamination } from '../../context/ExaminationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useFinance } from '../../context/FinanceContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/Dialog';
-import { ArrowLeft, Save, Plus, Search, Building2, ChevronDown, X, Users } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Search, Building2, ChevronDown, X, Users, ChevronRight } from 'lucide-react';
 import { Customer } from '../../types';
 import { dbService } from '../../services/db';
 import { toast } from '../../components/Toast';
 import { getPlaceholder } from '../../constants/placeholders';
 import { format, addDays } from 'date-fns';
+
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const labelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+};
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  padding: '9px 12px', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
 
 const ExaminationBatchForm: React.FC = () => {
   const navigate = useNavigate();
@@ -422,92 +448,114 @@ const ExaminationBatchForm: React.FC = () => {
         </form>
       </div>
 
-      <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Add New Customer</DialogTitle>
-          </DialogHeader>
-          <div className="px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                Customer Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="customer-name"
-                name="customer_name"
-                value={newCustomer.name}
-                onChange={(event) => setNewCustomer((prev) => ({ ...prev, name: event.target.value }))}
-                placeholder="Enter customer/school name"
-                required
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-              />
+      {showAddCustomer && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(15, 23, 42, 0.6)',
+          padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+        }} onClick={() => { if (!addingCustomer) setShowAddCustomer(false); }}>
+          <div style={{
+            width: 560, maxWidth: '100%', maxHeight: '92vh',
+            background: paper, borderRadius: 14,
+            boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+              background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+            }} />
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '22px 28px 18px',
+              borderBottom: `1px solid ${hairline}`, background: paper
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+                }}>
+                  <Plus size={19} color="#fff" />
+                </div>
+                <div>
+                  <h1 style={{
+                    fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                    fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                  }}>
+                    Add New Customer
+                  </h1>
+                  <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+                    Create a new customer or school record
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => { if (!addingCustomer) setShowAddCustomer(false); }} aria-label="Close" style={{
+                width: 32, height: 32, borderRadius: 8,
+                border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
+              }}>
+                <X size={15} />
+              </button>
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Email</label>
-              <input
-                id="customer-email"
-                name="customer_email"
-                type="email"
-                value={newCustomer.email}
-                onChange={(event) => setNewCustomer((prev) => ({ ...prev, email: event.target.value }))}
-                placeholder="customer@example.com"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-              />
+            <div style={{ padding: '24px 28px 8px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ marginBottom: 18 }}>
+                <label style={labelStyle}>Customer Name <span style={{ color: danger, fontWeight: 700 }}>*</span></label>
+                <input value={newCustomer.name} onChange={(event) => setNewCustomer((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Enter customer/school name" style={inputStyle} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+                <div>
+                  <label style={labelStyle}>Email</label>
+                  <input type="email" value={newCustomer.email} onChange={(event) => setNewCustomer((prev) => ({ ...prev, email: event.target.value }))}
+                    placeholder="customer@example.com" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Phone</label>
+                  <input value={newCustomer.phone} onChange={(event) => setNewCustomer((prev) => ({ ...prev, phone: event.target.value }))}
+                    placeholder={getPlaceholder.phone()} style={inputStyle} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+                <div>
+                  <label style={labelStyle}>Address</label>
+                  <input value={newCustomer.address} onChange={(event) => setNewCustomer((prev) => ({ ...prev, address: event.target.value }))}
+                    placeholder="Street address" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>City</label>
+                  <input value={newCustomer.city} onChange={(event) => setNewCustomer((prev) => ({ ...prev, city: event.target.value }))}
+                    placeholder="City" style={inputStyle} />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Phone</label>
-              <input
-                id="customer-phone"
-                name="customer_phone"
-                value={newCustomer.phone}
-                onChange={(event) => setNewCustomer((prev) => ({ ...prev, phone: event.target.value }))}
-                placeholder={getPlaceholder.phone()}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Address</label>
-              <input
-                id="customer-address"
-                name="customer_address"
-                value={newCustomer.address}
-                onChange={(event) => setNewCustomer((prev) => ({ ...prev, address: event.target.value }))}
-                placeholder="Street address"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">City</label>
-              <input
-                id="customer-city"
-                name="customer_city"
-                value={newCustomer.city}
-                onChange={(event) => setNewCustomer((prev) => ({ ...prev, city: event.target.value }))}
-                placeholder="City"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-              />
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+              gap: 10, padding: '16px 28px',
+              borderTop: `1px solid ${hairline}`, background: paper
+            }}>
+              <button type="button" onClick={() => setShowAddCustomer(false)} disabled={addingCustomer} style={btnGhostStyle}>
+                Cancel
+              </button>
+              <button onClick={handleAddNewCustomer} disabled={addingCustomer || !newCustomer.name.trim()} type="button"
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                  color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                  boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+                  transition: 'all .15s ease', opacity: (addingCustomer || !newCustomer.name.trim()) ? 0.6 : 1
+                }}>
+                <Plus size={14} />
+                {addingCustomer ? 'Adding...' : 'Add Customer'}
+                <ChevronRight size={14} />
+              </button>
             </div>
           </div>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setShowAddCustomer(false)}
-              className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-700 px-4 py-2 rounded-xl font-medium hover:bg-slate-100 text-sm shadow-sm transition-all border border-slate-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddNewCustomer}
-              disabled={addingCustomer || !newCustomer.name.trim()}
-              type="button"
-              className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-700 text-sm shadow-sm transition-all disabled:opacity-60"
-            >
-              <Plus size={16} />
-              {addingCustomer ? 'Adding...' : 'Add Customer'}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 };
