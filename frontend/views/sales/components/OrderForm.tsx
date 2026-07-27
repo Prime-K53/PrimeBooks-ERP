@@ -385,7 +385,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ type, initialData, onSave,
         const normalized = String(label || '').toLowerCase();
 
         if (normalized.includes('transport') || normalized.includes('logistics') || normalized.includes('delivery')) {
-            return { priority: 0, Icon: Truck, iconClass: 'text-blue-500', textClass: 'text-blue-600' };
+            return { priority: 0, Icon: Truck, iconClass: 'text-emerald-600', textClass: 'text-emerald-700' };
         }
         if (normalized.includes('waste') || normalized.includes('wastage') || normalized.includes('shrinkage')) {
             return { priority: 1, Icon: Scale, iconClass: 'text-rose-500', textClass: 'text-rose-600' };
@@ -394,7 +394,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ type, initialData, onSave,
             return { priority: 3, Icon: Tag, iconClass: 'text-purple-500', textClass: normalized.includes('-') ? 'text-rose-600' : 'text-purple-600' };
         }
         if (normalized.includes('profit') || normalized.includes('margin')) {
-            return { priority: 4, Icon: TrendingUp, iconClass: 'text-blue-500', textClass: 'text-blue-600' };
+            return { priority: 4, Icon: TrendingUp, iconClass: 'text-emerald-600', textClass: 'text-emerald-700' };
         }
         return { priority: 2, Icon: Tag, iconClass: 'text-indigo-500', textClass: 'text-indigo-600' };
     };
@@ -1917,8 +1917,23 @@ const handleVariantSelect = async (variant: ProductVariant) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-[rgba(15,40,40,0.45)] backdrop-blur-[2px] flex items-center justify-center p-4">
-            <div className="w-full max-w-[1040px] bg-[#FEFDFB] rounded-[14px] shadow-[0_30px_60px_-20px_rgba(16,43,40,0.35),0_0_0_1px_rgba(16,43,40,0.06)] grid grid-cols-[266px_1fr] h-[88vh] max-h-[88vh]">
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(15, 23, 42, 0.6)',
+            padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: '#23282A',
+        }}>
+            <div style={{
+                width: '100%', maxWidth: 1040,
+                background: '#FEFDFB', borderRadius: 14,
+                boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+                display: 'grid', gridTemplateColumns: '266px 1fr',
+                maxHeight: '88vh', overflow: 'hidden', position: 'relative'
+            }}>
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: 4, zIndex: 10,
+                    background: 'linear-gradient(90deg, #146b60, #3fa294 40%, #d99a3f 100%)',
+                }} />
 
                 {/* DOCKET SIDEBAR */}
                 <aside className="bg-[#FBF8F2] p-[20px_20px_14px] flex flex-col relative overflow-y-visible rounded-l-[14px] after:content-[''] after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[1px] after:bg-[repeating-linear-gradient(#FEFDFB_50%,transparent_0%)] after:bg-[length:1px_14px] after:opacity-50">
@@ -1942,7 +1957,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                 onFocus={() => setShowCustomerDropdown(true)}
                                 onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
                                 placeholder="Search customer..."
-                                className="w-full bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none focus:border-[#2563EB] focus:bg-[#EFF6FF] transition-colors placeholder:text-[#666F6C] pr-8"
+                                className="w-full bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none focus:border-[#146b60] focus:bg-[#eef7f6] transition-colors placeholder:text-[#666F6C] pr-8"
                             />
                             <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#666F6C]" />
                         </div>
@@ -1953,7 +1968,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                         key={c.id}
                                         type="button"
                                         onMouseDown={e => { e.preventDefault(); selectCustomer(c.name, c.id); setCustomerSearch(''); setShowCustomerDropdown(false); }}
-                                        className="w-full text-left px-[10px] py-[8px] text-[13px] text-[#23282A] hover:bg-[#EFF6FF] transition-colors border-b border-[#E4DFD1]/50"
+                                        className="w-full text-left px-[10px] py-[8px] text-[13px] text-[#23282A] hover:bg-[#eef7f6] transition-colors border-b border-[#E4DFD1]/50"
                                     >
                                         <div className="flex items-center justify-between">
                                             <span className="truncate">{c.name}</span>
@@ -1990,7 +2005,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                             setShowCustomerDropdown(false);
                                             selectCustomer(name, newCustomer.id);
                                         }}
-                                        className="w-full text-left px-[10px] py-[8px] text-[13px] text-[#2563EB] hover:bg-[#EFF6FF] transition-colors font-medium border-t border-[#E4DFD1]/50"
+                                        className="w-full text-left px-[10px] py-[8px] text-[13px] text-[#146b60] hover:bg-[#eef7f6] transition-colors font-medium border-t border-[#E4DFD1]/50"
                                     >
                                         + Add New Customer "{customerSearch.trim()}"
                                     </button>
@@ -2003,14 +2018,14 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         <label className="block text-[10px] font-bold tracking-[0.8px] uppercase text-[#666F6C] mb-[3px]">Voucher Date</label>
                         <input type="date" value={formData.date}
                             onChange={e => handleVoucherDateChange(e.target.value)}
-                            className="w-full bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none focus:border-[#2563EB] focus:bg-[#EFF6FF] transition-colors [color-scheme:dark]" />
+                            className="w-full bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none focus:border-[#146b60] focus:bg-[#eef7f6] transition-colors [color-scheme:dark]" />
                     </div>
 
                     <div className="docket-field mb-[10px]">
                         <label className="block text-[10px] font-bold tracking-[0.8px] uppercase text-[#666F6C] mb-[3px]">Due Date</label>
                         <input type="date" value={formData.dueDate}
                             onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
-                            className="w-full bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none focus:border-[#2563EB] focus:bg-[#EFF6FF] transition-colors [color-scheme:dark]" />
+                            className="w-full bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none focus:border-[#146b60] focus:bg-[#eef7f6] transition-colors [color-scheme:dark]" />
                     </div>
 
                     <div className="docket-field mb-[10px]">
@@ -2018,7 +2033,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         <input type="text" placeholder="Reference..."
                             value={formData.referenceDoc || ''}
                             onChange={e => setFormData({ ...formData, referenceDoc: e.target.value })}
-                            className="w-full bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none placeholder:text-[#666F6C] focus:border-[#2563EB] focus:bg-[#EFF6FF] transition-colors" />
+                            className="w-full bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none placeholder:text-[#666F6C] focus:border-[#146b60] focus:bg-[#eef7f6] transition-colors" />
                     </div>
 
                     <div className="docket-field mb-[10px]">
@@ -2036,7 +2051,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         <div className="flex gap-[6px]">
                             <select value={formData.salesAccountId}
                                 onChange={e => setFormData({ ...formData, salesAccountId: e.target.value })}
-                                className="flex-1 bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none focus:border-[#2563EB] focus:bg-[#EFF6FF] transition-colors">
+                                className="flex-1 bg-white border border-[#E4DFD1] rounded-[7px] px-[10px] py-[8px] text-[13px] text-[#23282A] outline-none focus:border-[#146b60] focus:bg-[#eef7f6] transition-colors">
                                 {revenueAccounts.map(acc => (
                                     <option key={acc.id} value={acc.id} className="text-[#23282A]">{acc.name}</option>
                                 ))}
@@ -2067,12 +2082,12 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                 </button>
                             )}
                             {onPreview && (
-                                <button onClick={onPreview} className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-white border border-[#E4DFD1] hover:border-[#93C5FD] hover:text-[#2563EB] flex items-center gap-1.5 transition-colors">
+                                <button onClick={onPreview} className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-white border border-[#E4DFD1] hover:border-[#72c0b7] hover:text-[#146b60] flex items-center gap-1.5 transition-colors">
                                     <Eye size={13} /> Preview
                                 </button>
                             )}
                             <button onClick={handleCancelForm}
-                                className="w-[30px] h-[30px] rounded-[8px] border border-[#E4DFD1] bg-[#FEFDFB] text-[#666F6C] text-[15px] flex items-center justify-center cursor-pointer hover:border-[#93C5FD] hover:text-[#2563EB] transition-colors">
+                                className="w-[30px] h-[30px] rounded-[8px] border border-[#E4DFD1] bg-[#FEFDFB] text-[#666F6C] text-[15px] flex items-center justify-center cursor-pointer hover:border-[#72c0b7] hover:text-[#146b60] transition-colors">
                                 ✕
                             </button>
                         </div>
@@ -2084,7 +2099,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         </div>
                     )}
 
-                    <div className="flex-1 min-h-0 overflow-y-auto px-[26px] pt-[6px] [scrollbar-width:thin] [scrollbar-color:#93C5FD_#FBF8F2]">
+                    <div className="flex-1 min-h-0 overflow-y-auto px-[26px] pt-[6px] [scrollbar-width:thin] [scrollbar-color:#72c0b7_#FBF8F2]">
 
                         {formData.customerName && customerPanelOpen && (() => {
                             const cust = selectedCustomerObj;
@@ -2099,7 +2114,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                                         <div className="flex justify-between py-0.5 border-b border-gray-100">
                                             <span className="text-slate-500">Balance</span>
-                                            <span className={`font-medium ${bal > 0 ? 'text-red-600' : bal < 0 ? 'text-blue-600' : 'text-slate-600'}`}>
+                                            <span className={`font-medium ${bal > 0 ? 'text-red-600' : bal < 0 ? 'text-emerald-700' : 'text-slate-600'}`}>
                                                 {bal > 0 ? `${currency}${bal.toLocaleString()} overdue` : bal < 0 ? `${currency}${Math.abs(bal).toLocaleString()} credit` : 'Settled'}
                                             </span>
                                         </div>
@@ -2134,18 +2149,18 @@ const handleVariantSelect = async (variant: ProductVariant) => {
 
                         <div className="flex items-center gap-[6px] px-[2px] mb-[11px]">
                             <button type="button" onClick={() => handleQuickService('Photocopy')}
-                                className="group inline-flex items-center gap-[6px] px-[10px] py-[5px] text-[11px] font-semibold text-[#666F6C] bg-white border border-[#E4DFD1] rounded-[6px] hover:border-[#93C5FD] hover:text-[#2563EB] transition-all duration-200">
+                                className="group inline-flex items-center gap-[6px] px-[10px] py-[5px] text-[11px] font-semibold text-[#666F6C] bg-white border border-[#E4DFD1] rounded-[6px] hover:border-[#72c0b7] hover:text-[#146b60] transition-all duration-200">
                                 <span>Photocopy</span>
                             </button>
                             <button type="button" onClick={() => handleQuickService('Printing')}
-                                className="group inline-flex items-center gap-[6px] px-[10px] py-[5px] text-[11px] font-semibold text-[#666F6C] bg-white border border-[#E4DFD1] rounded-[6px] hover:border-[#93C5FD] hover:text-[#2563EB] transition-all duration-200">
-                                <Printer size={13} className="shrink-0 text-[#B8863B] group-hover:text-[#2563EB] group-hover:scale-110 transition-all" />
+                                className="group inline-flex items-center gap-[6px] px-[10px] py-[5px] text-[11px] font-semibold text-[#666F6C] bg-white border border-[#E4DFD1] rounded-[6px] hover:border-[#72c0b7] hover:text-[#146b60] transition-all duration-200">
+                                <Printer size={13} className="shrink-0 text-[#B8863B] group-hover:text-[#146b60] group-hover:scale-110 transition-all" />
                                 <span>Type &amp; Print</span>
                             </button>
                             {(type === 'Quotation' || type === 'Invoice') && (
                                 <button type="button" onClick={() => setShowAiGenerator(!showAiGenerator)}
-                                    className={`group inline-flex items-center gap-[6px] px-[10px] py-[5px] text-[11px] font-semibold border rounded-[6px] transition-all duration-200 ${showAiGenerator ? 'text-[#2563EB] bg-[#EFF6FF] border-[#2563EB]' : 'text-[#666F6C] bg-white border-[#E4DFD1] hover:border-[#93C5FD] hover:text-[#2563EB]'}`}>
-                                    <Sparkles size={13} className={`shrink-0 transition-transform ${showAiGenerator ? 'text-[#2563EB]' : 'text-[#B8863B] group-hover:scale-110'}`} />
+                                    className={`group inline-flex items-center gap-[6px] px-[10px] py-[5px] text-[11px] font-semibold border rounded-[6px] transition-all duration-200 ${showAiGenerator ? 'text-[#146b60] bg-[#eef7f6] border-[#146b60]' : 'text-[#666F6C] bg-white border-[#E4DFD1] hover:border-[#72c0b7] hover:text-[#146b60]'}`}>
+                                    <Sparkles size={13} className={`shrink-0 transition-transform ${showAiGenerator ? 'text-[#146b60]' : 'text-[#B8863B] group-hover:scale-110'}`} />
                                     <span>AI {type === 'Invoice' ? 'Invoice' : 'Quote'}</span>
                                 </button>
                             )}
@@ -2153,10 +2168,10 @@ const handleVariantSelect = async (variant: ProductVariant) => {
 
                         <div className="search-row" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",marginBottom:"8px"}}>
                             <div className="search-box" style={{position:"relative"}} ref={itemDropdownRef}>
-                                <span style={{position:"absolute",left:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.5px",color:"#2563EB",background:"#FEFDFB",padding:"0 4px",zIndex:"1"}}>Item</span>
+                                <span style={{position:"absolute",left:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.5px",color:"#146b60",background:"#FEFDFB",padding:"0 4px",zIndex:"1"}}>Item</span>
                                 <input type="text" placeholder="Search inventory..."
                                     style={{width:"100%",padding:"7px 10px 7px 68px",fontFamily:"Inter,sans-serif",fontSize:"13px",border:"1px solid #E4DFD1",borderRadius:"9px",background:"#FEFDFB",outline:"none",transition:"border-color .15s ease"}}
-                                    className="focus:border-[#2563EB]"
+                                    className="focus:border-[#146b60]"
                                     value={itemSearch}
                                     onFocus={() => setIsItemDropdownOpen(true)}
                                     onChange={e => { setItemSearch(e.target.value); setIsItemDropdownOpen(true); }}
@@ -2168,7 +2183,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                             <div className="p-[12px] text-center">
                                                 <div className="text-[11px] text-[#666F6C] font-['JetBrains_Mono',monospace] mb-[6px]">No matching items</div>
                                                 <button type="button" onClick={() => setShowCreateItemModal(true)}
-                                                    className="inline-flex items-center gap-[4px] px-[10px] py-[5px] text-[11px] font-semibold text-white bg-[#2563EB] rounded-[6px] hover:bg-[#1D4ED8] transition-colors">
+                                                    className="inline-flex items-center gap-[4px] px-[10px] py-[5px] text-[11px] font-semibold text-white bg-[#146b60] rounded-[6px] hover:bg-[#0f544c] transition-colors">
                                                     <Plus size={12} />
                                                     <span>Create new item</span>
                                                 </button>
@@ -2215,10 +2230,10 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                 )}
                             </div>
                             <div className="search-box" style={{position:"relative"}} ref={serviceDropdownRef}>
-                                <span style={{position:"absolute",left:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.5px",color:"#2563EB",background:"#FEFDFB",padding:"0 4px",zIndex:"1"}}>Services</span>
+                                <span style={{position:"absolute",left:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.5px",color:"#146b60",background:"#FEFDFB",padding:"0 4px",zIndex:"1"}}>Services</span>
                                 <input type="text" placeholder="Search services..."
                                     style={{width:"100%",padding:"7px 10px 7px 68px",fontFamily:"Inter,sans-serif",fontSize:"13px",border:"1px solid #E4DFD1",borderRadius:"9px",background:"#FEFDFB",outline:"none",transition:"border-color .15s ease"}}
-                                    className="focus:border-[#2563EB]"
+                                    className="focus:border-[#146b60]"
                                     value={serviceSearch}
                                     onFocus={() => setIsServiceDropdownOpen(true)}
                                     onChange={e => { setServiceSearch(e.target.value); setIsServiceDropdownOpen(true); }}
@@ -2263,7 +2278,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                 }))}` : '—'}
                             </span></span>
                             <span className="text-[#E4DFD1]">|</span>
-                            <a href="#" className="text-[#2563EB] hover:text-[#23282A] hover:underline" onClick={e => { e.preventDefault(); const match = itemSearch.trim() ? inventory.find((i: Item) => i.name.toLowerCase().includes(itemSearch.toLowerCase()) || i.sku.toLowerCase().includes(itemSearch.toLowerCase())) : null; setItemHistoryItemId(match?.id); setShowItemHistory(true); }}>
+                            <a href="#" className="text-[#146b60] hover:text-[#23282A] hover:underline" onClick={e => { e.preventDefault(); const match = itemSearch.trim() ? inventory.find((i: Item) => i.name.toLowerCase().includes(itemSearch.toLowerCase()) || i.sku.toLowerCase().includes(itemSearch.toLowerCase())) : null; setItemHistoryItemId(match?.id); setShowItemHistory(true); }}>
                                 Alt+F2: Item History
                             </a>
                         </div>
@@ -2415,7 +2430,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                         <col style={{width: '6%'}} />
                                     </colgroup>
                                     <thead>
-                                        <tr className="text-[10.5px] font-bold text-[#0F3D3E] uppercase tracking-[0.7px] bg-[#EFF6FF]">
+                                        <tr className="text-[10.5px] font-bold text-[#0F3D3E] uppercase tracking-[0.7px] bg-[#eef7f6]">
                                             <th className="px-[12px] py-[6px] text-left border-b border-[#E4DFD1]">Item</th>
                                             <th className="px-[12px] py-[6px] text-center border-b border-[#E4DFD1]">Qty</th>
                                             <th className="px-[12px] py-[6px] text-right border-b border-[#E4DFD1]">Price</th>
@@ -2437,11 +2452,11 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                                 const stock = invItem?.stock ?? 0;
                                                 const qty = Number(item.quantity) || 0;
                                                 return (
-                                                    <tr key={idx} className="hover:bg-[#EFF6FF] transition-colors border-b border-[#E4DFD1] last:border-b-0">
+                                                    <tr key={idx} className="hover:bg-[#eef7f6] transition-colors border-b border-[#E4DFD1] last:border-b-0">
                                                         <td className="px-[12px] py-[4px] text-[13px] text-[#23282A] font-medium flex items-center gap-[6px]">
                                                             {invItem?.image ? (
-                                                                <button onClick={e => { e.stopPropagation(); setPhotoViewItem(invItem); }} className="shrink-0 w-7 h-7 rounded border border-blue-200 bg-blue-50 hover:border-blue-400 hover:shadow-sm transition-all flex items-center justify-center" title="View Details">
-                                                                    <Package size={14} className="text-blue-600"/>
+                                                                <button onClick={e => { e.stopPropagation(); setPhotoViewItem(invItem); }} className="shrink-0 w-7 h-7 rounded border border-teal-200 bg-teal-50 hover:border-teal-400 hover:shadow-sm transition-all flex items-center justify-center" title="View Details">
+                                                                    <Package size={14} className="text-emerald-700"/>
                                                                 </button>
                                                             ) : (
                                                                 <span className="shrink-0 w-7 h-7 rounded border border-slate-100 flex items-center justify-center text-slate-300" title="No photo">
@@ -2497,14 +2512,14 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="flex items-center justify-between px-[14px] py-[10px] border-t border-[#E4DFD1] bg-gradient-to-r from-[rgba(37,99,235,0.03)] to-transparent">
+                            <div className="flex items-center justify-between px-[14px] py-[10px] border-t border-[#E4DFD1] bg-gradient-to-r from-[rgba(20,107,96,0.03)] to-transparent">
                                 <div className="flex items-center gap-[10px]">
-                                    <div className="flex items-center gap-[6px] px-[8px] py-[3px] bg-[rgba(37,99,235,0.08)] border border-[rgba(37,99,235,0.15)] rounded-[5px]">
-                                        <Package size={12} className="text-[#2563EB]" />
-                                        <span className="text-[11px] font-['JetBrains_Mono',monospace] font-semibold text-[#2563EB]">
+                                    <div className="flex items-center gap-[6px] px-[8px] py-[3px] bg-[rgba(20,107,96,0.08)] border border-[rgba(20,107,96,0.15)] rounded-[5px]">
+                                        <Package size={12} className="text-[#146b60]" />
+                                        <span className="text-[11px] font-['JetBrains_Mono',monospace] font-semibold text-[#146b60]">
                                             {analysis.totalItems}
                                         </span>
-                                        <span className="text-[10px] text-[rgba(37,99,235,0.6)] font-['JetBrains_Mono',monospace]">
+                                        <span className="text-[10px] text-[rgba(20,107,96,0.6)] font-['JetBrains_Mono',monospace]">
                                             item{analysis.totalItems !== 1 ? 's' : ''}
                                         </span>
                                     </div>
@@ -2537,7 +2552,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:"22px",paddingBottom:"24px"}}>
                             <div className="pr-[14px] border-r border-[#E4DFD1]">
                                 <div className="flex items-center gap-[6px] mb-[6px]">
-                                    <input type="checkbox" className="rounded accent-[#2563EB]"
+                                    <input type="checkbox" className="rounded accent-[#146b60]"
                                         checked={formData.otherChargesEnabled}
                                         onChange={e => {
                                             setFormData((prev: any) => ({
@@ -2555,7 +2570,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                     <span className="text-[11px] font-medium text-[#23282A]">Other Charges</span>
                                     {formData.otherChargesEnabled && (
                                         <>
-                                            <select className="text-[11px] border border-[#E4DFD1] rounded-[4px] px-[6px] py-[3px] bg-[#FEFDFB] flex-1 focus:border-[#93C5FD] outline-none transition-colors"
+                                            <select className="text-[11px] border border-[#E4DFD1] rounded-[4px] px-[6px] py-[3px] bg-[#FEFDFB] flex-1 focus:border-[#72c0b7] outline-none transition-colors"
                                                 value={formData.otherChargesAdjustment}
                                                 onChange={e => {
                                                     const adj = activeMarketAdjustments.find((a: any) => a.id === e.target.value);
@@ -2578,40 +2593,40 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                                 })}
                                             </select>
                                             {selectedAdjustment && formData.otherChargesPercent > 0 && (
-                                                <span className="text-[11px] font-semibold text-[#2563EB] whitespace-nowrap">{formData.otherChargesPercent}%</span>
+                                                <span className="text-[11px] font-semibold text-[#146b60] whitespace-nowrap">{formData.otherChargesPercent}%</span>
                                             )}
                                             <button onClick={handleCalculateCharges} disabled={!formData.otherChargesAdjustment}
-                                                className="px-[8px] py-[3px] text-[11px] font-medium text-white bg-[#2563EB] rounded-[4px] hover:bg-[#2563EB] disabled:opacity-40 flex items-center gap-[3px] transition-colors">
+                                                className="px-[8px] py-[3px] text-[11px] font-medium text-white bg-[#146b60] rounded-[4px] hover:bg-[#146b60] disabled:opacity-40 flex items-center gap-[3px] transition-colors">
                                                 <Calculator size={12} /> Calculate
                                             </button>
                                         </>
                                     )}
                                 </div>
                                 {formData.otherChargesEnabled && calculatedOtherCharges > 0 && (
-                                    <div className="mb-[6px] text-[11px] text-[#2563EB] font-medium bg-[rgba(37,99,235,0.08)] border border-[rgba(37,99,235,0.18)] rounded-[4px] px-[8px] py-[3px]">
+                                    <div className="mb-[6px] text-[11px] text-[#146b60] font-medium bg-[rgba(20,107,96,0.08)] border border-[rgba(20,107,96,0.18)] rounded-[4px] px-[8px] py-[3px]">
                                         Adjustment applied: {currency}{calculatedOtherCharges.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </div>
                                 )}
                                 <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"16px"}}>
-                                    <span style={{fontSize:"11px",fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px",color:"#2563EB",whiteSpace:"nowrap"}}>Discount</span>
-                                    <div style={{display:"flex",alignItems:"center",gap:"6px",background:"#EFF6FF",borderRadius:"8px",padding:"3px"}}>
-                                        <button type="button" onClick={() => setFormData({ ...formData, discountType: 'fixed' })} style={{padding:"5px 10px",fontSize:"11px",fontWeight:"600",border:"none",borderRadius:"6px",cursor:"pointer",background:formData.discountType==='fixed'?'#2563EB':'transparent',color:formData.discountType==='fixed'?'#fff':'#2563EB',transition:"all 0.15s"}}>{currency}</button>
-                                        <button type="button" onClick={() => setFormData({ ...formData, discountType: 'percentage' })} style={{padding:"5px 10px",fontSize:"11px",fontWeight:"600",border:"none",borderRadius:"6px",cursor:"pointer",background:formData.discountType==='percentage'?'#2563EB':'transparent',color:formData.discountType==='percentage'?'#fff':'#2563EB',transition:"all 0.15s"}}>%</button>
+                                    <span style={{fontSize:"11px",fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px",color:"#146b60",whiteSpace:"nowrap"}}>Discount</span>
+                                    <div style={{display:"flex",alignItems:"center",gap:"6px",background:"#eef7f6",borderRadius:"8px",padding:"3px"}}>
+                                        <button type="button" onClick={() => setFormData({ ...formData, discountType: 'fixed' })} style={{padding:"5px 10px",fontSize:"11px",fontWeight:"600",border:"none",borderRadius:"6px",cursor:"pointer",background:formData.discountType==='fixed'?'#146b60':'transparent',color:formData.discountType==='fixed'?'#fff':'#146b60',transition:"all 0.15s"}}>{currency}</button>
+                                        <button type="button" onClick={() => setFormData({ ...formData, discountType: 'percentage' })} style={{padding:"5px 10px",fontSize:"11px",fontWeight:"600",border:"none",borderRadius:"6px",cursor:"pointer",background:formData.discountType==='percentage'?'#146b60':'transparent',color:formData.discountType==='percentage'?'#fff':'#146b60',transition:"all 0.15s"}}>%</button>
                                     </div>
                                     <div style={{position:"relative",flex:"1"}}>
                                         <input type="number" min="0" step="0.01" placeholder="0.00"
                                             value={formData.discount || ''}
                                             onChange={e => setFormData({ ...formData, discount: Math.max(0, Number(e.target.value) || 0) })}
                                             style={{width:"100%",fontFamily:"JetBrains Mono,monospace",fontSize:"13px",padding:"9px 34px 9px 12px",border:"1px solid #E4DFD1",borderRadius:"8px",background:"#FEFDFB",outline:"none"}}
-                                            className="focus:border-[#2563EB]"
+                                            className="focus:border-[#146b60]"
                                         />
-                                        <span style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"12px",fontWeight:"600",color:"#2563EB"}}>{formData.discountType === 'percentage' ? '%' : currency}</span>
+                                        <span style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"12px",fontWeight:"600",color:"#146b60"}}>{formData.discountType === 'percentage' ? '%' : currency}</span>
                                     </div>
                                 </div>
                                 <div className="notes-box">
                                     <textarea
                                         style={{width:"100%",minHeight:"82px",resize:"vertical",border:"1px solid #E4DFD1",borderRadius:"9px",background:"#FEFDFB",padding:"12px 14px",fontFamily:"Inter,sans-serif",fontSize:"13px",color:"#23282A",outline:"none"}}
-                                        className="focus:border-[#2563EB]"
+                                        className="focus:border-[#146b60]"
                                         placeholder="Narration / notes..."
                                         value={formData.notes}
                                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
@@ -2622,7 +2637,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                             <div>
                                 <div className="summary-card" style={{background:"#FBF8F2",border:"1.5px solid #0F3D3E",borderRadius:"10px",padding:"12px 14px",position:"relative"}}>
                                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
-                                        <span style={{fontSize:"10px",fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px",color:"#2563EB"}}>Round Up</span>
+                                        <span style={{fontSize:"10px",fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px",color:"#146b60"}}>Round Up</span>
                                         <div className="flex items-center gap-[4px]">
                                             <select
                                                 style={{fontFamily:"Inter,sans-serif",fontSize:"11px",padding:"4px 8px",border:"1px solid #E4DFD1",borderRadius:"7px",background:"#FEFDFB",color:"#23282A"}}
@@ -2633,7 +2648,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                                     <option key={m.value} value={m.value}>{m.label}</option>
                                                 ))}
                                             </select>
-                                            <input type="checkbox" className="rounded accent-[#2563EB]"
+                                            <input type="checkbox" className="rounded accent-[#146b60]"
                                                 checked={formData.roundingEnabled}
                                                 onChange={e => setFormData({ ...formData, roundingEnabled: e.target.checked })}
                                             />
@@ -2641,7 +2656,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                     </div>
                                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px dashed #E4DFD1",fontSize:"12px"}}>
                                         <span style={{color:"#666F6C",fontWeight:"500"}}>Discount{formData.discountType === 'percentage' && formData.discount > 0 ? ` ${formData.discount}%` : ''}</span>
-                                         <span style={{fontFamily:"JetBrains Mono,monospace",fontWeight:"600",color:"#2563EB"}}>-{currency}{analysis.discountAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                         <span style={{fontFamily:"JetBrains Mono,monospace",fontWeight:"600",color:"#146b60"}}>-{currency}{analysis.discountAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                                     </div>
                                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px dashed #E4DFD1",fontSize:"12px"}}>
                                         <span style={{color:"#666F6C",fontWeight:"500"}}>Other Charges</span>
@@ -2661,7 +2676,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                     </div>
                     <div className="border-t border-[#E4DFD1] bg-[#FEFDFB] px-[26px] py-[16px] flex items-center justify-end gap-[10px] shrink-0">
                         <button onClick={handleCancelForm}
-                            className="px-[14px] py-[7px] text-[13px] font-semibold text-[#23282A] bg-[#FEFDFB] border border-[#E4DFD1] rounded-[9px] hover:border-[#93C5FD] flex items-center gap-[7px] transition-colors">
+                            className="px-[14px] py-[7px] text-[13px] font-semibold text-[#23282A] bg-[#FEFDFB] border border-[#E4DFD1] rounded-[9px] hover:border-[#72c0b7] flex items-center gap-[7px] transition-colors">
                             <X size={14} /> Close
                         </button>
                         {isEditing && (
@@ -2673,7 +2688,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         <button
                             onClick={() => handleSubmission(false, false)}
                             disabled={formData.items.length === 0 || (isEditing && !auditReason.trim()) || saving}
-                            className="px-[16px] py-[7px] text-[13px] font-semibold text-white bg-gradient-to-br from-[#2563EB] to-[#1E3A8A] rounded-[9px] shadow-[0_4px_14px_rgba(37,99,235,0.35)] hover:shadow-[0_6px_18px_rgba(37,99,235,0.45)] hover:-translate-y-[0.5px] flex items-center gap-[7px] disabled:opacity-40 transition-all">
+                            className="px-[16px] py-[7px] text-[13px] font-semibold text-white bg-gradient-to-br from-[#146b60] to-[#0b3e39] rounded-[9px] shadow-[0_4px_14px_rgba(20,107,96,0.35)] hover:shadow-[0_6px_18px_rgba(20,107,96,0.45)] hover:-translate-y-[0.5px] flex items-center gap-[7px] disabled:opacity-40 transition-all">
                             <Check size={14} /> Save &amp; Finalise
                         </button>
                     </div>
@@ -2729,7 +2744,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                     />
                 )}
                 {showItemHistory && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40" onClick={() => setShowItemHistory(false)}>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={() => setShowItemHistory(false)} style={{background: 'rgba(15, 23, 42, 0.6)'}}>
                         <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col m-4" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-slate-50">
                                 <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
@@ -2759,7 +2774,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                     </div>
                 )}
                 {photoViewItem && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40" onClick={() => setPhotoViewItem(null)}>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={() => setPhotoViewItem(null)} style={{background: 'rgba(15, 23, 42, 0.6)'}}>
                         <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden m-4" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-slate-50">
                                 <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
