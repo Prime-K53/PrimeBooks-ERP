@@ -716,11 +716,7 @@ const DashboardContent: React.FC = () => {
   }, []);
 
   const currentFyDisplay = React.useMemo(() => {
-    if (!selectedFinancialYear) return 'Financial Year';
-    const sy = selectedFinancialYear.start_date?.slice(0, 4);
-    const ey = selectedFinancialYear.end_date?.slice(0, 4);
-    if (sy && ey && sy !== ey) return 'Financial Year';
-    return selectedFinancialYear.name || 'Financial Year';
+    return selectedFinancialYear ? 'Financial Year' : 'Financial Year';
   }, [selectedFinancialYear]);
 
   useEffect(() => {
