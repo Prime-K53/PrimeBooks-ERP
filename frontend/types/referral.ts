@@ -53,6 +53,36 @@ export interface ReferralSettings {
   allowMultipleRewards: boolean
 }
 
+export interface ReferralCommission {
+  id: string;
+  referralId: string;
+  customerId: string;
+  amount: number;
+  status: 'pending' | 'approved' | 'paid' | 'cancelled';
+  date: string;
+  [key: string]: any;
+}
+
+export interface ReferralTransaction {
+  id: string;
+  referralId: string;
+  customerId: string;
+  type: 'earned' | 'paid' | 'reversed';
+  amount: number;
+  balance: number;
+  date: string;
+  [key: string]: any;
+}
+
+export interface ReferralLog {
+  id: string;
+  referralId: string;
+  action: string;
+  details: string;
+  timestamp: string;
+  [key: string]: any;
+}
+
 export const DEFAULT_REFERRAL_SETTINGS: ReferralSettings = {
   enabled: true,
   rewardType: 'percentage',

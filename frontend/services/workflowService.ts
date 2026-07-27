@@ -39,7 +39,7 @@ class WorkflowService {
   private notifications: Map<string, WorkflowNotification> = new Map();
   private templates: Map<string, WorkflowTemplate> = new Map();
   private initialized: boolean = false;
-  private checkInterval: NodeJS.Timeout | null = null;
+  private checkInterval: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Initialize the workflow service

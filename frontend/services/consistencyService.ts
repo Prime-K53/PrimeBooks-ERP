@@ -1,6 +1,6 @@
 import { RenderModel, RenderPage } from '../../contracts/RenderModel';
 import { ValidationResult, ConsistencyConfig } from '../../contracts/ConsistencyLock';
-import * as crypto from 'crypto';
+const crypto: any = globalThis.crypto || (typeof window !== 'undefined' ? window.crypto : undefined);
 
 /**
  * ConsistencyService is responsible for ensuring that a RenderModel is structurally

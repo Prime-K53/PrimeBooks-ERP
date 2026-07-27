@@ -10,6 +10,7 @@ import { ConfirmDialog, ConfirmDialogType } from '../../components/ConfirmDialog
 import { useAuth } from '../../context/AuthContext';
 import { getUrl, HAS_REMOTE_BACKEND } from '../../config/api';
 import { dbService } from '../../services/db';
+import { logger } from '../../services/logger';
 import {
   bulkUploadOfflineMarginSettings,
   createOfflineMarginSetting,

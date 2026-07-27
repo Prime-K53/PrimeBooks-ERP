@@ -120,7 +120,7 @@ class HardwareService {
     try {
       // Request device - this prompts the browser permission dialog
       // Filters empty to show all devices, or add vendorId for specific printers (e.g. Epson: 0x04b8)
-      const device = await (navigator as Navigator & { usb: USB }).usb.requestDevice({ filters: [] });
+      const device = await (navigator as Navigator & { usb: any }).usb.requestDevice({ filters: [] });
       await this.setupDevice(device);
       return true;
     } catch (error: any) {

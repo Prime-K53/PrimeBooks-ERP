@@ -19,10 +19,11 @@ import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
 import { useInventory } from '../context/InventoryContext';
 import { useFinancialYear } from '../context/FinancialYearContext';
-import { CompanyConfig, InvoiceTemplatesConfig, NumberingRule, PricingRoundingMethod, RoundingRulesConfig } from '../types';
+import { CompanyConfig, InvoiceTemplatesConfig, InventorySettingsConfig, NumberingRule, PricingRoundingMethod, RoundingAnalytics, RoundingRulesConfig, SecuritySettingsConfig } from '../types';
 import { OfflineImage } from '../components/OfflineImage';
 import { localFileStorage } from '../services/localFileStorage';
-import { DEFAULT_PRICING_SETTINGS, ROUNDING_METHOD_OPTIONS, getRoundingAnalytics } from '../services/pricingRoundingService';import { PricingSettingsValidator, PricingSettingsValidationResult } from '../services/pricingSettingsValidation';
+import { DEFAULT_PRICING_SETTINGS, ROUNDING_METHOD_OPTIONS, getRoundingAnalytics } from '../services/pricingRoundingService';
+import { PricingSettingsValidator, PricingSettingsValidationResult } from '../services/pricingSettingsValidation';
 import { hardwareService } from '../services/hardwareService';
 import { z } from 'zod';
 
@@ -337,7 +338,8 @@ const Settings: React.FC = () => {
         ...DEFAULT_PRICING_SETTINGS,
         ...(config.pricingSettings || {})
     };
-    const roundingAnalytics = getRoundingAnalytics();
+    const [roundingAnalytics, setRoundingAnalytics] = React.useState<RoundingAnalytics>({ totalExtraProfit: 0, roundedTransactions: 0, byMethod: {} });
+    React.useEffect(() => { getRoundingAnalytics().then(setRoundingAnalytics).catch(() => {}); }, []);
 
     useEffect(() => {
         setConfig(withNormalizedSecurityConfig({

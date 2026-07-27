@@ -10,34 +10,37 @@ import { serviceRecipeService } from './serviceRecipeService';
 
 // ─── Lazy-loaded dependencies ───
 let _inventoryService: any = null;
-function getInvService(): any {
+async function getInvService(): Promise<any> {
   if (!_inventoryService) {
-    _inventoryService = require('./inventoryTransactionService').inventoryTransactionService;
+    const mod = await import('./inventoryTransactionService');
+    _inventoryService = mod.inventoryTransactionService;
   }
   return _inventoryService;
 }
 
 let _reservationService: any = null;
-function getReservationService(): any {
+async function getReservationService(): Promise<any> {
   if (!_reservationService) {
-    _reservationService = require('./inventoryTransactionService').InventoryReservationService;
-    _reservationService = new _reservationService();
+    const mod = await import('./inventoryTransactionService');
+    _reservationService = new mod.InventoryReservationService();
   }
   return _reservationService;
 }
 
 let _pricingService: any = null;
-function getPricingService(): any {
+async function getPricingService(): Promise<any> {
   if (!_pricingService) {
-    _pricingService = require('./pricingService').pricingService;
+    const mod = await import('./pricingService');
+    _pricingService = mod.pricingService;
   }
   return _pricingService;
 }
 
 let _masterPricingService: any = null;
-function getMasterPricingService(): any {
+async function getMasterPricingService(): Promise<any> {
   if (!_masterPricingService) {
-    _masterPricingService = require('./masterInventoryPricingService').masterInventoryPricingService;
+    const mod = await import('./masterInventoryPricingService');
+    _masterPricingService = mod.masterInventoryPricingService;
   }
   return _masterPricingService;
 }
@@ -46,8 +49,7 @@ let _inventoryItems: any[] | null = null;
 async function ensureInventoryCache(): Promise<any[]> {
   if (!_inventoryItems) {
     try {
-      const { dbService: invDb } = require('./db');
-      _inventoryItems = await invDb.getAll('inventory');
+      _inventoryItems = await dbService.getAll('inventory');
     } catch {
       _inventoryItems = [];
     }
@@ -236,7 +238,7 @@ class ServiceJobService {
 
     // Attempt to load pricing from centralized services
     try {
-      const masterPricing = getMasterPricingService();
+      const masterPricing = await getMasterPricingService();
       const inventory = await ensureInventoryCache();
 
       // Find the variant and item in inventory
@@ -259,7 +261,7 @@ class ServiceJobService {
     // Fallback: try direct pricing service
     if (costPrice === 0 && sellingPrice === 0) {
       try {
-        const pricingService = getPricingService();
+        const pricingService = await getPricingService();
         const inventory = await ensureInventoryCache();
         const item = inventory.find((i: any) => i.id === input.itemId);
 
@@ -334,8 +336,8 @@ class ServiceJobService {
 
     const now = new Date().toISOString();
     const updatedMaterials = [...(job.materials || [])];
-    const invService = getInvService();
-    const reservationService = getReservationService();
+    const invService = await getInvService();
+    const reservationService = await getReservationService();
 
     for (let i = 0; i < updatedMaterials.length; i++) {
       const mat = updatedMaterials[i];
@@ -374,7 +376,7 @@ class ServiceJobService {
 
     const now = new Date().toISOString();
     const updatedMaterials = [...(job.materials || [])];
-    const invService = getInvService();
+    const invService = await getInvService();
 
     for (let i = 0; i < updatedMaterials.length; i++) {
       const mat = updatedMaterials[i];

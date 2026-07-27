@@ -8,7 +8,7 @@ import { useProductionStore } from '../stores/productionStore';
 import { roundFinancial } from '../utils/helpers';
 import { bomService } from '../services/bomService';
 import { transactionService } from '../services/transactionService';
-import { inventoryReservationService } from '../services/inventoryTransactionService';
+import { inventoryReservationService, inventoryTransactionService } from '../services/inventoryTransactionService';
 import { api } from '../services/api';
 import { logger } from '../services/logger';
 
@@ -663,6 +663,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 holdStartedAt: new Date().toISOString(),
                 logs: [...wo.logs, {
                     id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    workOrderId: id,
                     timestamp: new Date().toISOString(),
                     action: 'Put On Hold',
                     user: user?.username || 'system',
@@ -709,6 +710,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 totalHoldTime,
                 logs: [...wo.logs, {
                     id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    workOrderId: id,
                     timestamp: new Date().toISOString(),
                     action: 'Resumed',
                     user: user?.username || 'system',
@@ -756,6 +758,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 actualStartTime: new Date().toISOString(),
                 logs: [...wo.logs, {
                     id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    workOrderId: id,
                     timestamp: new Date().toISOString(),
                     action: 'Started',
                     user: user?.username || 'system'
@@ -797,6 +800,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 progressPercentage,
                 logs: [...wo.logs, {
                     id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    workOrderId: id,
                     timestamp: new Date().toISOString(),
                     action: 'Progress Update',
                     user: user?.username || 'system',
@@ -914,6 +918,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 assignedTo: userId,
                 logs: [...wo.logs, {
                     id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    workOrderId: id,
                     timestamp: new Date().toISOString(),
                     action: 'Assigned',
                     user: user?.username || 'system',
@@ -955,6 +960,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 ],
                 logs: [...wo.logs, {
                     id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    workOrderId: id,
                     timestamp: new Date().toISOString(),
                     action: 'QA Pass',
                     user: inspector,
@@ -1000,6 +1006,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 qaChecks: updatedChecks,
                 logs: [...wo.logs, {
                     id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    workOrderId: workOrderId,
                     timestamp: new Date().toISOString(),
                     action: status === 'Fail' ? 'QA Fail' : 'QA Pass',
                     user: user?.username || 'system',
@@ -1047,6 +1054,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 status: finalStatus === 'Rework Required' ? 'In Progress' : 'QA',
                 logs: [...wo.logs, {
                     id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    workOrderId: id,
                     timestamp: new Date().toISOString(),
                     action: finalStatus === 'Failed' ? 'QA Fail' : 'QA Pass',
                     user: user?.username || 'system',
@@ -1065,7 +1073,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 newValue: updated
             });
 
-            notify(`QA ${finalStatus.toLowerCase()}`, finalStatus === 'Passed' ? 'success' : 'info');
+            notify(`QA ${finalStatus.toLowerCase()}`, finalStatus === 'Failed' ? 'error' : 'info');
         } catch (err: any) {
             notify(`Failed to complete QA: ${err.message}`, 'error');
         }

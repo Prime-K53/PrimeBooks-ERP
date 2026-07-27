@@ -126,6 +126,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         customerId: '', // Quotation might not have customerId directly, we might need to look it up by name
         customerName: quotation.customerName,
         orderDate: new Date().toISOString(),
+        date: new Date().toISOString(),
         status: 'Pending',
         subtotal,
         totalAmount,
@@ -203,6 +204,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         customerId: data.customerId || '',
         customerName: data.customerName || 'Walking Customer',
         orderDate: new Date().toISOString(),
+        date: new Date().toISOString(),
         status: 'Pending',
         subtotal,
         totalAmount,
@@ -241,6 +243,9 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const fullPayment: OrderPayment = {
         id: generateNextId('PAY', []),
         orderId,
+        amount: payment.amountPaid || payment.amount || 0,
+        method: payment.paymentMethod || payment.method || 'Cash',
+        date: payment.paymentDate || payment.date || new Date().toISOString(),
         amountPaid: payment.amountPaid || 0,
         paymentMethod: payment.paymentMethod || 'Cash',
         paymentDate: new Date().toISOString(),

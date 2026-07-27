@@ -219,21 +219,11 @@ class InventoryResourceService {
   // ─── CRUD ───
 
   async getItem(id: string): Promise<Item | undefined> {
-    try {
-      const { dbService: invDb } = require('./db');
-      return invDb.get('inventory', id);
-    } catch {
-      return dbService.get('inventory', id);
-    }
+    return dbService.get('inventory', id);
   }
 
   async saveItem(item: Item): Promise<void> {
-    try {
-      const { dbService: invDb } = require('./db');
-      await invDb.put('inventory', item);
-    } catch {
-      await dbService.put('inventory', item);
-    }
+    await dbService.put('inventory', item);
   }
 
   async getPurchaseLots(itemId: string): Promise<PurchaseLot[]> {
@@ -258,34 +248,21 @@ class InventoryResourceService {
     inventoryRole?: InventoryRole;
     resourceSubtype?: ResourceSubtype;
   }): Promise<Item[]> {
-    try {
-      const { dbService: invDb } = require('./db');
-      const all: Item[] = await invDb.getAll('inventory');
+    const all: Item[] = await dbService.getAll('inventory');
 
-      if (filters?.inventoryRole) {
-        return all.filter(i => i.inventoryRole === filters.inventoryRole);
-      }
-      if (filters?.resourceSubtype) {
-        return all.filter(i => i.resourceSubtype === filters.resourceSubtype);
-      }
-      // Default: return internal + both items
-      return all.filter((i: Item) =>
-        i.inventoryRole === 'internal' ||
-        i.inventoryRole === 'both' ||
-        i.type === 'Raw Material' ||
-        i.type === 'Material'
-      );
-    } catch {
-      const all: Item[] = await dbService.getAll('inventory');
-      if (filters?.inventoryRole) return all.filter(i => i.inventoryRole === filters.inventoryRole);
-      if (filters?.resourceSubtype) return all.filter(i => i.resourceSubtype === filters.resourceSubtype);
-      return all.filter((i: Item) =>
-        i.inventoryRole === 'internal' ||
-        i.inventoryRole === 'both' ||
-        i.type === 'Raw Material' ||
-        i.type === 'Material'
-      );
+    if (filters?.inventoryRole) {
+      return all.filter(i => i.inventoryRole === filters.inventoryRole);
     }
+    if (filters?.resourceSubtype) {
+      return all.filter(i => i.resourceSubtype === filters.resourceSubtype);
+    }
+    // Default: return internal + both items
+    return all.filter((i: Item) =>
+      i.inventoryRole === 'internal' ||
+      i.inventoryRole === 'both' ||
+      i.type === 'Raw Material' ||
+      i.type === 'Material'
+    );
   }
 }
 

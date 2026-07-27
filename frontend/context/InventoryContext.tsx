@@ -139,6 +139,9 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return onHand + getAssemblableQty(bom);
     };
 
+    const toLowStockItems = (items: Item[]) =>
+        items.map(i => ({ id: i.id, name: i.name, sku: i.sku, stock: i.stock, reorderPoint: i.reorderPoint ?? 0 }));
+
     const addItem = async (item: Item): Promise<void> => {
         const itemToSave = { ...item, id: item.id || generateNextId('ITM', inventory, companyConfig) };
         try {
@@ -154,7 +157,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             syncBomRelevantInventory('item creation', [itemToSave]).catch((error) => {
                 console.warn('Background inventory sync failed:', error);
             });
-            checkAndSendLowStockAlerts(inventory).catch(() => {});
+            checkAndSendLowStockAlerts(toLowStockItems(inventory)).catch(() => {});
         } catch (err: any) {
             throw err;
         }
@@ -190,7 +193,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     console.warn('Background inventory sync failed:', error);
                 });
             }
-            checkAndSendLowStockAlerts(inventory).catch(() => {});
+            checkAndSendLowStockAlerts(toLowStockItems(inventory)).catch(() => {});
         } catch (err: any) {
             throw err;
         }
@@ -307,7 +310,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     type: 'Stock', date: new Date().toISOString(), severity: 'High'
                 });
             }
-            checkAndSendLowStockAlerts(inventory).catch(() => {});
+            checkAndSendLowStockAlerts(toLowStockItems(inventory)).catch(() => {});
         } catch (err: any) {
             notify(`Stock update failed: ${err.message}`, "error");
         }

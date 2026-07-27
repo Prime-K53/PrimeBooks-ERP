@@ -182,7 +182,7 @@ async function stampAllRecordsWithCompany(companyId: string): Promise<void> {
   const db = await initDB();
   const existingStores = [...db.objectStoreNames].filter(s => companyStores.includes(s as any)) as (keyof NexusDB)[];
   if (existingStores.length === 0) return;
-  const tx = db.transaction(existingStores, 'readwrite');
+        const tx = db.transaction(existingStores as any, 'readwrite');
   let totalStamped = 0;
   for (const store of existingStores) {
     try {
@@ -372,10 +372,10 @@ const getAllFromLegacyStore = async <T>(storeName: keyof NexusDB): Promise<T[]> 
         return [];
     }
     // Use getAllKeys + get to avoid any stale-snapshot issues with getAll
-    const keys = await db.getAllKeys(storeName);
+    const keys = await db.getAllKeys(storeName as any);
     const items: T[] = [];
     for (const key of keys) {
-        const item = await db.get(storeName, key);
+        const item = await db.get(storeName as any, key);
         if (item !== undefined) items.push(item);
     }
     const cid = await getCurrentCompanyId();
@@ -396,7 +396,7 @@ const getFromLegacyStore = async <T>(storeName: keyof NexusDB, id: string): Prom
         console.warn(`Object store "${storeName}" not found in IndexedDB.`);
         return undefined;
     }
-    const record = await db.get(storeName, id) as T | undefined;
+    const record = await db.get(storeName as any, id) as T | undefined;
     if (!record) return undefined;
     const cid = await getCurrentCompanyId();
     if (!cid) return record;
@@ -414,7 +414,7 @@ const putToLegacyStore = async <T>(storeName: keyof NexusDB, item: T): Promise<s
     const prev = writeQueues.get(key) ?? Promise.resolve();
     const next = prev.then(() => withDbRecovery(async (db) => {
         stampCompanyId(item);
-        const result = await db.put(storeName, item);
+        const result = await db.put(storeName as any, item);
         return result as string;
     }));
     writeQueues.set(key, next.then(() => {}, () => {}));
@@ -426,7 +426,7 @@ const deleteFromLegacyStore = async (storeName: keyof NexusDB, id: string): Prom
         if (!db?.objectStoreNames?.contains?.(storeName)) {
             return;
         }
-        await db.delete(storeName, id);
+        await db.delete(storeName as any, id);
     });
 };
 
@@ -791,6 +791,11 @@ const buildBackfilledReceiptSnapshot = (payment: CustomerPayment): CustomerRecei
         const fallbackInvoiceTotal = round2(payment.invoiceTotal ?? fallbackApplied);
         const fallbackBalance = round2(Math.max(0, fallbackInvoiceTotal - fallbackApplied));
         calculated = {
+            id: String(payment.id ?? ''),
+            customerId: String(payment.customerId ?? ''),
+            invoiceId: allocations[0]?.invoiceId ?? '',
+            amount: amountTendered,
+            date: toIsoSafe(payment.date),
             generatedAt: toIsoSafe(payment.date),
             paymentPurpose: inferBackfillPurpose(payment),
             amountTendered,
@@ -1147,8 +1152,8 @@ export const dbService = {
       // Skip cloud writes — bulkPut is for syncing cloud data into local cache
       await withDbRecovery(async (db) => {
         if (!db?.objectStoreNames?.contains?.(storeName)) return;
-        const tx = db.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
+        const tx = db.transaction(storeName as any, 'readwrite');
+        const store = tx.objectStore(storeName as any);
         for (const item of items) {
           stampCompanyId(item);
           (item as Record<string, unknown>)._updatedAt = new Date().toISOString();
@@ -1199,8 +1204,6 @@ export const dbService = {
             import('./offlineDb')
         ]);
 
-        productionModule.getProductionDb()?.close();
-        examinationModule.getExaminationDb()?.close();
         await offlineModule.closeOfflineDbConnection?.();
 
         await Promise.all(LEGACY_DATABASE_NAMES.map((name) => deleteDB(name).catch(() => undefined)));
@@ -1415,10 +1418,10 @@ export const dbService = {
         const db = await initDB();
         const parsed = JSON.parse(jsonData);
 
-        const tx = db.transaction(db.objectStoreNames, 'readwrite');
+        const tx = db.transaction(db.objectStoreNames as any, 'readwrite');
         for (const store of STORE_NAMES) {
             if (!db.objectStoreNames.contains(store)) continue;
-            const objectStore = tx.objectStore(store);
+            const objectStore = tx.objectStore(store as any);
             await objectStore.clear();
             const items = parsed.data[store];
             if (Array.isArray(items)) {

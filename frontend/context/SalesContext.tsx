@@ -67,6 +67,7 @@ const normalizeExaminationQuotationDetails = (raw: any): ExaminationQuotationDet
 
 interface SalesContextType {
     sales: Sale[];
+    invoices: Invoice[];
     quotations: Quotation[];
     jobOrders: JobOrder[];
     heldOrders: HeldOrder[];
@@ -1188,6 +1189,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (
         <SalesContext.Provider value={{
             ...salesStore,
+            invoices: finance.invoices,
             isPosModalOpen,
             setIsPosModalOpen,
             fetchSalesData: salesStore.fetchSalesData,

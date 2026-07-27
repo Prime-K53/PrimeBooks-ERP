@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { BatchRecord, OfflineState, SyncQueueItem, SyncQueuePriority, SyncQueueStatus } from '../types/offline';
+import { dbService } from './db';
 
 interface PrimeErpOfflineDbSchema extends DBSchema {
   batches: {

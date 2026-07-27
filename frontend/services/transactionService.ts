@@ -1952,8 +1952,7 @@ export const transactionService = {
                 const paidAmount = Math.min(rawPaidAmount, totalAmount);
                 const overpayment = Math.max(0, rawPaidAmount - totalAmount);
                 if (overpayment > 0.01) {
-                    const { processOverpaymentToWallet } = require('./transactionService');
-                    await processOverpaymentToWallet(invoice, overpayment);
+                    await this.processOverpaymentToWallet(invoice, overpayment);
                 }
                 invoice.paidAmount = paidAmount;
 

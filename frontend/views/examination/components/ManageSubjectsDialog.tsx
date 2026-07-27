@@ -120,7 +120,7 @@ export const ManageSubjectsDialog: React.FC<ManageSubjectsDialogProps> = ({
   // Learner Count Management
   const [learnerCount, setLearnerCount] = useState<number>(0);
   const [isUpdatingLearners, setIsUpdatingLearners] = useState(false);
-  const learnerUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const learnerUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (examinationClass) {

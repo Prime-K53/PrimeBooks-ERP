@@ -49,7 +49,7 @@ apiClient.interceptors.request.use((config) => {
   if (shouldPreferLocalReadModels() && config.method && config.method.toLowerCase() !== 'get') {
     return Promise.reject({ __localOnly: true, message: 'Skipped (local-first mode)', config });
   }
-  config.headers = config.headers || {};
+  if (!config.headers) config.headers = {} as any;
   try {
     const raw = sessionStorage.getItem('nexus_user');
     if (raw) {
@@ -75,6 +75,17 @@ apiClient.interceptors.request.use((config) => {
     const fyId = localStorage.getItem('selectedFinancialYearId');
     if (fyId) {
       config.params = { ...(config.params || {}), financial_year_id: fyId };
+    }
+  } catch { /* non-fatal */ }
+  try {
+    const sbSession = localStorage.getItem('prime-erp-supabase-auth');
+    if (sbSession) {
+      const parsed = JSON.parse(sbSession);
+      const token = parsed?.access_token;
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+        config.headers['x-auth-mode'] = 'supabase';
+      }
     }
   } catch { /* non-fatal */ }
   if (import.meta.env?.DEV) {

@@ -44,7 +44,7 @@ class ReportService {
   private dashboards: Map<string, ReportDashboard> = new Map();
   private reportHistory: Map<string, ReportResult> = new Map();
   private initialized: boolean = false;
-  private scheduleInterval: NodeJS.Timeout | null = null;
+  private scheduleInterval: ReturnType<typeof setTimeout> | null = null;
 
   private async loadStoredArray<T>(key: string): Promise<T[]> {
     const stored = await dbService.getSetting<T[]>(key);

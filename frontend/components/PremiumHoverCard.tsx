@@ -62,7 +62,7 @@ export const PremiumHoverCard: React.FC<PremiumHoverCardProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const hoverTimeout = React.useRef<NodeJS.Timeout | null>(null);
+  const hoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
     setMousePosition({ x: e.clientX, y: e.clientY });

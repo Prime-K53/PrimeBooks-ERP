@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient';
 import { dbService } from './db';
 import { mergeRecords, fieldLevelMerge } from './syncConflictResolver';
 import { durableSyncQueue } from './durableSyncQueue';
+import { logger } from './logger';
 
 const getCompanyId = (): string | null => {
   try {

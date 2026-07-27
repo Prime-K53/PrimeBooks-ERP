@@ -1,5 +1,4 @@
 import { platform } from './platform';
-import { logger } from '@/services/logger';
 
 export interface SafeFetchOptions extends RequestInit {
   timeoutMs?: number;
@@ -15,7 +14,7 @@ const logger = {
   },
   error: (msg: string, extra?: any) => {
     const formatted = `[FRONTEND][safeFetch] ${msg}`;
-    logger.error(formatted, extra || '');
+    console.error(formatted, extra || '');
     if (platform.isDesktop) {
       platform.api.log({ message: formatted, level: 'ERROR', ...extra });
     }

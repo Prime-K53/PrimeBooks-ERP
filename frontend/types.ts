@@ -193,6 +193,7 @@ export interface SecuritySettingsConfig {
   lockoutAttempts: number;
   passwordProtectionEnabled?: boolean;
   enforcePasswordComplexity?: boolean;
+  mfaSecret?: string;
 }
 
 export interface VATConfig {

@@ -55,7 +55,7 @@ class InventoryAlertService {
   private readonly STORAGE_KEY = 'inventoryAlerts';
   private readonly CONFIG_KEY = 'inventoryAlertConfig';
   private config: AlertConfig = DEFAULT_CONFIG;
-  private checkInterval: NodeJS.Timeout | null = null;
+  private checkInterval: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     const local = localStorage.getItem(this.CONFIG_KEY);

@@ -183,31 +183,36 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       employeesToPay.forEach(emp => {
           totalBasic += emp.basicSalary;
-          const slip: Payslip = {
-              id: `SLIP-${emp.id}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-              payrollRunId: runId,
-              employeeId: emp.id,
-              employeeName: emp.name,
-              date: date,
-              basicSalary: emp.basicSalary,
-              allowances: 0,
-              deductions: 0,
-              netPay: emp.basicSalary,
-              status: 'Paid'
-          };
+            const slip: Payslip = {
+                id: `SLIP-${emp.id}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                payrollRunId: runId,
+                employeeId: emp.id,
+                employeeName: emp.name,
+                date: date,
+                basicSalary: emp.basicSalary,
+                allowances: 0,
+                deductions: 0,
+                netPay: emp.basicSalary,
+                status: 'Paid',
+                amount: emp.basicSalary,
+                period: month
+            };
           slips.push(slip);
       });
 
       const run: PayrollRun = {
-          id: runId,
-          month,
-          date,
-          totalBasic,
-          totalAllowances: 0,
-          totalDeductions: 0,
-          totalNetPay: totalBasic,
-          status: 'Paid',
-          employeeCount: employeesToPay.length
+            id: runId,
+            month,
+            date,
+            totalBasic,
+            totalAllowances: 0,
+            totalDeductions: 0,
+            totalNetPay: totalBasic,
+            status: 'Paid',
+            employeeCount: employeesToPay.length,
+            period: month,
+            employees: employeesToPay,
+            totalAmount: totalBasic
       };
 
       await financeStore.addPayrollRun(run);
@@ -258,7 +263,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   notes: `Invoice payment for #${invoice.id}`,
                   allocations: [{ invoiceId: invoice.id, amount: paidDelta }],
                   status: 'Cleared',
-                  reconciled: false
+                  reconciled: false,
+                  method: invoice.paymentMethod || invoice.payment_method || 'Cash'
               };
               await transactionService.addCustomerPayment(payment);
               await salesStore.fetchSalesData();
