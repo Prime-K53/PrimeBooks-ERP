@@ -72,9 +72,12 @@ apiClient.interceptors.request.use((config) => {
     }
   } catch { /* non-fatal */ }
   try {
-    const fyId = localStorage.getItem('selectedFinancialYearId');
-    if (fyId) {
-      config.params = { ...(config.params || {}), financial_year_id: fyId };
+    const method = String(config.method || '').toLowerCase();
+    if (method === 'get') {
+      const fyId = localStorage.getItem('selectedFinancialYearId');
+      if (fyId) {
+        config.params = { ...(config.params || {}), financial_year_id: fyId };
+      }
     }
   } catch { /* non-fatal */ }
   try {
