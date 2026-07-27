@@ -154,9 +154,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: `radial-gradient(circle at 20% 15%, rgba(31,133,119,.35), transparent 45%),
-                   radial-gradient(circle at 85% 80%, rgba(11,62,57,.5), transparent 50%),
-                   ${teal[900]}`,
+      background: 'rgba(15, 23, 42, 0.6)',
       padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
     }}>
       <div style={{
