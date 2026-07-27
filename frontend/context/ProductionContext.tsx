@@ -1016,7 +1016,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             await storeUpdateWorkOrder(updated);
 
-            notify(`QA check ${status.toLowerCase()}ed`, status === 'Fail' ? 'error' : 'success');
+            notify(`QA check ${(status || '').toLowerCase()}ed`, status === 'Fail' ? 'error' : 'success');
         } catch (err: any) {
             notify(`Failed to submit QA check: ${err.message}`, 'error');
         }
@@ -1073,7 +1073,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 newValue: updated
             });
 
-            notify(`QA ${finalStatus.toLowerCase()}`, finalStatus === 'Failed' ? 'error' : 'info');
+            notify(`QA ${(finalStatus || '').toLowerCase()}`, finalStatus === 'Failed' ? 'error' : 'info');
         } catch (err: any) {
             notify(`Failed to complete QA: ${err.message}`, 'error');
         }
@@ -1081,7 +1081,7 @@ export const ProductionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const getQATemplate = async (productType: string): Promise<QACheck[]> => {
         // Default QA checks for examination printing
-        if (productType.toLowerCase().includes('exam')) {
+        if ((productType || '').toLowerCase().includes('exam')) {
             return [
                 { id: 'QA-EXAM-1', name: 'Print Quality', category: 'Visual', status: 'Pending', description: 'Check for smudges, clarity' },
                 { id: 'QA-EXAM-2', name: 'Page Count', category: 'Dimensional', status: 'Pending', description: 'Verify correct number of pages' },

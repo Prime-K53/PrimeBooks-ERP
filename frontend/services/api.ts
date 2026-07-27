@@ -509,7 +509,7 @@ export const api = {
     login: async (username: string, password?: string, mfaCode?: string) => {
       return handle(async () => {
         const dbUsers = await dbService.getAll<User>('users');
-        const found = dbUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
+        const found = dbUsers.find(u => (u.username || '').toLowerCase() === (username || '').toLowerCase());
         if (!found) return { status: 401, error: 'User not found in local database' };
         return { status: 200, data: found };
       }, 'Auth.Login');
@@ -1294,8 +1294,8 @@ export const api = {
         pricing_value: 0.3
       };
 
-      const paper = inventory.find(i => i.name.toLowerCase().includes('paper')) || { cost: 35 };
-      const toner = inventory.find(i => i.name.toLowerCase().includes('toner')) || { cost: 0.25 };
+      const paper = inventory.find(i => (i.name || '').toLowerCase().includes('paper')) || { cost: 35 };
+      const toner = inventory.find(i => (i.name || '').toLowerCase().includes('toner')) || { cost: 0.25 };
       const TONER_MG_PER_SHEET = 20;
       const internal_cost_per_sheet = (paper.cost || 35) + ((toner.cost || 0.25) * TONER_MG_PER_SHEET);
 

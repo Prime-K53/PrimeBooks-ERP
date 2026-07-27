@@ -399,17 +399,18 @@ const MarketingMessages: React.FC = () => {
 
     try {
       const salesStore = (await import('../../stores/salesStore')).useSalesStore.getState();
+      const normalizedName = (customerName || '').toLowerCase();
       const customerSales = salesStore.sales.filter((s: any) =>
-        s.customerId === customerId || s.customerName?.toLowerCase() === customerName.toLowerCase()
+        s.customerId === customerId || (s.customerName || '').toLowerCase() === normalizedName
       );
       const customerOrders = salesStore.salesOrders.filter((o: any) =>
         o.customerId === customerId
       );
       const customerQuotes = salesStore.quotations.filter((q: any) =>
-        q.customerId === customerId || q.customerName?.toLowerCase() === customerName.toLowerCase()
+        q.customerId === customerId || (q.customerName || '').toLowerCase() === normalizedName
       );
       const customerInvoices = salesStore.salesInvoices?.filter((i: any) =>
-        i.customerId === customerId || i.customerName?.toLowerCase() === customerName.toLowerCase()
+        i.customerId === customerId || (i.customerName || '').toLowerCase() === normalizedName
       ) || [];
 
       const lastSale = customerSales[customerSales.length - 1];

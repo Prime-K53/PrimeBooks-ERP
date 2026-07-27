@@ -101,7 +101,7 @@ const sendViaWebhook = async (webhookUrl: string, type: NotificationActivityType
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      event: `notification.${type.toLowerCase()}`,
+      event: `notification.${(type || '').toLowerCase()}`,
       timestamp: new Date().toISOString(),
       data: payload
     })

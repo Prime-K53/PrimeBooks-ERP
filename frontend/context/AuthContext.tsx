@@ -958,7 +958,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return 'SUCCESS';
         }
         
-        const foundUser = dbUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
+        const foundUser = dbUsers.find(u => (u.username || '').toLowerCase() === (username || '').toLowerCase());
         if (!foundUser) {
             return 'INVALID';
         }
@@ -1065,7 +1065,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check username uniqueness (exclude current user's ID on edit)
     const existingUsername = allUsers.find(
-      existing => existing.username.toLowerCase() === userData.username.toLowerCase() && existing.id !== userData.id
+      existing => (existing.username || '').toLowerCase() === (userData.username || '').toLowerCase() && existing.id !== userData.id
     );
     if (existingUsername) {
       throw new Error(`Username "${userData.username}" is already taken.`);

@@ -447,7 +447,7 @@ class FinancialReportingService {
 
     // Get cash accounts
     const cashAccountIds = accounts
-      .filter(a => a.code?.startsWith('100') || a.name.toLowerCase().includes('cash'))
+      .filter(a => a.code?.startsWith('100') || (a.name || '').toLowerCase().includes('cash'))
       .map(a => a.id);
 
     const beginningCash = await this.calculateCashBalance(cashAccountIds, periodStart);

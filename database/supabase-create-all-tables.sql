@@ -172,9 +172,52 @@ CREATE TABLE IF NOT EXISTS public.payslips (id TEXT PRIMARY KEY, company_id TEXT
 -- ============================================================================
 -- 8. WhatsApp / Communication tables
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS public.whatsapp_accounts (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
-CREATE TABLE IF NOT EXISTS public.whatsapp_message_queue (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
-CREATE TABLE IF NOT EXISTS public.whatsapp_messages (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.whatsapp_accounts (
+  id TEXT PRIMARY KEY,
+  company_id TEXT,
+  user_id TEXT,
+  phone_number_id TEXT,
+  access_token TEXT,
+  display_name TEXT,
+  connection_status TEXT DEFAULT 'disconnected',
+  last_connected_at TIMESTAMPTZ,
+  data JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_accounts_user_id ON public.whatsapp_accounts(user_id);
+CREATE TABLE IF NOT EXISTS public.whatsapp_message_queue (
+  id TEXT PRIMARY KEY,
+  company_id TEXT,
+  account_id TEXT,
+  user_id TEXT,
+  recipient TEXT,
+  message_content TEXT,
+  status TEXT DEFAULT 'pending',
+  batch_id TEXT,
+  retry_count INTEGER DEFAULT 0,
+  data JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_queue_account ON public.whatsapp_message_queue(account_id);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_queue_status ON public.whatsapp_message_queue(status);
+CREATE TABLE IF NOT EXISTS public.whatsapp_messages (
+  id TEXT PRIMARY KEY,
+  company_id TEXT,
+  account_id TEXT,
+  user_id TEXT,
+  recipient TEXT,
+  message_content TEXT,
+  status TEXT DEFAULT 'pending',
+  direction TEXT,
+  message_id TEXT,
+  data JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_account ON public.whatsapp_messages(account_id);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_user ON public.whatsapp_messages(user_id);
 CREATE TABLE IF NOT EXISTS public.whatsapp_chats (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.whatsapp_templates (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.whatsapp_campaigns (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());

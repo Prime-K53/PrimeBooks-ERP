@@ -1554,9 +1554,9 @@ const ensureCoreExaminationSchema = async () => {
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_classes_batch ON examination_classes(batch_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_subjects_class ON examination_subjects(class_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_bom_calc_batch_class ON examination_bom_calculations(batch_id, class_id)');
-  })().catch((error) => {
+  })().then(null, (error) => {
     ensureCoreSchemaPromise = null;
-    throw error;
+    console.error('[CoreSchema] Error ensuring core examination schema:', error);
   });
 
   return ensureCoreSchemaPromise;
@@ -1684,9 +1684,9 @@ const ensureExaminationSyncSchema = async () => {
     await ensureColumnIfMissing('inventory', 'last_updated', 'DATETIME');
     await ensureColumnIfMissing('inventory', 'last_synced_at', 'DATETIME');
     await ensureColumnIfMissing('inventory', 'sync_checksum', 'TEXT');
-  })().catch((error) => {
+  })().then(null, (error) => {
     ensureSyncSchemaPromise = null;
-    throw error;
+    console.error('[SyncSchema] Error ensuring sync schema:', error);
   });
 
   return ensureSyncSchemaPromise;
@@ -1797,9 +1797,9 @@ const ensureExaminationPricingSchema = async () => {
     await ensureColumnIfMissing('examination_bom_calculations', 'source_unit_cost', 'REAL');
     await ensureColumnIfMissing('examination_bom_calculations', 'source_timestamp', 'DATETIME');
     await ensureColumnIfMissing('examination_bom_calculations', 'source_item_id', 'TEXT');
-  })().catch((error) => {
+  })().then(null, (error) => {
     ensurePricingSchemaPromise = null;
-    throw error;
+    console.error('[PricingSchema] Error ensuring pricing schema:', error);
   });
 
   return ensurePricingSchemaPromise;
@@ -1821,9 +1821,9 @@ const ensureExaminationInvoiceSchema = async () => {
 
     await runRun('CREATE INDEX IF NOT EXISTS idx_invoices_origin_batch ON invoices(origin_module, origin_batch_id)');
     await runRun('CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_idempotency_key ON invoices(idempotency_key)');
-  })().catch((error) => {
+  })().then(null, (error) => {
     ensureInvoiceSchemaPromise = null;
-    throw error;
+    console.error('[InvoiceSchema] Error ensuring invoice schema:', error);
   });
 
   return ensureInvoiceSchemaPromise;
