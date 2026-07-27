@@ -61,6 +61,31 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  /**
+   * Persist the selected FY ID to the cloud (Supabase via backend API)
+   * so the user's choice follows them across devices.
+   */
+  const persistFyToCloud = useCallback(async (fyId: string) => {
+    try {
+      await api.system.saveUserPreference('selectedFinancialYearId', fyId);
+    } catch {
+      // Cloud persistence is best-effort; localStorage still works offline
+    }
+  }, []);
+
+  /**
+   * Load the user's preferred FY ID from the cloud.
+   * This is the key function that enables cross-device sync.
+   */
+  const loadFyIdFromCloud = useCallback(async (): Promise<string | null> => {
+    try {
+      const result = await api.system.getUserPreference('selectedFinancialYearId');
+      return result?.value || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const refreshFinancialYears = useCallback(async () => {
     const { years, defaultFy } = await fetchFinancialYears();
     setFinancialYears(years);
@@ -68,8 +93,11 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
     const selectAndPersist = (fy: FinancialYear) => {
       setSelected(fy);
       persistFyToLocalStorage(fy);
+      // Fire-and-forget cloud persistence
+      persistFyToCloud(fy.id);
     };
 
+    // Priority 1: URL parameter (explicit navigation)
     const urlId = getFyIdFromUrl();
     if (urlId) {
       const urlMatch = years.find((fy: FinancialYear) => fy.id === urlId);
@@ -80,6 +108,19 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
 
+    // Priority 2: Cloud preference (cross-device sync — this makes the FY
+    // selection follow the user from one device to another)
+    const cloudFyId = await loadFyIdFromCloud();
+    if (cloudFyId) {
+      const cloudMatch = years.find((fy: FinancialYear) => fy.id === cloudFyId);
+      if (cloudMatch) {
+        selectAndPersist(cloudMatch);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Priority 3: Local storage (device-specific fallback for offline)
     const storedId = localStorage.getItem(STORAGE_KEY);
     if (storedId) {
       const match = years.find((fy: FinancialYear) => fy.id === storedId);
@@ -89,13 +130,15 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
     }
+
+    // Priority 4: Default FY from backend
     if (defaultFy) {
       selectAndPersist(defaultFy);
     } else if (years.length > 0) {
       selectAndPersist(years[0]);
     }
     setIsLoading(false);
-  }, [fetchFinancialYears]);
+  }, [fetchFinancialYears, loadFyIdFromCloud, persistFyToCloud]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -115,7 +158,9 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
   const setFinancialYear = useCallback((fy: FinancialYear) => {
     setSelected(fy);
     persistFyToLocalStorage(fy);
-  }, []);
+    // Persist to cloud immediately so the change shows on other devices
+    persistFyToCloud(fy.id);
+  }, [persistFyToCloud]);
 
   const isDateInFY = useCallback((date: string): boolean => {
     if (!selected) return true;

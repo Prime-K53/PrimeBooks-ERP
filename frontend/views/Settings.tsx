@@ -40,6 +40,7 @@ import {
     formatNumberingPreview,
     resolveGlobalNumberingRule,
 } from '../utils/numbering';
+import { getDocumentNumberSeriesState } from '../services/documentNumberService';
 import { hydrateCompanyPdfAssets, resolvePdfReadyImageDataUrlFromBlob } from '../utils/companyAssetUtils';
 import { PrimeTemplatePreview } from './shared/components/PDF/PrimeTemplatePreview';
 import {

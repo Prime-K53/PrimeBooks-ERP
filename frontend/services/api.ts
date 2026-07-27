@@ -2242,6 +2242,21 @@ export const api = {
       return resp.json();
     }, 'System.DeleteWorkspace'),
 
+    // User preferences — persisted to backend so they follow the user across devices
+    getUserPreference: (key: string) => handle(async () => {
+      try {
+        const response = await apiClient.get(getApiPath(`user/preferences/${key}`));
+        return response.data || { value: null };
+      } catch {
+        return { value: null };
+      }
+    }, 'UserPrefs.Get'),
+
+    saveUserPreference: (key: string, value: string) => handle(async () => {
+      await apiClient.put(getApiPath(`user/preferences/${key}`), { value });
+      return { success: true };
+    }, 'UserPrefs.Save'),
+
     // Financial Years — cloud-only: served through backend API
     getFinancialYears: () => handle(async () => {
       const response = await apiClient.get('/financial-years');

@@ -105,6 +105,10 @@ export const STORE_TO_TABLE: Record<string, string> = {
   engagementCustomerRewards: 'engagement_customer_rewards',
   engagementAnalytics: 'engagement_analytics',
 
+  // Financial years & user preferences for cross-device sync
+  financialYears: 'financial_years',
+  userPreferences: 'user_preferences',
+
 };
 
 const SUPABASE_ENABLED = isSupabaseConfigured();

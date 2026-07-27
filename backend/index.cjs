@@ -1251,6 +1251,46 @@ async function startServer() {
     }
   });
 
+  // ── User Preferences Endpoints ──
+  // Persist user-selected financial year (and other prefs) so the choice
+  // follows the user across devices.
+  app.get('/api/user/preferences/:key', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
+    try {
+      const userId = req.user?.id || req.headers['x-user-id'] || '';
+      const companyId = req.companyId || '';
+      if (!userId) return res.status(200).json({ value: null });
+      // Try the local SQLite preference store first, then fallback to no value
+      const row = await db.get(
+        `SELECT pref_value FROM user_preferences WHERE id = ?`,
+        [`${userId}:${companyId}:${req.params.key}`]
+      );
+      res.json({ value: row?.pref_value || null });
+    } catch (err) {
+      console.error('[UserPrefs] Get failed:', err);
+      res.status(200).json({ value: null });
+    }
+  });
+
+  app.put('/api/user/preferences/:key', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
+    try {
+      const userId = req.user?.id || req.headers['x-user-id'] || '';
+      const companyId = req.companyId || '';
+      const { value } = req.body || {};
+      if (!userId) return res.status(400).json({ error: 'User ID required' });
+      const prefId = `${userId}:${companyId}:${req.params.key}`;
+      await db.run(
+        `INSERT INTO user_preferences (id, user_id, company_id, pref_key, pref_value, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+         ON CONFLICT(id) DO UPDATE SET pref_value = excluded.pref_value, updated_at = datetime('now')`,
+        [prefId, userId, companyId, req.params.key, value || '']
+      );
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[UserPrefs] Save failed:', err);
+      res.status(500).json({ error: err?.message || 'Failed to save preference' });
+    }
+  });
+
   // --- Financial Year Endpoints ---
   app.get('/api/financial-years', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {

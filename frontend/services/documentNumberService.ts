@@ -64,6 +64,40 @@ const toPositiveInteger = (value: unknown, fallback: number) => {
   return Math.max(1, Math.floor(parsed));
 };
 
+/**
+ * Determines whether the sequence should be reset based on the configured interval
+ * and the last reset timestamp.
+ */
+const shouldResetSequence = (
+  resetInterval: NonNullable<NumberingRule['resetInterval']>,
+  lastResetAt?: string
+): boolean => {
+  if (resetInterval === 'Never' || !lastResetAt) return false;
+
+  const now = new Date();
+  const lastReset = new Date(lastResetAt);
+
+  switch (resetInterval) {
+    case 'Daily':
+      // Reset if the last reset was on a different calendar day
+      return lastReset.getFullYear() !== now.getFullYear() ||
+             lastReset.getMonth() !== now.getMonth() ||
+             lastReset.getDate() !== now.getDate();
+
+    case 'Monthly':
+      // Reset if the last reset was in a different calendar month
+      return lastReset.getFullYear() !== now.getFullYear() ||
+             lastReset.getMonth() !== now.getMonth();
+
+    case 'Yearly':
+      // Reset if the last reset was in a different calendar year
+      return lastReset.getFullYear() !== now.getFullYear();
+
+    default:
+      return false;
+  }
+};
+
 const getCompanyConfig = (): CompanyConfig | null => {
   const saved = localStorage.getItem('nexus_company_config');
   if (!saved) return null;
@@ -108,7 +142,7 @@ const normalizeRule = (
   seriesKey: DocumentNumberSeriesKey,
   source?: Partial<NumberingRule> | null,
   currentNumberOverride?: number
-): NumberingRule => {
+): NumberingRule & { lastResetAt?: string } => {
   const defaultPrefix = resolveBuiltInDocumentPrefix(seriesKey) || (seriesKey === 'sales_invoice' ? 'INV' : 'EB');
   const startNumber = toPositiveInteger(source?.startNumber, 1);
   const currentNumber = toPositiveInteger(currentNumberOverride ?? source?.currentNumber ?? startNumber, startNumber);
@@ -120,7 +154,8 @@ const normalizeRule = (
     startNumber,
     currentNumber: Math.max(currentNumber, startNumber),
     suffix: String(source?.suffix || ''),
-    resetInterval: source?.resetInterval || 'Never'
+    resetInterval: source?.resetInterval || 'Never',
+    lastResetAt: (source as any)?.lastResetAt
   };
 };
 
@@ -257,13 +292,31 @@ export const generateNextNumber = async (
       throw new Error('Sales invoice number series is not configured yet.');
     }
 
-    const nextNumber = toPositiveInteger(currentRule.currentNumber, currentRule.startNumber);
+    // ── Reset Sequence Logic ──
+    // If a reset interval is configured and the interval has elapsed since lastResetAt,
+    // reset currentNumber back to startNumber and record the reset timestamp.
+    const interval = currentRule.resetInterval || 'Never';
+    const shouldReset = shouldResetSequence(interval, (currentRule as any).lastResetAt);
+
+    let effectiveCurrentNumber: number;
+    let lastResetAt: string | undefined;
+
+    if (shouldReset) {
+      effectiveCurrentNumber = toPositiveInteger(currentRule.startNumber, 1);
+      lastResetAt = new Date().toISOString();
+    } else {
+      effectiveCurrentNumber = toPositiveInteger(currentRule.currentNumber, currentRule.startNumber);
+      lastResetAt = (currentRule as any).lastResetAt;
+    }
+
+    const nextNumber = effectiveCurrentNumber;
     const documentNumber = formatDocumentNumber(currentRule, nextNumber);
 
     await store.put({
       id: definition.storageKey,
       ...currentRule,
       currentNumber: nextNumber + 1,
+      lastResetAt,
       updatedAt: new Date().toISOString()
     });
 

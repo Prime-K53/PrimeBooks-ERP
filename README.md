@@ -162,3 +162,5 @@ cd backend && npx jest tests/profitMargin.integration.test.js
 ## License
 
 Proprietary — Prime K53 / Prime ERP. All rights reserved.
+# PrimeBooks-ERP
+# PrimeBooks-ERP
