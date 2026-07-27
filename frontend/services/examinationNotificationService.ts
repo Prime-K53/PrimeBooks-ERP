@@ -16,7 +16,7 @@ const EXAM_BACKEND_URL = (import.meta as any)?.env?.VITE_EXAM_BACKEND_URL;
 
 const API_BASE_CANDIDATES = () => {
   if (!EXAM_BACKEND_URL) return [];
-  return [`${EXAM_BACKEND_URL}/examination`];
+  return [`${EXAM_BACKEND_URL}/api/examination`];
 };
 let backendRetryAfter = 0;
 
