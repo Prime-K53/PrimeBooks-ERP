@@ -45,9 +45,9 @@ const apiClient = axios.create({
 
 // ── Single consolidated request interceptor ──
 apiClient.interceptors.request.use((config) => {
-  // Skip in local-first mode for non-GET requests
-  if (shouldPreferLocalReadModels() && config.method && config.method.toLowerCase() !== 'get') {
-    return Promise.reject({ __localOnly: true, message: 'Skipped (local-first mode)', config });
+  // Skip when backend auth is not available
+  if (shouldPreferLocalReadModels()) {
+    return Promise.reject({ __localOnly: true, message: 'Skipped (no auth)', config });
   }
   if (!config.headers) config.headers = {} as any;
   try {
@@ -75,17 +75,6 @@ apiClient.interceptors.request.use((config) => {
     const fyId = localStorage.getItem('selectedFinancialYearId');
     if (fyId) {
       config.params = { ...(config.params || {}), financial_year_id: fyId };
-    }
-  } catch { /* non-fatal */ }
-  try {
-    const sbSession = localStorage.getItem('prime-erp-supabase-auth');
-    if (sbSession) {
-      const parsed = JSON.parse(sbSession);
-      const token = parsed?.access_token;
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-        config.headers['x-auth-mode'] = 'supabase';
-      }
     }
   } catch { /* non-fatal */ }
   if (import.meta.env?.DEV) {
@@ -200,7 +189,22 @@ const isPasswordBypassSession = () => {
   return sessionUser.bypassAuth === true || sessionUser.authMode === 'password_bypass';
 };
 
-const shouldPreferLocalReadModels = () => false; // Cloud-first: all data served through backend API
+const hasBackendAuth = () => {
+  try {
+    const sbSession = localStorage.getItem('prime-erp-supabase-auth');
+    if (sbSession) {
+      const parsed = JSON.parse(sbSession);
+      if (parsed?.access_token) return true;
+    }
+    const nexusUser = sessionStorage.getItem('nexus_user');
+    if (nexusUser) {
+      const parsed = JSON.parse(nexusUser);
+      if (parsed?.accessToken) return true;
+    }
+  } catch {}
+  return false;
+};
+const shouldPreferLocalReadModels = () => !hasBackendAuth();
 
 const getRequestUrl = (config: any) => {
   const rawUrl = String(config?.url || '').trim();
