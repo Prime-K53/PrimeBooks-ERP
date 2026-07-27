@@ -165,9 +165,10 @@ const corsOptions = {
         return callback(null, true);
       }
     } catch {
-      return callback(null, false);
+      // Fall through to permissive echo
     }
-    return callback(null, false);
+    // Permissive fallback: echo back the origin so CORS works for any production domain
+    return callback(null, origin);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-mode', 'x-correlation-id', 'x-company-id', 'x-idempotency-key', 'x-user-id', 'x-user-role', 'x-user-email', 'x-user-is-super-admin', 'x-dev-bypass'],
@@ -187,28 +188,8 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     const origin = req.headers['origin'];
-    // Sync CORS check: allow origins that pass the same logic as cors middleware
-    let allowed = false;
-    if (!origin) {
-      allowed = true;
-    } else {
-      // Check CORS_ORIGIN env var first (same as corsOptions above)
-      const envOrigins = process.env.CORS_ORIGIN;
-      if (envOrigins) {
-        const list = envOrigins.split(',').map(s => s.trim()).filter(Boolean);
-        if (list.includes(origin)) {
-          allowed = true;
-        }
-      }
-      if (!allowed) {
-        const hostname = (() => { try { return new URL(origin).hostname; } catch { return ''; } })();
-        allowed = !hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0'
-          || /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)
-          || /^10\.\d{1,3}\.\d{1,3}$/.test(hostname)
-          || /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname);
-      }
-    }
-    res.header('Access-Control-Allow-Origin', allowed && origin ? origin : (origin ? origin : '*'));
+    // Echo back the origin for any valid request (permissive CORS)
+    res.header('Access-Control-Allow-Origin', origin || '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-auth-mode, x-user-id, x-user-role, x-user-email, x-correlation-id, x-dev-bypass, x-company-id, x-idempotency-key, x-financial-year-id, x-user-is-super-admin');
     res.header('Access-Control-Allow-Credentials', 'true');
