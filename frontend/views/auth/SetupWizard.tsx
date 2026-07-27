@@ -245,7 +245,7 @@ const SetupWizard: React.FC = () => {
       const fyEndDate = `${fyBaseYear + 1}-${String(fyStartMonth + 1).padStart(2, '0')}-${new Date(fyBaseYear + 1, fyStartMonth + 1, 0).getDate()}`;
 
       try {
-        await fetch((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/financial-years', {
+        await fetch((import.meta.env.VITE_API_URL || 'https://primebooks-erp.onrender.com') + '/api/financial-years', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

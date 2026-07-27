@@ -1,5 +1,4 @@
 # Proxy API requests to the backend when VITE_API_URL is not set.
 # If VITE_API_URL is configured in Netlify, this redirect is bypassed.
-# Replace the URL below with your actual backend URL.
-/api/*  https://your-backend-url.example.com/api/:splat  200!
+/api/*  https://primebooks-erp.onrender.com/api/:splat  200!
 /*  /index.html  200

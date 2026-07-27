@@ -2230,7 +2230,7 @@ export const api = {
         const response = await apiClient.delete('/system/workspace');
         return response.data;
       }
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://primebooks-erp.onrender.com';
       const resp = await fetch(`${backendUrl}/api/system/workspace`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },

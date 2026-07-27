@@ -16,7 +16,7 @@ interface AlertConfig {
 }
 
 const STORAGE_KEY = 'prime_erp_low_stock_alert_config';
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'https://primebooks-erp.onrender.com';
 
 export const getAlertConfig = async (): Promise<AlertConfig> => {
   try {

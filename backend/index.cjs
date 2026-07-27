@@ -141,6 +141,14 @@ const corsOptions = {
     if (!origin) {
       return callback(null, true);
     }
+    // Allow origins from CORS_ORIGIN env var (comma-separated list)
+    const envOrigins = process.env.CORS_ORIGIN;
+    if (envOrigins) {
+      const allowed = envOrigins.split(',').map(s => s.trim()).filter(Boolean);
+      if (allowed.includes(origin)) {
+        return callback(null, true);
+      }
+    }
     const normalizedOrigin = normalizeCorsOrigin(origin);
     if (isDesktopLocalOrigin(normalizedOrigin)) {
       return callback(null, true);
