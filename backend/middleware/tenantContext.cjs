@@ -12,7 +12,8 @@ function tenantContext(req, res, next) {
   }
 
   // Skip company membership check for header-based auth (trusted local origins only)
-  if (req.authMode === 'header') {
+  // and for Supabase auth (tenant isolation handled by Supabase RLS)
+  if (req.authMode === 'header' || req.authMode === 'supabase') {
     return next();
   }
 
