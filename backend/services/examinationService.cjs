@@ -1579,7 +1579,8 @@ const ensureNotificationSchema = async () => {
       read_at DATETIME,
       delivered_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      expires_at DATETIME
+      expires_at DATETIME,
+      company_id TEXT NOT NULL DEFAULT ''
     )`);
 
     await runRun(`CREATE TABLE IF NOT EXISTS notification_audit_logs (
@@ -1590,19 +1591,22 @@ const ensureNotificationSchema = async () => {
       details_json TEXT,
       ip_address TEXT,
       user_agent TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      company_id TEXT NOT NULL DEFAULT ''
     )`);
 
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_notifications_user ON examination_batch_notifications(user_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_notifications_created ON examination_batch_notifications(created_at)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_notifications_read ON examination_batch_notifications(is_read)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_notifications_user_created ON examination_batch_notifications(user_id, created_at DESC)');
+    await runRun('CREATE INDEX IF NOT EXISTS idx_examination_batch_notifications_company_id ON examination_batch_notifications(company_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_notification ON notification_audit_logs(notification_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_user ON notification_audit_logs(user_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_created ON notification_audit_logs(created_at)');
-  })().catch((error) => {
+    await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_company_id ON notification_audit_logs(company_id)');
+  })().then(null, (error) => {
     ensureNotificationSchemaPromise = null;
-    throw error;
+    console.error('[NotificationSchema] Error ensuring notification schema:', error);
   });
 
   return ensureNotificationSchemaPromise;
