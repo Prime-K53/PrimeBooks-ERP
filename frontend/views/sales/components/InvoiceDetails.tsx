@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -25,6 +24,14 @@ interface InvoiceDetailsProps {
     onAction: (inv: Invoice, action: string) => void;
 }
 
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
 export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initialInvoice, onClose, onEdit, onAction }) => {
     const { companyConfig, auditLogs, notify } = useAuth();
     const { customerPayments = [], invoices = [], deliveryNotes = [], ledger = [], accounts = [], updateCustomerPayment, updateInvoice, addCustomerPayment } = useFinance();
@@ -39,7 +46,6 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
         invoices.find(i => i.id === initialInvoice.id) || initialInvoice
         , [invoices, initialInvoice]);
 
-    // Properly check for recurring/subscription invoice by verifying frequency exists and has a valid value
     const isSubscription = invoice.frequency != null &&
                           invoice.frequency !== '' &&
                           typeof invoice.frequency !== 'undefined';
@@ -56,8 +62,6 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
             : invoice,
         [invoice, isExaminationInvoice, matchingExaminationBatch]
     );
-    
-    // Debug logging to help verify invoice type detection - Removed due to console spam
     
     const docTitle = 'Invoice';
 
@@ -79,9 +83,8 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
         setIsUpdatingStatus(true);
         try {
             if (newStatus === 'Paid' && !isPaid) {
-                // LOGIC LINK: "Force Paid" must generate financial history.
                 const paymentId = `PAY-FORCE-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-                                const payment: CustomerPayment = {
+                const payment: CustomerPayment = {
                     id: paymentId,
                     date: new Date().toISOString(),
                     customerName: invoice.customerName,
@@ -107,10 +110,8 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
     const handleAllocateCredit = async (payment: CustomerPayment) => {
         const amountToAllocate = Math.min(payment.creditApplied || 0, balanceDue);
         if (amountToAllocate <= 0) return;
-
         const newAllocation: InvoiceAllocation = { paymentId: payment.id, invoiceId: invoice.id, amount: amountToAllocate };
         const updatedPayment: CustomerPayment = { ...payment, allocations: [...(payment.allocations || []), newAllocation], creditApplied: (payment.creditApplied || 0) - amountToAllocate };
-
         try {
             await updateCustomerPayment(updatedPayment);
             notify(`${currency}${amountToAllocate} allocated from Payment #${payment.id}`, 'success');
@@ -134,7 +135,6 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
         );
     }, [customerPayments, invoice.customerName]);
 
-    // Compute total outstanding across all unpaid invoices for this customer
     const totalCustomerOutstanding = useMemo(() => {
         return (invoices || [])
             .filter((inv: any) =>
@@ -153,182 +153,202 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
     }), [invoice, totalCustomerOutstanding]);
 
     return (
-        <div className="fixed inset-0 z-[70] bg-slate-900/60 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-[1.5rem] shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200/60 font-sans text-[13.5px] leading-[1.45] text-slate-800">
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(15, 23, 42, 0.6)',
+            padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+        }}>
+            <div style={{
+                width: 960, maxWidth: '100%', maxHeight: '92vh',
+                background: paper, borderRadius: 14,
+                boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+                display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+            }}>
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+                    background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+                }} />
 
-                <div className="px-[16px] py-[12px] border-b border-slate-100 bg-slate-50/50 flex justify-between items-start shrink-0">
-                    <div>
-                        <div className="flex items-center gap-4 mb-1">
-                            <h2 className="text-[22px] font-semibold text-slate-800 tracking-tight">{docTitle} #{invoice.id}</h2>
-                            <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-0.5 rounded-lg shadow-sm">
-                                <div className={`w-2 h-2 rounded-full ${invoice.status === 'Paid' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></div>
-                                <span className="text-[13px] font-semibold text-slate-600 tracking-wide">{invoice.status}</span>
-                            </div>
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '22px 28px 18px',
+                    borderBottom: `1px solid ${hairline}`, background: paper
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{
+                            width: 40, height: 40, borderRadius: 10,
+                            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+                        }}>
+                            <FileText size={19} color="#fff" />
                         </div>
-                        <div className="flex items-center gap-4 text-[13px] font-medium text-slate-500 tracking-wide">
-                            <button
-                                onClick={() => navigate('/sales-flow/customers', { state: { customerId: invoice.customerId } })}
-                                className="hover:text-blue-600 transition-colors flex items-center gap-1 group"
-                            >
-                                {invoice.customerName}
-                                <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                            <span className="text-slate-200">•</span>
-                            <span>Ref: {invoice.jobOrderId || 'Retail'}</span>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <h1 style={{
+                                    fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                    fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                                }}>
+                                    {docTitle} #{invoice.id}
+                                </h1>
+                                <span style={{
+                                    padding: '2px 10px', borderRadius: 6, fontSize: 11.5, fontWeight: 600,
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                    background: invoice.status === 'Paid' ? '#ecfdf5' : amber[100],
+                                    color: invoice.status === 'Paid' ? '#059669' : '#d97706'
+                                }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: invoice.status === 'Paid' ? '#059669' : '#d97706' }} />
+                                    {invoice.status}
+                                </span>
+                            </div>
+                            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <button onClick={() => navigate('/sales-flow/customers', { state: { customerId: invoice.customerId } })}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: teal[600], fontWeight: 600, fontSize: 11.5, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    {invoice.customerName}
+                                    <ExternalLink size={10} />
+                                </button>
+                                <span style={{ color: hairline }}>|</span>
+                                <span>Ref: {invoice.jobOrderId || 'Retail'}</span>
+                            </p>
                         </div>
                     </div>
-                    <div className="flex gap-2 no-print items-center">
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         {!hasDeliveryNote && (
-                            <button
-                                onClick={() => onAction(invoice, 'generate_dn')}
-                                className="px-[10px] py-[6px] bg-blue-600 text-white rounded-lg text-[13px] font-semibold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm active:scale-95"
-                            >
-                                <Truck size={16} /> Generate delivery note
+                            <button onClick={() => onAction(invoice, 'generate_dn')}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', background: teal[500], color: '#fff', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Truck size={14} /> Generate delivery note
                             </button>
                         )}
-                        <button onClick={() => { onClose(); handlePreview(isSubscription ? 'SUBSCRIPTION' : (isExaminationInvoice ? 'EXAMINATION_INVOICE' : 'INVOICE'), enrichedInvoice); }} className="p-2 hover:bg-blue-50 bg-blue-50/30 border border-blue-200/60 rounded-lg text-blue-600 transition-all shadow-sm" title="Preview PDF">
-                            <Eye size={18} />
+                        <button onClick={() => { onClose(); handlePreview(isSubscription ? 'SUBSCRIPTION' : (isExaminationInvoice ? 'EXAMINATION_INVOICE' : 'INVOICE'), enrichedInvoice); }}
+                            style={{ padding: 6, borderRadius: 8, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'flex' }}>
+                            <Eye size={16} />
                         </button>
-                        <button onClick={() => onAction(invoice, 'download_pdf')} className="p-2 hover:bg-blue-50 bg-blue-50/30 border border-blue-200/60 rounded-lg text-blue-600 transition-all shadow-sm" title="Download PDF">
-                            <Download size={18} />
+                        <button onClick={() => onAction(invoice, 'download_pdf')}
+                            style={{ padding: 6, borderRadius: 8, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'flex' }}>
+                            <Download size={16} />
                         </button>
-                        <button onClick={() => window.print()} className="p-2 hover:bg-white bg-slate-100/50 border border-slate-200/60 rounded-lg text-slate-600 transition-all shadow-sm" title="Print">
-                            <Printer size={18} />
+                        <button onClick={() => window.print()}
+                            style={{ padding: 6, borderRadius: 8, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'flex' }}>
+                            <Printer size={16} />
                         </button>
-                        <button onClick={() => onEdit(invoice)} className="p-2 hover:bg-white bg-slate-100/50 border border-slate-200/60 rounded-lg text-slate-600 transition-all shadow-sm" title="Edit">
-                            <Edit2 size={18} />
+                        <button onClick={() => onEdit(invoice)}
+                            style={{ padding: 6, borderRadius: 8, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'flex' }}>
+                            <Edit2 size={16} />
                         </button>
-                        <AIDocumentSummarizer docType="Invoice" data={invoice} label="Summary" color="#8b5cf6" />
-                        <button onClick={onClose} className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-100 rounded-lg transition-all ml-2">
-                            <X size={20} />
+                        <AIDocumentSummarizer docType="Invoice" data={invoice} label="" color="#8b5cf6" />
+                        <button onClick={onClose}
+                            style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                            <X size={15} />
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 bg-white border-b border-slate-100 shrink-0">
-                    <div className="p-4 text-center border-r border-slate-100">
-                        <p className="text-[13px] font-medium text-slate-500 tracking-wide mb-0.5">Gross billing</p>
-                        <p className="text-[20px] font-semibold text-slate-800 tabular-nums">{currency}{totalAmountDisplay.toLocaleString()}</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: `1px solid ${hairline}`, background: paper, flexShrink: 0 }}>
+                    <div style={{ padding: 14, textAlign: 'center', borderRight: `1px solid ${hairline}` }}>
+                        <p style={{ margin: 0, fontSize: 11, color: inkSoft, fontWeight: 500 }}>Gross billing</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{currency}{totalAmountDisplay.toLocaleString()}</p>
                     </div>
-                    <div className="p-4 text-center border-r border-slate-100">
-                        <p className="text-[13px] font-medium text-slate-500 tracking-wide mb-0.5">Discount</p>
-                        <p className="text-[20px] font-semibold text-rose-600 tabular-nums">
+                    <div style={{ padding: 14, textAlign: 'center', borderRight: `1px solid ${hairline}` }}>
+                        <p style={{ margin: 0, fontSize: 11, color: inkSoft, fontWeight: 500 }}>Discount</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: '#dc2626', fontFamily: "'JetBrains Mono', monospace" }}>
                             {invoice.discount ? `${invoice.discountType === 'percentage' ? invoice.discount + '%' : currency + (invoice.discount || 0).toLocaleString()}` : '-'}
                         </p>
                     </div>
-                    <div className="p-4 text-center">
-                        <p className="text-[13px] font-medium text-slate-500 tracking-wide mb-0.5">Net balance</p>
-                        <p className={`text-[20px] font-semibold tabular-nums ${(balanceDue || 0) > 0.001 ? 'text-rose-600' : 'text-slate-300'}`}>{currency}{(balanceDue || 0).toLocaleString()}</p>
+                    <div style={{ padding: 14, textAlign: 'center' }}>
+                        <p style={{ margin: 0, fontSize: 11, color: inkSoft, fontWeight: 500 }}>Net balance</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: (balanceDue || 0) > 0.001 ? danger : hairline, fontFamily: "'JetBrains Mono', monospace" }}>{currency}{(balanceDue || 0).toLocaleString()}</p>
                     </div>
                 </div>
 
-                <nav className="flex border-b border-slate-100 px-8 bg-white shrink-0 overflow-x-auto no-scrollbar">
+                <div style={{ display: 'flex', borderBottom: `1px solid ${hairline}`, padding: '0 28px', background: paper, flexShrink: 0 }}>
                     {['Overview', 'Financials', 'Payments', 'Activity'].map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab as 'Overview' | 'Financials' | 'Payments' | 'Activity')}
-                            className={`px-4 py-[7px] text-[14px] font-semibold tracking-wide border-b-2 transition-all shrink-0 ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
-                        >
+                        <button key={tab} onClick={() => setActiveTab(tab as 'Overview' | 'Financials' | 'Payments' | 'Activity')}
+                            style={{
+                                padding: '14px 16px 12px', fontSize: 12, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase',
+                                background: 'transparent', border: 'none', cursor: 'pointer',
+                                color: activeTab === tab ? teal[600] : inkSoft,
+                                borderBottom: `2px solid ${activeTab === tab ? teal[500] : 'transparent'}`,
+                                transition: 'all .15s ease'
+                            }}>
                             {tab}
                         </button>
                     ))}
-                </nav>
+                </div>
 
-                <div className="flex-1 overflow-y-auto p-8 bg-slate-100 custom-scrollbar">
+                <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 8px', background: teal[50] }}>
                     {activeTab === 'Overview' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                            {/* Functional Overrides & Management */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="md:col-span-2 space-y-6">
                                     {(invoice as Record<string, unknown>).isConverted && (invoice as Record<string, unknown>).conversionDetails && (
-                                        <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm">
-                                            <h3 className="text-[13px] font-semibold text-slate-500 tracking-wide mb-4 flex items-center gap-2">
-                                                <History size={14} className="text-purple-600" /> Conversion History
+                                        <div style={{ padding: 16, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                                            <h3 style={{ margin: '0 0 12px', fontSize: 12, color: inkSoft, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <History size={14} color={teal[600]} /> Conversion History
                                             </h3>
-                                            <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-100/60">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="mt-0.5 p-1.5 bg-white rounded-lg border border-purple-100 text-purple-600 shadow-sm">
+                                            <div style={{ padding: 12, background: teal[50], borderRadius: 8, border: `1px solid ${teal[100]}` }}>
+                                                <div style={{ display: 'flex', gap: 10 }}>
+                                                    <div style={{ padding: 6, borderRadius: 6, background: paper, color: teal[600] }}>
                                                         <RefreshCw size={14} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-[13px] font-semibold text-slate-800">
-                                                            Converted from <span className="text-purple-700">{(invoice as any).conversionDetails.sourceType} {(invoice as any).conversionDetails.sourceNumber}</span>
+                                                        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: ink }}>
+                                                            Converted from <span style={{ color: teal[600] }}>{(invoice as any).conversionDetails.sourceType} {(invoice as any).conversionDetails.sourceNumber}</span>
                                                         </p>
-                                                        <div className="mt-1 flex items-center gap-3 text-[13px] text-slate-500">
-                                                            <span className="flex items-center gap-1.5">
-                                                                <Clock size={12} />
-                                                                {new Date((invoice as any).conversionDetails.date).toLocaleString()}
-                                                            </span>
-                                                            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                                            <span className="flex items-center gap-1.5">
-                                                                <User size={12} />
-                                                                {(invoice as any).conversionDetails.acceptedBy}
-                                                            </span>
-                                                        </div>
+                                                        <p style={{ margin: '4px 0 0', fontSize: 11, color: inkSoft, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={11} /> {new Date((invoice as any).conversionDetails.date).toLocaleString()}</span>
+                                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={11} /> {(invoice as any).conversionDetails.acceptedBy}</span>
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm">
-                                        <h3 className="text-[13px] font-semibold text-slate-500 tracking-wide mb-4 flex items-center gap-2">
-                                            <History size={14} className="text-blue-500" /> System audit trail
+                                    <div style={{ padding: 16, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                                        <h3 style={{ margin: '0 0 12px', fontSize: 12, color: inkSoft, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <History size={14} color={teal[600]} /> System audit trail
                                         </h3>
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                                <span className="text-[13px] font-medium text-slate-500">Created on</span>
-                                                <span className="text-[13px] font-semibold text-slate-700 tabular-nums">{new Date(invoice.date).toLocaleString()}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: teal[50], borderRadius: 8, border: `1px solid ${teal[100]}` }}>
+                                                <span style={{ fontSize: 12, color: inkSoft }}>Created on</span>
+                                                <span style={{ fontSize: 12, fontWeight: 600, color: ink }}>{new Date(invoice.date).toLocaleString()}</span>
                                             </div>
-                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                                <span className="text-[13px] font-medium text-slate-500">Last modified</span>
-                                                <span className="text-[13px] font-semibold text-slate-700 tabular-nums">{new Date((invoice as Record<string, unknown>).updatedAt as string || invoice.date).toLocaleString()}</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: teal[50], borderRadius: 8, border: `1px solid ${teal[100]}` }}>
+                                                <span style={{ fontSize: 12, color: inkSoft }}>Last modified</span>
+                                                <span style={{ fontSize: 12, fontWeight: 600, color: ink }}>{new Date((invoice as Record<string, unknown>).updatedAt as string || invoice.date).toLocaleString()}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm space-y-3">
-                                    <h3 className="text-[13px] font-semibold text-slate-500 tracking-wide flex items-center gap-2">
-                                        <Zap size={14} className="text-amber-500" /> Quick actions
+                                <div style={{ padding: 16, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                                    <h3 style={{ margin: '0 0 12px', fontSize: 11, color: inkSoft, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <Zap size={14} color={amber[500]} /> Quick actions
                                     </h3>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        <button
-                                            onClick={() => navigate('/sales-flow/payments', { state: { action: 'create', customer: invoice.customerName, customerId: invoice.customerId, invoiceId: invoice.id } })}
-                                            className="w-full px-[10px] py-[6px] bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-[13px] font-semibold tracking-wide hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
-                                        >
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                        <button onClick={() => navigate('/sales-flow/payments', { state: { action: 'create', customer: invoice.customerName, customerId: invoice.customerId, invoiceId: invoice.id } })}
+                                            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1.4px solid ${teal[200]}`, cursor: 'pointer', background: teal[50], color: teal[700], fontWeight: 600, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                                             <PaymentIcon size={14} /> Record payment
                                         </button>
                                         {!isSubscription && (
-                                            <button
-                                                onClick={() => onAction(invoice, 'convert_to_recurring')}
-                                                className="w-full px-[10px] py-[6px] bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-[13px] font-semibold tracking-wide hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
-                                            >
+                                            <button onClick={() => onAction(invoice, 'convert_to_recurring')}
+                                                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1.4px solid ${teal[200]}`, cursor: 'pointer', background: teal[50], color: teal[700], fontWeight: 600, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                                                 <RefreshCw size={14} /> Convert to recurring
                                             </button>
                                         )}
-                                        <button
-                                            onClick={() => handleStatusOverride('Paid')}
-                                            disabled={isUpdatingStatus || isPaid}
-                                            className="w-full px-[10px] py-[6px] bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-[13px] font-semibold tracking-wide hover:bg-emerald-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                                        >
-                                            {isUpdatingStatus ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle size={14} />}
-                                            Force paid
+                                        <button onClick={() => handleStatusOverride('Paid')} disabled={isUpdatingStatus || isPaid}
+                                            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', background: '#059669', color: '#fff', fontWeight: 600, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: (isUpdatingStatus || isPaid) ? 0.5 : 1 }}>
+                                            {isUpdatingStatus ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle size={14} />} Force paid
                                         </button>
-                                        <button
-                                            onClick={() => handleStatusOverride('Cancelled')}
-                                            disabled={isUpdatingStatus || isCancelled}
-                                            className="w-full px-[10px] py-[6px] bg-rose-50 text-rose-700 border border-rose-100 rounded-lg text-[13px] font-semibold tracking-wide hover:bg-rose-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                                        >
-                                            <Ban size={14} />
-                                            Void invoice
+                                        <button onClick={() => handleStatusOverride('Cancelled')} disabled={isUpdatingStatus || isCancelled}
+                                            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1.4px solid ${danger}30`, cursor: 'pointer', background: paper, color: danger, fontWeight: 600, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: (isUpdatingStatus || isCancelled) ? 0.5 : 1 }}>
+                                            <Ban size={14} /> Void invoice
                                         </button>
                                     </div>
-                                    <div className="bg-amber-50 p-3 rounded-xl border border-amber-100 flex items-start gap-2">
-                                        <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-                                        <p className="text-[12px] text-amber-800 leading-normal font-medium">
-                                            Manual overrides bypass validation but generate full financial logs.
-                                        </p>
+                                    <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: `${amber[100]}80`, border: `1px solid ${amber[300]}`, display: 'flex', gap: 8 }}>
+                                        <AlertTriangle size={14} color={amber[500]} style={{ flexShrink: 0, marginTop: 1 }} />
+                                        <p style={{ margin: 0, fontSize: 10, color: '#92400e', lineHeight: 1.4 }}>Manual overrides bypass validation but generate full financial logs.</p>
                                     </div>
                                 </div>
                             </div>
@@ -339,43 +359,41 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <TransactionPricingInsights transaction={pricingInsightTransaction} currencySymbol={currency} />
 
-                            <div className="bg-white rounded-[1.25rem] border border-slate-200 overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                                    <h3 className="font-semibold text-slate-700 flex items-center gap-2 tracking-tight text-[13.5px]">
-                                        <BarChart3 size={18} className="text-blue-600" /> General ledger entries
+                            <div style={{ borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', background: paper }}>
+                                <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3 style={{ margin: 0, fontSize: 12, color: ink, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <BarChart3 size={16} color={teal[600]} /> General ledger entries
                                     </h3>
-                                    <span className="text-[12px] font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">Real-time sync</span>
+                                    <span style={{ fontSize: 10, fontWeight: 700, background: teal[100], color: teal[600], padding: '2px 8px', borderRadius: 4 }}>Real-time sync</span>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-[13px]">
-                                        <thead className="bg-slate-50 border-b border-slate-200">
-                                            <tr>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 tracking-wide">Date</th>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 tracking-wide">Account</th>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 tracking-wide">Description</th>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 tracking-wide text-right">Debit</th>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 tracking-wide text-right">Credit</th>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                                                <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: inkSoft }}>Date</th>
+                                                <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: inkSoft }}>Account</th>
+                                                <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: inkSoft }}>Description</th>
+                                                <th style={{ padding: '8px 16px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: inkSoft }}>Debit</th>
+                                                <th style={{ padding: '8px 16px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: inkSoft }}>Credit</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody>
                                             {ledger.filter(entry => entry.reference === invoice.id).length > 0 ? (
                                                 ledger.filter(entry => entry.reference === invoice.id).map((entry, idx) => (
-                                                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                                        <td className="px-4 py-[7px] font-semibold text-slate-600 tabular-nums">{new Date(entry.date).toLocaleDateString()}</td>
-                                                        <td className="px-4 py-[7px] font-semibold text-blue-600">{entry.accountName}</td>
-                                                        <td className="px-4 py-[7px] text-slate-500">{entry.description}</td>
-                                                        <td className="px-4 py-[7px] text-right font-semibold text-slate-700 tabular-nums">
+                                                    <tr key={idx} style={{ borderBottom: `1px solid ${hairline}` }}>
+                                                        <td style={{ padding: '8px 16px', fontWeight: 600, color: ink }}>{new Date(entry.date).toLocaleDateString()}</td>
+                                                        <td style={{ padding: '8px 16px', fontWeight: 600, color: teal[600] }}>{entry.accountName}</td>
+                                                        <td style={{ padding: '8px 16px', color: inkSoft }}>{entry.description}</td>
+                                                        <td style={{ padding: '8px 16px', textAlign: 'right', fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>
                                                             {entry.type === 'Debit' ? `${currency}${entry.amount.toLocaleString()}` : '-'}
                                                         </td>
-                                                        <td className="px-4 py-[7px] text-right font-semibold text-slate-700 tabular-nums">
+                                                        <td style={{ padding: '8px 16px', textAlign: 'right', fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>
                                                             {entry.type === 'Credit' ? `${currency}${entry.amount.toLocaleString()}` : '-'}
                                                         </td>
                                                     </tr>
                                                 ))
                                             ) : (
-                                                <tr>
-                                                    <td colSpan={5} className="px-4 py-10 text-center text-slate-400 italic font-medium">No ledger entries found for this invoice.</td>
-                                                </tr>
+                                                <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No ledger entries found for this invoice.</td></tr>
                                             )}
                                         </tbody>
                                     </table>
@@ -386,51 +404,45 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
 
                     {activeTab === 'Payments' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                            <div className="bg-white rounded-[1.25rem] border border-slate-200 overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                                    <h3 className="font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-tight text-[13.5px]">
-                                        <CreditCard size={18} className="text-emerald-600" /> Payment History
+                            <div style={{ borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', background: paper }}>
+                                <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3 style={{ margin: 0, fontSize: 12, color: ink, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <CreditCard size={16} color="#059669" /> Payment History
                                     </h3>
-                                    <button
-                                        onClick={() => navigate('/sales-flow/payments', { state: { action: 'create', customer: invoice.customerName, customerId: invoice.customerId, invoiceId: invoice.id } })}
-                                        className="text-[13px] font-semibold text-emerald-600 uppercase flex items-center gap-1 hover:underline"
-                                    >
+                                    <button onClick={() => navigate('/sales-flow/payments', { state: { action: 'create', customer: invoice.customerName, customerId: invoice.customerId, invoiceId: invoice.id } })}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#059669', fontWeight: 600, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
                                         New Payment <ArrowRight size={12} />
                                     </button>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-[13px]">
-                                        <thead className="bg-slate-50 border-b border-slate-200">
-                                            <tr>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 uppercase tracking-wide">Date</th>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 uppercase tracking-wide">Payment #</th>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 uppercase tracking-wide">Method</th>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 uppercase tracking-wide text-right">Allocated</th>
-                                                <th className="px-4 py-[7px] text-[14px] font-semibold text-slate-500 uppercase tracking-wide text-center">Status</th>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                                                <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Date</th>
+                                                <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Payment #</th>
+                                                <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Method</th>
+                                                <th style={{ padding: '8px 16px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Allocated</th>
+                                                <th style={{ padding: '8px 16px', textAlign: 'center', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Status</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody>
                                             {paymentHistory.map(payment => (
-                                                <tr key={payment.id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-4 py-[7px] font-semibold text-slate-600 tabular-nums">{new Date(payment.date).toLocaleDateString()}</td>
-                                                    <td className="px-4 py-[7px] font-semibold text-blue-600">{payment.id}</td>
-                                                    <td className="px-4 py-[7px] font-semibold text-slate-700">{payment.paymentMethod}</td>
-                                                    <td className="px-4 py-[7px] text-right font-semibold text-emerald-600 tabular-nums">
+                                                <tr key={payment.id} style={{ borderBottom: `1px solid ${hairline}` }}>
+                                                    <td style={{ padding: '8px 16px', fontWeight: 600, color: ink }}>{new Date(payment.date).toLocaleDateString()}</td>
+                                                    <td style={{ padding: '8px 16px', fontWeight: 600, color: teal[600] }}>{payment.id}</td>
+                                                    <td style={{ padding: '8px 16px', fontWeight: 600, color: ink }}>{payment.paymentMethod}</td>
+                                                    <td style={{ padding: '8px 16px', textAlign: 'right', fontWeight: 600, color: '#059669', fontFamily: "'JetBrains Mono', monospace" }}>
                                                         {currency}{(payment.allocations?.find(a => a.invoiceId === invoice.id)?.amount || 0).toLocaleString()}
                                                     </td>
-                                                    <td className="px-4 py-[7px] text-center">
-                                                        <span className={`px-2 py-0.5 rounded-md text-[12px] font-semibold uppercase tracking-tight ${payment.status === 'Cleared' ? 'bg-emerald-100 text-emerald-700' :
-                                                            payment.status === 'Bounced' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
-                                                            }`}>
+                                                    <td style={{ padding: '8px 16px', textAlign: 'center' }}>
+                                                        <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: payment.status === 'Cleared' ? '#ecfdf5' : payment.status === 'Bounced' ? '#fef2f2' : amber[100], color: payment.status === 'Cleared' ? '#059669' : payment.status === 'Bounced' ? '#dc2626' : '#d97706' }}>
                                                             {payment.status}
                                                         </span>
                                                     </td>
                                                 </tr>
                                             ))}
                                             {paymentHistory.length === 0 && (
-                                                <tr>
-                                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic font-medium">No payments recorded yet.</td>
-                                                </tr>
+                                                <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No payments recorded yet.</td></tr>
                                             )}
                                         </tbody>
                                     </table>
@@ -441,40 +453,38 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
 
                     {activeTab === 'Activity' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                            <div className="bg-white rounded-[1.25rem] border border-slate-200 overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <h3 className="font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-tight text-[13.5px]">
-                                        <History size={18} className="text-indigo-600" /> Detailed Audit Trail
+                            <div style={{ borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', background: paper }}>
+                                <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                                    <h3 style={{ margin: 0, fontSize: 12, color: ink, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <History size={16} color={teal[600]} /> Detailed Audit Trail
                                     </h3>
                                 </div>
-                                <div className="p-5 space-y-3">
+                                <div style={{ padding: 16 }}>
                                     {auditLogs.filter(log => log.entityId === invoice.id).length > 0 ? (
                                         auditLogs.filter(log => log.entityId === invoice.id)
                                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                                             .map(log => (
-                                                <div key={log.id} className="flex gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${log.action === 'CREATE' ? 'bg-emerald-100 text-emerald-600' :
-                                                        log.action === 'UPDATE' ? 'bg-blue-100 text-blue-600' :
-                                                            log.action === 'VOID' ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'
-                                                        }`}>
-                                                        {log.action === 'CREATE' ? <Plus size={14} /> :
-                                                            log.action === 'UPDATE' ? <Edit2 size={14} /> : <Trash2 size={14} />}
+                                                <div key={log.id} style={{ display: 'flex', gap: 12, padding: 12, background: teal[50], borderRadius: 8, border: `1px solid ${teal[100]}`, marginBottom: 8 }}>
+                                                    <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                                        background: log.action === 'CREATE' ? '#ecfdf5' : log.action === 'UPDATE' ? '#eff6ff' : log.action === 'VOID' ? '#fef2f2' : hairline,
+                                                        color: log.action === 'CREATE' ? '#059669' : log.action === 'UPDATE' ? '#2563eb' : log.action === 'VOID' ? '#dc2626' : inkSoft }}>
+                                                        {log.action === 'CREATE' ? <Plus size={13} /> : log.action === 'UPDATE' ? <Edit2 size={13} /> : <Trash2 size={13} />}
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <div className="flex justify-between items-start mb-1">
-                                                            <span className="text-[13px] font-semibold text-slate-800 uppercase tracking-wide">{log.action} {log.entityType}</span>
-                                                            <span className="text-[12px] font-medium text-slate-400 tabular-nums">{new Date(log.date).toLocaleString()}</span>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                            <span style={{ fontSize: 12, fontWeight: 700, color: ink, textTransform: 'uppercase' }}>{log.action} {log.entityType}</span>
+                                                            <span style={{ fontSize: 11, color: inkSoft }}>{new Date(log.date).toLocaleString()}</span>
                                                         </div>
-                                                        <p className="text-[13px] text-slate-600 leading-relaxed">{log.details}</p>
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <span className="text-[12px] font-semibold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase">{log.userId}</span>
-                                                            <span className="text-[12px] font-medium text-slate-400 uppercase tracking-tight">{log.userRole}</span>
+                                                        <p style={{ margin: 0, fontSize: 12, color: ink, lineHeight: 1.5 }}>{log.details}</p>
+                                                        <div style={{ marginTop: 4, display: 'flex', gap: 8 }}>
+                                                            <span style={{ fontSize: 10, fontWeight: 700, background: hairline, color: inkSoft, padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase' }}>{log.userId}</span>
+                                                            <span style={{ fontSize: 10, color: inkSoft, textTransform: 'uppercase' }}>{log.userRole}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))
                                     ) : (
-                                        <div className="p-10 text-center text-slate-400 italic font-medium">No activity recorded in the logs.</div>
+                                        <div style={{ padding: 32, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No activity recorded in the logs.</div>
                                     )}
                                 </div>
                             </div>
@@ -483,32 +493,55 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ invoice: initial
                 </div>
 
                 {showAllocationModal && (
-                    <div className="fixed inset-0 z-[80] bg-slate-900/60 flex items-center justify-center p-4 backdrop-blur-sm">
-                        <div className="bg-white rounded-[1.25rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 border border-slate-200/60 font-sans text-[13.5px] leading-[1.45] text-slate-800">
-                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                                <h3 className="font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-tight text-[13.5px]"><Wallet size={18} className="text-emerald-600" /> Apply Customer Credits</h3>
-                                <button onClick={() => setShowAllocationModal(false)} className="p-1 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.6)' }}>
+                        <div style={{ width: 480, background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', overflow: 'hidden' }}>
+                            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ margin: 0, fontSize: 13, color: ink, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <Wallet size={16} color="#059669" /> Apply Customer Credits
+                                </h3>
+                                <button onClick={() => setShowAllocationModal(false)} style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: inkSoft }}>
+                                    <X size={16} />
+                                </button>
                             </div>
-                            <div className="p-5 max-h-[50vh] overflow-y-auto space-y-2 custom-scrollbar">
+                            <div style={{ padding: 16, maxHeight: '50vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 {availableCredits.map(payment => (
-                                    <div key={payment.id} onClick={() => handleAllocateCredit(payment)} className="flex justify-between items-center p-4 border border-slate-100 rounded-xl hover:border-emerald-400 hover:bg-emerald-50 transition-all cursor-pointer group bg-white shadow-sm">
+                                    <div key={payment.id} onClick={() => handleAllocateCredit(payment)}
+                                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 14, border: `1px solid ${hairline}`, borderRadius: 10, cursor: 'pointer', background: paper }}>
                                         <div>
-                                            <div className="font-semibold text-slate-700 text-[13.5px]">Payment #{payment.id}</div>
-                                            <div className="text-[12px] text-slate-400 uppercase font-medium mt-0.5 tabular-nums">Found: {new Date(payment.date).toLocaleDateString()}</div>
+                                            <div style={{ fontWeight: 600, color: ink, fontSize: 12 }}>Payment #{payment.id}</div>
+                                            <div style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>Found: {new Date(payment.date).toLocaleDateString()}</div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-[16px] font-semibold text-emerald-600 group-hover:scale-105 transition-transform tabular-nums">{currency}{(payment.creditApplied || 0).toLocaleString()}</div>
-                                            <div className="text-[12px] font-medium text-slate-300 uppercase tracking-tighter">Avail. Fund</div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: 15, fontWeight: 700, color: '#059669' }}>{currency}{(payment.creditApplied || 0).toLocaleString()}</div>
+                                            <div style={{ fontSize: 10, color: inkSoft, textTransform: 'uppercase' }}>Avail. Fund</div>
                                         </div>
                                     </div>
                                 ))}
                                 {availableCredits.length === 0 && (
-                                    <div className="p-10 text-center text-slate-400 font-medium italic">No available credits for this client.</div>
+                                    <div style={{ padding: 32, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No available credits for this client.</div>
                                 )}
                             </div>
                         </div>
                     </div>
                 )}
+
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+                    gap: 10, padding: '16px 28px',
+                    borderTop: `1px solid ${hairline}`, background: paper
+                }}>
+                    <button type="button" onClick={onClose}
+                        style={{
+                            fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                            padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+                            background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+                            display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     );

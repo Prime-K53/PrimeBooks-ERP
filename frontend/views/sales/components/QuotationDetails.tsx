@@ -1,16 +1,14 @@
-
 import React, { useState, useMemo } from 'react';
 import {
   X, CheckCircle, Clock, DollarSign, Printer, Edit2, Download,
   FileText, ArrowRight, History, Trash2,
   AlertTriangle, Send, Eye, Briefcase, Package, RefreshCw,
-  TrendingUp, Percent, Copy
+  TrendingUp, Percent, Copy, ChevronRight
 } from 'lucide-react';
 import { Quotation } from '../../../types';
 import { useAuth } from '../../../context/AuthContext';
 import { useSales } from '../../../context/SalesContext';
 import { useDocumentPreview } from '../../../hooks/useDocumentPreview';
-
 import { AuditTimeline } from '../../shared/components/AuditTimeline';
 import TransactionPricingInsights from './TransactionPricingInsights';
 import { currencyService } from '../../../services/currencyService';
@@ -21,6 +19,14 @@ interface QuotationDetailsProps {
   onEdit: (quote: Quotation) => void;
   onAction: (quote: Quotation, action: string) => void;
 }
+
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
 
 export const QuotationDetails: React.FC<QuotationDetailsProps> = ({ quotation: initialQuotation, onClose, onEdit, onAction }) => {
   const { companyConfig, notify } = useAuth();
@@ -39,142 +45,171 @@ export const QuotationDetails: React.FC<QuotationDetailsProps> = ({ quotation: i
   const isExaminationQuotation = String((quotation as Quotation & { quotationType?: string }).quotationType || '').toLowerCase() === 'examination';
 
   return (
-    <div className="fixed inset-0 z-[70] bg-slate-900/60 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-[1.5rem] shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200/60 font-sans text-[13px] leading-relaxed text-slate-800">
-        {/* Header */}
-        <div className="px-[16px] py-[12px] border-b border-slate-100 bg-slate-50/50 flex justify-between items-start shrink-0">
-          <div className="flex gap-6 items-center">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-              <FileText size={32} />
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(15, 23, 42, 0.6)',
+      padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+    }}>
+      <div style={{
+        width: 960, maxWidth: '100%', maxHeight: '92vh',
+        background: paper, borderRadius: 14,
+        boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+          background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+        }} />
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '22px 28px 18px',
+          borderBottom: `1px solid ${hairline}`, background: paper
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+            }}>
+              <FileText size={19} color="#fff" />
             </div>
             <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-[22px] font-semibold text-slate-800 tracking-tight">Quotation #{quotation.id}</h1>
-                <span className={`px-2.5 py-0.5 rounded-lg text-[12.5px] font-semibold tracking-wide ${quotation.status === 'Accepted' || quotation.status === 'Approved' || quotation.status === 'Converted' ? 'bg-emerald-100 text-emerald-700' :
-                  quotation.status === 'Rejected' ? 'bg-rose-100 text-rose-700' :
-                    isExpired ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h1 style={{
+                  fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                  fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                }}>
+                  Quotation #{quotation.id}
+                </h1>
+                <span style={{
+                  padding: '2px 10px', borderRadius: 6,
+                  fontSize: 11.5, fontWeight: 600, letterSpacing: 0.04,
+                  background: quotation.status === 'Accepted' || quotation.status === 'Approved' || quotation.status === 'Converted' ? '#ecfdf5' :
+                    quotation.status === 'Rejected' ? '#fef2f2' : isExpired ? amber[100] : '#eff6ff',
+                  color: quotation.status === 'Accepted' || quotation.status === 'Approved' || quotation.status === 'Converted' ? '#059669' :
+                    quotation.status === 'Rejected' ? '#dc2626' : isExpired ? '#d97706' : '#2563eb',
+                }}>
                   {isExpired ? 'Expired' : quotation.status}
                 </span>
                 {isExaminationQuotation && (
-                  <span className="px-2.5 py-0.5 rounded-lg text-[12.5px] font-semibold tracking-wide bg-violet-100 text-violet-700">
+                  <span style={{ padding: '2px 10px', borderRadius: 6, fontSize: 11.5, fontWeight: 600, background: '#f5f3ff', color: '#7c3aed' }}>
                     Examination
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-4 text-[12.5px] font-medium text-slate-500 tracking-wide">
-                <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold">{quotation.customerName}</span>
-                <span className="flex items-center gap-1.5"><Clock size={14} /> Issued {new Date(quotation.date).toLocaleDateString()}</span>
+              <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ padding: '1px 6px', borderRadius: 4, background: teal[50], color: teal[700], fontWeight: 600 }}>{quotation.customerName}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} /> Issued {new Date(quotation.date).toLocaleDateString()}</span>
                 {quotation.validUntil && (
-                  <span className={`flex items-center gap-1.5 ${isExpired ? 'text-rose-600 font-bold' : ''}`}>
-                    <AlertTriangle size={14} /> Valid until {new Date(quotation.validUntil).toLocaleDateString()}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isExpired ? '#dc2626' : inkSoft }}>
+                    <AlertTriangle size={12} /> Valid until {new Date(quotation.validUntil).toLocaleDateString()}
                   </span>
                 )}
-              </div>
+              </p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => onEdit(quotation)}
-              className="p-3 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2 font-bold text-xs uppercase tracking-tight"
-            >
-              <Edit2 size={16} /> Edit
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={() => onEdit(quotation)}
+              style={{
+                padding: '8px 14px', borderRadius: 8, background: paper,
+                border: `1.4px solid ${hairline}`, color: inkSoft, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+                fontSize: 12, fontWeight: 600, transition: 'all .15s ease'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+              onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+              <Edit2 size={14} /> Edit
             </button>
-            <button
-              onClick={onClose}
-              className="p-3 bg-white border border-slate-200 text-slate-400 rounded-2xl hover:bg-rose-50 hover:text-rose-500 transition-all shadow-sm"
-            >
-              <X size={20} />
+            <button onClick={onClose} aria-label="Close"
+              style={{
+                width: 32, height: 32, borderRadius: 8,
+                border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+              onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+              <X size={15} />
             </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="px-8 bg-white border-b border-slate-200 shrink-0">
-          <div className="flex gap-8">
-            {(['Overview', 'Activity'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 text-[13px] font-bold uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-              >
-                {tab}
-                {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full shadow-[0_-2px_10px_rgba(37,99,235,0.3)]"></div>
-                )}
-              </button>
-            ))}
-          </div>
+        <div style={{ display: 'flex', borderBottom: `1px solid ${hairline}`, padding: '0 28px', background: paper, flexShrink: 0 }}>
+          {(['Overview', 'Activity'] as const).map((tab) => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '14px 16px 12px', fontSize: 12, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: activeTab === tab ? teal[600] : inkSoft,
+                borderBottom: `2px solid ${activeTab === tab ? teal[500] : 'transparent'}`,
+                transition: 'all .15s ease'
+              }}>
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/50">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 8px', background: teal[50] }}>
           {activeTab === 'Overview' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
-                {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-center">
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm text-slate-500">
-                        <span>Subtotal</span>
-                        <span className="font-bold">{currency}{((quotation.total || 0) - (quotation.tax || 0)).toLocaleString()}</span>
+                   <div style={{ padding: 20, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: inkSoft, marginBottom: 4 }}>
+                      <span>Subtotal</span>
+                      <span style={{ fontWeight: 600 }}>{currency}{((quotation.total || 0) - (quotation.tax || 0)).toLocaleString()}</span>
+                    </div>
+                    {(quotation.discount || 0) > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#dc2626', marginBottom: 4 }}>
+                        <span>Discount {quotation.discountType === 'percentage' ? `(${quotation.discount}%)` : ''}</span>
+                        <span style={{ fontWeight: 600 }}>-{currency}{(quotation.discount || 0).toLocaleString()}</span>
                       </div>
-                      {(quotation.discount || 0) > 0 && (
-                        <div className="flex justify-between text-sm text-rose-600">
-                          <span>Discount {quotation.discountType === 'percentage' ? `(${quotation.discount}%)` : ''}</span>
-                          <span className="font-bold">-{currency}{(quotation.discount || 0).toLocaleString()}</span>
-                        </div>
-                      )}
-                      {quotation.tax && quotation.tax > 0 && (
-                        <div className="flex justify-between text-sm text-slate-500">
-                          <span>Tax ({quotation.taxRate}%)</span>
-                          <span className="font-bold">{currency}{quotation.tax.toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="h-px bg-slate-100 my-2"></div>
-                      <div className="flex justify-between items-end">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Value</p>
-                        <p className="text-3xl font-black text-slate-900 tabular-nums leading-none">
-                          {currency}{quotation.total.toLocaleString()}
-                        </p>
+                    )}
+                    {quotation.tax && quotation.tax > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: inkSoft, marginBottom: 4 }}>
+                        <span>Tax ({quotation.taxRate}%)</span>
+                        <span style={{ fontWeight: 600 }}>{currency}{quotation.tax.toLocaleString()}</span>
                       </div>
+                    )}
+                    <div style={{ height: 1, background: hairline, margin: '8px 0' }}></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Total Value</p>
+                      <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: ink }}>{currency}{quotation.total.toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-center">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Items Count</p>
-                    <p className="text-3xl font-black text-slate-900 tabular-nums">
-                      {quotation.items?.length || 0}
-                    </p>
+                  <div style={{ padding: 20, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 4 }}>Items Count</p>
+                    <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: ink }}>{quotation.items?.length || 0}</p>
                   </div>
                 </div>
 
-                {/* Items Table */}
-                <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-700 text-xs uppercase tracking-widest">Line Items</h3>
+                <div style={{ borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', background: paper }}>
+                  <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                    <h3 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Line Items</h3>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-50/80 border-b border-slate-200">
-                        <tr>
-                          <th className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-center">Qty</th>
-                          <th className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Item / Description</th>
-                          <th className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-right">Unit Price</th>
-                          <th className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-right">Total</th>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${hairline}` }}>
+                          <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Qty</th>
+                          <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Item / Description</th>
+                          <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Unit Price</th>
+                          <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Total</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody>
                         {quotation.items?.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4 text-center font-bold text-slate-700">{item.quantity}</td>
-                            <td className="px-6 py-4">
-                              <p className="font-bold text-slate-800">{item.name}</p>
-                              {item.description && <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>}
+                          <tr key={idx} style={{ borderBottom: `1px solid ${hairline}` }}>
+                            <td style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 700, color: ink }}>{item.quantity}</td>
+                            <td style={{ padding: '10px 16px' }}>
+                              <p style={{ margin: 0, fontWeight: 600, color: ink }}>{item.name}</p>
+                              {item.description && <p style={{ margin: '2px 0 0', fontSize: 11, color: inkSoft }}>{item.description}</p>}
                             </td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-700">{currency}{item.price.toLocaleString()}</td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-900">{currency}{(item.quantity * item.price).toLocaleString()}</td>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: ink }}>{currency}{item.price.toLocaleString()}</td>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: ink }}>{currency}{(item.quantity * item.price).toLocaleString()}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -184,109 +219,96 @@ export const QuotationDetails: React.FC<QuotationDetailsProps> = ({ quotation: i
 
                 <TransactionPricingInsights transaction={quotation} currencySymbol={currency} />
 
-                {/* Notes */}
                 {quotation.notes && (
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                    <h3 className="font-bold text-slate-700 text-xs uppercase tracking-widest mb-3">Terms & Notes</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{quotation.notes}</p>
+                  <div style={{ padding: 20, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Terms & Notes</h3>
+                    <p style={{ margin: 0, fontSize: 12, color: ink, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{quotation.notes}</p>
                   </div>
                 )}
               </div>
 
-              {/* Sidebar Actions */}
-              <div className="space-y-6">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Document Actions</h3>
-
-                  <button
-                    onClick={() => { onClose(); handlePreview('QUOTATION', quotation); }}
-                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-2xl text-[13px] font-bold tracking-tight hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100"
-                  >
-                    <Eye size={18} /> Preview Quotation
-                  </button>
-
-                  <button
-                    onClick={() => onAction(quotation, 'download_pdf')}
-                    className="w-full px-4 py-3 bg-white text-slate-700 border border-slate-200 rounded-2xl text-[13px] font-bold tracking-tight hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Download size={18} /> Download PDF
-                  </button>
-
-                  {quotation.status === 'Draft' && (
-                    <button
-                      onClick={() => onAction(quotation, 'approve')}
-                      className="w-full px-4 py-3 bg-emerald-600 text-white rounded-2xl text-[13px] font-bold tracking-tight hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-100"
-                    >
-                      <CheckCircle size={18} /> Approve Quotation
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ padding: 20, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
+                  <h3 style={{ margin: '0 0 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08 }}>Document Actions</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <button onClick={() => { onClose(); handlePreview('QUOTATION', quotation); }}
+                      style={{ width: '100%', padding: '10px 16px', border: 'none', borderRadius: 9, cursor: 'pointer', background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, color: '#fff', fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: `0 4px 10px -4px rgba(15,84,76,.4)` }}>
+                      <Eye size={16} /> Preview Quotation
                     </button>
-                  )}
-
-                  <div className="h-px bg-slate-100 my-2"></div>
-
-                  <button
-                    onClick={() => onAction(quotation, 'convert_to_order')}
-                    disabled={isConverted}
-                    className="w-full px-4 py-3 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-2xl text-[13px] font-bold tracking-tight hover:bg-indigo-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <Package size={18} /> Convert to Order
-                  </button>
-
-                  <button
-                    onClick={() => onAction(quotation, 'convert_inv')}
-                    disabled={isConverted}
-                    className="w-full px-4 py-3 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-2xl text-[13px] font-bold tracking-tight hover:bg-emerald-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle size={18} /> Convert to Invoice
-                  </button>
-
-                  <button
-                    onClick={() => onAction(quotation, 'convert_wo')}
-                    disabled={isConverted}
-                    className="w-full px-4 py-3 bg-purple-50 text-purple-700 border border-purple-100 rounded-2xl text-[13px] font-bold tracking-tight hover:bg-purple-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <Briefcase size={18} /> Convert to Work Order
-                  </button>
-
-                  <button
-                    onClick={() => onAction(quotation, 'convert_to_job_ticket')}
-                    disabled={isConverted}
-                    className="w-full px-4 py-3 bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl text-[13px] font-bold tracking-tight hover:bg-rose-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <Printer size={18} /> Convert to Job Ticket
-                  </button>
-
-                  <button
-                    onClick={() => onAction(quotation, 'duplicate_exact')}
-                    className="w-full px-4 py-3 bg-purple-50 text-purple-700 border border-purple-100 rounded-2xl text-[13px] font-bold tracking-tight hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Copy size={18} /> Duplicate Quotation
-                  </button>
+                    <button onClick={() => onAction(quotation, 'download_pdf')}
+                      style={{ width: '100%', padding: '10px 16px', border: `1.4px solid ${hairline}`, borderRadius: 9, cursor: 'pointer', background: paper, color: inkSoft, fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      <Download size={16} /> Download PDF
+                    </button>
+                    {quotation.status === 'Draft' && (
+                      <button onClick={() => onAction(quotation, 'approve')}
+                        style={{ width: '100%', padding: '10px 16px', border: 'none', borderRadius: 9, cursor: 'pointer', background: '#059669', color: '#fff', fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <CheckCircle size={16} /> Approve Quotation
+                      </button>
+                    )}
+                    <div style={{ height: 1, background: hairline, margin: '4px 0' }} />
+                    <button onClick={() => onAction(quotation, 'convert_to_order')} disabled={isConverted}
+                      style={{ width: '100%', padding: '10px 16px', border: `1.4px solid ${teal[200]}`, borderRadius: 9, cursor: 'pointer', background: teal[50], color: teal[700], fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: isConverted ? 0.5 : 1 }}>
+                      <Package size={16} /> Convert to Order
+                    </button>
+                    <button onClick={() => onAction(quotation, 'convert_inv')} disabled={isConverted}
+                      style={{ width: '100%', padding: '10px 16px', border: `1.4px solid ${teal[200]}`, borderRadius: 9, cursor: 'pointer', background: teal[50], color: teal[700], fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: isConverted ? 0.5 : 1 }}>
+                      <CheckCircle size={16} /> Convert to Invoice
+                    </button>
+                    <button onClick={() => onAction(quotation, 'convert_wo')} disabled={isConverted}
+                      style={{ width: '100%', padding: '10px 16px', border: `1.4px solid ${teal[200]}`, borderRadius: 9, cursor: 'pointer', background: teal[50], color: teal[700], fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: isConverted ? 0.5 : 1 }}>
+                      <Briefcase size={16} /> Convert to Work Order
+                    </button>
+                    <button onClick={() => onAction(quotation, 'convert_to_job_ticket')} disabled={isConverted}
+                      style={{ width: '100%', padding: '10px 16px', border: `1.4px solid ${teal[200]}`, borderRadius: 9, cursor: 'pointer', background: teal[50], color: teal[700], fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: isConverted ? 0.5 : 1 }}>
+                      <Printer size={16} /> Convert to Job Ticket
+                    </button>
+                    <button onClick={() => onAction(quotation, 'duplicate_exact')}
+                      style={{ width: '100%', padding: '10px 16px', border: `1.4px solid ${teal[200]}`, borderRadius: 9, cursor: 'pointer', background: teal[50], color: teal[700], fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      <Copy size={16} /> Duplicate Quotation
+                    </button>
+                  </div>
                 </div>
 
-                <div className="bg-rose-50 p-6 rounded-3xl border border-rose-100 space-y-3">
-                  <h3 className="text-xs font-bold text-rose-400 uppercase tracking-widest">Danger Zone</h3>
-                  <button
-                    onClick={() => onAction(quotation, 'status_Rejected')}
-                    className="w-full px-4 py-3 bg-white text-rose-600 border border-rose-100 rounded-2xl text-[13px] font-bold tracking-tight hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
-                  >
-                    <X size={18} /> Reject Quotation
-                  </button>
-                  <button
-                    onClick={() => onAction(quotation, 'delete')}
-                    className="w-full px-4 py-3 bg-rose-600 text-white rounded-2xl text-[13px] font-bold tracking-tight hover:bg-rose-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-100"
-                  >
-                    <Trash2 size={18} /> Delete Record
-                  </button>
+                <div style={{ padding: 20, borderRadius: 12, border: `1px solid ${danger}30`, background: `${danger}08` }}>
+                  <h3 style={{ margin: '0 0 12px', fontSize: 10, fontWeight: 700, color: danger, textTransform: 'uppercase', letterSpacing: 0.08 }}>Danger Zone</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <button onClick={() => onAction(quotation, 'status_Rejected')}
+                      style={{ width: '100%', padding: '10px 16px', border: `1.4px solid ${danger}30`, borderRadius: 9, cursor: 'pointer', background: paper, color: danger, fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      <X size={16} /> Reject Quotation
+                    </button>
+                    <button onClick={() => onAction(quotation, 'delete')}
+                      style={{ width: '100%', padding: '10px 16px', border: 'none', borderRadius: 9, cursor: 'pointer', background: danger, color: '#fff', fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      <Trash2 size={16} /> Delete Record
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'Activity' && (
-            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+            <div style={{ padding: 20, background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
               <AuditTimeline entityType="quotation" entityId={quotation.id} />
             </div>
           )}
+        </div>
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+          gap: 10, padding: '16px 28px',
+          borderTop: `1px solid ${hairline}`, background: paper
+        }}>
+          <button type="button" onClick={onClose}
+            style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+              padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+              background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+              display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+            Close
+          </button>
         </div>
       </div>
     </div>

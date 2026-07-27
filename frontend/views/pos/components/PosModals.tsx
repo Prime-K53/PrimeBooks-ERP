@@ -16,9 +16,67 @@ import { dbService } from '../../../services/db';
 import { calculateServicePrice } from '../../../utils/pricing/pricingEngine';
 import { normalizeStoredPricing, resolveStoredSellingPrice } from '../../../utils/pricing';
 import { getPlaceholder } from '../../../constants/placeholders';
-import { Dialog, DialogHeader, DialogTitle, DialogFooter } from '../../../components/Dialog';
 
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
 
+const modalOverlay: React.CSSProperties = {
+  position: 'fixed', inset: 0, zIndex: 9999,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: 'rgba(15, 23, 42, 0.6)',
+  padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+};
+
+const modalCard: React.CSSProperties = {
+  maxWidth: '100%', background: paper, borderRadius: 14,
+  boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+  display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative',
+};
+
+const accentBar: React.CSSProperties = {
+  position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+  background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+};
+
+const closeBtn: React.CSSProperties = {
+  width: 32, height: 32, borderRadius: 8,
+  border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer', transition: 'all .15s ease', flexShrink: 0,
+};
+
+const iconBox: React.CSSProperties = {
+  width: 40, height: 40, borderRadius: 10,
+  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0,
+};
+
+const ghostBtn: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+};
+
+const tealBtn: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+  color: '#fff', display: 'flex', alignItems: 'center', gap: 6,
+  boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+  transition: 'all .15s ease',
+};
+
+const dangerBtn: React.CSSProperties = {
+  ...tealBtn,
+  background: `linear-gradient(155deg, #dc2626, #b91c1c)`,
+  boxShadow: `0 6px 16px -6px rgba(185,28,28,.55)`,
+};
 
 // --- Printing Variant Modal ---
 export const PrintingVariantModal: React.FC<{
@@ -46,7 +104,6 @@ export const PrintingVariantModal: React.FC<{
     });
     const [quantity, setQuantity] = useState(1);
 
-    // Load BOM templates on mount
     useEffect(() => {
         let mounted = true;
         dbService.getAll<BOMTemplate>('bomTemplates')
@@ -59,16 +116,13 @@ export const PrintingVariantModal: React.FC<{
         return () => { mounted = false; };
     }, []);
 
-    // Memoize values to prevent infinite loops
     const materialsList = useMemo(() => inventory || materials, [inventory, materials]);
     const adjustmentsList = useMemo(() => marketAdjustments || [], [marketAdjustments]);
 
     useEffect(() => {
-        // Check if parent has Hidden BOM for dynamic pricing
         const hasHiddenBOM = product.smartPricing?.hiddenBOMId || product.smartPricing?.bomTemplateId;
 
         if (hasHiddenBOM) {
-            // Use dynamic variant pricing from pricingService
             const virtualVariant = {
                 id: 'virtual',
                 productId: product.id,
@@ -92,7 +146,7 @@ export const PrintingVariantModal: React.FC<{
                 adjustmentsList
             );
 
-            const finishingCost = (result.breakdown || []).reduce((sum, item: any) => sum + (Number(item.amount) || 0), 0);
+            const finishingCost = (result.breakdown || []).reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0);
 
             setPricingState({
                 baseCost: result.cost + finishingCost,
@@ -102,7 +156,6 @@ export const PrintingVariantModal: React.FC<{
                 adjustmentSnapshots: result.adjustmentSnapshots
             });
         } else if (bom) {
-            // Legacy BOM calculation
             const result = bomService.calculateVariantBOM(bom, { attributes } as Record<string, unknown>, materials);
             const cost = roundFinancial(result.totalProductionCost);
 
@@ -138,70 +191,79 @@ export const PrintingVariantModal: React.FC<{
             cost: pricingState.baseCost,
             adjustmentTotal: pricingState.adjustmentTotal,
             adjustmentSnapshots: pricingState.adjustmentSnapshots,
-            pagesOverride: attributes.number_of_pages // Pass through for transactionService
+            pagesOverride: attributes.number_of_pages
         };
         onSelect(virtualVariant);
     };
 
     return (
-        <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogHeader className="flex items-center justify-between">
-                <DialogTitle className="text-sm font-bold text-[#393a3d] uppercase tracking-wider">Configure {product.name}</DialogTitle>
-                <button onClick={onClose} className="text-[#8d9096] hover:text-[#d52b1e]" title="Close" aria-label="Close product configuration"><X size={20} /></button>
-            </DialogHeader>
-            <div className="space-y-6">
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-[11px] font-bold text-[#6b6c7f] uppercase tracking-wider mb-1.5">Number of Pages</label>
-                        <input
-                            type="number"
-                            className="w-full p-2 border border-[#babec5] rounded text-sm focus:border-[#0077c5] outline-none"
-                            placeholder="e.g. 5"
-                            onChange={e => handleAttributeChange('number_of_pages', parseInt(e.target.value))}
-                        />
+        <div style={modalOverlay} onClick={onClose}>
+            <div style={{ ...modalCard, width: 520 }} onClick={(e) => e.stopPropagation()}>
+                <div style={accentBar} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={iconBox}><Printer size={19} color="#fff" /></div>
+                        <div>
+                            <h1 style={{
+                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                            }}>Configure {product.name}</h1>
+                            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>Printing Variant</p>
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-[11px] font-bold text-[#6b6c7f] uppercase tracking-wider mb-1.5">Paper Type</label>
-                        <select
-                            className="w-full p-2 border border-[#babec5] rounded text-sm focus:border-[#0077c5] outline-none"
-                            onChange={e => handleAttributeChange('paper_type', e.target.value)}
-                        >
-                            <option value="">Select...</option>
-                            <option value="A4 80g">A4 80g</option>
-                            <option value="A4 100g">A4 100g</option>
-                            <option value="A3 80g">A3 80g</option>
-                        </select>
+                    <button onClick={onClose} aria-label="Close" style={closeBtn}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                    ><X size={15} /></button>
+                </div>
+                <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: '60vh' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 10 }}>Attributes</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 18 }}>
+                        <div>
+                            <label style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 4, display: 'block' }}>Number of Pages</label>
+                            <input type="number"
+                                style={{ width: '100%', padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 8, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+                                placeholder="e.g. 5"
+                                onChange={e => handleAttributeChange('number_of_pages', parseInt(e.target.value))}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 4, display: 'block' }}>Paper Type</label>
+                            <select style={{ width: '100%', padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 8, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+                                onChange={e => handleAttributeChange('paper_type', e.target.value)}>
+                                <option value="">Select...</option>
+                                <option value="A4 80g">A4 80g</option>
+                                <option value="A4 100g">A4 100g</option>
+                                <option value="A3 80g">A3 80g</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 4, display: 'block' }}>Quantity</label>
+                            <input type="number"
+                                style={{ width: '100%', padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 8, fontSize: 13, fontWeight: 700, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+                                value={quantity}
+                                onChange={e => setQuantity(parseInt(e.target.value))}
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-[11px] font-bold text-[#6b6c7f] uppercase tracking-wider mb-1.5">Quantity</label>
-                        <input
-                            type="number"
-                            className="w-full p-2 border border-[#babec5] rounded text-sm font-bold focus:border-[#0077c5] outline-none"
-                            value={quantity}
-                            onChange={e => setQuantity(parseInt(e.target.value))}
-                        />
+                    <div style={{ background: teal[50], padding: 16, borderRadius: 10, border: `1px solid ${teal[100]}`, marginBottom: 18 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Unit Price</span>
+                            <span style={{ fontSize: 15, fontWeight: 700, color: ink }}>{currency}{(pricingState.sellingPrice || 0).toLocaleString()}</span>
+                        </div>
+                        <div style={{ height: 1, background: teal[100], marginBottom: 8 }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: ink, textTransform: 'uppercase', letterSpacing: 0.05 }}>Total Amount</span>
+                            <span style={{ fontSize: 20, fontWeight: 700, color: teal[600] }}>{currency}{((pricingState.sellingPrice || 0) * quantity).toLocaleString()}</span>
+                        </div>
                     </div>
                 </div>
-
-                <div className="bg-[#f4f5f8] p-6 rounded border border-[#d4d7dc] space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="text-[11px] font-bold text-[#6b6c7f] uppercase">Unit Price</span>
-                        <span className="text-sm font-bold text-[#393a3d]">{currency}{pricingState.sellingPrice.toLocaleString()}</span>
-                    </div>
-                    <div className="pt-3 border-t border-[#d4d7dc] flex justify-between items-center">
-                        <span className="text-xs font-bold text-[#393a3d] uppercase">Total Amount</span>
-                        <span className="text-xl font-bold text-[#0077c5]">{currency}{(pricingState.sellingPrice * quantity).toLocaleString()}</span>
-                    </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, padding: '14px 24px 18px', borderTop: `1px solid ${hairline}` }}>
+                    <button onClick={onClose} style={ghostBtn}>Cancel</button>
+                    <button onClick={handleConfirm} style={tealBtn}><ArrowRight size={14} /> Add to Order</button>
                 </div>
-
-                <button
-                    onClick={handleConfirm}
-                    className="w-full py-3.5 bg-blue-600 text-white rounded-full font-bold text-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-sm"
-                >
-                    Add to Order <ArrowRight size={18} />
-                </button>
             </div>
-        </Dialog>
+        </div>
     );
 };
 
@@ -361,67 +423,61 @@ export const ServiceCalculatorModal: React.FC<{
 
     const handleConfirm = () => onConfirm({ ...ap, totalPrice: sellingPrice, unitPricePerCopy: copies > 0 ? roundToCurrency(sellingPrice / copies) : 0, calculatedTotalPrice: ap.totalPrice, marginAmount: profit, priceLocked: true, lockedTotalPrice: sellingPrice, lockedUnitPricePerCopy: copies > 0 ? roundToCurrency(sellingPrice / copies) : 0, lockedUnitCostPerCopy: copies > 0 ? roundToCurrency(ap.totalCost / copies) : 0 });
 
-    const ink900 = '#16191c', ink700 = '#3a4046', ink500 = '#6b7178', ink300 = '#aeb3b8', line = '#e7e5e1', canvas = '#eeece7', amber = '#b8742f', amberDeep = '#8f5a22', amberTint = '#fbf2e6', good = '#3f7d52', goodTint = '#eef6ef';
-
     return (
-        <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <div className="-m-6">
-
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '16px 20px 14px 20px', borderBottom: `1px solid ${line}` }}>
-                    <div>
-                        <div style={{ fontFamily: "inherit", fontSize: 9.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: amber, marginBottom: 5 }}>Printing Service</div>
-                        <div style={{ fontSize: 19, color: ink900, lineHeight: 1.1, fontWeight: 700 }}>{service.name}</div>
+        <div style={modalOverlay} onClick={onClose}>
+            <div style={{ ...modalCard, width: 640, maxHeight: '92vh' }} onClick={(e) => e.stopPropagation()}>
+                <div style={accentBar} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={iconBox}><Printer size={19} color="#fff" /></div>
+                        <div>
+                            <div style={{ fontSize: 9.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: amber[500], marginBottom: 5 }}>Printing Service</div>
+                            <h1 style={{
+                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2, lineHeight: 1.1
+                            }}>{service.name}</h1>
+                        </div>
                     </div>
-                    <button onClick={onClose} style={{ width: 26, height: 26, borderRadius: 7, border: 'none', background: 'transparent', color: ink500, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginTop: 2 }}
-                        onMouseOver={e => { e.currentTarget.style.background = canvas; e.currentTarget.style.color = ink900; }}
-                        onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = ink500; }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
+                    <button onClick={onClose} aria-label="Close" style={closeBtn}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                    ><X size={15} /></button>
                 </div>
-
-                {/* Two-column body */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr' }}>
-                    <div className="custom-scrollbar" style={{ padding: '16px 20px', maxHeight: '64vh', overflowY: 'auto' }}>
-
-                        {/* Quantities */}
-                        <div style={{ fontFamily: "inherit", fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: ink500, marginBottom: 9 }}>Quantities</div>
-                        <div style={{ display: 'flex', border: `1px solid ${line}`, borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
-                            <div style={{ flex: 1, padding: '8px 10px', borderRight: `1px solid ${line}` }}>
-                                <div style={{ fontFamily: "inherit", fontSize: 8.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: ink500, marginBottom: 3 }}>Pages</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', flex: 1, minHeight: 0 }}>
+                    <div style={{ padding: '16px 20px', maxHeight: '60vh', overflowY: 'auto' }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 9 }}>Quantities</div>
+                        <div style={{ display: 'flex', border: `1.4px solid ${hairline}`, borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
+                            <div style={{ flex: 1, padding: '8px 10px', borderRight: `1.4px solid ${hairline}` }}>
+                                <div style={{ fontSize: 9, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 3 }}>Pages</div>
                                 <input type="number" min={1} value={pages} onChange={e => setPages(Math.max(1, parseInt(e.target.value || '1', 10) || 1))}
-                                    style={{ border: 'none', padding: 0, fontSize: 14, fontWeight: 700, fontFamily: "inherit", color: ink900, width: '100%', background: 'transparent', outline: 'none' }} />
+                                    style={{ border: 'none', padding: 0, fontSize: 14, fontWeight: 700, color: ink, width: '100%', background: 'transparent', outline: 'none', fontFamily: 'inherit' }} />
                             </div>
-                            <div style={{ flex: 1, padding: '8px 10px', background: canvas, textAlign: 'center' }}>
-                                <div style={{ fontFamily: "inherit", fontSize: 8.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: ink500, marginBottom: 3 }}>Copies</div>
+                            <div style={{ flex: 1, padding: '8px 10px', background: teal[50], textAlign: 'center' }}>
+                                <div style={{ fontSize: 9, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 3 }}>Copies</div>
                                 <input type="number" min={1} value={copies} onChange={e => setCopies(Math.max(1, parseInt(e.target.value || '1', 10) || 1))}
-                                    style={{ border: 'none', padding: 0, fontSize: 14, fontWeight: 700, fontFamily: "inherit", color: ink900, width: '100%', background: 'transparent', outline: 'none', textAlign: 'center' }} />
+                                    style={{ border: 'none', padding: 0, fontSize: 14, fontWeight: 700, color: ink, width: '100%', background: 'transparent', outline: 'none', textAlign: 'center', fontFamily: 'inherit' }} />
                             </div>
                         </div>
-
-                        {/* BOM line */}
                         {bomTemplate && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: ink500, paddingBottom: 14, marginBottom: 14, borderBottom: `1px solid ${line}` }}>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={amber} strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
-                                Specs from <b style={{ color: ink900, fontWeight: 700 }}>BOM: {bomTemplate.name}</b>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: inkSoft, paddingBottom: 14, marginBottom: 14, borderBottom: `1px solid ${hairline}` }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={amber[500]} strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+                                Specs from <b style={{ color: ink, fontWeight: 700 }}>BOM: {bomTemplate.name}</b>
                             </div>
                         )}
-
-                        {/* Finishing Options */}
                         {costBreakdown.finishingDetails.length > 0 && (
                             <>
-                                <div style={{ fontFamily: "inherit", fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: ink500, marginBottom: 9 }}>Finishing Options</div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 9 }}>Finishing Options</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                     {costBreakdown.finishingDetails.map(fd => {
                                         const isOn = enabledFinishing.includes(fd.id);
                                         return (
                                             <button key={fd.id} type="button" onClick={() => setEnabledFinishing(prev => prev.includes(fd.id) ? prev.filter(id => id !== fd.id) : [...prev, fd.id])}
-                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', background: isOn ? amberTint : canvas, transition: 'all .12s' }}>
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', background: isOn ? amber[100] : teal[50], transition: 'all .12s' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: isOn ? amber : ink300 }}></div>
-                                                    <span style={{ fontSize: 12, fontWeight: 600, color: ink900 }}>{fd.name}</span>
+                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: isOn ? amber[500] : inkSoft }}></div>
+                                                    <span style={{ fontSize: 12, fontWeight: 600, color: ink }}>{fd.name}</span>
                                                 </div>
-                                                <span style={{ fontFamily: "inherit", fontSize: 11, color: isOn ? amber : ink500 }}>{fc(fd.cost)}/job</span>
+                                                <span style={{ fontSize: 11, color: isOn ? amber[500] : inkSoft }}>{fc(fd.cost)}/job</span>
                                             </button>
                                         );
                                     })}
@@ -429,52 +485,47 @@ export const ServiceCalculatorModal: React.FC<{
                             </>
                         )}
                     </div>
-
-                    {/* Divider */}
-                    <div style={{ background: line }}></div>
-
-                    {/* Right column — Costing */}
-                    <div className="custom-scrollbar" style={{ padding: '16px 20px', maxHeight: '64vh', overflowY: 'auto' }}>
-                        <div style={{ fontFamily: "inherit", fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: ink500, marginBottom: 9 }}>Cost Breakdown</div>
-
+                    <div style={{ background: hairline }}></div>
+                    <div style={{ padding: '16px 20px', maxHeight: '60vh', overflowY: 'auto' }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 9 }}>Cost Breakdown</div>
                         {hasSmartPricing ? (
                             <>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', fontSize: 12.5 }}>
-                                    <span style={{ color: ink500 }}>Paper</span>
-                                    <span style={{ fontFamily: "inherit", fontWeight: 600, color: ink900 }}>{fc(costBreakdown.paperCost)}</span>
+                                    <span style={{ color: inkSoft }}>Paper</span>
+                                    <span style={{ fontWeight: 600, color: ink }}>{fc(costBreakdown.paperCost)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', fontSize: 12.5 }}>
-                                    <span style={{ color: ink500 }}>Toner</span>
-                                    <span style={{ fontFamily: "inherit", fontWeight: 600, color: ink900 }}>{fc(costBreakdown.tonerCost)}</span>
+                                    <span style={{ color: inkSoft }}>Toner</span>
+                                    <span style={{ fontWeight: 600, color: ink }}>{fc(costBreakdown.tonerCost)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', fontSize: 12.5 }}>
-                                    <span style={{ color: ink500 }}>Finishing</span>
-                                    <span style={{ fontFamily: "inherit", fontWeight: 600, color: ink900 }}>{fc(costBreakdown.finishingCost)}</span>
+                                    <span style={{ color: inkSoft }}>Finishing</span>
+                                    <span style={{ fontWeight: 600, color: ink }}>{fc(costBreakdown.finishingCost)}</span>
                                 </div>
-                                <div style={{ borderTop: `1px dashed ${line}`, margin: '4px 0' }}></div>
+                                <div style={{ borderTop: `1px dashed ${hairline}`, margin: '4px 0' }}></div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', fontSize: 12.5 }}>
-                                    <span style={{ color: ink500 }}>Cost Price</span>
-                                    <span style={{ fontFamily: "inherit", fontWeight: 600, color: ink900 }}>{fc(costBreakdown.baseCost)}</span>
+                                    <span style={{ color: inkSoft }}>Cost Price</span>
+                                    <span style={{ fontWeight: 600, color: ink }}>{fc(costBreakdown.baseCost)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', fontSize: 12.5 }}>
-                                    <span style={{ color: ink500 }}>Selling Price</span>
+                                    <span style={{ color: inkSoft }}>Selling Price</span>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <span style={{ fontFamily: "inherit", fontSize: 11, color: ink500 }}>{currencySymbol}</span>
+                                        <span style={{ fontSize: 11, color: inkSoft }}>{currencySymbol}</span>
                                         <input type="number" step="0.01" min={0} value={sellingPrice} onChange={e => { setSellingPrice(Math.max(0, parseFloat(e.target.value || '0'))); setPriceManuallySet(true); }}
-                                            style={{ width: 80, textAlign: 'right', border: `1px solid ${line}`, borderRadius: 6, padding: '3px 7px', fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, color: ink900, outline: 'none' }}
-                                            onFocus={e => e.currentTarget.style.borderColor = amber}
-                                            onBlur={e => e.currentTarget.style.borderColor = line} />
+                                            style={{ width: 80, textAlign: 'right', border: `1.4px solid ${hairline}`, borderRadius: 6, padding: '3px 7px', fontSize: 12.5, fontWeight: 700, color: ink, outline: 'none', fontFamily: 'inherit' }}
+                                            onFocus={e => e.currentTarget.style.borderColor = amber[500]}
+                                            onBlur={e => e.currentTarget.style.borderColor = hairline} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', fontSize: 12.5 }}>
-                                    <span style={{ color: ink500 }}>Calculated</span>
-                                    <span style={{ fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, color: amberDeep }}>{fc(ap.totalPrice)}</span>
+                                    <span style={{ color: inkSoft }}>Calculated</span>
+                                    <span style={{ fontSize: 13.5, fontWeight: 700, color: amber[600] }}>{fc(ap.totalPrice)}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: goodTint, borderRadius: 8, padding: '9px 12px', marginTop: 12 }}>
-                                    <div style={{ fontSize: 11.5, color: good, fontWeight: 700 }}>
-                                        Profit <span style={{ fontFamily: "inherit" }}>{isLoss ? '-' : '+'}{fc(Math.abs(profit))}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ecfdf5', borderRadius: 8, padding: '9px 12px', marginTop: 12 }}>
+                                    <div style={{ fontSize: 11.5, color: '#059669', fontWeight: 700 }}>
+                                        Profit {isLoss ? '-' : '+'}{fc(Math.abs(profit))}
                                     </div>
-                                    <div style={{ fontFamily: "inherit", fontSize: 11, fontWeight: 700, color: good, background: '#fff', padding: '3px 9px', borderRadius: 999 }}>{profitMarginPct}% margin</div>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', background: paper, padding: '3px 9px', borderRadius: 999 }}>{profitMarginPct}% margin</div>
                                 </div>
                                 {isLoss && (
                                     <div style={{ marginTop: 8, padding: '6px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 11, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -490,48 +541,36 @@ export const ServiceCalculatorModal: React.FC<{
                         ) : (
                             <>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', fontSize: 12.5 }}>
-                                    <span style={{ color: ink500 }}>Base Rate</span>
-                                    <span style={{ fontFamily: "inherit", fontWeight: 600, color: ink900 }}>{fc(ap.totalCost)}</span>
+                                    <span style={{ color: inkSoft }}>Base Rate</span>
+                                    <span style={{ fontWeight: 600, color: ink }}>{fc(ap.totalCost)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', fontSize: 12.5 }}>
-                                    <span style={{ color: ink500 }}>Selling Price</span>
+                                    <span style={{ color: inkSoft }}>Selling Price</span>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <span style={{ fontFamily: "inherit", fontSize: 11, color: ink500 }}>{currencySymbol}</span>
+                                        <span style={{ fontSize: 11, color: inkSoft }}>{currencySymbol}</span>
                                         <input type="number" step="0.01" min={0} value={sellingPrice} onChange={e => { setSellingPrice(Math.max(0, parseFloat(e.target.value || '0'))); setPriceManuallySet(true); }}
-                                            style={{ width: 80, textAlign: 'right', border: `1px solid ${line}`, borderRadius: 6, padding: '3px 7px', fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, color: ink900, outline: 'none' }}
-                                            onFocus={e => e.currentTarget.style.borderColor = amber}
-                                            onBlur={e => e.currentTarget.style.borderColor = line} />
+                                            style={{ width: 80, textAlign: 'right', border: `1.4px solid ${hairline}`, borderRadius: 6, padding: '3px 7px', fontSize: 12.5, fontWeight: 700, color: ink, outline: 'none', fontFamily: 'inherit' }}
+                                            onFocus={e => e.currentTarget.style.borderColor = amber[500]}
+                                            onBlur={e => e.currentTarget.style.borderColor = hairline} />
                                     </div>
                                 </div>
                             </>
                         )}
                     </div>
                 </div>
-
-                {/* Footer */}
-                <div style={{ padding: '14px 20px 18px 20px', borderTop: `1px solid ${line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 24px 18px', borderTop: `1px solid ${hairline}` }}>
                     <div>
-                        <div style={{ fontFamily: "inherit", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: ink500 }}>Total Due</div>
-                        <div style={{ fontSize: 23, color: ink900, lineHeight: 1.15, fontWeight: 700 }}>{fc(sellingPrice)}</div>
-                        <div style={{ fontFamily: "inherit", fontSize: 10, color: ink500 }}>{pages * copies} page{pages * copies !== 1 ? 's' : ''} · {Math.ceil(pages / 2) * copies} sheet{Math.ceil(pages / 2) * copies !== 1 ? 's' : ''} · {fc(copies > 0 ? roundToCurrency(sellingPrice / copies) : 0)}/copy</div>
+                        <div style={{ fontSize: 9, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08 }}>Total Due</div>
+                        <div style={{ fontSize: 23, color: ink, lineHeight: 1.15, fontWeight: 700 }}>{fc(sellingPrice)}</div>
+                        <div style={{ fontSize: 10, color: inkSoft }}>{pages * copies} page{pages * copies !== 1 ? 's' : ''} &middot; {Math.ceil(pages / 2) * copies} sheet{Math.ceil(pages / 2) * copies !== 1 ? 's' : ''} &middot; {fc(copies > 0 ? roundToCurrency(sellingPrice / copies) : 0)}/copy</div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                        <button onClick={onClose} style={{ border: `1px solid ${line}`, borderRadius: 8, padding: '10px 16px', fontFamily: "inherit", fontSize: 13, fontWeight: 700, cursor: 'pointer', background: '#fff', color: ink700, whiteSpace: 'nowrap', transition: 'all .15s' }}
-                            onMouseOver={e => e.currentTarget.style.background = canvas}
-                            onMouseOut={e => e.currentTarget.style.background = '#fff'}>
-                            Cancel
-                        </button>
-                        <button onClick={handleConfirm} style={{ border: 'none', borderRadius: 8, padding: '10px 16px', fontFamily: "inherit", fontSize: 13, fontWeight: 700, cursor: 'pointer', background: ink900, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, whiteSpace: 'nowrap', transition: 'all .15s' }}
-                            onMouseOver={e => e.currentTarget.style.background = '#000'}
-                            onMouseOut={e => e.currentTarget.style.background = ink900}>
-                            Add to Order
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                        </button>
+                        <button onClick={onClose} style={ghostBtn}>Cancel</button>
+                        <button onClick={handleConfirm} style={tealBtn}><ArrowRight size={14} /> Add to Order</button>
                     </div>
                 </div>
-
             </div>
-        </Dialog>
+        </div>
     );
 };
 
@@ -566,186 +605,167 @@ export const CustomerModal: React.FC<{
     const handleQuickAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newCustomerName) return;
-
         onSelect(newCustomerName);
         notify(`Customer ${newCustomerName} selected`, 'success');
         onClose();
     };
 
     return (
-        <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <div className="-m-6 flex flex-col max-h-[82vh]">
-                {/* Gold accent top bar */}
-                <div className="h-[3px] shrink-0 bg-[#B8863B]" />
-
-                {/* Header */}
-                <DialogHeader className="flex items-center justify-between px-5 py-3.5 bg-[#FBF8F2] border-b border-[#E4DFD1] shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-[8px] bg-[#2563EB] flex items-center justify-center">
-                            <Users size={15} className="text-white" />
-                        </div>
+        <div style={modalOverlay} onClick={onClose}>
+            <div style={{ ...modalCard, width: 520, maxHeight: '82vh' }} onClick={(e) => e.stopPropagation()}>
+                <div style={accentBar} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={iconBox}><Users size={19} color="#fff" /></div>
                         <div>
-                            <DialogTitle className="text-[15px] font-bold text-[#23282A] leading-tight">Select Customer</DialogTitle>
-                            <p className="text-[10px] font-['JetBrains_Mono',monospace] text-[#666F6C] tracking-wide mt-[2px]">
+                            <h1 style={{
+                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                            }}>Select Customer</h1>
+                            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
                                 {filteredCustomerNames.length} account{filteredCustomerNames.length !== 1 ? 's' : ''}
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="w-7 h-7 flex items-center justify-center rounded-[6px] text-[#666F6C] hover:text-[#D52B1E] hover:bg-[rgba(213,43,30,0.08)] transition-all"
-                        title="Close"
-                        aria-label="Close customer selection"
-                    >
-                        <X size={16} />
-                    </button>
-                </DialogHeader>
-
-                {/* Search */}
-                <div className="px-4 py-2.5 bg-[#FEFDFB] border-b border-[#E4DFD1] shrink-0">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666F6C]" size={14} />
-                        <input
-                            ref={(el) => { /* focus is set on mount */ }}
-                            type="text"
-                            placeholder="Search customers…"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-white border border-[#E4DFD1] rounded-[8px] text-[13px] text-[#23282A] placeholder:text-[#666F6C] outline-none focus:border-[#2563EB] focus:bg-[#EFF6FF] transition-all font-['JetBrains_Mono',monospace]"
-                        />
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-[#F4F5F8] text-[#666F6C] hover:text-[#23282A] transition-colors"
-                            >
-                                <X size={11} />
+                    <button onClick={onClose} aria-label="Close" style={closeBtn}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                    ><X size={15} /></button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                    <div style={{ padding: '10px 20px', borderBottom: `1px solid ${hairline}` }}>
+                        <div style={{ position: 'relative' }}>
+                            <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} size={14} />
+                            <input type="text" placeholder="Search customers…" value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                style={{ width: '100%', padding: '8px 10px 8px 34px', border: `1.4px solid ${hairline}`, borderRadius: 8, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: "'JetBrains Mono', monospace" }}
+                                onFocus={e => { e.currentTarget.style.borderColor = teal[400]; e.currentTarget.style.background = teal[50]; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }} />
+                            {searchTerm && (
+                                <button onClick={() => setSearchTerm('')}
+                                    style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 20, height: 20, borderRadius: '50%', border: 'none', background: teal[50], color: inkSoft, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <X size={11} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <div style={{ padding: '8px 20px', borderBottom: `1px solid ${hairline}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', color: inkSoft }}>Actions</span>
+                        <button onClick={() => setShowQuickAdd(!showQuickAdd)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+                                fontFamily: 'inherit', cursor: 'pointer',
+                                background: showQuickAdd ? teal[50] : `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                                color: showQuickAdd ? inkSoft : '#fff',
+                                border: showQuickAdd ? `1.4px solid ${hairline}` : '1.4px solid transparent',
+                                transition: 'all .12s'
+                            }}>
+                            {showQuickAdd ? <X size={13} /> : <UserPlus size={13} />}
+                            {showQuickAdd ? 'Cancel' : 'New Customer'}
+                        </button>
+                    </div>
+                    {showQuickAdd && (
+                        <form onSubmit={handleQuickAdd} style={{ padding: '12px 20px', background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
+                                <div>
+                                    <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: inkSoft, marginBottom: 5, display: 'block' }}>
+                                        Full Name <span style={{ color: danger }}>*</span>
+                                    </label>
+                                    <input placeholder="e.g. Acme Printing" value={newCustomerName}
+                                        onChange={e => setNewCustomerName(e.target.value)}
+                                        style={{ width: '100%', padding: '7px 10px', border: `1.4px solid ${hairline}`, borderRadius: 7, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+                                        onFocus={e => { e.currentTarget.style.borderColor = teal[400]; e.currentTarget.style.background = teal[50]; }}
+                                        onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: inkSoft, marginBottom: 5, display: 'block' }}>Contact Info</label>
+                                    <input placeholder="Phone or Email" value={newCustomerContact}
+                                        onChange={e => setNewCustomerContact(e.target.value)}
+                                        style={{ width: '100%', padding: '7px 10px', border: `1.4px solid ${hairline}`, borderRadius: 7, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+                                        onFocus={e => { e.currentTarget.style.borderColor = teal[400]; e.currentTarget.style.background = teal[50]; }}
+                                        onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }} />
+                                </div>
+                            </div>
+                            <button type="submit" disabled={!newCustomerName}
+                                style={{
+                                    ...tealBtn, width: '100%', justifyContent: 'center', opacity: newCustomerName ? 1 : 0.4,
+                                    cursor: newCustomerName ? 'pointer' : 'not-allowed'
+                                }}>
+                                <Save size={13} /> Save and Select
                             </button>
+                        </form>
+                    )}
+                    <div style={{ flex: 1, overflowY: 'auto', background: paper }}>
+                        {filteredCustomerNames.length === 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 24px' }}>
+                                <div style={{ width: 48, height: 48, borderRadius: '50%', background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                                    <Users size={20} style={{ color: inkSoft, opacity: 0.5 }} />
+                                </div>
+                                <p style={{ fontSize: 13, fontWeight: 500, color: inkSoft, textAlign: 'center' }}>
+                                    {searchTerm ? `No matches for "${searchTerm}"` : 'No customers found'}
+                                </p>
+                                <p style={{ fontSize: 11, color: hairline, marginTop: 4, textAlign: 'center' }}>
+                                    {searchTerm ? 'Try adjusting your search criteria' : 'Add a new customer to get started'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                {filteredCustomerNames.map(name => {
+                                    const custInvoices = invoices.filter(i => i.customerName === name && i.status !== 'Paid' && i.status !== 'Draft');
+                                    const custDebt = custInvoices.reduce((sum, i) => sum + (i.totalAmount - (i.paidAmount || 0)), 0);
+                                    const initials = name.charAt(0).toUpperCase();
+
+                                    return (
+                                        <button key={name} onClick={() => onSelect(name)}
+                                            style={{ width: '100%', textAlign: 'left', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: 'none', cursor: 'pointer', background: 'transparent', borderBottom: `1px solid ${teal[50]}`, transition: 'all .12s', fontFamily: 'inherit', fontSize: 13.5, color: ink }}
+                                            onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                                                <div style={{
+                                                    width: 36, height: 36, borderRadius: 8, background: teal[50], color: inkSoft,
+                                                    border: `1px solid ${hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontSize: 14, fontWeight: 700, flexShrink: 0,
+                                                    transition: 'all .12s'
+                                                }}
+                                                    onMouseEnter={e => { e.currentTarget.style.background = teal[600]; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = teal[600]; }}
+                                                    onMouseLeave={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+                                                    {initials}
+                                                </div>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 700, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                                                <div style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px',
+                                                    borderRadius: 5, fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                                                    border: `1px solid ${custDebt > 0 ? 'rgba(220,38,38,0.18)' : 'rgba(22,163,74,0.18)'}`,
+                                                    background: custDebt > 0 ? 'rgba(220,38,38,0.07)' : 'rgba(22,163,74,0.07)',
+                                                    color: custDebt > 0 ? '#dc2626' : '#16a34a'
+                                                }}>
+                                                    {companyConfig.currencySymbol}{custDebt.toLocaleString()}
+                                                </div>
+                                                <div style={{ fontSize: 10, color: inkSoft, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', marginTop: 2 }}>
+                                                    {custDebt > 0 ? 'Outstanding' : 'Settled'}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
-                </div>
-
-                {/* Quick Add toolbar */}
-                <div className="px-4 py-2 bg-[#FEFDFB] border-b border-[#E4DFD1] flex justify-between items-center shrink-0">
-                    <span className="text-[10px] font-bold tracking-[0.8px] uppercase text-[#666F6C] font-['JetBrains_Mono',monospace]">
-                        Actions
-                    </span>
-                    <button
-                        onClick={() => setShowQuickAdd(!showQuickAdd)}
-                        className={`flex items-center gap-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-bold transition-all ${
-                            showQuickAdd
-                                ? 'bg-[#F4F5F8] text-[#666F6C] border border-[#D4D7DC]'
-                                : 'bg-[#2563EB] text-white border border-[#2563EB] hover:bg-[#1D4ED8] hover:shadow-[0_2px_8px_rgba(37,99,235,0.3)]'
-                        }`}
-                    >
-                        {showQuickAdd ? <X size={13} /> : <UserPlus size={13} />}
-                        {showQuickAdd ? 'Cancel' : 'New Customer'}
-                    </button>
-                </div>
-
-                {/* Quick Add Form */}
-                {showQuickAdd && (
-                    <form onSubmit={handleQuickAdd} className="px-4 py-3.5 bg-[#FBF8F2] border-b border-[#E4DFD1] shrink-0">
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                                <label className="block text-[10px] font-bold tracking-[0.8px] uppercase text-[#666F6C] mb-[5px] font-['JetBrains_Mono',monospace]">
-                                    Full Name <span className="text-[#D52B1E]">*</span>
-                                </label>
-                                <input
-                                    className="w-full px-3 py-[7px] bg-white border border-[#E4DFD1] rounded-[7px] text-[13px] text-[#23282A] placeholder:text-[#666F6C] outline-none focus:border-[#2563EB] focus:bg-[#EFF6FF] transition-all"
-                                    placeholder="e.g. Acme Printing"
-                                    value={newCustomerName}
-                                    onChange={e => setNewCustomerName(e.target.value)}
-                                    autoFocus
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold tracking-[0.8px] uppercase text-[#666F6C] mb-[5px] font-['JetBrains_Mono',monospace]">
-                                    Contact info
-                                </label>
-                                <input
-                                    className="w-full px-3 py-[7px] bg-white border border-[#E4DFD1] rounded-[7px] text-[13px] text-[#23282A] placeholder:text-[#666F6C] outline-none focus:border-[#2563EB] focus:bg-[#EFF6FF] transition-all"
-                                    placeholder="Phone or Email"
-                                    value={newCustomerContact}
-                                    onChange={e => setNewCustomerContact(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={!newCustomerName}
-                            className="px-4 py-[7px] bg-[#2563EB] text-white rounded-[7px] text-[12px] font-bold hover:bg-[#1D4ED8] hover:shadow-[0_2px_8px_rgba(37,99,235,0.3)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 transition-all w-full"
-                        >
-                            <Save size={13} /> Save and Select
-                        </button>
-                    </form>
-                )}
-
-                {/* Customer list */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#FEFDFB]">
-                    {filteredCustomerNames.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-14 px-6">
-                            <div className="w-12 h-12 rounded-full bg-[#F4F5F8] flex items-center justify-center mb-3">
-                                <Users size={20} className="text-[#666F6C] opacity-50" />
-                            </div>
-                            <p className="text-[13px] font-medium text-[#666F6C] text-center">
-                                {searchTerm ? `No matches for "${searchTerm}"` : 'No customers found'}
-                            </p>
-                            <p className="text-[11px] text-[#D4D7DC] mt-1 text-center">
-                                {searchTerm ? 'Try adjusting your search criteria' : 'Add a new customer to get started'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-[#F0EFE8]">
-                            {filteredCustomerNames.map(name => {
-                                const custInvoices = invoices.filter(i => i.customerName === name && i.status !== 'Paid' && i.status !== 'Draft');
-                                const custDebt = custInvoices.reduce((sum, i) => sum + (i.totalAmount - (i.paidAmount || 0)), 0);
-                                const initials = name.charAt(0).toUpperCase();
-                                const isHovered = false;
-
-                                return (
-                                    <button
-                                        key={name}
-                                        onClick={() => onSelect(name)}
-                                        className="w-full text-left px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-[#EFF6FF] transition-all group"
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                                            <div className="w-9 h-9 rounded-[8px] bg-[#F4F5F8] text-[#666F6C] border border-[#E4DFD1] flex items-center justify-center text-sm font-bold shrink-0 group-hover:bg-[#2563EB] group-hover:text-white group-hover:border-[#2563EB] group-hover:shadow-[0_2px_6px_rgba(37,99,235,0.3)] transition-all">
-                                                {initials}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="text-[13.5px] font-bold text-[#23282A] leading-tight truncate">{name}</div>
-                                            </div>
-                                        </div>
-                                        <div className="shrink-0 text-right">
-                                            <div className={`inline-flex items-center gap-1 px-2 py-[3px] rounded-[5px] text-[11px] font-bold font-['JetBrains_Mono',monospace] border ${
-                                                custDebt > 0
-                                                    ? 'bg-[rgba(220,38,38,0.07)] text-[#DC2626] border-[rgba(220,38,38,0.18)]'
-                                                    : 'bg-[rgba(22,163,74,0.07)] text-[#16A34A] border-[rgba(22,163,74,0.18)]'
-                                            }`}>
-                                                {companyConfig.currencySymbol}{custDebt.toLocaleString()}
-                                            </div>
-                                            <div className="text-[10px] text-[#666F6C] font-bold tracking-wide uppercase mt-[2px]">
-                                                {custDebt > 0 ? 'Outstanding' : 'Settled'}
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer */}
-                <div className="px-4 py-2 bg-[#FBF8F2] border-t border-[#E4DFD1] flex items-center justify-between shrink-0">
-                    <span className="text-[10px] text-[#D4D7DC] font-['JetBrains_Mono',monospace]">
-                        ↑↓ navigate · ↵ select · esc close
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-[3px] rounded-[4px] text-[10px] font-bold border bg-[rgba(37,99,235,0.08)] text-[#2563EB] border-[rgba(37,99,235,0.2)]">
-                        POS Mode
-                    </span>
+                    <div style={{ padding: '8px 20px', background: teal[50], borderTop: `1px solid ${hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 10, color: hairline, fontFamily: "'JetBrains Mono', monospace" }}>↑↓ navigate &middot; ↵ select &middot; esc close</span>
+                        <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 4,
+                            fontSize: 10, fontWeight: 700, border: `1px solid rgba(15,84,76,0.2)`,
+                            background: 'rgba(15,84,76,0.08)', color: teal[600]
+                        }}>POS Mode</span>
+                    </div>
                 </div>
             </div>
-        </Dialog>
+        </div>
     );
 };
 
@@ -755,36 +775,65 @@ export const HeldOrdersModal: React.FC<{
     onRetrieve: (o: HeldOrder) => void;
     onClose: () => void;
 }> = ({ orders, onRetrieve, onClose }) => (
-    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogHeader className="flex items-center justify-between">
-            <DialogTitle className="text-sm font-bold text-[#393a3d] uppercase tracking-wider">Parked Orders</DialogTitle>
-            <button onClick={onClose} className="text-[#8d9096] hover:text-[#d52b1e]" title="Close" aria-label="Close parked orders"><X size={20} /></button>
-        </DialogHeader>
-        <div className="overflow-y-auto flex-1 divide-y divide-[#f4f5f8] custom-scrollbar max-h-[60vh]">
-            {orders.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-20 text-[#8d9096]">
-                        <Clock size={48} className="mb-4 opacity-20" />
-                        <p className="text-sm font-medium">No parked orders found</p>
+    <div style={modalOverlay} onClick={onClose}>
+        <div style={{ ...modalCard, width: 520, maxHeight: '82vh' }} onClick={(e) => e.stopPropagation()}>
+            <div style={accentBar} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={iconBox}><Clock size={19} color="#fff" /></div>
+                    <div>
+                        <h1 style={{
+                            fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                            fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                        }}>Parked Orders</h1>
+                        <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>Retrieve a parked order</p>
+                    </div>
+                </div>
+                <button onClick={onClose} aria-label="Close" style={closeBtn}
+                    onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                ><X size={15} /></button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+                {orders.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', color: inkSoft }}>
+                        <Clock size={48} style={{ marginBottom: 16, opacity: 0.2 }} />
+                        <p style={{ fontSize: 14, fontWeight: 500 }}>No parked orders found</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {orders.map(order => (
+                            <div key={order.id}
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: `1px solid ${teal[50]}`, transition: 'all .12s' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                                <div>
+                                    <div style={{ fontWeight: 700, color: ink }}>{order.customerName}</div>
+                                    <div style={{ fontSize: 12, color: inkSoft, display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                                        <span>{new Date(order.date).toLocaleString()}</span>
+                                        <span style={{ width: 4, height: 4, borderRadius: '50%', background: hairline }}></span>
+                                        <span>{order.items.length} items</span>
+                                    </div>
+                                    {order.note && <div style={{ fontSize: 12, color: inkSoft, fontStyle: 'italic', marginTop: 2 }}>Note: {order.note}</div>}
+                                </div>
+                                <button onClick={() => onRetrieve(order)}
+                                    style={{
+                                        fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600,
+                                        padding: '7px 20px', borderRadius: 999, cursor: 'pointer',
+                                        background: paper, border: `1.4px solid ${hairline}`, color: ink,
+                                        transition: 'all .15s'
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.color = teal[700]; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = ink; }}>
+                                    Retrieve
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 )}
-                {orders.map(order => (
-                    <div key={order.id} className="px-6 py-5 flex justify-between items-center hover:bg-[#f4f5f8] transition-all group">
-                        <div className="space-y-1">
-                            <div className="font-bold text-[#393a3d]">{order.customerName}</div>
-                            <div className="text-xs text-[#6b6c7f] flex items-center gap-3">
-                                <span>{new Date(order.date).toLocaleString()}</span>
-                                <span className="w-1 h-1 bg-[#d4d7dc] rounded-full"></span>
-                                <span>{order.items.length} items</span>
-                            </div>
-                            {order.note && <div className="text-xs text-[#6b6c7f] italic">Note: {order.note}</div>}
-                        </div>
-                        <button onClick={() => onRetrieve(order)} className="bg-white border border-[#babec5] text-[#393a3d] px-6 py-2 rounded-full font-bold text-xs hover:bg-[#eceef1] hover:border-[#8d9096] transition-all">
-                            Retrieve
-                        </button>
-                    </div>
-                ))}
             </div>
-    </Dialog>
+        </div>
+    </div>
 );
 
 // --- Returns Modal ---
@@ -796,7 +845,7 @@ export const ReturnsModal: React.FC<{
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
     const [returnItems, setReturnItems] = useState<{ itemId: string, qty: number }[]>([]);
-    const [refundAccountId, setRefundAccountId] = useState(ACCOUNT_IDS.CASH_DRAWER); // Default to Cash Account
+    const [refundAccountId, setRefundAccountId] = useState(ACCOUNT_IDS.CASH_DRAWER);
 
     const cashBankAccounts = useMemo(() =>
         DEFAULT_ACCOUNTS.filter(acc => [ACCOUNT_IDS.CASH_DRAWER, ACCOUNT_IDS.BANK, ACCOUNT_IDS.MOBILE_MONEY].includes(acc.id)),
@@ -815,76 +864,111 @@ export const ReturnsModal: React.FC<{
     };
 
     return (
-        <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogHeader className="flex items-center justify-between">
-                <DialogTitle className="text-sm font-bold text-[#393a3d] uppercase tracking-wider">Process Return</DialogTitle>
-                <button onClick={onClose} className="text-[#8d9096] hover:text-[#d52b1e]" title="Close" aria-label="Close return process"><X size={20} /></button>
-            </DialogHeader>
-            <div className="bg-white border-b border-[#d4d7dc] p-6">
-                <div className="flex gap-3 max-w-lg">
-                    <input
-                        type="text"
-                        placeholder="e.g. REC-1234"
-                        className="flex-1 p-2.5 border border-[#babec5] rounded text-sm focus:border-[#0077c5] outline-none"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                    />
-                    <button onClick={handleSearch} className="bg-[#0077c5] text-white px-6 rounded-full text-xs font-bold hover:bg-[#005da3]">Search</button>
-                </div>
-            </div>
-            <div className="p-2 overflow-y-auto flex-1 divide-y divide-[#f4f5f8] custom-scrollbar max-h-[50vh]">
-                {selectedSale ? (
-                    <div className="p-4 space-y-2">
-                        <div className="flex items-center justify-between mb-4">
-                            <p className="text-[11px] font-bold text-[#6b6c7f] uppercase tracking-wider">Select items to refund</p>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">POS Sale</span>
+        <div style={modalOverlay} onClick={onClose}>
+            <div style={{ ...modalCard, width: 560, maxHeight: '82vh' }} onClick={(e) => e.stopPropagation()}>
+                <div style={accentBar} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={iconBox}><ArrowRight size={19} color="#fff" style={{ transform: 'rotate(180deg)' }} /></div>
+                        <div>
+                            <h1 style={{
+                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                            }}>Process Return</h1>
+                            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>Refund items from a sale</p>
                         </div>
-                        {selectedSale.items.map(item => (
-                            <div key={item.id} className="flex items-center justify-between p-4 hover:bg-[#f4f5f8] rounded transition-all cursor-pointer group" onClick={() => toggleItem(item.id, item.quantity)}>
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-5 h-5 border rounded flex items-center justify-center transition-all ${returnItems.some(r => r.itemId === item.id) ? 'bg-[#0077c5] border-[#0077c5] text-white' : 'border-[#babec5] bg-white group-hover:border-[#8d9096]'}`}>
-                                        {returnItems.some(r => r.itemId === item.id) && <CheckCircle size={14} />}
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-[#393a3d] text-sm">{item.name}</div>
-                                        <div className="text-[11px] text-[#6b6c7f]">{item.quantity} units @ ${item.price}</div>
-                                    </div>
-                                </div>
-                                <div className="font-bold text-[#393a3d]">${formatNumber(item.quantity * item.price)}</div>
+                    </div>
+                    <button onClick={onClose} aria-label="Close" style={closeBtn}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                    ><X size={15} /></button>
+                </div>
+                <div style={{ padding: '16px 24px', borderBottom: `1px solid ${hairline}` }}>
+                    <div style={{ display: 'flex', gap: 10, maxWidth: 400 }}>
+                        <input type="text" placeholder="e.g. REC-1234"
+                            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                            style={{ flex: 1, padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 8, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+                            onFocus={e => { e.currentTarget.style.borderColor = teal[400]; e.currentTarget.style.background = teal[50]; }}
+                            onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }} />
+                        <button onClick={handleSearch}
+                            style={{
+                                ...tealBtn, fontSize: 12, padding: '8px 20px',
+                            }}>
+                            Search
+                        </button>
+                    </div>
+                </div>
+                <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+                    {selectedSale ? (
+                        <div style={{ padding: '16px 24px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Select items to refund</p>
+                                <span style={{
+                                    padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                                    background: amber[100], color: amber[600], border: `1px solid ${amber[300]}`
+                                }}>POS Sale</span>
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-[#8d9096]">
-                        <Search size={48} className="mb-4 opacity-20" />
-                        <p className="text-sm font-medium">Search for a sale to begin refund</p>
-                    </div>
-                )}
-            </div>
-            <DialogFooter className="bg-[#f4f5f8] border-t border-[#d4d7dc] flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                    <div className="flex flex-col">
-                        <label className="text-[10px] font-black text-[#6b6c7f] uppercase mb-1">Pay Refund From</label>
-                        <select
-                            value={refundAccountId}
-                            onChange={(e) => setRefundAccountId(e.target.value)}
-                            className="p-2 border border-[#babec5] rounded text-sm bg-white font-bold text-[#393a3d] focus:border-[#0077c5] outline-none min-w-[200px]"
-                        >
+                            {selectedSale.items.map(item => {
+                                const isSelected = returnItems.some(r => r.itemId === item.id);
+                                return (
+                                    <div key={item.id}
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 8, cursor: 'pointer', transition: 'all .12s', border: `1px solid ${isSelected ? teal[200] : 'transparent'}`, background: isSelected ? teal[50] : 'transparent', marginBottom: 4 }}
+                                        onClick={() => toggleItem(item.id, item.quantity)}
+                                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = teal[50]; }}
+                                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <div style={{
+                                                width: 20, height: 20, borderRadius: 4,
+                                                border: `1.4px solid ${isSelected ? teal[600] : hairline}`,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                background: isSelected ? teal[600] : 'transparent',
+                                                transition: 'all .12s'
+                                            }}>
+                                                {isSelected && <CheckCircle size={14} color="#fff" />}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 700, color: ink, fontSize: 13 }}>{item.name}</div>
+                                                <div style={{ fontSize: 11, color: inkSoft }}>{item.quantity} units @ ${item.price}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ fontWeight: 700, color: ink }}>${formatNumber(item.quantity * item.price)}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', color: inkSoft }}>
+                            <Search size={48} style={{ marginBottom: 16, opacity: 0.2 }} />
+                            <p style={{ fontSize: 14, fontWeight: 500 }}>Search for a sale to begin refund</p>
+                        </div>
+                    )}
+                </div>
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+                    padding: '14px 24px 18px', borderTop: `1px solid ${hairline}`,
+                    background: teal[50]
+                }}>
+                    <div>
+                        <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: inkSoft, marginBottom: 4, display: 'block' }}>Pay Refund From</label>
+                        <select value={refundAccountId} onChange={(e) => setRefundAccountId(e.target.value)}
+                            style={{ padding: '7px 10px', border: `1.4px solid ${hairline}`, borderRadius: 7, fontSize: 13, fontWeight: 700, color: ink, background: paper, outline: 'none', fontFamily: 'inherit', minWidth: 180 }}>
                             {cashBankAccounts.map(acc => (
                                 <option key={acc.id} value={acc.id}>{acc.name}</option>
                             ))}
                         </select>
                     </div>
+                    <button onClick={() => selectedSale && onProcess(selectedSale.id, returnItems, refundAccountId)}
+                        disabled={returnItems.length === 0}
+                        style={{
+                            ...dangerBtn, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.04,
+                            opacity: returnItems.length === 0 ? 0.5 : 1,
+                            cursor: returnItems.length === 0 ? 'not-allowed' : 'pointer'
+                        }}>
+                        Complete Refund
+                    </button>
                 </div>
-                <button
-                    onClick={() => selectedSale && onProcess(selectedSale.id, returnItems, refundAccountId)}
-                    disabled={returnItems.length === 0}
-                    className="bg-[#d52b1e] text-white px-10 py-3 rounded-full font-bold text-sm uppercase tracking-wider disabled:opacity-50 shadow-sm hover:bg-[#b9251a] transition-all"
-                >
-                    Complete Refund
-                </button>
-            </DialogFooter>
-        </Dialog>
+            </div>
+        </div>
     );
 };
 
@@ -899,68 +983,68 @@ export const VariantSelectorModal: React.FC<{
     const [quantity, setQuantity] = useState(1);
 
     const isStationery = product.type === 'Stationery' || product.type === 'Product';
-
-    // For products with existing variants, we also skip the configure step
-    // Users should set the correct pages/price when creating variants in inventory
     const shouldSkipConfigure = isStationery || (product.variants && product.variants.length > 0);
 
     const handleVariantClick = (v: ProductVariant) => {
-        // Directly select the variant without configure step for stationery/products with variants
         onSelect({ ...normalizeStoredPricing(v as unknown as Record<string, unknown>), quantity } as unknown as ProductVariant);
     };
 
     return (
-        <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogHeader className="flex items-center justify-between">
-                <div>
-                    <DialogTitle className="text-sm font-bold text-[#393a3d] uppercase tracking-wider">Select Variant</DialogTitle>
-                    <p className="text-[10px] text-[#6b6c7f] font-medium">{product.name}</p>
+        <div style={modalOverlay} onClick={onClose}>
+            <div style={{ ...modalCard, width: 520, maxHeight: '82vh' }} onClick={(e) => e.stopPropagation()}>
+                <div style={accentBar} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={iconBox}><Printer size={19} color="#fff" /></div>
+                        <div>
+                            <h1 style={{
+                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                            }}>Select Variant</h1>
+                            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>{product.name}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} aria-label="Close" style={closeBtn}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                    ><X size={15} /></button>
                 </div>
-                <button onClick={onClose} className="text-[#8d9096] hover:text-[#d52b1e]" title="Close" aria-label="Close variant selection"><X size={20} /></button>
-            </DialogHeader>
-
-            {/* Quantity Selector */}
-            <div className="px-6 py-3 bg-white border-b border-[#f4f5f8] flex items-center justify-between">
-                <label className="text-xs font-bold text-[#6b6c7f] uppercase tracking-wider">Quantity to Add</label>
-                <div className="w-32">
-                    <input
-                        type="number"
-                        min="1"
-                        className="w-full p-2 border border-[#babec5] rounded text-sm font-bold focus:border-[#0077c5] outline-none text-right"
+                <div style={{ padding: '12px 24px', borderBottom: `1px solid ${hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Quantity to Add</label>
+                    <input type="number" min="1"
+                        style={{ width: 120, padding: '7px 10px', border: `1.4px solid ${hairline}`, borderRadius: 7, fontSize: 13, fontWeight: 700, color: ink, background: paper, outline: 'none', textAlign: 'right', fontFamily: 'inherit' }}
                         value={quantity}
                         onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    />
+                        onFocus={e => e.currentTarget.style.borderColor = teal[400]}
+                        onBlur={e => e.currentTarget.style.borderColor = hairline} />
+                </div>
+                <div style={{ overflowY: 'auto', flex: 1 }}>
+                    {product.variants?.map((v, vi) => (
+                        <button key={v.id || vi} onClick={() => handleVariantClick(v)}
+                            style={{ width: '100%', textAlign: 'left', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none', cursor: 'pointer', background: 'transparent', borderBottom: `1px solid ${teal[50]}`, transition: 'all .12s', fontFamily: 'inherit' }}
+                            onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700, color: ink, fontSize: 13 }}>{v.name}</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                                    {Object.entries(v.attributes || {}).map(([attrKey, val]) => (
+                                        <span key={attrKey}
+                                            style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: teal[50], color: inkSoft, textTransform: 'uppercase', border: `1px solid ${teal[100]}` }}>
+                                            {attrKey.replace(/_/g, ' ')}: {String(val)}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right', marginLeft: 16, flexShrink: 0 }}>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: teal[600] }}>{currency}{formatNumber(resolveStoredSellingPrice(v))}</div>
+                                {(product.type === 'Stationery' || product.type === 'Material' || product.type === 'Raw Material' || product.type === 'Product') && v.stock > 0 && (
+                                    <div style={{ fontSize: 10, fontWeight: 500, color: inkSoft }}>{v.stock} in stock</div>
+                                )}
+                            </div>
+                        </button>
+                    ))}
                 </div>
             </div>
-
-            <div className="p-2 overflow-y-auto flex-1 divide-y divide-[#f4f5f8] custom-scrollbar max-h-[50vh]">
-                {product.variants?.map((v, vi) => (
-                    <button
-                        key={v.id || vi}
-                        onClick={() => handleVariantClick(v)}
-                        className="w-full text-left px-6 py-4 hover:bg-[#f4f5f8] flex justify-between items-center transition-all group"
-                    >
-                        <div className="flex-1">
-                            <div className="font-bold text-[#393a3d] text-sm">{v.name}</div>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                                {Object.entries(v.attributes || {}).map(([attrKey, val]) => (
-                                    <span key={attrKey} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#eceef1] text-[#6b6c7f] uppercase">
-                                        {attrKey.replace(/_/g, ' ')}: {String(val)}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="text-right ml-4">
-                            <div className="text-sm font-bold text-[#0077c5]">{currency}{formatNumber(resolveStoredSellingPrice(v))}</div>
-                            {(product.type === 'Stationery' || product.type === 'Material' || product.type === 'Raw Material' || product.type === 'Product') && v.stock > 0 && (
-                                <div className="text-[10px] font-medium text-[#6b6c7f]">
-                                    {v.stock} in stock
-                                </div>
-                            )}
-                        </div>
-                    </button>
-                ))}
-            </div>
-        </Dialog>
+        </div>
     );
 };

@@ -27,14 +27,17 @@ function categoryFromSourceTab(tab: string | null | undefined): Category {
   return 'raw';
 }
 
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+
 const VAR_STYLES = {
   ink900: '#0F3D3E',
   ink700: '#146B67',
-  teal600: '#1C8C86',
-  teal500: '#2AA69E',
-  teal050: '#EAF6F4',
-  amber: '#C9832F',
-  amberSoft: '#F4E3C8',
+  teal600: teal[500],
+  teal500: teal[400],
+  teal050: teal[50],
+  amber: amber[500],
+  amberSoft: amber[100],
   purple: '#7B5CC9',
   purpleSoft: '#EDE6F7',
   paper: '#FBF8F2',
@@ -64,21 +67,21 @@ const BOM_DEFAULT_RATES = {
 const s: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed', inset: 0,
-    background: 'rgba(15,40,40,0.45)',
-    backdropFilter: 'blur(2px)',
-    display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+    background: 'rgba(15, 23, 42, 0.6)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     padding: '40px 20px',
-    zIndex: 100,
-    overflowY: 'auto',
+    zIndex: 9999,
+    fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: '#23282A',
   },
   modal: {
     width: '100%', maxWidth: 1040,
     background: VAR_STYLES.card,
     borderRadius: 18,
-    boxShadow: VAR_STYLES.shadowLg,
-    border: `1px solid ${VAR_STYLES.line}`,
+    boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
     display: 'flex', flexDirection: 'column',
     maxHeight: 'calc(100vh - 80px)',
+    overflow: 'hidden',
+    position: 'relative',
   },
   modalHead: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -87,16 +90,18 @@ const s: Record<string, React.CSSProperties> = {
   },
   modalHeadLeft: { display: 'flex', alignItems: 'center', gap: 12 },
   modalIcon: {
-    width: 36, height: 36, borderRadius: 10,
-    background: '#2563EB',
+    width: 40, height: 40, borderRadius: 10,
+    background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)',
   },
   modalTitle: { fontSize: 17, fontWeight: 600, margin: 0, lineHeight: 1.3 },
   modalSub: { fontSize: 12, color: VAR_STYLES.textDim, margin: '1px 0 0' },
   iconBtn: {
-    width: 30, height: 30, borderRadius: 8, border: `1px solid ${VAR_STYLES.line}`,
+    width: 32, height: 32, borderRadius: 8, border: `1px solid ${VAR_STYLES.line}`,
     background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer', color: VAR_STYLES.textDim, flexShrink: 0,
+    transition: 'all .15s ease',
   },
   modalMain: { display: 'flex', flex: 1, minHeight: 0 },
   sideNav: {
@@ -120,9 +125,9 @@ const s: Record<string, React.CSSProperties> = {
     marginBottom: 4,
   },
   tabActive: {
-    background: '#2563EB',
+    background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
     color: '#fff',
-    boxShadow: VAR_STYLES.shadowSm,
+    boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)',
   },
   tabSvg: { width: 15, height: 15, flexShrink: 0 },
   modalContentCol: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 },
@@ -130,7 +135,7 @@ const s: Record<string, React.CSSProperties> = {
   section: { marginBottom: 22 },
   sectionTitle: {
     fontSize: 11.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-    color: '#2563EB', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8,
+    color: teal[700], margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8,
   },
   sectionTitleAfter: { flex: 1, height: 1, background: VAR_STYLES.line },
   grid2: { display: 'grid', gap: 14, gridTemplateColumns: '1fr 1fr' },
@@ -168,7 +173,7 @@ const s: Record<string, React.CSSProperties> = {
     width: 38, height: 22, borderRadius: 100, background: VAR_STYLES.line,
     position: 'relative' as const, cursor: 'pointer', flexShrink: 0,
   },
-  switchOn: { background: '#2563EB' },
+  switchOn: { background: teal[600] },
   switchKnob: {
     position: 'absolute', width: 18, height: 18, borderRadius: '50%',
     background: '#fff', top: 2, left: 2, transition: 'left .15s ease', boxShadow: VAR_STYLES.shadowSm,
@@ -197,7 +202,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   addVariant: {
     display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px',
-    fontSize: 12.5, fontWeight: 600, color: '#2563EB', cursor: 'pointer',
+    fontSize: 12.5, fontWeight: 600, color: teal[600], cursor: 'pointer',
     borderTop: `1px dashed ${VAR_STYLES.line}`,
   },
   chipGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 },
@@ -206,14 +211,14 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer', background: '#fff',
   },
   chipActive: {
-    border: '1.5px solid #2563EB', background: 'linear-gradient(135deg, #EFF6FF, #FFFFFF)',
-    boxShadow: '0 0 0 1px #2563EB inset',
+    border: `1.5px solid ${teal[400]}`, background: `linear-gradient(135deg, ${teal[50]}, #FFFFFF)`,
+    boxShadow: `0 0 0 1px ${teal[400]} inset`,
   },
   chipTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
   chipName: { fontSize: 12.5, fontWeight: 600 },
   chipPrice: { fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 700, color: VAR_STYLES.ink700 },
   chipCheck: { width: 16, height: 16, borderRadius: 5, border: `1.5px solid ${VAR_STYLES.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  chipCheckActive: { background: '#2563EB', border: '1.5px solid #2563EB' },
+  chipCheckActive: { background: teal[600], border: `1.5px solid ${teal[600]}` },
   costStrip: {
     display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10,
     background: VAR_STYLES.paper, border: `1px solid ${VAR_STYLES.line}`, borderRadius: 11, padding: '14px 16px',
@@ -226,7 +231,7 @@ const s: Record<string, React.CSSProperties> = {
     border: `1.5px solid ${VAR_STYLES.line}`, borderRadius: 10, padding: '12px 13px', cursor: 'pointer',
     background: '#fff',
   },
-  methodActive: { border: '1.5px solid #2563EB', background: 'linear-gradient(135deg, #EFF6FF, #FFFFFF)' },
+  methodActive: { border: `1.5px solid ${teal[400]}`, background: `linear-gradient(135deg, ${teal[50]}, #FFFFFF)` },
   methodName: { fontSize: 13, fontWeight: 600, marginBottom: 3 },
   methodDesc: { fontSize: 11.5, color: VAR_STYLES.textDim, lineHeight: 1.4 },
   modalFooter: {
@@ -237,13 +242,14 @@ const s: Record<string, React.CSSProperties> = {
   footerActions: { display: 'flex', gap: 8 },
   btn: {
     fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 600,
-    padding: '7px 12px', borderRadius: 9, border: `1px solid ${VAR_STYLES.line}`,
-    background: '#fff', color: VAR_STYLES.ink900, cursor: 'pointer',
+    padding: '9px 18px', borderRadius: 9, border: `1.4px solid ${VAR_STYLES.line}`,
+    background: '#fff', color: VAR_STYLES.textDim, cursor: 'pointer',
     display: 'flex', alignItems: 'center', gap: 7, lineHeight: 1.4,
   },
   btnPrimary: {
-    background: '#2563EB',
+    background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
     color: '#fff', border: 'none',
+    boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
   },
   btnDanger: {
     background: `linear-gradient(135deg, ${VAR_STYLES.danger}, #7A2020)`,
@@ -258,11 +264,11 @@ const s: Record<string, React.CSSProperties> = {
     background: VAR_STYLES.dangerSoft, padding: '6px 10px', borderRadius: 100, marginTop: 10, width: 'fit-content',
   },
   bomSubOverlay: {
-    position: 'fixed', inset: 0, zIndex: 250,
-    background: 'rgba(15,40,40,0.55)', backdropFilter: 'blur(3px)',
+    position: 'fixed', inset: 0, zIndex: 10000,
+    background: 'rgba(15, 23, 42, 0.6)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  bomSubModal: { width: '100%', maxWidth: 480, background: VAR_STYLES.card, borderRadius: 18, boxShadow: VAR_STYLES.shadowLg, border: `1px solid ${VAR_STYLES.line}`, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 120px)' },
+  bomSubModal: { width: '100%', maxWidth: 480, background: VAR_STYLES.card, borderRadius: 18, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 120px)', position: 'relative' },
   bomList: { border: `1px solid ${VAR_STYLES.line}`, borderRadius: 11, overflow: 'hidden' },
   bomRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1051,18 +1057,18 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
         <p style={s.sectionTitle}>Material Category</p>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={() => setRawConsumableType('consumable')} style={{
-            flex: 1, padding: '10px 16px', borderRadius: 8, border: `2px solid ${rawConsumableType === 'consumable' ? '#2563EB' : '#E2E8F0'}`,
-            background: rawConsumableType === 'consumable' ? '#EFF6FF' : '#FFF', cursor: 'pointer', textAlign: 'center' as const,
-            fontWeight: rawConsumableType === 'consumable' ? 600 : 400, fontSize: 13.5, color: rawConsumableType === 'consumable' ? '#1D4ED8' : '#64748B',
+            flex: 1, padding: '10px 16px', borderRadius: 8, border: `2px solid ${rawConsumableType === 'consumable' ? teal[400] : '#E2E8F0'}`,
+            background: rawConsumableType === 'consumable' ? teal[50] : '#FFF', cursor: 'pointer', textAlign: 'center' as const,
+            fontWeight: rawConsumableType === 'consumable' ? 600 : 400, fontSize: 13.5, color: rawConsumableType === 'consumable' ? teal[700] : '#64748B',
           }}>
             <div style={{ fontSize: 18, marginBottom: 4 }}>🔄</div>
             <div>Consumable</div>
             <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>Paper, toner, ink — used up per job</div>
           </button>
           <button type="button" onClick={() => setRawConsumableType('non_consumable')} style={{
-            flex: 1, padding: '10px 16px', borderRadius: 8, border: `2px solid ${rawConsumableType === 'non_consumable' ? '#2563EB' : '#E2E8F0'}`,
-            background: rawConsumableType === 'non_consumable' ? '#EFF6FF' : '#FFF', cursor: 'pointer', textAlign: 'center' as const,
-            fontWeight: rawConsumableType === 'non_consumable' ? 600 : 400, fontSize: 13.5, color: rawConsumableType === 'non_consumable' ? '#1D4ED8' : '#64748B',
+            flex: 1, padding: '10px 16px', borderRadius: 8, border: `2px solid ${rawConsumableType === 'non_consumable' ? teal[400] : '#E2E8F0'}`,
+            background: rawConsumableType === 'non_consumable' ? teal[50] : '#FFF', cursor: 'pointer', textAlign: 'center' as const,
+            fontWeight: rawConsumableType === 'non_consumable' ? 600 : 400, fontSize: 13.5, color: rawConsumableType === 'non_consumable' ? teal[700] : '#64748B',
           }}>
             <div style={{ fontSize: 18, marginBottom: 4 }}>⚙️</div>
             <div>Non-Consumable</div>
@@ -1108,7 +1114,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
             <div style={s.costItem}><div style={s.costItemK}>Cost / {rawBuyUnit}</div><div style={s.costItemV}>{formatCurrency(rawBuyCost, currencySymbol)}</div></div>
             <div style={s.costItem}><div style={s.costItemK}>Cost / {rawUseUnit}</div><div style={{ ...s.costItemV, color: VAR_STYLES.ink700 }}>{formatCurrency(rawUnitCost, currencySymbol)}</div></div>
             <div style={s.costItem}><div style={s.costItemK}>Conversion</div><div style={s.costItemV}>1:{rawConvRate}</div></div>
-            <div style={s.costItem}><div style={s.costItemK}>Feeds Into</div><div style={{ ...s.costItemV, fontSize: 12, fontWeight: 600, color: '#2563EB' }}>BOM Costing</div></div>
+            <div style={s.costItem}><div style={s.costItemK}>Feeds Into</div><div style={{ ...s.costItemV, fontSize: 12, fontWeight: 600, color: teal[600] }}>BOM Costing</div></div>
           </div>
           <div style={{ marginTop: 14 }}>
             <Field label={`Cost per ${rawBuyUnit}`} hint="What your supplier charges per buying unit">
@@ -1282,7 +1288,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
               style={{
                 padding: '8px 16px', borderRadius: 100, border: 'none', cursor: 'pointer',
                 fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit', lineHeight: 1.3,
-                background: f.active ? '#2563EB' : VAR_STYLES.paper,
+                background: f.active ? teal[600] : VAR_STYLES.paper,
                 color: f.active ? '#fff' : VAR_STYLES.textDim,
                 transition: 'all .15s',
               }}
@@ -1436,15 +1442,23 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
   return (
     <div style={s.overlay} onClick={e => { if (e.target === e.currentTarget) handleRequestClose(); }}>
       <div style={s.modal}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 4, zIndex: 1,
+          background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`,
+          borderRadius: '18px 18px 0 0',
+        }} />
         {/* Header */}
         <div style={s.modalHead}>
           <div style={s.modalHeadLeft}>
             <div style={s.modalIcon}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h9" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></svg>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h9" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></svg>
             </div>
             <div>
-              <h2 style={s.modalTitle}>{isEditing ? `Edit ${titleMap[category]}` : `Add New Item`}</h2>
-              <p style={s.modalSub}>{isEditing ? `Edit ${titleMap[category].toLowerCase()} record` : `Create a ${titleMap[category].toLowerCase()} record`}</p>
+              <h2 style={{
+                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+              }}>{isEditing ? `Edit ${titleMap[category]}` : `Add New Item`}</h2>
+              <p style={{ ...s.modalSub, marginTop: 2 }}>{isEditing ? `Edit ${titleMap[category].toLowerCase()} record` : `Create a ${titleMap[category].toLowerCase()} record`}</p>
             </div>
           </div>
           <button style={s.iconBtn} onClick={handleRequestClose}>
@@ -1613,14 +1627,22 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
       {bomOpen && (
         <div style={s.bomSubOverlay} onClick={e => { if (e.target === e.currentTarget) setBomOpen(false); }}>
           <div style={s.bomSubModal}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 4, zIndex: 1,
+              background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`,
+              borderRadius: '18px 18px 0 0',
+            }} />
             <div style={s.modalHead}>
               <div style={s.modalHeadLeft}>
-                <div style={{ ...s.modalIcon, background: '#2563EB' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="#fff" strokeWidth="1.7"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round"/></svg>
                 </div>
                 <div>
-                  <h2 style={s.modalTitle}>Bill of Materials Builder</h2>
-                  <p style={s.modalSub}>For: {variants[bomVariantIdx]?.name || 'variant'}</p>
+                  <h2 style={{
+                    fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                    fontSize: 20, margin: 0, color: teal[800], letterSpacing: 0.2
+                  }}>Bill of Materials</h2>
+                  <p style={{ fontSize: 12, color: VAR_STYLES.textDim, margin: '1px 0 0' }}>For: {variants[bomVariantIdx]?.name || 'variant'}</p>
                 </div>
               </div>
               <button style={s.iconBtn} onClick={() => setBomOpen(false)}>
