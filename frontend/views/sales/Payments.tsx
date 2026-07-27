@@ -1310,19 +1310,37 @@ const Payments: React.FC = () => {
                 <>
                     {isModalOpen && (
                         <div
-                            className="fixed inset-0 z-[100] bg-gradient-to-br from-slate-900/60 via-slate-800/50 to-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+                            style={{
+                                position:'fixed', inset:0, zIndex:9999,
+                                display:'flex', alignItems:'center', justifyContent:'center',
+                                background:'rgba(15,23,42,.6)',
+                                padding:'40px 20px', fontFamily:"'Inter','DM Sans',sans-serif", fontSize:13.5, color:'#23282A',
+                            }}
                             onClick={(e) => { if (e.target === e.currentTarget) { modalOpenedRef.current = false; setIsModalOpen(false); } }}
                         >
-                            <div className="bg-white rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-white/20">
-                                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0 bg-gradient-to-r from-blue-50 via-white to-slate-50 relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent"></div>
-                                    <div className="flex items-center gap-3 relative z-10">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/30 ring-2 ring-blue-500/20">
-                                            <PaymentIcon size={18} className="text-white" />
+                            <div style={{
+                                width:960, maxWidth:'100%', maxHeight:'92vh',
+                                background:'#FEFDFB', borderRadius:14,
+                                boxShadow:'0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+                                display:'flex', flexDirection:'column', overflow:'hidden', position:'relative'
+                            }}>
+                                <div style={{
+                                    position:'absolute', top:0, left:0, right:0, height:4,
+                                    background:'linear-gradient(90deg,#146b60,#3fa294 40%,#d99a3f 100%)'
+                                }} />
+                                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 28px 18px', borderBottom:'1px solid #e4ddd1' }}>
+                                    <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                                        <div style={{
+                                            width:40, height:40, borderRadius:10,
+                                            background:'linear-gradient(155deg,#1f8577,#0f544c)',
+                                            display:'flex', alignItems:'center', justifyContent:'center',
+                                            boxShadow:'0 4px 10px -3px rgba(15,84,76,.6)', flexShrink:0
+                                        }}>
+                                            <PaymentIcon size={19} color="#fff" />
                                         </div>
                                         <div>
-                                            <h2 className="text-[15px] font-bold text-slate-900 tracking-tight">Record Customer Payment</h2>
-                                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">Process payment and allocate to invoices or orders</p>
+                                            <h1 style={{ fontFamily:"'DM Serif Display','Georgia',serif", fontWeight:400, fontSize:22, margin:0, color:'#0b3e39', letterSpacing:0.2 }}>Record Customer Payment</h1>
+                                            <p style={{ margin:'2px 0 0', fontSize:11.5, color:'#5c6567', letterSpacing:0.02 }}>Process payment and allocate to invoices or orders</p>
                                         </div>
                                     </div>
                                     <button
@@ -1332,26 +1350,33 @@ const Payments: React.FC = () => {
                                             modalOpenedRef.current = false;
                                             setIsModalOpen(false);
                                         }}
-                                        className="w-8 h-8 rounded-lg hover:bg-slate-200/60 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-all hover:rotate-90 duration-200"
-                                    ><X size={16} /></button>
+                                        style={{
+                                            width:32, height:32, borderRadius:8,
+                                            border:'1px solid #e4ddd1', background:'#FEFDFB', color:'#5c6567',
+                                            display:'flex', alignItems:'center', justifyContent:'center',
+                                            cursor:'pointer', transition:'all .15s ease'
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.color = '#0f544c'; e.currentTarget.style.borderColor = '#a6d9d3'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = '#FEFDFB'; e.currentTarget.style.color = '#5c6567'; e.currentTarget.style.borderColor = '#e4ddd1'; }}
+                                    ><X size={15} /></button>
                                 </div>
 
-                                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-                                    <div className="w-full md:w-[320px] bg-gradient-to-b from-slate-50/90 to-slate-50/70 p-5 border-r border-slate-200/80 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+                                <div style={{ display:'flex', flex:1, minHeight:0 }}>
+                                    <div style={{ width:310, background:'#eef7f6', padding:'18px 20px 16px', borderRight:'1px solid #e4ddd1', display:'flex', flexDirection:'column', flexShrink:0, overflowY:'auto' }}>
                                         {editMode && (
-                                            <div className="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                                                <p className="text-[10px] font-semibold text-amber-700 flex items-center gap-1.5">
-                                                    <AlertTriangle size={12} className="shrink-0" />
+                                            <div style={{ padding:'8px 12px', background:'#fbead0', border:'1px solid #eec27a', borderRadius:8, marginBottom:8 }}>
+                                                <p style={{ fontSize:11, fontWeight:600, color:'#b97e2b', display:'flex', alignItems:'center', gap:4 }}>
+                                                    <AlertTriangle size={12} style={{flexShrink:0}} />
                                                     Financial fields are locked after posting. Use Void and Re-post for corrections.
                                                 </p>
                                             </div>
                                         )}
 
-                                        <div className="space-y-3 flex-1">
+                                        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                                             <div>
-                                                <label className="block text-[10px] font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Customer</label>
+                                                <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Customer</div>
                                                 <select
-                                                    className="w-full h-9 px-3 border border-slate-200 rounded-xl bg-white text-[13px] font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                                                    style={{ width:'100%', height:36, padding:'0 10px', border:'1.4px solid #e4ddd1', borderRadius:8, fontSize:13, fontWeight:600, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
                                                     value={formData.customerName}
                                                     disabled={editMode}
                                                     onChange={e => {
@@ -1373,20 +1398,20 @@ const Payments: React.FC = () => {
                                                     const cust = customers.find((c: any) => c.name === formData.customerName);
                                                     const bal = cust?.walletBalance || 0;
                                                     return bal > 0 ? (
-                                                        <p className="text-[11px] text-emerald-600 font-bold mt-1.5 flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-lg">
-                                                            <Wallet size={12} className="text-emerald-700" /> Wallet Balance: {currency}{bal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                        <p style={{ fontSize:11, fontWeight:700, color:'#146b60', marginTop:6, display:'flex', alignItems:'center', gap:6, background:'#d3ece9', padding:'4px 8px', borderRadius:6 }}>
+                                                            <Wallet size={12} style={{color:'#0f544c'}} /> Wallet Balance: {currency}{bal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                         </p>
                                                     ) : null;
                                                 })()}
                                             </div>
 
                                             {formData.customerName && customers.find(c => c.name === formData.customerName)?.subAccounts?.length > 0 && (
-                                                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                                    <label className="block text-[10px] font-semibold text-slate-500 mb-1 flex items-center gap-1">
-                                                        <Building2 size={11} className="text-blue-500" /> Credit Sub-Account
-                                                    </label>
+                                                <div>
+                                                    <div style={{ fontSize:10, fontWeight:600, color:'#5c6567', marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
+                                                        <Building2 size={11} style={{color:'#1f8577'}} /> Credit Sub-Account
+                                                    </div>
                                                     <select
-                                                        className="w-full h-8 px-2.5 border border-blue-200 rounded-lg bg-white text-[12px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                                                        style={{ width:'100%', height:34, padding:'0 8px', border:'1.4px solid #a6d9d3', borderRadius:7, fontSize:12, fontWeight:600, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
                                                         value={formData.subAccountName}
                                                         disabled={editMode}
                                                         onChange={e => setFormData({ ...formData, subAccountName: e.target.value })}
@@ -1396,36 +1421,30 @@ const Payments: React.FC = () => {
                                                             <option key={sa.id || sa.name} value={sa.name}>{sa.name}</option>
                                                         ))}
                                                     </select>
-                                                    <p className="text-[10px] text-slate-400 mt-0.5">Choose which sub-account to credit this payment to.</p>
+                                                    <p style={{ fontSize:10, color:'#5c6567', marginTop:3 }}>Choose which sub-account to credit this payment to.</p>
                                                 </div>
                                             )}
 
                                             <div>
-                                                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Payment Date</label>
-                                                <input type="date" className="w-full h-8 px-2.5 border border-slate-200 rounded-lg bg-white text-[12px] font-medium text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all" value={formData.date} disabled={editMode} onChange={e => setFormData({ ...formData, date: e.target.value })} />
+                                                <div style={{ fontSize:10, fontWeight:600, color:'#5c6567', marginBottom:4 }}>Payment Date</div>
+                                                <input type="date" style={{ width:'100%', height:34, padding:'0 8px', border:'1.4px solid #e4ddd1', borderRadius:7, fontSize:12, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }} value={formData.date} disabled={editMode} onChange={e => setFormData({ ...formData, date: e.target.value })} />
                                             </div>
 
                                             <div>
-                                                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Payment Account</label>
+                                                <div style={{ fontSize:10, fontWeight:600, color:'#5c6567', marginBottom:4 }}>Payment Account</div>
                                                 <select
-                                                    className="w-full h-8 px-2.5 border border-slate-200 rounded-lg bg-white text-[12px] font-medium text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                                                    style={{ width:'100%', height:34, padding:'0 8px', border:'1.4px solid #e4ddd1', borderRadius:7, fontSize:12, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
                                                     value={formData.accountId}
                                                     disabled={editMode}
                                                     onChange={e => {
                                                         const accId = e.target.value;
                                                         const defAcc = DEFAULT_ACCOUNTS.find(a => a.id === accId);
                                                         const bankAcc = bankAccounts.find(a => a.id === accId);
-                                                        
                                                         let method = 'Bank';
                                                         if (accId === 'wallet') method = 'Wallet';
                                                         else if (defAcc?.name.includes('Cash')) method = 'Cash';
                                                         else if (defAcc?.name.includes('Mobile') || bankAcc?.name.toLowerCase().includes('mobile')) method = 'Mobile Money';
-                                                        
-                                                        setFormData({
-                                                            ...formData,
-                                                            accountId: accId,
-                                                            paymentMethod: method
-                                                        });
+                                                        setFormData({ ...formData, accountId: accId, paymentMethod: method });
                                                     }}
                                                 >
                                                     <optgroup label="Default Accounts">
@@ -1447,11 +1466,11 @@ const Payments: React.FC = () => {
                                                 const cust = customers.find((c: any) => c.name === formData.customerName);
                                                 const bal = cust?.walletBalance || 0;
                                                 return bal > 0 ? (
-                                                    <div className="px-3 py-2 bg-gradient-to-r from-emerald-50 to-emerald-50/50 border border-emerald-200 rounded-lg">
-                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                    <div style={{ padding:'8px 10px', background:'linear-gradient(135deg,#eef7f6,#d3ece9)', border:'1px solid #a6d9d3', borderRadius:8 }}>
+                                                        <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
                                                             <input
                                                                 type="checkbox"
-                                                                className="w-3.5 h-3.5 rounded accent-emerald-600"
+                                                                style={{ width:14, height:14, accentColor:'#146b60' }}
                                                                 checked={formData.paymentMethod === 'Wallet'}
                                                                 onChange={e => {
                                                                     if (e.target.checked) {
@@ -1461,12 +1480,12 @@ const Payments: React.FC = () => {
                                                                     }
                                                                 }}
                                                             />
-                                                            <div className="flex-1">
-                                                                <p className="text-[11px] font-semibold text-emerald-800">Pay from Wallet</p>
-                                                                <p className="text-[10px] text-emerald-600">{currency}{bal.toLocaleString(undefined, { minimumFractionDigits: 2 })} available</p>
+                                                            <div style={{ flex:1 }}>
+                                                                <p style={{ fontSize:11, fontWeight:600, color:'#0b3e39' }}>Pay from Wallet</p>
+                                                                <p style={{ fontSize:10, color:'#146b60' }}>{currency}{bal.toLocaleString(undefined, { minimumFractionDigits: 2 })} available</p>
                                                             </div>
                                                             {formData.paymentMethod === 'Wallet' && (
-                                                                <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-200 px-1.5 py-0.5 rounded-md">Active</span>
+                                                                <span style={{ fontSize:9, fontWeight:600, color:'#0f544c', background:'#a6d9d3', padding:'2px 6px', borderRadius:4 }}>Active</span>
                                                             )}
                                                         </label>
                                                     </div>
@@ -1474,12 +1493,12 @@ const Payments: React.FC = () => {
                                             })()}
 
                                             <div>
-                                                <label className="block text-[10px] font-semibold text-blue-600 mb-1">Amount Received</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-blue-500">{currency}</span>
+                                                <div style={{ fontSize:10, fontWeight:600, color:'#146b60', marginBottom:4 }}>Amount Received</div>
+                                                <div style={{ display:'flex', alignItems:'center', border:'1.4px solid #a6d9d3', borderRadius:7, height:36, background:'#FEFDFB' }}>
+                                                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:600, color:'#146b60', marginLeft:8, fontSize:14 }}>{currency}</span>
                                                     <input
                                                         type="number"
-                                                        className="w-full pl-7 h-9 bg-white border-2 border-blue-200 rounded-lg text-base font-bold text-blue-700 focus:border-blue-500 outline-none finance-nums transition-all"
+                                                        style={{ border:'none', outline:'none', fontFamily:"'JetBrains Mono',monospace", fontSize:14, fontWeight:700, width:'100%', color:'#146b60', background:'transparent', padding:'0 8px' }}
                                                         value={formData.amount || ''}
                                                         disabled={editMode}
                                                         onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
@@ -1489,29 +1508,29 @@ const Payments: React.FC = () => {
                                                 <button
                                                     onClick={handleAutoAllocate}
                                                     disabled={editMode || !formData.amount || (availableInvoices.length === 0 && availableOrders.length === 0)}
-                                                    className="w-full mt-1.5 h-7 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-semibold transition-all disabled:opacity-30 flex items-center justify-center gap-1"
+                                                    style={{ width:'100%', marginTop:6, height:28, border:'1px solid #e4ddd1', borderRadius:6, background:'#FEFDFB', color:'#5c6567', fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}
                                                 >
                                                     <BarChart3 size={12} /> Auto-Allocate
                                                 </button>
                                             </div>
 
                                             {excessAmount > 0.01 && (
-                                                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg animate-in zoom-in-95">
-                                                    <label className="block text-[10px] font-semibold text-emerald-800 mb-2 flex items-center gap-1.5">
+                                                <div style={{ padding:'10px', background:'#eef7f6', border:'1px solid #a6d9d3', borderRadius:8 }}>
+                                                    <div style={{ fontSize:10, fontWeight:600, color:'#0b3e39', marginBottom:6, display:'flex', alignItems:'center', gap:4 }}>
                                                         <AlertTriangle size={12} /> Excess: {currency}{excessAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                    </label>
-                                                    <div className="flex flex-col gap-1.5">
+                                                    </div>
+                                                    <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
                                                         <button
                                                             onClick={() => setFormData({ ...formData, excessHandling: 'Change' })}
                                                             disabled={editMode}
-                                                            className={`w-full h-7 rounded-lg text-[10px] font-semibold border transition-all flex items-center justify-center gap-1.5 ${formData.excessHandling === 'Change' ? 'bg-white text-emerald-600 border-emerald-300' : 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700'}`}
+                                                            style={{ width:'100%', height:28, borderRadius:6, fontSize:10, fontWeight:600, border:formData.excessHandling === 'Change' ? '1px solid #a6d9d3' : '1px solid #146b60', background:formData.excessHandling === 'Change' ? '#FEFDFB' : '#146b60', color:formData.excessHandling === 'Change' ? '#146b60' : '#fff', cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}
                                                         >
                                                             <Undo2 size={11} /> Give Change
                                                         </button>
                                                         <button
                                                             disabled={editMode || !formData.customerName}
                                                             onClick={() => setFormData({ ...formData, excessHandling: 'Wallet' })}
-                                                            className={`w-full h-7 rounded-lg text-[10px] font-semibold border transition-all flex items-center justify-center gap-1.5 ${formData.excessHandling === 'Wallet' ? 'bg-white text-emerald-600 border-emerald-300' : 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700'}`}
+                                                            style={{ width:'100%', height:28, borderRadius:6, fontSize:10, fontWeight:600, border:formData.excessHandling === 'Wallet' ? '1px solid #a6d9d3' : '1px solid #146b60', background:formData.excessHandling === 'Wallet' ? '#FEFDFB' : '#146b60', color:formData.excessHandling === 'Wallet' ? '#146b60' : '#fff', cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}
                                                         >
                                                             <Wallet size={11} /> To Wallet
                                                         </button>
@@ -1519,17 +1538,24 @@ const Payments: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            <div className="space-y-2">
-                                                <label className="block text-[10px] font-semibold text-slate-500">Reference & Notes</label>
-                                                <input type="text" className="w-full h-8 px-2.5 border border-slate-200 rounded-lg text-[12px] font-medium text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400" placeholder="Reference / Cheque #" value={formData.reference} onChange={e => setFormData({ ...formData, reference: e.target.value })} />
-                                                <textarea className="w-full p-2.5 border border-slate-200 rounded-lg text-[12px] font-medium text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all h-[56px] resize-none placeholder:text-slate-400" placeholder="Narration..." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} />
+                                            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                                                <div style={{ fontSize:10, fontWeight:600, color:'#5c6567' }}>Reference & Notes</div>
+                                                <input type="text" style={{ width:'100%', height:34, padding:'0 8px', border:'1.4px solid #e4ddd1', borderRadius:7, fontSize:12, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }} placeholder="Reference / Cheque #" value={formData.reference} onChange={e => setFormData({ ...formData, reference: e.target.value })} />
+                                                <textarea style={{ width:'100%', padding:'6px 8px', border:'1.4px solid #e4ddd1', borderRadius:7, fontSize:12, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none', resize:'none' }} placeholder="Narration..." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} />
                                             </div>
                                         </div>
 
                                         <button
                                             onClick={handleSave}
                                             disabled={isSubmitting}
-                                            className={`w-full h-10 rounded-xl font-bold text-[11px] tracking-wide transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${isSubmitting ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md shadow-blue-200 hover:shadow-blue-300 hover:from-blue-700 hover:to-blue-800'}`}
+                                            style={{
+                                                width:'100%', marginTop:12, padding:'10px 0', borderRadius:8, border:'none',
+                                                fontFamily:"'Inter',sans-serif", fontSize:13, fontWeight:600, cursor: isSubmitting ? 'default' : 'pointer',
+                                                background: isSubmitting ? '#d3ece9' : 'linear-gradient(155deg,#1f8577,#0f544c)',
+                                                color: isSubmitting ? '#5c6567' : '#fff',
+                                                boxShadow: isSubmitting ? 'none' : '0 6px 16px -6px rgba(15,84,76,.55)',
+                                                display:'flex', alignItems:'center', justifyContent:'center', gap:4
+                                            }}
                                         >
                                             {isSubmitting ? (
                                                 <><Loader2 size={14} className="animate-spin" /> Processing...</>
@@ -1540,51 +1566,50 @@ const Payments: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => { modalOpenedRef.current = false; setIsModalOpen(false); }}
-                                            className="w-full h-9 rounded-xl font-bold text-[11px] tracking-wide transition-all bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5"
+                                            style={{ width:'100%', padding:'9px 0', borderRadius:8, border:'1px solid #e4ddd1', background:'#FEFDFB', color:'#5c6567', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}
                                         >
                                             Cancel
                                         </button>
                                     </div>
 
-                                    <div className="flex-1 bg-white p-3.5 overflow-y-auto custom-scrollbar">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h3 className="text-[12px] font-bold text-slate-800">Document Allocations</h3>
-                                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">{availableInvoices.length + availableOrders.length} unpaid</span>
+                                    <div style={{ flex:1, background:'#FEFDFB', padding:'14px 18px', overflowY:'auto' }}>
+                                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                                            <h3 style={{ fontSize:12.5, fontWeight:700, color:'#23282A', margin:0 }}>Document Allocations</h3>
+                                            <span style={{ fontSize:10, fontWeight:600, color:'#5c6567', background:'#eef7f6', padding:'3px 8px', borderRadius:4 }}>{availableInvoices.length + availableOrders.length} unpaid</span>
                                         </div>
 
-                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
-                                            <table className="w-full text-left text-[12px] border-collapse">
+                                        <div style={{ border:'1px solid #e4ddd1', borderRadius:8, overflow:'hidden' }}>
+                                            <table style={{ width:'100%', textAlign:'left', fontSize:12, borderCollapse:'collapse' }}>
                                                 <thead>
-                                                    <tr className="bg-slate-50 border-b border-slate-200">
-                                                        <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Doc #</th>
-                                                        <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Type</th>
-                                                        <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Date</th>
-                                                        <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Total</th>
-                                                        <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Balance</th>
-                                                        <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right w-28">Allocate</th>
+                                                    <tr style={{ background:'#eef7f6' }}>
+                                                        <th style={{ padding:'8px 12px', fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.06em' }}>Doc #</th>
+                                                        <th style={{ padding:'8px 12px', fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.06em' }}>Type</th>
+                                                        <th style={{ padding:'8px 12px', fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.06em' }}>Date</th>
+                                                        <th style={{ padding:'8px 12px', fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.06em', textAlign:'right' }}>Total</th>
+                                                        <th style={{ padding:'8px 12px', fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.06em', textAlign:'right' }}>Balance</th>
+                                                        <th style={{ padding:'8px 12px', fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.06em', textAlign:'right', width:110 }}>Allocate</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
+                                                <tbody>
                                                     {availableInvoices.map(inv => {
                                                         const due = inv.totalAmount - (inv.paidAmount || 0);
                                                         const alloc = allocations.find(a => a.invoiceId === inv.id);
-
                                                         return (
-                                                            <tr key={`inv-${inv.id}`} className="hover:bg-blue-50/40 transition-colors">
-                                                                <td className="px-3 py-2">
-                                                                    <div className="font-semibold text-blue-600 text-[12px]">#{inv.id}</div>
-                                                                    {inv.subAccountName && <div className="text-[9px] text-slate-400 font-medium">{inv.subAccountName}</div>}
+                                                            <tr key={`inv-${inv.id}`} style={{ borderTop:'1px solid #e4ddd1' }}>
+                                                                <td style={{ padding:'7px 12px' }}>
+                                                                    <div style={{ fontWeight:600, color:'#1f8577', fontSize:12 }}>#{inv.id}</div>
+                                                                    {inv.subAccountName && <div style={{ fontSize:9, color:'#5c6567' }}>{inv.subAccountName}</div>}
                                                                 </td>
-                                                                <td className="px-3 py-2">
-                                                                    <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded uppercase">Invoice</span>
+                                                                <td style={{ padding:'7px 12px' }}>
+                                                                    <span style={{ fontSize:9, fontWeight:700, color:'#1f8577', background:'#eef7f6', padding:'2px 6px', borderRadius:3, textTransform:'uppercase' }}>Invoice</span>
                                                                  </td>
-                                                                 <td className="px-3 py-2 text-slate-500 text-[12px]">{new Date(inv.date).toLocaleDateString()}</td>
-                                                                 <td className="px-3 py-2 text-right text-slate-500 finance-nums text-[12px]">{currency}{inv.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                                 <td className="px-3 py-2 text-right font-semibold text-red-500 finance-nums text-[12px]">{currency}{due.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                                 <td className="px-3 py-2 text-right">
+                                                                 <td style={{ padding:'7px 12px', color:'#5c6567', fontSize:12 }}>{new Date(inv.date).toLocaleDateString()}</td>
+                                                                 <td style={{ padding:'7px 12px', textAlign:'right', color:'#5c6567', fontFamily:"'JetBrains Mono',monospace", fontSize:12 }}>{currency}{inv.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                                 <td style={{ padding:'7px 12px', textAlign:'right', fontWeight:600, color:'#d99a3f', fontFamily:"'JetBrains Mono',monospace", fontSize:12 }}>{currency}{due.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                                 <td style={{ padding:'7px 12px', textAlign:'right' }}>
                                                                      <input
                                                                         type="number"
-                                                                        className="w-20 h-7 px-1.5 border border-slate-200 rounded-md text-right font-semibold text-blue-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none finance-nums text-[12px] bg-white transition-all"
+                                                                        style={{ width:80, padding:'4px 6px', borderRadius:6, border:'1.2px solid #e4ddd1', textAlign:'right', fontWeight:600, color:'#146b60', fontFamily:"'JetBrains Mono',monospace", fontSize:12, background:'#FEFDFB', outline:'none' }}
                                                                         value={alloc?.amount || ''}
                                                                         disabled={editMode}
                                                                         onChange={e => {
@@ -1603,22 +1628,21 @@ const Payments: React.FC = () => {
                                                     {availableOrders.map(order => {
                                                         const due = order.totalAmount - (order.paidAmount || 0);
                                                         const alloc = allocations.find(a => a.orderId === order.id);
-
                                                         return (
-                                                            <tr key={`ord-${order.id}`} className="hover:bg-amber-50/40 transition-colors">
-                                                                <td className="px-3 py-2">
-                                                                    <div className="font-semibold text-amber-700 text-[12px]">#{order.orderNumber || order.id}</div>
+                                                            <tr key={`ord-${order.id}`} style={{ borderTop:'1px solid #e4ddd1' }}>
+                                                                <td style={{ padding:'7px 12px' }}>
+                                                                    <div style={{ fontWeight:600, color:'#b97e2b', fontSize:12 }}>#{order.orderNumber || order.id}</div>
                                                                 </td>
-                                                                <td className="px-3 py-2">
-                                                                    <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase">Order</span>
+                                                                <td style={{ padding:'7px 12px' }}>
+                                                                    <span style={{ fontSize:9, fontWeight:700, color:'#b97e2b', background:'#fbead0', padding:'2px 6px', borderRadius:3, textTransform:'uppercase' }}>Order</span>
                                                                  </td>
-                                                                 <td className="px-3 py-2 text-slate-500 text-[12px]">{new Date(order.orderDate || order.date).toLocaleDateString()}</td>
-                                                                 <td className="px-3 py-2 text-right text-slate-500 finance-nums text-[12px]">{currency}{order.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                                 <td className="px-3 py-2 text-right font-semibold text-red-500 finance-nums text-[12px]">{currency}{due.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                                 <td className="px-3 py-2 text-right">
+                                                                 <td style={{ padding:'7px 12px', color:'#5c6567', fontSize:12 }}>{new Date(order.orderDate || order.date).toLocaleDateString()}</td>
+                                                                 <td style={{ padding:'7px 12px', textAlign:'right', color:'#5c6567', fontFamily:"'JetBrains Mono',monospace", fontSize:12 }}>{currency}{order.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                                 <td style={{ padding:'7px 12px', textAlign:'right', fontWeight:600, color:'#d99a3f', fontFamily:"'JetBrains Mono',monospace", fontSize:12 }}>{currency}{due.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                                 <td style={{ padding:'7px 12px', textAlign:'right' }}>
                                                                      <input
                                                                         type="number"
-                                                                        className="w-20 h-7 px-1.5 border border-slate-200 rounded-md text-right font-semibold text-amber-700 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none finance-nums text-[12px] bg-white transition-all"
+                                                                        style={{ width:80, padding:'4px 6px', borderRadius:6, border:'1.2px solid #e4ddd1', textAlign:'right', fontWeight:600, color:'#b97e2b', fontFamily:"'JetBrains Mono',monospace", fontSize:12, background:'#FEFDFB', outline:'none' }}
                                                                         value={alloc?.amount || ''}
                                                                         disabled={editMode}
                                                                         onChange={e => {
@@ -1635,17 +1659,17 @@ const Payments: React.FC = () => {
                                                         );
                                                     })}
                                                     {availableInvoices.length === 0 && availableOrders.length === 0 && (
-                                                        <tr><td colSpan={6} className="p-10 text-center text-slate-300 font-medium italic">No outstanding invoices or orders for this account context.</td></tr>
+                                                        <tr><td colSpan={6} style={{ padding:'28px 12px', textAlign:'center', color:'#5c6567', fontStyle:'italic' }}>No outstanding invoices or orders for this account context.</td></tr>
                                                     )}
                                                 </tbody>
                                             </table>
                                         </div>
 
                                         {allocations.length > 0 && (
-                                            <div className="mt-2 flex items-center justify-end gap-3 text-[12px]">
-                                                <span className="text-slate-500 font-medium">Allocated: <span className="font-bold text-slate-700 finance-nums">{currency}{allocations.reduce((s, a) => s + a.amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>
+                                            <div style={{ marginTop:6, display:'flex', alignItems:'center', justifyContent:'flex-end', gap:8, fontSize:12 }}>
+                                                <span style={{ color:'#5c6567', fontWeight:500 }}>Allocated: <span style={{ fontWeight:700, color:'#23282A', fontFamily:"'JetBrains Mono',monospace" }}>{currency}{allocations.reduce((s, a) => s + a.amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>
                                                 {excessAmount > 0.01 && (
-                                                    <span className="text-emerald-600 font-medium">Excess: <span className="font-bold finance-nums">{currency}{excessAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>
+                                                    <span style={{ color:'#146b60', fontWeight:500 }}>Excess: <span style={{ fontWeight:700, fontFamily:"'JetBrains Mono',monospace" }}>{currency}{excessAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>
                                                 )}
                                             </div>
                                         )}
@@ -1867,26 +1891,60 @@ const Payments: React.FC = () => {
             )}
 
             {isSupplierModalOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95">
-                        <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                            <h2 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Record Supplier Payment</h2>
-                            <button onClick={() => setIsSupplierModalOpen(false)}><X size={20} /></button>
-                        </div>
-                        <div className="p-8 space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
+                <div style={{
+                    position:'fixed', inset:0, zIndex:9999,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    background:'rgba(15,23,42,.6)',
+                    padding:'40px 20px', fontFamily:"'Inter','DM Sans',sans-serif", fontSize:13.5, color:'#23282A',
+                }}>
+                    <div style={{
+                        width:620, maxWidth:'100%', maxHeight:'92vh',
+                        background:'#FEFDFB', borderRadius:14,
+                        boxShadow:'0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+                        display:'flex', flexDirection:'column', overflow:'hidden', position:'relative'
+                    }}>
+                        <div style={{
+                            position:'absolute', top:0, left:0, right:0, height:4,
+                            background:'linear-gradient(90deg,#146b60,#3fa294 40%,#d99a3f 100%)'
+                        }} />
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 28px 18px', borderBottom:'1px solid #e4ddd1' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                                <div style={{
+                                    width:40, height:40, borderRadius:10,
+                                    background:'linear-gradient(155deg,#1f8577,#0f544c)',
+                                    display:'flex', alignItems:'center', justifyContent:'center',
+                                    boxShadow:'0 4px 10px -3px rgba(15,84,76,.6)', flexShrink:0
+                                }}>
+                                    <PaymentIcon size={19} color="#fff" />
+                                </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Supplier</label>
+                                    <h1 style={{ fontFamily:"'DM Serif Display','Georgia',serif", fontWeight:400, fontSize:22, margin:0, color:'#0b3e39', letterSpacing:0.2 }}>Record Supplier Payment</h1>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsSupplierModalOpen(false)} style={{
+                                width:32, height:32, borderRadius:8,
+                                border:'1px solid #e4ddd1', background:'#FEFDFB', color:'#5c6567',
+                                display:'flex', alignItems:'center', justifyContent:'center',
+                                cursor:'pointer', transition:'all .15s ease'
+                            }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.color = '#0f544c'; e.currentTarget.style.borderColor = '#a6d9d3'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#FEFDFB'; e.currentTarget.style.color = '#5c6567'; e.currentTarget.style.borderColor = '#e4ddd1'; }}
+                            ><X size={15} /></button>
+                        </div>
+                        <div style={{ padding:'20px 28px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16 }}>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                                <div>
+                                    <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Supplier</div>
                                     <select
-                                        className="w-full p-2.5 border rounded-xl bg-white text-[13px]"
+                                        style={{ width:'100%', height:38, padding:'0 10px', border:'1.4px solid #e4ddd1', borderRadius:8, fontSize:13, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
                                         value={supplierFormData.supplierId}
                                         onChange={e => {
                                             setSupplierFormData({
                                                 ...supplierFormData,
                                                 supplierId: e.target.value,
-                                                amount: 0 // Reset amount on supplier change to force re-allocation logic
+                                                amount: 0
                                             });
-                                            setSupplierAllocations([]); // Clear allocations from previous supplier
+                                            setSupplierAllocations([]);
                                         }}
                                     >
                                         <option value="">-- Select Supplier --</option>
@@ -1894,45 +1952,39 @@ const Payments: React.FC = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Date</label>
+                                    <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Date</div>
                                     <input
                                         type="date"
-                                        className="w-full p-2.5 border rounded-xl bg-white text-[13px]"
+                                        style={{ width:'100%', height:38, padding:'0 10px', border:'1.4px solid #e4ddd1', borderRadius:8, fontSize:13, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
                                         value={supplierFormData.date}
                                         onChange={e => setSupplierFormData({ ...supplierFormData, date: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Amount Paid</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">{currency}</span>
+                                    <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Amount Paid</div>
+                                    <div style={{ display:'flex', alignItems:'center', border:'1.4px solid #e4ddd1', borderRadius:8, padding:'0 10px', height:38, background:'#FEFDFB' }}>
+                                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:600, color:'#5c6567', marginRight:6, fontSize:14 }}>{currency}</span>
                                         <input
                                             type="number"
-                                            className="w-full pl-8 p-2.5 border rounded-xl bg-white text-[13px] font-bold"
+                                            style={{ border:'none', outline:'none', fontFamily:"'JetBrains Mono',monospace", fontSize:14, fontWeight:600, width:'100%', color:'#23282A', background:'transparent' }}
                                             value={supplierFormData.amount || ''}
                                             onChange={e => setSupplierFormData({ ...supplierFormData, amount: parseFloat(e.target.value) || 0 })}
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Payment Account</label>
+                                    <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Payment Account</div>
                                     <select
-                                        className="w-full p-2.5 border rounded-xl bg-white text-[13px]"
+                                        style={{ width:'100%', height:38, padding:'0 10px', border:'1.4px solid #e4ddd1', borderRadius:8, fontSize:13, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
                                         value={supplierFormData.accountId}
                                         onChange={e => {
                                             const accId = e.target.value;
                                             const defAcc = DEFAULT_ACCOUNTS.find(a => a.id === accId);
                                             const bankAcc = bankAccounts.find(a => a.id === accId);
-                                            
                                             let method = 'Bank Transfer';
                                             if (defAcc?.name.includes('Cash')) method = 'Cash';
                                             else if (defAcc?.name.includes('Mobile') || bankAcc?.name.toLowerCase().includes('mobile')) method = 'Mobile Money';
-
-                                            setSupplierFormData({
-                                                ...supplierFormData,
-                                                accountId: accId,
-                                                paymentMethod: method
-                                            });
+                                            setSupplierFormData({ ...supplierFormData, accountId: accId, paymentMethod: method });
                                         }}
                                     >
                                         <optgroup label="Default Accounts">
@@ -1951,53 +2003,52 @@ const Payments: React.FC = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Reference / Transaction ID</label>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Reference / Transaction ID</div>
                                 <input
                                     type="text"
-                                    className="w-full p-2.5 border rounded-xl bg-white text-[13px]"
+                                    style={{ width:'100%', height:38, padding:'0 10px', border:'1.4px solid #e4ddd1', borderRadius:8, fontSize:13, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
                                     value={supplierFormData.reference}
                                     onChange={e => setSupplierFormData({ ...supplierFormData, reference: e.target.value })}
                                     placeholder="e.g. Bank Ref, Check #"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Notes</label>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Notes</div>
                                 <textarea
-                                    className="w-full p-2.5 border rounded-xl bg-white text-[13px]"
+                                    style={{ width:'100%', padding:'8px 10px', border:'1.4px solid #e4ddd1', borderRadius:8, fontSize:13, fontWeight:500, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none', resize:'vertical' }}
                                     value={supplierFormData.notes}
                                     onChange={e => setSupplierFormData({ ...supplierFormData, notes: e.target.value })}
                                     rows={2}
                                 />
                             </div>
 
-                            {/* Supplier Allocation Section */}
-                            <div className="space-y-3 pt-2">
-                                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-tight flex items-center gap-2">
-                                    <FileText size={14} className="text-blue-500" /> Bill Allocations
+                            <div>
+                                <h3 style={{ fontSize:12.5, fontWeight:700, color:'#23282A', display:'flex', alignItems:'center', gap:6, margin:'0 0 8px' }}>
+                                    <FileText size={14} style={{ color:'#1f8577' }} /> Bill Allocations
                                 </h3>
-                                <div className="border border-slate-100 rounded-2xl overflow-hidden bg-slate-50/50">
-                                    <table className="w-full text-left text-[11px]">
-                                        <thead className="bg-slate-100/50 text-slate-500">
-                                            <tr>
-                                                <th className="px-4 py-2 font-bold">Bill #</th>
-                                                <th className="px-4 py-2 font-bold">Balance</th>
-                                                <th className="px-4 py-2 font-bold text-right">Allocate</th>
+                                <div style={{ border:'1px solid #e4ddd1', borderRadius:10, overflow:'hidden', background:'#eef7f6' }}>
+                                    <table style={{ width:'100%', textAlign:'left', fontSize:12, borderCollapse:'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background:'#d3ece9', color:'#5c6567' }}>
+                                                <th style={{ padding:'8px 14px', fontWeight:700, fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em' }}>Bill #</th>
+                                                <th style={{ padding:'8px 14px', fontWeight:700, fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em' }}>Balance</th>
+                                                <th style={{ padding:'8px 14px', fontWeight:700, fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', textAlign:'right' }}>Allocate</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody>
                                             {purchases
                                                 .filter(p => p.supplierId === supplierFormData.supplierId && p.paymentStatus !== 'Paid')
                                                 .map(bill => {
                                                     const currentAllocation = supplierAllocations.find(a => a.purchaseId === bill.id)?.amount || 0;
                                                     const due = (bill.total || 0) - (bill.paidAmount || 0);
                                                     return (
-                                                        <tr key={bill.id}>
-                                                            <td className="px-4 py-2 font-medium text-slate-700">{bill.id}</td>
-                                                            <td className="px-4 py-2 text-slate-500">{currency}{due.toLocaleString()}</td>
-                                                            <td className="px-4 py-2 text-right">
+                                                        <tr key={bill.id} style={{ borderTop:'1px solid #e4ddd1' }}>
+                                                            <td style={{ padding:'8px 14px', fontWeight:600, color:'#23282A' }}>{bill.id}</td>
+                                                            <td style={{ padding:'8px 14px', color:'#5c6567' }}>{currency}{due.toLocaleString()}</td>
+                                                            <td style={{ padding:'8px 14px', textAlign:'right' }}>
                                                                 <input
                                                                     type="number"
-                                                                    className="w-24 p-1 text-right border rounded-lg bg-white font-bold"
+                                                                    style={{ width:80, padding:'4px 6px', textAlign:'right', border:'1.2px solid #e4ddd1', borderRadius:6, fontWeight:600, background:'#FEFDFB', color:'#23282A', fontFamily:"'JetBrains Mono',monospace", fontSize:12, outline:'none' }}
                                                                     value={currentAllocation || ''}
                                                                     onChange={e => {
                                                                         const val = parseFloat(e.target.value) || 0;
@@ -2014,71 +2065,56 @@ const Payments: React.FC = () => {
                                                 })}
                                             {purchases.filter(p => p.supplierId === supplierFormData.supplierId && p.paymentStatus !== 'Paid').length === 0 && (
                                                 <tr>
-                                                    <td colSpan={3} className="px-4 py-8 text-center text-slate-400 italic">No outstanding bills for this supplier</td>
+                                                    <td colSpan={3} style={{ padding:'24px 14px', textAlign:'center', color:'#5c6567', fontStyle:'italic' }}>No outstanding bills for this supplier</td>
                                                 </tr>
                                             )}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={() => setIsSupplierModalOpen(false)}
-                                    className="flex-1 px-6 py-3 border border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        if (!supplierFormData.supplierId || !supplierFormData.amount) {
-                                            notify("Please fill in supplier and amount", "error");
-                                            return;
-                                        }
-
-                                        // Allocation Validation
-                                        const totalAllocated = supplierAllocations.reduce((sum, a) => sum + a.amount, 0);
-                                        if (totalAllocated > supplierFormData.amount) {
-                                            notify(`Over-allocation: Total allocated (${totalAllocated}) exceeds payment amount (${supplierFormData.amount})`, "error");
-                                            return;
-                                        }
-
-                                        const dateError = validateDateInFY(supplierFormData.date || '');
-                                        if (dateError) {
-                                            notify(dateError, "error");
-                                            return;
-                                        }
-
-                                        const payment: SupplierPayment = {
-                                            ...supplierFormData as SupplierPayment,
-                                            id: supplierEditMode ? currentSupplierPaymentId! : generateNextId('spay', supplierPayments, companyConfig),
-                                            reconciled: false,
-                                            status: 'Cleared',
-                                            allocations: supplierAllocations
-                                        };
-                                        if (supplierEditMode) await updateSupplierPayment(payment);
-                                        else                                         await recordSupplierPayment(payment);
-
-                                        setIsSupplierModalOpen(false);
-                                        setSupplierAllocations([]);
-                                        setSupplierFormData({
-                                            date: getDefaultDate(),
-                                            supplierId: '',
-                                            amount: 0,
-                                            paymentMethod: 'Bank Transfer',
-        accountId: '1000',
-                                            reference: '',
-                                            notes: '',
-                                            status: 'Cleared',
-                                            reconciled: false
-                                        });
-                                        notify("Supplier payment recorded", "success");
-                                    }}
-                                    className="flex-[2] px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
-                                >
-                                    {supplierEditMode ? 'Update Payment' : 'Post Payment to Ledger'}
-                                </button>
-                            </div>
+                        <div style={{ display:'flex', gap:8, padding:'14px 28px 20px', borderTop:'1px solid #e4ddd1' }}>
+                            <button
+                                onClick={() => setIsSupplierModalOpen(false)}
+                                style={{ flex:1, padding:'10px 0', borderRadius:8, border:'1px solid #e4ddd1', background:'#FEFDFB', color:'#5c6567', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (!supplierFormData.supplierId || !supplierFormData.amount) {
+                                        notify("Please fill in supplier and amount", "error");
+                                        return;
+                                    }
+                                    const totalAllocated = supplierAllocations.reduce((sum, a) => sum + a.amount, 0);
+                                    if (totalAllocated > supplierFormData.amount) {
+                                        notify(`Over-allocation: Total allocated (${totalAllocated}) exceeds payment amount (${supplierFormData.amount})`, "error");
+                                        return;
+                                    }
+                                    const dateError = validateDateInFY(supplierFormData.date || '');
+                                    if (dateError) {
+                                        notify(dateError, "error");
+                                        return;
+                                    }
+                                    const payment: SupplierPayment = {
+                                        ...supplierFormData as SupplierPayment,
+                                        id: supplierEditMode ? currentSupplierPaymentId! : generateNextId('spay', supplierPayments, companyConfig),
+                                        reconciled: false,
+                                        status: 'Cleared',
+                                        allocations: supplierAllocations
+                                    };
+                                    if (supplierEditMode) await updateSupplierPayment(payment);
+                                    else await recordSupplierPayment(payment);
+                                    setIsSupplierModalOpen(false);
+                                    setSupplierAllocations([]);
+                                    setSupplierFormData({ date: getDefaultDate(), supplierId: '', amount: 0, paymentMethod: 'Bank Transfer', accountId: '1000', reference: '', notes: '', status: 'Cleared', reconciled: false });
+                                    notify("Supplier payment recorded", "success");
+                                }}
+                                style={{ flex:2, padding:'10px 0', borderRadius:8, border:'none', background:'linear-gradient(155deg,#1f8577,#0f544c)', color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit', boxShadow:'0 6px 16px -6px rgba(15,84,76,.55)' }}
+                            >
+                                {supplierEditMode ? 'Update Payment' : 'Post Payment to Ledger'}
+                            </button>
                         </div>
                     </div>
                 </div>

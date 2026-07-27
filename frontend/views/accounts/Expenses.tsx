@@ -264,23 +264,30 @@ date: getDefaultDate(),
   return (
     <div className="flex flex-col h-full max-w-[1600px] mx-auto font-normal">
       {isAddModalOpen && canEdit && (
-        <div className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-white/50">
-              <div className="flex justify-between items-center mb-6">
-                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2"><PaymentIcon size={20} className="text-blue-600"/> New Expense</h2>
-                 <div className="flex gap-2">{isOnline && <button onClick={handleMagicScan} className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold hover:shadow-md transition-all flex items-center gap-1" disabled={isScanning}>{isScanning ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}Magic Scan</button>}<button onClick={() => setIsAddModalOpen(false)}><X size={24} className="text-slate-400 hover:text-slate-600"/></button></div>
+        <div className="fixed inset-0 z-[70] bg-[rgba(15,23,42,0.6)] flex items-center justify-center p-4" style={{fontFamily:"'Inter','DM Sans',sans-serif"}}>
+           <div className="w-full max-w-md bg-[#FEFDFB] rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35)] flex flex-col overflow-hidden relative">
+              <div className="absolute top-0 left-0 right-0 h-[4px]" style={{background:'linear-gradient(90deg,#146b60,#3fa294 40%,#d99a3f 100%)'}}></div>
+              <div className="flex items-center justify-between px-7 pt-[22px] pb-[18px] border-b border-[#e4ddd1]">
+                 <div className="flex items-center gap-[14px]">
+                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0" style={{background:'linear-gradient(155deg,#1f8577,#0f544c)',boxShadow:'0 4px 10px -3px rgba(15,84,76,.6)'}}><PaymentIcon size={19} className="text-white"/></div>
+                    <div>
+                       <h1 className="text-[22px] m-0 text-[#0b3e39] tracking-[0.2px]" style={{fontFamily:"'DM Serif Display','Georgia',serif",fontWeight:400}}>New Expense</h1>
+                    </div>
+                 </div>
+                 <div className="flex gap-2">{isOnline && <button onClick={handleMagicScan} className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold hover:shadow-md transition-all flex items-center gap-1" disabled={isScanning}>{isScanning ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}Magic Scan</button>}<button onClick={() => setIsAddModalOpen(false)} className="w-8 h-8 rounded-lg border border-[#e4ddd1] bg-[#FEFDFB] text-[#5c6567] flex items-center justify-center cursor-pointer hover:bg-[#eef7f6] hover:text-[#0f544c] hover:border-[#a6d9d3] transition-all"><X size={15}/></button></div>
               </div>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                 <div className="grid grid-cols-2 gap-4"><div><label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Date</label><input type="date" className="w-full p-2 border border-slate-200 rounded-xl text-sm" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div></div>
-                 <div><label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Amount ({currency})</label><input type="number" step="0.01" autoFocus required className="w-full p-3 border border-slate-200 rounded-xl text-xl font-bold outline-none focus:ring-2 focus:ring-blue-500" value={formData.amount} onChange={e => {
+              <form onSubmit={handleSubmit} className="px-7 py-5 space-y-4" style={{fontSize:13.5,color:'#23282A'}}>
+                 <div className="grid grid-cols-2 gap-4"><div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Date</label><input type="date" className="w-full p-2 border border-[#e4ddd1] rounded-lg text-sm bg-[#FEFDFB]" style={{fontFamily:"'Inter',sans-serif",color:'#23282A'}} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div></div>
+                 <div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Amount ({currency})</label><input type="number" step="0.01" autoFocus required className="w-full p-3 border border-[#e4ddd1] rounded-lg text-xl font-bold outline-none" style={{color:'#23282A',background:'#FEFDFB',fontFamily:"'JetBrains Mono',monospace"}} value={formData.amount} onChange={e => {
                    const val = e.target.value;
                    setFormData({...formData, amount: val});
                  }} placeholder="0.00" /></div>
-                 <div><label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Category</label><select className="w-full p-2 border border-slate-200 rounded-xl text-sm bg-white" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>{categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                 <div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Category</label><select className="w-full p-2 border border-[#e4ddd1] rounded-lg text-sm" style={{background:'#FEFDFB',color:'#23282A',fontFamily:"'Inter',sans-serif"}} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>{categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}</select></div>
                  <div>
-                   <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Payment Account</label>
+                   <label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Payment Account</label>
                    <select 
-                     className="w-full p-2 border border-slate-200 rounded-xl text-sm bg-white" 
+                     className="w-full p-2 border border-[#e4ddd1] rounded-lg text-sm" 
+                     style={{background:'#FEFDFB',color:'#23282A',fontFamily:"'Inter',sans-serif"}}
                      value={formData.accountId} 
                      onChange={e => setFormData({...formData, accountId: e.target.value})}
                    >
@@ -290,15 +297,15 @@ date: getDefaultDate(),
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Status</label>
-                    <select className="w-full p-2 border border-slate-200 rounded-xl text-sm bg-white" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                    <label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Status</label>
+                    <select className="w-full p-2 border border-[#e4ddd1] rounded-lg text-sm" style={{background:'#FEFDFB',color:'#23282A',fontFamily:"'Inter',sans-serif"}} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
                       <option value="Paid">Paid</option>
                       <option value="Pending Approval">Pending Approval</option>
                     </select>
                   </div>
-                  <div><label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Description</label><textarea className="w-full p-2 border border-slate-200 rounded-xl h-24 resize-none text-sm outline-none focus:ring-2 focus:ring-blue-500" required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="What was this for?" /></div>
-                 <div><label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Payment Proof Image</label><input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*" /><div className={`flex items-center gap-2 p-3 border border-dashed border-slate-300 rounded-xl text-slate-500 text-xs cursor-pointer hover:bg-slate-50 transition-colors ${attachedFileId ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : ''}`} onClick={handleAttach}><Paperclip size={16}/><span>{attachedFileId ? 'Proof Attached!' : 'Click to upload payment proof'}</span>{attachedFileId && <CheckCircle size={16} className="text-emerald-500 ml-auto"/>}</div>{attachedFileId && <div className="mt-2 h-20 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><OfflineImage src={attachedFileId} alt="Preview" className="w-full h-full object-contain" /></div>}</div>
-                 <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center gap-2 shadow-lg shadow-blue-200 text-sm transition-transform active:scale-95"><CheckCircle size={18}/> Record Expense</button>
+                  <div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Description</label><textarea className="w-full p-2 border border-[#e4ddd1] rounded-lg h-24 resize-none text-sm outline-none" style={{color:'#23282A',background:'#FEFDFB',fontFamily:"'Inter',sans-serif"}} required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="What was this for?" /></div>
+                 <div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Payment Proof Image</label><input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*" /><div className={`flex items-center gap-2 p-3 border border-dashed border-[#e4ddd1] rounded-lg text-[#5c6567] text-xs cursor-pointer hover:bg-[#eef7f6] transition-colors ${attachedFileId ? 'bg-[#eef7f6] border-[#a6d9d3] text-[#146b60]' : ''}`} onClick={handleAttach}><Paperclip size={16}/><span>{attachedFileId ? 'Proof Attached!' : 'Click to upload payment proof'}</span>{attachedFileId && <CheckCircle size={16} className="text-[#1f8577] ml-auto"/>}</div>{attachedFileId && <div className="mt-2 h-20 rounded-lg overflow-hidden border border-[#e4ddd1] bg-[#eef7f6]"><OfflineImage src={attachedFileId} alt="Preview" className="w-full h-full object-contain" /></div>}</div>
+                 <button type="submit" className="w-full py-3 rounded-lg border-none text-white font-semibold flex items-center justify-center gap-2 shadow-[0_6px_16px_-6px_rgba(15,84,76,.55)] transition-all active:scale-[0.98] text-sm cursor-pointer" style={{background:'linear-gradient(155deg,#1f8577,#0f544c)',fontFamily:"'Inter',sans-serif"}}><CheckCircle size={18}/> Record Expense</button>
               </form>
            </div>
         </div>
