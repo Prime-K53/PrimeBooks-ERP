@@ -121,34 +121,71 @@ const Payroll: React.FC = () => {
         {/* Employee Modal */}
         {showEmpModal && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fadeIn">
-                    <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-slate-900">{editEmp.id ? 'Edit Employee' : 'New Employee'}</h2>
-                        <button onClick={() => setShowEmpModal(false)}><X size={20}/></button>
-                    </div>
-                    <form onSubmit={handleSaveEmployee} className="p-6 space-y-4">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fadeIn flex">
+                    <div style={{ width: 4, background: 'linear-gradient(180deg, #1f8577, #0f544c)', flexShrink: 0 }} />
+                    <div className="flex-1">
+                        <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(155deg, #1f8577, #0f544c)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px -3px rgba(15,84,76,.4)' }}>
+                                    <UserPlus size={18} color="#fff" />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontWeight: 400, fontSize: 20, margin: 0, color: '#0b3e39', letterSpacing: 0.2 }}>
+                                        {editEmp.id ? 'Edit Employee' : 'New Employee'}
+                                    </h2>
+                                    <p style={{ margin: '2px 0 0', fontSize: 11.5, color: '#5c6567', letterSpacing: 0.02 }}>Payroll Engine</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowEmpModal(false)} style={{ padding: '6px', borderRadius: 8, border: '1.4px solid #e4ddd1', background: '#FEFDFB', color: '#5c6567', cursor: 'pointer', transition: 'all .15s ease' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.color = '#0f544c'; e.currentTarget.style.borderColor = '#a6d9d3'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#FEFDFB'; e.currentTarget.style.color = '#5c6567'; e.currentTarget.style.borderColor = '#e4ddd1'; }}
+                            >
+                                <X size={15} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSaveEmployee} className="p-6 space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
-                            <input className="w-full p-2 border rounded-lg" value={editEmp.name || ''} onChange={e => setEditEmp({...editEmp, name: e.target.value})} required/>
+                            <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: '#5c6567', marginBottom: 5, display: 'block' }}>Full Name</label>
+                            <input className="w-full" style={{ padding: '8px 10px', border: '1.4px solid #e4ddd1', borderRadius: 7, fontSize: 13, color: '#23282A', background: '#FEFDFB', outline: 'none', fontFamily: 'inherit' }}
+                                value={editEmp.name || ''} onChange={e => setEditEmp({...editEmp, name: e.target.value})} required
+                                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = '#eef7f6'; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.background = '#FEFDFB'; }}
+                            />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Role / Title</label>
-                                <input className="w-full p-2 border rounded-lg" value={editEmp.role || ''} onChange={e => setEditEmp({...editEmp, role: e.target.value})} required/>
+                                <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: '#5c6567', marginBottom: 5, display: 'block' }}>Role / Title</label>
+                                <input className="w-full" style={{ padding: '8px 10px', border: '1.4px solid #e4ddd1', borderRadius: 7, fontSize: 13, color: '#23282A', background: '#FEFDFB', outline: 'none', fontFamily: 'inherit' }}
+                                    value={editEmp.role || ''} onChange={e => setEditEmp({...editEmp, role: e.target.value})} required
+                                    onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = '#eef7f6'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.background = '#FEFDFB'; }}
+                                />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Join Date</label>
-                                <input type="date" className="w-full p-2 border rounded-lg" value={editEmp.joinDate || ''} onChange={e => setEditEmp({...editEmp, joinDate: e.target.value})}/>
+                                <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: '#5c6567', marginBottom: 5, display: 'block' }}>Join Date</label>
+                                <input type="date" className="w-full" style={{ padding: '8px 10px', border: '1.4px solid #e4ddd1', borderRadius: 7, fontSize: 13, color: '#23282A', background: '#FEFDFB', outline: 'none', fontFamily: 'inherit' }}
+                                    value={editEmp.joinDate || ''} onChange={e => setEditEmp({...editEmp, joinDate: e.target.value})}
+                                    onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = '#eef7f6'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.background = '#FEFDFB'; }}
+                                />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Basic Salary ({currency})</label>
-                                <input type="number" min="1" className="w-full p-2 border rounded-lg font-bold" value={editEmp.basicSalary} onChange={e => setEditEmp({...editEmp, basicSalary: parseFloat(e.target.value)})}/>
+                                <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: '#5c6567', marginBottom: 5, display: 'block' }}>Basic Salary ({currency})</label>
+                                <input type="number" min="1" className="w-full" style={{ padding: '8px 10px', border: '1.4px solid #e4ddd1', borderRadius: 7, fontSize: 13, color: '#23282A', background: '#FEFDFB', outline: 'none', fontFamily: 'inherit', fontWeight: 700 }}
+                                    value={editEmp.basicSalary} onChange={e => setEditEmp({...editEmp, basicSalary: parseFloat(e.target.value)})}
+                                    onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = '#eef7f6'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.background = '#FEFDFB'; }}
+                                />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>
-                                <select className="w-full p-2 border rounded-lg bg-white" value={editEmp.status} onChange={e => setEditEmp({...editEmp, status: e.target.value})}>
+                                <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: '#5c6567', marginBottom: 5, display: 'block' }}>Status</label>
+                                <select className="w-full" style={{ padding: '8px 10px', border: '1.4px solid #e4ddd1', borderRadius: 7, fontSize: 13, color: '#23282A', background: '#FEFDFB', outline: 'none', fontFamily: 'inherit' }}
+                                    value={editEmp.status} onChange={e => setEditEmp({...editEmp, status: e.target.value})}
+                                    onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = '#eef7f6'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.background = '#FEFDFB'; }}
+                                >
                                     <option>Active</option>
                                     <option>Leave</option>
                                     <option>Terminated</option>
@@ -156,29 +193,55 @@ const Payroll: React.FC = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Bank Details (Optional)</label>
-                            <input className="w-full p-2 border rounded-lg mb-2" placeholder="Bank Name" value={editEmp.bankDetails?.bankName || ''} onChange={e => setEditEmp({...editEmp, bankDetails: { ...editEmp.bankDetails!, bankName: e.target.value }})}/>
-                            <input className="w-full p-2 border rounded-lg" placeholder="Account Number" value={editEmp.bankDetails?.accountNumber || ''} onChange={e => setEditEmp({...editEmp, bankDetails: { ...editEmp.bankDetails!, accountNumber: e.target.value }})}/>
+                            <label style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase', color: '#5c6567', marginBottom: 5, display: 'block' }}>Bank Details (Optional)</label>
+                            <input className="w-full mb-2" style={{ padding: '8px 10px', border: '1.4px solid #e4ddd1', borderRadius: 7, fontSize: 13, color: '#23282A', background: '#FEFDFB', outline: 'none', fontFamily: 'inherit' }}
+                                placeholder="Bank Name" value={editEmp.bankDetails?.bankName || ''} onChange={e => setEditEmp({...editEmp, bankDetails: { ...editEmp.bankDetails!, bankName: e.target.value }})}
+                                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = '#eef7f6'; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.background = '#FEFDFB'; }}
+                            />
+                            <input className="w-full" style={{ padding: '8px 10px', border: '1.4px solid #e4ddd1', borderRadius: 7, fontSize: 13, color: '#23282A', background: '#FEFDFB', outline: 'none', fontFamily: 'inherit' }}
+                                placeholder="Account Number" value={editEmp.bankDetails?.accountNumber || ''} onChange={e => setEditEmp({...editEmp, bankDetails: { ...editEmp.bankDetails!, accountNumber: e.target.value }})}
+                                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = '#eef7f6'; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.background = '#FEFDFB'; }}
+                            />
                         </div>
-                        <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 mt-2 flex items-center justify-center gap-2">
+                        <button type="submit" style={{ width: '100%', padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
+                        >
                             <Save size={18}/> Save Record
                         </button>
                     </form>
                 </div>
+            </div>
             </div>
         )}
 
         {/* Payslip List Modal */}
         {showPayslipModal && selectedRun && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden animate-fadeIn">
-                    <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                        <div>
-                            <h2 className="text-lg font-bold text-slate-900">Payslips for {selectedRun.month}</h2>
-                            <p className="text-xs text-slate-500">Run ID: {selectedRun.id} | Net: {currency}{selectedRun.totalNetPay?.toLocaleString()}</p>
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden animate-fadeIn flex">
+                    <div style={{ width: 4, background: 'linear-gradient(180deg, #1f8577, #0f544c)', flexShrink: 0 }} />
+                    <div className="flex-1">
+                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(155deg, #1f8577, #0f544c)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px -3px rgba(15,84,76,.4)' }}>
+                                    <FileText size={18} color="#fff" />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontWeight: 400, fontSize: 20, margin: 0, color: '#0b3e39', letterSpacing: 0.2 }}>
+                                        Payslips for {selectedRun.month}
+                                    </h2>
+                                    <p style={{ margin: '2px 0 0', fontSize: 11.5, color: '#5c6567', letterSpacing: 0.02 }}>Run ID: {selectedRun.id} | Net: {currency}{selectedRun.totalNetPay?.toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowPayslipModal(false)} style={{ padding: '6px', borderRadius: 8, border: '1.4px solid #e4ddd1', background: '#FEFDFB', color: '#5c6567', cursor: 'pointer', transition: 'all .15s ease' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.color = '#0f544c'; e.currentTarget.style.borderColor = '#a6d9d3'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#FEFDFB'; e.currentTarget.style.color = '#5c6567'; e.currentTarget.style.borderColor = '#e4ddd1'; }}
+                            >
+                                <X size={15} />
+                            </button>
                         </div>
-                        <button onClick={() => setShowPayslipModal(false)}><X size={20}/></button>
-                    </div>
                     <div className="max-h-[60vh] overflow-y-auto">
                         <table className="w-full text-left text-sm">
                             <thead className="bg-white text-slate-500 border-b border-slate-100 sticky top-0 text-xs font-bold uppercase tracking-wider">
@@ -212,20 +275,43 @@ const Payroll: React.FC = () => {
                         </table>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                        <button onClick={() => setShowPayslipModal(false)} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-300 text-sm">Close</button>
+                        <button onClick={() => setShowPayslipModal(false)} style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567', display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.borderColor = '#a6d9d3'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#FEFDFB'; e.currentTarget.style.borderColor = '#e4ddd1'; }}
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
+            </div>
             </div>
         )}
 
         {/* Payslip Detail Modal */}
         {showPayslipDetail && selectedPayslip && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn">
-                    <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-slate-900">Payslip Details</h2>
-                        <button onClick={() => setShowPayslipDetail(false)}><X size={20}/></button>
-                    </div>
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn flex">
+                    <div style={{ width: 4, background: 'linear-gradient(180deg, #1f8577, #0f544c)', flexShrink: 0 }} />
+                    <div className="flex-1">
+                        <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(155deg, #1f8577, #0f544c)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px -3px rgba(15,84,76,.4)' }}>
+                                    <FileText size={18} color="#fff" />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontWeight: 400, fontSize: 20, margin: 0, color: '#0b3e39', letterSpacing: 0.2 }}>
+                                        Payslip Details
+                                    </h2>
+                                    <p style={{ margin: '2px 0 0', fontSize: 11.5, color: '#5c6567', letterSpacing: 0.02 }}>Payroll Engine</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowPayslipDetail(false)} style={{ padding: '6px', borderRadius: 8, border: '1.4px solid #e4ddd1', background: '#FEFDFB', color: '#5c6567', cursor: 'pointer', transition: 'all .15s ease' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.color = '#0f544c'; e.currentTarget.style.borderColor = '#a6d9d3'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#FEFDFB'; e.currentTarget.style.color = '#5c6567'; e.currentTarget.style.borderColor = '#e4ddd1'; }}
+                            >
+                                <X size={15} />
+                            </button>
+                        </div>
                     <div className="p-6 space-y-4">
                         <div>
                             <p className="text-sm text-slate-500">Employee</p>
@@ -258,6 +344,7 @@ const Payroll: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         )}
 
@@ -310,7 +397,10 @@ const Payroll: React.FC = () => {
                                 <span className="font-bold text-emerald-600">{currency}{estNetPay.toLocaleString()}</span>
                             </div>
                         </div>
-                        <button onClick={handleRunPayroll} className="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 text-sm">
+                        <button onClick={handleRunPayroll} style={{ width: '100%', padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
+                        >
                             <DollarSign size={16}/> Process Payroll
                         </button>
                     </div>
@@ -359,7 +449,10 @@ const Payroll: React.FC = () => {
             <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
                     <h3 className="font-bold text-slate-700 text-sm">Staff Directory</h3>
-                    <button onClick={() => { setEditEmp({basicSalary: 0, status: 'Active'}); setShowEmpModal(true); }} className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 flex items-center gap-2 shadow-sm">
+                    <button onClick={() => { setEditEmp({basicSalary: 0, status: 'Active'}); setShowEmpModal(true); }} style={{ padding: '7px 14px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 12px rgba(31,133,119,.12)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 12, fontWeight: 600 }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(31,133,119,.2)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(31,133,119,.12)'; }}
+                    >
                         <UserPlus size={14}/> Add Employee
                     </button>
                 </div>
@@ -446,27 +539,34 @@ const Payroll: React.FC = () => {
         {/* Confirm Dialog */}
         {confirmDialog && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn">
-                    <div className="p-6 text-center space-y-4">
-                        <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 flex items-center justify-center border border-amber-200">
-                            <AlertTriangle size={32} className="text-amber-600" />
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn flex">
+                    <div style={{ width: 4, background: 'linear-gradient(180deg, #1f8577, #0f544c)', flexShrink: 0 }} />
+                    <div className="flex-1">
+                        <div className="p-6 text-center space-y-4">
+                            <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center" style={{ background: '#fbead0', border: '1.4px solid #eec27a' }}>
+                                <AlertTriangle size={32} style={{ color: '#d99a3f' }} />
+                            </div>
+                            <h3 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontWeight: 400, fontSize: 20, margin: 0, color: '#0b3e39', letterSpacing: 0.2 }}>Confirm Payroll Run</h3>
+                            <p className="text-sm text-slate-600 whitespace-pre-line">{confirmDialog.message}</p>
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900">Confirm Payroll Run</h3>
-                        <p className="text-sm text-slate-600 whitespace-pre-line">{confirmDialog.message}</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
-                        <button
-                            onClick={() => setConfirmDialog(null)}
-                            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-50 text-sm transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={confirmDialog.onConfirm}
-                            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 text-sm transition-colors"
-                        >
-                            Confirm
-                        </button>
+                        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+                            <button
+                                onClick={() => setConfirmDialog(null)}
+                                style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567', display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.borderColor = '#a6d9d3'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#FEFDFB'; e.currentTarget.style.borderColor = '#e4ddd1'; }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDialog.onConfirm}
+                                style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
+                            >
+                                Confirm
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

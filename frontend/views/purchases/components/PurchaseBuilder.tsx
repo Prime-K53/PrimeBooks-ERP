@@ -12,6 +12,12 @@ import { useNavigate } from 'react-router-dom';
 import { SupplierModal } from './SupplierModal';
 import { getDefaultDate, validateDateInFY } from '../../../utils/financialYearUtils';
 
+const teal = { 50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a' };
+const paper = '#FEFDFB';
+const hairline = '#e4ddd1';
+const inkSoft = '#5c6567';
+const ink = '#23282A';
+
 interface PurchaseBuilderProps {
     inventory: Item[];
     supplierNames?: string[];
@@ -26,7 +32,7 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
     const { companyConfig, notify, isOnline } = useAuth(); const { suppliers, purchases, addSupplier } = useProcurement();
     const currency = companyConfig.currencySymbol;
     const navigate = useNavigate();
-    
+
     const [selectedSupplierId, setSelectedSupplierId] = useState('');
     const [supplierSearch, setSupplierSearch] = useState('');
     const [isSupplierDropdownOpen, setIsSupplierDropdownOpen] = useState(false);
@@ -40,11 +46,10 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
         return d.toISOString().split('T')[0];
     });
     const [reference, setReference] = useState('');
-    
+
     const [searchItem, setSearchTerm] = useState('');
     const [poItems, setPoItems] = useState<{item: Item, qty: number, cost: number}[]>([]);
 
-    // Scanning State
     const [isScanning, setIsScanning] = useState(false);
     const [scannedImage, setScannedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,14 +57,12 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
     const getSupplierOutstanding = (id: string) => {
         const supplier = suppliers.find(s => s.id === id);
         if (!supplier) return 0;
-        
-        // Calculate outstanding from purchases
         return (purchases || [])
             .filter(p => p.supplierId === id && p.paymentStatus !== 'Paid' && p.status !== 'Cancelled')
             .reduce((sum, p) => sum + (p.totalAmount - (p.paidAmount || 0)), 0);
     };
 
-    const selectedSupplierObj = useMemo(() => 
+    const selectedSupplierObj = useMemo(() =>
         suppliers.find(s => s.id === selectedSupplierId),
     [selectedSupplierId, suppliers]);
 
@@ -71,31 +74,25 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
             setBillDate(new Date(initialData.date).toISOString().split('T')[0]);
             setDueDate(initialData.dueDate ? new Date(initialData.dueDate).toISOString().split('T')[0] : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().split('T')[0]; })());
             setReference(initialData.reference || '');
-            
+
             const items = (initialData.items || []).map(pItem => {
                 const invItem = inventory.find(i => i.id === pItem.itemId);
-                // Construct item object if inventory item missing (deleted), or use existing
-                const fullItem = invItem || { 
-                    id: pItem.itemId, 
-                    name: pItem.name, 
-                    sku: 'N/A', 
-                    price: pItem.cost, 
-                    cost: pItem.cost, 
+                const fullItem = invItem || {
+                    id: pItem.itemId,
+                    name: pItem.name,
+                    sku: 'N/A',
+                    price: pItem.cost,
+                    cost: pItem.cost,
                     type: 'Material',
                     category: 'Unknown',
                     stock: 0,
                     minStockLevel: 0
                 } as Item;
-                
-                return {
-                    item: fullItem,
-                    qty: pItem.quantity,
-                    cost: pItem.cost
-                };
+
+                return { item: fullItem, qty: pItem.quantity, cost: pItem.cost };
             });
             setPoItems(items);
         } else {
-            // Reset
             setSelectedSupplierId('');
             setSupplierSearch('');
             setPoItems([]);
@@ -107,7 +104,7 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
 
     const filteredSuppliers = useMemo(() => {
         if (!supplierSearch) return suppliers;
-        return suppliers.filter(s => 
+        return suppliers.filter(s =>
             (s.name || '').toLowerCase().includes(supplierSearch.toLowerCase()) ||
             (s.email || '').toLowerCase().includes(supplierSearch.toLowerCase())
         );
@@ -129,7 +126,6 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
         }
     };
 
-    // Close dropdown on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (supplierDropdownRef.current && !supplierDropdownRef.current.contains(event.target as Node)) {
@@ -140,10 +136,9 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Requirement: Hide products and services. Only allow materials/stationery for Bills/Purchases.
-    const availableItems = inventory.filter(i => 
+    const availableItems = inventory.filter(i =>
         (i.type === 'Raw Material' || i.type === 'Stationery') &&
-        ((i.name || '').toLowerCase().includes(searchItem.toLowerCase()) || 
+        ((i.name || '').toLowerCase().includes(searchItem.toLowerCase()) ||
         (i.sku || '').toLowerCase().includes(searchItem.toLowerCase()))
     );
 
@@ -156,7 +151,7 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
     };
 
     const updatePOItem = (id: string, field: 'qty' | 'cost', value: number) => {
-        setPoItems(prev => prev.map(p => 
+        setPoItems(prev => prev.map(p =>
           p.item.id === id ? { ...p, [field]: value } : p
         ));
     };
@@ -167,10 +162,10 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
 
     const handleSubmit = () => {
         if(!selectedSupplierId || poItems.length === 0) return;
-        
+
         const dateError = validateDateInFY(billDate);
         if (dateError) { notify(dateError, "error"); return; }
-        
+
         const payload = {
             supplierId: selectedSupplierId,
             items: poItems,
@@ -193,26 +188,19 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
     const handleScanInvoice = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
-        if (!isOnline) {
-            notify("Scanning requires internet connection.", "error");
-            return;
-        }
+        if (!isOnline) { notify("Scanning requires internet connection.", "error"); return; }
 
         setIsScanning(true);
         try {
-            // 1. Preview
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 const base64 = ev.target?.result as string;
                 setScannedImage(base64);
-                
+
                 try {
-                    // 2. AI Processing
                     const extracted = await extractInvoiceData(base64);
-                    
+
                     if (extracted) {
-                        // Match Supplier - AI returns clientName as the entity on the doc
                         const supplierName = extracted.supplierName || extracted.clientName;
                         if (supplierName) {
                             const match = suppliers.find(s => (s.name || '').toLowerCase().includes((supplierName || '').toLowerCase()));
@@ -225,16 +213,10 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
                             }
                         }
 
-                        // Match Items
                         const newItems: {item: Item, qty: number, cost: number}[] = [];
-                        
                         extracted.items?.forEach((scanItem: any) => {
-                            // Fuzzy Match Logic (Simple includes for now)
-                            // Use desc or name from AI extraction
                             const itemName = scanItem.desc || scanItem.name || "";
                             const matchedInv = inventory.find(i => (i.name || '').toLowerCase().includes(itemName.toLowerCase()));
-                            
-                            // Check if matched item is allowed (Material/Stationery)
                             if (matchedInv && (matchedInv.type === 'Raw Material' || matchedInv.type === 'Stationery')) {
                                 newItems.push({
                                     item: matchedInv,
@@ -250,7 +232,7 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
                         } else {
                             notify("No matching purchaseable inventory items found in invoice.", "info");
                         }
-                        
+
                         if(extracted.date) setBillDate(extracted.date);
                     } else {
                         notify("Could not extract data from image.", "error");
@@ -272,124 +254,127 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
 
     const totalCost = poItems.reduce((sum, p) => sum + (p.qty * p.cost), 0);
 
+    const inputStyle: React.CSSProperties = { width:'100%',border:`1.4px solid ${hairline}`,borderRadius:9,padding:'9px 12px',background:paper,fontFamily:"'Inter','DM Sans',sans-serif",fontSize:13.5,color:ink,outline:'none',transition:'border-color .15s ease, box-shadow .15s ease' };
+    const btnScan: React.CSSProperties = { padding:'8px 10px',background:`linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,color:'#fff',borderRadius:9,border:'none',fontFamily:"'Inter','DM Sans',sans-serif",fontSize:12,fontWeight:600,cursor:'pointer',boxShadow:'0 4px 12px -4px rgba(15,84,76,.5)',display:'flex',alignItems:'center',gap:4,transition:'all .15s ease' };
+    const btnPrimary: React.CSSProperties = { background:`linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,color:'#fff',borderRadius:9,padding:'9px 22px',border:'none',fontFamily:"'Inter','DM Sans',sans-serif",fontSize:13.5,fontWeight:600,cursor:'pointer',boxShadow:'0 6px 16px -6px rgba(15,84,76,.55)',display:'inline-flex',alignItems:'center',gap:7,transition:'all .15s ease' };
+    const btnGhost: React.CSSProperties = { background:paper,border:`1.4px solid ${hairline}`,color:inkSoft,borderRadius:9,padding:'9px 22px',fontFamily:"'Inter','DM Sans',sans-serif",fontSize:13.5,fontWeight:600,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:7,transition:'all .15s ease' };
+
     return (
-        <div className="flex gap-6 flex-1 min-h-0 h-full overflow-hidden">
-            {/* Scan Preview Panel (Conditional) */}
+        <div style={{display:'flex',gap:16,flex:1,minHeight:0,height:'100%',overflow:'hidden',background:paper,padding:16,borderRadius:14,border:`1.4px solid ${hairline}`}}>
+            <style>{`
+              .pbuilder-scan-panel{background:linear-gradient(180deg,#082e2a 0%,#0b3e39 100%)!important;border:1.4px solid #0b3e39;border-radius:14px;overflow:hidden!important;position:relative;flex-shrink:0;width:25%!important;box-shadow:0 30px 60px -20px rgba(0,0,0,.5)}
+              .pbuilder-header-bar{display:flex;align-items:center;justify-content:space-between;padding:'10px 14px';borderBottom:'1px solid rgba(255,255,255,.1)';background:'rgba(8,46,42,.7)';backdropFilter:'blur(8px)';fontFamily:"'Inter',sans-serif"}
+              .pbuilder-col-left{border:1.4px solid #e4ddd1;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;background:#FEFDFB;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+              .pbuilder-col-left-bar{display:flex;align-items:center;justify-content:space-between;padding:'10px 14px';borderBottom:'1.4px solid #e4ddd1';background:'linear-gradient(135deg,#eef7f6 0%,#FEFDFB 100%)'}
+              .pbuilder-col-right{border:1.4px solid #e4ddd1;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;background:#FEFDFB;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+              .pbuilder-total-chip{display:inline-flex;align-items:center;gap:6px;padding:'5px 14px';background:'linear-gradient(135deg,#eef7f6,#d3ece9)',border:'1.4px solid #a6d9d3',borderRadius:999,fontFamily:"'JetBrains Mono',monospace";fontSize:12.5;fontWeight:700;color:#0f544c;textTransform:'uppercase';letterSpacing:'.03em'}
+              .pbuilder-supplier-row{display:flex;align-items:center;justify-content:space-between;padding:'10px 14px';borderBottom:'1px solid #e4ddd1';transition:'all .12s ease',cursor:'pointer'}
+              .pbuilder-supplier-row:hover{background:'#eef7f6'}
+              .pbuilder-input-focus:focus{borderColor:'#3fa294'!important;boxShadow:'0 0 0 3px rgba(31,133,119,.1)'!important}
+              .pbuilder-dropdown{position:absolute;zIndex:60;marginTop:4;width:'100%';background:'#FEFDFB';border:'1.4px solid #a6d9d3';borderRadius:12;boxShadow:'0 20px 50px -16px rgba(0,0,0,.18)';maxHeight:240;overflowY:'auto';animation:'fadeInUp .12s ease'}
+              .pbuilder-item-row{transition:'all .15s ease',cursor:'pointer'}
+              .pbuilder-item-row:hover{borderColor:'#a6d9d3'!important;background:'#eef7f6'!important}
+            `}</style>
+
+            {/* Scan Preview Panel */}
             {scannedImage && (
-                <div className="w-1/4 bg-slate-900 rounded-2xl overflow-hidden relative flex flex-col shadow-2xl border border-slate-700 animate-in slide-in-from-left-4">
-                    <div className="p-4 bg-slate-800/80 backdrop-blur-md text-white flex justify-between items-center absolute top-0 left-0 right-0 z-10">
-                        <h3 className="font-bold flex items-center gap-2 text-[13px]"><ScanLine size={16} className="text-emerald-400"/> Scanned Invoice</h3>
-                        <button onClick={() => setScannedImage(null)} className="p-1 hover:bg-white/20 rounded-full"><X size={16}/></button>
+                <div className="pbuilder-scan-panel">
+                    <div className="pbuilder-header-bar" style={{borderBottom:'1px solid rgba(255,255,255,.1)',background:'rgba(8,46,42,.7)',backdropFilter:'blur(8px)',padding:'10px 14px'}}>
+                        <h3 style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,color:'#fff',display:'flex',alignItems:'center',gap:8}}>
+                            <ScanLine size={16} style={{color:'#72c0b7'}}/> Scanned Invoice
+                        </h3>
+                        <button onClick={() => setScannedImage(null)} style={{padding:4,borderRadius:'50%',border:'none',background:'transparent',color:'rgba(255,255,255,.6)',cursor:'pointer',transition:'all .15s ease',display:'flex'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,.12)';e.currentTarget.style.color='#fff'}} onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='rgba(255,255,255,.6)'}}><X size={16}/></button>
                     </div>
-                    <img src={scannedImage} alt="Scanned" className="w-full h-full object-contain opacity-80 hover:opacity-100 transition-opacity"/>
+                    <img src={scannedImage} alt="Scanned" style={{width:'100%',height:'100%',objectFit:'contain',opacity:.85,transition:'opacity .2s'}} onMouseEnter={e=>e.currentTarget.style.opacity='1'} onMouseLeave={e=>e.currentTarget.style.opacity='.85'}/>
                 </div>
             )}
 
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-10 gap-6 h-full min-h-0">
-                {/* 30% Column: Select Bill Items */}
-                <div className="lg:col-span-3 flex flex-col bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-slate-200/60 bg-slate-50/30 flex justify-between items-center">
-                        <h2 className="text-title flex items-center gap-2 text-slate-800">
-                            <Search size={16} className="text-blue-600"/> Select Items
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-10 gap-5 h-full min-h-0">
+                {/* 30% Column: Select Items */}
+                <div className="lg:col-span-3 pbuilder-col-left">
+                    <div className="pbuilder-col-left-bar" style={{padding:'10px 14px',borderBottom:`1.4px solid ${hairline}`,background:`linear-gradient(135deg, ${teal[50]} 0%, #FEFDFB 100%)`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                        <h2 style={{fontFamily:"'DM Serif Display','Georgia',serif",fontWeight:400,fontSize:15,color:teal[800],display:'flex',alignItems:'center',gap:8}}>
+                            <Search size={16} style={{color:teal[500]}}/> Select Items
                         </h2>
                         {isOnline && (
-                            <>
-                                <button 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center"
-                                    disabled={isScanning}
-                                    title="Scan Bill"
-                                >
-                                    {isScanning ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>}
-                                </button>
-                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleScanInvoice}/>
-                            </>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                style={btnScan}
+                                disabled={isScanning}
+                                title="Scan Bill"
+                                onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.06)';e.currentTarget.style.boxShadow='0 6px 18px -4px rgba(15,84,76,.65)'}}
+                                onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 4px 12px -4px rgba(15,84,76,.5)'}}
+                            >
+                                {isScanning ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}}/> : <Sparkles size={14}/>}
+                            </button>
                         )}
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleScanInvoice}/>
                     </div>
-                    <div className="px-4 pt-3 pb-1">
-                         <input 
-                            type="text"
-                            className="w-full px-3 py-2 border border-slate-200/80 rounded-xl bg-white/50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all text-[13px] outline-none"
-                            placeholder="e.g. Paper, Ink"
-                            aria-label="Search materials"
-                            value={searchItem}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+                    <div style={{padding:'12px 12px 6px'}}>
+                        <input type="text" placeholder="e.g. Paper, Ink" value={searchItem}
+                            onChange={e => setSearchTerm(e.target.value)} aria-label="Search materials"
+                            style={{...inputStyle,borderRadius:10,padding:'8px 12px'}} onFocus={e=>{e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}} onBlur={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.boxShadow='none'}} />
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                    {availableItems.map(item => (
-                        <button 
-                            key={item.id}
-                            onClick={() => addItemToPO(item)}
-                            className="w-full text-left p-2 border border-slate-200/60 rounded-xl hover:border-blue-400 hover:bg-white/80 transition-all group bg-white/40 backdrop-blur-sm shadow-sm flex gap-3 items-center"
-                        >
-                            <div className="w-8 h-8 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
-                                <OfflineImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                            </div>
-                            
-                            <div className="flex-1 min-w-0 py-1">
-                                <div className="font-bold text-slate-800 text-[13px] truncate">{item.name}</div>
-                                <div className="text-[10px] text-slate-400 font-bold font-mono truncate uppercase tracking-tight">{item.sku}</div>
-                            </div>
-                        </button>
-                    ))}
+                    <div style={{flex:1,overflowY:'auto',padding:12,display:'flex',flexDirection:'column',gap:8}}>
+                        {availableItems.map(item => (
+                            <button key={item.id} onClick={() => addItemToPO(item)}
+                                className="pbuilder-item-row"
+                                style={{width:'100%',textAlign:'left',padding:'8px 10px',border:`1.4px solid ${hairline}`,borderRadius:10,background:paper,display:'flex',gap:10,alignItems:'center',cursor:'pointer',transition:'all .15s ease'}}
+                                onMouseEnter={e=>{e.currentTarget.style.borderColor=teal[300];e.currentTarget.style.background=teal[50]}}
+                                onMouseLeave={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.background=paper}}
+                            >
+                                <div style={{width:34,height:34,borderRadius:9,background:teal[50],border:`1px solid ${teal[100]}`,overflow:'hidden',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                    <OfflineImage src={item.image} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                                </div>
+                                <div style={{flex:1,minWidth:0,padding:'2px 0'}}>
+                                    <div style={{fontWeight:700,fontSize:13,color:ink,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
+                                    <div style={{fontSize:10,color:inkSoft,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',letterSpacing:'.03em',textTransform:'uppercase'}}>{item.sku}</div>
+                                </div>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
                 {/* 70% Column: Bill Summary */}
-                <div className="lg:col-span-7 flex flex-col bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden h-full">
-                    <div className="px-4 py-3 border-b border-slate-200/60 bg-slate-50/30 flex justify-between items-center">
-                        <h2 className="text-title flex items-center gap-2 text-slate-800">
-                            <ShoppingCart size={16} className="text-blue-600"/> Bill Summary
+                <div className="lg:col-span-7 pbuilder-col-right" style={{display:'flex',flexDirection:'column'}}>
+                    <div style={{padding:'10px 16px',borderBottom:`1.4px solid ${hairline}`,background:`linear-gradient(135deg, ${teal[50]} 0%, #FEFDFB 100%)`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                        <h2 style={{fontFamily:"'DM Serif Display','Georgia',serif",fontWeight:400,fontSize:15,color:teal[800],display:'flex',alignItems:'center',gap:8}}>
+                            <ShoppingCart size={16} style={{color:teal[500]}}/> Bill Summary
                         </h2>
-                        <div className="text-[13px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 uppercase tracking-tight finance-nums">
-                            Total: {currency}{totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        <div style={{display:'inline-flex',alignItemsItems:'center',gap:6,padding:'5px 14px',background:`linear-gradient(135deg, ${teal[100]}, ${teal[50]})`,border:`1px solid ${teal[200]}`,borderRadius:999,fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:teal[700],letterSpacing:'.03em'}}>
+                            Total: {currency}{totalCost.toLocaleString(undefined,{minimumFractionDigits:2})}
                         </div>
                     </div>
-                    
-                    <div className="p-4 border-b border-slate-200/60 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-white/40">
-                        <div className="md:col-span-2 lg:col-span-1 relative" ref={supplierDropdownRef}>
-                            <div className="flex justify-between items-center mb-1 px-1">
-                                <label className="text-label">Supplier Entity</label>
+
+                    <div style={{padding:14,borderBottom:`1.4px solid ${hairline}`,display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:14,background:`linear-gradient(135deg,#eef7f6,#FEFDFB)`}}>
+                        <div ref={supplierDropdownRef} style={{position:'relative'}}>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6,padding:'0 2px'}}>
+                                <label style={{fontSize:12,fontWeight:600,color:teal[800],letterSpacing:'.01'}}>Supplier Entity</label>
                                 {selectedSupplierObj && (
-                                    <button 
-                                        type="button"
-                                        onClick={() => navigate('/purchases/suppliers', { state: { selectedId: selectedSupplierObj.id } })}
-                                        className="text-[10px] font-black uppercase text-blue-600 hover:underline flex items-center gap-1"
-                                    >
+                                    <button type="button" onClick={()=>navigate('/purchases/suppliers',{state:{selectedId:selectedSupplierObj.id}})}
+                                        style={{fontSize:10,fontWeight:800,color:teal[500],textTransform:'uppercase',letterSpacing:'.03em',background:'none',border:'none',cursor:'pointer',display:'inline-flex',alignItems:'center',gap:3,padding:0}}
+                                        onMouseEnter={e=>e.currentTarget.style.color=teal[700]} onMouseLeave={e=>e.currentTarget.style.color=teal[500]}>
                                         View Profile <ExternalLink size={10}/>
                                     </button>
                                 )}
                             </div>
-                            <div className="relative">
-                                <input 
-                                    type="text"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[13px] bg-white/80 focus:ring-2 focus:ring-blue-500 outline-none font-bold placeholder:text-slate-400"
-                                    placeholder="e.g. ABC Suppliers"
-                                    value={supplierSearch}
-                                    onChange={(e) => {
-                                        setSupplierSearch(e.target.value);
-                                        setIsSupplierDropdownOpen(true);
-                                    }}
-                                    onFocus={() => setIsSupplierDropdownOpen(true)}
+                            <div style={{position:'relative'}}>
+                                <input type="text" placeholder="e.g. ABC Suppliers" value={supplierSearch}
+                                    onChange={e=>{setSupplierSearch(e.target.value);setIsSupplierDropdownOpen(true)}} onFocus={()=>setIsSupplierDropdownOpen(true)}
+                                    style={{...inputStyle,borderRadius:9,fontWeight:700,fontFamily:"'Inter','DM Sans',sans-serif"}}
+                                    onFocus={e=>{e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}}
+                                    onBlur={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.boxShadow='none'}}
                                 />
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                <ChevronDown size={14} style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',color:inkSoft,pointerEvents:'none'}} />
                             </div>
-
                             {isSupplierDropdownOpen && (
-                                <div className="absolute z-[60] mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-premium max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                                <div className="pbuilder-dropdown" style={{background:paper,border:`1.4px solid ${teal[200]}`,borderRadius:12,boxShadow:'0 20px 50px -16px rgba(0,0,0,.18)',maxHeight:240,overflowY:'auto',position:'absolute',zIndex:60,marginTop:4,width:'100%'}}>
                                     {filteredSuppliers.length === 0 ? (
-                                        <div className="p-4 flex flex-col items-center gap-2">
-                                            <p className="text-[11px] text-slate-400 italic">No vendors found</p>
-                                            <button
-                                                onClick={() => {
-                                                    setIsSupplierModalOpen(true);
-                                                    setIsSupplierDropdownOpen(false);
-                                                }}
-                                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg text-[11px] font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <Plus size={12} />
-                                                Add "{supplierSearch}" as New Supplier
+                                        <div style={{padding:16,display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+                                            <p style={{fontSize:11,color:inkSoft,fontStyle:'italic'}}>No vendors found</p>
+                                            <button onClick={()=>{setIsSupplierModalOpen(true);setIsSupplierDropdownOpen(false)}}
+                                                style={{width:'100%',padding:'9px 12px',background:`linear-gradient(155deg,${teal[500]},${teal[700]})`,color:'#fff',borderRadius:9,border:'none',fontFamily:"'Inter','DM Sans',sans-serif",fontSize:12,fontWeight:600,cursor:'pointer',boxShadow:'0 4px 12px -4px rgba(15,84,76,.5)',display:'flex',alignItems:'center',justifyContent:'center',gap:6,transition:'all .15s ease'}}>
+                                                <Plus size={12}/> Add "{supplierSearch}" as New Supplier
                                             </button>
                                         </div>
                                     ) : (
@@ -397,34 +382,27 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
                                             {filteredSuppliers.map(s => {
                                                 const outstanding = getSupplierOutstanding(s.id);
                                                 return (
-                                                    <button 
-                                                        key={s.id} 
-                                                        onClick={() => selectSupplier(s)}
-                                                        className="w-full px-4 py-2 text-left hover:bg-blue-50 flex justify-between items-center transition-colors border-b border-slate-50 last:border-0"
-                                                    >
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[13px] font-bold text-slate-800">{s.name}</span>
-                                                            <span className="text-[10px] text-slate-400 font-medium">{s.category || 'General Vendor'}</span>
+                                                    <button key={s.id} onClick={()=>selectSupplier(s)}
+                                                        className="pbuilder-supplier-row"
+                                                        onMouseEnter={e=>e.currentTarget.style.background=teal[50]} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                                                        <div>
+                                                            <span style={{fontWeight:700,fontSize:13,color:ink}}>{s.name}</span>
+                                                            <span style={{fontSize:10,color:inkSoft,fontWeight:500,display:'block'}}>{s.category || 'General Vendor'}</span>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <div className={`text-[11px] font-black tabular-nums ${outstanding > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                        <div style={{textAlign:'right'}}>
+                                                            <div style={{fontFamily:"'JetBrains Mono',monospace",fontWeight:800,fontSize:11,color:outstanding > 0 ? '#b5493f' : teal[600]}}>
                                                                 {currency}{outstanding.toLocaleString()}
                                                             </div>
-                                                            <div className="text-[9px] text-slate-400 uppercase font-bold">Outstanding</div>
+                                                            <div style={{fontSize:9,color:inkSoft,fontWeight:700,textTransform:'uppercase',letterSpacing:'.04em'}}>Outstanding</div>
                                                         </div>
                                                     </button>
                                                 );
                                             })}
-                                            {supplierSearch && !filteredSuppliers.some(s => (s.name || '').toLowerCase().includes(supplierSearch.toLowerCase())) && (
-                                                <button
-                                                    onClick={() => {
-                                                        setIsSupplierModalOpen(true);
-                                                        setIsSupplierDropdownOpen(false);
-                                                    }}
-                                                    className="w-full px-4 py-3 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2 border-t border-slate-100"
-                                                >
-                                                    <Plus size={14} />
-                                                    <span className="text-[12px] font-bold">Add "{supplierSearch}" as New Supplier</span>
+                                            {supplierSearch && !filteredSuppliers.some(s=>(s.name||'').toLowerCase().includes(supplierSearch.toLowerCase())) && (
+                                                <button onClick={()=>{setIsSupplierModalOpen(true);setIsSupplierDropdownOpen(false)}}
+                                                    style={{width:'100%',padding:'11px 16px',background:teal[50],color:teal[600],borderTop:`1px solid ${hairline}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:"'Inter','DM Sans',sans-serif",fontSize:12,fontWeight:600,transition:'all .15s ease',border:'none',width:'100%'}}
+                                                    onMouseEnter={e=>e.currentTarget.style.background=teal[100]} onMouseLeave={e=>e.currentTarget.style.background=teal[50]}>
+                                                    <Plus size={14}/><span style={{fontWeight:700}}>Add "{supplierSearch}" as New Supplier</span>
                                                 </button>
                                             )}
                                         </>
@@ -433,96 +411,69 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
                             )}
                         </div>
                         <div>
-                            <label className="text-label mb-1">Bill Date</label>
-                            <input 
-                                type="date" 
-                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[13px] bg-white/80 font-bold"
-                                value={billDate}
-                                onChange={e => setBillDate(e.target.value)}
-                            />
+                            <label style={{...inputStyle,display:'block',fontSize:12,fontWeight:600,color:teal[800],marginBottom:6,letterSpacing:'.01',padding:0,border:'none',background:'transparent'}}>Bill Date</label>
+                            <input type="date" value={billDate} onChange={e=>setBillDate(e.target.value)}
+                                style={{...inputStyle,fontWeight:700}} onFocus={e=>{e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}} onBlur={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.boxShadow='none'}} />
                         </div>
                         <div>
-                            <label className="text-label mb-1">Due Date</label>
-                            <input 
-                                type="date" 
-                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[13px] bg-white/80 font-bold"
-                                value={dueDate}
-                                onChange={e => setDueDate(e.target.value)}
-                            />
+                            <label style={{...inputStyle,display:'block',fontSize:12,fontWeight:600,color:teal[800],marginBottom:6,letterSpacing:'.01',padding:0,border:'none',background:'transparent'}}>Due Date</label>
+                            <input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}
+                                style={{...inputStyle,fontWeight:700}} onFocus={e=>{e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}} onBlur={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.boxShadow='none'}} />
                         </div>
                         <div>
-                            <label className="text-label mb-1">Vendor Ref #</label>
-                            <input 
-                                type="text"
-                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[13px] bg-white/80 font-bold uppercase"
-                                placeholder="e.g. INV-2024-001"
-                                value={reference}
-                                onChange={e => setReference(e.target.value)}
-                            />
+                            <label style={{...inputStyle,display:'block',fontSize:12,fontWeight:600,color:teal[800],marginBottom:6,letterSpacing:'.01',padding:0,border:'none',background:'transparent'}}>Vendor Ref #</label>
+                            <input type="text" placeholder="e.g. INV-2024-001" value={reference} onChange={e=>setReference(e.target.value)}
+                                style={{...inputStyle,textTransform:'uppercase',fontWeight:700}} onFocus={e=>{e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}} onBlur={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.boxShadow='none'}} />
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        <table className="w-full text-left">
-                            <thead className="sticky top-0 z-10">
-                                <tr className="bg-slate-50/50">
-                                    <th className="table-header px-4 py-2">Item Identity</th>
-                                    <th className="table-header px-4 py-2 text-center w-24">Quantity</th>
-                                    <th className="table-header px-4 py-2 text-center w-40">Unit Cost</th>
-                                    <th className="table-header px-4 py-2 text-right w-40">Line Total</th>
-                                    <th className="table-header px-4 py-2 w-12"></th>
+                    <div style={{flex:1,overflowY:'auto'}}>
+                        <table style={{width:'100%',borderCollapse:'collapse',textAlign:'left'}}>
+                            <thead>
+                                <tr style={{position:'sticky',top:0,zIndex:10,background:`linear-gradient(135deg,${teal[50]},#FEFDFB)`}}>
+                                    <th style={{padding:'10px 16px',fontSize:10.5,fontWeight:700,color:teal[700],textTransform:'uppercase',letterSpacing:'.06em'}}>Item Identity</th>
+                                    <th style={{padding:'10px 16px',fontSize:10.5,fontWeight:700,color:teal[700],textTransform:'uppercase',letterSpacing:'.06em',textAlign:'center',width:90}}>Qty</th>
+                                    <th style={{padding:'10px 16px',fontSize:10.5,fontWeight:700,color:teal[700],textTransform:'uppercase',letterSpacing:'.06em',textAlign:'center',width:140}}>Unit Cost</th>
+                                    <th style={{padding:'10px 16px',fontSize:10.5,fontWeight:700,color:teal[700],textTransform:'uppercase',letterSpacing:'.06em',textAlign:'right',width:140}}>Line Total</th>
+                                    <th style={{padding:'10px 16px',width:48}}></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody style={{divideY:`1px solid ${hairline}`}}>
                                 {poItems.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="p-20 text-center text-slate-300 font-bold italic text-[13px]">No items added to bill yet. Select from left panel.</td>
-                                    </tr>
+                                    <tr><td colSpan={5} style={{padding:48,textAlign:'center',color:inkSoft,fontWeight:600,fontStyle:'italic',fontSize:13}}>No items added to bill yet. Select from left panel.</td></tr>
                                 )}
                                 {poItems.map(p => (
-                                    <tr key={p.item.id} className="hover:bg-blue-50/20 transition-all group">
-                                        <td className="table-body-cell px-4 py-2">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0">
-                                                    <OfflineImage src={p.item.image} alt="" className="w-full h-full object-cover"/>
+                                    <tr key={p.item.id} style={{borderBottom:`1px solid ${hairline}`,transition:'all .15s ease',cursor:'pointer'}} onMouseEnter={e=>e.currentTarget.style.background=teal[50]} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                                        <td style={{padding:'10px 16px'}}>
+                                            <div style={{display:'flex',alignItems:'center',gap:12}}>
+                                                <div style={{width:42,height:42,borderRadius:10,background:teal[50],border:`1px solid ${teal[100]}`,overflow:'hidden',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                                    <OfflineImage src={p.item.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-slate-800 text-[13px]">{p.item.name}</div>
-                                                    <div className="text-[10px] text-slate-400 font-bold font-mono uppercase tracking-tight">{p.item.sku}</div>
+                                                    <div style={{fontWeight:700,fontSize:13,color:ink}}>{p.item.name}</div>
+                                                    <div style={{fontSize:10,color:inkSoft,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",letterSpacing:'.04em',textTransform:'uppercase'}}>{p.item.sku}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="table-body-cell px-4 py-2">
-                                            <input 
-                                                    type="number" 
-                                                    min="1"
-                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[13px] font-bold text-center bg-slate-50 focus:bg-white outline-none finance-nums"
-                                                    value={p.qty || 0}
-                                                    onChange={e => updatePOItem(p.item.id, 'qty', parseFloat(e.target.value) || 0)}
-                                                />
-                                            </td>
-                                            <td className="table-body-cell px-4 py-2">
-                                                <div className="relative">
-                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 tracking-tight uppercase">{currency}</span>
-                                                    <input 
-                                                        type="number" 
-                                                        min="0" 
-                                                        step="0.01"
-                                                        className="w-full pl-6 pr-3 py-2 border border-slate-200 rounded-lg text-[13px] font-bold text-center bg-slate-50 focus:bg-white outline-none finance-nums"
-                                                        value={p.cost || 0}
-                                                        onChange={e => updatePOItem(p.item.id, 'cost', parseFloat(e.target.value) || 0)}
-                                                    />
-                                                </div>
-                                            </td>
-                                        <td className="table-body-cell px-4 py-2 text-right font-bold text-slate-800 finance-nums">
-                                            {currency}{(p.qty * p.cost).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                        <td style={{padding:'10px 16px'}}>
+                                            <input type="number" min="1" value={p.qty || 0} onChange={e=>updatePOItem(p.item.id,'qty',parseFloat(e.target.value)||0)}
+                                                style={{...inputStyle,borderRadius:10,fontWeight:700,textAlign:'center',fontFamily:"'JetBrains Mono',monospace"}} onFocus={e=>{e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}} onBlur={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.boxShadow='none'}} />
                                         </td>
-                                        <td className="table-body-cell px-4 py-2">
-                                            <button 
-                                                onClick={() => removePOItem(p.item.id)}
-                                                className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 size={16}/>
+                                        <td style={{padding:'10px 16px'}}>
+                                            <div style={{position:'relative'}}>
+                                                <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',fontSize:10,fontWeight:700,color:teal[600],letterSpacing:'.03em',textTransform:'uppercase',fontFamily:"'JetBrains Mono',monospace"}}>{currency}</span>
+                                                <input type="number" min="0" step="0.01" value={p.cost || 0} onChange={e=>updatePOItem(p.item.id,'cost',parseFloat(e.target.value)||0)}
+                                                    style={{...inputStyle,borderRadius:10,fontWeight:700,textAlign:'center',paddingLeft:26,fontFamily:"'JetBrains Mono',monospace"}} onFocus={e=>{e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}} onBlur={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.boxShadow='none'}} />
+                                            </div>
+                                        </td>
+                                        <td style={{padding:'10px 16px',textAlign:'right',fontWeight:700,color:teal[800],fontFamily:"'JetBrains Mono',monospace",fontSize:13.5}}>
+                                            {currency}{(p.qty * p.cost).toLocaleString(undefined,{minimumFractionDigits:2})}
+                                        </td>
+                                        <td style={{padding:'10px 16px',textAlign:'center'}}>
+                                            <button onClick={()=>removePOItem(p.item.id)}
+                                                style={{padding:6,border:'none',background:'transparent',color:inkSoft,cursor:'pointer',borderRadius:7,display:'inline-flex',transition:'all .12s ease'}}
+                                                onMouseEnter={e=>{e.currentTarget.style.background='#fde8e7';e.currentTarget.style.color='#b5493f'}} onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color=inkSoft}}>
+                                                <Trash2 size={15}/>
                                             </button>
                                         </td>
                                     </tr>
@@ -531,31 +482,23 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
                         </table>
                     </div>
 
-                    <div className="p-4 border-t border-slate-200/60 bg-slate-50/30 flex justify-between items-center">
-                        <button 
-                            onClick={onCancel}
-                            className="px-4 py-2 text-[13px] font-bold text-slate-500 hover:text-slate-700 transition-colors"
-                        >
-                            Discard
+                    <div style={{padding:'12px 16px',borderTop:`1.4px solid ${hairline}`,background:`linear-gradient(135deg,#eef7f6 0%,#FEFDFB 100%)`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <button onClick={onCancel} style={btnGhost} onMouseEnter={e=>{e.currentTarget.style.background=teal[50];e.currentTarget.style.color=teal[800];e.currentTarget.style.borderColor=teal[200]}} onMouseLeave={e=>{e.currentTarget.style.background=paper;e.currentTarget.style.color=inkSoft;e.currentTarget.style.borderColor=hairline}}>
+                            <X size={14}/> Discard
                         </button>
-                        <button 
-                            onClick={handleSubmit}
-                            disabled={!selectedSupplierId || poItems.length === 0}
-                            className="zoho-button-primary flex items-center gap-2"
-                        >
-                            <Save size={16}/> {initialData ? 'Update Bill' : 'Save Bill'}
+                        <button onClick={handleSubmit} disabled={!selectedSupplierId || poItems.length === 0} style={btnPrimary} onMouseEnter={e=>e.currentTarget.style.transform='translateY(-1px)'} onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}>
+                            <Save size={15}/> {initialData ? 'Update Bill' : 'Save Bill'}
                         </button>
                     </div>
                 </div>
             </div>
-            
-            {/* Supplier Modal */}
+
             <SupplierModal
                 isOpen={isSupplierModalOpen}
-                onClose={() => setIsSupplierModalOpen(false)}
+                onClose={()=>setIsSupplierModalOpen(false)}
                 onSave={handleAddSupplier}
                 mode="create"
-                initialSupplier={{ name: supplierSearch } as Partial<Supplier>}
+                initialSupplier={{name:supplierSearch} as Partial<Supplier>}
             />
         </div>
     );

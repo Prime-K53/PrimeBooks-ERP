@@ -50,13 +50,13 @@ const SortableTh: React.FC<{
     const isCenter = className.includes('text-center');
     return (
         <th
-            className={`table-header cursor-pointer select-none ${className} ${isActive ? 'text-blue-600 font-bold' : ''}`}
+            className={`table-header cursor-pointer select-none ${className} ${isActive ? 'text-[#0b3e39] font-bold' : ''}`}
             onClick={() => onSort?.(field)}
         >
             <div className={`flex items-center gap-1 ${isRight ? 'justify-end' : isCenter ? 'justify-center' : 'justify-start'}`}>
                 {children}
                 {isActive && (
-                    sortConfig?.direction === 'asc' ? <ArrowUp size={12} className="text-blue-500 shrink-0" /> : <ArrowDown size={12} className="text-blue-500 shrink-0" />
+                    sortConfig?.direction === 'asc' ? <ArrowUp size={12} className="text-[#1f8577] shrink-0" /> : <ArrowDown size={12} className="text-[#1f8577] shrink-0" />
                 )}
             </div>
         </th>
@@ -100,9 +100,9 @@ export const HoverActionMenu: React.FC<{
             className="fixed z-[200] pointer-events-auto animate-in fade-in zoom-in-95 duration-200"
             style={{ top: pos.y + 15, left: pos.x + 15 }}
         >
-            <div className="bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-2xl shadow-premium p-4 min-w-[280px] flex flex-col gap-3 text-white">
-                <div className="flex items-center gap-3 border-b border-slate-700 pb-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+            <div className="bg-[#23282A]/95 backdrop-blur-md border border-[#5c6567]/50 rounded-2xl shadow-premium p-4 min-w-[280px] flex flex-col gap-3 text-white">
+                <div className="flex items-center gap-3 border-b border-[#5c6567]/50 pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#1f857720] flex items-center justify-center text-[#72c0b7]">
                         {type === 'Invoice' ? <FileCheck size={16} /> :
                             type === 'Quotation' ? <FileText size={16} /> :
                                 type === 'Subscription' ? <RefreshCw size={16} /> :
@@ -110,39 +110,39 @@ export const HoverActionMenu: React.FC<{
                                         <Truck size={16} />}
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-blue-400 tracking-tight">{type === 'SalesExchange' ? 'Exchange' : type} details</p>
+                        <p className="text-[10px] font-bold text-[#72c0b7] tracking-tight">{type === 'SalesExchange' ? 'Exchange' : type} details</p>
                         <p className="text-xs font-bold font-mono">{data.exchange_number || id}</p>
                     </div>
                 </div>
 
                 <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                    <p className="text-[10px] font-bold text-slate-400 tracking-tight mb-2">
+                    <p className="text-[10px] font-bold text-[#5c6567] tracking-tight mb-2">
                         {type === 'SalesExchange' ? 'Exchange Items' : 'Items summary'}
                     </p>
                     {data.items && data.items.length > 0 ? (
                         data.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex justify-between items-start gap-4 text-xs py-1 border-b border-white/5 last:border-0">
-                                <span className="text-slate-200 font-medium line-clamp-1">
+                                <span className="text-[#FEFDFB] font-medium line-clamp-1">
                                     {type === 'SalesExchange' && item.qty_replaced > 0 && item.replaced_product_name && item.replaced_product_name !== item.product_name
                                         ? `${item.product_name} → ${item.replaced_product_name}`
                                         : (item.product_name || item.productName || item.name || item.desc || 'Item')
                                     }
                                 </span>
-                                <span className="text-blue-400 font-bold whitespace-nowrap">
+                                <span className="text-[#72c0b7] font-bold whitespace-nowrap">
                                     {type === 'SalesExchange' ? `Ret: ${item.qty_returned || 0}` : `x${item.quantity || item.qty || 0}`}
                                 </span>
                             </div>
                         ))
                     ) : (
-                        <p className="text-[10px] text-slate-500 italic">No items listed</p>
+                        <p className="text-[10px] text-[#5c6567] italic">No items listed</p>
                     )}
                 </div>
 
-                <div className="mt-2 pt-2 border-t border-slate-700 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-slate-400 tracking-tight">
+                <div className="mt-2 pt-2 border-t border-[#5c6567]/50 flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-[#5c6567] tracking-tight">
                         {type === 'SalesExchange' ? 'Price Difference' : 'Total value'}
                     </span>
-                    <span className="text-[13px] font-bold text-emerald-400 finance-nums">
+                    <span className="text-[13px] font-bold text-[#3fa294] finance-nums">
                         {currency}{(data.total || data.totalAmount || data.total_price_difference || 0).toLocaleString()}
                     </span>
                 </div>
@@ -150,16 +150,16 @@ export const HoverActionMenu: React.FC<{
                 {hasPricingMetrics && (
                     <div className="grid grid-cols-3 gap-2 mt-2">
                         <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
-                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Adj</div>
-                            <div className="text-[11px] font-bold text-indigo-300 finance-nums">{currency}{pricingSummary.adjustmentTotal.toLocaleString()}</div>
+                            <div className="text-[9px] font-bold text-[#5c6567] uppercase tracking-tight">Adj</div>
+                            <div className="text-[11px] font-bold text-[#146b60] finance-nums">{currency}{pricingSummary.adjustmentTotal.toLocaleString()}</div>
                         </div>
                         <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
-                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Markup</div>
-                            <div className="text-[11px] font-bold text-emerald-300 finance-nums">{currency}{pricingSummary.profitMarginTotal.toLocaleString()}</div>
+                            <div className="text-[9px] font-bold text-[#5c6567] uppercase tracking-tight">Markup</div>
+                            <div className="text-[11px] font-bold text-[#72c0b7] finance-nums">{currency}{pricingSummary.profitMarginTotal.toLocaleString()}</div>
                         </div>
                         <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
-                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Round</div>
-                            <div className={`text-[11px] font-bold finance-nums ${pricingSummary.roundingTotal >= 0 ? 'text-blue-300' : 'text-rose-300'}`}>
+                            <div className="text-[9px] font-bold text-[#5c6567] uppercase tracking-tight">Round</div>
+                            <div className={`text-[11px] font-bold finance-nums ${pricingSummary.roundingTotal >= 0 ? 'text-[#3fa294]' : 'text-[#d99a3f]'}`}>
                                 {pricingSummary.roundingTotal >= 0 ? '+' : ''}{currency}{pricingSummary.roundingTotal.toLocaleString()}
                             </div>
                         </div>
@@ -167,16 +167,16 @@ export const HoverActionMenu: React.FC<{
                 )}
 
                 {type === 'SalesExchange' && onAction && (data.status === 'pending' || data.status === 'Pending') && (
-                    <div className="flex gap-2 mt-2 pt-2 border-t border-slate-700">
+                    <div className="flex gap-2 mt-2 pt-2 border-t border-[#5c6567]/50">
                         <button
                             onClick={(e) => { e.stopPropagation(); onAction(data, 'approve_exchange'); }}
-                            className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
+                            className="flex-1 py-1.5 px-3 bg-[#1f8577] hover:bg-[#0f544c] text-white rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
                         >
                             <CheckCircle size={12} /> Approve
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); onAction(data, 'cancel_exchange'); }}
-                            className="flex-1 py-1.5 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
+                            className="flex-1 py-1.5 px-3 bg-[#d99a3f] hover:bg-[#b97e2b] text-white rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
                         >
                             <XCircle size={12} /> Cancel
                         </button>
@@ -184,8 +184,8 @@ export const HoverActionMenu: React.FC<{
                 )}
 
                 <div className="bg-white/5 rounded-lg p-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                    <span className="text-[9px] text-slate-300 font-bold tracking-tight font-mono italic">Secure snapshot</span>
+                    <div className="w-1.5 h-1.5 bg-[#72c0b7] rounded-full animate-pulse"></div>
+                    <span className="text-[9px] text-[#FEFDFB] font-bold tracking-tight font-mono italic">Secure snapshot</span>
                 </div>
             </div>
         </div>
@@ -227,28 +227,28 @@ export const SalesOrderList: React.FC<ListProps<JobOrder>> = (props) => {
         return (
             <div
                 ref={menuRef}
-                className="fixed w-64 bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-slate-200 z-[70] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left overflow-y-auto custom-scrollbar"
+                 className="fixed w-64 bg-[#FEFDFB]/90 backdrop-blur-md rounded-xl shadow-2xl border border-[#e4ddd1] z-[70] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left overflow-y-auto custom-scrollbar"
                 style={{ top: y, left: x, maxHeight: '90vh' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="px-4 py-2 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-tight bg-slate-100/50 rounded-t-xl">SALES ORDER ACTIONS</div>
-                <button onClick={() => { setOpenMenuId(null); props.onView(order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"><ChevronRight size={14} /> View Detail</button>
-                <button onClick={() => { setOpenMenuId(null); handlePreview('SALES_ORDER', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"><Eye size={14} /> Preview PDF Order</button>
-                <button onClick={() => { setOpenMenuId(null); handlePreview('PO', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors">
+                <div className="px-4 py-2 border-b border-[#e4ddd1] text-[10px] font-bold text-[#5c6567] uppercase tracking-tight bg-[#eef7f6] rounded-t-xl">SALES ORDER ACTIONS</div>
+                <button onClick={() => { setOpenMenuId(null); props.onView(order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><ChevronRight size={14} /> View Detail</button>
+                <button onClick={() => { setOpenMenuId(null); handlePreview('SALES_ORDER', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#1f8577] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><Eye size={14} /> Preview PDF Order</button>
+                <button onClick={() => { setOpenMenuId(null); handlePreview('PO', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#146b60] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors">
                     <ShoppingBag size={14} /> Preview Purchase Order
                 </button>
-                <button onClick={() => { setOpenMenuId(null); handlePreview('WORK_ORDER', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-purple-700 hover:bg-purple-50 flex items-center gap-3 transition-colors">
+                <button onClick={() => { setOpenMenuId(null); handlePreview('WORK_ORDER', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#0b3e39] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors">
                     <Briefcase size={14} /> Preview Work Order
                 </button>
-                <button onClick={() => { setOpenMenuId(null); handlePreview('DELIVERY_NOTE', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-3 transition-colors">
+                <button onClick={() => { setOpenMenuId(null); handlePreview('DELIVERY_NOTE', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#b97e2b] hover:bg-[#fbead0] flex items-center gap-3 transition-colors">
                     <Truck size={14} /> Preview Delivery Note
                 </button>
-                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'download_pdf'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"><Download size={14} /> Download PDF Order</button>
-                <button onClick={() => { setOpenMenuId(null); props.onEdit(order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-amber-50 flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Order</button>
+                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'download_pdf'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#1f8577] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><Download size={14} /> Download PDF Order</button>
+                <button onClick={() => { setOpenMenuId(null); props.onEdit(order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-[#fbead0] flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Order</button>
 
-                <div className="my-1 border-t border-slate-200"></div>
-                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'convert_inv'); }} className="w-full text-left px-4 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 flex items-center gap-3 transition-colors"><FileCheck size={14} /> Convert to Invoice</button>
-                <div className="my-1 border-t border-slate-200"></div>
+                <div className="my-1 border-t border-[#e4ddd1]"></div>
+                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'convert_inv'); }} className="w-full text-left px-4 py-2 text-xs font-bold text-[#1f8577] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><FileCheck size={14} /> Convert to Invoice</button>
+                <div className="my-1 border-t border-[#e4ddd1]"></div>
                 <button onClick={() => { setOpenMenuId(null); props.onDelete(order.id); }} className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"><Trash2 size={14} /> Delete</button>
             </div>
         );
@@ -273,10 +273,10 @@ export const SalesOrderList: React.FC<ListProps<JobOrder>> = (props) => {
                     </div>
                 </div>
             ) : (
-                <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden flex-1 flex flex-col">
+                <div className="bg-[#FEFDFB] border border-[#e4ddd1] rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
                     <div className="flex-1 overflow-auto custom-scrollbar">
                         <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                            <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+                            <thead className="bg-[#eef7f6] text-[#5c6567] sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <SortableTh field="id" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[16.66%]">Order No.</SortableTh>
                                     <SortableTh field="date" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[16.66%]">Date</SortableTh>
@@ -286,12 +286,12 @@ export const SalesOrderList: React.FC<ListProps<JobOrder>> = (props) => {
                                     <th className="table-header text-center w-[16.66%]">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100/50">
+                            <tbody className="divide-y divide-[#e4ddd1]/50">
                                 {(currentItems || []).map((o: any) => (
                                     <tr
                                         key={o.id}
                                         id={`so-${o.id}`}
-                                        className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
+                                        className="hover:bg-[#eef7f6] cursor-pointer transition-colors group"
                                         onClick={(e) => handleRowClick(e, o.id)}
                                         onContextMenu={(e) => handleContextMenu(e, o.id)}
                                         onMouseEnter={(e) => onMouseEnter(o.id, e)}
@@ -307,25 +307,25 @@ export const SalesOrderList: React.FC<ListProps<JobOrder>> = (props) => {
                                             />
                                         </td>
                                         <td className="table-body-cell text-left font-normal truncate">{new Date(o.date).toLocaleDateString()}</td>
-                                        <td className="table-body-cell text-left font-medium text-slate-900 truncate">{o.customerName}</td>
+                                        <td className="table-body-cell text-left font-medium text-[#23282A] truncate">{o.customerName}</td>
                                         <td className="table-body-cell text-left font-normal truncate">{o.jobTitle}</td>
                                         <td className="table-body-cell text-center">
-                                            <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${o.status === 'Completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                                                o.status === 'In Progress' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                                    o.status === 'Draft' ? 'bg-slate-100 text-slate-600 border-slate-200' :
-                                                        'bg-amber-100 text-amber-700 border-amber-200'
+                                            <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${o.status === 'Completed' ? 'bg-[#d3ece9] text-[#0f544c] border-[#a6d9d3]' :
+                                                o.status === 'In Progress' ? 'bg-[#eef7f6] text-[#1f8577] border-[#a6d9d3]' :
+                                                    o.status === 'Draft' ? 'bg-[#f5f2ed] text-[#5c6567] border-[#e4ddd1]' :
+                                                        'bg-[#fbead0] text-[#b97e2b] border-[#eec27a]'
                                                 }`}>{o.status}</span>
                                         </td>
                                         <td className="table-body-cell text-center" onClick={e => e.stopPropagation()}>
                                             <div className="flex justify-center gap-1 items-center shrink-0">
-                                                <button onClick={(e) => { e.stopPropagation(); handlePreview('WORK_ORDER', o); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
+                                                <button onClick={(e) => { e.stopPropagation(); handlePreview('WORK_ORDER', o); }} className="p-1.5 text-[#5c6567] hover:text-[#1f8577] bg-[#FEFDFB] hover:bg-white border border-transparent hover:border-[#e4ddd1] rounded transition-all" title="Preview PDF">
                                                     <Eye size={14} />
                                                 </button>
-                                                <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(o, 'download_pdf'); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download PDF">
+                                                <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(o, 'download_pdf'); }} className="p-1.5 text-[#5c6567] hover:text-[#1f8577] bg-[#FEFDFB] hover:bg-white border border-transparent hover:border-[#e4ddd1] rounded transition-all" title="Download PDF">
                                                     <Download size={14} />
                                                 </button>
-                                                <button onClick={(e) => { e.stopPropagation(); props.onEdit(o); }} className="p-1.5 text-slate-400 hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit"><Edit2 size={14} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, o.id); }} className="p-1.5 text-slate-400 hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); props.onEdit(o); }} className="p-1.5 text-[#5c6567] hover:text-[#b97e2b] bg-[#FEFDFB] hover:bg-white border border-transparent hover:border-[#e4ddd1] rounded transition-all" title="Edit"><Edit2 size={14} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, o.id); }} className="p-1.5 text-[#5c6567] hover:text-[#23282A] rounded"><MoreVertical size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -373,22 +373,22 @@ export const OrdersList: React.FC<ListProps<Order>> = (props) => {
         return (
             <div
                 ref={menuRef}
-                className="fixed w-64 bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-slate-200 z-[70] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left overflow-y-auto custom-scrollbar"
+                 className="fixed w-64 bg-[#FEFDFB]/90 backdrop-blur-md rounded-xl shadow-2xl border border-[#e4ddd1] z-[70] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left overflow-y-auto custom-scrollbar"
                 style={{ top: y, left: x, maxHeight: '90vh' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="px-4 py-2 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-tight bg-slate-100/50 rounded-t-xl">ORDER ACTIONS</div>
-                <button onClick={() => { setOpenMenuId(null); props.onView(order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"><ChevronRight size={14} /> View Detail</button>
-                <button onClick={() => { setOpenMenuId(null); handlePreview('ORDER', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"><Eye size={14} /> Preview Order Confirmation</button>
-                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'record_payment'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 flex items-center gap-3 transition-colors"><DollarSign size={14} /> Record Payment</button>
-                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'convert_to_invoice'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors"><FileCheck size={14} /> Convert to Invoice</button>
-                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'convert_to_job_ticket'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-purple-700 hover:bg-purple-50 flex items-center gap-3 transition-colors"><Package size={14} /> Convert to Job Ticket</button>
-                <button onClick={() => { setOpenMenuId(null); props.onEdit(order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-amber-50 flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Order</button>
+                <div className="px-4 py-2 border-b border-[#e4ddd1] text-[10px] font-bold text-[#5c6567] uppercase tracking-tight bg-[#eef7f6] rounded-t-xl">ORDER ACTIONS</div>
+                <button onClick={() => { setOpenMenuId(null); props.onView(order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><ChevronRight size={14} /> View Detail</button>
+                <button onClick={() => { setOpenMenuId(null); handlePreview('ORDER', order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#1f8577] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><Eye size={14} /> Preview Order Confirmation</button>
+                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'record_payment'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#1f8577] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><DollarSign size={14} /> Record Payment</button>
+                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'convert_to_invoice'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#0f544c] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><FileCheck size={14} /> Convert to Invoice</button>
+                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'convert_to_job_ticket'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#0b3e39] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><Package size={14} /> Convert to Job Ticket</button>
+                <button onClick={() => { setOpenMenuId(null); props.onEdit(order); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-[#fbead0] flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Order</button>
 
-                <div className="my-1 border-t border-slate-200"></div>
-                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'cancel_order'); }} className="w-full text-left px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 flex items-center gap-3 transition-colors"><XCircle size={14} /> Cancel Order</button>
-                <div className="my-1 border-t border-slate-200"></div>
-                <button onClick={() => { setOpenMenuId(null); props.onDelete(order.id); }} className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"><Trash2 size={14} /> Delete</button>
+                <div className="my-1 border-t border-[#e4ddd1]"></div>
+                <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(order, 'cancel_order'); }} className="w-full text-left px-4 py-2 text-xs font-bold text-[#b97e2b] hover:bg-[#fbead0] flex items-center gap-3 transition-colors"><XCircle size={14} /> Cancel Order</button>
+                <div className="my-1 border-t border-[#e4ddd1]"></div>
+                <button onClick={() => { setOpenMenuId(null); props.onDelete(order.id); }} className="w-full text-left px-4 py-2 text-xs text-[#b5493f] hover:bg-[#f5f2ed] flex items-center gap-3 transition-colors"><Trash2 size={14} /> Delete</button>
             </div>
         );
     };
@@ -404,34 +404,34 @@ export const OrdersList: React.FC<ListProps<Order>> = (props) => {
                             <div key={item.id} className="prime-card hover:shadow-md transition-shadow" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, padding: 16 }}>
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
-                                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{item.orderNumber}</p>
-                                        <h4 className="font-bold text-slate-900 truncate max-w-[150px]">{item.customerName}</h4>
+                                        <p className="text-[10px] font-bold text-[#1f8577] uppercase tracking-wider">{item.orderNumber}</p>
+                                        <h4 className="font-bold text-[#23282A] truncate max-w-[150px]">{item.customerName}</h4>
                                     </div>
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.status === 'Completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                                        item.status === 'Paid' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                                            item.status === 'Partially Paid' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                                                item.status === 'Pending' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                                    item.status === 'Cancelled' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                                                        'bg-slate-100 text-slate-600 border-slate-200'
-                                        }`}>{item.status}</span>
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${item.status === 'Completed' ? 'bg-[#d3ece9] text-[#0f544c] border-[#a6d9d3]' :
+                                        item.status === 'Paid' ? 'bg-[#d3ece9] text-[#0f544c] border-[#a6d9d3]' :
+                                            item.status === 'Partially Paid' ? 'bg-[#fbead0] text-[#b97e2b] border-[#eec27a]' :
+                                                item.status === 'Pending' ? 'bg-[#eef7f6] text-[#1f8577] border-[#a6d9d3]' :
+                                                    item.status === 'Cancelled' ? 'bg-[#f5f2ed] text-[#5c6567] border-[#e4ddd1]' :
+                                                        'bg-[#f5f2ed] text-[#5c6567] border-[#e4ddd1]'
+                                    }`}>{item.status}</span>
                                 </div>
                                 <div className="space-y-2 mb-4">
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-slate-500">Date:</span>
+                                        <span className="text-[#5c6567]">Date:</span>
                                         <span className="font-medium">{new Date(item.orderDate).toLocaleDateString()}</span>
                                     </div>
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-slate-500">Total:</span>
-                                        <span className="font-bold text-slate-900">{companyConfig.currencySymbol}{item.totalAmount.toLocaleString()}</span>
+                                        <span className="text-[#5c6567]">Total:</span>
+                                        <span className="font-bold text-[#23282A]">{companyConfig.currencySymbol}{item.totalAmount.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-slate-500">Paid:</span>
-                                        <span className="font-bold text-emerald-600">{companyConfig.currencySymbol}{item.paidAmount.toLocaleString()}</span>
+                                        <span className="text-[#5c6567]">Paid:</span>
+                                        <span className="font-bold text-[#1f8577]">{companyConfig.currencySymbol}{item.paidAmount.toLocaleString()}</span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => props.onView(item)} className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold transition-colors">Details</button>
-                                    <button onClick={() => props.onEdit(item)} className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold transition-colors">Edit</button>
+                                    <button onClick={() => props.onView(item)} className="flex-1 py-1.5 bg-[#FEFDFB] hover:bg-[#eef7f6] text-[#23282A] rounded-lg text-[10px] font-bold transition-colors border border-[#e4ddd1]">Details</button>
+                                    <button onClick={() => props.onEdit(item)} className="flex-1 py-1.5 bg-[#eef7f6] hover:bg-[#d3ece9] text-[#1f8577] rounded-lg text-[10px] font-bold transition-colors border border-[#a6d9d3]">Edit</button>
                                 </div>
                             </div>
                         ))}
@@ -439,22 +439,22 @@ export const OrdersList: React.FC<ListProps<Order>> = (props) => {
                     <Pagination currentPage={currentPage} maxPage={maxPage} totalItems={totalItems} itemsPerPage={itemsPerPage} onNext={next} onPrev={prev} onFirst={first} onLast={last} onItemsPerPageChange={setItemsPerPage} />
                 </div>
             ) : (
-                <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden flex-1 flex flex-col">
+                    <div className="bg-[#FEFDFB] border border-[#e4ddd1] rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
                     {(props.searchTerm !== undefined || props.onSearchChange) && (
-                        <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-50/30 shrink-0">
+                        <div className="p-3 border-b border-[#e4ddd1]/60 flex justify-between items-center bg-[#eef7f6]/30 shrink-0">
                             <div className="relative w-full max-w-md">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c6567]" size={14} />
                                 <input
                                     type="text"
                                     placeholder="Search orders..."
-                                    className="w-full pl-9 pr-3 py-1.5 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 font-normal"
+                                    className="w-full pl-9 pr-3 py-1.5 border border-[#e4ddd1] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1f857715] bg-[#FEFDFB] font-normal"
                                     value={props.searchTerm || ''}
                                     onChange={e => props.onSearchChange?.(e.target.value)}
                                 />
                                 {props.searchTerm && props.onSearchClear && (
                                     <button
                                         onClick={props.onSearchClear}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5c6567] hover:text-[#23282A]"
                                     >
                                         <X size={14} />
                                     </button>
@@ -502,16 +502,16 @@ export const OrdersList: React.FC<ListProps<Order>> = (props) => {
                                                     o.status === 'Partially Paid' ? 'bg-amber-100 text-amber-700 border-amber-200' :
                                                         o.status === 'Pending' ? 'bg-blue-100 text-blue-700 border-blue-200' :
                                                             o.status === 'Cancelled' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                                                                'bg-slate-100 text-slate-600 border-slate-200'
+                                                                'bg-slate-100 text-[#5c6567] border-slate-200'
                                                 }`}>{o.status}</span>
                                         </td>
                                         <td className="table-body-cell text-center" onClick={e => e.stopPropagation()}>
                                             <div className="flex justify-center gap-1 items-center shrink-0">
-                                                <button onClick={(e) => { e.stopPropagation(); handlePreview('ORDER', o); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
+                                                <button onClick={(e) => { e.stopPropagation(); handlePreview('ORDER', o); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
                                                     <Eye size={14} />
                                                 </button>
-                                                <button onClick={(e) => { e.stopPropagation(); props.onEdit(o); }} className="p-1.5 text-slate-400 hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit"><Edit2 size={14} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, o.id); }} className="p-1.5 text-slate-400 hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); props.onEdit(o); }} className="p-1.5 text-[#5c6567] hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit"><Edit2 size={14} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, o.id); }} className="p-1.5 text-[#5c6567] hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -615,7 +615,7 @@ const GenericCard: React.FC<{ item: any, type: string, onView: any, onEdit: any,
         >
             <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-lg ${type === 'Invoice' ? 'bg-blue-100 text-blue-600' : type === 'JobOrder' ? 'bg-purple-100 text-purple-600' : 'bg-amber-100 text-amber-600'}`}>
+                    <div className={`p-1.5 rounded-lg ${type === 'Invoice' ? 'bg-[#eef7f6] text-[#1f8577]' : type === 'JobOrder' ? 'bg-[#d3ece9] text-[#0f544c]' : 'bg-[#fbead0] text-[#b97e2b]'}`}>
                         {type === 'Invoice' ? <DollarSign size={14} /> : type === 'JobOrder' ? <Briefcase size={14} /> : <FileText size={14} />}
                     </div>
                     <span className="text-[10px] font-bold tracking-tight" style={{ color: inkSoft }}>{item.id}</span>
@@ -727,7 +727,7 @@ export const SalesExchangeList: React.FC<ListProps<SalesExchange>> = (props) => 
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="px-4 py-2 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-tight bg-slate-100/50 rounded-t-xl">EXCHANGE ACTIONS</div>
-                <button onClick={() => { setOpenMenuId(null); props.onView(exchange); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"><Eye size={14} /> View Details</button>
+                <button onClick={() => { setOpenMenuId(null); props.onView(exchange); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-slate-50 flex items-center gap-3 transition-colors"><Eye size={14} /> View Details</button>
                 <button onClick={() => { setOpenMenuId(null); handlePreview('SALES_EXCHANGE', exchange); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"><FileText size={14} /> Preview Exchange Note</button>
                 <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(exchange, 'print_note'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"><Printer size={14} /> Print Exchange Note</button>
                 <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(exchange, 'email_note'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors"><Mail size={14} /> Email Exchange Note</button>
@@ -827,14 +827,14 @@ export const SalesExchangeList: React.FC<ListProps<SalesExchange>> = (props) => 
                                         <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${ex.status === 'Completed' || ex.status === 'Approved' || ex.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                                             ex.status === 'Pending' || ex.status === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
                                                 ex.status === 'Rejected' || ex.status === 'rejected' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                                                    ex.status === 'Cancelled' || ex.status === 'cancelled' ? 'bg-slate-100 text-slate-400 border-slate-200' :
-                                                        'bg-slate-100 text-slate-600 border-slate-200'
+                                                    ex.status === 'Cancelled' || ex.status === 'cancelled' ? 'bg-slate-100 text-[#5c6567] border-slate-200' :
+                                                        'bg-slate-100 text-[#5c6567] border-slate-200'
                                             }`}>{ex.status.toUpperCase()}</span>
                                     </td>
                                     <td className="table-body-cell text-center">
                                         <div className="flex justify-center gap-1 items-center">
-                                            <button onClick={(e) => { e.stopPropagation(); props.onView(ex); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View"><Eye size={14} /></button>
-                                            <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, ex.id); }} className="p-1.5 text-slate-400 hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); props.onView(ex); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View"><Eye size={14} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, ex.id); }} className="p-1.5 text-[#5c6567] hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -934,81 +934,81 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
         return (
             <div
                 ref={menuRef}
-                className="fixed w-64 bg-slate-50/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200 z-[70] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left overflow-y-auto custom-scrollbar"
+                className="fixed w-64 bg-[#FEFDFB]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-[#e4ddd1] z-[70] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left overflow-y-auto custom-scrollbar"
                 style={{ top: y, left: x, maxHeight: '90vh' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="px-4 py-2 border-b border-slate-200 text-[10px] font-bold text-slate-500 tracking-tight bg-slate-100/50 rounded-t-xl shrink-0">Invoice actions</div>
+                <div className="px-4 py-2 border-b border-[#e4ddd1] text-[10px] font-bold text-[#5c6567] uppercase tracking-tight bg-[#eef7f6] rounded-t-xl shrink-0">Invoice actions</div>
 
                 <div className="overflow-y-auto custom-scrollbar flex-1">
-                    <button onClick={() => { setOpenMenuId(null); props.onView(inv); }} className="w-full px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors">
+                    <button onClick={() => { setOpenMenuId(null); props.onView(inv); }} className="w-full px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors">
                         <FileText size={14} /> View full detail
                     </button>
-                    <button onClick={() => { setOpenMenuId(null); handlePreview('INVOICE', inv); }} className="w-full px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors">
+                    <button onClick={() => { setOpenMenuId(null); handlePreview('INVOICE', inv); }} className="w-full px-4 py-2 text-xs font-medium text-[#1f8577] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors">
                         <Eye size={14} /> Preview PDF Invoice
                     </button>
-                    <button onClick={() => { setOpenMenuId(null); handlePreview('WORK_ORDER', inv); }} className="w-full px-4 py-2 text-xs font-medium text-purple-700 hover:bg-purple-50 flex items-center gap-3 transition-colors">
+                    <button onClick={() => { setOpenMenuId(null); handlePreview('WORK_ORDER', inv); }} className="w-full px-4 py-2 text-xs font-medium text-[#0f544c] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors">
                         <Briefcase size={14} /> Preview Work Order
                     </button>
-                    <button onClick={() => { setOpenMenuId(null); handlePreview('DELIVERY_NOTE', inv); }} className="w-full px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-3 transition-colors">
+                    <button onClick={() => { setOpenMenuId(null); handlePreview('DELIVERY_NOTE', inv); }} className="w-full px-4 py-2 text-xs font-medium text-[#b97e2b] hover:bg-[#fbead0] flex items-center gap-3 transition-colors">
                         <Truck size={14} /> Preview Delivery Note
                     </button>
-                    <button onClick={() => { setOpenMenuId(null); handlePreview('PO', inv); }} className="w-full px-4 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors">
+                    <button onClick={() => { setOpenMenuId(null); handlePreview('PO', inv); }} className="w-full px-4 py-2 text-xs font-medium text-[#146b60] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors">
                         <ShoppingBag size={14} /> Preview Purchase Order
                     </button>
-                    <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'download_pdf'); }} className="w-full px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors">
+                    <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'download_pdf'); }} className="w-full px-4 py-2 text-xs font-medium text-[#1f8577] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors">
                         <Download size={14} /> Download PDF Invoice
                     </button>
-                    <div className="my-1 border-t border-slate-200"></div>
-                    <div className="my-1 border-t border-slate-200"></div>
-                    <button onClick={() => { setOpenMenuId(null); navigate(`/fiscal-reports/ledgers?query=${inv.id}`); }} className="w-full px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-3 transition-colors"><HistoryIcon size={14} className="text-slate-400" /> Audit Ledger Entries</button>
-                    <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'analyze_profit'); }} className="w-full px-4 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 flex items-center gap-3 transition-colors"><TrendingUp size={14} /> Analyze Profit</button>
+                    <div className="my-1 border-t border-[#e4ddd1]"></div>
+                    <div className="my-1 border-t border-[#e4ddd1]"></div>
+                    <button onClick={() => { setOpenMenuId(null); navigate(`/fiscal-reports/ledgers?query=${inv.id}`); }} className="w-full px-4 py-2 text-xs font-bold text-[#23282A] hover:bg-[#f5f2ed] flex items-center gap-3 transition-colors"><HistoryIcon size={14} className="text-[#5c6567]" /> Audit Ledger Entries</button>
+                    <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'analyze_profit'); }} className="w-full px-4 py-2 text-xs font-bold text-[#0f544c] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><TrendingUp size={14} /> Analyze Profit</button>
 
                     {isOverdue && (
                         <button
                             onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'ai_followup'); }}
-                            className="w-full px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors"
+                            className="w-full px-4 py-2 text-xs font-bold text-[#146b60] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"
                         >
-                            <Zap size={14} className="fill-indigo-500" /> AI Follow-up Strategy
+                            <Zap size={14} className="fill-[#3fa294]" /> AI Follow-up Strategy
                         </button>
                     )}
 
-                    <div className="relative group bg-blue-50/50">
+                    <div className="relative group bg-[#eef7f6]/50">
                         <button
                             onClick={() => setActiveSubmenu(activeSubmenu === 'portal' ? null : 'portal')}
-                            className="w-full px-4 py-2 text-xs font-bold text-blue-700 hover:bg-white flex items-center justify-between gap-3 transition-colors"
+                            className="w-full px-4 py-2 text-xs font-bold text-[#1f8577] hover:bg-white flex items-center justify-between gap-3 transition-colors"
                         >
                             <div className="flex items-center gap-3"><Globe size={14} /> Client Portal</div>
                             <ChevronRight size={12} />
                         </button>
                         {activeSubmenu === 'portal' && (
-                            <div className="absolute left-full top-0 ml-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1 overflow-hidden z-50 animate-in slide-in-from-left-2">
-                                <button onClick={() => handleOpenPortal(inv.id)} className="w-full px-4 py-2 text-xs text-left hover:bg-blue-50 flex items-center gap-2"><ExternalLink size={12} /> Open Portal</button>
-                                <button onClick={() => handleCopyPortalLink(inv.id)} className="w-full px-4 py-2 text-xs text-left hover:bg-blue-50 flex items-center gap-2"><Share2 size={12} /> Copy Secret Link</button>
+                            <div className="absolute left-full top-0 ml-1 w-48 bg-white rounded-xl shadow-xl border border-[#e4ddd1] py-1 overflow-hidden z-50 animate-in slide-in-from-left-2">
+                                <button onClick={() => handleOpenPortal(inv.id)} className="w-full px-4 py-2 text-xs text-left hover:bg-[#eef7f6] flex items-center gap-2"><ExternalLink size={12} /> Open Portal</button>
+                                <button onClick={() => handleCopyPortalLink(inv.id)} className="w-full px-4 py-2 text-xs text-left hover:bg-[#eef7f6] flex items-center gap-2"><Share2 size={12} /> Copy Secret Link</button>
                             </div>
                         )}
                     </div>
 
-                    <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'generate_dn'); }} className="w-full px-4 py-2 text-xs font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors"><Truck size={14} /> Generate Delivery Note</button>
+                    <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'generate_dn'); }} className="w-full px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-[#fbead0] hover:text-[#b97e2b] flex items-center gap-3 transition-colors"><Truck size={14} /> Generate Delivery Note</button>
 
                     {!isPaid && !isPartial && (
                         <>
-                            <button onClick={() => { setOpenMenuId(null); props.onEdit(inv); }} className="w-full px-4 py-2 text-xs font-medium text-slate-700 hover:bg-amber-50 flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Invoice</button>
+                            <button onClick={() => { setOpenMenuId(null); props.onEdit(inv); }} className="w-full px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-[#fbead0] flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Invoice</button>
                             <div className="relative group">
                                 <button
                                     onClick={() => setActiveSubmenu(activeSubmenu === 'status' ? null : 'status')}
-                                    className="w-full px-4 py-2 text-xs font-medium text-slate-700 hover:bg-white hover:text-blue-700 flex items-center justify-between gap-3 transition-colors"
+                                    className="w-full px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-white hover:text-[#1f8577] flex items-center justify-between gap-3 transition-colors"
                                 >
                                     <div className="flex items-center gap-3"><RefreshCw size={14} /> Change Status</div>
                                     <ChevronRight size={12} />
                                 </button>
                                 {activeSubmenu === 'status' && (
-                                    <div className="absolute left-full top-0 ml-1 w-48 bg-slate-50/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200 py-1 overflow-hidden z-50">
+                                    <div className="absolute left-full top-0 ml-1 w-48 bg-[#FEFDFB]/95 backdrop-blur-md rounded-xl shadow-xl border border-[#e4ddd1] py-1 overflow-hidden z-50">
                                         {['Draft', 'Unpaid', 'Overdue', 'Cancelled'].map(status => (
                                             <button
                                                 key={status}
                                                 onClick={() => { props.onAction && props.onAction(inv, `status_${status}`); setOpenMenuId(null); }}
-                                                className={`w-full px-4 py-2 text-xs text-left hover:bg-white hover:text-blue-700 ${inv.status === status ? 'font-bold text-blue-600 bg-blue-50' : 'text-slate-700'}`}
+                                                className={`w-full px-4 py-2 text-xs text-left hover:bg-white hover:text-[#1f8577] ${inv.status === status ? 'font-bold text-[#0b3e39] bg-[#eef7f6]' : 'text-[#5c6567]'}`}
                                             >
                                                 {status}
                                             </button>
@@ -1022,7 +1022,7 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                     {!isPaid && (
                         <button
                             onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'create_payment'); }}
-                            className="w-full px-4 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"
+                            className="w-full px-4 py-2 text-xs font-bold text-[#1f8577] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"
                         >
                             <DollarSign size={14} /> Receive Payment
                         </button>
@@ -1030,24 +1030,24 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
 
                     <button
                         onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'convert_to_recurring'); }}
-                        className="w-full px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors"
+                        className="w-full px-4 py-2 text-xs font-bold text-[#0f544c] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"
                     >
                         <RefreshCw size={14} /> Convert to Recurring Invoice
                     </button>
 
                     <button
                         onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'create_exchange'); }}
-                        className="w-full px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 flex items-center gap-3 transition-colors"
+                        className="w-full px-4 py-2 text-xs font-bold text-[#b97e2b] hover:bg-[#fbead0] flex items-center gap-3 transition-colors"
                     >
                         <Repeat size={14} /> Create Sales Exchange
                     </button>
 
-                    <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'duplicate'); }} className="w-full px-4 py-2 text-xs font-medium text-purple-700 hover:bg-purple-50 flex items-center gap-3 transition-colors"><Copy size={14} /> Duplicate</button>
+                    <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(inv, 'duplicate'); }} className="w-full px-4 py-2 text-xs font-medium text-[#0b3e39] hover:bg-[#eef7f6] flex items-center gap-3 transition-colors"><Copy size={14} /> Duplicate</button>
 
-                    <div className="my-1 border-t border-slate-200"></div>
+                    <div className="my-1 border-t border-[#e4ddd1]"></div>
 
                     {!isPaid && !isPartial && (
-                        <button onClick={() => { setOpenMenuId(null); props.onDelete(inv.id); }} className="w-full px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"><Trash2 size={14} /> Delete Invoice</button>
+                        <button onClick={() => { setOpenMenuId(null); props.onDelete(inv.id); }} className="w-full px-4 py-2 text-xs text-[#b5493f] hover:bg-[#f5f2ed] flex items-center gap-3 transition-colors"><Trash2 size={14} /> Delete Invoice</button>
                     )}
                 </div>
             </div>
@@ -1077,7 +1077,7 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                     {(props.searchTerm !== undefined || props.onSearchChange) && (
                         <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-50/30 shrink-0">
                             <div className="relative w-full max-w-md">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c6567]" size={14} />
                                 <input
                                     type="text"
                                     placeholder="Search invoices..."
@@ -1088,7 +1088,7 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                 {props.searchTerm && props.onSearchClear && (
                                     <button
                                         onClick={props.onSearchClear}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5c6567] hover:text-slate-600"
                                     >
                                         <X size={14} />
                                     </button>
@@ -1174,23 +1174,23 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                                 <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                                                     inv.status === 'Partial' ? 'bg-amber-100 text-amber-700 border-amber-200' :
                                                         inv.status === 'Overdue' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                                                            inv.status === 'Cancelled' ? 'bg-slate-100 text-slate-400 border-slate-200 line-through' :
-                                                                'bg-slate-100 text-slate-600 border-slate-200'
+                                                            inv.status === 'Cancelled' ? 'bg-slate-100 text-[#5c6567] border-slate-200 line-through' :
+                                                                'bg-slate-100 text-[#5c6567] border-slate-200'
                                                     }`}>{inv.status}</span>
                                             </td>
                                             <td className="table-body-cell text-center" onClick={e => e.stopPropagation()}>
                                                 <div className="flex justify-center gap-1 items-center shrink-0">
-                                                    <button onClick={(e) => { e.stopPropagation(); props.onView(inv); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View full detail">
+                                                    <button onClick={(e) => { e.stopPropagation(); props.onView(inv); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View full detail">
                                                         <ChevronRight size={14} />
                                                     </button>
-                                                    <button onClick={(e) => { e.stopPropagation(); handlePreview('INVOICE', inv); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
+                                                    <button onClick={(e) => { e.stopPropagation(); handlePreview('INVOICE', inv); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
                                                         <Eye size={14} />
                                                     </button>
-                                                    <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(inv, 'download_pdf'); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download PDF">
+                                                    <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(inv, 'download_pdf'); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download PDF">
                                                         <Download size={14} />
                                                     </button>
                                                     {!isPaid && !isPartial && (
-                                                        <button onClick={(e) => { e.stopPropagation(); props.onEdit(inv); }} className="p-1.5 text-slate-400 hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit">
+                                                        <button onClick={(e) => { e.stopPropagation(); props.onEdit(inv); }} className="p-1.5 text-[#5c6567] hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit">
                                                             <Edit2 size={14} />
                                                         </button>
                                                     )}
@@ -1203,7 +1203,7 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                                             <DollarSign size={16} className="group-hover/btn:scale-110 transition-transform" />
                                                         </button>
                                                     )}
-                                                    <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, inv.id); }} className="p-1.5 text-slate-400 hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, inv.id); }} className="p-1.5 text-[#5c6567] hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1253,12 +1253,12 @@ export const QuotationList: React.FC<ListProps<Quotation>> = (props) => {
         return (
             <div
                 ref={menuRef}
-                className="fixed w-64 bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-slate-200 z-[70] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left overflow-y-auto custom-scrollbar"
+                 className="fixed w-64 bg-[#FEFDFB]/90 backdrop-blur-md rounded-xl shadow-2xl border border-[#e4ddd1] z-[70] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left overflow-y-auto custom-scrollbar"
                 style={{ top: y, left: x, maxHeight: '90vh' }}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="px-4 py-2 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-tight bg-slate-100/50 rounded-t-xl">QUOTATION ACTIONS</div>
-                <button onClick={() => { setOpenMenuId(null); props.onView(quote); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"><ChevronRight size={14} /> View Detail</button>
+                <button onClick={() => { setOpenMenuId(null); props.onView(quote); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-slate-50 flex items-center gap-3 transition-colors"><ChevronRight size={14} /> View Detail</button>
                 <button onClick={() => { setOpenMenuId(null); handlePreview('QUOTATION', quote); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors">
                     <Eye size={14} /> Preview PDF Quotation
                 </button>
@@ -1266,7 +1266,7 @@ export const QuotationList: React.FC<ListProps<Quotation>> = (props) => {
                 <button onClick={() => { setOpenMenuId(null); handlePreview('DELIVERY_NOTE', quote); }} className="w-full text-left px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-3 transition-colors">
                     <Truck size={14} /> Preview Delivery Note
                 </button>
-                <button onClick={() => { setOpenMenuId(null); props.onEdit(quote); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-amber-50 flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Quotation</button>
+                <button onClick={() => { setOpenMenuId(null); props.onEdit(quote); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-amber-50 flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Quotation</button>
 
                 <div className="my-1 border-t border-slate-200"></div>
                 <div className="my-1 border-t border-slate-200"></div>
@@ -1333,7 +1333,7 @@ export const QuotationList: React.FC<ListProps<Quotation>> = (props) => {
                     {(props.searchTerm !== undefined || props.onSearchChange) && (
                         <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-50/30 shrink-0">
                             <div className="relative w-full max-w-md">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c6567]" size={14} />
                                 <input
                                     type="text"
                                     placeholder="Search quotations..."
@@ -1344,7 +1344,7 @@ export const QuotationList: React.FC<ListProps<Quotation>> = (props) => {
                                 {props.searchTerm && props.onSearchClear && (
                                     <button
                                         onClick={props.onSearchClear}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5c6567] hover:text-slate-600"
                                     >
                                         <X size={14} />
                                     </button>
@@ -1391,19 +1391,19 @@ export const QuotationList: React.FC<ListProps<Quotation>> = (props) => {
                                             <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${q.status === 'Accepted' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                                                 q.status === 'Sent' ? 'bg-blue-100 text-blue-700 border-blue-200' :
                                                     q.status === 'Pending Approval' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                                                        'bg-slate-100 text-slate-600 border-slate-200'
+                                                        'bg-slate-100 text-[#5c6567] border-slate-200'
                                                 }`}>{q.status}</span>
                                         </td>
                                         <td className="table-body-cell text-center" onClick={e => e.stopPropagation()}>
                                             <div className="flex justify-center gap-1 items-center shrink-0">
-                                                <button onClick={(e) => { e.stopPropagation(); handlePreview('QUOTATION', q); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
+                                                <button onClick={(e) => { e.stopPropagation(); handlePreview('QUOTATION', q); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
                                                     <Eye size={14} />
                                                 </button>
-                                                <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(q, 'download_pdf'); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download PDF">
+                                                <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(q, 'download_pdf'); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download PDF">
                                                     <Download size={14} />
                                                 </button>
-                                                <button onClick={(e) => { e.stopPropagation(); props.onEdit(q); }} className="p-1.5 text-slate-400 hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit"><Edit2 size={14} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, q.id); }} className="p-1.5 text-slate-400 hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); props.onEdit(q); }} className="p-1.5 text-[#5c6567] hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit"><Edit2 size={14} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, q.id); }} className="p-1.5 text-[#5c6567] hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -1468,8 +1468,8 @@ export const RecurringList: React.FC<ListProps<RecurringInvoice>> = (props) => {
             >
                 <div className="px-4 py-2 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-tight bg-slate-100/50 rounded-t-xl shrink-0">RECURRING INVOICE ACTIONS</div>
                 <div className="flex-1 overflow-y-auto">
-                    <button onClick={() => { setOpenMenuId(null); props.onView(sub); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"><ChevronRight size={14} /> View Details</button>
-                    <button onClick={() => { setOpenMenuId(null); props.onEdit(sub); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-amber-50 flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Subscription</button>
+                    <button onClick={() => { setOpenMenuId(null); props.onView(sub); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-slate-50 flex items-center gap-3 transition-colors"><ChevronRight size={14} /> View Details</button>
+                    <button onClick={() => { setOpenMenuId(null); props.onEdit(sub); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-amber-50 flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Subscription</button>
                     <button onClick={() => { setOpenMenuId(null); handlePreview('SUBSCRIPTION', sub); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"><Eye size={14} /> Preview Recurring Invoice</button>
                     <button onClick={() => { setOpenMenuId(null); handlePreview('PO', sub); }} className="w-full text-left px-4 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors"><ShoppingBag size={14} /> Preview Purchase Order</button>
                     <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(sub, 'download_pdf'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"><Download size={14} /> Download Recurring Invoice</button>
@@ -1480,7 +1480,7 @@ export const RecurringList: React.FC<ListProps<RecurringInvoice>> = (props) => {
                     <div className="relative">
                         <button
                             onClick={() => setActiveSubmenu(activeSubmenu === 'sub_status' ? null : 'sub_status')}
-                            className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between gap-3 transition-colors"
+                            className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-slate-50 flex items-center justify-between gap-3 transition-colors"
                         >
                             <div className="flex items-center gap-3"><RefreshCw size={14} /> Change Status</div>
                             <ChevronRight size={12} />
@@ -1503,7 +1503,7 @@ export const RecurringList: React.FC<ListProps<RecurringInvoice>> = (props) => {
                     </div>
 
                     {toggleAction && (
-                        <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(sub, 'toggle_status'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-3 transition-colors">
+                        <button onClick={() => { setOpenMenuId(null); props.onAction && props.onAction(sub, 'toggle_status'); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-purple-50 hover:text-purple-700 flex items-center gap-3 transition-colors">
                             {toggleAction.icon === 'pause' ? <><Pause size={14} /> {toggleAction.label}</> : <><Play size={14} /> {toggleAction.label}</>}
                         </button>
                     )}
@@ -1562,19 +1562,19 @@ export const RecurringList: React.FC<ListProps<RecurringInvoice>> = (props) => {
                                     <td className="table-body-cell text-center font-medium finance-nums truncate">{companyConfig.currencySymbol} {(sub.total || 0).toLocaleString()}</td>
                                     <td className="table-body-cell text-center">
                                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${sub.status === 'Active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                                            'bg-slate-100 text-slate-600 border-slate-200'
+                                            'bg-slate-100 text-[#5c6567] border-slate-200'
                                             }`}>{sub.status}</span>
                                     </td>
                                         <td className="table-body-cell text-center" onClick={e => e.stopPropagation()}>
                                         <div className="flex justify-center gap-1 items-center">
-                                            <button onClick={(e) => { e.stopPropagation(); handlePreview('SUBSCRIPTION', sub); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview Recurring Invoice">
+                                            <button onClick={(e) => { e.stopPropagation(); handlePreview('SUBSCRIPTION', sub); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview Recurring Invoice">
                                                 <Eye size={14} />
                                             </button>
-                                            <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(sub, 'download_pdf'); }} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download Recurring Invoice">
+                                            <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(sub, 'download_pdf'); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download Recurring Invoice">
                                                 <Download size={14} />
                                             </button>
-                                            <button onClick={(e) => { e.stopPropagation(); props.onEdit(sub); }} className="p-1.5 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit"><Edit2 size={14} /></button>
-                                            <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, sub.id); }} className="p-1.5 text-slate-400 hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); props.onEdit(sub); }} className="p-1.5 text-[#5c6567] hover:text-slate-700 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit"><Edit2 size={14} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, sub.id); }} className="p-1.5 text-[#5c6567] hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
                                         </div>
                                     </td>
                                 </tr>

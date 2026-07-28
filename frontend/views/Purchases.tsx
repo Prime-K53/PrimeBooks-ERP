@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Truck } from 'lucide-react';
+import { Truck, ShoppingCart, FileText } from 'lucide-react';
 import { useData, REFRESH_INTERVAL } from '../context/DataContext';
 import { useModuleRefresh } from '../hooks/useModuleRefresh';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { generateNextId } from '../utils/helpers';
 import { ConfirmDialog, ConfirmDialogType } from '../components/ConfirmDialog';
 import { getDefaultDate, validateDateInFY } from '../utils/financialYearUtils';
+
+const teal = { 50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a' };
+const amber = { 100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b' };
+const paper = '#FEFDFB'; const ink = '#23282A'; const inkSoft = '#5c6567'; const hairline = '#e4ddd1';
 
 const Purchases: React.FC = () => {
   const { refreshAllData } = useData();
@@ -35,7 +39,7 @@ const Purchases: React.FC = () => {
    const navigate = useNavigate();
    const location = useLocation();
 
-   const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; confirmText?: string; type?: ConfirmDialogType; onConfirm?: () => void }>({ open: false, title: '', message: '' });
+  const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; confirmText?: string; type?: ConfirmDialogType; onConfirm?: () => void }>({ open: false, title: '', message: '' });
 
    React.useEffect(() => {
      if (location.state?.action === 'create') {
@@ -44,8 +48,8 @@ const Purchases: React.FC = () => {
          setEditingPurchase({
            id: '',
            supplierId: location.state.supplierId,
-date: getDefaultDate(),
-            dueDate: getDefaultDate(),
+           date: getDefaultDate(),
+           dueDate: getDefaultDate(),
            items: [],
            total: 0,
            status: 'Draft',
@@ -253,7 +257,31 @@ date: getDefaultDate(),
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-[1600px] mx-auto flex flex-col h-full relative w-full">
+    <div className="purchases-page flex flex-col h-full relative w-full" style={{background:paper,color:ink,fontFamily:"'Inter','DM Sans',sans-serif",fontSize:13.5}}>
+      <style>{`
+:root{--teal-50:#eef7f6;--teal-100:#d3ece9;--teal-200:#a6d9d3;--teal-300:#72c0b7;--teal-400:#3fa294;--teal-500:#1f8577;--teal-600:#146b60;--teal-700:#0f544c;--teal-800:#0b3e39;--teal-900:#082e2a;--amber-100:#fbead0;--amber-300:#eec27a;--amber-500:#d99a3f;--amber-600:#b97e2b;--paper:#FEFDFB;--ink:#23282A;--ink-soft:#5c6567;--hairline:#e4ddd1}
+.purchases-page{background:var(--paper);color:var(--ink);font-family:'Inter','DM Sans',sans-serif;font-size:13.5px;min-height:100vh;padding:20px 24px!important;max-width:1600px!important;margin:0 auto!important}
+.purchases-page *{box-sizing:border-box}
+.purchases-card{background:var(--paper);border-radius:14px;box-shadow:0 30px 70px -20px rgba(0,0,0,.55),0 8px 24px -8px rgba(0,0,0,.35);overflow:hidden;border:1.4px solid var(--hairline)}
+.purchases-tab{display:flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease;border:1.4px solid var(--hairline);background:var(--paper);color:var(--ink-soft);font-family:'Inter','DM Sans',sans-serif}
+.purchases-tab:hover{background:var(--teal-50);color:var(--teal-700);border-color:var(--teal-200)}
+.purchases-tab.active{background:linear-gradient(155deg,var(--teal-500),var(--teal-700));color:#fff;border-color:transparent;box-shadow:0 6px 16px -6px rgba(15,84,76,.55)}
+.purchases-input{width:100%;border:1.4px solid var(--hairline);border-radius:9px;padding:9px 12px;background:var(--paper);font-family:'Inter','DM Sans',sans-serif;font-size:13.5px;color:var(--ink);outline:none;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+.purchases-input:focus{border-color:var(--teal-400);box-shadow:0 0 0 3px rgba(31,133,119,.1)}
+.purchases-input::placeholder{color:#b7afa4;opacity:.85}
+.purchases-btn-primary{background:linear-gradient(155deg,var(--teal-500),var(--teal-700));color:#fff;border-radius:9px;padding:9px 18px;border:none;font-family:'Inter','DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:0 6px 16px -6px rgba(15,84,76,.55);transition:all .15s ease;display:inline-flex;align-items:center;gap:7px}
+.purchases-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px -6px rgba(15,84,76,.65)}
+.purchases-btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.purchases-btn-ghost{background:var(--paper);border:1.4px solid var(--hairline);color:var(--ink-soft);border-radius:9px;padding:9px 18px;font-family:'Inter','DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:7px}
+.purchases-btn-ghost:hover{background:var(--teal-50);color:var(--teal-800);border-color:var(--teal-200)}
+.purchases-label{display:block;font-size:12px;font-weight:600;color:var(--teal-800);margin-bottom:6px;letter-spacing:.01;font-family:'Inter','DM Sans',sans-serif}
+.purchases-accent-border{border-color:var(--teal-200)!important}
+.purchases-accent-bg{background:linear-gradient(135deg,var(--teal-50) 0%,var(--paper) 100%)!important}
+.purchases-text-heading{font-family:'DM Serif Display','Georgia',serif;font-size:22px;color:var(--teal-800);font-weight:400;letter-spacing:.2}
+.purchases-text-subtitle{font-size:11.5px;color:var(--ink-soft);margin-top:2px;letter-spacing:.02;font-family:'Inter','DM Sans',sans-serif}
+.purchases-icon-teal{background:linear-gradient(155deg,var(--teal-500),var(--teal-700));color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px -3px rgba(15,84,76,.6)}
+.nav-tilde{color:var(--teal-400);margin:0 4px;opacity:.6}
+      `}</style>
       
       {selectedPurchase && (
           <PurchaseOrderDetail 
@@ -282,51 +310,60 @@ date: getDefaultDate(),
           />
       )}
 
-      <div className="mb-4 flex justify-between items-center shrink-0">
-         <div>
-            <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2 tracking-tight"><Truck className="text-blue-600" size={20}/> Bills & Purchases</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Manage vendor bills and purchase orders</p>
+      <div className="mb-5 flex justify-between items-center shrink-0">
+         <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg purchases-icon-teal" style={{borderRadius:10}}>
+               <Truck size={18} />
+            </div>
+            <div>
+               <h1 className="purchases-text-heading" style={{margin:0}}>Bills & Purchases</h1>
+               <p className="purchases-text-subtitle">Manage vendor bills and purchase orders</p>
+            </div>
          </div>
-         <div className="flex bg-white/70 backdrop-blur-md p-1 rounded-2xl border border-white/50 shadow-sm">
-            <button 
-              onClick={() => handleTabChange('New')} 
-              className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${activeTab === 'New' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
+         <div className="flex gap-1 p-1">
+            <button
+              onClick={() => handleTabChange('New')}
+              className={`purchases-tab${activeTab === 'New' ? ' active' : ''}`}
             >
-               {editingPurchase ? 'Edit Bill' : 'New Bill'}
+               <ShoppingCart size={13} />{editingPurchase ? 'Edit Bill' : 'New Bill'}
             </button>
-            <button 
-              onClick={() => handleTabChange('History')} 
-              className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${activeTab === 'History' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
+            <button
+              onClick={() => handleTabChange('History')}
+              className={`purchases-tab${activeTab === 'History' ? ' active' : ''}`}
             >
-               All Bills
+               <FileText size={13} />All Bills
             </button>
          </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-        {activeTab === 'New' && (
-            <PurchaseBuilder
-                inventory={inventory}
-                suppliers={suppliers}
-                onCreateOrder={handleCreateOrder}
-                initialData={editingPurchase}
-                onUpdateOrder={handleUpdateOrder}
-                onCancel={() => { setEditingPurchase(null); setActiveTab('History'); }}
-            />
-        )}
+         {activeTab === 'New' && (
+             <div className="purchases-card flex-1 min-h-0 overflow-hidden">
+                <PurchaseBuilder
+                    inventory={inventory}
+                    suppliers={suppliers}
+                    onCreateOrder={handleCreateOrder}
+                    initialData={editingPurchase}
+                    onUpdateOrder={handleUpdateOrder}
+                    onCancel={() => { setEditingPurchase(null); setActiveTab('History'); }}
+                />
+             </div>
+         )}
 
-        {activeTab === 'History' && (
-            <PurchaseHistory
-                purchases={purchases}
-                suppliers={suppliers}
-                onReceive={handleReceive}
-                onView={(po) => setSelectedPurchase(po)}
-                onEdit={handleEditOrder}
-                onMerge={handleMergeOrders}
-                onBatchDelete={handleBatchDelete}
-                onPayment={handlePaymentRequest}
-            />
-        )}
+         {activeTab === 'History' && (
+             <div className="purchases-card flex-1 min-h-0 overflow-hidden">
+                <PurchaseHistory
+                    purchases={purchases}
+                    suppliers={suppliers}
+                    onReceive={handleReceive}
+                    onView={(po) => setSelectedPurchase(po)}
+                    onEdit={handleEditOrder}
+                    onMerge={handleMergeOrders}
+                    onBatchDelete={handleBatchDelete}
+                    onPayment={handlePaymentRequest}
+                />
+             </div>
+         )}
       </div>
 
       <ConfirmDialog

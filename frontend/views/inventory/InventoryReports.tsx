@@ -7,6 +7,46 @@ import { currencyService } from '../../services/currencyService';
 import type { Item, Sale as SaleType } from '../../types';
 import './inventory-reference.css';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', border: '1.4px solid #e4ddd1', borderRadius: 9,
+  padding: '9px 12px', background: '#FEFDFB',
+  fontFamily: "'Inter',sans-serif", fontSize: 13.5, color: '#23282A',
+  outline: 'none', transition: 'border-color .15s ease, box-shadow .15s ease'
+};
+
+const btnPrimaryStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  background: 'linear-gradient(155deg, #1f8577, #0f544c)',
+  color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+  boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
+  transition: 'all .15s ease'
+};
+
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567',
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12, fontWeight: 600, color: '#0b3e39',
+  marginBottom: 6, letterSpacing: 0.01
+};
+
 type ReportTab = 'overview' | 'stock-levels' | 'low-stock' | 'valuation' | 'reorder' | 'financials' | 'top-products';
 
 const TABS: { id: ReportTab; label: string; icon: React.ReactNode }[] = [
@@ -163,23 +203,24 @@ export const InventoryReports: React.FC = () => {
   const statusBadge = (item: Item) => {
     const stock = item.stock ?? 0;
     const rop = item.reorderPoint ?? 0;
-    if (stock === 0 && rop > 0) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Out of Stock</span>;
-    if (rop > 0 && stock <= rop) return <span className="text-[10px] font-bold px-2 py.5 rounded-full bg-amber-100 text-amber-700">Low Stock</span>;
-    if (stock === 0) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">Zero</span>;
-    return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">In Stock</span>;
+    if (stock === 0 && rop > 0) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#fef2f2', color: '#b5493f', border: '1px solid #f5c6c2' }}>Out of Stock</span>;
+    if (rop > 0 && stock <= rop) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: amber[100], color: '#8c5c1f', border: `1px solid ${amber[300]}` }}>Low Stock</span>;
+    if (stock === 0) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#f3f0ec', color: inkSoft, border: `1px solid ${hairline}` }}>Zero</span>;
+    return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: teal[50], color: teal[700], border: `1px solid ${teal[200]}` }}>In Stock</span>;
   };
 
   const searchAndFilter = (
     <div className="flex items-center gap-3 mb-4">
       <div className="relative flex-1 max-w-xs">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#5c6567' }} />
         <input type="text" placeholder="Search items..." value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 rounded-xl border text-sm outline-none transition-all"
-          style={{ borderColor: '#E2E8F0', color: '#0F172A' }} />
+          style={inputStyle}
+        />
       </div>
       <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-        className="px-3 py-2 rounded-xl border text-sm outline-none"
-        style={{ borderColor: '#E2E8F0', color: '#0F172A' }}>
+        style={{ ...inputStyle, paddingRight: 30, cursor: 'pointer', appearance: 'none',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+          backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}>
         {categories.map(c => <option key={c} value={c}>{c === 'all' ? 'All Categories' : c}</option>)}
       </select>
     </div>
@@ -202,19 +243,19 @@ export const InventoryReports: React.FC = () => {
           </thead>
           <tbody>
             {items.length === 0 ? (
-              <tr><td colSpan={showRop ? 7 : 6} className="px-4 py-12 text-center text-xs font-medium" style={{ color: '#94A3B8' }}>No items match your filters.</td></tr>
+              <tr><td colSpan={showRop ? 7 : 6} className="px-4 py-12 text-center text-xs font-medium" style={{ color: inkSoft }}>No items match your filters.</td></tr>
             ) : items.map((item: Item, idx: number) => (
-              <tr key={`${item.id}-${idx}`} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                <td style={{ fontWeight: 600, color: '#0F172A' }}>{item.name}</td>
-                <td style={{ fontSize: 12, fontFamily: "'IBM Plex Mono',monospace", color: '#94A3B8' }}>{item.sku}</td>
-                <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: (item.stock ?? 0) <= (item.reorderPoint ?? -1) ? '#DC2626' : '#0F172A' }}>
+              <tr key={`${item.id}-${idx}`} style={{ borderBottom: `1px solid ${hairline}` }}>
+                <td style={{ fontWeight: 600, color: ink }}>{item.name}</td>
+                <td style={{ fontSize: 12, fontFamily: "'JetBrains Mono',monospace", color: inkSoft }}>{item.sku}</td>
+                <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: (item.stock ?? 0) <= (item.reorderPoint ?? -1) ? danger : ink }}>
                   {item.stock ?? 0}
                 </td>
-                {showRop && <td className="num" style={{ color: '#64748B' }}>{item.reorderPoint ?? '-'}</td>}
-                <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#1E293B' }}>
+                {showRop && <td className="num" style={{ color: inkSoft }}>{item.reorderPoint ?? '-'}</td>}
+                <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800] }}>
                   {currency}{(item.costPrice ?? 0).toFixed(2)}
                 </td>
-                <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#0F172A' }}>
+                <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: ink }}>
                   {currency}{((item.costPrice ?? 0) * Math.max(item.stock ?? 0, 0)).toFixed(2)}
                 </td>
                 <td style={{ textAlign: 'center' }}>{statusBadge(item)}</td>
@@ -227,26 +268,31 @@ export const InventoryReports: React.FC = () => {
   );
 
   return (
-    <div className="h-full flex flex-col p-6 max-w-[1280px] mx-auto" style={{ color: '#0F172A' }}>
+    <div className="h-full flex flex-col p-6 max-w-[1280px] mx-auto" style={{ background: paper, color: ink }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-[40px] h-[40px] rounded-[10px] flex items-center justify-center" style={{ background: '#EFF6FF', color: '#2563EB' }}>
-            <Package size={20} />
+          <div className="w-[40px] h-[40px] rounded-[10px] flex items-center justify-center" style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)', boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)' }}>
+            <Package size={20} color="#fff" />
           </div>
           <div>
-            <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>Inventory Reports</h1>
-            <p className="text-xs font-medium" style={{ color: '#64748B' }}>{activeItems.length} active items · {currency}{totalValue.toFixed(2)} total value</p>
+            <h1 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2 }}>Inventory Reports</h1>
+            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>{activeItems.length} active items · {currency}{totalValue.toFixed(2)} total value</p>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-slate-200 bg-white rounded-t-xl mb-6">
+      <div className="border-b mb-6" style={{ borderColor: hairline, background: paper, borderRadius: '14px 14px 0 0' }}>
         <div className="flex items-center gap-6 px-4 overflow-x-auto custom-scrollbar">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`py-3 text-[13px] font-bold transition-all border-b-2 relative whitespace-nowrap flex items-center gap-1.5 ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+              className="py-3 text-[13px] font-bold transition-all whitespace-nowrap flex items-center gap-1.5"
+              style={{
+                borderBottom: activeTab === tab.id ? '2px solid #0b3e39' : '2px solid transparent',
+                color: activeTab === tab.id ? teal[800] : inkSoft,
+                background: 'transparent', cursor: 'pointer'
+              }}>
               {tab.icon}
               {tab.label}
             </button>
@@ -260,38 +306,38 @@ export const InventoryReports: React.FC = () => {
           {/* KPI Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total Items', value: activeItems.length, icon: <Box size={20} />, color: 'blue', border: 'border-l-blue-500', iconBg: 'bg-blue-50', iconText: 'text-blue-600' },
-              { label: 'Top Product', value: productSalesAggregated[0]?.name || 'N/A', sub: productSalesAggregated[0] ? `${currency}${productSalesAggregated[0].profit.toFixed(2)} profit` : '', icon: <Award size={20} />, color: 'emerald', border: 'border-l-emerald-500', iconBg: 'bg-emerald-50', iconText: 'text-emerald-600' },
-              { label: 'Low Stock Items', value: lowStockItems.length, icon: <AlertTriangle size={20} />, color: 'amber', border: 'border-l-amber-500', iconBg: 'bg-amber-50', iconText: 'text-amber-600' },
-              { label: 'Out of Stock', value: outOfStock.length, icon: <TrendingUp size={20} />, color: 'red', border: 'border-l-red-500', iconBg: 'bg-red-50', iconText: 'text-red-600' },
+              { label: 'Total Items', value: activeItems.length, icon: <Box size={20} />, color: 'teal', border: 'border-l-teal-500', iconBg: teal[50], iconText: teal[700] },
+              { label: 'Top Product', value: productSalesAggregated[0]?.name || 'N/A', sub: productSalesAggregated[0] ? `${currency}${productSalesAggregated[0].profit.toFixed(2)} profit` : '', icon: <Award size={20} />, color: 'teal', border: 'border-l-teal-400', iconBg: teal[50], iconText: teal[600] },
+              { label: 'Low Stock Items', value: lowStockItems.length, icon: <AlertTriangle size={20} />, color: 'amber', border: 'border-l-amber-500', iconBg: amber[100], iconText: '#8c5c1f' },
+              { label: 'Out of Stock', value: outOfStock.length, icon: <TrendingUp size={20} />, color: 'red', border: 'border-l-red-500', iconBg: '#fef2f2', iconText: danger },
             ].map((kpi: any) => (
-              <div key={kpi.label} className={`bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 ${kpi.border} hover:bg-slate-50 transition-all`}>
-                <div className={`p-2.5 ${kpi.iconBg} ${kpi.iconText} rounded-lg`}>{kpi.icon}</div>
+              <div key={kpi.label} className="p-3 md:p-4 rounded-xl flex items-center gap-4 transition-all" style={{ background: paper, borderLeft: `3px solid ${kpi.iconBg === teal[50] ? teal[500] : kpi.iconBg === amber[100] ? amber[500] : '#b5493f'}`, border: `1px solid ${hairline}`, borderLeftWidth: 3, borderLeftColor: kpi.label === 'Total Items' ? teal[500] : kpi.label === 'Top Product' ? teal[400] : kpi.label === 'Low Stock Items' ? amber[500] : '#b5493f' }}>
+                <div className="p-2.5 rounded-lg" style={{ background: kpi.iconBg, color: kpi.iconText }}>{kpi.icon}</div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">{kpi.label}</p>
-                  <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{kpi.value}</p>
-                  {kpi.sub && <p className="text-[10px] text-emerald-600 mt-0.5">{kpi.sub}</p>}
+                  <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: inkSoft }}>{kpi.label}</p>
+                  <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{kpi.value}</p>
+                  {kpi.sub && <p className="text-[10px] mt-0.5" style={{ color: teal[600] }}>{kpi.sub}</p>}
                 </div>
               </div>
             ))}
           </div>
 
           {/* Valuation by Category */}
-          <div className="pp-panel">
-            <h3 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: '#0F172A' }}>
-              <Layers size={16} style={{ color: '#2563EB' }} /> Inventory Value by Category
+          <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
+            <h3 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: ink }}>
+              <Layers size={16} style={{ color: teal[500] }} /> Inventory Value by Category
             </h3>
             <div className="space-y-2">
               {valuationByCategory.map(([cat, data]) => {
                 const pct = totalValue > 0 ? (data.value / totalValue) * 100 : 0;
                 return (
                   <div key={cat} className="flex items-center gap-3">
-                    <span className="w-32 text-xs font-semibold truncate" style={{ color: '#1E293B' }}>{cat}</span>
-                    <div className="flex-1 h-2.5 rounded-full bg-[#F1F5F9] overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct > 50 ? '#2563EB' : pct > 20 ? '#3B82F6' : '#94A3B8' }} />
+                    <span className="w-32 text-xs font-semibold truncate" style={{ color: teal[800] }}>{cat}</span>
+                    <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: teal[50] }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(90deg, #1f8577, #0f544c)` }} />
                     </div>
-                    <span className="w-24 text-xs font-semibold text-right finance-nums" style={{ color: '#0F172A' }}>{currency}{data.value.toFixed(2)}</span>
-                    <span className="w-16 text-[10px] text-right" style={{ color: '#94A3B8' }}>{pct.toFixed(1)}%</span>
+                    <span className="w-24 text-xs font-semibold text-right finance-nums" style={{ color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{data.value.toFixed(2)}</span>
+                    <span className="w-16 text-[10px] text-right" style={{ color: inkSoft }}>{pct.toFixed(1)}%</span>
                   </div>
                 );
               })}
@@ -299,21 +345,21 @@ export const InventoryReports: React.FC = () => {
           </div>
 
           {/* Valuation by Warehouse */}
-          <div className="pp-panel">
-            <h3 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: '#0F172A' }}>
-              <WarehouseIcon size={16} style={{ color: '#2563EB' }} /> Inventory Value by Warehouse
+          <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
+            <h3 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: ink }}>
+              <WarehouseIcon size={16} style={{ color: teal[500] }} /> Inventory Value by Warehouse
             </h3>
             <div className="space-y-2">
               {valuationByWarehouse.map(([wh, data]) => {
                 const pct = totalValue > 0 ? (data.value / totalValue) * 100 : 0;
                 return (
                   <div key={wh} className="flex items-center gap-3">
-                    <span className="w-40 text-xs font-semibold truncate" style={{ color: '#1E293B' }}>{wh}</span>
-                    <div className="flex-1 h-2.5 rounded-full bg-[#F1F5F9] overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: '#2563EB' }} />
+                    <span className="w-40 text-xs font-semibold truncate" style={{ color: teal[800] }}>{wh}</span>
+                    <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: teal[50] }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(90deg, #1f8577, #0f544c)` }} />
                     </div>
-                    <span className="w-24 text-xs font-semibold text-right finance-nums" style={{ color: '#0F172A' }}>{currency}{data.value.toFixed(2)}</span>
-                    <span className="w-16 text-[10px] text-right" style={{ color: '#94A3B8' }}>{pct.toFixed(1)}%</span>
+                    <span className="w-24 text-xs font-semibold text-right finance-nums" style={{ color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{data.value.toFixed(2)}</span>
+                    <span className="w-16 text-[10px] text-right" style={{ color: inkSoft }}>{pct.toFixed(1)}%</span>
                   </div>
                 );
               })}
@@ -331,9 +377,9 @@ export const InventoryReports: React.FC = () => {
 
       {activeTab === 'low-stock' && (
         <div className="flex-1 overflow-y-auto">
-          <div className="flex items-center gap-2 mb-4 p-3 rounded-[8px]" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-            <AlertTriangle size={16} style={{ color: '#D97706' }} />
-            <span className="text-xs font-medium" style={{ color: '#92400E' }}>
+          <div className="flex items-center gap-2 mb-4 p-3 rounded-[8px]" style={{ background: amber[100], border: `1px solid ${amber[300]}` }}>
+            <AlertTriangle size={16} style={{ color: '#8c5c1f' }} />
+            <span className="text-xs font-medium" style={{ color: '#6b4513' }}>
               {lowStockItems.length} item{lowStockItems.length !== 1 ? 's' : ''} at or below reorder point. {outOfStock.length} item{outOfStock.length !== 1 ? 's' : ''} out of stock.
             </span>
           </div>
@@ -345,8 +391,8 @@ export const InventoryReports: React.FC = () => {
       {activeTab === 'valuation' && (
         <div className="flex-1 overflow-y-auto space-y-6">
           {/* Classification Breakdown */}
-          <div className="pp-panel">
-            <h3 className="text-sm font-bold mb-4" style={{ color: '#0F172A' }}>Value by Classification</h3>
+          <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
+            <h3 className="text-sm font-bold mb-4" style={{ color: ink }}>Value by Classification</h3>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="pp-table">
                 <thead>
@@ -368,15 +414,15 @@ export const InventoryReports: React.FC = () => {
                     const total = breakdown.reduce((s, c) => s + c.value, 0);
                     return breakdown.map((c: { label: string; items: number; value: number }) => (
                       <tr key={c.label}>
-                        <td style={{ fontWeight: 600, color: '#0F172A' }}>{c.label}</td>
-                        <td className="num" style={{ color: '#64748B' }}>{c.items}</td>
-                        <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#0F172A' }}>{currency}{c.value.toFixed(2)}</td>
+                        <td style={{ fontWeight: 600, color: ink }}>{c.label}</td>
+                        <td className="num" style={{ color: inkSoft }}>{c.items}</td>
+                        <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: ink }}>{currency}{c.value.toFixed(2)}</td>
                         <td className="num">
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
-                            <div style={{ flex: 1, maxWidth: 120, height: 8, borderRadius: 4, background: '#F1F5F9', overflow: 'hidden' }}>
-                              <div style={{ height: '100%', borderRadius: 4, background: total > 0 ? (c.value / total > 0.5 ? '#2563EB' : c.value / total > 0.2 ? '#3B82F6' : '#94A3B8') : '#94A3B8', width: `${total > 0 ? (c.value / total * 100) : 0}%` }} />
+                            <div style={{ flex: 1, maxWidth: 120, height: 8, borderRadius: 4, background: teal[50], overflow: 'hidden' }}>
+                              <div style={{ height: '100%', borderRadius: 4, background: `linear-gradient(90deg, #1f8577, #0f544c)`, width: `${total > 0 ? (c.value / total * 100) : 0}%` }} />
                             </div>
-                            <span className="text-xs font-semibold finance-nums" style={{ color: '#64748B', width: 48, textAlign: 'right' }}>{total > 0 ? (c.value / total * 100).toFixed(1) : '0.0'}%</span>
+                            <span className="text-xs font-semibold finance-nums" style={{ color: inkSoft, width: 48, textAlign: 'right', fontFamily: "'JetBrains Mono',monospace" }}>{total > 0 ? (c.value / total * 100).toFixed(1) : '0.0'}%</span>
                           </div>
                         </td>
                       </tr>
@@ -387,8 +433,8 @@ export const InventoryReports: React.FC = () => {
             </div>
           </div>
           {/* By Category */}
-          <div className="pp-panel">
-            <h3 className="text-sm font-bold mb-4" style={{ color: '#0F172A' }}>Value by Category</h3>
+          <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
+            <h3 className="text-sm font-bold mb-4" style={{ color: ink }}>Value by Category</h3>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="pp-table">
                 <thead>
@@ -403,11 +449,11 @@ export const InventoryReports: React.FC = () => {
                 <tbody>
                   {valuationByCategory.map(([cat, data]) => (
                     <tr key={cat}>
-                      <td style={{ fontWeight: 600, color: '#0F172A' }}>{cat}</td>
-                      <td className="num" style={{ color: '#64748B' }}>{data.count}</td>
-                      <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#1E293B' }}>{currency}{data.cost.toFixed(2)}</td>
-                      <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#0F172A' }}>{currency}{data.value.toFixed(2)}</td>
-                      <td className="num" style={{ color: '#64748B' }}>{totalValue > 0 ? ((data.value / totalValue) * 100).toFixed(1) : '0.0'}%</td>
+                      <td style={{ fontWeight: 600, color: ink }}>{cat}</td>
+                      <td className="num" style={{ color: inkSoft }}>{data.count}</td>
+                      <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800] }}>{currency}{data.cost.toFixed(2)}</td>
+                      <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{data.value.toFixed(2)}</td>
+                      <td className="num" style={{ color: inkSoft }}>{totalValue > 0 ? ((data.value / totalValue) * 100).toFixed(1) : '0.0'}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -415,8 +461,8 @@ export const InventoryReports: React.FC = () => {
             </div>
           </div>
           {/* By Warehouse */}
-          <div className="pp-panel">
-            <h3 className="text-sm font-bold mb-4" style={{ color: '#0F172A' }}>Value by Warehouse</h3>
+          <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
+            <h3 className="text-sm font-bold mb-4" style={{ color: ink }}>Value by Warehouse</h3>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="pp-table">
                 <thead>
@@ -430,10 +476,10 @@ export const InventoryReports: React.FC = () => {
                 <tbody>
                   {valuationByWarehouse.map(([wh, data]) => (
                     <tr key={wh}>
-                      <td style={{ fontWeight: 600, color: '#0F172A' }}>{wh}</td>
-                      <td className="num" style={{ color: '#64748B' }}>{data.count}</td>
-                      <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#0F172A' }}>{currency}{data.value.toFixed(2)}</td>
-                      <td className="num" style={{ color: '#64748B' }}>{totalValue > 0 ? ((data.value / totalValue) * 100).toFixed(1) : '0.0'}%</td>
+                      <td style={{ fontWeight: 600, color: ink }}>{wh}</td>
+                      <td className="num" style={{ color: inkSoft }}>{data.count}</td>
+                      <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{data.value.toFixed(2)}</td>
+                      <td className="num" style={{ color: inkSoft }}>{totalValue > 0 ? ((data.value / totalValue) * 100).toFixed(1) : '0.0'}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -441,10 +487,10 @@ export const InventoryReports: React.FC = () => {
             </div>
           </div>
           {/* Total */}
-          <div className="pp-panel">
+          <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold" style={{ color: '#0F172A' }}>Total Inventory Value</span>
-              <span className="text-lg font-bold finance-nums" style={{ color: '#2563EB' }}>{currency}{totalValue.toFixed(2)}</span>
+              <span className="text-sm font-bold" style={{ color: ink }}>Total Inventory Value</span>
+              <span className="text-lg font-bold finance-nums" style={{ color: teal[700], fontFamily: "'JetBrains Mono',monospace" }}>{currency}{totalValue.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -455,24 +501,24 @@ export const InventoryReports: React.FC = () => {
           {/* Financial Basis KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total Cost Basis', value: currency + totalValue.toFixed(2), icon: <DollarSign size={20} />, border: 'border-l-emerald-500', iconBg: 'bg-emerald-50', iconText: 'text-emerald-600' },
-              { label: 'Potential Revenue', value: currency + totalPotentialRevenue.toFixed(2), icon: <TrendingUp size={20} />, border: 'border-l-blue-500', iconBg: 'bg-blue-50', iconText: 'text-blue-600' },
-              { label: 'Gross Profit Potential', value: currency + grossProfitPotential.toFixed(2), icon: <Coins size={20} />, border: grossProfitPotential >= 0 ? 'border-l-emerald-500' : 'border-l-red-500', iconBg: grossProfitPotential >= 0 ? 'bg-emerald-50' : 'bg-red-50', iconText: grossProfitPotential >= 0 ? 'text-emerald-600' : 'text-red-600' },
-              { label: 'Avg Markup', value: overallMarkupPct.toFixed(1) + '%', icon: <BarChart3 size={20} />, border: overallMarkupPct >= 20 ? 'border-l-emerald-500' : 'border-l-amber-500', iconBg: 'bg-amber-50', iconText: 'text-amber-600' },
+              { label: 'Total Cost Basis', value: currency + totalValue.toFixed(2), icon: <DollarSign size={20} />, border: teal[500], iconBg: teal[50], iconText: teal[700] },
+              { label: 'Potential Revenue', value: currency + totalPotentialRevenue.toFixed(2), icon: <TrendingUp size={20} />, border: teal[400], iconBg: teal[50], iconText: teal[600] },
+              { label: 'Gross Profit Potential', value: currency + grossProfitPotential.toFixed(2), icon: <Coins size={20} />, border: grossProfitPotential >= 0 ? teal[500] : '#b5493f', iconBg: grossProfitPotential >= 0 ? teal[50] : '#fef2f2', iconText: grossProfitPotential >= 0 ? teal[700] : danger },
+              { label: 'Avg Markup', value: overallMarkupPct.toFixed(1) + '%', icon: <BarChart3 size={20} />, border: overallMarkupPct >= 20 ? teal[500] : amber[500], iconBg: 'bg-amber-50', iconText: overallMarkupPct >= 20 ? teal[700] : '#8c5c1f' },
             ].map(kpi => (
-              <div key={kpi.label} className={`bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 ${kpi.border} hover:bg-slate-50 transition-all`}>
-                <div className={`p-2.5 ${kpi.iconBg} ${kpi.iconText} rounded-lg`}>{kpi.icon}</div>
+              <div key={kpi.label} className="p-3 md:p-4 rounded-xl flex items-center gap-4 transition-all" style={{ background: paper, border: `1px solid ${hairline}`, borderLeft: `3px solid ${kpi.border}` }}>
+                <div className="p-2.5 rounded-lg" style={{ background: kpi.iconBg, color: kpi.iconText }}>{kpi.icon}</div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">{kpi.label}</p>
-                  <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{kpi.value}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: inkSoft }}>{kpi.label}</p>
+                  <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{kpi.value}</p>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Markup Distribution */}
-          <div className="pp-panel">
-            <h3 className="text-sm font-bold mb-4" style={{ color: '#0F172A' }}>Markup Distribution</h3>
+          <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
+            <h3 className="text-sm font-bold mb-4" style={{ color: ink }}>Markup Distribution</h3>
             <div className="space-y-3">
               {markupDistribution.map(b => {
                 const totalInvValue = markupDistribution.reduce((s, x) => s + x.value, 0);
@@ -480,13 +526,13 @@ export const InventoryReports: React.FC = () => {
                 return (
                   <div key={b.label}>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold" style={{ color: '#1E293B' }}>{b.label}</span>
-                      <span style={{ color: '#64748B' }}>{b.items} items · {currency}{b.value.toFixed(2)}</span>
+                      <span className="font-semibold" style={{ color: teal[800] }}>{b.label}</span>
+                      <span style={{ color: inkSoft }}>{b.items} items · {currency}{b.value.toFixed(2)}</span>
                     </div>
-                    <div className="h-2.5 rounded-full bg-[#F1F5F9] overflow-hidden">
+                    <div className="h-2.5 rounded-full overflow-hidden" style={{ background: teal[50] }}>
                       <div className="h-full rounded-full transition-all" style={{
                         width: `${pct}%`,
-                        background: b.label === '100%+' ? '#2563EB' : b.label === '0-10%' ? '#EF4444' : b.label === '10-20%' ? '#F59E0B' : '#3B82F6'
+                        background: b.label === '100%+' ? `linear-gradient(90deg, #1f8577, #0f544c)` : b.label === '0-10%' ? '#b5493f' : b.label === '10-20%' ? '#d99a3f' : `linear-gradient(90deg, #1f8577, #0f544c)`
                       }} />
                     </div>
                   </div>
@@ -497,10 +543,10 @@ export const InventoryReports: React.FC = () => {
 
           {/* Negative / Low Markup Warning */}
           {negativeMarkupItems.length > 0 && (
-            <div className="pp-panel">
+            <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
               <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle size={16} style={{ color: '#EF4444' }} />
-                <h3 className="text-sm font-bold" style={{ color: '#0F172A' }}>Items Selling Below Cost ({negativeMarkupItems.length})</h3>
+                <AlertTriangle size={16} style={{ color: danger }} />
+                <h3 className="text-sm font-bold" style={{ color: ink }}>Items Selling Below Cost ({negativeMarkupItems.length})</h3>
               </div>
               <div className="overflow-x-auto custom-scrollbar">
                 <table className="pp-table">
@@ -519,12 +565,12 @@ export const InventoryReports: React.FC = () => {
                       const loss = (i.costPrice || 0) - (i.sellingPrice || 0);
                       return (
                         <tr key={`${i.id}-${idx}`}>
-                          <td style={{ fontWeight: 600, color: '#0F172A' }}>{i.name}</td>
-                          <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#1E293B' }}>{currency}{(i.costPrice || 0).toFixed(2)}</td>
-                          <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#DC2626' }}>{currency}{(i.sellingPrice || 0).toFixed(2)}</td>
-                          <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#DC2626' }}>-{currency}{loss.toFixed(2)}</td>
-                          <td className="num" style={{ color: '#64748B' }}>{i.stock ?? 0}</td>
-                          <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#DC2626' }}>-{currency}{(loss * Math.max(i.stock || 0, 0)).toFixed(2)}</td>
+                          <td style={{ fontWeight: 600, color: ink }}>{i.name}</td>
+                          <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800] }}>{currency}{(i.costPrice || 0).toFixed(2)}</td>
+                          <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: danger }}>{currency}{(i.sellingPrice || 0).toFixed(2)}</td>
+                          <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: danger }}>-{currency}{loss.toFixed(2)}</td>
+                          <td className="num" style={{ color: inkSoft }}>{i.stock ?? 0}</td>
+                          <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: danger }}>-{currency}{(loss * Math.max(i.stock || 0, 0)).toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -538,13 +584,13 @@ export const InventoryReports: React.FC = () => {
 
       {activeTab === 'top-products' && (
         <div className="flex-1 overflow-y-auto">
-          <div className="flex items-center gap-2 mb-4 p-3 rounded-[8px]" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-            <Award size={16} style={{ color: '#16A34A' }} />
-            <span className="text-xs font-medium" style={{ color: '#166534' }}>
+          <div className="flex items-center gap-2 mb-4 p-3 rounded-[8px]" style={{ background: teal[50], border: `1px solid ${teal[200]}` }}>
+            <Award size={16} style={{ color: teal[600] }} />
+            <span className="text-xs font-medium" style={{ color: teal[800] }}>
               Top {productSalesAggregated.length} income-generating products ranked by total profit.
             </span>
           </div>
-          <div className="pp-panel" style={{ padding: 0 }}>
+          <div className="pp-panel" style={{ padding: 0, background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="pp-table">
                 <thead>
@@ -560,27 +606,26 @@ export const InventoryReports: React.FC = () => {
                 </thead>
                 <tbody>
                   {productSalesAggregated.length === 0 ? (
-                    <tr><td colSpan={7} className="px-4 py-12 text-center text-xs font-medium" style={{ color: '#94A3B8' }}>No sales data available to compute product profitability.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-12 text-center text-xs font-medium" style={{ color: inkSoft }}>No sales data available to compute product profitability.</td></tr>
                   ) : productSalesAggregated.slice(0, 100).map((p, i) => {
                     const markupPct = p.cost > 0 ? (p.profit / p.cost) * 100 : 0;
                     return (
                       <tr key={`${p.name}-${i}`}>
-                        <td style={{ color: '#94A3B8', fontWeight: 600 }}>{i + 1}</td>
+                        <td style={{ color: inkSoft, fontWeight: 600, fontFamily: "'JetBrains Mono',monospace" }}>{i + 1}</td>
                         <td>
-                          <div style={{ fontWeight: 600, color: '#0F172A' }}>{p.name}</div>
-                          {p.sku && <div style={{ fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: '#94A3B8' }}>{p.sku}</div>}
+                          <div style={{ fontWeight: 600, color: ink }}>{p.name}</div>
+                          {p.sku && <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: inkSoft }}>{p.sku}</div>}
                         </td>
-                        <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#0F172A' }}>{p.qty}</td>
-                        <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#1E293B' }}>{currency}{p.revenue.toFixed(2)}</td>
-                        <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#1E293B' }}>{currency}{p.cost.toFixed(2)}</td>
-                        <td className="num" style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: p.profit >= 0 ? '#059669' : '#DC2626' }}>{currency}{p.profit.toFixed(2)}</td>
+                        <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{p.qty}</td>
+                        <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800], fontFamily: "'JetBrains Mono',monospace" }}>{currency}{p.revenue.toFixed(2)}</td>
+                        <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800], fontFamily: "'JetBrains Mono',monospace" }}>{currency}{p.cost.toFixed(2)}</td>
+                        <td className="num" style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: p.profit >= 0 ? teal[600] : danger, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{p.profit.toFixed(2)}</td>
                         <td className="num">
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                            markupPct >= 30 ? 'bg-emerald-100 text-emerald-700' :
-                            markupPct >= 15 ? 'bg-blue-100 text-blue-700' :
-                            markupPct >= 0 ? 'bg-amber-100 text-amber-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>{markupPct.toFixed(1)}%</span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{
+                            background: markupPct >= 30 ? teal[50] : markupPct >= 15 ? teal[100] : markupPct >= 0 ? amber[100] : '#fef2f2',
+                            color: markupPct >= 30 ? teal[700] : markupPct >= 15 ? teal[600] : markupPct >= 0 ? '#8c5c1f' : danger,
+                            border: `1px solid ${markupPct >= 30 ? teal[200] : markupPct >= 15 ? teal[200] : markupPct >= 0 ? amber[300] : '#f5c6c2'}`
+                          }}>{markupPct.toFixed(1)}%</span>
                         </td>
                       </tr>
                     );
@@ -594,9 +639,9 @@ export const InventoryReports: React.FC = () => {
 
       {activeTab === 'reorder' && (
         <div className="flex-1 overflow-y-auto">
-          <div className="flex items-center gap-2 mb-4 p-3 rounded-[8px]" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-            <ArrowUpDown size={16} style={{ color: '#2563EB' }} />
-            <span className="text-xs font-medium" style={{ color: '#1E40AF' }}>
+          <div className="flex items-center gap-2 mb-4 p-3 rounded-[8px]" style={{ background: teal[50], border: `1px solid ${teal[200]}` }}>
+            <ArrowUpDown size={16} style={{ color: teal[700] }} />
+            <span className="text-xs font-medium" style={{ color: teal[800] }}>
               {lowStockItems.length} item{lowStockItems.length !== 1 ? 's' : ''} need reorder. Sorted by urgency (stock vs reorder point ratio).
             </span>
           </div>

@@ -244,13 +244,11 @@ const PremiumKpiCard = ({
       className="kpi-card-shimmer"
       style={{
         position: 'relative',
-        background: 'rgba(255, 255, 255, 0.65)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderRadius: compact ? 16 : 24,
+        background: '#FEFDFB',
+        borderRadius: 14,
         padding: compact ? '16px' : '24px',
-        boxShadow: '0 8px 32px rgba(31, 38, 135, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.8)',
+        boxShadow: '0 1px 2px rgba(11,62,57,.04)',
+        border: '1px solid #e4ddd1',
         borderTop: `2px solid ${accentColor}44`,
         cursor: 'pointer',
         transition: 'box-shadow 0.22s ease, transform 0.22s ease, background 0.22s ease',
@@ -263,11 +261,11 @@ const PremiumKpiCard = ({
       }}
       onClick={onClick}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 6px 12px rgba(15,23,42,0.04), 0 24px 64px rgba(15,23,42,0.08)';
+        e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.06), 0 4px 12px rgba(11,62,57,.08)';
         e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 4px 6px rgba(15,23,42,0.02), 0 12px 36px rgba(15,23,42,0.06)';
+        e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.04)';
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
@@ -1108,101 +1106,40 @@ const DashboardContent: React.FC = () => {
   const fyName = selectedFinancialYear?.name || 'this Financial Year';
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={{
-      minHeight: '100vh', background: 'radial-gradient(circle at top left, #dfebfc, transparent 40%), radial-gradient(circle at bottom right, #ece1fa, transparent 40%), linear-gradient(135deg, #a7b5f5 0%, #d1c5f4 50%, #9db6f2 100%)', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat', padding: isMobile ? '8px' : isTablet ? '16px' : '24px', fontFamily: "'Inter', -apple-system, sans-serif", color: '#1e293b', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: isMobile ? 8 : 16,
-    }}>
+     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={{
+       minHeight: '100vh', background: '#f3ede3', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat', padding: isMobile ? '8px' : isTablet ? '16px' : '28px 32px 40px', fontFamily: "'Inter', -apple-system, sans-serif", color: '#1e293b', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: isMobile ? 8 : 16,
+     }}>
       <DashboardStyleInjector />
       <div style={{
-        background: 'rgba(255,255,255,0.45)', backdropFilter: 'blur(36px)', WebkitBackdropFilter: 'blur(36px)', borderRadius: isMobile ? 20 : 28, boxShadow: '0 8px 32px rgba(31, 38, 135, 0.12)', border: '1px solid rgba(255,255,255,0.6)', maxWidth: 1520, width: '100%', overflow: 'hidden', flex: 1,
+        maxWidth: 1520, width: '100%', overflow: 'hidden', flex: 1,
       }}>
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '8px 12px' : isTablet ? '10px 16px' : '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', flexWrap: 'wrap', gap: isMobile ? 8 : 16, position: 'relative', zIndex: 100,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: isMobile ? '20px 16px 0' : isTablet ? '24px 24px 0' : '28px 32px 0', flexWrap: 'wrap', gap: isMobile ? 16 : 24, marginBottom: isMobile ? 8 : 12,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-            <h1 onClick={() => setShowCompanyMenu(!showCompanyMenu)} style={{ fontSize: isMobile ? 14 : 16, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 10, color: '#2e2a5d', cursor: 'pointer' }}>
-              {getGreeting()}, <span style={{ fontWeight: 400, color: '#5b578c' }}>{displayCompanyName}</span>
-              <ChevronDown size={18} color="#5b578c" style={{ transform: showCompanyMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-            </h1>
-            {showCompanyMenu && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 12, backgroundColor: '#ffffff', borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.05)', overflow: 'hidden', zIndex: 60, minWidth: 220 }}>
-                <div onClick={handleCreateCompany} style={{ padding: '12px 16px', fontSize: 13, fontWeight: 500, color: '#1e293b', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                  <Building2 size={16} color="#6366f1" /> Create New Company
-                </div>
-                <div onClick={() => restoreInputRef.current?.click()} style={{ padding: '12px 16px', fontSize: 13, fontWeight: 500, color: '#1e293b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                  <Database size={16} color="#f59e0b" /> Restore a Company
-                </div>
-              </div>
-            )}
-            <input type="file" ref={restoreInputRef} style={{ display: 'none' }} accept=".json" onChange={handleRestoreBackupFile} />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 8 }}>
-              <button onClick={() => navigate('/smart-operations/pricing')} title="Calculator" aria-label="Open calculator" style={{
-                padding: isMobile ? '8px' : '8px 16px', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', boxShadow: '0 4px 12px rgba(31,38,135,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2e2a5d', transition: 'all 0.15s ease',
-              }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)'; e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.borderColor = '#bfdbfe'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.6)'; e.currentTarget.style.color = '#2e2a5d'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.8)'; }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Calculator size={16} />{!isMobile && <span style={{ fontWeight: 600, fontSize: 13 }}>Calculator</span>}</div>
-              </button>
-
-              <button onClick={() => setIsWhatsAppModalOpen(true)} title="Messages" aria-label="Open messages" style={{
-                padding: isMobile ? '8px' : '8px 16px', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', boxShadow: '0 4px 12px rgba(31,38,135,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#2e2a5d', position: 'relative', transition: 'all 0.15s ease',
-              }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)'; e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.borderColor = '#bfdbfe'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.6)'; e.currentTarget.style.color = '#2e2a5d'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.8)'; }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MessageSquare size={16} />{!isMobile && <span style={{ fontWeight: 600, fontSize: 13 }}>Messages</span>}</div>
-              </button>
-
-              <div ref={fyDropdownRef} style={{ position: 'relative' }}>
-                <button onClick={() => setShowFyDropdown(prev => !prev)} title={selectedFinancialYear ? `Financial Year: ${selectedFinancialYear.name}${selectedFinancialYear.is_closed ? ' (Closed)' : ''}` : 'Select Financial Year'} aria-label="Select Financial Year" style={{
-                  padding: isMobile ? '8px' : '8px 16px', borderRadius: 999, backgroundColor: showFyDropdown ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)', border: showFyDropdown ? '1px solid #bfdbfe' : '1px solid rgba(255,255,255,0.8)', boxShadow: '0 4px 12px rgba(31,38,135,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', color: showFyDropdown ? '#3b82f6' : '#2e2a5d', position: 'relative', transition: 'all 0.15s ease',
-                }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)'; e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.borderColor = '#bfdbfe'; }} onMouseLeave={e => { if (!showFyDropdown) { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.6)'; e.currentTarget.style.color = '#2e2a5d'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.8)'; } }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <CalendarDays size={16} />
-                    {!isMobile && <span style={{ fontWeight: 600, fontSize: 13 }}>{isFyLoading ? 'Loading...' : currentFyDisplay}</span>}
-                    <ChevronDown size={14} style={{ transform: showFyDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', opacity: 0.7 }} />
-                  </div>
-                </button>
-                {showFyDropdown && (
-                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 230, backgroundColor: '#ffffff', borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden', zIndex: 60, padding: '6px' }}>
-                    <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Financial Years</div>
-                    {availableFinancialYears.length === 0 ? (
-                      <div style={{ padding: '12px', fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>No financial years configured</div>
-                    ) : (
-                      availableFinancialYears.map(fy => {
-                        const isActive = selectedFinancialYear?.id === fy.id;
-                        const fyLabelStr = fyDisplayName(fy);
-                        return (
-                          <button key={fy.id} onClick={() => { setFinancialYear(fy); setShowFyDropdown(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, border: 'none', backgroundColor: isActive ? '#eef2ff' : 'transparent', color: isActive ? '#4338ca' : '#1e293b', cursor: 'pointer', fontSize: 12, fontWeight: isActive ? 700 : 500, textAlign: 'left', transition: 'background-color 0.15s ease', gap: 8 }} onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = '#f8fafc'; }} onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CalendarDays size={14} color={isActive ? '#6366f1' : '#64748b'} /><span>{fyLabelStr}</span></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              {fy.is_closed ? <span style={{ fontSize: 9, fontWeight: 600, color: '#dc2626', backgroundColor: '#fef2f2', padding: '1px 6px', borderRadius: 4 }}>Closed</span> : fy.is_default ? <span style={{ fontSize: 9, fontWeight: 600, color: '#2563eb', backgroundColor: '#eff6ff', padding: '1px 6px', borderRadius: 4 }}>Default</span> : null}
-                              {isActive && <Check size={14} color="#6366f1" />}
-                            </div>
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: isMobile ? 12 : 24, padding: isMobile ? '12px 16px 0' : isTablet ? '12px 24px 0' : '24px 32px 12px' }}>
-          <h2 style={{ fontSize: isMobile ? 18 : isTablet ? 22 : 26, fontWeight: 800, color: '#2e2a5d', margin: '0 0 8px', letterSpacing: '-0.02em' }}>{format(new Date(), isMobile ? 'EEE, MMM d' : 'EEEE, MMMM d, yyyy')}</h2>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <p style={{ margin: 0, fontSize: 14, color: '#5b578c', fontWeight: 500 }}>Here's what's happening with your business today.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button onClick={() => navigate('/reports')} style={{
-                background: 'linear-gradient(135deg, #2563EB, #6366f1)', color: '#fff', padding: isMobile ? '8px 16px' : '9px 18px', borderRadius: 999, border: 'none', fontSize: isMobile ? 12 : 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(37,99,235,0.25)', whiteSpace: 'nowrap', letterSpacing: '-0.01em',
-              }} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 8px 20px rgba(37,99,235,0.35)'; e.currentTarget.style.transform = 'translateY(-1px) scale(1.015)'; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.25)'; e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}>
-                {isMobile ? 'Reports' : 'View Detailed Reports'}<ArrowRight size={14} />
-              </button>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: '#5c6567', letterSpacing: '0.02em' }}>Good afternoon, </span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0b3e39' }}>Prime Printing</span>
+              <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                <ChevronDown size={16} color="#5b578c" style={{ transform: showCompanyMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </div>
             </div>
+             <div style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 30, color: '#0b3e39', letterSpacing: '0.2px', lineHeight: 1.2, fontWeight: 400 }}>
+               {format(new Date(), isMobile ? 'EEE, MMM d' : 'EEEE, MMMM d, yyyy')}
+             </div>
+             <div style={{ fontSize: 13, color: '#5c6567', fontWeight: 500 }}>Here's what's happening with your business today.</div>
+           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => navigate('/reports')} style={{
+              background: 'linear-gradient(160deg, #3fa294, #0f544c)', color: '#fff', padding: '10px 20px', borderRadius: 999, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(11,62,57,.15)', whiteSpace: 'nowrap',
+            }} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(11,62,57,.25)'; e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.15)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+              {isMobile ? 'Reports' : 'View Detailed Reports'}
+            </button>
           </div>
         </div>
 
         <div style={{
-          display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1.6fr' : '1fr', gap: isDesktop ? 32 : 24, marginBottom: isMobile ? 24 : 32, padding: isMobile ? '0 16px 24px' : isTablet ? '0 24px 32px' : '0 32px 48px',
+          display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1.6fr' : '1fr', gap: isDesktop ? 24 : 20, marginBottom: isMobile ? 16 : 24, padding: isMobile ? '0 0 24px' : isTablet ? '0 0 32px' : '0 0 40px',
         }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: isMobile ? 12 : 24, minWidth: 0 }}>
             {!hasTransactions && (
@@ -1295,7 +1232,7 @@ const DashboardContent: React.FC = () => {
 
           {widgets.find(w => w.id === 'chart')?.visible !== false && (
             <div style={{
-              background: 'rgba(255,255,255,0.65)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: 24, padding: isMobile ? '20px' : '32px', border: '1px solid rgba(255,255,255,0.8)', boxShadow: '0 8px 32px rgba(31,38,135,0.08)', display: 'flex', flexDirection: 'column', minWidth: 0,
+              background: '#FEFDFB', border: '1px solid #e4ddd1', borderRadius: 14, padding: isMobile ? '20px' : '28px', boxShadow: '0 1px 2px rgba(11,62,57,.04)', display: 'flex', flexDirection: 'column', minWidth: 0,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isMobile ? 16 : 24, flexWrap: 'wrap', gap: 8 }}>
                 <div>
@@ -1308,16 +1245,16 @@ const DashboardContent: React.FC = () => {
                   {!isMobile && <div style={{ marginLeft: 4 }}><PeriodDropdown value={activePeriod} onChange={setActivePeriod} /></div>}
                 </div>
               </div>
-              <div style={{ width: '100%', height: isMobile ? 220 : isTablet ? 280 : 316, minWidth: 0, minHeight: 150, overflow: 'hidden' }}>
+              <div style={{ width: '100%', flex: 1, minWidth: 0, minHeight: 150, overflow: 'hidden' }}>
                 {chartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={isMobile ? 220 : isTablet ? 280 : 316} minWidth={0} minHeight={150}>
-                    <AreaChart data={chartData} margin={{ top: 8, right: isMobile ? 4 : 16, left: isMobile ? -24 : -8, bottom: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={150}>
+                    <AreaChart data={chartData} margin={{ top: 8, right: isMobile ? 4 : 16, left: isMobile ? -24 : -8, bottom: -8 }}>
                       <defs>
                         <linearGradient id="gradIncome" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#16a34a" stopOpacity={0.6} /><stop offset="60%" stopColor="#22c55e" stopOpacity={0.15} /><stop offset="100%" stopColor="#bbf7d0" stopOpacity={0} /></linearGradient>
                         <linearGradient id="gradExpenses" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#dc2626" stopOpacity={0.3} /><stop offset="100%" stopColor="#fecaca" stopOpacity={0} /></linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(148,163,184,0.18)" />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: isMobile ? 10 : 11, fontWeight: 500 }} dy={8} interval="preserveStartEnd" />
+                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: isMobile ? 10 : 11, fontWeight: 500 }} dy={4} interval="preserveStartEnd" />
                       <YAxis domain={[0, 'auto']} axisLine={false} tickLine={false} tick={{ fill: '#cbd5e1', fontSize: isMobile ? 10 : 11, fontWeight: 500 }} tickFormatter={(val) => { if (val === 0) return '0'; if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`; if (val >= 1000) return `${(val / 1000).toFixed(0)}k`; return String(val); }} dx={-4} width={isMobile ? 36 : 48} />
                       <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 32px rgba(31,38,135,0.25)', fontSize: isMobile ? 12 : 14, padding: isMobile ? '10px 14px' : '14px 20px', background: '#5b578c', color: '#ffffff' }} labelStyle={{ fontWeight: 600, color: '#e0e7ff', marginBottom: 6, fontSize: 12 }} itemStyle={{ fontWeight: 800, color: '#ffffff', fontVariantNumeric: 'tabular-nums', padding: '2px 0' }} cursor={{ stroke: 'rgba(79,70,229,0.3)', strokeWidth: 1.5, strokeDasharray: '4 4' }} />
                       <Area type="monotone" dataKey="income" name="Income" stroke="#16a34a" strokeWidth={2} fillOpacity={1} fill="url(#gradIncome)" dot={false} activeDot={{ r: 5, fill: '#ffffff', stroke: '#16a34a', strokeWidth: 2 }} />

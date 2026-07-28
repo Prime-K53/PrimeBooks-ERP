@@ -737,6 +737,7 @@ const MarketingMessages: React.FC = () => {
   const Printer = (props: any) => <FileText {...props} />;
 
   const dt = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+  const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
   const paper = '#FEFDFB'; const ink = '#23282A'; const inkSoft = '#5c6567'; const hairline = '#e4ddd1'; const danger = '#b5493f';
   const dAmber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f' };
 

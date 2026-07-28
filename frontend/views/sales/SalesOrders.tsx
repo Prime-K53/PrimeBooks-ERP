@@ -4,6 +4,25 @@ import { useFinanceStore } from '../../stores/financeStore';
 import SalesOrderForm from './SalesOrderForm';
 import SalesOrderDetail from './SalesOrderDetail';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+
+const statusBadgeColors: Record<string, { bg: string; color: string; border: string }> = {
+  Draft: { bg: amber[100], color: amber[600], border: amber[300] },
+  Confirmed: { bg: teal[50], color: teal[700], border: teal[200] },
+  Processing: { bg: teal[50], color: teal[500], border: teal[200] },
+  Fulfilled: { bg: teal[100], color: teal[800], border: teal[200] },
+  Cancelled: { bg: '#f3f4f6', color: inkSoft, border: hairline },
+};
+
 const SalesOrders: React.FC = () => {
   const { salesOrders, isLoading, fetchSalesData, addSalesOrder, updateSalesOrder } = useSalesStore();
   const { addInvoice } = useFinanceStore();
@@ -43,67 +62,186 @@ const SalesOrders: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Sales Orders</h2>
-      <div className="mb-4">
-        {!editing ? (
-          <SalesOrderForm onCreate={(o: any) => addSalesOrder(o).then(() => fetchSalesData())} />
-        ) : (
-          <div className="mb-4">
-            <SalesOrderForm initial={editing} onDone={() => { setEditing(null); void fetchSalesData(); }} />
+    <div style={{ background: '#f0ede8', minHeight: '100vh', padding: 24, fontFamily: "'Inter','DM Sans',sans-serif", color: ink }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <h1 style={{
+          fontFamily: "'DM Serif Display', 'Georgia', serif",
+          fontWeight: 400,
+          fontSize: 22,
+          color: teal[800],
+          margin: '0 0 20px',
+          letterSpacing: 0.2
+        }}>
+          Sales Orders
+        </h1>
+
+        <div style={{ marginBottom: 20, background: paper, borderRadius: 14, border: `1px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.03)' }}>
+          <div style={{ height: 3, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
+          <div style={{ padding: 20 }}>
+            {!editing ? (
+              <SalesOrderForm onCreate={(o: any) => addSalesOrder(o).then(() => fetchSalesData())} />
+            ) : (
+              <div style={{ marginBottom: 16 }}>
+                <SalesOrderForm initial={editing} onDone={() => { setEditing(null); void fetchSalesData(); }} />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div>
-        {isLoading ? <div>Loading...</div> : (
-          <table className="w-full table-auto">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Customer</th>
-                <th>Order Date</th>
-                <th>Status</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {salesOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-16 px-4">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </div>
-                      <p className="text-slate-500 font-medium">No sales orders yet</p>
-                      <p className="text-slate-400 text-sm">Create your first sales order using the form above.</p>
-                    </div>
-                  </td>
+        </div>
+
+        <div style={{
+          background: paper,
+          borderRadius: 14,
+          border: `1px solid ${hairline}`,
+          overflow: 'hidden',
+          boxShadow: '0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.03)'
+        }}>
+          {isLoading ? (
+            <div style={{ padding: 40, textAlign: 'center', color: inkSoft, fontSize: 14 }}>Loading...</div>
+          ) : salesOrders.length === 0 ? (
+            <div style={{ padding: 48, textAlign: 'center' }}>
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14
+              }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: '50%',
+                  background: teal[50],
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: `1px solid ${teal[100]}`
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={teal[400]} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: teal[800], margin: 0 }}>No sales orders yet</p>
+                <p style={{ fontSize: 13, color: inkSoft, margin: 0 }}>Create your first sales order using the form above.</p>
+              </div>
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+              <thead>
+                <tr style={{ background: teal[50] }}>
+                  {['ID', 'Customer', 'Order Date', 'Status', 'Total', 'Actions'].map((h) => (
+                    <th key={h} style={{
+                      padding: '10px 14px',
+                      textAlign: 'left',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: teal[700],
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.06,
+                      borderBottom: `1px solid ${teal[100]}`,
+                      fontFamily: "'Inter', sans-serif"
+                    }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ) : salesOrders.map((o: any) => (
-                <tr key={o.id}>
-                  <td>{o.id}</td>
-                  <td>{o.customerId || '-'}</td>
-                  <td>{new Date(o.orderDate).toLocaleDateString()}</td>
-                  <td>{o.status}</td>
-                  <td>{o.total}</td>
-                  <td>
-                    <button className="mr-2 px-2 py-1 bg-white border rounded" onClick={() => setEditing(o)}>Edit</button>
-                    <button className="mr-2 px-2 py-1 bg-white border rounded" onClick={() => handleConvertToInvoice(o)}>Convert</button>
-                    <div className="inline-block ml-2">
-                      <select value={o.status} onChange={(e) => changeStatus(o, e.target.value)} className="px-2 py-1 border rounded">
-                        <option value="Draft">Draft</option>
-                        <option value="Confirmed">Confirm</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Fulfilled">Fulfilled</option>
-                        <option value="Cancelled">Cancel</option>
-                      </select>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {salesOrders.map((o: any) => {
+                  const sc = statusBadgeColors[o.status] || { bg: paper, color: inkSoft, border: hairline };
+                  return (
+                    <tr key={o.id} style={{ borderBottom: `1px solid ${hairline}` }}>
+                      <td style={{ padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5, color: ink, fontVariantNumeric: 'tabular-nums' }}>{o.id}</td>
+                      <td style={{ padding: '10px 14px', color: ink }}>{o.customerId || '-'}</td>
+                      <td style={{ padding: '10px 14px', color: inkSoft, fontSize: 13 }}>{new Date(o.orderDate).toLocaleDateString()}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '3px 10px',
+                          borderRadius: 20,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background: sc.bg,
+                          color: sc.color,
+                          border: `1px solid ${sc.border}`,
+                          letterSpacing: 0.02
+                        }}>
+                          {o.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5, fontWeight: 600, color: ink }}>{o.total}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <button
+                            onClick={() => setEditing(o)}
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              padding: '7px 14px',
+                              borderRadius: 9,
+                              cursor: 'pointer',
+                              background: paper,
+                              border: `1.4px solid ${hairline}`,
+                              color: inkSoft,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              transition: 'all .15s ease'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleConvertToInvoice(o)}
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              padding: '7px 14px',
+                              borderRadius: 9,
+                              cursor: 'pointer',
+                              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                              color: '#fff',
+                              border: '1.4px solid transparent',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              transition: 'all .15s ease',
+                              boxShadow: '0 4px 10px -4px rgba(15,84,76,.4)'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 14px -4px rgba(15,84,76,.55)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 10px -4px rgba(15,84,76,.4)'; }}
+                          >
+                            Convert
+                          </button>
+                          <div style={{ marginLeft: 4 }}>
+                            <select
+                              value={o.status}
+                              onChange={(e) => changeStatus(o, e.target.value)}
+                              style={{
+                                fontFamily: "'Inter', sans-serif",
+                                fontSize: 12,
+                                fontWeight: 500,
+                                padding: '6px 10px',
+                                borderRadius: 9,
+                                cursor: 'pointer',
+                                background: paper,
+                                border: `1.4px solid ${hairline}`,
+                                color: inkSoft,
+                                outline: 'none',
+                                transition: 'border-color .15s ease'
+                              }}
+                            >
+                              <option value="Draft">Draft</option>
+                              <option value="Confirmed">Confirm</option>
+                              <option value="Processing">Processing</option>
+                              <option value="Fulfilled">Fulfilled</option>
+                              <option value="Cancelled">Cancel</option>
+                            </select>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );

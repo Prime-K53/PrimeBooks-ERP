@@ -16,6 +16,18 @@ import { exportToCSV, parseCSV } from '../services/excelService';
 import { generateAccountNumber } from '../utils/helpers';
 import type { Item, ItemType } from '../types';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
 interface TopBarProps {
     toggleSidebar: () => void;
     toggleCollapse: () => void;
@@ -43,12 +55,12 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
   const notificationRef = useRef<HTMLDivElement>(null);
   const appsMenuRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const combinedNotifications = useMemo(() => {
     const formattedAlerts = (alerts || []).map(a => ({ ...a, type: 'Alert' as const }));
     const formattedReminders = (reminders || []).map(r => ({ ...r, type: 'Reminder' as const, message: r.text, severity: 'Low' as const }));
     
-    // Add Tasks with dueDate = today
     const today = new Date().toISOString().split('T')[0];
     const formattedTasks = (tasks || []).filter(t =>
       t.dueDate === today &&
@@ -80,6 +92,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) setShowNotifications(false);
       if (appsMenuRef.current && !appsMenuRef.current.contains(event.target as Node)) setShowApps(false);
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) setShowTools(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) setShowUserMenu(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -101,8 +114,6 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
   };
 
   const handleExportCustomers = () => {
-      // Note: customers is usually available via context
-      // This is a simplified call
       notify("Exporting customers...", "info");
   };
 
@@ -141,10 +152,67 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
       e.target.value = '';
   };
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 13,
+    color: ink,
+    background: paper,
+    border: `1.4px solid ${hairline}`,
+    borderRadius: 9,
+    padding: '7px 10px',
+    outline: 'none',
+    transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+  };
+
+  const btnPrimary: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 13,
+    fontWeight: 600,
+    padding: '7px 14px',
+    borderRadius: 9,
+    cursor: 'pointer',
+    border: '1.4px solid transparent',
+    background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+    color: '#fff',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
+    transition: 'all .15s ease'
+  };
+
+  const btnGhost: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 13,
+    fontWeight: 600,
+    padding: '7px 14px',
+    borderRadius: 9,
+    cursor: 'pointer',
+    background: paper,
+    border: `1.4px solid ${hairline}`,
+    color: inkSoft,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    transition: 'all .15s ease'
+  };
+
   const MenuItem = ({ icon: Icon, color, bg, label, onClick, danger }: { icon: React.ElementType; color: string; bg: string; label: string; onClick: () => void; danger?: boolean }) => (
-    <div onClick={onClick} style={{ padding: '8px 12px', fontSize: 13, fontWeight: 500, color: danger ? '#ef4444' : '#1e293b', cursor: 'pointer', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.15s' }}
-      onMouseEnter={e => (e.currentTarget.style.backgroundColor = danger ? '#fef2f2' : '#f8fafc')}
-      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+    <div onClick={onClick} style={{
+      padding: '8px 12px',
+      fontSize: 13,
+      fontWeight: 500,
+      color: danger ? danger : ink,
+      cursor: 'pointer',
+      borderRadius: 9,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      transition: 'background .15s'
+    }}
+      onMouseEnter={e => { e.currentTarget.style.backgroundColor = danger ? `${danger}15` : teal[50]; }}
+      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}>
       <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: bg }}>
         <Icon size={14} color={color} />
       </div>
@@ -153,58 +221,174 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
   );
 
   return (
-    <header className="h-14 px-6 flex items-center justify-between sticky top-0 z-30 border-b border-slate-200 print:hidden transition-all duration-300">
-      <div className="flex items-center gap-4">
+    <header style={{
+      height: 56,
+      paddingLeft: 24,
+      paddingRight: 24,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      position: 'sticky',
+      top: 0,
+      zIndex: 30,
+      borderBottom: `1px solid ${hairline}`,
+      background: paper,
+      fontFamily: "'Inter','DM Sans',sans-serif",
+      fontSize: 13.5,
+      color: ink
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 3,
+        background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+      }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button 
-            className="p-2 rounded-lg text-slate-500 hover:bg-slate-50 transition-all" 
-            onClick={() => {
-                if (window.innerWidth < 768) {
-                    toggleSidebar();
-                } else {
-                    toggleCollapse();
-                }
-            }}
-            aria-label="Toggle Sidebar"
+          style={{
+            padding: 8,
+            borderRadius: 10,
+            color: inkSoft,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background .15s'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[50]; }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          onClick={() => {
+              if (window.innerWidth < 768) {
+                  toggleSidebar();
+              } else {
+                  toggleCollapse();
+              }
+          }}
+          aria-label="Toggle Sidebar"
         >
-            <Menu size={20}/>
+          <Menu size={20}/>
         </button>
-
       </div>
 
-      <div className="flex items-center gap-1 md:gap-3">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {/* Dedicated Notifications Panel */}
-        <div className="relative" ref={notificationRef}>
+        <div style={{ position: 'relative' }} ref={notificationRef}>
             <button 
-                className={`relative p-2 rounded-lg transition-all duration-300 ${showNotifications ? 'bg-blue-600 text-white shadow-md' : 'hover:bg-slate-50 text-slate-500'}`} 
-                onClick={() => setShowNotifications(!showNotifications)}
+              style={{
+                position: 'relative',
+                padding: 8,
+                borderRadius: 10,
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all .15s',
+                background: showNotifications ? `linear-gradient(155deg, ${teal[500]}, ${teal[700]})` : 'transparent',
+                color: showNotifications ? '#fff' : inkSoft
+              }}
+              onMouseEnter={e => { if (!showNotifications) e.currentTarget.style.backgroundColor = teal[50]; }}
+              onMouseLeave={e => { if (!showNotifications) e.currentTarget.style.backgroundColor = 'transparent'; }}
+              onClick={() => setShowNotifications(!showNotifications)}
             >
                 <Bell size={18}/>
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white text-[9px] font-bold text-white flex items-center justify-center animate-in zoom-in">
+                    <span style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      width: 16,
+                      height: 16,
+                      background: danger,
+                      borderRadius: '50%',
+                      border: '2px solid #fff',
+                      fontSize: 9,
+                      fontWeight: 700,
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
                         {unreadCount}
                     </span>
                 )}
             </button>
 
             {showNotifications && (
-                <div className="absolute right-0 top-full mt-3 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-right flex flex-col max-h-[500px]">
-                    <div className="p-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
-                        <div className="flex justify-between items-center mb-4">
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  marginTop: 12,
+                  width: 320,
+                  background: paper,
+                  borderRadius: 14,
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
+                  border: `1px solid ${hairline}`,
+                  overflow: 'hidden',
+                  zIndex: 50,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  maxHeight: 500
+                }}>
+                    <div style={{
+                      padding: 16,
+                      borderBottom: `1px solid ${hairline}`,
+                      background: paper,
+                      flexShrink: 0
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-800">Notifications</h3>
-                                <p className="text-[10px] text-slate-400 font-medium">Updates from your workspace</p>
+                                <h3 style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0, fontFamily: "'DM Serif Display', 'Georgia', serif" }}>Notifications</h3>
+                                <p style={{ fontSize: 10, color: inkSoft, fontWeight: 500, margin: '2px 0 0' }}>Updates from your workspace</p>
                             </div>
-                            <button onClick={() => setShowNotifications(false)} className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400" title="Close notifications" aria-label="Close notifications">
+                            <button onClick={() => setShowNotifications(false)} style={{
+                              padding: 6,
+                              borderRadius: '50%',
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              color: inkSoft,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'background .15s'
+                            }}
+                              onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[100]; }}
+                              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              title="Close notifications" aria-label="Close notifications">
                                 <X size={16}/>
                             </button>
                         </div>
                         
-                        <div className="flex bg-slate-100 p-1 rounded-lg gap-1">
+                        <div style={{
+                          display: 'flex',
+background: teal[100],
+                          padding: 4,
+                          borderRadius: 10,
+                          gap: 4
+                        }}>
                             {(['All', 'Alerts', 'Reminders', 'Tasks'] as const).map(tab => (
                                 <button 
                                     key={tab}
                                     onClick={() => setNotificationTab(tab)}
-                                    className={`flex-1 py-1.5 rounded-md text-[10px] font-semibold transition-all ${notificationTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                    style={{
+                                      flex: 1,
+                                      padding: '6px 0',
+                                      borderRadius: 8,
+                                      border: 'none',
+                                      fontSize: 10,
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      transition: 'all .15s',
+                                      background: notificationTab === tab ? paper : 'transparent',
+                                      color: notificationTab === tab ? teal[600] : inkSoft,
+                                      boxShadow: notificationTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'
+                                    }}
                                 >
                                     {tab}
                                 </button>
@@ -212,81 +396,147 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
                         {combinedNotifications.length === 0 ? (
-                            <div className="py-12 flex flex-col items-center justify-center text-slate-300">
-                                <CheckCircle size={40} className="mb-3 opacity-20"/>
-                                <p className="text-xs font-medium">All caught up!</p>
+                            <div style={{ padding: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: inkSoft }}>
+                                <CheckCircle size={40} style={{ marginBottom: 12, opacity: 0.2 }} />
+                                <p style={{ fontSize: 12, fontWeight: 500 }}>All caught up!</p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-slate-50">
+                            <div>
                                 {combinedNotifications.map((notif: any) => (
                                     <div 
                                         key={notif.id} 
-                                        className={`p-4 hover:bg-slate-50 transition-colors flex gap-3 group relative
-                                            ${notif.type === 'Reminder' && notif.completed ? 'opacity-50 grayscale' : ''}`}
+                                        style={{
+                                          padding: 16,
+                                          display: 'flex',
+                                          gap: 12,
+                                          transition: 'background .15s',
+                                          cursor: 'pointer',
+                                          borderBottom: `1px solid ${hairline}`
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[50]; }}
+                                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                                     >
-                                        <div className={`mt-0.5 p-2 rounded-lg h-fit shrink-0 border ${
+                                        <div style={{
+                                          marginTop: 4,
+                                          padding: 6,
+                                          borderRadius: 8,
+                                          height: 'fit-content',
+                                          flexShrink: 0,
+                                          border: `1px solid ${
                                             notif.type === 'Alert' 
-                                                ? (notif.severity === 'High' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-blue-50 text-blue-600 border-blue-100')
-                                                : (notif.completed ? 'bg-slate-50 text-slate-400 border-slate-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100')
-                                        }`}>
+                                              ? (notif.severity === 'High' ? `${danger}30` : teal[100])
+                                              : teal[100]
+                                          }`,
+                                          background: notif.type === 'Alert' 
+                                            ? (notif.severity === 'High' ? `${danger}15` : teal[50])
+                                            : teal[50],
+                                          color: notif.type === 'Alert' 
+                                            ? (notif.severity === 'High' ? danger : teal[600])
+                                            : (notif.completed ? inkSoft : teal[500])
+                                        }}>
                                             {notif.type === 'Alert' ? <AlertTriangle size={14}/> : <CheckCircle size={14}/>}
                                         </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-start mb-0.5">
-                                                <span className={`text-[9px] font-bold uppercase tracking-wider ${
-                                                    notif.type === 'Alert' ? 'text-blue-500' : 'text-emerald-600'
-                                                }`}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                                                <span style={{
+                                                  fontSize: 9,
+                                                  fontWeight: 700,
+                                                  letterSpacing: 0.08,
+                                                  textTransform: 'uppercase',
+                                                  color: notif.type === 'Alert' ? teal[500] : teal[500]
+                                                }}>
                                                     {notif.type}
                                                 </span>
-                                                <span className="text-[9px] font-medium text-slate-400">
+                                                <span style={{ fontSize: 9, fontWeight: 500, color: inkSoft }}>
                                                     {new Date(notif.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
-                                            <p className={`text-xs font-medium text-slate-700 leading-normal ${notif.type === 'Reminder' && notif.completed ? 'line-through' : ''}`}>
+                                            <p style={{
+                                              fontSize: 12,
+                                              fontWeight: 500,
+                                              color: ink,
+                                              lineHeight: 1.5,
+                                              textDecoration: notif.type === 'Reminder' && notif.completed ? 'line-through' : 'none'
+                                            }}>
                                                 {notif.message || notif.text}
                                             </p>
                                             
-                                           <div className="mt-2 flex gap-2">
-                                               {notif.type === 'Reminder' && (
-                                                   <button
-                                                       onClick={() => toggleReminder(notif.id)}
-                                                       className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
-                                                           notif.completed ? 'text-slate-500 bg-slate-100' : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
-                                                       }`}
-                                                   >
-                                                       {notif.completed ? 'Re-open' : 'Done'}
-                                                   </button>
-                                               )}
-                                               {notif.type === 'Task' && (
-                                                   <button
-                                                       onClick={() => updateTask({ id: notif.id, status: notif.completed ? 'Pending' : 'Completed' })}
-                                                       className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
-                                                           notif.completed ? 'text-slate-500 bg-slate-100' : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
-                                                       }`}
-                                                   >
-                                                       {notif.completed ? 'Re-open' : 'Done'}
-                                                   </button>
-                                               )}
-                                               {notif.type === 'Alert' && (
-                                                   <button
-                                                       onClick={() => dismissAlert(notif.id)}
-                                                       className="px-2 py-0.5 rounded text-[10px] font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100"
-                                                   >
-                                                       Dismiss
-                                                   </button>
-                                               )}
-                                               {notif.type === 'Reminder' && (
-                                                   <button
-                                                       onClick={() => deleteReminder(notif.id)}
-                                                       className="p-1 text-slate-300 hover:text-rose-500 transition-colors ml-auto opacity-0 group-hover:opacity-100"
-                                                   >
-                                                       <Trash2 size={12}/>
-                                                   </button>
-                                               )}
-                                           </div>
+                                           <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                                                {notif.type === 'Reminder' && (
+                                                    <button
+                                                        onClick={() => toggleReminder(notif.id)}
+                                                        style={{
+                                                          padding: '2px 8px',
+                                                          borderRadius: 6,
+                                                          fontSize: 10,
+                                                          fontWeight: 600,
+                                                          border: 'none',
+                                                          cursor: 'pointer',
+                                                          transition: 'all .15s',
+                                                          background: notif.completed ? teal[100] : teal[50],
+                                                          color: notif.completed ? inkSoft : teal[500]
+                                                        }}
+                                                    >
+                                                        {notif.completed ? 'Re-open' : 'Done'}
+                                                    </button>
+                                                )}
+                                                {notif.type === 'Task' && (
+                                                    <button
+                                                        onClick={() => updateTask({ id: notif.id, status: notif.completed ? 'Pending' : 'Completed' })}
+                                                        style={{
+                                                          padding: '2px 8px',
+                                                          borderRadius: 6,
+                                                          fontSize: 10,
+                                                          fontWeight: 600,
+                                                          border: 'none',
+                                                          cursor: 'pointer',
+                                                          transition: 'all .15s',
+                                                          background: notif.completed ? teal[100] : teal[50],
+                                                          color: notif.completed ? inkSoft : teal[500]
+                                                        }}
+                                                    >
+                                                        {notif.completed ? 'Re-open' : 'Done'}
+                                                    </button>
+                                                )}
+                                                {notif.type === 'Alert' && (
+                                                    <button
+                                                        onClick={() => dismissAlert(notif.id)}
+                                                        style={{
+                                                          padding: '2px 8px',
+                                                          borderRadius: 6,
+                                                          fontSize: 10,
+                                                          fontWeight: 600,
+                                                          border: 'none',
+                                                          cursor: 'pointer',
+                                                          background: teal[50],
+                                                          color: inkSoft
+                                                        }}
+                                                    >
+                                                        Dismiss
+                                                    </button>
+                                                )}
+                                                {notif.type === 'Reminder' && (
+                                                    <button
+                                                        onClick={() => deleteReminder(notif.id)}
+                                                        style={{
+                                                          padding: 4,
+                                                          border: 'none',
+                                                          background: 'transparent',
+                                                          cursor: 'pointer',
+                                                          color: inkSoft,
+                                                          transition: 'color .15s',
+                                                          marginLeft: 'auto'
+                                                        }}
+                                                        onMouseEnter={e => { e.currentTarget.style.color = danger; }}
+                                                        onMouseLeave={e => { e.currentTarget.style.color = inkSoft; }}
+                                                    >
+                                                        <Trash2 size={12}/>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -294,14 +544,17 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
                         )}
                     </div>
 
-                    <div className="p-3 bg-slate-50 border-t border-slate-100 shrink-0">
-                        <form onSubmit={handleAddQuickReminder} className="flex gap-2">
-                            <div className="relative flex-1">
-                                <Plus className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14}/>
+                    <div style={{ padding: 12, background: teal[50], borderTop: `1px solid ${hairline}`, flexShrink: 0 }}>
+                        <form onSubmit={handleAddQuickReminder} style={{ display: 'flex', gap: 8 }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <Plus style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: inkSoft, pointerEvents: 'none' }} size={14}/>
                                 <input 
                                     type="text"
                                     placeholder="e.g. Call client at 2pm"
-                                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium outline-none focus:border-blue-400"
+                                    style={{
+                                      ...inputStyle,
+                                      paddingLeft: 32
+                                    }}
                                     value={quickReminder}
                                     onChange={e => setQuickReminder(e.target.value)}
                                 />
@@ -309,7 +562,11 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
                             <button 
                                 type="submit"
                                 disabled={!quickReminder.trim()}
-                                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold disabled:bg-slate-200"
+                                style={{
+                                  ...btnPrimary,
+                                  padding: '7px 12px',
+                                  opacity: quickReminder.trim() ? 1 : 0.5
+                                }}
                             >
                                 Add
                             </button>
@@ -319,48 +576,103 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
             )}
         </div>
 
-        <div className="flex items-center gap-2 pl-2 border-l border-slate-100 relative" style={{ cursor: 'pointer' }} onClick={() => setShowUserMenu(!showUserMenu)}>
-            <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 border border-slate-200">
+        <div ref={userMenuRef} style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 16, borderLeft: `1px solid ${hairline}`, position: 'relative', cursor: 'pointer' }} onClick={() => setShowUserMenu(!showUserMenu)}>
+            <div style={{ width: 36, height: 36, background: teal[100], borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: inkSoft, border: `1px solid ${hairline}` }}>
                 <User size={18}/>
             </div>
-            <div className="hidden sm:flex items-center gap-1">
-                <span className="text-xs font-semibold text-slate-800">{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: ink }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</span>
                 <ChevronDown size={14} color="#5b578c" style={{ transform: showUserMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </div>
             {showUserMenu && (
-                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 12, backgroundColor: '#ffffff', borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.05)', overflow: 'hidden', zIndex: 60, minWidth: 220 }}>
-                    <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #f1f5f9' }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{user?.fullName || user?.username || 'User'}</div>
-                        <div style={{ fontSize: 11, fontWeight: 500, color: '#64748b', marginTop: 2 }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
+                <div onClick={(e) => e.stopPropagation()} style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: 12,
+                  backgroundColor: paper,
+                  borderRadius: 16,
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
+                  border: `1px solid rgba(0,0,0,0.05)`,
+                  overflow: 'hidden',
+                  zIndex: 60,
+                  minWidth: 220
+                }}>
+                    <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${hairline}` }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: ink }}>{user?.fullName || user?.username || 'User'}</div>
+                        <div style={{ fontSize: 11, fontWeight: 500, color: inkSoft, marginTop: 2 }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
                     </div>
-                    <div style={{ padding: '6px' }}>
-                        <MenuItem icon={Wrench} color="#3b82f6" bg="rgb(239 246 255)" label="Internal Tools" onClick={() => { navigate('/internal-tools'); setShowUserMenu(false); }} />
-                        <MenuItem icon={User} color="#6366f1" bg="rgb(238 242 255)" label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
-                        <MenuItem icon={ShieldCheck} color="#10b981" bg="rgb(236 253 243)" label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
-                        <MenuItem icon={Database} color="#06b6d4" bg="rgb(236 254 255)" label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
-                        <MenuItem icon={Settings} color="#f59e0b" bg="rgb(255 251 235)" label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
+                    <div style={{ padding: 6 }}>
+                        <MenuItem icon={Wrench} color="#3b82f6" bg={teal[50]} label="Internal Tools" onClick={() => { navigate('/internal-tools'); setShowUserMenu(false); }} />
+                        <MenuItem icon={User} color="#6366f1" bg={teal[50]} label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
+                        <MenuItem icon={ShieldCheck} color="#10b981" bg={teal[50]} label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
+                        <MenuItem icon={Database} color="#06b6d4" bg={teal[50]} label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
+                        <MenuItem icon={Settings} color="#f59e0b" bg={amber[100]} label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
                     </div>
-                    <div style={{ borderTop: '1px solid #f1f5f9', padding: '6px' }}>
-                        <MenuItem icon={LogOut} color="#ef4444" bg="rgb(254 242 242)" label="Log out" onClick={() => { logout(); navigate('/login'); }} danger />
+                    <div style={{ borderTop: `1px solid ${hairline}`, padding: 6 }}>
+                        <MenuItem icon={LogOut} color={danger} bg={`${danger}15`} label="Log out" onClick={() => { logout(); navigate('/login'); }} danger />
                     </div>
                 </div>
             )}
         </div>
-            <button className={`p-1.5 rounded-full transition-colors ${showApps ? 'bg-blue-50 text-blue-600' : 'hover:bg-slate-100 text-slate-500'}`} onClick={() => setShowApps(!showApps)} title="Apps menu" aria-label="Toggle apps menu"><LayoutGrid size={18}/></button>
+            <button style={{
+              padding: 6,
+              borderRadius: '50%',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background .15s',
+              background: showApps ? `${teal[50]} ${teal[600]}` : 'transparent',
+              color: showApps ? teal[600] : inkSoft
+            }} onMouseEnter={e => { if (!showApps) e.currentTarget.style.backgroundColor = teal[50]; }} onMouseLeave={e => { if (!showApps) e.currentTarget.style.backgroundColor = 'transparent'; }} onClick={() => setShowApps(!showApps)} title="Apps menu" aria-label="Toggle apps menu"><LayoutGrid size={18}/></button>
             {showApps && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-slate-100 p-3 z-50 animate-in fade-in zoom-in-95 origin-top-right">
-                    <div className="grid grid-cols-2 gap-2">
-                        <Link to="/internal-tools/chat" className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-slate-50 transition-colors group" onClick={() => setShowApps(false)}>
-                            <div className="w-9 h-9 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  marginTop: 8,
+                  width: 288,
+                  background: paper,
+                  borderRadius: 14,
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
+                  border: `1px solid ${hairline}`,
+                  padding: 12,
+                  zIndex: 50
+                }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <Link to="/internal-tools/chat" style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: 12,
+                          borderRadius: 12,
+                          textDecoration: 'none',
+                          transition: 'background .15s',
+                          cursor: 'pointer'
+                        }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[50]; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }} onClick={() => setShowApps(false)}>
+                            <div style={{ width: 36, height: 36, background: amber[100], color: amber[500], borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                 <MessageSquare size={18}/>
                             </div>
-                            <span className="text-[9px] font-black uppercase">Chat</span>
+                            <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', color: ink }}>Chat</span>
                         </Link>
-                        <Link to="/sales/tasks" className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-slate-50 transition-colors group" onClick={() => setShowApps(false)}>
-                            <div className="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+                        <Link to="/sales/tasks" style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: 12,
+                          borderRadius: 12,
+                          textDecoration: 'none',
+                          transition: 'background .15s',
+                          cursor: 'pointer'
+                        }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[50]; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }} onClick={() => setShowApps(false)}>
+                            <div style={{ width: 36, height: 36, background: teal[100], color: teal[600], borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                 <CheckSquare size={18}/>
                             </div>
-                            <span className="text-[9px] font-black uppercase">Tasks</span>
+                            <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', color: ink }}>Tasks</span>
                         </Link>
                     </div>
                 </div>
@@ -371,7 +683,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileChange} 
-        className="hidden" 
+        style={{ display: 'none' }}
         accept=".csv"
       />
     </header>

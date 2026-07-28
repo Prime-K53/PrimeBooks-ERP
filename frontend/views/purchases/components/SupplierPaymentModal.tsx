@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Banknote, CreditCard, Smartphone, Send } from 'lucide-react';
+import { X, Banknote, CreditCard, Smartphone, Send, ChevronRight } from 'lucide-react';
 import { Purchase, SupplierPayment } from '../../../types';
 import { DEFAULT_ACCOUNTS } from '../../../constants';
 
@@ -69,7 +69,12 @@ export const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({ purc
                     background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
                 }} />
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}` }}>
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '22px 28px 18px',
+                    borderBottom: `1px solid ${hairline}`,
+                    background: paper
+                }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div style={{
                             width: 40, height: 40, borderRadius: 10,
@@ -80,37 +85,49 @@ export const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({ purc
                             <Send size={19} color="#fff" style={{ transform: 'rotate(-45deg)' }} />
                         </div>
                         <div>
-                            <h1 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2 }}>Record Supplier Payment</h1>
-                            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>Bill #{purchase.id} &bull; Balance: ${remainingBalance.toLocaleString()}</p>
+                            <h1 style={{
+                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                            }}>
+                                Record Supplier Payment
+                            </h1>
+                            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+                                Bill #{purchase.id} · Balance: ${remainingBalance.toLocaleString()}
+                            </p>
                         </div>
                     </div>
                     <button onClick={onClose} aria-label="Close" style={{
                         width: 32, height: 32, borderRadius: 8,
                         border: `1px solid ${hairline}`, background: paper, color: inkSoft,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', transition: 'all .15s ease'
+                        cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
                     }}
                         onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
                         onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
-                    ><X size={15} /></button>
+                    >
+                        <X size={15} />
+                    </button>
                 </div>
 
                 <form id="supplier-payment-form" onSubmit={handleSubmit} style={{ padding: '22px 28px 18px', display: 'flex', flexDirection: 'column', gap: 18 }}>
                     <div>
                         <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 6 }}>Payment Amount</div>
-                        <div style={{ display: 'flex', alignItems: 'center', border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '0 14px', height: 50 }}>
-                            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 600, color: inkSoft, marginRight: 8, fontSize: 18 }}>$</span>
+                        <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft, fontWeight: 700, fontSize: 18 }}>$</span>
                             <input
                                 autoFocus
                                 type="number"
                                 step="0.01"
-                                style={{
-                                    border: 'none', outline: 'none', fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700,
-                                    width: '100%', color: ink, background: 'transparent'
-                                }}
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 placeholder="0.00"
+                                style={{
+                                    ...inputStyle,
+                                    fontFamily: "'JetBrains Mono',monospace",
+                                    fontSize: 20,
+                                    fontWeight: 700,
+                                    paddingLeft: 28
+                                }}
                             />
                         </div>
                     </div>
@@ -129,7 +146,7 @@ export const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({ purc
                                         style={{
                                             display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
                                             borderRadius: 9, border: `1.4px solid ${isActive ? teal[400] : hairline}`,
-                                            background: isActive ? teal[50] : paper, cursor: 'pointer', transition: 'all .12s',
+                                            background: isActive ? teal[50] : paper, cursor: 'pointer', transition: 'all .15s ease',
                                             fontFamily: 'inherit', fontSize: 13, textAlign: 'left'
                                         }}
                                     >
@@ -160,32 +177,51 @@ export const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({ purc
                     </div>
                 </form>
 
-                <div style={{ display: 'flex', gap: 8, padding: '14px 28px 20px', borderTop: `1px solid ${hairline}` }}>
+                <div style={{
+                    display: 'flex', gap: 10, padding: '16px 28px',
+                    borderTop: `1px solid ${hairline}`, background: paper
+                }}>
                     <button
                         type="button"
                         onClick={onClose}
                         style={{
-                            flex: 1, padding: '11px 0', borderRadius: 8, border: `1px solid ${hairline}`,
-                            background: paper, color: inkSoft, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            fontFamily: 'inherit'
+                            fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                            padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+                            background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+                            display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
                         }}
-                    >
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
                         Cancel
                     </button>
                     <button
                         type="submit"
                         form="supplier-payment-form"
                         style={{
-                            flex: 2, padding: '11px 0', borderRadius: 8, border: 'none',
-                            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, color: '#fff',
-                            fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                            fontFamily: 'inherit', boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`
+                            fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                            padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                            color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                            boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+                            transition: 'all .15s ease'
                         }}
-                    >
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}>
                         Record Payment
+                        <ChevronRight size={14} />
                     </button>
                 </div>
             </div>
         </div>
     );
 };
+
+const inputStyle: React.CSSProperties = {
+    width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+    color: ink, background: paper,
+    border: `1.4px solid ${hairline}`, borderRadius: 9,
+    padding: '9px 12px', outline: 'none',
+    transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+
+export default SupplierPaymentModal;

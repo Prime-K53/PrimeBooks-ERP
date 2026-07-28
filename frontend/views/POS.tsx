@@ -1378,23 +1378,23 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row overflow-hidden bg-slate-50 relative font-sans text-slate-800">
+    <div className="h-full flex flex-col md:flex-row overflow-hidden bg-[#FEFDFB] relative font-['Inter',_sans-serif] text-[#23282A]">
       <div className="flex-1 flex flex-col relative overflow-hidden">
         {/* Top Header Mimicking QBO */}
-          <div className="px-6 py-1 flex items-center justify-between z-30 bg-slate-50 border-b border-slate-200">
+          <div className="px-6 py-1 flex items-center justify-between z-30 bg-[#FEFDFB] border-b border-[#e4ddd1]">
            <div className="flex items-center gap-4">
              <div className="hidden lg:flex gap-2">
-               <button onClick={handleQuickPhotocopy} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all flex items-center gap-1.5 shadow-sm">
-                 <Copy size={14} /> Photocopy
-               </button>
-               <button onClick={handleQuickTypePrinting} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all flex items-center gap-1.5 shadow-sm">
-                 <FileText size={14} /> Type & Print
-               </button>
-               <button onClick={() => setGiftCardModal(true)} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12px] font-bold text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition-all flex items-center gap-1.5 shadow-sm">
+<button onClick={handleQuickPhotocopy} className="px-3 py-1.5 bg-[#FEFDFB] border border-[#e4ddd1] rounded-lg text-[12px] font-bold text-[#23282A] hover:bg-[#eef7f6] hover:border-[#a6d9d3] hover:text-[#0b3e39] transition-all flex items-center gap-1.5 shadow-sm">
+                  <Copy size={14} /> Photocopy
+                </button>
+                 <button onClick={handleQuickTypePrinting} className="px-3 py-1.5 bg-[#FEFDFB] border border-[#e4ddd1] rounded-lg text-[12px] font-bold text-[#23282A] hover:bg-[#eef7f6] hover:border-[#a6d9d3] hover:text-[#0b3e39] transition-all flex items-center gap-1.5 shadow-sm">
+                  <FileText size={14} /> Type & Print
+                </button>
+                 <button onClick={() => setGiftCardModal(true)} className="px-3 py-1.5 bg-[#FEFDFB] border border-[#e4ddd1] rounded-lg text-[12px] font-bold text-[#0f544c] hover:bg-[#eef7f6] hover:border-[#a6d9d3] hover:text-[#0b3e39] transition-all flex items-center gap-1.5 shadow-sm">
                  <Gift size={14} /> Gift Card
                </button>
-               <select value={selectedSalesAccountId} onChange={e => setSelectedSalesAccountId(e.target.value)}
-                 className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12px] font-bold text-slate-700 hover:border-blue-300 transition-all shadow-sm outline-none cursor-pointer">
+<select value={selectedSalesAccountId} onChange={e => setSelectedSalesAccountId(e.target.value)}
+                   className="px-3 py-1.5 bg-[#FEFDFB] border border-[#e4ddd1] rounded-lg text-[12px] font-bold text-[#23282A] hover:border-[#a6d9d3] transition-all shadow-sm outline-none cursor-pointer">
                  {(accounts || []).filter((a: any) => a.type === 'Revenue').map(acc => (
                    <option key={acc.id} value={acc.id}>{acc.name}</option>
                  ))}
@@ -1404,7 +1404,7 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
 
           <div className="flex gap-3 items-center">
             {companyConfig?.transactionSettings?.pos?.showShortcutHints !== false && (
-              <span className="text-[11px] text-slate-500 font-medium hidden xl:block italic">
+              <span className="text-[11px] text-[#5c6567] font-medium hidden xl:block italic">
                 {companyConfig?.transactionSettings?.pos?.shortcutLabels?.F1 ? `F1: ${companyConfig.transactionSettings.pos.shortcutLabels.F1} • ` : 'F1: Cust • '}
                 {companyConfig?.transactionSettings?.pos?.shortcutLabels?.F2 ? `F2: ${companyConfig.transactionSettings.pos.shortcutLabels.F2} • ` : 'F2: Photo • '}
                 {companyConfig?.transactionSettings?.pos?.shortcutLabels?.F3 ? `F3: ${companyConfig.transactionSettings.pos.shortcutLabels.F3} • ` : 'F3: Print • '}
@@ -1412,8 +1412,8 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
               </span>
             )}
             <div className="flex gap-2">
-              <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-[12px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer transition-all bg-white shadow-sm select-none">
-                <div className={`w-7 h-3.5 rounded-full flex items-center p-0.5 transition-colors ${autoPreviewReceipt ? 'bg-blue-600' : 'bg-slate-300'}`}>
+<label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#e4ddd1] text-[12px] font-bold text-[#23282A] hover:bg-[#eef7f6] cursor-pointer transition-all bg-[#FEFDFB] shadow-sm select-none">
+                 <div className={`w-7 h-3.5 rounded-full flex items-center p-0.5 transition-colors ${autoPreviewReceipt ? 'bg-[#1f8577]' : 'bg-[#e4ddd1]'}`}>
                   <div className={`bg-white w-2.5 h-2.5 rounded-full shadow-sm transform transition-transform ${autoPreviewReceipt ? 'translate-x-3.5' : 'translate-x-0'}`}></div>
                 </div>
                 <span>Preview</span>
@@ -1433,7 +1433,7 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
                   }} 
                 />
               </label>
-              <button onClick={async () => { await fetchSalesData?.(); setZReportData(generateZReport(user?.id || '')); setShowZReport(true); }} className="px-3 py-1.5 rounded-lg border border-slate-200 text-[12px] font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-all bg-white shadow-sm flex items-center gap-1.5">
+               <button onClick={async () => { await fetchSalesData?.(); setZReportData(generateZReport(user?.id || '')); setShowZReport(true); }} className="px-3 py-1.5 rounded-lg border border-[#e4ddd1] text-[12px] font-bold text-[#23282A] hover:bg-[#eef7f6] hover:border-[#d4cdc2] transition-all bg-[#FEFDFB] shadow-sm flex items-center gap-1.5">
                 <TrendingUp size={14} /> Register
               </button>
             </div>
@@ -1450,8 +1450,8 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
       </div>
 
       {/* Right Sidebar - Checkout */}
-      <div className="w-full md:w-1/3 h-full relative z-20 border-l border-slate-200">
-        <div className="absolute inset-0 bg-white">
+      <div className="w-full md:w-1/3 h-full relative z-20 border-l border-[#e4ddd1]">
+        <div className="absolute inset-0 bg-[#FEFDFB]">
           <CartSidebar
             cart={cart}
             sales={sales}
@@ -1478,31 +1478,30 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
 
       {showZReport && zReportData && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-[2px]">
-          <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col border border-slate-200">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-              <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wider"><TrendingUp size={16} className="text-blue-600" /> Register Summary</h2>
-              <button onClick={() => setShowZReport(false)} className="text-slate-400 hover:text-red-600"><X size={20} /></button>
+          <div className="bg-[#FEFDFB] w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col border border-[#e4ddd1]">
+            <div className="px-6 py-4 border-b border-[#e4ddd1] bg-[#eef7f6] flex justify-between items-center">
+              <h2 className="text-sm font-bold text-[#23282A] flex items-center gap-2 uppercase tracking-wider"><TrendingUp size={16} className="text-[#1f8577]" /> Register Summary</h2>
+              <button onClick={() => setShowZReport(false)} className="text-[#5c6567] hover:text-[#b5493f]"><X size={20} /></button>
             </div>
-            <div id="register-details" className="flex-1 overflow-y-auto p-8 text-sm bg-white">
-              <div className="text-center border-b border-slate-100 pb-6 mb-6">
-                <h1 className="font-bold text-lg text-slate-800 uppercase tracking-tight">{companyConfig.companyName}</h1>
-                <p className="text-slate-500 text-xs mt-1 font-medium">Daily Sales Summary</p>
+            <div id="register-details" className="flex-1 overflow-y-auto p-8 text-sm bg-[#FEFDFB]">
+              <div className="text-center border-b border-[#e4ddd1] pb-6 mb-6">
+                <h1 className="font-bold text-lg text-[#23282A] uppercase tracking-tight">{companyConfig.companyName}</h1>
+                <p className="text-[#5c6567] text-xs mt-1 font-medium">Daily Sales Summary</p>
               </div>
               <div className="space-y-4">
-                <div className="flex justify-between items-center"><span className="text-slate-500">Gross Sales</span><span className="font-bold text-slate-800">{currency}{formatNumber(zReportData.totalSales)}</span></div>
-                <div className="flex justify-between items-center"><span className="text-slate-500">Cash in Drawer</span><span className="font-bold text-emerald-600">{currency}{formatNumber(zReportData.cashSales)}</span></div>
-                <div className="flex justify-between items-center"><span className="text-slate-500">Card Terminal</span><span className="font-bold text-slate-800">{currency}{formatNumber(zReportData.cardSales)}</span></div>
+                <div className="flex justify-between items-center"><span className="text-[#5c6567]">Gross Sales</span><span className="font-bold text-[#23282A]">{currency}{formatNumber(zReportData.totalSales)}</span></div>
+                <div className="flex justify-between items-center"><span className="text-[#5c6567]">Cash in Drawer</span><span className="font-bold text-[#1f8577]">{currency}{formatNumber(zReportData.cashSales)}</span></div>
+                <div className="flex justify-between items-center"><span className="text-[#5c6567]">Card Terminal</span><span className="font-bold text-[#23282A]">{currency}{formatNumber(zReportData.cardSales)}</span></div>
               </div>
-              <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
+              <div className="mt-8 p-4 bg-[#eef7f6] rounded-xl border border-[#e4ddd1] text-[11px] text-[#5c6567] leading-relaxed">
                 Closing the register will automatically transfer the cash balance to the Main Ledger account.
               </div>
             </div>
-            <div className="p-6 bg-slate-50 border-t border-slate-200">
+            <div className="p-6 bg-[#eef7f6] border-t border-[#e4ddd1]">
               <button
                 onClick={handleCloseRegister}
                 disabled={isClosingDrawer}
-                className="w-full py-3.5 bg-blue-600 text-white rounded-full font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
-              >
+                className="w-full py-3.5 text-white rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm" style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)' }}>
                 {isClosingDrawer ? <RefreshCw size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                 {isClosingDrawer ? 'Posting to Ledger...' : 'Close Register & Post'}
               </button>
@@ -1513,37 +1512,36 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
 
       {quickReceiptSale && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-[2px]">
-          <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col border border-slate-200">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-              <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wider"><CheckCircle size={16} className="text-emerald-600" /> Sale Successful</h2>
-              <button onClick={() => setQuickReceiptSale(null)} className="text-slate-400 hover:text-red-600"><X size={20} /></button>
+          <div className="bg-[#FEFDFB] w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col border border-[#e4ddd1]">
+            <div className="px-6 py-4 border-b border-[#e4ddd1] bg-[#eef7f6] flex justify-between items-center">
+              <h2 className="text-sm font-bold text-[#23282A] flex items-center gap-2 uppercase tracking-wider"><CheckCircle size={16} className="text-[#1f8577]" /> Sale Successful</h2>
+              <button onClick={() => setQuickReceiptSale(null)} className="text-[#5c6567] hover:text-[#b5493f]"><X size={20} /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-8 bg-white" style={{ fontFamily: (() => { const s = resolvePrimeTemplateSettings(getStoredCompanyConfig()); return s.fontFamily === 'Helvetica' ? "'Helvetica', Arial, sans-serif" : s.fontFamily; })(), fontSize: 14, color: '#1E293B', lineHeight: 1.5 }}>
-              <div className="text-center border-b border-slate-100 pb-6 mb-6">
-                <h1 className="font-bold uppercase tracking-tight" style={{ fontSize: 18, color: '#0F172A' }}>{companyConfig.companyName}</h1>
-                <p className="mt-1 font-medium" style={{ fontSize: 12, color: '#64748B' }}>Receipt #{quickReceiptSale.id}</p>
+            <div className="flex-1 overflow-y-auto p-8 bg-[#FEFDFB]" style={{ fontFamily: (() => { const s = resolvePrimeTemplateSettings(getStoredCompanyConfig()); return s.fontFamily === 'Helvetica' ? "'Helvetica', Arial, sans-serif" : s.fontFamily; })(), fontSize: 14, color: '#1E293B', lineHeight: 1.5 }}>
+              <div className="text-center border-b border-[#e4ddd1] pb-6 mb-6">
+                <h1 className="font-bold uppercase tracking-tight" style={{ fontSize: 18, color: '#23282A' }}>{companyConfig.companyName}</h1>
+                <p className="mt-1 font-medium" style={{ fontSize: 12, color: '#5c6567' }}>Receipt #{quickReceiptSale.id}</p>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between items-center"><span style={{ fontSize: 12, color: '#64748B' }}>Customer</span><span className="font-bold" style={{ fontSize: 14, color: '#0F172A' }}>{quickReceiptSale.customerName || 'Walk-in'}</span></div>
-                <div className="flex justify-between items-center"><span style={{ fontSize: 12, color: '#64748B' }}>Total Amount</span><span className="font-bold" style={{ fontSize: 14, color: '#0F172A' }}>{currency}{formatNumber(quickReceiptSale.totalAmount)}</span></div>
-                <div className="flex justify-between items-center"><span style={{ fontSize: 12, color: '#64748B' }}>Paid Amount</span><span className="font-bold" style={{ fontSize: 14, color: '#0F172A' }}>{currency}{formatNumber(quickReceiptSale.cash_tendered || quickReceiptSale.totalAmount)}</span></div>
-                <div className="flex justify-between items-center"><span style={{ fontSize: 12, color: '#64748B' }}>Change Due</span><span className="font-bold" style={{ fontSize: 14, color: '#059669' }}>{currency}{formatNumber(quickReceiptSale.change_due || 0)}</span></div>
+                <div className="flex justify-between items-center"><span style={{ fontSize: 12, color: '#5c6567' }}>Customer</span><span className="font-bold" style={{ fontSize: 14, color: '#23282A' }}>{quickReceiptSale.customerName || 'Walk-in'}</span></div>
+                <div className="flex justify-between items-center"><span style={{ fontSize: 12, color: '#5c6567' }}>Total Amount</span><span className="font-bold" style={{ fontSize: 14, color: '#23282A' }}>{currency}{formatNumber(quickReceiptSale.totalAmount)}</span></div>
+                <div className="flex justify-between items-center"><span style={{ fontSize: 12, color: '#5c6567' }}>Paid Amount</span><span className="font-bold" style={{ fontSize: 14, color: '#23282A' }}>{currency}{formatNumber(quickReceiptSale.cash_tendered || quickReceiptSale.totalAmount)}</span></div>
+                <div className="flex justify-between items-center"><span style={{ fontSize: 12, color: '#5c6567' }}>Change Due</span><span className="font-bold" style={{ fontSize: 14, color: '#1f8577' }}>{currency}{formatNumber(quickReceiptSale.change_due || 0)}</span></div>
               </div>
             </div>
-            <div className="p-6 bg-slate-50 border-t border-slate-200 flex gap-3">
+            <div className="p-6 bg-[#eef7f6] border-t border-[#e4ddd1] flex gap-3">
               <button
                 onClick={() => {
                   const receiptData = buildValidatedPosReceipt(quickReceiptSale);
                   setQuickReceiptSale(null);
                   setPreviewState({ isOpen: true, type: 'POS_RECEIPT', data: receiptData });
                 }}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-full font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
-              >
+                className="flex-1 py-3 text-white rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm" style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)' }}>
                 <FileText size={16} /> Full Receipt
               </button>
               <button
                 onClick={() => setQuickReceiptSale(null)}
-                className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-full font-bold text-sm hover:bg-slate-50 transition-all shadow-sm"
+                className="flex-1 py-3 bg-[#FEFDFB] border border-[#e4ddd1] text-[#5c6567] rounded-full font-bold text-sm hover:bg-[#eef7f6] transition-all shadow-sm"
               >
                 Done
               </button>
@@ -1647,12 +1645,12 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
 
       {/* Receipt Preview Banner */}
       {lastSale && (
-        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-300">
+         <div className="fixed bottom-4 right-4 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-300" style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)' }}>
           <CheckCircle size={20} />
           <div className="text-sm font-bold">Sale #{lastSale.id} completed</div>
           <button
             onClick={() => handleDownloadReceipt(lastSale)}
-            className="ml-4 px-3 py-1.5 bg-white text-slate-600 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition-colors flex items-center gap-1"
+            className="ml-4 px-3 py-1.5 bg-[#FEFDFB] text-[#5c6567] rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#eef7f6] transition-colors flex items-center gap-1"
           >
             <FileDown size={12} /> Download Receipt
           </button>
@@ -1662,24 +1660,24 @@ const handleQuickPrintConfirm = (quantity: number, pagesPerCopy: number, total: 
       {/* Gift Card Sell Modal */}
       {giftCardModal && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Sell Gift Card</h3>
+          <div className="bg-[#FEFDFB] rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-[#23282A] mb-4">Sell Gift Card</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Amount ($)</label>
-                <input type="number" value={giftCardForm.amount} onChange={e => setGiftCardForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))} className="w-full text-lg font-bold border border-slate-200 rounded-lg px-3 py-2 text-right" min={1} autoFocus />
+                <label className="block text-xs font-medium text-[#5c6567] mb-1">Amount ($)</label>
+                <input type="number" value={giftCardForm.amount} onChange={e => setGiftCardForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))} className="w-full text-lg font-bold border border-[#e4ddd1] rounded-lg px-3 py-2 text-right" min={1} autoFocus />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Gift Message (optional)</label>
-                <input type="text" value={giftCardForm.message} onChange={e => setGiftCardForm(prev => ({ ...prev, message: e.target.value }))} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" placeholder="Happy Birthday!" />
+                <label className="block text-xs font-medium text-[#5c6567] mb-1">Gift Message (optional)</label>
+                <input type="text" value={giftCardForm.message} onChange={e => setGiftCardForm(prev => ({ ...prev, message: e.target.value }))} className="w-full text-sm border border-[#e4ddd1] rounded-lg px-3 py-2" placeholder="Happy Birthday!" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Card Color</label>
-                <input type="color" value={giftCardForm.color} onChange={e => setGiftCardForm(prev => ({ ...prev, color: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg cursor-pointer" />
+                <label className="block text-xs font-medium text-[#5c6567] mb-1">Card Color</label>
+                <input type="color" value={giftCardForm.color} onChange={e => setGiftCardForm(prev => ({ ...prev, color: e.target.value }))} className="w-full h-10 border border-[#e4ddd1] rounded-lg cursor-pointer" />
               </div>
               <div className="flex gap-2 pt-2">
-                <button onClick={handleSellGiftCard} className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700">Add to Cart</button>
-                <button onClick={() => { setGiftCardModal(false); setGiftCardForm({ amount: 50, message: '', color: '#10b981' }) }} className="px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50">Cancel</button>
+                <button onClick={handleSellGiftCard} className="flex-1 px-4 py-2.5 text-sm font-bold text-white rounded-xl transition-all" style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)' }}>Add to Cart</button>
+                <button onClick={() => { setGiftCardModal(false); setGiftCardForm({ amount: 50, message: '', color: '#10b981' }) }} className="px-4 py-2.5 text-sm font-bold text-[#5c6567] bg-[#FEFDFB] border border-[#e4ddd1] rounded-xl hover:bg-[#eef7f6]">Cancel</button>
               </div>
             </div>
           </div>

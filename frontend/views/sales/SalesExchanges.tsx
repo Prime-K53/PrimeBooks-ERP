@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Plus, Search, Filter, RefreshCw, FileText, Clock, CheckCircle, Printer
 } from 'lucide-react';
 import { useSalesStore } from '../../stores/salesStore';
@@ -11,11 +11,59 @@ import { useDocumentPreview } from '../../hooks/useDocumentPreview';
 import { useAuth } from '../../context/AuthContext';
 import { ConfirmDialog, useConfirmDialog } from '../../components/ConfirmDialog';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', border: '1.4px solid #e4ddd1', borderRadius: 9,
+  padding: '9px 12px', background: '#FEFDFB', fontFamily: "'Inter',sans-serif",
+  fontSize: 13.5, color: '#23282A', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+
+const btnPrimaryStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  background: 'linear-gradient(155deg, #1f8577, #0f544c)',
+  color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+  boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
+  transition: 'all .15s ease'
+};
+
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567',
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
+
+const pageStyle: React.CSSProperties = {
+  padding: '24px', background: '#FEFDFB', minHeight: '100vh',
+  fontFamily: "'Inter',sans-serif", fontSize: 13.5, color: ink
+};
+
+const cardStyle: React.CSSProperties = {
+  background: '#FEFDFB', borderRadius: 14, border: '1px solid #e4ddd1'
+};
+
 const SalesExchanges: React.FC = () => {
-  const { 
-    salesExchanges, reprintJobs, fetchExchanges, isLoading, 
+  const {
+    salesExchanges, reprintJobs, fetchExchanges, isLoading,
     deleteSalesExchange, approveSalesExchange, cancelSalesExchange,
-    bulkCancelSalesExchanges 
+    bulkCancelSalesExchanges
   } = useSalesStore();
   const { notify } = useAuth();
   const { handlePreview } = useDocumentPreview();
@@ -31,13 +79,13 @@ const SalesExchanges: React.FC = () => {
   }, [fetchExchanges]);
 
   const filteredExchanges = salesExchanges.filter(ex => {
-    const matchesSearch = 
+    const matchesSearch =
       (ex.exchange_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (ex.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (ex.invoice_id || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || ex.status.toLowerCase() === statusFilter.toLowerCase();
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -87,99 +135,127 @@ const SalesExchanges: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center">
+    <div style={pageStyle} className="space-y-6">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Sales Exchanges</h1>
-          <p className="text-sm text-gray-500">Manage print job replacements and reprints</p>
+          <h1 style={{
+            fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+            fontSize: 22, color: teal[800], margin: 0, letterSpacing: 0.2
+          }}>
+            Sales Exchanges
+          </h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: inkSoft }}>
+            Manage print job replacements and reprints
+          </p>
         </div>
         <button
           onClick={() => setIsRequestModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-sm font-bold text-xs uppercase tracking-wider"
+          style={btnPrimaryStyle}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus size={16} />
           New Exchange Request
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-slate-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg shrink-0">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+        <div style={{ ...cardStyle, borderLeft: '4px solid ' + teal[500], padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{ padding: '10px', background: teal[50], color: teal[600], borderRadius: 9, flexShrink: 0 }}>
             <RefreshCw size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total Exchanges</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{salesExchanges.length}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Total Exchanges</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{salesExchanges.length}</p>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0">
+        <div style={{ ...cardStyle, borderLeft: '4px solid ' + amber[500], padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{ padding: '10px', background: amber[100], color: amber[600], borderRadius: 9, flexShrink: 0 }}>
             <Clock size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Pending Approval</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{salesExchanges.filter(e => e.status.toLowerCase() === 'pending').length}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Pending Approval</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{salesExchanges.filter(e => e.status.toLowerCase() === 'pending').length}</p>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+        <div style={{ ...cardStyle, borderLeft: '4px solid ' + teal[400], padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{ padding: '10px', background: teal[50], color: teal[500], borderRadius: 9, flexShrink: 0 }}>
             <Printer size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Active Reprints</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{reprintJobs.filter(j => j.status !== 'completed').length}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Active Reprints</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{reprintJobs.filter(j => j.status !== 'completed').length}</p>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
+        <div style={{ ...cardStyle, borderLeft: '4px solid ' + teal[600], padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{ padding: '10px', background: teal[50], color: teal[600], borderRadius: 9, flexShrink: 0 }}>
             <CheckCircle size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Completed</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{salesExchanges.filter(e => e.status.toLowerCase() === 'completed').length}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Completed</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{salesExchanges.filter(e => e.status.toLowerCase() === 'completed').length}</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[600px]">
+      <div style={{ ...cardStyle, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 600 }}>
         {selectedIds.length > 0 ? (
-          <div className="p-4 bg-indigo-600 text-white flex justify-between items-center animate-in slide-in-from-top duration-200">
-            <div className="flex items-center space-x-4">
-              <span className="font-bold text-sm">{selectedIds.length} items selected</span>
-              <button 
+          <div style={{
+            padding: '14px 18px', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ fontWeight: 700, fontSize: 13 }}>{selectedIds.length} items selected</span>
+              <button
                 onClick={() => setSelectedIds([])}
-                className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors font-bold uppercase tracking-wider"
+                style={{
+                  fontSize: 12, background: 'rgba(255,255,255,.18)', color: '#fff',
+                  padding: '6px 12px', borderRadius: 9, border: 'none', cursor: 'pointer',
+                  fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.06
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.28)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,.18)'}
               >
                 Clear Selection
               </button>
             </div>
-            <div className="flex space-x-2">
-              <button 
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
                 onClick={handleBulkCancel}
-                className="px-4 py-1.5 bg-rose-500 hover:bg-rose-600 rounded-lg text-xs font-bold transition-colors shadow-sm uppercase tracking-wider"
+                style={{
+                  padding: '8px 16px', background: '#fff', color: teal[700],
+                  borderRadius: 9, border: 'none', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.06
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff'}
               >
                 Cancel Selected
               </button>
             </div>
           </div>
         ) : (
-          <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4 bg-gray-50/50">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid ' + hairline, display: 'flex', flexDirection: 'column', gap: 12, background: paper }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft, width: 16, height: 16, pointerEvents: 'none' }} />
               <input
                 type="text"
                 placeholder="Search by SE#, Customer or Invoice..."
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all"
+                style={{ ...inputStyle, paddingLeft: 36, paddingRight: 14 }}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={e => { e.currentTarget.style.borderColor = teal[400]; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(31,133,119,.08)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="text-gray-400 w-4 h-4" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Filter style={{ color: inkSoft, width: 16, height: 16 }} />
               <select
-                className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-indigo-500/5"
+                style={{ ...inputStyle, width: 'auto', minWidth: 160 }}
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
+                onFocus={e => { e.currentTarget.style.borderColor = teal[400]; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(31,133,119,.08)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -187,23 +263,29 @@ const SalesExchanges: React.FC = () => {
                 <option value="rejected">Rejected</option>
                 <option value="completed">Completed</option>
               </select>
+              <button
+                onClick={() => fetchExchanges()}
+                style={{
+                  padding: '9px 12px', color: inkSoft, background: paper,
+                  border: '1.4px solid ' + hairline, borderRadius: 9, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', transition: 'all .15s ease'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.background = teal[50]; }}
+                onMouseLeave={e => { e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
+                title="Refresh"
+              >
+                <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} style={{ width: 16, height: 16 }} />
+              </button>
             </div>
-            <button 
-              onClick={() => fetchExchanges()}
-              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
           </div>
         )}
 
-        <div className="flex-1 overflow-hidden">
-          <SalesExchangeList 
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <SalesExchangeList
             data={filteredExchanges}
             viewMode="List"
             onView={(ex) => setSelectedExchange(ex)}
-            onEdit={() => {}} // No edit for exchanges per policy
+            onEdit={() => {}}
             onDelete={async (id) => {
               const ok = await confirmDialog({
                 title: 'Mark Exchange as Deleted',
@@ -225,8 +307,8 @@ const SalesExchanges: React.FC = () => {
       <ConfirmDialogComponent />
 
       {isRequestModalOpen && (
-        <ExchangeRequestModal 
-          onClose={() => setIsRequestModalOpen(false)} 
+        <ExchangeRequestModal
+          onClose={() => setIsRequestModalOpen(false)}
         />
       )}
 

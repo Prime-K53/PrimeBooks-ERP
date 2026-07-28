@@ -25,6 +25,26 @@ const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294'
 const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
 const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
 
+const tealBtn: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+  color: '#fff', display: 'flex', alignItems: 'center', gap: 6,
+  boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+  transition: 'all .15s ease',
+};
+const ghostBtn: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
+const dangerBtn: React.CSSProperties = {
+  ...tealBtn,
+  background: `linear-gradient(155deg, #dc2626, #b91c1c)`,
+  boxShadow: `0 6px 16px -6px rgba(185,28,28,.55)`,
+};
+
 /**
  * Job Hover Card
  */
@@ -61,7 +81,7 @@ const JobHoverCard: React.FC<{
                             <span style={{ color: '#3fa294', fontWeight: 700 }}>{(progress || 0).toFixed(0)}%</span>
                         </div>
                         <div style={{ width: '100%', background: 'rgba(254,253,251,.1)', height: '4px', borderRadius: '9999px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', background: '#eef7f6' }} style={{ width: `${progress}%` }}></div>
+                            <div style={{ height: '100%', background: '#eef7f6', width: `${progress}%` }}></div>
                         </div>
                     </div>
                 </div>
@@ -344,8 +364,7 @@ const WorkOrders: React.FC = () => {
                 <>
                     <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0 }} onClick={() => setShowAdvancedMenu(null)}></div>
                     <div
-                        style={{ position: 'fixed', background: '#FEFDFB', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', padding: '4px', transitionDuration: '100ms' }}
-                        style={{ left: Math.min(advancedMenuPos.x, window.innerWidth - 220), top: Math.min(advancedMenuPos.y, window.innerHeight - 300) }}
+                        style={{ position: 'fixed', background: '#FEFDFB', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', padding: '4px', transitionDuration: '100ms', left: Math.min(advancedMenuPos.x, window.innerWidth - 220), top: Math.min(advancedMenuPos.y, window.innerHeight - 300) }}
                     >
                         <div style={{ paddingLeft: '12px', paddingTop: '8px', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '12px', paddingBottom: '8px' }}>Advanced Protocols</div>
                         <div style={{ paddingTop: '4px', paddingBottom: '4px' }}>
@@ -370,26 +389,46 @@ const WorkOrders: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                     {/* Filter buttons for examination vs regular work orders */}
-                    <div style={{ display: 'flex', background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(8px)', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.6)', borderRadius: '12px', padding: '4px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
-                        <button 
-                            onClick={() => setFilterType('all')} 
-                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-colors ${filterType === 'all' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
-                            All
-                        </button>
-                        <button 
-                            onClick={() => setFilterType('examination')} 
-                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-colors ${filterType === 'examination' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
-                            ðŸ“ Examination
-                        </button>
-                        <button 
-                            onClick={() => setFilterType('regular')} 
-                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-colors ${filterType === 'regular' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
-                            ðŸ­ Regular
-                        </button>
-                    </div>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button 
+                        onClick={() => setFilterType('all')} 
+                        style={{
+                            padding: '7px 14px', borderRadius: 9, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                            background: filterType === 'all' ? teal[500] : paper,
+                            color: filterType === 'all' ? '#fff' : inkSoft,
+                            border: `1.4px solid ${filterType === 'all' ? teal[500] : hairline}`,
+                            boxShadow: filterType === 'all' ? '0 4px 12px rgba(31,133,119,.12)' : '0 1px 2px rgba(0,0,0,.04)',
+                            transition: 'all .15s ease', fontFamily: 'inherit'
+                        }}
+                    >
+                        All
+                    </button>
+                    <button 
+                        onClick={() => setFilterType('examination')} 
+                        style={{
+                            padding: '7px 14px', borderRadius: 9, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                            background: filterType === 'examination' ? '#7c3aed' : paper,
+                            color: filterType === 'examination' ? '#fff' : inkSoft,
+                            border: `1.4px solid ${filterType === 'examination' ? '#7c3aed' : hairline}`,
+                            boxShadow: filterType === 'examination' ? '0 4px 12px rgba(124,58,237,.12)' : '0 1px 2px rgba(0,0,0,.04)',
+                            transition: 'all .15s ease', fontFamily: 'inherit'
+                        }}
+                    >
+                        ðŸ“ Examination
+                    </button>
+                    <button 
+                        onClick={() => setFilterType('regular')} 
+                        style={{
+                            padding: '7px 14px', borderRadius: 9, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                            background: filterType === 'regular' ? '#059669' : paper,
+                            color: filterType === 'regular' ? '#fff' : inkSoft,
+                            border: `1.4px solid ${filterType === 'regular' ? '#059669' : hairline}`,
+                            boxShadow: filterType === 'regular' ? '0 4px 12px rgba(5,150,105,.12)' : '0 1px 2px rgba(0,0,0,.04)',
+                            transition: 'all .15s ease', fontFamily: 'inherit'
+                        }}
+                    >
+                        ðŸ­ Regular
+                    </button>
                     <div style={{ position: 'relative' }}>
                         <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567', pointerEvents: 'none' }} />
                         <input
@@ -403,26 +442,27 @@ const WorkOrders: React.FC = () => {
                     {selectedIds.length > 0 && (
                         <button
                             onClick={handleBatchDelete}
-                            style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '16px', paddingTop: '8px', background: '#fef2f2', color: '#b5493f', borderRadius: '12px', fontWeight: 700, transition: 'all .15s ease', border: '1.4px solid #e4ddd1', borderColor: '#b5493f', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '16px', paddingBottom: '8px' }}
+                            style={dangerBtn}
                         >
-                            <Trash2 size={16} /> Delete ({selectedIds.length})
+                            <Trash2 size={15} /> Delete ({selectedIds.length})
                         </button>
                     )}
                     <button
                         onClick={handleOpenCreate}
-                        className="zoho-button-primary"
+                        style={tealBtn}
                     >
-                        <Plus size={16} /> Create New
+                        <Plus size={15} /> Create New
                     </button>
                     <button
                         onClick={() => navigate('/production/shop-floor')}
-                        style={{ background: '#0b3e39', color: '#fff', border: 'none' }}
+                        style={ghostBtn}
                     >
-                        <MonitorPlay size={16} /> Terminal View
+                        <MonitorPlay size={15} /> Terminal View
                     </button>
-                    <div style={{ display: 'flex', background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(8px)', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.6)', borderRadius: '12px', padding: '4px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
-                        <button onClick={() => setViewType('List')} className={`p-1.5 rounded-lg transition-colors ${viewType === 'List' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><ListIcon size={16} /></button>
-                        <button onClick={() => setViewType('Kanban')} className={`p-1.5 rounded-lg transition-colors ${viewType === 'Kanban' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LayoutGrid size={16} /></button>
+                    <div style={{ display: 'flex', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '3px', boxShadow: '0 1px 2px rgba(0,0,0,.04)' }}>
+                        <button onClick={() => setViewType('List')} style={{ padding: '6px 10px', borderRadius: 7, cursor: 'pointer', border: 'none', background: viewType === 'List' ? teal[50] : 'transparent', color: viewType === 'List' ? teal[700] : inkSoft, transition: 'all .15s ease', display: 'flex', alignItems: 'center' }}><ListIcon size={15} /></button>
+                        <button onClick={() => setViewType('Kanban')} style={{ padding: '6px 10px', borderRadius: 7, cursor: 'pointer', border: 'none', background: viewType === 'Kanban' ? teal[50] : 'transparent', color: viewType === 'Kanban' ? teal[700] : inkSoft, transition: 'all .15s ease', display: 'flex', alignItems: 'center' }}><LayoutGrid size={15} /></button>
+                    </div>
                     </div>
                 </div>
             </div>

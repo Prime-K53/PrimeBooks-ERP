@@ -24,6 +24,61 @@ import { attachDocumentSecurity } from '../../utils/documentSecurity';
 import { enrichDocumentCustomerData } from '../../utils/documentCustomerData';
 import { getPlaceholder } from '../../constants/placeholders';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+
+const labelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  padding: '9px 12px', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+
+const textareaStyle: React.CSSProperties = {
+  ...inputStyle, resize: 'none', minHeight: 80, lineHeight: 1.5
+};
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none' as const,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  paddingRight: 30,
+  cursor: 'pointer'
+};
+
+const btnPrimaryStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+  color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+  boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+  transition: 'all .15s ease'
+};
+
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
+
 const carriers = ['Own Delivery', 'DHL', 'FedEx', 'UPS', 'Local Courier', 'SpeedAF', 'Fargo Courier'];
 const DELIVERY_POD_RECONCILE_KEY = 'prime_shipping_pod_reconcile_v1';
 
@@ -500,27 +555,50 @@ const ShippingManager: React.FC = () => {
     };
 
     return (
-        <div className="h-[calc(100vh-4rem)] flex flex-col bg-[#f8fafc] font-sans overflow-hidden">
+        <div style={{ 
+          height: 'calc(100vh - 4rem)', display: 'flex', flexDirection: 'column',
+          background: paper, overflow: 'hidden'
+        }}>
             
-            <header className="px-10 py-6 border-b border-slate-200 bg-white/70 backdrop-blur-md flex justify-between items-center shrink-0">
+            <header style={{ 
+              padding: '24px 40px', 
+              borderBottom: `1px solid ${hairline}`, 
+              background: paper,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              flexShrink: 0, gap: 16, flexWrap: 'wrap'
+            }}>
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
-                        <Truck size={32} className="text-blue-600"/> Logistics Command
+                    <h1 style={{
+                      fontFamily: "'DM Serif Display', 'Georgia', serif",
+                      fontSize: 22, color: teal[800], margin: 0,
+                      display: 'flex', alignItems: 'center', gap: 12, letterSpacing: 0.2
+                    }}>
+                        <div style={{
+                          width: 40, height: 40, borderRadius: 10,
+                          background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+                        }}>
+                            <Truck size={20} color="#fff" />
+                        </div>
+                        Logistics Command
                     </h1>
-                    <p className="text-sm text-slate-500 mt-1">Proof of delivery processing and manifest management.</p>
+                    <p style={{ fontSize: 12, color: inkSoft, marginTop: 4, fontWeight: 500 }}>
+                        Proof of delivery processing and manifest management.
+                    </p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="relative w-72">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', width: 280 }}>
+                        <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                            style={{ ...inputStyle, paddingLeft: 36 }}
                             placeholder={activeTab === 'Pipeline' ? 'Search pending delivery notes...' : 'Search shipments...'}
                         />
                     </div>
-                    <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+                    <div style={{ display: 'flex', background: teal[50], padding: 4, borderRadius: 12, border: `1px solid ${teal[100]}`, gap: 2 }}>
                         {[
                             { id: 'Pipeline', label: 'Inbound', icon: Package, count: filteredDeliveries.length },
                             { id: 'Active', label: 'Active', icon: Truck, count: (shipments || []).filter(s => s.status !== 'Delivered' && s.status !== 'Cancelled').length },
@@ -529,123 +607,216 @@ const ShippingManager: React.FC = () => {
                             <button 
                                 key={tab.id} 
                                 onClick={() => setActiveTab(tab.id as 'Pipeline' | 'Active' | 'History')}
-                                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-md scale-[1.02]' : 'text-slate-500 hover:text-slate-800'}`}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                    padding: '8px 14px', borderRadius: 10,
+                                    fontSize: 10, fontWeight: 700, letterSpacing: 0.08,
+                                    textTransform: 'uppercase', cursor: 'pointer',
+                                    border: 'none', transition: 'all .15s ease',
+                                    background: activeTab === tab.id ? teal[500] : 'transparent',
+                                    color: activeTab === tab.id ? '#fff' : inkSoft,
+                                    boxShadow: activeTab === tab.id ? `0 2px 8px -2px rgba(15,84,76,.4)` : 'none'
+                                }}
                             >
-                                <tab.icon size={14}/>
+                                <tab.icon size={14} />
                                 {tab.label}
-                                <span className={`px-1.5 py-0.5 rounded-full text-[8px] ${activeTab === tab.id ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>{tab.count}</span>
+                                <span style={{
+                                    padding: '2px 6px', borderRadius: 6,
+                                    fontSize: 9, fontWeight: 700,
+                                    background: activeTab === tab.id ? 'rgba(255,255,255,.2)' : teal[100],
+                                    color: activeTab === tab.id ? '#fff' : teal[700]
+                                }}>
+                                    {tab.count}
+                                </span>
                             </button>
                         ))}
                     </div>
                     
                     <button 
                         onClick={handleScanReceived}
-                        className="bg-slate-200 text-slate-600 px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-300 transition-all flex items-center gap-2"
+                        style={{ ...btnGhostStyle, opacity: 0.7, cursor: 'not-allowed' }}
                     >
-                        <FileSearch size={16}/>
-                        Scan Received Image (Disabled)
+                        <FileSearch size={16}/> Scan Received Image (Disabled)
                     </button>
                 </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+            <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
                 {activeTab === 'Pipeline' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
                         {filteredDeliveries.map(dn => (
-                            <div key={dn.id} id={`dn-card-${dn.id}`} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 group hover:border-blue-400 hover:shadow-xl transition-all flex flex-col relative overflow-hidden">
-                                <div className="mb-6">
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Ready for dispatch</span>
+                            <div key={dn.id} id={`dn-card-${dn.id}`} style={{
+                              background: paper, borderRadius: 14,
+                              border: `1px solid ${hairline}`,
+                              boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+                              padding: 24, transition: 'all .2s ease',
+                              position: 'relative', overflow: 'hidden',
+                              display: 'flex', flexDirection: 'column'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = '0 8px 24px -8px rgba(15,84,76,.15)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,.04)'; }}
+                            >
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <span style={{
+                                          fontSize: 9, fontWeight: 700, color: teal[600], textTransform: 'uppercase',
+                                          letterSpacing: 0.08, background: teal[50],
+                                          padding: '3px 10px', borderRadius: 20, border: `1px solid ${teal[100]}`
+                                        }}>
+                                            Ready for dispatch
+                                        </span>
                                     </div>
-                                    <h3 className="text-xl font-black text-slate-900 mt-2 truncate">{dn.customerName}</h3>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Delivery ID: {dn.id}</p>
+                                    <h3 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: '12px 0 4px', letterSpacing: -0.2 }}>{dn.customerName}</h3>
+                                    <p style={{ fontSize: 10, color: inkSoft, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.05, margin: 0 }}>
+                                        Delivery ID: {dn.id}
+                                    </p>
                                 </div>
-                                <div className="absolute top-8 right-8 flex gap-2">
+                                <div style={{ position: 'absolute', top: 24, right: 24, display: 'flex', gap: 8 }}>
                                     <button 
                                         onClick={() => handlePreview('DELIVERY_NOTE', dn)}
-                                        className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-xl border border-transparent hover:border-indigo-100 transition-all"
+                                        style={{
+                                          padding: 8, background: paper, border: `1px solid ${hairline}`,
+                                          color: inkSoft, borderRadius: 10, cursor: 'pointer',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          transition: 'all .15s ease'
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
                                         title="Preview PDF"
                                     >
                                         <Eye size={16}/>
                                     </button>
                                     <button 
                                         onClick={() => handleDownloadPDF(dn)}
-                                        className="p-2 hover:bg-blue-50 text-blue-600 rounded-xl border border-transparent hover:border-blue-100 transition-all"
+                                        style={{
+                                          padding: 8, background: paper, border: `1px solid ${hairline}`,
+                                          color: inkSoft, borderRadius: 10, cursor: 'pointer',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          transition: 'all .15s ease'
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
                                         title="Download PDF"
                                     >
                                         <Download size={16}/>
                                     </button>
                                 </div>
-                                <div className="flex-1 space-y-4 mb-8">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex items-start gap-3 flex-1">
-                                            <MapPin size={16} className="text-rose-500 shrink-0 mt-0.5"/>
-                                            <p className="text-xs text-slate-600 leading-relaxed font-medium line-clamp-2">{dn.shippingAddress}</p>
-                                        </div>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                        <MapPin size={16} style={{ color: teal[400], flexShrink: 0, marginTop: 2 }} />
+                                        <p style={{ fontSize: 13, color: ink, lineHeight: 1.5, fontWeight: 500, margin: 0 }}>{dn.shippingAddress}</p>
                                     </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <Package size={16} className="text-slate-400 shrink-0"/>
-                                            <p className="text-xs text-slate-600 font-bold">{dn.items.length} Items</p>
-                                        </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <Package size={16} style={{ color: inkSoft, flexShrink: 0 }} />
+                                        <p style={{ fontSize: 13, color: ink, fontWeight: 600, margin: 0 }}>{dn.items.length} Items</p>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => handleOpenDispatch(dn)}
-                                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                    style={{
+                                      ...btnPrimaryStyle, width: '100%', padding: '14px 20px',
+                                      justifyContent: 'center', gap: 8, fontSize: 10, letterSpacing: 0.08
+                                    }}
                                 >
                                     <Navigation size={14}/> Initiate Dispatch
                                 </button>
                             </div>
                         ))}
-                        {filteredDeliveries.length === 0 && <div className="col-span-full py-20 text-center text-slate-400 italic">Manifest pipeline clear. All pending notes are dispatched.</div>}
+                        {filteredDeliveries.length === 0 && (
+                          <div style={{ 
+                            gridColumn: '1 / -1', padding: '80px 20px', textAlign: 'center',
+                            color: inkSoft, fontStyle: 'italic', fontSize: 14
+                          }}>
+                            Manifest pipeline clear. All pending notes are dispatched.
+                          </div>
+                        )}
                     </div>
                 )}
 
                 {(activeTab === 'Active' || activeTab === 'History') && (
-                    <div className="space-y-6">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                         {filteredShipments.map(shp => (
-                            <div key={shp.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row group transition-all hover:border-blue-200">
-                                <div className="p-8 border-r border-slate-100 bg-slate-50/50 flex flex-col justify-center items-center text-center shrink-0 w-56">
-                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner relative
-                                        ${shp.status === 'Delivered' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600 animate-pulse'}`}>
-                                        <Truck size={28}/>
+                            <div key={shp.id} style={{
+                              background: paper, borderRadius: 14,
+                              border: `1px solid ${hairline}`,
+                              boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+                              overflow: 'hidden', display: 'flex', flexDirection: 'row',
+                              transition: 'all .2s ease'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = teal[200]}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = hairline}
+                            >
+                                <div style={{
+                                  padding: 24, borderRight: `1px solid ${hairline}`,
+                                  background: teal[50],
+                                  display: 'flex', flexDirection: 'column',
+                                  alignItems: 'center', justifyContent: 'center',
+                                  textAlign: 'center', flexShrink: 0, width: 224
+                                }}>
+                                    <div style={{
+                                      width: 56, height: 56, borderRadius: 14,
+                                      background: `linear-gradient(155deg, ${teal[400]}, ${teal[600]})`,
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      marginBottom: 12,
+                                      boxShadow: `0 4px 12px -3px rgba(15,84,76,.4)`
+                                    }}>
+                                        <Truck size={28} color="#fff" />
                                     </div>
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{shp.carrier}</div>
-                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase border tracking-widest ${shp.status === 'Delivered' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
+                                    <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 8 }}>
+                                        {shp.carrier}
+                                    </div>
+                                    <span style={{
+                                      padding: '4px 12px', borderRadius: 20,
+                                      fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                                      letterSpacing: 0.08,
+                                      border: `1px solid ${shp.status === 'Delivered' ? teal[500] : teal[200]}`,
+                                      background: shp.status === 'Delivered' ? teal[500] : teal[50],
+                                      color: shp.status === 'Delivered' ? '#fff' : teal[600]
+                                    }}>
                                         {shp.status}
                                     </span>
                                 </div>
 
-                                <div className="flex-1 p-8">
-                                    <div className="flex justify-between items-start mb-6">
+                                <div style={{ flex: 1, padding: 24 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
                                         <div>
-                                            <h4 className="text-xl font-black text-slate-900 tracking-tight">{shp.customerName}</h4>
-                                            <div className="flex items-center gap-3 mt-1">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Box size={10}/> {shp.orderId}</span>
-                                                <span className="text-slate-200">•</span>
-                                                <span className="text-[10px] font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded select-all cursor-copy">{shp.trackingNumber}</span>
+                                            <h4 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0, letterSpacing: -0.2 }}>{shp.customerName}</h4>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.05, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <Box size={10}/> {shp.orderId}
+                                                </span>
+                                                <span style={{ color: hairline }}>•</span>
+                                                <span style={{
+                                                  fontSize: 10, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+                                                  color: teal[600], background: teal[50],
+                                                  padding: '2px 8px', borderRadius: 6, border: `1px solid ${teal[100]}`
+                                                }}>
+                                                    {shp.trackingNumber}
+                                                </span>
                                             </div>
                                         </div>
                                         {shp.status !== 'Delivered' ? (
                                             <button 
                                                 onClick={() => handleMarkDelivered(shp)}
-                                                className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-xl shadow-emerald-900/10 transition-all flex items-center gap-2"
+                                                style={{
+                                                  ...btnPrimaryStyle, padding: '10px 18px',
+                                                  justifyContent: 'center', gap: 6, fontSize: 10, letterSpacing: 0.08
+                                                }}
                                             >
                                                 <CheckSquare size={14}/> Seal Proof of Delivery
                                             </button>
                                         ) : (
-                                            <div className="flex gap-2">
+                                            <div style={{ display: 'flex', gap: 8 }}>
                                                 <button 
                                                     onClick={() => handlePreviewDeliveryNote(shp)}
-                                                    className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase hover:bg-blue-100 flex items-center gap-2"
+                                                    style={{ ...btnGhostStyle, padding: '8px 14px', fontSize: 10, gap: 6 }}
                                                     title="Preview Delivery Note"
                                                 >
                                                     <Eye size={14}/> Preview
                                                 </button>
                                                 <button 
                                                     onClick={() => handleDownloadDeliveryNote(shp)}
-                                                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase hover:bg-slate-200 flex items-center gap-2"
+                                                    style={{ ...btnGhostStyle, padding: '8px 14px', fontSize: 10, gap: 6 }}
                                                     title="Download PDF"
                                                 >
                                                     <Download size={14}/> Download
@@ -654,30 +825,35 @@ const ShippingManager: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
                                         <div>
-                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Expected Arrival</p>
-                                            <p className="text-sm font-bold text-slate-800">{shp.estimatedDelivery ? format(new Date(shp.estimatedDelivery), 'MMM d, HH:mm') : 'N/A'}</p>
+                                            <p style={{ fontSize: 9, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 4px' }}>Expected Arrival</p>
+                                            <p style={{ fontSize: 14, fontWeight: 700, color: ink, margin: 0 }}>{shp.estimatedDelivery ? format(new Date(shp.estimatedDelivery), 'MMM d, HH:mm') : 'N/A'}</p>
                                         </div>
                                         {shp.actualArrival && (
                                             <div>
-                                                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Received Date</p>
-                                                <p className="text-sm font-bold text-emerald-700">{format(new Date(shp.actualArrival), 'MMM d, HH:mm')}</p>
+                                                <p style={{ fontSize: 9, fontWeight: 700, color: teal[600], textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 4px' }}>Received Date</p>
+                                                <p style={{ fontSize: 14, fontWeight: 700, color: teal[700], margin: 0 }}>{format(new Date(shp.actualArrival), 'MMM d, HH:mm')}</p>
                                             </div>
                                         )}
                                         {shp.currentLocation && (
                                             <div>
-                                                <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">Remote GPS Stamp</p>
-                                                <p className="text-sm font-mono font-bold text-slate-500">{shp.currentLocation.lat.toFixed(4)}, {shp.currentLocation.lng.toFixed(4)}</p>
+                                                <p style={{ fontSize: 9, fontWeight: 700, color: teal[400], textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 4px' }}>Remote GPS Stamp</p>
+                                                <p style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: inkSoft, margin: 0 }}>
+                                                    {shp.currentLocation.lat.toFixed(4)}, {shp.currentLocation.lng.toFixed(4)}
+                                                </p>
                                             </div>
                                         )}
                                     </div>
                                 </div>
                                 
-                                <div className="bg-slate-50 p-8 flex flex-col justify-center gap-2 shrink-0 w-44">
+                                <div style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, flexShrink: 0, width: 176, background: teal[50] }}>
                                     <button 
                                         onClick={() => void handleNotifyClient(shp)} 
-                                        className="w-full py-2 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                                        style={{
+                                          ...btnPrimaryStyle, width: '100%', padding: '8px 12px',
+                                          justifyContent: 'center', gap: 6, fontSize: 9, letterSpacing: 0.05
+                                        }}
                                     >
                                         <MessageSquare size={12}/> Update
                                     </button>
@@ -690,71 +866,141 @@ const ShippingManager: React.FC = () => {
 
             {/* Dispatch Modal */}
             {isDispatchModalOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
-                        <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                            <h3 className="font-black text-slate-900 uppercase tracking-tighter">Initiate Dispatch</h3>
-                            <button onClick={() => setIsDispatchModalOpen(false)}><X size={20}/></button>
+                <div style={{
+                  position: 'fixed', inset: 0, zIndex: 100,
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 40, fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+                }}>
+                    <div style={{
+                      width: 480, maxWidth: '100%', maxHeight: '90vh',
+                      background: paper, borderRadius: 14,
+                      boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
+                      display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+                    }}>
+                        {/* Accent stripe */}
+                        <div style={{
+                          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+                          background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+                        }} />
+                        
+                        {/* Header */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '22px 28px 18px',
+                          borderBottom: `1px solid ${hairline}`,
+                          background: paper
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{
+                              width: 40, height: 40, borderRadius: 10,
+                              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+                            }}>
+                              <Navigation size={19} color="#fff" />
+                            </div>
+                            <h3 style={{
+                              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                              fontSize: 20, margin: 0, color: teal[800], letterSpacing: 0.2
+                            }}>
+                              Initiate Dispatch
+                            </h3>
+                          </div>
+                          <button onClick={() => setIsDispatchModalOpen(false)} style={{
+                            width: 32, height: 32, borderRadius: 8,
+                            border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', transition: 'all .15s ease'
+                          }}
+                            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                          >
+                            <X size={15} />
+                          </button>
                         </div>
-                        <div className="p-8 space-y-5">
-                            <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Fleet Carrier</label>
-                                <select 
-                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                    value={dispatchForm.carrier}
-                                    onChange={e => setDispatchForm({...dispatchForm, carrier: e.target.value})}
-                                >
-                                    {carriers.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <div className="flex justify-between items-center mb-1.5 px-1">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Driver Name</label>
-                                    <button 
-                                        onClick={() => setIsAddingNewDriver(!isAddingNewDriver)}
-                                        className="text-[9px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1 hover:underline"
-                                    >
-                                        {isAddingNewDriver ? <X size={10}/> : <UserPlus size={10}/>}
-                                        {isAddingNewDriver ? 'Select Existing' : 'Add New Driver'}
-                                    </button>
-                                </div>
-                                {isAddingNewDriver ? (
-                                    <input 
-                                        type="text"
-                                        autoFocus
-                                        className="w-full p-3 bg-white border-2 border-blue-100 rounded-2xl text-sm font-bold outline-none focus:border-blue-500 transition-all shadow-sm"
-                                        placeholder="Enter full name..."
-                                        value={dispatchForm.newDriverName}
-                                        onChange={e => setDispatchForm({...dispatchForm, newDriverName: e.target.value})}
-                                    />
-                                ) : (
+                        
+                        {/* Body */}
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                <div>
+                                    <label style={labelStyle}>Fleet Carrier</label>
                                     <select 
-                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                        value={dispatchForm.driverId}
-                                        onChange={e => setDispatchForm({...dispatchForm, driverId: e.target.value})}
+                                        style={{ ...inputStyle, cursor: 'pointer' }}
+                                        value={dispatchForm.carrier}
+                                        onChange={e => setDispatchForm({...dispatchForm, carrier: e.target.value})}
                                     >
-                                        <option value="">-- Select Active Employee --</option>
-                                        {payrollDrivers.map(d => <option key={d.id} value={d.id}>{d.name} ({d.role})</option>)}
+                                        {carriers.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
-                                )}
-                            </div>
+                                </div>
+                                
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                        <label style={{ ...labelStyle, marginBottom: 0 }}>Driver Name</label>
+                                        <button 
+                                            onClick={() => setIsAddingNewDriver(!isAddingNewDriver)}
+                                            style={{ fontSize: 10, fontWeight: 700, color: teal[600], cursor: 'pointer', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 4, textTransform: 'uppercase', letterSpacing: 0.05 }}
+                                        >
+                                            {isAddingNewDriver ? <X size={12}/> : <UserPlus size={12}/>}
+                                            {isAddingNewDriver ? 'Select Existing' : 'Add New Driver'}
+                                        </button>
+                                    </div>
+                                    {isAddingNewDriver ? (
+                                        <input 
+                                            type="text"
+                                            autoFocus
+                                            style={{ ...inputStyle }}
+                                            placeholder="Enter full name..."
+                                            value={dispatchForm.newDriverName}
+                                            onChange={e => setDispatchForm({...dispatchForm, newDriverName: e.target.value})}
+                                        />
+                                    ) : (
+                                        <select 
+                                            style={{ ...inputStyle, cursor: 'pointer' }}
+                                            value={dispatchForm.driverId}
+                                            onChange={e => setDispatchForm({...dispatchForm, driverId: e.target.value})}
+                                        >
+                                            <option value="">-- Select Active Employee --</option>
+                                            {payrollDrivers.map(d => <option key={d.id} value={d.id}>{d.name} ({d.role})</option>)}
+                                        </select>
+                                    )}
+                                </div>
 
-                            <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1 flex items-center gap-1.5"><Car size={12} className="text-blue-500"/> Vehicle No.</label>
-                                <input 
-                                    type="text" 
-                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/5 transition-all uppercase"
-                                    placeholder="e.g. ZA 1234"
-                                    value={dispatchForm.vehicleNo}
-                                    onChange={e => setDispatchForm({...dispatchForm, vehicleNo: e.target.value})}
-                                />
+                                <div>
+                                    <label style={labelStyle}>
+                                        <Car size={14} style={{ color: teal[500], marginRight: 4 }} /> Vehicle No.
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        style={{ ...inputStyle, textTransform: 'uppercase' }}
+                                        placeholder="e.g. ZA 1234"
+                                        value={dispatchForm.vehicleNo}
+                                        onChange={e => setDispatchForm({...dispatchForm, vehicleNo: e.target.value})}
+                                    />
+                                </div>
                             </div>
-
+                        </div>
+                        
+                        {/* Footer */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+                          gap: 10, padding: '16px 28px',
+                          borderTop: `1px solid ${hairline}`, background: paper
+                        }}>
+                            <button type="button" onClick={() => setIsDispatchModalOpen(false)}
+                              style={btnGhostStyle}
+                              onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+                              Cancel
+                            </button>
                             <button 
                                 onClick={handleConfirmDispatch} 
                                 disabled={(isAddingNewDriver && !dispatchForm.newDriverName) || (!isAddingNewDriver && !dispatchForm.driverId && dispatchForm.carrier === 'Own Delivery')}
-                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-xl hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                                style={{
+                                  ...btnPrimaryStyle,
+                                  opacity: ((isAddingNewDriver && !dispatchForm.newDriverName) || (!isAddingNewDriver && !dispatchForm.driverId && dispatchForm.carrier === 'Own Delivery')) ? 0.5 : 1,
+                                  cursor: ((isAddingNewDriver && !dispatchForm.newDriverName) || (!isAddingNewDriver && !dispatchForm.driverId && dispatchForm.carrier === 'Own Delivery')) ? 'not-allowed' : 'pointer'
+                                }}
                             >
                                 <Navigation size={16}/> Commit Dispatch Manifest
                             </button>
@@ -765,184 +1011,276 @@ const ShippingManager: React.FC = () => {
 
             {/* Delivery Confirmation Modal (Seal Proof) */}
             {showDeliveryModal && deliveryNoteTarget && (
-                <div className="fixed inset-0 z-[110] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
-                        <div className="p-8 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                            <div>
-                                <h3 className="font-black text-slate-900 uppercase tracking-tighter text-xl">Seal Delivery Certificate</h3>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Order Ref: {deliveryNoteTarget.id}</p>
+                <div style={{
+                  position: 'fixed', inset: 0, zIndex: 110,
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 40, fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+                }}>
+                    <div style={{
+                      width: 960, maxWidth: '100%', maxHeight: '92vh',
+                      background: paper, borderRadius: 14,
+                      boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
+                      display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+                    }}>
+                        {/* Accent stripe */}
+                        <div style={{
+                          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+                          background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+                        }} />
+                        
+                        {/* Header */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '22px 28px 18px',
+                          borderBottom: `1px solid ${hairline}`,
+                          background: paper
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{
+                              width: 40, height: 40, borderRadius: 10,
+                              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+                            }}>
+                              <CheckSquare size={19} color="#fff" />
                             </div>
-                            <button onClick={() => setShowDeliveryModal(false)} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors"><X size={24}/></button>
+                            <div>
+                              <h3 style={{
+                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontSize: 20, margin: 0, color: teal[800], letterSpacing: 0.2
+                              }}>
+                                Seal Delivery Certificate
+                              </h3>
+                              <p style={{ margin: '2px 0 0', fontSize: 11, color: inkSoft, letterSpacing: 0.02 }}>
+                                Order Ref: {deliveryNoteTarget.id}
+                              </p>
+                            </div>
+                          </div>
+                          <button onClick={() => setShowDeliveryModal(false)} style={{
+                            width: 32, height: 32, borderRadius: 8,
+                            border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', transition: 'all .15s ease'
+                          }}
+                            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                          >
+                            <X size={15} />
+                          </button>
                         </div>
                         
-                        <div className="p-10 space-y-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Recipient Legal Name</label>
-                                    <input 
-                                        type="text" 
-                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-base font-black outline-none focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                        value={recipientName}
-                                        onChange={e => setRecipientName(e.target.value)}
-                                        placeholder="Who is signing?"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Recipient Phone (Optional)</label>
-                                    <input
-                                        type="tel"
-                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-base font-black outline-none focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                        value={recipientPhone}
-                                        onChange={e => setRecipientPhone(e.target.value)}
-                                        placeholder={`${getPlaceholder.phone().split(' ')[0]}...`}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Exact Date & Time Received</label>
-                                    <input 
-                                        type="datetime-local" 
-                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-base font-black outline-none focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                        value={manualTimestamp}
-                                        onChange={e => setManualTimestamp(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Globe size={14} className="text-blue-500"/> Tracking Coordinates (Handheld Sync)</h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="relative">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 uppercase">Lat</div>
+                        {/* Body */}
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                                    <div>
+                                        <label style={labelStyle}>Recipient Legal Name</label>
                                         <input 
-                                            type="number" 
-                                            className="w-full pl-12 p-3 bg-slate-50 border border-slate-200 rounded-2xl font-mono font-bold outline-none focus:ring-4 focus:ring-blue-500/5"
-                                            value={manualGps.lat}
-                                            onChange={e => setManualGps({...manualGps, lat: e.target.value})}
-                                            placeholder="-13.9..."
+                                            type="text" 
+                                            style={{ ...inputStyle }}
+                                            value={recipientName}
+                                            onChange={e => setRecipientName(e.target.value)}
+                                            placeholder="Who is signing?"
                                         />
                                     </div>
-                                    <div className="relative">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 uppercase">Lng</div>
-                                        <input 
-                                            type="number" 
-                                            className="w-full pl-12 p-3 bg-slate-50 border border-slate-200 rounded-2xl font-mono font-bold outline-none focus:ring-4 focus:ring-blue-500/5"
-                                            value={manualGps.lng}
-                                            onChange={e => setManualGps({...manualGps, lng: e.target.value})}
-                                            placeholder="33.7..."
-                                        />
-                                    </div>
-                                </div>
-                                <p className="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-tight italic flex items-center gap-1"><Info size={10}/> Auto GPS when available, manual coordinates accepted</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Comments / Remarks</label>
-                                <textarea 
-                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm h-24 resize-none outline-none focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                    value={deliveryNotesText}
-                                    onChange={e => setDeliveryNotesText(e.target.value)}
-                                    placeholder="Dispatch or recipient comments..."
-                                />
-                            </div>
-
-                            <div>
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Customer Signature</label>
-                                    <div className="bg-slate-100 rounded-xl p-1 border border-slate-200 flex items-center gap-1">
-                                        {(['Draw', 'Upload'] as SignatureInputMode[]).map(mode => (
-                                            <button
-                                                key={mode}
-                                                onClick={() => setSignatureInputMode(mode)}
-                                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${signatureInputMode === mode ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                                            >
-                                                {mode}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {signatureInputMode === 'Draw' ? (
-                                    <div className="relative group">
-                                        <canvas
-                                            ref={canvasRef}
-                                            onPointerDown={startDrawing}
-                                            onPointerMove={draw}
-                                            onPointerUp={stopDrawing}
-                                            onPointerLeave={stopDrawing}
-                                            onPointerCancel={stopDrawing}
-                                            className="w-full h-48 bg-white border-2 border-slate-200 rounded-3xl cursor-crosshair touch-none shadow-inner"
-                                        />
-                                        <button
-                                            onClick={clearSignature}
-                                            className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded-xl transition-all border border-slate-200"
-                                            title="Clear Signature"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                        <div className="absolute bottom-4 left-4 flex items-center gap-2 text-[8px] font-bold text-slate-300 uppercase tracking-widest pointer-events-none">
-                                            <ShieldCheck size={10} /> Desktop pointer signature pad ready
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
+                                    <div>
+                                        <label style={labelStyle}>Recipient Phone (Optional)</label>
                                         <input
-                                            ref={signatureUploadInputRef}
-                                            data-testid="signature-upload-input"
-                                            type="file"
-                                            accept="image/png,image/jpeg,image/jpg,image/webp"
-                                            className="hidden"
-                                            onChange={handleSignatureUpload}
+                                            type="tel"
+                                            style={{ ...inputStyle }}
+                                            value={recipientPhone}
+                                            onChange={e => setRecipientPhone(e.target.value)}
+                                            placeholder={`${getPlaceholder.phone().split(' ')[0]}...`}
                                         />
-                                        <button
-                                            onClick={() => signatureUploadInputRef.current?.click()}
-                                            className="w-full py-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 flex items-center justify-center gap-2"
-                                        >
-                                            <Upload size={14} /> Upload Signature
-                                        </button>
-                                        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 min-h-28 bg-white flex items-center justify-center">
-                                            {uploadedSignatureDataUrl ? (
-                                                <img src={uploadedSignatureDataUrl} alt="Uploaded recipient signature" className="max-h-24 object-contain" />
-                                            ) : (
-                                                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">No uploaded signature</p>
-                                            )}
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Exact Date & Time Received</label>
+                                        <input 
+                                            type="datetime-local" 
+                                            style={{ ...inputStyle }}
+                                            value={manualTimestamp}
+                                            onChange={e => setManualTimestamp(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label style={{ ...labelStyle, marginBottom: 10 }}>
+                                        <Globe size={14} style={{ color: teal[500], marginRight: 4 }} /> Tracking Coordinates (Handheld Sync)
+                                    </label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                        <div style={{ position: 'relative' }}>
+                                            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 9, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.05 }}>Lat</div>
+                                            <input 
+                                                type="number" 
+                                                style={{ ...inputStyle, paddingLeft: 36, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums' }}
+                                                value={manualGps.lat}
+                                                onChange={e => setManualGps({...manualGps, lat: e.target.value})}
+                                                placeholder="-13.9..."
+                                            />
                                         </div>
-                                        {uploadedSignatureDataUrl && (
+                                        <div style={{ position: 'relative' }}>
+                                            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 9, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.05 }}>Lng</div>
+                                            <input 
+                                                type="number" 
+                                                style={{ ...inputStyle, paddingLeft: 36, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums' }}
+                                                value={manualGps.lng}
+                                                onChange={e => setManualGps({...manualGps, lng: e.target.value})}
+                                                placeholder="33.7..."
+                                            />
+                                        </div>
+                                    </div>
+                                    <p style={{ fontSize: 10, color: inkSoft, marginTop: 8, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, fontStyle: 'italic' }}>
+                                        <Info size={12} /> Auto GPS when available, manual coordinates accepted
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label style={labelStyle}>Comments / Remarks</label>
+                                    <textarea 
+                                        style={{ ...inputStyle, resize: 'none', minHeight: 80, lineHeight: 1.5 }}
+                                        value={deliveryNotesText}
+                                        onChange={e => setDeliveryNotesText(e.target.value)}
+                                        placeholder="Dispatch or recipient comments..."
+                                    />
+                                </div>
+
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                        <label style={{ ...labelStyle, marginBottom: 0 }}>Customer Signature</label>
+                                        <div style={{ display: 'flex', background: teal[50], padding: 4, borderRadius: 10, border: `1px solid ${teal[100]}`, gap: 2 }}>
+                                            {(['Draw', 'Upload'] as SignatureInputMode[]).map(mode => (
+                                                <button
+                                                    key={mode}
+                                                    onClick={() => setSignatureInputMode(mode)}
+                                                    style={{
+                                                        padding: '6px 12px', borderRadius: 8,
+                                                        fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                                                        letterSpacing: 0.05, cursor: 'pointer', border: 'none',
+                                                        transition: 'all .15s ease',
+                                                        background: signatureInputMode === mode ? paper : 'transparent',
+                                                        color: signatureInputMode === mode ? teal[700] : inkSoft,
+                                                        boxShadow: signatureInputMode === mode ? '0 1px 3px rgba(0,0,0,.06)' : 'none'
+                                                    }}
+                                                >
+                                                    {mode}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    {signatureInputMode === 'Draw' ? (
+                                        <div style={{ position: 'relative' }}>
+                                            <canvas
+                                                ref={canvasRef}
+                                                onPointerDown={startDrawing}
+                                                onPointerMove={draw}
+                                                onPointerUp={stopDrawing}
+                                                onPointerLeave={stopDrawing}
+                                                onPointerCancel={stopDrawing}
+                                                style={{ 
+                                                  width: '100%', height: 192,
+                                                  border: `1.4px solid ${hairline}`,
+                                                  borderRadius: 10,
+                                                  background: paper,
+                                                  cursor: 'crosshair',
+                                                  touchAction: 'none'
+                                                }}
+                                            />
                                             <button
                                                 onClick={clearSignature}
-                                                className="text-[10px] font-black text-rose-600 uppercase tracking-wider hover:underline"
+                                                style={{
+                                                  position: 'absolute', top: 12, right: 12,
+                                                  padding: 8, background: paper, border: `1px solid ${hairline}`,
+                                                  color: inkSoft, cursor: 'pointer', borderRadius: 8,
+                                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                  transition: 'all .15s ease'
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#b5493f'; e.currentTarget.style.borderColor = '#fecaca'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                                                title="Clear Signature"
                                             >
-                                                Clear Uploaded Signature
+                                                <Trash2 size={16} />
                                             </button>
-                                        )}
+                                            <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, fontWeight: 600, color: '#c4bdb2', textTransform: 'uppercase', letterSpacing: 0.05, pointerEvents: 'none' }}>
+                                                <ShieldCheck size={10} /> Desktop pointer signature pad ready
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                            <input
+                                                ref={signatureUploadInputRef}
+                                                data-testid="signature-upload-input"
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                                style={{ display: 'none' }}
+                                                onChange={handleSignatureUpload}
+                                            />
+                                            <button
+                                                onClick={() => signatureUploadInputRef.current?.click()}
+                                                style={{
+                                                  ...btnGhostStyle, width: '100%', padding: '12px 20px',
+                                                  justifyContent: 'center', gap: 8, fontSize: 10, letterSpacing: 0.08
+                                                }}
+                                            >
+                                                <Upload size={14} /> Upload Signature
+                                            </button>
+                                            <div style={{ border: `1.4px dashed ${hairline}`, borderRadius: 10, padding: 16, minHeight: 112, background: paper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {uploadedSignatureDataUrl ? (
+                                                    <img src={uploadedSignatureDataUrl} alt="Uploaded recipient signature" style={{ maxHeight: 96, objectFit: 'contain' }} />
+                                                ) : (
+                                                    <p style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.05 }}>No uploaded signature</p>
+                                                )}
+                                            </div>
+                                            {uploadedSignatureDataUrl && (
+                                                <button
+                                                    onClick={clearSignature}
+                                                    style={{ fontSize: 10, fontWeight: 700, color: '#b5493f', textTransform: 'uppercase', letterSpacing: 0.05, background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start' }}
+                                                >
+                                                    Clear Uploaded Signature
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, paddingTop: 20, borderTop: `1px solid ${hairline}` }}>
+                                    <div style={{ background: teal[50], padding: 16, borderRadius: 10, border: `1px solid ${teal[100]}` }}>
+                                        <p style={{ fontSize: 9, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 4px' }}>Driver In-Charge</p>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: ink, margin: 0 }}>{deliveryTarget.driverName || 'N/A'}</p>
                                     </div>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Driver In-Charge</p>
-                                    <p className="text-xs font-bold text-slate-700">{deliveryTarget.driverName || 'N/A'}</p>
+                                    <div style={{ background: teal[50], padding: 16, borderRadius: 10, border: `1px solid ${teal[100]}` }}>
+                                        <p style={{ fontSize: 9, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 4px' }}>Vehicle Reg No.</p>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: ink, margin: 0 }}>{deliveryTarget.vehicleNo || 'N/A'}</p>
+                                    </div>
                                 </div>
-                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Vehicle Reg No.</p>
-                                    <p className="text-xs font-bold text-slate-700">{deliveryTarget.vehicleNo || 'N/A'}</p>
-                                </div>
-                            </div>
 
-                            <button 
-                                onClick={handleCaptureDelivery} 
-                                disabled={!canFinalizeDelivery}
-                                className="w-full py-5 bg-blue-600 text-white rounded-3xl font-black uppercase text-sm tracking-[0.2em] shadow-2xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <CheckSquare size={24}/> {isSavingDelivery ? 'Finalizing...' : 'Finalize & Generate Certificate'}
-                            </button>
+                                <button 
+                                    onClick={handleCaptureDelivery} 
+                                    disabled={!canFinalizeDelivery}
+                                    style={{
+                                      ...btnPrimaryStyle, width: '100%', padding: '16px 24px',
+                                      justifyContent: 'center', gap: 10, fontSize: 13,
+                                      opacity: !canFinalizeDelivery ? 0.5 : 1,
+                                      cursor: !canFinalizeDelivery ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    <CheckSquare size={24}/> {isSavingDelivery ? 'Finalizing...' : 'Finalize & Generate Certificate'}
+                                </button>
+                            </div>
                         </div>
-
-                        <div className="px-10 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                <ShieldCheck size={14} className="text-emerald-500"/> Protocol Verified
+                        
+                        {/* Footer */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '16px 28px',
+                          borderTop: `1px solid ${hairline}`, background: paper
+                        }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08 }}>
+                                <ShieldCheck size={14} style={{ color: teal[500] }}/> Protocol Verified
                             </span>
-                            <span className="text-[9px] font-mono text-slate-400 uppercase tracking-tighter">Office Terminal Sync</span>
+                            <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.05 }}>Office Terminal Sync</span>
                         </div>
                     </div>
                 </div>

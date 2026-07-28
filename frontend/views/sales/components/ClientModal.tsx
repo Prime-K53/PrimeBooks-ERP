@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, MapPin, CreditCard, FileText, Building, Plus, Trash2, AlertTriangle, Search, User, ChevronRight } from 'lucide-react';
 import { Customer } from '../../../types';
 import { getDefaultPaymentTermsForSegment } from '../../../utils/helpers';
 import { useAuth } from '../../../context/AuthContext';
 import { useFinance } from '../../../context/FinanceContext';
+import { useSales } from '../../../context/SalesContext';
 import { getPlaceholder } from '../../../constants/placeholders';
 import { currencyService } from '../../../services/currencyService';
-import { CustomerSearch } from '../../../components/CustomerSearch';
 
 interface ClientModalProps {
   isOpen: boolean;
@@ -49,9 +49,14 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
   const [useBillingForShipping, setUseBillingForShipping] = useState(true);
   const [activeTab, setActiveTab] = useState<typeof tabs[number]['id']>('Address');
   const [referrerSearchOpen, setReferrerSearchOpen] = useState(false);
+  const [referrerQuery, setReferrerQuery] = useState('');
+  const [referrerDropdownOpen, setReferrerDropdownOpen] = useState(false);
+  const [referrerHoveredIdx, setReferrerHoveredIdx] = useState(-1);
+  const referrerRef = useRef<HTMLDivElement>(null);
 
   const { invoices } = useFinance();
   const { companyConfig } = useAuth();
+  const { customers } = useSales();
 
   useEffect(() => {
     if (customer) {
@@ -91,6 +96,17 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
     }
   }, [useBillingForShipping, formData.billingAddress]);
 
+  // Close referrer dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (referrerRef.current && !referrerRef.current.contains(e.target as Node)) {
+        setReferrerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const calcOutstanding = (custId: string | undefined) => {
     if (!custId) return 0;
     const invs = (invoices || []).filter((inv: any) =>
@@ -100,12 +116,26 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
     return invs.reduce((sum: number, inv: any) => sum + ((inv.totalAmount || 0) - (inv.paidAmount || 0)), 0);
   };
 
-  const outstandingBalance = calcOutstanding(customer?.id || formData.id);
+  const outstandingBalance = calcOutstanding((customer as any)?.id || (formData as any).id);
   const currency = companyConfig?.currencySymbol || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || '$';
+
+  const getFilteredReferrers = useMemo(() => {
+    if (!referrerQuery.trim()) return customers || [];
+    const q = referrerQuery.trim().toLowerCase();
+    return (customers || []).filter((c: any) =>
+      c.name?.toLowerCase().includes(q) ||
+      c.phone?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q)
+    ).slice(0, 30);
+  }, [customers, referrerQuery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const dataToSave = { ...formData };
+    // Auto-prefix +265 to phone number if not already present
+    if (dataToSave.phone && !dataToSave.phone.startsWith('+265')) {
+      dataToSave.phone = '+265' + dataToSave.phone.replace(/^\+?/, '');
+    }
     if (useBillingForShipping) dataToSave.shippingAddress = dataToSave.billingAddress;
     if (!dataToSave.paymentTerms) {
       dataToSave.paymentTerms = getDefaultPaymentTermsForSegment(dataToSave.segment || 'Individual');
@@ -141,7 +171,9 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
       const newSegment = value as 'Individual' | 'School Account' | 'Institution' | 'Government';
       setFormData(prev => ({ ...prev, [name]: newSegment, paymentTerms: getDefaultPaymentTermsForSegment(newSegment) }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) : value }));
+      // Strip +265 from phone if user pastes it, to avoid duplication
+      const cleanedValue = name === 'phone' ? value.replace(/^\+265/, '') : value;
+      setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(cleanedValue) : cleanedValue }));
     }
   };
 
@@ -499,24 +531,99 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
                         <option value="Email Campaign">Email Campaign</option>
                       </select>
                     </div>
-                    <div>
+                    <div ref={referrerRef} style={{ position: 'relative' }}>
                       <label style={labelStyle}>Referred By</label>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <input value={formData.referredByName || formData.referredById || ''} readOnly
-                          onClick={() => setReferrerSearchOpen(true)}
-                          placeholder="Search referrer customer..."
-                          style={{ ...inputStyle, cursor: 'pointer', flex: 1 }} />
-                        <button type="button" onClick={() => setReferrerSearchOpen(true)}
-                          style={{ ...btnGhostStyle, padding: '0 12px' }}>
-                          <Search size={16} />
-                        </button>
+                        <input
+                          value={referrerDropdownOpen ? referrerQuery : (formData.referredByName || formData.referredById || '')}
+                          onChange={(e) => {
+                            setReferrerQuery(e.target.value);
+                            setReferrerDropdownOpen(true);
+                            setReferrerHoveredIdx(-1);
+                          }}
+                          onFocus={() => {
+                            if (!formData.referredById) {
+                              setReferrerQuery('');
+                              setReferrerDropdownOpen(true);
+                            }
+                          }}
+                            onKeyDown={(e) => {
+                            if (!referrerDropdownOpen) return;
+                            const filtered = getFilteredReferrers;
+                            if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              setReferrerHoveredIdx(prev => Math.min(prev + 1, filtered.length - 1));
+                            } else if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              setReferrerHoveredIdx(prev => Math.max(prev - 1, 0));
+                            } else if (e.key === 'Enter' && referrerHoveredIdx >= 0 && filtered[referrerHoveredIdx]) {
+                              e.preventDefault();
+                              const c = filtered[referrerHoveredIdx];
+                              setFormData(prev => ({ ...prev, referredById: c.id, referredByName: c.name }));
+                              setReferrerDropdownOpen(false);
+                              setReferrerQuery('');
+                            } else if (e.key === 'Escape') {
+                              setReferrerDropdownOpen(false);
+                            }
+                          }}
+                          placeholder="Type to search referrer..."
+                          style={{ ...inputStyle, flex: 1 }} />
                         {formData.referredById && (
-                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, referredById: '', referredByName: '' }))}
+                          <button type="button" onClick={() => { setFormData(prev => ({ ...prev, referredById: '', referredByName: '' })); setReferrerDropdownOpen(true); setReferrerQuery(''); }}
                             style={{ ...btnGhostStyle, padding: '0 12px', color: danger }}>
                             <X size={16} />
                           </button>
                         )}
                       </div>
+                      {referrerDropdownOpen && (
+                        <div style={{
+                          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 40, marginTop: 4,
+                          borderRadius: 10, boxShadow: '0 16px 36px -12px rgba(0,0,0,.28)',
+                          background: paper, border: `1.4px solid ${hairline}`,
+                          maxHeight: 220, overflowY: 'auto'
+                        }}>
+                          {getFilteredReferrers.length === 0 ? (
+                            <div style={{ padding: '16px 14px', fontSize: 12.5, color: inkSoft, textAlign: 'center' }}>
+                              No matching customers found
+                            </div>
+                          ) : (
+                            getFilteredReferrers.map((c: any, idx: number) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, referredById: c.id, referredByName: c.name }));
+                                  setReferrerDropdownOpen(false);
+                                  setReferrerQuery('');
+                                }}
+                                onMouseEnter={() => setReferrerHoveredIdx(idx)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 10,
+                                  width: '100%', textAlign: 'left', padding: '10px 14px',
+                                  border: 'none', background: referrerHoveredIdx === idx ? teal[50] : 'transparent',
+                                  cursor: 'pointer', fontSize: 13, color: ink,
+                                  borderBottom: idx < getFilteredReferrers.length - 1 ? `1px solid ${hairline}` : 'none',
+                                  transition: 'background .1s'
+                                }}
+                              >
+                                <div style={{
+                                  width: 28, height: 28, borderRadius: 6,
+                                  background: referrerHoveredIdx === idx ? teal[500] : teal[100],
+                                  color: referrerHoveredIdx === idx ? '#fff' : teal[700],
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 12, fontWeight: 700, flexShrink: 0
+                                }}>
+                                  {(c.name || '?').charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 600 }}>{c.name}</div>
+                                  {c.phone && <div style={{ fontSize: 11, color: inkSoft, fontFamily: "'JetBrains Mono', monospace" }}>{c.phone}</div>}
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label style={labelStyle}>Pipeline Stage</label>
@@ -674,15 +781,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
         </div>
       </div>
 
-      <CustomerSearch
-        open={referrerSearchOpen}
-        mode="referrer"
-        onSelect={(customer) => {
-          setFormData(prev => ({ ...prev, referredById: customer?.id || '', referredByName: customer?.name || '' }));
-          setReferrerSearchOpen(false);
-        }}
-        onClose={() => setReferrerSearchOpen(false)}
-      />
     </div>
   );
 };

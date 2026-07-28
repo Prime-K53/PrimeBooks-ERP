@@ -21,6 +21,75 @@ import { currencyService } from '../../services/currencyService';
 import { CustomerSearch } from '../../components/CustomerSearch';
 import { ConfirmDialog, ConfirmDialogType } from '../../components/ConfirmDialog';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const pageWrapper: React.CSSProperties = {
+  background: paper,
+  fontFamily: "'Inter','DM Sans',sans-serif",
+  fontSize: 13.5,
+  color: ink,
+  minHeight: '100vh',
+  padding: '16px 24px 32px'
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: teal[800],
+  marginBottom: 6,
+  letterSpacing: 0.01,
+  display: 'block'
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  fontFamily: "'Inter', sans-serif",
+  fontSize: 13.5,
+  color: ink,
+  background: paper,
+  border: '1.4px solid #e4ddd1',
+  borderRadius: 9,
+  padding: '9px 12px',
+  outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+
+const btnPrimary: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  background: 'linear-gradient(155deg, #1f8577, #0f544c)',
+  color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 7,
+  boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
+  transition: 'all .15s ease'
+};
+
+const btnGhost: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: '1.4px solid #e4ddd1', color: inkSoft,
+  display: 'inline-flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  paddingRight: 30,
+  cursor: 'pointer'
+};
+
 export const Clients: React.FC = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, isLoading, customerPayments } = useSales();
   const { invoices } = useFinance();
@@ -30,10 +99,10 @@ export const Clients: React.FC = () => {
   const currency = companyConfig?.currencySymbol || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || '$';
 
   const [searchQuery, setSearchQuery] = useState('');
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
-   const [pendingSegment, setPendingSegment] = useState<string | undefined>();
-   const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
+  const [pendingSegment, setPendingSegment] = useState<string | undefined>();
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>();
   const [selectedWorkspaceCustomer, setSelectedWorkspaceCustomer] = useState<Customer | null>(null);
   const [selectedCardCustomer, setSelectedCardCustomer] = useState<Customer | null>(null);
   const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Inactive' | 'Lead'>('All');
@@ -43,13 +112,20 @@ export const Clients: React.FC = () => {
 
   const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; confirmText?: string; type?: ConfirmDialogType; onConfirm?: () => void }>({ open: false, title: '', message: '' });
 
-  // Advanced Filters State
   const [balanceRange, setBalanceRange] = useState<string>('Any Balance');
   const [customerSegment, setCustomerSegment] = useState<string>('All Segments');
   const [pipelineStageFilter, setPipelineStageFilter] = useState<string>('All Stages');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
-    const handleClickOutside = () => setActiveMenuId(null);
+    const handleClickOutside = (e: MouseEvent) => {
+      setActiveMenuId(null);
+      // Close advanced filters when clicking outside the filter area
+      const target = e.target as HTMLElement;
+      if (!target.closest('#advanced-filters-wrapper')) {
+        setShowAdvancedFilters(false);
+      }
+    };
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
@@ -57,14 +133,12 @@ export const Clients: React.FC = () => {
   useEffect(() => {
     if (location.state?.action === 'create') {
       handleAddNew();
-      // Clear state to prevent reopening on refresh
       window.history.replaceState({}, document.title);
     } else if (location.state?.customerId) {
       const customer = customers.find(c => c.id === location.state.customerId);
       if (customer) {
         setSelectedWorkspaceCustomer(customer);
       }
-      // Clear state to prevent reopening on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location.state, customers]);
@@ -124,17 +198,14 @@ export const Clients: React.FC = () => {
 
     const totalBalance = customers.reduce((sum, c) => sum + (c.balance || 0), 0);
 
-    // Calculate Overdue
     const overdueBalance = invoices
       .filter(inv => inv.status !== 'Paid' && inv.status !== 'Cancelled' && isAfter(today, parseISO(inv.dueDate)))
       .reduce((sum, inv) => sum + (inv.totalAmount - (inv.paidAmount || 0)), 0);
 
-    // Calculate Open Invoices
     const openInvoicesTotal = invoices
       .filter(inv => inv.status === 'Unpaid' || inv.status === 'Partial')
       .reduce((sum, inv) => sum + (inv.totalAmount - (inv.paidAmount || 0)), 0);
 
-    // Calculate Paid in last 30 days
     const paidLast30Days = customerPayments
       .filter(r => r.status === 'Cleared' && isAfter(parseISO(r.date), thirtyDaysAgo))
       .reduce((sum, r) => sum + r.amount, 0);
@@ -155,16 +226,16 @@ export const Clients: React.FC = () => {
     setIsModalOpen(true);
   };
 
-   const handleAddNew = () => {
-      setIsModalOpen(true);
-    };
+  const handleAddNew = () => {
+    setIsModalOpen(true);
+  };
 
-   const handleSegmentSelect = (segment: string) => {
-     setPendingSegment(segment);
-     setIsSegmentModalOpen(false);
-     setSelectedCustomer(undefined);
-     setIsModalOpen(true);
-   };
+  const handleSegmentSelect = (segment: string) => {
+    setPendingSegment(segment);
+    setIsSegmentModalOpen(false);
+    setSelectedCustomer(undefined);
+    setIsModalOpen(true);
+  };
 
   const handleDelete = async (id: string) => {
     setConfirmState({
@@ -237,12 +308,12 @@ export const Clients: React.FC = () => {
         />
 
        <ClientModal
-         isOpen={isModalOpen}
-         onClose={() => { setIsModalOpen(false); setPendingSegment(undefined); }}
-         onSave={selectedCustomer ? updateCustomer : addCustomer}
-         customer={selectedCustomer}
-         initialSegment={pendingSegment}
-       />
+          isOpen={isModalOpen}
+          onClose={() => { setIsModalOpen(false); setPendingSegment(undefined); }}
+          onSave={selectedCustomer ? updateCustomer : addCustomer}
+          customer={selectedCustomer}
+          initialSegment={pendingSegment}
+        />
       </>
     );
   }
@@ -258,92 +329,159 @@ export const Clients: React.FC = () => {
     return format(parseISO(latest.date), 'MMM dd, yyyy');
   };
 
+  const statusBadge = (status: string) => {
+    const map: Record<string, { bg: string; text: string; border: string }> = {
+      'Active': { bg: teal[100], text: teal[700], border: teal[200] },
+      'Inactive': { bg: '#f5f5f4', text: inkSoft, border: hairline },
+      'Lead': { bg: amber[100], text: amber[600], border: amber[300] },
+      'Suspended': { bg: '#fef2f2', text: '#b5493f', border: '#f5c6c6' },
+      'VIP': { bg: teal[50], text: teal[800], border: teal[200] },
+      'Prospect': { bg: teal[50], text: teal[700], border: teal[200] },
+      'Credit Hold': { bg: '#fef2f2', text: '#b5493f', border: '#f5c6c6' },
+    };
+    const s = map[status] || { bg: '#f5f5f4', text: inkSoft, border: hairline };
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700,
+        border: `1px solid ${s.border}`, background: s.bg, color: s.text,
+        letterSpacing: 0.01, whiteSpace: 'nowrap'
+      }}>
+        {status}
+      </span>
+    );
+  };
+
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6 min-h-screen font-sans text-[13px] leading-[1.45]" style={{ background: '#FEFDFB' }}>
+    <div style={pageWrapper}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight" style={{ color: '#0b3e39' }}>Clients</h1>
-          <p className="text-[13px] font-medium" style={{ color: '#5c6567' }}>Manage your client relationships and balances</p>
+          <h1 style={{
+            fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+            fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+          }}>
+            Clients
+          </h1>
+          <p style={{ margin: '4px 0 0', fontSize: 12.5, color: inkSoft, fontWeight: 500, letterSpacing: 0.01 }}>
+            Manage your client relationships and balances
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/sales-flow/leads')}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold transition-all text-[13px]"
-            style={{ background: '#FEFDFB', border: '1.4px solid #a6d9d3', color: '#0f544c' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button onClick={() => navigate('/sales-flow/leads')} style={btnGhost}>
             <Target size={16} /> Lead Board
           </button>
-          <button onClick={() => exportToCSV(customers.map(c => ({ 'Customer ID': c.id, 'Full name': c.name, 'Billing Address': c.billingAddress || c.address || '', 'Phone number': c.phone, 'Segment': c.segment, 'Shipping Address': c.shippingAddress || '', 'Opening Balance': c.balance || 0, 'Wallet Balance': c.walletBalance || 0, 'Branch Account': c.accountNumber || '' })), 'Clients')}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold transition-all text-[13px] prime-btn-secondary">
+          <button onClick={() => exportToCSV(customers.map(c => ({ 'Customer ID': c.id, 'Full name': c.name, 'Billing Address': c.billingAddress || c.address || '', 'Phone number': c.phone, 'Segment': c.segment, 'Shipping Address': c.shippingAddress || '', 'Opening Balance': c.balance || 0, 'Wallet Balance': c.walletBalance || 0, 'Branch Account': c.accountNumber || '' })), 'Clients')} style={btnGhost}>
             <Download size={16} /> Export
           </button>
-          <button onClick={handleAddNew} className="prime-btn">
+          <button onClick={handleAddNew} style={btnPrimary}>
             <Plus size={18} /> New Client
           </button>
         </div>
       </div>
 
       {/* Money Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 18 }}>
         <div onClick={() => setSelectedMetric(selectedMetric === 'Overdue' ? 'All' : 'Overdue')}
-          className={`cursor-pointer transition-all duration-200 p-3 md:p-4 rounded-xl flex items-start gap-4 border-l-4 ${selectedMetric === 'Overdue' ? 'ring-2 ring-rose-500 shadow-md scale-[1.01]' : 'hover:opacity-80'}`}
-          style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #b5493f', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
-          <div className="p-2.5 rounded-lg" style={{ background: '#fef2f2', color: '#b5493f' }}><AlertTriangle size={20} /></div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: '#5c6567' }}>Overdue</p>
-            <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#23282A' }}>{currency}{(stats.overdueBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          style={{
+            cursor: 'pointer', padding: '14px 16px', borderRadius: 14,
+            background: paper, border: `1.4px solid ${hairline}`,
+            borderLeft: `4px solid ${danger}`,
+            boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            transition: 'transform .15s ease, box-shadow .15s ease',
+            transform: selectedMetric === 'Overdue' ? 'scale(1.01)' : 'scale(1)',
+            boxShadow: selectedMetric === 'Overdue' ? '0 8px 20px -8px rgba(0,0,0,.12)' : '0 1px 3px rgba(0,0,0,.04)'
+          }}>
+          <div style={{ padding: 10, borderRadius: 10, background: '#fef2f2', color: danger, display: 'inline-flex' }}><AlertTriangle size={20} /></div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Overdue</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+              {currency}{(stats.overdueBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
           </div>
         </div>
         <div onClick={() => setSelectedMetric(selectedMetric === 'Open' ? 'All' : 'Open')}
-          className={`cursor-pointer transition-all duration-200 p-3 md:p-4 rounded-xl flex items-start gap-4 border-l-4 ${selectedMetric === 'Open' ? 'ring-2 ring-amber-500 shadow-md scale-[1.01]' : 'hover:opacity-80'}`}
-          style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #d99a3f', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
-          <div className="p-2.5 rounded-lg" style={{ background: '#fbead0', color: '#d99a3f' }}><Clock size={20} /></div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: '#5c6567' }}>Open Invoices</p>
-            <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#23282A' }}>{currency}{(stats.openInvoicesTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          style={{
+            cursor: 'pointer', padding: '14px 16px', borderRadius: 14,
+            background: paper, border: `1.4px solid ${hairline}`,
+            borderLeft: `4px solid ${amber[500]}`,
+            boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            transition: 'transform .15s ease, box-shadow .15s ease',
+            transform: selectedMetric === 'Open' ? 'scale(1.01)' : 'scale(1)',
+            boxShadow: selectedMetric === 'Open' ? '0 8px 20px -8px rgba(0,0,0,.12)' : '0 1px 3px rgba(0,0,0,.04)'
+          }}>
+          <div style={{ padding: 10, borderRadius: 10, background: amber[100], color: amber[500], display: 'inline-flex' }}><Clock size={20} /></div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Open Invoices</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+              {currency}{(stats.openInvoicesTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
           </div>
         </div>
         <div onClick={() => setSelectedMetric(selectedMetric === 'Paid' ? 'All' : 'Paid')}
-          className={`cursor-pointer transition-all duration-200 p-3 md:p-4 rounded-xl flex items-start gap-4 border-l-4 ${selectedMetric === 'Paid' ? 'ring-2 ring-emerald-500 shadow-md scale-[1.01]' : 'hover:opacity-80'}`}
-          style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #1f8577', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
-          <div className="p-2.5 rounded-lg" style={{ background: '#d3ece9', color: '#1f8577' }}><CheckCircle size={20} /></div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: '#5c6567' }}>Paid (30d)</p>
-            <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#23282A' }}>{currency}{(stats.paidLast30Days || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          style={{
+            cursor: 'pointer', padding: '14px 16px', borderRadius: 14,
+            background: paper, border: `1.4px solid ${hairline}`,
+            borderLeft: `4px solid ${teal[500]}`,
+            boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            transition: 'transform .15s ease, box-shadow .15s ease',
+            transform: selectedMetric === 'Paid' ? 'scale(1.01)' : 'scale(1)',
+            boxShadow: selectedMetric === 'Paid' ? '0 8px 20px -8px rgba(0,0,0,.12)' : '0 1px 3px rgba(0,0,0,.04)'
+          }}>
+          <div style={{ padding: 10, borderRadius: 10, background: teal[100], color: teal[600], display: 'inline-flex' }}><CheckCircle size={20} /></div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Paid (30d)</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+              {currency}{(stats.paidLast30Days || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
           </div>
         </div>
         <div onClick={() => setSelectedMetric('All')}
-          className={`cursor-pointer transition-all duration-200 p-3 md:p-4 rounded-xl flex items-start gap-4 border-l-4 ${selectedMetric === 'All' ? 'ring-2 ring-teal-500 shadow-md scale-[1.01]' : 'hover:opacity-80'}`}
-          style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #1f8577', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
-          <div className="p-2.5 rounded-lg" style={{ background: '#eef7f6', color: '#1f8577' }}><User size={20} /></div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: '#5c6567' }}>Total Balance</p>
-            <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#23282A' }}>{currency}{(stats.totalBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          style={{
+            cursor: 'pointer', padding: '14px 16px', borderRadius: 14,
+            background: paper, border: `1.4px solid ${hairline}`,
+            borderLeft: `4px solid ${teal[500]}`,
+            boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            transition: 'transform .15s ease, box-shadow .15s ease',
+            transform: selectedMetric === 'All' ? 'scale(1.01)' : 'scale(1)',
+            boxShadow: selectedMetric === 'All' ? '0 8px 20px -8px rgba(0,0,0,.12)' : '0 1px 3px rgba(0,0,0,.04)'
+          }}>
+          <div style={{ padding: 10, borderRadius: 10, background: teal[50], color: teal[500], display: 'inline-flex' }}><User size={20} /></div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Total Balance</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+              {currency}{(stats.totalBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden flex-1 flex flex-col">
+      <div style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'visible', display: 'flex', flexDirection: 'column' }}>
         {/* Filters & Search */}
-        <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-50/30 shrink-0 flex-wrap gap-2">
-          <div className="flex flex-1 items-center gap-4 min-w-0">
-            <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: `1px solid ${hairline}`, background: paper, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 14, minWidth: 0, flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 480 }}>
+              <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />
               <input
                 type="text"
                 placeholder="Search by name, email or phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 font-normal"
+                style={{ ...inputStyle, paddingLeft: 36 }}
               />
             </div>
 
             {selectedIds.length > 0 && (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 shrink-0">
-                <span className="text-[13px] font-semibold px-2.5 py-1 rounded-lg border" style={{ color: '#0b3e39', background: '#eef7f6', borderColor: '#a6d9d3' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, padding: '6px 10px', borderRadius: 8, border: `1px solid ${teal[200]}`, background: teal[50], color: teal[800] }}>
                   {selectedIds.length} Selected
                 </span>
-                <div className="h-5 w-px mx-1" style={{ background: '#e4ddd1' }} />
+                <div style={{ width: 1, height: 16, background: hairline, margin: '0 2px' }} />
                 <select
                   onChange={(e) => {
                     if (e.target.value === 'delete') handleBatchDelete();
@@ -351,7 +489,7 @@ export const Clients: React.FC = () => {
                     else if (e.target.value === 'inactive') handleBatchStatusUpdate('Inactive');
                     e.target.value = '';
                   }}
-                  className="w-auto pl-2 pr-6 py-1 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ ...inputStyle, width: 'auto', padding: '7px 28px 7px 12px', fontSize: 12.5 }}
                 >
                   <option value="">Batch Actions</option>
                   <option value="active">Make Active</option>
@@ -362,11 +500,11 @@ export const Clients: React.FC = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as 'All' | 'Active' | 'Inactive' | 'Lead')}
-              className="w-auto pl-2 pr-6 py-1 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setFilterStatus(e.target.value as any)}
+              style={{ ...inputStyle, width: 'auto', padding: '7px 28px 7px 12px', fontSize: 12.5 }}
             >
               <option value="All">All Statuses</option>
               <option value="Active">Active</option>
@@ -380,7 +518,7 @@ export const Clients: React.FC = () => {
             <select
               value={pipelineStageFilter}
               onChange={(e) => setPipelineStageFilter(e.target.value)}
-              className="w-auto pl-2 pr-6 py-1 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ ...inputStyle, width: 'auto', padding: '7px 28px 7px 12px', fontSize: 12.5 }}
             >
               <option value="All Stages">All Stages</option>
               <option value="New">New</option>
@@ -390,20 +528,17 @@ export const Clients: React.FC = () => {
               <option value="Won">Won</option>
               <option value="Lost">Lost</option>
             </select>
-            <div className="relative group">
-              <button className="p-2 rounded-lg transition-all text-slate-400 hover:text-slate-600">
-                <Filter size={18} />
+            <div id="advanced-filters-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
+              <button onClick={() => setShowAdvancedFilters(prev => !prev)} style={{ padding: '7px 10px', borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'all .15s ease', fontSize: 12.5, fontWeight: 600 }}>
+                <Filter size={16} /> Advanced
               </button>
-              <div className="absolute right-0 top-full mt-1 w-64 rounded-xl shadow-xl py-3 px-4 z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right bg-white border border-slate-200/80">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider mb-3 text-slate-500">Advanced Filters</h4>
-                <div className="space-y-3">
+              {showAdvancedFilters && (
+              <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', width: 260, borderRadius: 12, boxShadow: '0 20px 40px -16px rgba(0,0,0,.22)', padding: 18, zIndex: 30, background: paper, border: `1.4px solid ${hairline}` }}>
+                <h4 style={{ fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 14px' }}>Advanced Filters</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div>
-                    <label className="text-xs font-medium text-slate-600 block mb-1">Balance Range</label>
-                    <select
-                      value={balanceRange}
-                      onChange={(e) => setBalanceRange(e.target.value)}
-                      className="w-full pl-2 pr-6 py-1.5 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
+                    <label style={labelStyle}>Balance Range</label>
+                    <select value={balanceRange} onChange={(e) => setBalanceRange(e.target.value)} style={{ ...inputStyle, fontSize: 12.5 }}>
                       <option value="Any Balance">Any Balance</option>
                       <option value="Over $1,000">Over $1,000</option>
                       <option value="Over $5,000">Over $5,000</option>
@@ -412,12 +547,8 @@ export const Clients: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-slate-600 block mb-1">Customer Segment</label>
-                    <select
-                      value={customerSegment}
-                      onChange={(e) => setCustomerSegment(e.target.value)}
-                      className="w-full pl-2 pr-6 py-1.5 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
+                    <label style={labelStyle}>Customer Segment</label>
+                    <select value={customerSegment} onChange={(e) => setCustomerSegment(e.target.value)} style={{ ...inputStyle, fontSize: 12.5 }}>
                       <option value="All Segments">All Segments</option>
                       <option value="Individual">Individual</option>
                       <option value="School Account">School Account</option>
@@ -425,189 +556,170 @@ export const Clients: React.FC = () => {
                       <option value="Government">Government</option>
                     </select>
                   </div>
-                  <button
-                    onClick={() => { setBalanceRange('Any Balance'); setCustomerSegment('All Segments'); }}
-                    className="w-full py-2 rounded-lg font-bold text-[11px] mt-2 transition-colors bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  >
+                  <button onClick={() => { setBalanceRange('Any Balance'); setCustomerSegment('All Segments'); }} style={{ ...btnGhost, width: '100%', justifyContent: 'center', marginTop: 2 }}>
                     Reset Filters
                   </button>
                 </div>
               </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto custom-scrollbar">
-          <table className="w-full min-w-[800px] text-left text-[13px] table-fixed">
-            <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
-              <tr>
-                <th className="table-header text-center w-10">
+        <div style={{ overflow: 'auto' }}>
+          <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse', textAlign: 'left', fontSize: 13, color: ink }}>
+            <thead>
+              <tr style={{ background: teal[50] }}>
+                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'center', width: 44, borderBottom: `1px solid ${hairline}` }}>
                   <input type="checkbox"
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    style={{ width: 15, height: 15, borderRadius: 6, accentColor: teal[600], cursor: 'pointer', border: `1px solid ${teal[200]}` }}
                     checked={selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0}
                     onChange={toggleSelectAll} />
                 </th>
-                <th className="table-header text-left w-[10%]">ID</th>
-                <th className="table-header text-left w-[25%]">Name</th>
-                <th className="table-header text-left w-[15%]">Contact Info</th>
-                <th className="table-header text-left w-[12%]">Last Transaction</th>
-                <th className="table-header text-right w-[10%]">Wallet</th>
-                <th className="table-header text-right w-[10%]">Open Balance</th>
-                <th className="table-header text-center w-[18%]">Actions</th>
+                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}` }}>ID</th>
+                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}` }}>Name</th>
+                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}` }}>Contact Info</th>
+                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}` }}>Last Transaction</th>
+                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}`, textAlign: 'right' }}>Wallet</th>
+                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}`, textAlign: 'right' }}>Open Balance</th>
+                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}`, textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/50">
+            <tbody style={{ divideY: `1px solid ${hairline}` }}>
               {isLoading ? (
-                <tr><td colSpan={8} className="table-body-cell text-center italic py-10">Loading clients...</td></tr>
+                <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>Loading clients...</td></tr>
               ) : filteredCustomers.length === 0 ? (
-                <tr><td colSpan={8} className="table-body-cell text-center italic py-10">No clients found matching your criteria.</td></tr>
+                <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No clients found matching your criteria.</td></tr>
               ) : (
                 currentItems.map((customer) => {
                   const isChecked = selectedIds.includes(customer.id);
                   return (
                     <React.Fragment key={customer.id}>
                       <tr onClick={(e) => { e.stopPropagation(); setSelectedCardCustomer(customer); }}
-                        className={`transition-colors cursor-pointer group ${isChecked ? 'bg-blue-50/80' : 'hover:bg-blue-50/50 border-l-4 border-l-transparent'}`}>
-                        <td className="table-body-cell text-center" onClick={(e) => e.stopPropagation()}>
+                        style={{ cursor: 'pointer', background: isChecked ? teal[50] : 'transparent', borderLeft: isChecked ? `4px solid ${teal[500]}` : '4px solid transparent', transition: 'background .15s ease' }}>
+                        <td style={{ padding: '11px 12px', textAlign: 'center', borderBottom: `1px solid ${hairline}` }} onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox"
-                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            style={{ width: 15, height: 15, borderRadius: 6, accentColor: teal[600], cursor: 'pointer', border: `1px solid ${teal[200]}` }}
                             checked={isChecked}
                             onChange={() => toggleSelect(customer.id)} />
                         </td>
-                        <td className="table-body-cell font-mono text-slate-500 font-bold truncate">
+                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, fontFamily: "'JetBrains Mono', monospace", color: inkSoft, fontWeight: 700, letterSpacing: 0.2 }}>
                           #{customer.id}
                         </td>
-                        <td className="table-body-cell">
-                          <div className="flex items-center gap-2">
+                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <button onClick={(e) => { e.stopPropagation(); setExpandedClientId(expandedClientId === customer.id ? null : customer.id); }}
-                              className="p-1 text-slate-400 hover:text-blue-600 rounded transition-all shrink-0">
-                              <ChevronRight size={14} className={`transition-transform duration-200 ${expandedClientId === customer.id ? 'rotate-90' : ''}`} />
+                              style={{ padding: 4, color: inkSoft, hoverColor: teal[600], background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', transition: 'color .15s' }}>
+                              <ChevronRight size={14} style={{ transition: 'transform .2s', transform: expandedClientId === customer.id ? 'rotate(90deg)' : 'rotate(0deg)' }} />
                             </button>
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-slate-100 text-slate-500 border border-slate-200">
+                            <div style={{ width: 34, height: 34, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: teal[50], color: teal[600], border: `1px solid ${teal[200]}`, flexShrink: 0 }}>
                               {customer.segment === 'School Account' ? <School size={14} /> :
-                               customer.segment === 'Institution' ? <Building2 size={14} /> :
-                               customer.segment === 'Government' ? <Landmark size={14} /> :
-                               <User size={14} />}
+                                customer.segment === 'Institution' ? <Building2 size={14} /> :
+                                customer.segment === 'Government' ? <Landmark size={14} /> :
+                                <User size={14} />}
                             </div>
-                            <div className="cursor-pointer hover:opacity-80 transition-opacity min-w-0"
+                            <div style={{ cursor: 'pointer', minWidth: 0 }}
                               onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }}>
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className="font-medium text-slate-900 truncate max-w-[140px]">{customer.name}</p>
-                                <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${
-                                  customer.status === 'Active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                                  customer.status === 'Lead' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                                  customer.status === 'Suspended' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                                  customer.status === 'VIP' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                  customer.status === 'Prospect' ? 'bg-teal-100 text-teal-700 border-teal-200' :
-                                  customer.status === 'Credit Hold' ? 'bg-rose-100 text-rose-700 border-rose-200 line-through' :
-                                  'bg-slate-100 text-slate-600 border-slate-200'
-                                }`}>
-                                  {customer.status}
-                                </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 600, color: ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180, display: 'inline-block' }}>{customer.name}</span>
+                                {statusBadge(customer.status)}
                               </div>
-                              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
                                 {(customer as Customer & Record<string, unknown>).pipelineStage && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap bg-blue-100 text-blue-700 border-blue-200">
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, border: `1px solid ${teal[200]}`, background: teal[50], color: teal[700], whiteSpace: 'nowrap' }}>
                                     {(customer as Customer & Record<string, unknown>).pipelineStage}
                                   </span>
                                 )}
                                 {(customer as Customer & Record<string, unknown>).leadSource && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap bg-amber-100 text-amber-700 border-amber-200">
-                                    {(customer as Customer & Record<string, unknown>).leadSource}
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, border: `1px solid ${amber[300]}`, background: amber[100], color: amber[600], whiteSpace: 'nowrap' }}>
+                                    {(customer as Customer & Record<string, unknown>).leadSource as string}
                                   </span>
                                 )}
                                 {customer.subAccounts && customer.subAccounts.length > 0 && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap bg-sky-100 text-sky-700 border-sky-200">
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, border: `1px solid ${teal[200]}`, background: teal[50], color: teal[700], whiteSpace: 'nowrap' }}>
                                     {customer.subAccounts.length} Sub
                                   </span>
                                 )}
-                                {customer.creditHold && <AlertTriangle size={12} className="text-rose-500 animate-pulse" />}
+                                {customer.creditHold && <AlertTriangle size={12} style={{ color: danger, animation: 'pulse 2s infinite' }} />}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="table-body-cell text-slate-500 truncate">
-                          <Phone size={13} className="inline mr-1 text-slate-400" />{customer.phone || 'No phone'}
+                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, color: inkSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Phone size={13} style={{ color: inkSoft }} />{customer.phone || 'No phone'}</span>
                         </td>
-                        <td className="table-body-cell font-medium finance-nums truncate text-slate-700">
+                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, color: ink, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
                           {getLastTransaction(customer.id)}
                         </td>
-                        <td className="table-body-cell text-right font-medium finance-nums truncate text-teal-600">
+                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', color: teal[600], fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
                           {currency}{(customer.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </td>
-                        <td className={`table-body-cell text-right font-medium finance-nums truncate ${(customer.balance || 0) > 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', color: (customer.balance || 0) > 0 ? danger : ink, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
                           {currency}{(customer.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="table-body-cell text-center" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex justify-center gap-1 items-center shrink-0">
-                            <button onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }}
-                              className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View Profile">
+                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <button onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }} style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease' }} title="View Profile">
                               <ChevronRight size={14} />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleEdit(customer); }}
-                              className="p-1.5 text-slate-400 hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit">
+                            <button onClick={(e) => { e.stopPropagation(); handleEdit(customer); }} style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease' }} title="Edit">
                               <Edit size={14} />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/sales-flow/invoices', { state: { action: 'create', customer: customer.name } }); }}
-                              className="p-1.5 text-blue-600 hover:text-blue-700 transition-all flex items-center justify-center" title="Create Invoice">
-                              <DollarSign size={16} />
-                            </button>
-                            <button onClick={(e) => handleRowMenuClick(e, customer.id)}
-                              className="p-1.5 text-slate-400 hover:text-slate-600 rounded transition-all" title="More">
-                              <MoreVertical size={14} />
+                            <button onClick={(e) => { e.stopPropagation(); navigate('/sales-flow/invoices', { state: { action: 'create', customer: customer.name } }); }} style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: teal[700], cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease' }} title="Create Invoice">
+                              <DollarSign size={15} />
                             </button>
                           </div>
-                          {activeMenuId === customer.id && (
-                            <div onClick={(e) => e.stopPropagation()}
-                              className="absolute right-0 mt-1 w-44 rounded-lg shadow-xl py-1.5 z-10 animate-in fade-in zoom-in-95 origin-top-right bg-white border border-slate-200/80"
-                              style={{ position: 'absolute' }}>
-                              <button onClick={() => { setActiveMenuId(null); navigate('/sales-flow/payments', { state: { action: 'create', customer: customer.name, isTopUp: true } }); }}
-                                className="w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center gap-2 text-slate-700 hover:bg-slate-50">
-                                <DollarSign size={14} className="text-slate-400" /> Add Prepayment
-                              </button>
-                              <button onClick={() => { setActiveMenuId(null); navigate('/revenue/contacts', { state: { customerId: customer.id } }); }}
-                                className="w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center gap-2 text-slate-700 hover:bg-slate-50">
-                                <FileText size={14} className="text-slate-400" /> Account Statement
-                              </button>
-                              <div className="h-px my-1 bg-slate-100" />
-                              <button onClick={() => { setActiveMenuId(null); handleDelete(customer.id); }}
-                                className="w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center gap-2 text-red-600 hover:bg-slate-50">
-                                <Trash2 size={14} /> Delete Client
-                              </button>
-                            </div>
-                          )}
+                          <div style={{ position: 'relative', display: 'inline-block', marginLeft: 2 }}>
+                            <button onClick={(e) => handleRowMenuClick(e, customer.id)} style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease' }} title="More">
+                              <MoreVertical size={14} />
+                            </button>
+                            {activeMenuId === customer.id && (
+                              <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', width: 200, borderRadius: 12, boxShadow: '0 16px 36px -12px rgba(0,0,0,.28)', padding: '10px 12px', zIndex: 40, background: paper, border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <button onClick={() => { setActiveMenuId(null); navigate('/sales-flow/payments', { state: { action: 'create', customer: customer.name, isTopUp: true } }); }} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: ink, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', transition: 'background .15s' }}>
+                                  <DollarSign size={14} style={{ color: inkSoft }} /> Add Prepayment
+                                </button>
+                                <button onClick={() => { setActiveMenuId(null); navigate('/revenue/contacts', { state: { customerId: customer.id } }); }} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: ink, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', transition: 'background .15s' }}>
+                                  <FileText size={14} style={{ color: inkSoft }} /> Account Statement
+                                </button>
+                                <div style={{ height: 1, background: hairline, margin: '2px 0' }} />
+                                <button onClick={() => { setActiveMenuId(null); handleDelete(customer.id); }} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: danger, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', transition: 'background .15s' }}>
+                                  <Trash2 size={14} /> Delete Client
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                       {expandedClientId === customer.id && customer.subAccounts && customer.subAccounts.length > 0 && (
-                        <tr className="animate-in slide-in-from-top-2 duration-200 bg-slate-50/50">
-                          <td></td>
-                          <td colSpan={7} className="px-4 py-3">
-                            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                              <div className="px-3 py-2 flex items-center justify-between bg-slate-50/80 border-b border-slate-200/60">
-                                <h4 className="text-[10px] font-bold uppercase tracking-tight text-slate-500">Sub Accounts</h4>
+                        <tr style={{ background: paper }}>
+                          <td style={{ padding: 0, borderBottom: `1px solid ${hairline}` }}></td>
+                          <td colSpan={7} style={{ padding: '18px 22px', borderBottom: `1px solid ${hairline}` }}>
+                            <div style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08 }}>Sub Accounts</span>
                               </div>
-                              <table className="w-full text-left text-[13px]">
+                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                                 <thead>
                                   <tr>
-                                    <th className="table-header">Name</th>
-                                    <th className="table-header text-right">Wallet</th>
-                                    <th className="table-header text-right">Balance</th>
-                                    <th className="table-header text-center">Status</th>
+                                    <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'left', borderBottom: `1px solid ${hairline}` }}>Name</th>
+                                    <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'right', borderBottom: `1px solid ${hairline}` }}>Wallet</th>
+                                    <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'right', borderBottom: `1px solid ${hairline}` }}>Balance</th>
+                                    <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'center', borderBottom: `1px solid ${hairline}` }}>Status</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100/50">
+                                <tbody>
                                   {customer.subAccounts.map((sub) => (
-                                    <tr key={sub.id} className="hover:bg-blue-50/50 transition-colors">
-                                      <td className="table-body-cell font-medium text-slate-900">{sub.name}</td>
-                                      <td className="table-body-cell text-right font-medium finance-nums text-teal-600">
+                                    <tr key={sub.id} style={{ borderBottom: `1px solid ${hairline}` }}>
+                                      <td style={{ padding: '10px 16px', fontWeight: 600, color: ink }}>{sub.name}</td>
+                                      <td style={{ padding: '10px 16px', textAlign: 'right', color: teal[600], fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
                                         {currency}{(sub.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                       </td>
-                                      <td className="table-body-cell text-right font-medium finance-nums text-red-600">
+                                      <td style={{ padding: '10px 16px', textAlign: 'right', color: (sub.balance || 0) > 0 ? danger : ink, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
                                         {currency}{(sub.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                       </td>
-                                      <td className="table-body-cell text-center">
-                                        <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${sub.status === 'Active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                      <td style={{ padding: '10px 16px', textAlign: 'center' }}>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, border: `1px solid ${sub.status === 'Active' ? teal[200] : hairline}`, background: sub.status === 'Active' ? teal[100] : '#f5f5f4', color: sub.status === 'Active' ? teal[700] : inkSoft }}>
                                           {sub.status}
                                         </span>
                                       </td>
@@ -626,7 +738,12 @@ export const Clients: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} maxPage={maxPage} totalItems={totalItems} itemsPerPage={itemsPerPage} onNext={next} onPrev={prev} onFirst={first} onLast={last} onItemsPerPageChange={setItemsPerPage} />
+        <div style={{ padding: '14px 18px', borderTop: `1px solid ${hairline}`, background: paper, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ color: inkSoft, fontSize: 12.5, fontWeight: 500 }}>
+            Showing page {currentPage} of {maxPage} · {totalItems} total clients
+          </div>
+          <Pagination currentPage={currentPage} maxPage={maxPage} totalItems={totalItems} itemsPerPage={itemsPerPage} onNext={next} onPrev={prev} onFirst={first} onLast={last} onItemsPerPageChange={setItemsPerPage} />
+        </div>
       </div>
 
       {selectedCardCustomer && (

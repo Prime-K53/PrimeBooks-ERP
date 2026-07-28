@@ -8,7 +8,7 @@ import Breadcrumbs from './components/Breadcrumbs';
 import Toast from './components/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
-import { FinancialYearProvider } from './context/FinancialYearContext';
+import { FinancialYearProvider, useFinancialYear } from './context/FinancialYearContext';
 import { FinanceProvider } from './context/FinanceContext';
 import { InventoryProvider } from './context/InventoryContext';
 import { SalesProvider } from './context/SalesContext';
@@ -33,7 +33,7 @@ import { useKeyboard as useGlobalKeyboard } from './hooks';
 import { useDocumentStore } from './stores/documentStore.ts';
 import { PreviewModal } from './views/shared/components/PDF/PreviewModal.tsx';
 import { PdfWorker } from './views/shared/components/PDF/PdfWorker.tsx';
-import { Bell, Loader2, Coins, X, Menu, UserIcon, Search as SearchIcon, FileText, Users, LogOut, Box, Package, Settings as SettingsIcon, Wrench, ShieldCheck, Database } from 'lucide-react';
+import { Bell, Loader2, Coins, X, Menu, UserIcon, Search as SearchIcon, FileText, Users, LogOut, Box, Package, Settings as SettingsIcon, Wrench, ShieldCheck, Database, Calculator, MessageSquare, CalendarDays, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { AICopilot } from './components/ai';
 import { NotificationCenter } from './components/ui';
 import Login from './views/auth/Login';
@@ -42,6 +42,13 @@ import ForgotPassword from './views/auth/ForgotPassword';
 import ResetPassword from './views/auth/ResetPassword';
 
 import { isResponsiveDebugEnabled } from './utils/debugFlags';
+
+function fyDisplayName(fy: { start_date: string; end_date: string; name: string }): string {
+  const startYear = fy.start_date?.slice(0, 4);
+  const endYear = fy.end_date?.slice(0, 4);
+  if (!startYear) return fy.name || 'Unknown FY';
+  return startYear !== endYear ? `FY ${startYear}/${endYear?.slice(2)}` : `FY ${startYear}`;
+}
 
 
 // Helper for lazy loading with retry logic to handle "Failed to fetch dynamically imported module" errors
@@ -340,8 +347,25 @@ const AppLayout: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showFyDropdown, setShowFyDropdown] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const notificationBellRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const fyDropdownRef = useRef<HTMLDivElement>(null);
+
+  const { selectedFinancialYear, availableFinancialYears, setFinancialYear, isLoading: isFyLoading } = useFinancialYear();
+
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 767);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 767);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const currentFyDisplay = selectedFinancialYear
+    ? `${selectedFinancialYear.start_date.slice(0, 4)}–${selectedFinancialYear.end_date.slice(0, 4)}`
+    : 'No FY';
 
   useEffect(() => {
     const theme = companyConfig?.appearance?.theme || 'Light';
@@ -453,37 +477,84 @@ const AppLayout: React.FC = () => {
       />
       <div className="app-content-shell flex-1 flex flex-col h-full min-w-0 transition-all duration-300">
         <div className="px-3 sm:px-6 pb-2 pt-3 sm:pt-6 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0" style={{ background: '#FEFDFB', borderBottom: '1.4px solid #e4ddd1', padding: '10px 20px', borderRadius: 0 }}>
             <button
               type="button"
-              className="md:hidden p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors shrink-0"
+              className="md:hidden p-2 rounded-lg border border-[#e4ddd1] bg-[#FEFDFB] text-[#5c6567] hover:bg-[#f3ede3] transition-colors shrink-0"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open Sidebar"
             >
               <Menu size={18} />
             </button>
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <Breadcrumbs />
-            </div>
             <button
               onClick={() => { setSearchOpen(true); setSearchQuery(''); }}
-              className="hidden sm:flex items-center gap-2 px-6 py-2 rounded-full border border-slate-200 bg-white text-slate-400 hover:text-slate-600 hover:border-slate-300 hover:shadow-sm transition-all text-xs"
+              className="hidden sm:flex items-center gap-2"
+              style={{ width: 300, padding: '9px 14px', borderRadius: 999, border: '1.4px solid #e4ddd1', background: '#FEFDFB', fontFamily: "'Inter', -apple-system, sans-serif", fontSize: 12.5, color: '#5c6567', cursor: 'pointer', transition: 'all 0.15s ease' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#d4cdc2'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.04)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <SearchIcon size={14} />
-              <span className="hidden md:inline">Search...</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono font-bold text-slate-400">⌘K</kbd>
+              <span>Search...</span>
             </button>
-            <div className="relative">
+            <div className="flex items-center gap-2 ml-auto">
+              <button onClick={() => navigate('/smart-operations/pricing')} title="Calculator" aria-label="Open calculator" style={{
+                padding: '9px 16px', borderRadius: 999, border: '1.4px solid #e4ddd1', background: '#FEFDFB', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0b6e6e', transition: 'all 0.15s ease', fontFamily: "'Inter', -apple-system, sans-serif", fontSize: 12.5, fontWeight: 600,
+              }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#d4cdc2'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.04)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = 'none'; }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Calculator size={14} /><span className="hidden md:inline">Calculator</span></div>
+              </button>
+
+              <button onClick={() => setIsWhatsAppModalOpen(true)} title="Messages" aria-label="Open messages" style={{
+                padding: '9px 16px', borderRadius: 999, border: '1.4px solid #e4ddd1', background: '#FEFDFB', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#0b6e6e', position: 'relative', transition: 'all 0.15s ease', fontFamily: "'Inter', -apple-system, sans-serif", fontSize: 12.5, fontWeight: 600,
+              }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#d4cdc2'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.04)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = 'none'; }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MessageSquare size={14} /><span className="hidden md:inline">Messages</span></div>
+              </button>
+
+              <div ref={fyDropdownRef} style={{ position: 'relative' }}>
+                <button onClick={() => setShowFyDropdown(prev => !prev)} title={selectedFinancialYear ? `Financial Year: ${selectedFinancialYear.name}${selectedFinancialYear.is_closed ? ' (Closed)' : ''}` : 'Select Financial Year'} aria-label="Select Financial Year" style={{
+                  padding: '9px 16px', borderRadius: 999, border: showFyDropdown ? '1.4px solid #d4cdc2' : '1.4px solid #e4ddd1', background: '#FEFDFB', cursor: 'pointer', display: 'flex', alignItems: 'center', color: showFyDropdown ? '#0b6e6e' : '#5c6567', position: 'relative', transition: 'all 0.15s ease', fontFamily: "'Inter', -apple-system, sans-serif", fontSize: 12.5, fontWeight: 600,
+                }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#d4cdc2'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.04)'; }} onMouseLeave={e => { if (!showFyDropdown) { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = 'none'; } }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CalendarDays size={14} color="#0b6e6e" />
+                    {!isMobile && <span>{isFyLoading ? 'Loading...' : currentFyDisplay}</span>}
+                    <ChevronDown size={14} style={{ transform: showFyDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', color: '#5b578c' }} />
+                  </div>
+                </button>
+                {showFyDropdown && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 230, backgroundColor: '#ffffff', borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden', zIndex: 60, padding: '6px' }}>
+                    <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Financial Years</div>
+                    {availableFinancialYears.length === 0 ? (
+                      <div style={{ padding: '12px', fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>No financial years configured</div>
+                    ) : (
+                      availableFinancialYears.map(fy => {
+                        const isActive = selectedFinancialYear?.id === fy.id;
+                        const fyLabelStr = fyDisplayName(fy);
+                        return (
+                          <button key={fy.id} onClick={() => { setFinancialYear(fy); setShowFyDropdown(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, border: 'none', backgroundColor: isActive ? '#eef2ff' : 'transparent', color: isActive ? '#4338ca' : '#1e293b', cursor: 'pointer', fontSize: 12, fontWeight: isActive ? 700 : 500, textAlign: 'left', transition: 'background-color 0.15s ease', gap: 8 }} onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = '#f8fafc'; }} onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CalendarDays size={14} color={isActive ? '#6366f1' : '#64748b'} /><span>{fyLabelStr}</span></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              {fy.is_closed ? <span style={{ fontSize: 9, fontWeight: 600, color: '#dc2626', backgroundColor: '#fef2f2', padding: '1px 6px', borderRadius: 4 }}>Closed</span> : fy.is_default ? <span style={{ fontSize: 9, fontWeight: 600, color: '#2563eb', backgroundColor: '#eff6ff', padding: '1px 6px', borderRadius: 4 }}>Default</span> : null}
+                              {isActive && <Check size={14} color="#6366f1" />}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="relative" style={{ marginLeft: 8 }}>
               <button
                 ref={notificationBellRef}
                 onClick={() => setNotificationCenterOpen(!notificationCenterOpen)}
-                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors relative"
+                style={{
+                  width: 38, height: 38, borderRadius: 999, background: '#FEFDFB', border: '1.4px solid #e4ddd1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#d4cdc2'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.04)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = 'none'; }}
               >
-                <Bell size={18} />
+                <Bell size={16} color="#0b6e6e" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                    {unreadCount}
-                  </span>
+                  <span className="absolute top-1 right-1" style={{ width: 8, height: 8, borderRadius: 999, background: '#d99a3f' }} />
                 )}
               </button>
               <NotificationCenter
@@ -504,12 +575,14 @@ const AppLayout: React.FC = () => {
                 anchorEl={notificationBellRef.current}
               />
             </div>
-            <div className="relative flex items-center gap-2 pl-2 border-l border-slate-200">
+            <div className="relative flex items-center gap-2 pl-2" style={{ borderLeft: '1.4px solid #e4ddd1' }}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center py-1 rounded-full hover:bg-slate-100 transition-colors"
+                className="flex items-center py-1 rounded-full hover:bg-[#f3ede3] transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                <div style={{
+                  width: 38, height: 38, borderRadius: 999, background: 'linear-gradient(160deg, #3fa294, #0f544c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: 14, fontWeight: 700, boxShadow: '0 1px 2px rgba(11,62,57,.15)',
+                }}>
                   {(user?.fullName || user?.username || 'U').charAt(0).toUpperCase()}
                 </div>
               </button>
@@ -611,6 +684,7 @@ const AppLayout: React.FC = () => {
                 <Route path="/inventory" element={<Navigate to="/supply-chain/inventory" replace />} />
                 <Route path="/purchases" element={<Navigate to="/procurement/bills" replace />} />
                 <Route path="/purchases/grn" element={<Navigate to="/supply-chain/grn" replace />} />
+                <Route path="/purchases/new" element={<Navigate to="/procurement/bills" replace />} />
                 <Route path="/purchases/subcontracting" element={<Navigate to="/procurement/subcontracting" replace />} />
                 <Route path="/pos" element={<Navigate to="/sales-flow/pos" replace />} />
                 <Route path="/sales/quotations" element={<Navigate to="/sales-flow/quotations" replace />} />
@@ -619,6 +693,8 @@ const AppLayout: React.FC = () => {
                 <Route path="/sales/subscriptions" element={<Navigate to="/sales-flow/subscriptions" replace />} />
                 <Route path="/sales/receipts" element={<Navigate to="/sales-flow/payments" replace />} />
                 <Route path="/sales-flow/receipts" element={<Navigate to="/sales-flow/payments" replace />} />
+                <Route path="/sales-flow/orders/new" element={<Navigate to="/sales-flow/orders" replace />} />
+                <Route path="/sales-flow/payments/new" element={<Navigate to="/sales-flow/payments" replace />} />
                 <Route path="/sales-flow/sms" element={<Navigate to="/internal-tools/chat" replace />} />
                 <Route path="/reports/statements" element={<Navigate to="/revenue/contacts" replace />} />
                 <Route path="/accounts/chart" element={<Navigate to="/accounts/chart-of-accounts" replace />} />
@@ -629,6 +705,7 @@ const AppLayout: React.FC = () => {
                 <Route path="/production/mrp" element={<Navigate to="/industrial/mrp" replace />} />
                 <Route path="/production/examination-printing" element={<Navigate to="/examination/batches" replace />} />
                 <Route path="/accounts/expenses" element={<Navigate to="/procurement/expenses" replace />} />
+                <Route path="/accounts/expenses/new" element={<Navigate to="/procurement/expenses" replace />} />
                 <Route path="/accounts/reconciliation" element={<Navigate to="/fiscal-reports/reconciliation" replace />} />
                 <Route path="/accounts/budgets" element={<Navigate to="/fiscal-reports/budgets" replace />} />
                 <Route path="/accounts/financials" element={<Navigate to="/fiscal-reports/financials" replace />} />
@@ -685,6 +762,7 @@ const AppLayout: React.FC = () => {
 
                 {/* Customers */}
                 <Route path="/customers" element={<ErrorBoundary name="Customers"><CustomersHub /></ErrorBoundary>} />
+                <Route path="/customers/new" element={<Navigate to="/customers" replace />} />
 
                 {/* Sales Flow */}
                 <Route element={<ErrorBoundary name="Sales"><Outlet /></ErrorBoundary>}>
@@ -903,6 +981,21 @@ const AppLayout: React.FC = () => {
         </div>
       )}
       {location.pathname === '/' && <AICopilot />}
+      {isWhatsAppModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsWhatsAppModalOpen(false)}>
+          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 slide-in-from-top-4 duration-200" onClick={(e) => e.stopPropagation()} style={{ height: '80vh', maxHeight: 700 }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+              <h2 className="text-sm font-bold text-slate-800">WhatsApp Messages</h2>
+              <button onClick={() => setIsWhatsAppModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 transition-colors" aria-label="Close messages">
+                <X size={16} className="text-slate-400" />
+              </button>
+            </div>
+            <div className="overflow-y-auto" style={{ height: 'calc(80vh - 52px)', maxHeight: 'calc(700px - 52px)' }}>
+              <MarketingMessages />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

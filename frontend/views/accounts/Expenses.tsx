@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef } from 'react';
 import { 
   Plus, DollarSign, Banknote as PaymentIcon, Calendar, Search, Filter, 
@@ -20,7 +19,17 @@ import { extractPaymentProofData, analyzeExpenses } from '../../services/geminiS
 import { getDefaultDate, validateDateInFY } from '../../utils/financialYearUtils';
 import ReactMarkdown from 'react-markdown';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'];
+const COLORS = ['#1f8577', '#146b60', '#d99a3f', '#b97e2b', '#0b3e39', '#0f544c', '#3fa294'];
+
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294',
+  500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
 
 const Expenses: React.FC = () => {
   const { user, companyConfig, checkPermission, notify, isOnline } = useAuth();
@@ -62,7 +71,7 @@ const Expenses: React.FC = () => {
     amount: '',
     category: 'General',
     description: '',
-date: getDefaultDate(),
+    date: getDefaultDate(),
     accountId: ACCOUNT_IDS.CASH_DRAWER,
     status: 'Paid'
   });
@@ -193,65 +202,222 @@ date: getDefaultDate(),
   const renderDetailModal = () => {
     if (!selectedExpense) return null;
     return (
-      <div className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-white/60">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50">
-            <div><h2 className="text-xl font-bold text-slate-900">Expense Details</h2><p className="text-xs text-slate-500 font-mono mt-1">{selectedExpense.id}</p></div>
-            <button onClick={() => { setSelectedExpense(null); setAttachedFileId(null); }} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 70,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(15, 23, 42, 0.6)', padding: '24px 20px',
+        backdropFilter: 'blur(4px)', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink
+      }}>
+        <div style={{
+          width: 480, maxWidth: '100%', maxHeight: '92vh',
+          background: paper, borderRadius: 14,
+          boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+        }}>
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+            background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+          }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}`, background: paper
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+              }}>
+                <DollarSign size={19} color="#fff" />
+              </div>
+              <div>
+                <h1 style={{
+                  fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                  fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                }}>
+                  Expense Details
+                </h1>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: inkSoft, fontFamily: "'JetBrains Mono', monospace" }}>
+                  {selectedExpense.id}
+                </p>
+              </div>
+            </div>
+            <button onClick={() => { setSelectedExpense(null); setAttachedFileId(null); }} aria-label="Close" style={{
+              width: 32, height: 32, borderRadius: 8,
+              border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+              onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+            >
+              <X size={15} />
+            </button>
           </div>
-          <div className="p-6 space-y-6 text-[12px]">
-            <div className="flex justify-between items-center p-4 bg-red-50 rounded-xl border border-red-100">
-               <div className="flex items-center gap-3"><div className="p-2 bg-red-100 text-red-600 rounded-lg"><DollarSign size={24} /></div><div><p className="text-[10px] font-bold text-red-800 uppercase">Total Amount</p><p className="text-2xl font-bold text-slate-900">{currency}{selectedExpense.amount.toLocaleString()}</p></div></div>
-               <div className="text-right">
-                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                   selectedExpense.status === 'Pending Approval' 
-                     ? 'bg-amber-100 text-amber-700' 
-                     : 'bg-emerald-100 text-emerald-700'
-                 }`}>
-                   {selectedExpense.status || 'Paid'}
-                 </span>
-               </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 8px' }}>
+            <div style={{ marginBottom: 18 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: 16, background: teal[50], borderRadius: 9, border: `1px solid ${teal[100]}`
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    padding: 8, borderRadius: 8, background: teal[100], color: teal[700]
+                  }}>
+                    <DollarSign size={22} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 2 }}>Total Amount</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: teal[800], fontFamily: "'JetBrains Mono', monospace" }}>
+                      {currency}{selectedExpense.amount.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <span style={{
+                    padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: 0.08,
+                    background: selectedExpense.status === 'Pending Approval' ? amber[100] : teal[100],
+                    color: selectedExpense.status === 'Pending Approval' ? amber[600] : teal[700]
+                  }}>
+                    {selectedExpense.status || 'Paid'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-               <div><label className="block text-slate-500 text-[10px] font-bold uppercase mb-1">Date</label><div className="font-medium text-slate-800 flex items-center gap-2"><Calendar size={14} className="text-slate-400"/>{new Date(selectedExpense.date).toLocaleDateString()} {new Date(selectedExpense.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div>
-               <div><label className="block text-slate-500 text-[10px] font-bold uppercase mb-1">Category</label><div className="font-medium text-slate-800 flex items-center gap-2"><Tag size={14} className="text-slate-400"/>{selectedExpense.category}</div></div>
-               <div className="col-span-2"><label className="block text-slate-500 text-[10px] font-bold uppercase mb-1">Description</label><div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-700">{selectedExpense.description}</div></div>
-               <div><label className="block text-slate-500 text-[10px] font-bold uppercase mb-1">Recorded By</label><div className="font-medium text-slate-800 flex items-center gap-2"><div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center text-[10px]">{selectedExpense.recordedBy.charAt(0)}</div>{selectedExpense.recordedBy}</div></div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+              <div>
+                <label style={labelStyle}>Date</label>
+                <div style={{ fontSize: 13, color: ink, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Calendar size={14} style={{ color: inkSoft }} />
+                  {new Date(selectedExpense.date).toLocaleDateString()} {new Date(selectedExpense.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Category</label>
+                <div style={{ fontSize: 13, color: ink, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Tag size={14} style={{ color: inkSoft }} />
+                  {selectedExpense.category}
+                </div>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelStyle}>Description</label>
+                <div style={{
+                  padding: 12, background: teal[50], borderRadius: 9, border: `1px solid ${teal[100]}`,
+                  fontSize: 13, color: ink, lineHeight: 1.5
+                }}>
+                  {selectedExpense.description}
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Recorded By</label>
+                <div style={{ fontSize: 13, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: '50%', background: teal[100],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 700, color: teal[700]
+                  }}>
+                    {selectedExpense.recordedBy.charAt(0)}
+                  </div>
+                  {selectedExpense.recordedBy}
+                </div>
+              </div>
             </div>
-            <div className="border-t border-slate-100 pt-4">
-               <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3">Ledger Impact</h4>
-               <div className="bg-slate-800 text-white p-3 rounded-lg font-mono text-[10px] space-y-1">
-                 <div className="flex justify-between">
-                   <span className="text-red-300">DR Expense: {selectedExpense.category}</span>
-                   <span>{currency}{selectedExpense.amount.toFixed(2)}</span>
-                 </div>
-                 <div className="flex justify-between">
-                   <span className="text-emerald-300 pl-4">
-                     CR {selectedExpense.accountId === ACCOUNT_IDS.BANK ? 'Main Bank Account' : 
-                         selectedExpense.accountId === ACCOUNT_IDS.MOBILE_MONEY ? 'Mobile Money' : 
-                         'Cash Drawer'}
-                   </span>
-                   <span>{currency}{selectedExpense.amount.toFixed(2)}</span>
-                 </div>
-               </div>
+
+            <div style={{ borderTop: `1px solid ${hairline}`, paddingTop: 18, marginBottom: 18 }}>
+              <div style={{ ...labelStyle, marginBottom: 10 }}>Ledger Impact</div>
+              <div style={{
+                background: teal[900], color: '#fff', padding: 14, borderRadius: 9,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, lineHeight: 1.6
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: teal[200] }}>DR Expense: {selectedExpense.category}</span>
+                  <span style={{ fontWeight: 600 }}>{currency}{selectedExpense.amount.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: teal[200], paddingLeft: 12 }}>
+                    CR {selectedExpense.accountId === ACCOUNT_IDS.BANK ? 'Main Bank Account' : 
+                        selectedExpense.accountId === ACCOUNT_IDS.MOBILE_MONEY ? 'Mobile Money' : 
+                        'Cash Drawer'}
+                  </span>
+                  <span style={{ fontWeight: 600 }}>{currency}{selectedExpense.amount.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
-            <div>
-               <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-2">Attachments</h4>
-               {selectedExpense.paymentProofUrl ? (
-                   <div className="space-y-3"><div className="h-40 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 relative group"><OfflineImage src={selectedExpense.paymentProofUrl} alt="Payment Proof Preview" className="w-full h-full object-contain" fallback={<div className="w-full h-full flex items-center justify-center text-slate-400 text-xs"><ImageIcon size={24} className="mb-1"/><br/>Preview Unavailable</div>}/><div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => handleViewPaymentProof(selectedExpense.paymentProofUrl!)} className="bg-white text-slate-800 px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2"><ExternalLink size={14}/> Open Full File</button></div></div><button onClick={() => handleViewPaymentProof(selectedExpense.paymentProofUrl!)} className="flex items-center gap-2 p-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 w-full justify-center transition-colors"><ExternalLink size={14}/> Open in New Tab</button></div>
-               ) : <div className="text-center text-xs text-slate-400 italic p-2 border border-dashed rounded-lg">No payment proof attached.</div>}
+
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ ...labelStyle, marginBottom: 8 }}>Attachments</div>
+              {selectedExpense.paymentProofUrl ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{
+                      height: 180, background: teal[50], borderRadius: 9, overflow: 'hidden',
+                      border: `1px solid ${teal[100]}`, position: 'relative'
+                    }}>
+                      <OfflineImage src={selectedExpense.paymentProofUrl} alt="Payment Proof Preview" className="w-full h-full object-contain" fallback={
+                        <div style={{
+                          width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center', color: inkSoft, fontSize: 11
+                        }}>
+                          <ImageIcon size={28} style={{ marginBottom: 6 }} />
+                          Preview Unavailable
+                        </div>
+                      } />
+                      <div style={{
+                        position: 'absolute', inset: 0, background: 'rgba(15,84,76,.5)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        opacity: 0, transition: 'opacity .2s'
+                      }} className="group-hover:opacity-100">
+                        <button onClick={() => handleViewPaymentProof(selectedExpense.paymentProofUrl!)} style={{
+                          background: paper, color: ink, padding: '8px 14px', borderRadius: 8,
+                          fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 6,
+                          border: 'none', cursor: 'pointer'
+                        }}>
+                          <ExternalLink size={13} /> Open Full File
+                        </button>
+                      </div>
+                    </div>
+                    <button onClick={() => handleViewPaymentProof(selectedExpense.paymentProofUrl!)} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+                      background: teal[50], color: teal[700], borderRadius: 9, fontSize: 12, fontWeight: 700,
+                      border: `1px solid ${teal[100]}`, cursor: 'pointer', justifyContent: 'center', transition: 'all .15s ease'
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background = teal[100]; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = teal[50]; }}
+                    >
+                      <ExternalLink size={13} /> Open in New Tab
+                    </button>
+                  </div>
+              ) : (
+                <div style={{
+                  textAlign: 'center', fontSize: 12, color: inkSoft, fontStyle: 'italic',
+                  padding: 14, border: `1.4px dashed ${hairline}`, borderRadius: 9
+                }}>
+                  No payment proof attached.
+                </div>
+              )}
             </div>
 
             {selectedExpense.status === 'Pending Approval' && checkPermission('accounts.approve') && (
-              <div className="pt-4 border-t border-slate-100">
+              <div style={{ borderTop: `1px solid ${hairline}`, paddingTop: 18 }}>
                 <button 
                   onClick={async () => {
                     await approveExpense(selectedExpense.id);
                     setSelectedExpense(null);
                   }}
-                  className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 text-sm transition-transform active:scale-95"
+                  style={{
+                    width: '100%', padding: '12px 16px', background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                    color: '#fff', borderRadius: 9, fontWeight: 700, fontSize: 13, border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`, cursor: 'pointer',
+                    transition: 'all .15s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
                 >
-                  <CheckCircle size={18}/> Approve & Post to Ledger
+                  <CheckCircle size={18} /> Approve & Post to Ledger
                 </button>
               </div>
             )}
@@ -261,91 +427,264 @@ date: getDefaultDate(),
     );
   };
 
-  return (
-    <div className="flex flex-col h-full max-w-[1600px] mx-auto font-normal">
-      {isAddModalOpen && canEdit && (
-        <div className="fixed inset-0 z-[70] bg-[rgba(15,23,42,0.6)] flex items-center justify-center p-4" style={{fontFamily:"'Inter','DM Sans',sans-serif"}}>
-           <div className="w-full max-w-md bg-[#FEFDFB] rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35)] flex flex-col overflow-hidden relative">
-              <div className="absolute top-0 left-0 right-0 h-[4px]" style={{background:'linear-gradient(90deg,#146b60,#3fa294 40%,#d99a3f 100%)'}}></div>
-              <div className="flex items-center justify-between px-7 pt-[22px] pb-[18px] border-b border-[#e4ddd1]">
-                 <div className="flex items-center gap-[14px]">
-                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0" style={{background:'linear-gradient(155deg,#1f8577,#0f544c)',boxShadow:'0 4px 10px -3px rgba(15,84,76,.6)'}}><PaymentIcon size={19} className="text-white"/></div>
-                    <div>
-                       <h1 className="text-[22px] m-0 text-[#0b3e39] tracking-[0.2px]" style={{fontFamily:"'DM Serif Display','Georgia',serif",fontWeight:400}}>New Expense</h1>
-                    </div>
-                 </div>
-                 <div className="flex gap-2">{isOnline && <button onClick={handleMagicScan} className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold hover:shadow-md transition-all flex items-center gap-1" disabled={isScanning}>{isScanning ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}Magic Scan</button>}<button onClick={() => setIsAddModalOpen(false)} className="w-8 h-8 rounded-lg border border-[#e4ddd1] bg-[#FEFDFB] text-[#5c6567] flex items-center justify-center cursor-pointer hover:bg-[#eef7f6] hover:text-[#0f544c] hover:border-[#a6d9d3] transition-all"><X size={15}/></button></div>
+  const labelStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 6,
+    fontSize: 12, fontWeight: 600, color: teal[800],
+    marginBottom: 6, letterSpacing: 0.01
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+    color: ink, background: paper,
+    border: `1.4px solid ${hairline}`, borderRadius: 9,
+    padding: '9px 12px', outline: 'none',
+    transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+  };
+
+  const btnGhostStyle: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+    padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+    background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+    display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+  };
+
+  const btnPrimaryStyle: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+    padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+    background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+    color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+    boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+    transition: 'all .15s ease'
+  };
+
+  const renderAddModal = () => {
+    if (!isAddModalOpen || !canEdit) return null;
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(15, 23, 42, 0.6)', padding: '40px 20px',
+        fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink
+      }}>
+        <div style={{
+          width: 480, maxWidth: '100%', maxHeight: '92vh',
+          background: paper, borderRadius: 14,
+          boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'
+        }}>
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+            background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+          }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}`, background: paper
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+              }}>
+                <PaymentIcon size={19} color="#fff" />
               </div>
-              <form onSubmit={handleSubmit} className="px-7 py-5 space-y-4" style={{fontSize:13.5,color:'#23282A'}}>
-                 <div className="grid grid-cols-2 gap-4"><div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Date</label><input type="date" className="w-full p-2 border border-[#e4ddd1] rounded-lg text-sm bg-[#FEFDFB]" style={{fontFamily:"'Inter',sans-serif",color:'#23282A'}} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div></div>
-                 <div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Amount ({currency})</label><input type="number" step="0.01" autoFocus required className="w-full p-3 border border-[#e4ddd1] rounded-lg text-xl font-bold outline-none" style={{color:'#23282A',background:'#FEFDFB',fontFamily:"'JetBrains Mono',monospace"}} value={formData.amount} onChange={e => {
-                   const val = e.target.value;
-                   setFormData({...formData, amount: val});
-                 }} placeholder="0.00" /></div>
-                 <div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Category</label><select className="w-full p-2 border border-[#e4ddd1] rounded-lg text-sm" style={{background:'#FEFDFB',color:'#23282A',fontFamily:"'Inter',sans-serif"}} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>{categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                 <div>
-                   <label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Payment Account</label>
-                   <select 
-                     className="w-full p-2 border border-[#e4ddd1] rounded-lg text-sm" 
-                     style={{background:'#FEFDFB',color:'#23282A',fontFamily:"'Inter',sans-serif"}}
-                     value={formData.accountId} 
-                     onChange={e => setFormData({...formData, accountId: e.target.value})}
-                   >
-                     <option value={ACCOUNT_IDS.CASH_DRAWER}>Cash Drawer (1000)</option>
-                     <option value={ACCOUNT_IDS.BANK}>Main Bank Account (1050)</option>
-                     <option value={ACCOUNT_IDS.MOBILE_MONEY}>Mobile Money (1060)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Status</label>
-                    <select className="w-full p-2 border border-[#e4ddd1] rounded-lg text-sm" style={{background:'#FEFDFB',color:'#23282A',fontFamily:"'Inter',sans-serif"}} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                      <option value="Paid">Paid</option>
-                      <option value="Pending Approval">Pending Approval</option>
-                    </select>
-                  </div>
-                  <div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Description</label><textarea className="w-full p-2 border border-[#e4ddd1] rounded-lg h-24 resize-none text-sm outline-none" style={{color:'#23282A',background:'#FEFDFB',fontFamily:"'Inter',sans-serif"}} required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="What was this for?" /></div>
-                 <div><label className="block text-[10px] font-bold text-[#5c6567] mb-1 uppercase tracking-[0.08em]">Payment Proof Image</label><input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*" /><div className={`flex items-center gap-2 p-3 border border-dashed border-[#e4ddd1] rounded-lg text-[#5c6567] text-xs cursor-pointer hover:bg-[#eef7f6] transition-colors ${attachedFileId ? 'bg-[#eef7f6] border-[#a6d9d3] text-[#146b60]' : ''}`} onClick={handleAttach}><Paperclip size={16}/><span>{attachedFileId ? 'Proof Attached!' : 'Click to upload payment proof'}</span>{attachedFileId && <CheckCircle size={16} className="text-[#1f8577] ml-auto"/>}</div>{attachedFileId && <div className="mt-2 h-20 rounded-lg overflow-hidden border border-[#e4ddd1] bg-[#eef7f6]"><OfflineImage src={attachedFileId} alt="Preview" className="w-full h-full object-contain" /></div>}</div>
-                 <button type="submit" className="w-full py-3 rounded-lg border-none text-white font-semibold flex items-center justify-center gap-2 shadow-[0_6px_16px_-6px_rgba(15,84,76,.55)] transition-all active:scale-[0.98] text-sm cursor-pointer" style={{background:'linear-gradient(155deg,#1f8577,#0f544c)',fontFamily:"'Inter',sans-serif"}}><CheckCircle size={18}/> Record Expense</button>
-              </form>
-           </div>
+              <div>
+                <h1 style={{
+                  fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                  fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                }}>
+                  New Expense
+                </h1>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {isOnline && (
+                <button onClick={handleMagicScan} style={{
+                  fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 9,
+                  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, color: '#fff',
+                  border: 'none', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                  boxShadow: `0 4px 10px -4px rgba(15,84,76,.4)`
+                }} disabled={isScanning}>
+                  {isScanning ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                  Magic Scan
+                </button>
+              )}
+              <button onClick={() => setIsAddModalOpen(false)} aria-label="Close" style={{
+                width: 32, height: 32, borderRadius: 8,
+                border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 8px' }}>
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Date</label>
+              <input type="date" style={inputStyle} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Amount ({currency})</label>
+              <input type="number" step="0.01" autoFocus required style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 16 }} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} placeholder="0.00" />
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Category</label>
+              <select style={inputStyle} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Payment Account</label>
+              <select style={inputStyle} value={formData.accountId} onChange={e => setFormData({...formData, accountId: e.target.value})}>
+                <option value={ACCOUNT_IDS.CASH_DRAWER}>Cash Drawer (1000)</option>
+                <option value={ACCOUNT_IDS.BANK}>Main Bank Account (1050)</option>
+                <option value={ACCOUNT_IDS.MOBILE_MONEY}>Mobile Money (1060)</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Status</label>
+              <select style={inputStyle} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                <option value="Paid">Paid</option>
+                <option value="Pending Approval">Pending Approval</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Description</label>
+              <textarea style={{ ...inputStyle, resize: 'none', minHeight: 80, lineHeight: 1.5 }} required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="What was this for?" />
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Payment Proof Image</label>
+              <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} accept="image/*" />
+              <div onClick={handleAttach} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+                border: `1.4px dashed ${hairline}`, borderRadius: 9, fontSize: 13, color: inkSoft,
+                cursor: 'pointer', transition: 'all .15s ease', background: attachedFileId ? teal[50] : paper
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { if (!attachedFileId) { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; } }}
+              >
+                <Paperclip size={16} />
+                <span style={{ fontWeight: 600 }}>{attachedFileId ? 'Proof Attached!' : 'Click to upload payment proof'}</span>
+                {attachedFileId && <CheckCircle size={16} style={{ color: teal[500], marginLeft: 'auto' }} />}
+              </div>
+              {attachedFileId && (
+                <div style={{ marginTop: 10, height: 80, borderRadius: 9, overflow: 'hidden', border: `1px solid ${teal[100]}`, background: teal[50] }}>
+                  <OfflineImage src={attachedFileId} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+              )}
+            </div>
+          </form>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 14, padding: '16px 28px',
+            borderTop: `1px solid ${hairline}`, background: paper
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: inkSoft }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: amber[500] }} />
+              Step 1 of 1 &mdash; Expense Entry
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" onClick={() => setIsAddModalOpen(false)} style={btnGhostStyle}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+                Cancel
+              </button>
+              <button type="submit" form="expense-form" style={btnPrimaryStyle}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}>
+                <CheckCircle size={16} /> Record Expense
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: 1600, margin: '0 auto', fontFamily: "'Inter','DM Sans',sans-serif", background: paper }}>
+      {renderAddModal()}
 
       {renderDetailModal()}
 
-      <div className="px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
-         <div><h1 className="text-lg font-bold text-slate-900 flex items-center gap-2 tracking-tight"><TrendingUp className="text-red-600" size={20}/> Expense Management</h1><p className="text-slate-500 text-xs mt-0.5">Track and analyze operational spending</p></div>
-         <div className="flex gap-2">
-            <button 
-                onClick={handleAiAudit}
-                disabled={isAiLoading}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white/70 border border-white/60 rounded-xl text-slate-600 font-bold hover:bg-white hover:border-red-300 text-xs shadow-sm transition-colors backdrop-blur-md disabled:opacity-50"
-            >
-                {isAiLoading ? <Loader2 className="animate-spin text-red-600" size={14} /> : <Sparkles className="text-red-600" size={14} />}
-                {aiAnalysis ? 'Update Audit' : 'AI Strategic Audit'}
+      <div style={{ padding: '16px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`
+            }}>
+              <TrendingUp size={18} color="#fff" />
+            </div>
+            <h1 style={{
+              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+              fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+            }}>
+              Expense Management
+            </h1>
+          </div>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: inkSoft }}>Track and analyze operational spending</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button 
+              onClick={handleAiAudit}
+              disabled={isAiLoading}
+              style={{ ...btnGhostStyle, fontSize: 12, padding: '7px 14px' }}
+          >
+              {isAiLoading ? <Loader2 className="animate-spin" size={14} style={{ color: teal[600] }} /> : <Sparkles size={14} style={{ color: teal[600] }} />}
+              {aiAnalysis ? 'Update Audit' : 'AI Strategic Audit'}
+          </button>
+          <button onClick={handleExport} style={{ ...btnGhostStyle, fontSize: 12, padding: '7px 14px' }}>
+            <Download size={14} /> Export
+          </button>
+          {canEdit && (
+            <button onClick={() => setIsAddModalOpen(true)} style={{
+              ...btnPrimaryStyle, fontSize: 12, padding: '7px 14px'
+            }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}>
+              <Plus size={14} /> New Expense
             </button>
-            <button onClick={handleExport} className="flex items-center gap-2 px-3 py-1.5 bg-white/70 border border-white/60 rounded-xl text-slate-600 font-bold hover:bg-white text-xs shadow-sm transition-colors backdrop-blur-md"><Download size={14}/> Export</button>
-            {canEdit && <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 text-xs transition-all"><Plus size={14}/> New Expense</button>}
-         </div>
+          )}
+        </div>
       </div>
 
       {aiAnalysis && (
-        <div className="mx-6 mb-6 bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 rounded-2xl p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                <PaymentIcon size={60} className="text-red-600" />
+        <div style={{ margin: '0 24px 16px', background: `linear-gradient(135deg, ${teal[50]}, ${amber[100]})`, border: `1px solid ${teal[100]}`, borderRadius: 14, padding: 18, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -10, right: -10, opacity: 0.08 }}>
+                <PaymentIcon size={80} style={{ color: teal[700] }} />
             </div>
-            <div className="flex items-start gap-3 relative">
-                <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0 border border-red-100">
-                    <Sparkles className="text-red-600" size={16} />
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, position: 'relative' }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8, background: paper,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: `1px solid ${teal[100]}`, flexShrink: 0
+                }}>
+                  <Sparkles size={16} style={{ color: teal[600] }} />
                 </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-[10px] font-black text-red-900 uppercase tracking-widest">AI Expenditure Audit Insight</h3>
-                        <button onClick={() => setAiAnalysis(null)} className="text-red-400 hover:text-red-600 transition-colors">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <h3 style={{ fontSize: 10, fontWeight: 800, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.12 }}>AI Expenditure Audit Insight</h3>
+                        <button onClick={() => setAiAnalysis(null)} style={{ background: 'none', border: 'none', color: teal[600], cursor: 'pointer', padding: 4 }}>
                             <X size={14} />
                         </button>
                     </div>
-                    <div className="prose prose-sm prose-red max-w-none text-red-900/80 font-medium text-[12px]">
+                    <div style={{ fontSize: 12.5, color: teal[800], lineHeight: 1.6 }}>
                         <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
                     </div>
                 </div>
@@ -353,57 +692,109 @@ date: getDefaultDate(),
         </div>
       )}
 
-      <div className="px-6 mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
+      <div style={{ padding: '0 24px 16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, flexShrink: 0 }}>
             {[
-                { label: `Total Spend (${dateFilter})`, value: `${currency}${stats.total.toLocaleString()}`, icon: TrendingUp, color: 'blue' },
-                { label: 'Avg Transaction', value: `${currency}${stats.avg.toLocaleString(undefined, {maximumFractionDigits: 0})}`, icon: Activity, color: 'purple' },
-                { label: 'Highest Category', value: stats.chartData.length > 0 ? stats.chartData[0].name : 'N/A', icon: Zap, color: 'amber' },
-                { label: 'Expense Count', value: stats.count, icon: FileText, color: 'rose' }
+                { label: `Total Spend (${dateFilter})`, value: `${currency}${stats.total.toLocaleString()}`, icon: TrendingUp },
+                { label: 'Avg Transaction', value: `${currency}${stats.avg.toLocaleString(undefined, {maximumFractionDigits: 0})}`, icon: Activity },
+                { label: 'Highest Category', value: stats.chartData.length > 0 ? stats.chartData[0].name : 'N/A', icon: Zap },
+                { label: 'Expense Count', value: stats.count, icon: FileText }
             ].map((kpi, idx) => (
-                <div key={idx} className="bg-white/80 backdrop-blur-md border border-slate-200/60 p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all group flex items-center gap-3">
-                    <div className={`p-2 rounded-xl bg-${kpi.color}-50 text-${kpi.color}-600 group-hover:scale-110 transition-transform`}>
+                <div key={idx} style={{
+                  background: paper, border: `1.4px solid ${teal[100]}`, padding: 14, borderRadius: 14,
+                  boxShadow: '0 1px 3px rgba(0,0,0,.04)', display: 'flex', alignItems: 'center', gap: 12
+                }}>
+                    <div style={{
+                      padding: 8, borderRadius: 8, background: teal[50], color: teal[600]
+                    }}>
                         <kpi.icon size={18}/>
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest truncate">{kpi.label}</p>
-                        <p className="text-sm font-black text-slate-900 tracking-tight truncate">{kpi.value}</p>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ fontSize: 9, fontWeight: 800, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1, margin: 0 }}>{kpi.label}</p>
+                        <p style={{ fontSize: 14, fontWeight: 800, color: teal[800], margin: '2px 0 0', fontFamily: "'JetBrains Mono', monospace" }}>{kpi.value}</p>
                     </div>
                 </div>
             ))}
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col lg:flex-row px-6 pb-6 gap-6 text-[12px]">
-         <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden min-w-0">
-            <div className="p-3 border-b border-slate-200/60 flex flex-wrap gap-3 items-center bg-slate-50/30 shrink-0">
-               <div className="relative flex-1 min-w-[200px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14}/><input type="text" placeholder="Search expenses..." className="w-full pl-9 pr-4 py-1.5 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}/></div>
-               <select className="p-1.5 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-medium text-slate-600" value={dateFilter} onChange={e => setDateFilter(e.target.value)}><option>This Month</option><option>Last Month</option><option>All Time</option></select>
-               <select className="p-1.5 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-medium text-slate-600" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'row', padding: '0 24px 24px', gap: 18 }}>
+         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: paper, border: `1.4px solid ${teal[100]}`, borderRadius: 14, overflow: 'hidden', minWidth: 0, boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', flexShrink: 0, background: teal[50] }}>
+               <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+                 <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} size={14} />
+                 <input type="text" placeholder="Search expenses..." style={{ ...inputStyle, paddingLeft: 30, fontSize: 12 }} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+               </div>
+               <select style={{ ...inputStyle, padding: '6px 30px 6px 10px', fontSize: 12, width: 'auto' }} value={dateFilter} onChange={e => setDateFilter(e.target.value as any)}>
+                 <option>This Month</option><option>Last Month</option><option>All Time</option>
+               </select>
+               <select style={{ ...inputStyle, padding: '6px 30px 6px 10px', fontSize: 12, width: 'auto' }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
+               </select>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-               <table className="w-full text-left">
-                  <thead className="bg-slate-50/80 backdrop-blur text-slate-500 font-bold border-b border-slate-200/60 sticky top-0 z-10 shadow-sm text-xs"><tr><th className="px-4 py-3 w-24">Date</th><th className="px-4 py-3">Description</th><th className="px-4 py-3">Category</th><th className="px-4 py-3 text-right">Amount</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
-                  <tbody className="divide-y divide-slate-100/50">
-                     {filteredExpenses.length === 0 && <tr><td colSpan={6} className="p-12 text-center text-slate-400 italic">No expenses found matching criteria.</td></tr>}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead style={{
+                    background: teal[50], color: inkSoft, fontWeight: 700,
+                    borderBottom: `1px solid ${hairline}`, position: 'sticky', top: 0, zIndex: 10, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.06
+                  }}>
+                    <tr>
+                      <th style={{ padding: '10px 14px', width: 110 }}>Date</th>
+                      <th style={{ padding: '10px 14px' }}>Description</th>
+                      <th style={{ padding: '10px 14px' }}>Category</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'right' }}>Amount</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'center' }}>Status</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'right' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody style={{ divideY: `1px solid ${hairline}` }}>
+                     {filteredExpenses.length === 0 && (
+                       <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: inkSoft, fontSize: 12 }}>No expenses found matching criteria.</td></tr>
+                     )}
                      {filteredExpenses.map(exp => (
-                        <tr key={exp.id} className="hover:bg-blue-50/30 cursor-pointer group transition-colors">
-                           <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap" onClick={() => setSelectedExpense(exp)}>{new Date(exp.date).toLocaleDateString()}</td>
-                           <td className="px-4 py-2.5 font-medium text-slate-800" onClick={() => setSelectedExpense(exp)}>{exp.description}<div className="text-[10px] text-slate-400 font-normal flex gap-1 items-center">{exp.id} • By {exp.recordedBy}{exp.paymentProofUrl && <Paperclip size={10} className="text-blue-500"/>}</div></td>
-                           <td className="px-4 py-2.5" onClick={() => setSelectedExpense(exp)}><span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">{exp.category}</span></td>
-                           <td className="px-4 py-2.5 text-right font-bold text-slate-900" onClick={() => setSelectedExpense(exp)}>
-                             <div>{currency}{exp.amount.toFixed(2)}</div>
+                        <tr key={exp.id} style={{ borderBottom: `1px solid ${hairline}`, cursor: 'pointer', transition: 'background .15s ease' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                           <td style={{ padding: '10px 14px', color: inkSoft, whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => setSelectedExpense(exp)}>{new Date(exp.date).toLocaleDateString()}</td>
+                           <td style={{ padding: '10px 14px', fontWeight: 600, color: ink, fontSize: 12 }} onClick={() => setSelectedExpense(exp)}>
+                             {exp.description}
+                             <div style={{ fontSize: 10, color: inkSoft, fontWeight: 500, display: 'flex', gap: 6, alignItems: 'center', marginTop: 2 }}>
+                               {exp.id} &bull; By {exp.recordedBy}
+                               {exp.paymentProofUrl && <Paperclip size={10} style={{ color: teal[600] }} />}
+                             </div>
                            </td>
-                           <td className="px-4 py-2.5 text-center" onClick={() => setSelectedExpense(exp)}>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border tracking-tight uppercase ${exp.status === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                           <td style={{ padding: '10px 14px' }} onClick={() => setSelectedExpense(exp)}>
+                             <span style={{
+                               display: 'inline-flex', alignItems: 'center', padding: '3px 8px', borderRadius: 6,
+                               fontSize: 10, fontWeight: 700, background: teal[50], color: teal[700], border: `1px solid ${teal[100]}`
+                             }}>
+                               {exp.category}
+                             </span>
+                           </td>
+                           <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: teal[800], fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }} onClick={() => setSelectedExpense(exp)}>
+                             {currency}{exp.amount.toFixed(2)}
+                           </td>
+                           <td style={{ padding: '10px 14px', textAlign: 'center' }} onClick={() => setSelectedExpense(exp)}>
+                                <span style={{
+                                  padding: '3px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700,
+                                  textTransform: 'uppercase', letterSpacing: 0.06, border: `1px solid ${exp.status === 'Paid' ? teal[100] : amber[100]}`,
+                                  background: exp.status === 'Paid' ? teal[50] : amber[100],
+                                  color: exp.status === 'Paid' ? teal[700] : amber[600]
+                                }}>
                                     {exp.status || 'Paid'}
                                 </span>
                            </td>
-                           <td className="px-4 py-2.5 text-right">
-                                <div className="flex justify-end gap-2">
+                           <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
                                     <button 
                                         onClick={() => setSelectedExpense(exp)}
-                                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        style={{
+                                          padding: 6, color: inkSoft, background: 'transparent',
+                                          border: 'none', borderRadius: 6, cursor: 'pointer',
+                                          display: 'flex', alignItems: 'center', transition: 'all .15s ease'
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = inkSoft; }}
                                         title="View Details"
                                     >
                                         <Eye size={14}/>
@@ -416,9 +807,49 @@ date: getDefaultDate(),
                </table>
             </div>
          </div>
-         <div className="w-full lg:w-80 bg-slate-50/50 rounded-2xl border border-slate-200/60 flex flex-col overflow-y-auto shadow-inner custom-scrollbar p-4 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm relative shrink-0"><h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-xs uppercase tracking-wider"><PieChart size={14}/> Category Breakdown</h3><div style={{ width: '100%', height: 192, minHeight: 150 }} className="relative"><ResponsiveContainer width="100%" height="100%" minHeight={150} minWidth={0}><RePieChart><Pie data={stats.chartData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={5} dataKey="value">{stats.chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}</Pie><ReTooltip formatter={(val: number) => `${currency}${val.toLocaleString()}`} /><Legend verticalAlign="bottom" height={36} iconSize={8} wrapperStyle={{fontSize:'10px'}}/></RePieChart></ResponsiveContainer><div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none pb-8"><div className="text-[9px] text-slate-400 font-bold uppercase">Total</div><div className="text-xs font-bold text-slate-800">{currency}{stats.total.toLocaleString()}</div></div></div></div>
-            <div className="space-y-3 shrink-0"><h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2"><AlertTriangle size={14} className="text-amber-500"/> Smart Insights</h3>{stats.highestExpense && <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm"><div className="text-[10px] font-bold text-red-600 uppercase mb-1 flex items-center gap-1"><ArrowUpRight size={10}/> High Value</div><p className="text-[12px] text-slate-600 mb-1 leading-tight">Largest single expense: <b>{stats.highestExpense.description}</b>.</p><div className="text-sm font-bold text-slate-900">{currency}{stats.highestExpense.amount.toLocaleString()}</div></div>}<div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm"><div className="text-[10px] font-bold text-blue-600 uppercase mb-1 flex items-center gap-1"><FileText size={10}/> Top Category</div><p className="text-[12px] text-slate-600 leading-tight"><b>{stats.chartData.length > 0 ? stats.chartData[0].name : 'None'}</b> accounts for the majority of costs.</p></div></div>
+         <div style={{ width: 300, background: teal[50], borderRadius: 14, border: `1.4px solid ${teal[100]}`, display: 'flex', flexDirection: 'column', overflowY: 'auto', boxShadow: '0 1px 3px rgba(0,0,0,.04)', padding: 16, gap: 16 }}>
+            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${teal[100]}`, padding: 16, position: 'relative', flexShrink: 0 }}>
+              <h3 style={{ fontWeight: 700, color: teal[800], marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08 }}>
+                <PieChart size={14} /> Category Breakdown
+              </h3>
+              <div style={{ width: '100%', height: 190, minHeight: 140, position: 'relative' }}>
+                <ResponsiveContainer width="100%" height="100%" minHeight={140} minWidth={0}>
+                  <RePieChart>
+                    <Pie data={stats.chartData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={5} dataKey="value">
+                      {stats.chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                    </Pie>
+                    <ReTooltip formatter={(val: number) => `${currency}${val.toLocaleString()}`} />
+                    <Legend verticalAlign="bottom" height={36} iconSize={8} wrapperStyle={{fontSize:'10px'}}/>
+                  </RePieChart>
+                </ResponsiveContainer>
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none', paddingBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: inkSoft, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.08 }}>Total</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: teal[800], fontFamily: "'JetBrains Mono', monospace" }}>{currency}{stats.total.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+              <h3 style={{ fontWeight: 700, color: teal[800], fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertTriangle size={14} style={{ color: amber[500] }} /> Smart Insights
+              </h3>
+              {stats.highestExpense && (
+                <div style={{ background: paper, padding: 14, borderRadius: 12, border: `1px solid ${teal[100]}` }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: teal[700], textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ArrowUpRight size={10} /> High Value
+                  </div>
+                  <p style={{ fontSize: 12, color: ink, marginBottom: 4, lineHeight: 1.5 }}>Largest single expense: <b>{stats.highestExpense.description}</b>.</p>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: teal[800], fontFamily: "'JetBrains Mono', monospace" }}>{currency}{stats.highestExpense.amount.toLocaleString()}</div>
+                </div>
+              )}
+              <div style={{ background: paper, padding: 14, borderRadius: 12, border: `1px solid ${teal[100]}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: teal[700], textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FileText size={10} /> Top Category
+                </div>
+                <p style={{ fontSize: 12, color: ink, lineHeight: 1.5 }}>
+                  <b>{stats.chartData.length > 0 ? stats.chartData[0].name : 'None'}</b> accounts for the majority of costs.
+                </p>
+              </div>
+            </div>
          </div>
       </div>
     </div>

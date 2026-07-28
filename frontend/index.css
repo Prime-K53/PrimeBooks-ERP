@@ -425,10 +425,10 @@
   .table-header {
     font-size: 10px;
     font-weight: 600;
-    color: #475569;
+    color: #0b3e39;
     padding: 8px 10px;
     line-height: 1.4;
-    background-color: #F1F5F9;
+    background-color: #eef7f6;
     text-transform: uppercase;
     letter-spacing: -0.025em;
   }
@@ -436,7 +436,7 @@
   .table-body-cell {
     font-size: 13px;
     font-weight: 400;
-    color: #1E293B;
+    color: #23282A;
     padding: 8px 10px;
     line-height: 1.5;
   }

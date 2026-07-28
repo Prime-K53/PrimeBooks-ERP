@@ -8,6 +8,50 @@ import type { Referral, ReferralReward } from '../../types/referral'
 import { cloudDb } from '../../services/cloudDb'
 
 import type { ReferralAnalytics, ReferralCampaign, ReversalRequest } from '../../types/referral-extended'
+
+const teal = { 50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a' }
+const amber = { 100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b' }
+const paper = '#FEFDFB'
+const ink = '#23282A'
+const inkSoft = '#5c6567'
+const hairline = '#e4ddd1'
+const danger = '#b5493f'
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  padding: '9px 12px', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+}
+
+const btnPrimaryStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  background: 'linear-gradient(155deg, #1f8577, #0f544c)',
+  color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+  boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
+  transition: 'all .15s ease'
+}
+
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+}
+
+const cardStyle: React.CSSProperties = {
+  background: paper, borderRadius: 14, border: `1px solid ${hairline}`,
+  boxShadow: '0 1px 3px rgba(0,0,0,.04)'
+}
+
 const Referrals: React.FC = () => {
   const { companyConfig, user, notify } = useAuth()
   const currency = companyConfig?.currencySymbol || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || '$'
@@ -257,34 +301,77 @@ const Referrals: React.FC = () => {
     }
   }
 
-  const TabButton = ({ view, label, count }: { view: typeof activeView; label: string; count?: number }) => (
-    <button
-      onClick={() => setActiveView(view)}
-      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeView === view ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-    >
-      {label}
-      {count !== undefined && count > 0 && (
-        <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded-full text-[9px]">{count}</span>
-      )}
-    </button>
-  )
+  const TabButton = ({ view, label, count }: { view: typeof activeView; label: string; count?: number }) => {
+    const isActive = activeView === view
+    return (
+      <button
+        onClick={() => setActiveView(view)}
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 12,
+          fontWeight: 600,
+          padding: '8px 16px',
+          borderRadius: 9,
+          border: isActive ? '1.4px solid transparent' : `1.4px solid ${hairline}`,
+          background: isActive ? 'linear-gradient(155deg, #1f8577, #0f544c)' : paper,
+          color: isActive ? '#fff' : inkSoft,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          transition: 'all .15s ease',
+          boxShadow: isActive ? '0 4px 12px -4px rgba(15,84,76,.4)' : 'none',
+        }}
+      >
+        {label}
+        {count !== undefined && count > 0 && (
+          <span style={{
+            padding: '1px 6px',
+            background: isActive ? 'rgba(255,255,255,.25)' : amber[100],
+            color: isActive ? '#fff' : amber[600],
+            borderRadius: 999,
+            fontSize: 9,
+            fontWeight: 700,
+          }}>{count}</span>
+        )}
+      </button>
+    )
+  }
 
   return (
-    <div className="h-full flex flex-col bg-[#F4F5F8] overflow-hidden font-sans">
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: paper, overflow: 'hidden', fontFamily: "'Inter', sans-serif", fontSize: 13.5, color: ink }}>
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shrink-0">
+      <div style={{
+        background: paper,
+        borderBottom: `1px solid ${hairline}`,
+        padding: '16px 32px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexShrink: 0,
+      }}>
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1, marginBottom: 4 }}>
             <span>Sales Flow</span>
-            <span className="text-slate-300">/</span>
-            <span className="text-blue-600">Referrals</span>
+            <span style={{ color: hairline }}>/</span>
+            <span style={{ color: teal[500] }}>Referrals</span>
           </div>
-          <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Award className="text-amber-500" size={24} />
+          <h1 style={{
+            fontFamily: "'DM Serif Display', 'Georgia', serif",
+            fontWeight: 400,
+            fontSize: 22,
+            margin: 0,
+            color: teal[800],
+            letterSpacing: 0.2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <Award size={24} style={{ color: amber[500] }} />
             Referral Management
           </h1>
         </div>
-        <div className="flex gap-3">
+        <div style={{ display: 'flex', gap: 8 }}>
           <TabButton view="referrals" label="Referrals" />
           <TabButton view="approvals" label="Approval Queue" count={stats.pendingRewards} />
           <TabButton view="analytics" label="Analytics" />
@@ -293,111 +380,94 @@ const Referrals: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-        <div className="max-w-6xl mx-auto space-y-4 animate-in fade-in duration-300">
+      <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+        <div style={{ maxWidth: 1152, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Error banner */}
           {loadError && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3 text-sm text-red-700">
-              <AlertTriangle size={20} className="text-red-500 shrink-0 mt-0.5" />
+            <div style={{
+              background: `${danger}10`,
+              border: `1px solid ${danger}30`,
+              borderRadius: 14,
+              padding: 16,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 12,
+              fontSize: 13,
+              color: danger,
+            }}>
+              <AlertTriangle size={20} style={{ color: danger, flexShrink: 0, marginTop: 2 }} />
               <div>
-                <p className="font-semibold">Referral data unavailable</p>
-                <p className="text-red-600 mt-1">{loadError}</p>
-                <p className="text-red-500 mt-1 text-xs">
-                  Check that the Supabase tables exist (run <code className="bg-red-100 px-1 rounded">database/supabase-referral-tables.sql</code> in your Supabase SQL editor).
+                <p style={{ fontWeight: 600 }}>Referral data unavailable</p>
+                <p style={{ marginTop: 4, color: danger }}>{loadError}</p>
+                <p style={{ marginTop: 4, fontSize: 12, color: danger }}>
+                  Check that the Supabase tables exist (run <code style={{ background: `${danger}15`, padding: '1px 4px', borderRadius: 4 }}>database/supabase-referral-tables.sql</code> in your Supabase SQL editor).
                 </p>
               </div>
             </div>
           )}
 
           {/* Stats (Referrals tab only) */}
-          {activeView === 'referrals' && <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
-            <div
-              onClick={() => setSelectedMetric(selectedMetric === 'total' ? 'All' : 'total')}
-              className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-blue-500 ${selectedMetric === 'total' ? 'ring-2 ring-blue-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-            >
-              <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
-                <Award size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Total Referrals</p>
-                <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{stats.total.toLocaleString()}</p>
-              </div>
+          {activeView === 'referrals' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
+              {[
+                { key: 'total', label: 'Total Referrals', value: stats.total, icon: Award, iconBg: teal[50], iconColor: teal[500], borderColor: teal[500] },
+                { key: 'active', label: 'Active', value: stats.active, icon: TrendingUp, iconBg: teal[50], iconColor: teal[500], borderColor: teal[500] },
+                { key: 'pendingInvoices', label: 'Pending Invoices', value: stats.pendingInvoices, icon: Clock, iconBg: amber[100], iconColor: amber[600], borderColor: teal[500], sub: `${currency}${stats.pendingInvoiceTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+                { key: 'converted', label: 'Converted', value: stats.converted, icon: CheckCircle, iconBg: teal[50], iconColor: teal[500], borderColor: teal[500] },
+                { key: 'pending', label: 'Pending Rewards', value: stats.pendingRewards, icon: Clock, iconBg: amber[100], iconColor: amber[600], borderColor: teal[500] },
+                { key: 'paid', label: 'Total Paid', value: null, icon: DollarSign, iconBg: teal[50], iconColor: teal[500], borderColor: teal[500], sub: `${currency}${stats.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+              ].map((stat) => (
+                <div
+                  key={stat.key}
+                  onClick={() => setSelectedMetric(selectedMetric === stat.key ? 'All' : stat.key)}
+                  style={{
+                    cursor: 'pointer',
+                    transition: 'all .2s ease',
+                    background: paper,
+                    padding: '8px 12px',
+                    borderRadius: 14,
+                    border: `1px solid ${hairline}`,
+                    borderLeft: `4px solid ${stat.borderColor}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    ...(selectedMetric === stat.key ? { boxShadow: '0 0 0 2px teal[500]', transform: 'scale(1.01)' } : {}),
+                  }}
+                  onMouseEnter={e => { if (selectedMetric !== stat.key) e.currentTarget.style.background = teal[50] }}
+                  onMouseLeave={e => { if (selectedMetric !== stat.key) e.currentTarget.style.background = paper }}
+                >
+                  <div style={{ padding: 6, background: stat.iconBg, color: stat.iconColor, borderRadius: 8 }}>
+                    <stat.icon size={20} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.02, lineHeight: 1, marginBottom: 2 }}>{stat.label}</p>
+                    <p style={{ fontSize: 18, fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{stat.value !== null ? stat.value.toLocaleString() : ''}</p>
+                    {stat.sub && <p style={{ fontSize: 10, color: inkSoft, fontWeight: 500 }}>{stat.sub}</p>}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div
-              onClick={() => setSelectedMetric(selectedMetric === 'active' ? 'All' : 'active')}
-              className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-blue-500 ${selectedMetric === 'active' ? 'ring-2 ring-blue-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-            >
-              <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
-                <TrendingUp size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Active</p>
-                <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{stats.active.toLocaleString()}</p>
-              </div>
-            </div>
-            <div
-              onClick={() => setSelectedMetric(selectedMetric === 'pendingInvoices' ? 'All' : 'pendingInvoices')}
-              className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-amber-500 ${selectedMetric === 'pendingInvoices' ? 'ring-2 ring-amber-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-            >
-              <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg">
-                <Clock size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Pending Invoices</p>
-                <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{stats.pendingInvoices.toLocaleString()}</p>
-                <p className="text-[10px] text-slate-400 font-medium">{currency}{stats.pendingInvoiceTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              </div>
-            </div>
-            <div
-              onClick={() => setSelectedMetric(selectedMetric === 'converted' ? 'All' : 'converted')}
-              className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-emerald-500 ${selectedMetric === 'converted' ? 'ring-2 ring-emerald-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-            >
-              <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
-                <CheckCircle size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Converted</p>
-                <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{stats.converted.toLocaleString()}</p>
-              </div>
-            </div>
-            <div
-              onClick={() => setSelectedMetric(selectedMetric === 'pending' ? 'All' : 'pending')}
-              className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-amber-500 ${selectedMetric === 'pending' ? 'ring-2 ring-amber-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-            >
-              <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg">
-                <Clock size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Pending Rewards</p>
-                <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{stats.pendingRewards.toLocaleString()}</p>
-              </div>
-            </div>
-            <div
-              onClick={() => setSelectedMetric(selectedMetric === 'paid' ? 'All' : 'paid')}
-              className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-emerald-500 ${selectedMetric === 'paid' ? 'ring-2 ring-emerald-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-            >
-              <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
-                <DollarSign size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Total Paid</p>
-                <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{stats.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              </div>
-            </div>
-          </div>}
+          )}
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48 }}>
+              <div style={{ width: 32, height: 32, border: '4px solid teal[50]', borderTop: '4px solid teal[500]', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
             </div>
           ) : activeView === 'referrals' ? (
             <>
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div style={{ position: 'relative' }}>
+                <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />
                 <input
                   type="text"
                   placeholder="Search referrals by customer name, code..."
-                  className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                  style={{
+                    ...inputStyle,
+                    paddingLeft: 44,
+                    paddingRight: 12,
+                    background: paper,
+                    border: `1.4px solid ${hairline}`,
+                    borderRadius: 9,
+                  }}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -405,113 +475,157 @@ const Referrals: React.FC = () => {
 
               {/* Action Menu Popup */}
               {showMenu && selectedReferral && (
-                <div ref={menuRef} className="bg-white border border-slate-200 rounded-xl shadow-xl p-2 fixed z-50 w-56" style={{ left: Math.min(menuPos.x, window.innerWidth - 240), top: Math.min(menuPos.y, window.innerHeight - 220) }}>
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 mb-1">
-                    <span className="text-xs font-bold text-slate-500 truncate">{selectedReferral.customerId}</span>
-                    <button onClick={() => { setShowMenu(false); setSelectedReferral(null) }} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+                <div ref={menuRef} style={{
+                  background: paper,
+                  border: `1px solid ${hairline}`,
+                  borderRadius: 14,
+                  boxShadow: '0 20px 60px -20px rgba(0,0,0,.5), 0 8px 24px -8px rgba(0,0,0,.3)',
+                  padding: 8,
+                  position: 'fixed',
+                  zIndex: 50,
+                  width: 224,
+                  left: Math.min(menuPos.x, window.innerWidth - 240),
+                  top: Math.min(menuPos.y, window.innerHeight - 220),
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: `1px solid ${hairline}`, marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedReferral.customerId}</span>
+                    <button onClick={() => { setShowMenu(false); setSelectedReferral(null) }} style={{ color: inkSoft, background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={14} /></button>
                   </div>
-                  <button onClick={handleViewDetails} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">
-                    <Eye size={16} className="text-blue-500" /> View Details
+                  <button onClick={handleViewDetails} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', fontSize: 12, fontWeight: 500, color: ink, background: 'none', border: 'none', cursor: 'pointer', borderRadius: 8, transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <Eye size={16} style={{ color: teal[500] }} /> View Details
                   </button>
-                  <button onClick={handleSendViaWhatsApp} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">
-                    <MessageSquare size={16} className="text-emerald-500" /> Send via WhatsApp
+                  <button onClick={handleSendViaWhatsApp} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', fontSize: 12, fontWeight: 500, color: ink, background: 'none', border: 'none', cursor: 'pointer', borderRadius: 8, transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <MessageSquare size={16} style={{ color: teal[500] }} /> Send via WhatsApp
                   </button>
-                  <button onClick={handleSendViaEmail} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">
-                    <Mail size={16} className="text-amber-500" /> Send via Email
+                  <button onClick={handleSendViaEmail} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', fontSize: 12, fontWeight: 500, color: ink, background: 'none', border: 'none', cursor: 'pointer', borderRadius: 8, transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <Mail size={16} style={{ color: amber[500] }} /> Send via Email
                   </button>
-                  <div className="border-t border-slate-100 mt-1 pt-1">
-                    <button onClick={handleRequestReversal} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                  <div style={{ borderTop: `1px solid ${hairline}`, marginTop: 4, paddingTop: 4 }}>
+                    <button onClick={handleRequestReversal} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', fontSize: 12, fontWeight: 500, color: danger, background: 'none', border: 'none', cursor: 'pointer', borderRadius: 8, transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = `${danger}10`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       <RotateCw size={16} /> Request Reversal
                     </button>
                   </div>
                 </div>
               )}
 
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative">
-                <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50">
-                  <h3 className="font-bold text-slate-900">All Referrals</h3>
+              <div style={{ ...cardStyle, overflow: 'hidden', position: 'relative' }}>
+                <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: `${teal[50]}80` }}>
+                  <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 16, color: ink }}>All Referrals</h3>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-slate-100">
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Referred Customer</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Referrer</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Invoice</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Amount</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Date</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Status</th>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                        {['Referred Customer', 'Referrer', 'Invoice', 'Amount', 'Date', 'Status'].map(h => (
+                          <th key={h} style={{ padding: '8px 12px', fontWeight: 600, fontSize: 10, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody style={{ borderTop: `1px solid ${hairline}` }}>
+                      {filteredReferrals.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ padding: '40px 12px', textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No referrals found.</td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {filteredReferrals.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="px-3 py-10 text-center text-slate-400 italic">No referrals found.</td>
-                          </tr>
-                        ) : (
-                          filteredReferrals.map((ref) => {
-                            const rewardAmt = allRewards.filter(r => r.referralId === ref.id).reduce((s, r) => s + r.amount, 0)
-                            const invoiceLabel = ref.pendingInvoiceId ? `#${ref.pendingInvoiceId.slice(-8)}` : ref.convertedInvoiceId ? `#${ref.convertedInvoiceId.slice(-8)}` : '-'
-                            const amountLabel = ref.pendingInvoiceAmount ? `${currency}${ref.pendingInvoiceAmount.toLocaleString()}` : rewardAmt > 0 ? `${currency}${rewardAmt.toLocaleString()}` : '-'
-                            const isSelected = selectedReferral?.id === ref.id
-                            return (
-                              <tr key={ref.id} onClick={e => { setSelectedReferral(ref); setMenuPos({ x: e.clientX, y: e.clientY }); setShowMenu(true) }} className={`cursor-pointer transition-colors ${isSelected ? 'bg-blue-50 ring-2 ring-blue-200' : 'hover:bg-slate-50/50'}`}>
-                                <td className="px-3 py-2 font-bold text-slate-900">{customers.find(c => c.id === ref.customerId)?.name || ref.customerId}</td>
-                                <td className="px-3 py-2 text-slate-500">{ref.referredByName || ref.referredById || '-'}</td>
-                                <td className="px-3 py-2 text-slate-500 font-mono text-xs">{invoiceLabel}</td>
-                                <td className="px-3 py-2 font-black text-emerald-600">{amountLabel}</td>
-                                <td className="px-3 py-2 text-slate-500">{new Date(ref.date).toLocaleDateString()}</td>
-                                <td className="px-6 py-4">
-                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${ref.status === 'active' && ref.pendingInvoiceId ? 'bg-amber-50 text-amber-700 border-amber-100' : ref.status === 'active' ? 'bg-blue-50 text-blue-700 border-blue-100' : ref.status === 'converted' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                    {ref.status === 'active' && ref.pendingInvoiceId ? 'Pending' : ref.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            )
-                          })
-                        )}
-                      </tbody>
-                    </table>
+                      ) : (
+                        filteredReferrals.map((ref) => {
+                          const rewardAmt = allRewards.filter(r => r.referralId === ref.id).reduce((s, r) => s + r.amount, 0)
+                          const invoiceLabel = ref.pendingInvoiceId ? `#${ref.pendingInvoiceId.slice(-8)}` : ref.convertedInvoiceId ? `#${ref.convertedInvoiceId.slice(-8)}` : '-'
+                          const amountLabel = ref.pendingInvoiceAmount ? `${currency}${ref.pendingInvoiceAmount.toLocaleString()}` : rewardAmt > 0 ? `${currency}${rewardAmt.toLocaleString()}` : '-'
+                          const isSelected = selectedReferral?.id === ref.id
+                          const statusLabel = ref.status === 'active' && ref.pendingInvoiceId ? 'Pending' : ref.status
+                          return (
+                            <tr key={ref.id} onClick={e => { setSelectedReferral(ref); setMenuPos({ x: e.clientX, y: e.clientY }); setShowMenu(true) }} style={{
+                              cursor: 'pointer',
+                              transition: 'background .15s',
+                              background: isSelected ? teal[50] : 'transparent',
+                            }} onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = `${teal[50]}60` }} onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
+                              <td style={{ padding: '8px 12px', fontWeight: 600, color: ink }}>{customers.find(c => c.id === ref.customerId)?.name || ref.customerId}</td>
+                              <td style={{ padding: '8px 12px', color: inkSoft }}>{ref.referredByName || ref.referredById || '-'}</td>
+                              <td style={{ padding: '8px 12px', color: inkSoft, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{invoiceLabel}</td>
+                              <td style={{ padding: '8px 12px', fontWeight: 700, color: teal[500] }}>{amountLabel}</td>
+                              <td style={{ padding: '8px 12px', color: inkSoft }}>{new Date(ref.date).toLocaleDateString()}</td>
+                              <td style={{ padding: '8px 16px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: 999,
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: 0.08,
+                                  border: `1px solid ${hairline}`,
+                                  background: teal[50],
+                                  color: teal[700],
+                                }}>{statusLabel}</span>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </>
           ) : activeView === 'approvals' ? (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <button onClick={() => setApprovalFilter('pending')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${approvalFilter === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Pending ({stats.pendingRewards})</button>
-                <button onClick={() => setApprovalFilter('approved')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${approvalFilter === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Approved & Paid</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button onClick={() => setApprovalFilter('pending')} style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '8px 16px',
+                  borderRadius: 9,
+                  border: `1.4px solid ${approvalFilter === 'pending' ? teal[500] : hairline}`,
+                  background: approvalFilter === 'pending' ? teal[500] : paper,
+                  color: approvalFilter === 'pending' ? '#fff' : inkSoft,
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.08,
+                }}>Pending ({stats.pendingRewards})</button>
+                <button onClick={() => setApprovalFilter('approved')} style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '8px 16px',
+                  borderRadius: 9,
+                  border: `1.4px solid ${approvalFilter === 'approved' ? teal[500] : hairline}`,
+                  background: approvalFilter === 'approved' ? teal[500] : paper,
+                  color: approvalFilter === 'approved' ? '#fff' : inkSoft,
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.08,
+                }}>Approved & Paid</button>
               </div>
 
               {approvalFilter === 'pending' ? (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50">
-                    <h3 className="font-bold text-slate-900">Reward Approval Queue</h3>
+                <div style={{ ...cardStyle, overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: `${teal[50]}80` }}>
+                    <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 16, color: ink }}>Reward Approval Queue</h3>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-100">
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Date</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Customer</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Invoice</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Amount</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest text-right">Actions</th>
+                        <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                          {['Date', 'Customer', 'Invoice', 'Amount', 'Actions'].map(h => (
+                            <th key={h} style={{ padding: '8px 12px', fontWeight: 600, fontSize: 10, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1 }}>{h}</th>
+                          ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-50">
+                      <tbody style={{ borderTop: `1px solid ${hairline}` }}>
                         {rewards.length === 0 ? (
-                          <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic">No pending rewards.</td></tr>
+                          <tr><td colSpan={5} style={{ padding: '40px 12px', textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No pending rewards.</td></tr>
                         ) : (
                           rewards.map((r) => (
-                            <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-3 py-2 text-slate-500">{new Date(r.date).toLocaleDateString()}</td>
-                              <td className="px-3 py-2 font-bold text-slate-900">{customers.find(c => c.id === r.customerId)?.name || r.customerId}</td>
-                              <td className="px-3 py-2 text-slate-500 font-mono text-xs">#{r.invoiceId?.slice(-8) || '-'}</td>
-                              <td className="px-3 py-2 font-black text-emerald-600">{currency}{r.amount.toLocaleString()}</td>
-                              <td className="px-6 py-4 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button onClick={() => handleApprove(r.id)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors" title="Approve"><CheckCircle size={18} /></button>
-                                  <button onClick={() => handleReject(r.id)} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors" title="Reject"><XCircle size={18} /></button>
+                            <tr key={r.id} style={{ transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = paper}>
+                              <td style={{ padding: '8px 12px', color: inkSoft }}>{new Date(r.date).toLocaleDateString()}</td>
+                              <td style={{ padding: '8px 12px', fontWeight: 600, color: ink }}>{customers.find(c => c.id === r.customerId)?.name || r.customerId}</td>
+                              <td style={{ padding: '8px 12px', color: inkSoft, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>#{r.invoiceId?.slice(-8) || '-'}</td>
+                              <td style={{ padding: '8px 12px', fontWeight: 700, color: teal[500] }}>{currency}{r.amount.toLocaleString()}</td>
+                              <td style={{ padding: '8px 16px', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                                  <button onClick={() => handleApprove(r.id)} style={{ padding: 8, background: teal[50], color: teal[500], borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[100]} onMouseLeave={e => e.currentTarget.style.background = teal[50]} title="Approve"><CheckCircle size={18} /></button>
+                                  <button onClick={() => handleReject(r.id)} style={{ padding: 8, background: `${danger}15`, color: danger, borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = `${danger}25`} onMouseLeave={e => e.currentTarget.style.background = `${danger}15`} title="Reject"><XCircle size={18} /></button>
                                 </div>
                               </td>
                             </tr>
@@ -522,34 +636,43 @@ const Referrals: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50">
-                    <h3 className="font-bold text-slate-900">Approved Referrals</h3>
+                <div style={{ ...cardStyle, overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: `${teal[50]}80` }}>
+                    <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 16, color: ink }}>Approved Referrals</h3>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-100">
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Date</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Customer</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Invoice</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Amount</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Status</th>
-                          <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Approved</th>
+                        <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                          {['Date', 'Customer', 'Invoice', 'Amount', 'Status', 'Approved'].map(h => (
+                            <th key={h} style={{ padding: '8px 12px', fontWeight: 600, fontSize: 10, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1 }}>{h}</th>
+                          ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-50">
+                      <tbody style={{ borderTop: `1px solid ${hairline}` }}>
                         {allRewards.filter(r => r.status === 'approved' || r.status === 'paid').length === 0 ? (
-                          <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400 italic">No approved rewards yet.</td></tr>
+                          <tr><td colSpan={6} style={{ padding: '40px 12px', textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No approved rewards yet.</td></tr>
                         ) : (
                           allRewards.filter(r => r.status === 'approved' || r.status === 'paid').map((r) => (
-                            <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-3 py-2 text-slate-500">{new Date(r.date).toLocaleDateString()}</td>
-                              <td className="px-3 py-2 font-bold text-slate-900">{customers.find(c => c.id === r.customerId)?.name || r.customerId}</td>
-                              <td className="px-3 py-2 text-slate-500 font-mono text-xs">#{r.invoiceId?.slice(-8) || '-'}</td>
-                              <td className="px-3 py-2 font-black text-emerald-600">{currency}{r.amount.toLocaleString()}</td>
-                              <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${r.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>{r.status}</span></td>
-                              <td className="px-3 py-2 text-slate-500 text-xs">{r.approvedAt ? new Date(r.approvedAt).toLocaleDateString() : '-'}</td>
+                            <tr key={r.id} style={{ transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = paper}>
+                              <td style={{ padding: '8px 12px', color: inkSoft }}>{new Date(r.date).toLocaleDateString()}</td>
+                              <td style={{ padding: '8px 12px', fontWeight: 600, color: ink }}>{customers.find(c => c.id === r.customerId)?.name || r.customerId}</td>
+                              <td style={{ padding: '8px 12px', color: inkSoft, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>#{r.invoiceId?.slice(-8) || '-'}</td>
+                              <td style={{ padding: '8px 12px', fontWeight: 700, color: teal[500] }}>{currency}{r.amount.toLocaleString()}</td>
+                              <td style={{ padding: '8px 12px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: 999,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: 0.08,
+                                  background: teal[50],
+                                  color: teal[700],
+                                }}>{r.status}</span>
+                              </td>
+                              <td style={{ padding: '8px 12px', color: inkSoft, fontSize: 12 }}>{r.approvedAt ? new Date(r.approvedAt).toLocaleDateString() : '-'}</td>
                             </tr>
                           ))
                         )}
@@ -560,114 +683,104 @@ const Referrals: React.FC = () => {
               )}
             </div>
           ) : activeView === 'analytics' ? (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-900 flex items-center gap-2"><BarChart3 size={18} className="text-blue-600" /> Referral Analytics</h3>
-                <div className="flex gap-2">
-                  <button onClick={() => handleGenerateAnalytics('weekly')} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Weekly</button>
-                  <button onClick={() => handleGenerateAnalytics('monthly')} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700">Monthly</button>
-                  <button onClick={() => handleGenerateAnalytics('yearly')} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Yearly</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 18, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <BarChart3 size={18} style={{ color: teal[500] }} /> Referral Analytics
+                </h3>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => handleGenerateAnalytics('weekly')} style={{ ...btnGhostStyle, padding: '6px 12px', fontSize: 12 }}>Weekly</button>
+                  <button onClick={() => handleGenerateAnalytics('monthly')} style={{ ...btnPrimaryStyle, padding: '6px 12px', fontSize: 12 }}>Monthly</button>
+                  <button onClick={() => handleGenerateAnalytics('yearly')} style={{ ...btnGhostStyle, padding: '6px 12px', fontSize: 12 }}>Yearly</button>
                 </div>
               </div>
 
               {analytics ? (
                 <>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div
-                      onClick={() => setSelectedMetric(selectedMetric === 'Conversion Rate' ? 'All' : 'Conversion Rate')}
-                      className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-blue-500 ${selectedMetric === 'Conversion Rate' ? 'ring-2 ring-blue-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-                    >
-                      <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
-                        <Percent size={20} />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                    {[
+                      { key: 'Conversion Rate', label: 'Conversion Rate', value: `${analytics.conversionRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}%`, icon: Percent, iconBg: teal[50], iconColor: teal[500], borderColor: teal[500] },
+                      { key: 'Total Rewards', label: 'Total Rewards', value: `${currency}${analytics.totalRewardsAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, icon: Users, iconBg: amber[100], iconColor: amber[600], borderColor: teal[500] },
+                      { key: 'Revenue Attributed', label: 'Revenue Attributed', value: `${currency}${analytics.revenueAttributed.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, icon: DollarSign, iconBg: teal[50], iconColor: teal[500], borderColor: teal[500] },
+                      { key: 'ROI', label: 'ROI', value: `${analytics.roi.toLocaleString(undefined, { minimumFractionDigits: 2 })}%`, icon: BarChart3, iconBg: teal[50], iconColor: teal[500], borderColor: teal[500] },
+                    ].map((stat) => (
+                      <div
+                        key={stat.key}
+                        onClick={() => setSelectedMetric(selectedMetric === stat.key ? 'All' : stat.key)}
+                        style={{
+                          cursor: 'pointer',
+                          transition: 'all .2s ease',
+                          background: paper,
+                          padding: '8px 12px',
+                          borderRadius: 14,
+                          border: `1px solid ${hairline}`,
+                          borderLeft: `4px solid ${stat.borderColor}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          ...(selectedMetric === stat.key ? { boxShadow: '0 0 0 2px teal[500]', transform: 'scale(1.01)' } : {}),
+                        }}
+                        onMouseEnter={e => { if (selectedMetric !== stat.key) e.currentTarget.style.background = teal[50] }}
+                        onMouseLeave={e => { if (selectedMetric !== stat.key) e.currentTarget.style.background = paper }}
+                      >
+                        <div style={{ padding: 6, background: stat.iconBg, color: stat.iconColor, borderRadius: 8 }}>
+                          <stat.icon size={20} />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.02, lineHeight: 1, marginBottom: 4 }}>{stat.label}</p>
+                          <p style={{ fontSize: 18, fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{stat.value}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Conversion Rate</p>
-                        <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{analytics.conversionRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}%</p>
-                      </div>
-                    </div>
-                    <div
-                      onClick={() => setSelectedMetric(selectedMetric === 'Total Rewards' ? 'All' : 'Total Rewards')}
-                      className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-amber-500 ${selectedMetric === 'Total Rewards' ? 'ring-2 ring-amber-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-                    >
-                      <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg">
-                        <Users size={20} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total Rewards</p>
-                        <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{analytics.totalRewardsAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                      </div>
-                    </div>
-                    <div
-                      onClick={() => setSelectedMetric(selectedMetric === 'Revenue Attributed' ? 'All' : 'Revenue Attributed')}
-                      className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-emerald-500 ${selectedMetric === 'Revenue Attributed' ? 'ring-2 ring-emerald-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-                    >
-                      <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <DollarSign size={20} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Revenue Attributed</p>
-                        <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{analytics.revenueAttributed.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                      </div>
-                    </div>
-                    <div
-                      onClick={() => setSelectedMetric(selectedMetric === 'ROI' ? 'All' : 'ROI')}
-                      className={`cursor-pointer transition-all duration-200 bg-white p-2 md:p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 border-l-4 border-l-emerald-500 ${selectedMetric === 'ROI' ? 'ring-2 ring-emerald-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-                    >
-                      <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <BarChart3 size={20} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">ROI</p>
-                        <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{analytics.roi.toLocaleString(undefined, { minimumFractionDigits: 2 })}%</p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
 
                   {analytics.topReferrers && analytics.topReferrers.length > 0 && (
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                      <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50">
-                        <h3 className="font-bold text-slate-900 flex items-center gap-2"><Users size={16} className="text-blue-500" /> Top Referrers</h3>
+                    <div style={{ ...cardStyle, overflow: 'hidden' }}>
+                      <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: `${teal[50]}80` }}>
+                        <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 16, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Users size={16} style={{ color: teal[500] }} /> Top Referrers
+                        </h3>
                       </div>
-                      <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                         {analytics.topReferrers.map((t, i) => {
                           const rank = i + 1
-                          const tier = rank === 1 ? 'diamond' : rank === 2 ? 'gold' : rank === 3 ? 'silver' : rank === 4 ? 'bronze' : null
-                          const cardStyle = tier === 'diamond'
-                            ? 'bg-gradient-to-br from-[#1a0533] via-[#2d1b69] to-[#0d0a2e] text-white shadow-2xl shadow-purple-900/30 ring-1 ring-purple-400/20'
-                            : tier === 'gold'
-                            ? 'bg-gradient-to-br from-[#1a1200] via-[#3d2e00] to-[#1a0e00] text-white shadow-2xl shadow-amber-900/30 ring-1 ring-amber-400/20'
-                            : tier === 'silver'
-                            ? 'bg-gradient-to-br from-[#0f1114] via-[#1e2126] to-[#141619] text-white shadow-2xl shadow-slate-900/30 ring-1 ring-slate-400/20'
-                            : tier === 'bronze'
-                            ? 'bg-gradient-to-br from-[#1a0a00] via-[#3d1f08] to-[#1a0e00] text-white shadow-2xl shadow-orange-900/30 ring-1 ring-orange-400/20'
-                            : 'bg-white border border-slate-200 text-slate-700 shadow-sm'
-                          const glow = tier === 'diamond' ? 'shadow-[0_0_30px_-5px_rgba(168,85,247,0.4)]' :
-                            tier === 'gold' ? 'shadow-[0_0_30px_-5px_rgba(251,191,36,0.4)]' :
-                            tier === 'silver' ? 'shadow-[0_0_30px_-5px_rgba(148,163,184,0.3)]' :
-                            tier === 'bronze' ? 'shadow-[0_0_30px_-5px_rgba(251,146,60,0.35)]' : ''
-                          const label = tier === 'diamond' ? 'Diamond' : tier === 'gold' ? 'Gold' : tier === 'silver' ? 'Silver' : tier === 'bronze' ? 'Bronze' : ''
-                          const labelColor = tier === 'diamond' ? 'text-purple-300' : tier === 'gold' ? 'text-amber-300' : tier === 'silver' ? 'text-slate-300' : tier === 'bronze' ? 'text-orange-300' : ''
-                          const Icon = tier === 'diamond' ? Gem : tier === 'gold' ? Trophy : tier === 'silver' ? Medal : tier === 'bronze' ? Medal : Users
-                          const iconBg = tier === 'diamond' ? 'bg-gradient-to-br from-purple-400/30 to-pink-400/30' :
-                            tier === 'gold' ? 'bg-gradient-to-br from-amber-400/30 to-yellow-400/30' :
-                            tier === 'silver' ? 'bg-gradient-to-br from-slate-400/30 to-slate-300/30' :
-                            tier === 'bronze' ? 'bg-gradient-to-br from-orange-400/30 to-amber-400/30' :
-                            'bg-blue-50'
                           return (
-                            <div key={t.customerId || i} className={`${cardStyle} ${glow} rounded-2xl p-5 flex flex-col items-center text-center transition-all duration-300 hover:scale-[1.03] hover:-translate-y-0.5 relative overflow-hidden`}>
-                              <div className={`absolute inset-0 opacity-[0.04] ${tier ? 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-transparent to-transparent' : ''}`} />
-                              {label && (
-                                <span className={`absolute top-2.5 right-3 text-[9px] font-black uppercase tracking-[0.2em] ${labelColor} opacity-60`}>#{rank}</span>
+                            <div key={t.customerId || i} style={{
+                              background: paper,
+                              border: `1px solid ${hairline}`,
+                              borderLeft: `4px solid ${teal[500]}`,
+                              borderRadius: 14,
+                              padding: 20,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              textAlign: 'center',
+                              transition: 'all .3s ease',
+                            }}
+                              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px -8px rgba(0,0,0,.12)' }}
+                              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+                            >
+                              {rank <= 3 && (
+                                <span style={{
+                                  position: 'absolute',
+                                  top: 12,
+                                  right: 12,
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  color: teal[500],
+                                  textTransform: 'uppercase',
+                                  letterSpacing: 0.1,
+                                }}>#{rank}</span>
                               )}
-                              <div className={`p-2.5 rounded-2xl mb-3 ${iconBg} backdrop-blur-sm`}>
-                                <Icon size={24} className={tier ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : 'text-blue-500'} />
+                              <div style={{ padding: 10, background: teal[50], borderRadius: 12, marginBottom: 12 }}>
+                                <Users size={24} style={{ color: teal[500] }} />
                               </div>
-                              <p className={`font-bold text-sm leading-tight tracking-tight ${tier ? 'text-white' : 'text-slate-900'}`}>{t.customerName || t.customerId}</p>
-                              {label && <p className={`text-[9px] font-black uppercase tracking-[0.25em] mt-0.5 ${labelColor}`}>{label}</p>}
-                              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/10 w-full justify-center">
-                                <span className={`text-[11px] font-semibold ${tier ? 'text-white/70' : 'text-slate-500'}`}>{t.referralCount} referrals</span>
-                                <span className={`w-px h-3 ${tier ? 'bg-white/10' : 'bg-slate-200'}`} />
-                                <span className={`text-[11px] font-black ${tier ? 'text-white' : 'text-emerald-600'}`}>{currency}{(t.rewardsAmount || 0).toLocaleString()}</span>
+                              <p style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.3, color: ink }}>{t.customerName || t.customerId}</p>
+                              <p style={{ fontSize: 9, fontWeight: 700, color: teal[500], textTransform: 'uppercase', letterSpacing: 0.1, marginTop: 4 }}>Top Referrer</p>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${hairline}`, width: '100%', justifyContent: 'center' }}>
+                                <span style={{ fontSize: 11, fontWeight: 500, color: inkSoft }}>{t.referralCount} referrals</span>
+                                <span style={{ width: 1, height: 12, background: hairline }} />
+                                <span style={{ fontSize: 11, fontWeight: 700, color: teal[500], fontFamily: "'JetBrains Mono', monospace" }}>{currency}{(t.rewardsAmount || 0).toLocaleString()}</span>
                               </div>
                             </div>
                           )
@@ -677,31 +790,28 @@ const Referrals: React.FC = () => {
                   )}
 
                   {analyticsHistory.length > 0 && (
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                      <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50">
-                        <h3 className="font-bold text-slate-900">Analytics History</h3>
+                    <div style={{ ...cardStyle, overflow: 'hidden' }}>
+                      <div style={{ padding: '12px 16px', borderBottom: `1px solid ${hairline}`, background: `${teal[50]}80` }}>
+                        <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 16, color: ink }}>Analytics History</h3>
                       </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                           <thead>
-                            <tr className="bg-slate-50 border-b border-slate-100">
-                              <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Period</th>
-                              <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Referrals</th>
-                              <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Converted</th>
-                              <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Rate</th>
-                              <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Rewards</th>
-                              <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">ROI</th>
+                            <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                              {['Period', 'Referrals', 'Converted', 'Rate', 'Rewards', 'ROI'].map(h => (
+                                <th key={h} style={{ padding: '8px 12px', fontWeight: 600, fontSize: 10, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1 }}>{h}</th>
+                              ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-50">
+                          <tbody style={{ borderTop: `1px solid ${hairline}` }}>
                             {analyticsHistory.map(a => (
-                              <tr key={a.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-3 py-2 font-bold text-slate-900">{new Date(a.periodStart).toLocaleDateString()} - {new Date(a.periodEnd).toLocaleDateString()}</td>
-                                <td className="px-3 py-2 text-slate-500">{a.totalReferrals}</td>
-                                <td className="px-3 py-2 text-slate-500">{a.convertedReferrals}</td>
-                                <td className="px-3 py-2 font-bold text-slate-900">{a.conversionRate}%</td>
-                                <td className="px-3 py-2 font-black text-emerald-600">{currency}{a.totalRewardsAmount.toLocaleString()}</td>
-                                <td className="px-3 py-2 font-bold text-slate-900">{a.roi}%</td>
+                              <tr key={a.id} style={{ transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = paper}>
+                                <td style={{ padding: '8px 12px', fontWeight: 600, color: ink }}>{new Date(a.periodStart).toLocaleDateString()} - {new Date(a.periodEnd).toLocaleDateString()}</td>
+                                <td style={{ padding: '8px 12px', color: inkSoft, fontFamily: "'JetBrains Mono', monospace" }}>{a.totalReferrals}</td>
+                                <td style={{ padding: '8px 12px', color: inkSoft, fontFamily: "'JetBrains Mono', monospace" }}>{a.convertedReferrals}</td>
+                                <td style={{ padding: '8px 12px', fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{a.conversionRate}%</td>
+                                <td style={{ padding: '8px 12px', fontWeight: 700, color: teal[500], fontFamily: "'JetBrains Mono', monospace" }}>{currency}{a.totalRewardsAmount.toLocaleString()}</td>
+                                <td style={{ padding: '8px 12px', fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{a.roi}%</td>
                               </tr>
                             ))}
                           </tbody>
@@ -711,106 +821,126 @@ const Referrals: React.FC = () => {
                   )}
                 </>
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-                  <BarChart3 size={48} className="text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500 font-medium">No analytics data yet. Generate a report to see insights.</p>
+                <div style={{ ...cardStyle, padding: 48, textAlign: 'center' }}>
+                  <BarChart3 size={48} style={{ color: inkSoft, margin: '0 auto 16px' }} />
+                  <p style={{ color: inkSoft, fontWeight: 500 }}>No analytics data yet. Generate a report to see insights.</p>
                 </div>
               )}
             </div>
           ) : activeView === 'campaigns' ? (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-900 flex items-center gap-2"><Award size={18} className="text-amber-500" /> Referral Campaigns</h3>
-                <button onClick={() => setShowCreateCampaign(!showCreateCampaign)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 18, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Award size={18} style={{ color: amber[500] }} /> Referral Campaigns
+                </h3>
+                <button onClick={() => setShowCreateCampaign(!showCreateCampaign)} style={{
+                  ...btnPrimaryStyle,
+                  padding: '8px 16px',
+                  fontSize: 12,
+                }}>
                   {showCreateCampaign ? 'Cancel' : 'New Campaign'}
                 </button>
               </div>
 
               {showCreateCampaign && (
-                <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-                  <h4 className="font-bold text-slate-900">New Campaign</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                <div style={{ ...cardStyle, padding: 24 }}>
+                  <h4 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 16, color: ink, marginBottom: 16 }}>New Campaign</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Name *</label>
-                      <input type="text" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={newCampaign.name} onChange={e => setNewCampaign({ ...newCampaign, name: e.target.value })} />
+                      <label style={labelStyle}>Name *</label>
+                      <input type="text" style={inputStyle} value={newCampaign.name} onChange={e => setNewCampaign({ ...newCampaign, name: e.target.value })} />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Reward Type</label>
-                      <select className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={newCampaign.rewardType} onChange={e => setNewCampaign({ ...newCampaign, rewardType: e.target.value as any })}>
+                      <label style={labelStyle}>Reward Type</label>
+                      <select style={{ ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 30, cursor: 'pointer' }} value={newCampaign.rewardType} onChange={e => setNewCampaign({ ...newCampaign, rewardType: e.target.value as any })}>
                         <option value="fixed">Fixed</option>
                         <option value="percentage">Percentage</option>
                         <option value="hybrid">Hybrid</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Start Date *</label>
-                      <input type="date" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={newCampaign.startDate} onChange={e => setNewCampaign({ ...newCampaign, startDate: e.target.value })} />
+                      <label style={labelStyle}>Start Date *</label>
+                      <input type="date" style={inputStyle} value={newCampaign.startDate} onChange={e => setNewCampaign({ ...newCampaign, startDate: e.target.value })} />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">End Date</label>
-                      <input type="date" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={newCampaign.endDate} onChange={e => setNewCampaign({ ...newCampaign, endDate: e.target.value })} />
+                      <label style={labelStyle}>End Date</label>
+                      <input type="date" style={inputStyle} value={newCampaign.endDate} onChange={e => setNewCampaign({ ...newCampaign, endDate: e.target.value })} />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Reward Value</label>
-                      <input type="number" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={newCampaign.rewardValue} onChange={e => setNewCampaign({ ...newCampaign, rewardValue: parseFloat(e.target.value) || 0 })} />
+                      <label style={labelStyle}>Reward Value</label>
+                      <input type="number" style={inputStyle} value={newCampaign.rewardValue} onChange={e => setNewCampaign({ ...newCampaign, rewardValue: parseFloat(e.target.value) || 0 })} />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Reward %</label>
-                      <input type="number" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={newCampaign.rewardPercentage} onChange={e => setNewCampaign({ ...newCampaign, rewardPercentage: parseFloat(e.target.value) || 0 })} />
+                      <label style={labelStyle}>Reward %</label>
+                      <input type="number" style={inputStyle} value={newCampaign.rewardPercentage} onChange={e => setNewCampaign({ ...newCampaign, rewardPercentage: parseFloat(e.target.value) || 0 })} />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Bonus Multiplier</label>
-                      <input type="number" step="0.1" min="1" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={newCampaign.bonusMultiplier} onChange={e => setNewCampaign({ ...newCampaign, bonusMultiplier: parseFloat(e.target.value) || 1 })} />
+                      <label style={labelStyle}>Bonus Multiplier</label>
+                      <input type="number" step="0.1" min="1" style={inputStyle} value={newCampaign.bonusMultiplier} onChange={e => setNewCampaign({ ...newCampaign, bonusMultiplier: parseFloat(e.target.value) || 1 })} />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Min Purchase</label>
-                      <input type="number" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={newCampaign.minPurchaseAmount} onChange={e => setNewCampaign({ ...newCampaign, minPurchaseAmount: parseFloat(e.target.value) || 0 })} />
+                      <label style={labelStyle}>Min Purchase</label>
+                      <input type="number" style={inputStyle} value={newCampaign.minPurchaseAmount} onChange={e => setNewCampaign({ ...newCampaign, minPurchaseAmount: parseFloat(e.target.value) || 0 })} />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Description</label>
-                    <textarea className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" rows={2} value={newCampaign.description} onChange={e => setNewCampaign({ ...newCampaign, description: e.target.value })} />
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={labelStyle}>Description</label>
+                    <textarea style={{ ...inputStyle, resize: 'none', minHeight: 66 }} rows={2} value={newCampaign.description} onChange={e => setNewCampaign({ ...newCampaign, description: e.target.value })} />
                   </div>
-                  <button onClick={handleCreateCampaign} className="px-6 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">Create Campaign</button>
+                  <button onClick={handleCreateCampaign} style={{ ...btnPrimaryStyle }}>Create Campaign</button>
                 </div>
               )}
 
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+              <div style={{ ...cardStyle, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100">
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Name</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Status</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Dates</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Reward</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Given / Max</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Actions</th>
+                      <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                        {['Name', 'Status', 'Dates', 'Reward', 'Given / Max', 'Actions'].map(h => (
+                          <th key={h} style={{ padding: '8px 12px', fontWeight: 600, fontSize: 10, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1 }}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
+                    <tbody style={{ borderTop: `1px solid ${hairline}` }}>
                       {campaigns.length === 0 ? (
-                        <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400 italic">No campaigns created yet.</td></tr>
+                        <tr><td colSpan={6} style={{ padding: '40px 12px', textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No campaigns created yet.</td></tr>
                       ) : (
-                        campaigns.map(c => (
-                          <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-3 py-2 font-bold text-slate-900">{c.name}</td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${c.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : c.status === 'draft' ? 'bg-slate-50 text-slate-500 border-slate-100' : c.status === 'paused' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>{c.status}</span>
-                            </td>
-                            <td className="px-3 py-2 text-slate-500 text-xs">{new Date(c.startDate).toLocaleDateString()}{c.endDate ? ` - ${new Date(c.endDate).toLocaleDateString()}` : ''}</td>
-                            <td className="px-3 py-2 font-bold text-slate-900">{c.rewardType === 'fixed' ? currency + c.rewardValue : c.rewardType === 'percentage' ? `${c.rewardPercentage}%` : `${currency + c.rewardValue} + ${c.rewardPercentage}%`}{c.bonusMultiplier && c.bonusMultiplier > 1 ? ` x${c.bonusMultiplier}` : ''}</td>
-                            <td className="px-3 py-2 text-slate-500">{c.totalRewardsGiven} / {c.maxTotalRewards || '∞'}</td>
-                            <td className="px-6 py-4">
-                              <div className="flex gap-1">
-                                {c.status === 'draft' && <button onClick={async () => { await referralService.updateCampaignStatus(c.id, 'active'); loadData(); notify('Campaign activated', 'success'); }} className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold hover:bg-emerald-100">Activate</button>}
-                                {c.status === 'active' && <button onClick={async () => { await referralService.updateCampaignStatus(c.id, 'paused'); loadData(); }} className="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[10px] font-bold hover:bg-amber-100">Pause</button>}
-                                {c.status === 'paused' && <button onClick={async () => { await referralService.updateCampaignStatus(c.id, 'active'); loadData(); }} className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold hover:bg-emerald-100">Resume</button>}
-                                {(c.status === 'active' || c.status === 'paused') && <button onClick={async () => { await referralService.updateCampaignStatus(c.id, 'completed'); loadData(); }} className="px-2 py-1 bg-rose-50 text-rose-600 rounded text-[10px] font-bold hover:bg-rose-100">End</button>}
-                              </div>
-                            </td>
-                          </tr>
-                        ))
+                        campaigns.map(c => {
+                          const statusLabel = c.status === 'active' ? 'Active' : c.status === 'draft' ? 'Draft' : c.status === 'paused' ? 'Paused' : 'Completed'
+                          const statusColor = c.status === 'active' ? teal[500] : c.status === 'draft' ? inkSoft : c.status === 'paused' ? amber[500] : teal[500]
+                          const statusBg = c.status === 'active' ? teal[50] : c.status === 'draft' ? `${hairline}30` : c.status === 'paused' ? amber[100] : teal[50]
+                          const statusBorder = c.status === 'active' ? teal[100] : c.status === 'draft' ? hairline : c.status === 'paused' ? amber[100] : teal[100]
+                          return (
+                            <tr key={c.id} style={{ transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = paper}>
+                              <td style={{ padding: '8px 12px', fontWeight: 600, color: ink }}>{c.name}</td>
+                              <td style={{ padding: '8px 16px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: 999,
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: 0.08,
+                                  background: statusBg,
+                                  color: statusColor,
+                                  border: `1px solid ${statusBorder}`,
+                                }}>{statusLabel}</span>
+                              </td>
+                              <td style={{ padding: '8px 12px', color: inkSoft, fontSize: 12 }}>{new Date(c.startDate).toLocaleDateString()}{c.endDate ? ` - ${new Date(c.endDate).toLocaleDateString()}` : ''}</td>
+                              <td style={{ padding: '8px 12px', fontWeight: 600, color: ink }}>{c.rewardType === 'fixed' ? currency + c.rewardValue : c.rewardType === 'percentage' ? `${c.rewardPercentage}%` : `${currency + c.rewardValue} + ${c.rewardPercentage}%`}{c.bonusMultiplier && c.bonusMultiplier > 1 ? ` x${c.bonusMultiplier}` : ''}</td>
+                              <td style={{ padding: '8px 12px', color: inkSoft }}>{c.totalRewardsGiven} / {c.maxTotalRewards || '∞'}</td>
+                              <td style={{ padding: '8px 16px' }}>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  {c.status === 'draft' && <button onClick={async () => { await referralService.updateCampaignStatus(c.id, 'active'); loadData(); notify('Campaign activated', 'success'); }} style={{ padding: '4px 8px', background: teal[50], color: teal[500], borderRadius: 6, border: 'none', fontSize: 10, fontWeight: 600, cursor: 'pointer', transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[100]} onMouseLeave={e => e.currentTarget.style.background = teal[50]}>Activate</button>}
+                                  {c.status === 'active' && <button onClick={async () => { await referralService.updateCampaignStatus(c.id, 'paused'); loadData(); }} style={{ padding: '4px 8px', background: amber[100], color: amber[600], borderRadius: 6, border: 'none', fontSize: 10, fontWeight: 600, cursor: 'pointer', transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = amber[300]} onMouseLeave={e => e.currentTarget.style.background = amber[100]}>Pause</button>}
+                                  {c.status === 'paused' && <button onClick={async () => { await referralService.updateCampaignStatus(c.id, 'active'); loadData(); }} style={{ padding: '4px 8px', background: teal[50], color: teal[500], borderRadius: 6, border: 'none', fontSize: 10, fontWeight: 600, cursor: 'pointer', transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[100]} onMouseLeave={e => e.currentTarget.style.background = teal[50]}>Resume</button>}
+                                  {(c.status === 'active' || c.status === 'paused') && <button onClick={async () => { await referralService.updateCampaignStatus(c.id, 'completed'); loadData(); }} style={{ padding: '4px 8px', background: `${danger}15`, color: danger, borderRadius: 6, border: 'none', fontSize: 10, fontWeight: 600, cursor: 'pointer', transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = `${danger}25`} onMouseLeave={e => e.currentTarget.style.background = `${danger}15`}>End</button>}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })
                       )}
                     </tbody>
                   </table>
@@ -818,43 +948,60 @@ const Referrals: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2"><RotateCw size={18} className="text-rose-500" /> Reward Reversals</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 18, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <RotateCw size={18} style={{ color: danger }} /> Reward Reversals
+              </h3>
 
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+              <div style={{ ...cardStyle, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100">
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Date</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Reason</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Requested By</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Status</th>
-                        <th className="px-3 py-2 font-bold text-slate-500 uppercase text-[10px] tracking-widest text-right">Actions</th>
+                      <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                        {['Date', 'Reason', 'Requested By', 'Status', 'Actions'].map(h => (
+                          <th key={h} style={{ padding: '8px 12px', fontWeight: 600, fontSize: 10, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1 }}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
+                    <tbody style={{ borderTop: `1px solid ${hairline}` }}>
                       {reversals.length === 0 ? (
-                        <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic">No reversals recorded.</td></tr>
+                        <tr><td colSpan={5} style={{ padding: '40px 12px', textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No reversals recorded.</td></tr>
                       ) : (
-                        reversals.map(r => (
-                          <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-3 py-2 text-slate-500">{new Date(r.requestedAt).toLocaleDateString()}</td>
-                            <td className="px-3 py-2 text-slate-900 font-medium">{r.reason}</td>
-                            <td className="px-3 py-2 text-slate-500">{r.requestedBy}</td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${r.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' : r.status === 'completed' ? 'bg-rose-50 text-rose-700 border-rose-100' : r.status === 'rejected' ? 'bg-slate-50 text-slate-500 border-slate-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>{r.status}</span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              {r.status === 'pending' && (
-                                <div className="flex items-center justify-end gap-2">
-                                  <button onClick={() => handleApproveReversal(r.id)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors" title="Approve"><CheckCircle size={18} /></button>
-                                  <button onClick={() => handleRejectReversal(r.id)} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors" title="Reject"><XCircle size={18} /></button>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        ))
+                        reversals.map(r => {
+                          const statusLabel = r.status === 'pending' ? 'Pending' : r.status === 'completed' ? 'Completed' : r.status === 'rejected' ? 'Rejected' : r.status
+                          const statusColor = r.status === 'pending' ? amber[600] : r.status === 'completed' ? danger : r.status === 'rejected' ? inkSoft : teal[500]
+                          const statusBg = r.status === 'pending' ? amber[100] : r.status === 'completed' ? `${danger}15` : r.status === 'rejected' ? `${hairline}30` : teal[50]
+                          const statusBorder = r.status === 'pending' ? amber[100] : r.status === 'completed' ? `${danger}30` : r.status === 'rejected' ? hairline : teal[100]
+                          return (
+                            <tr key={r.id} style={{ transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = paper}>
+                              <td style={{ padding: '8px 12px', color: inkSoft }}>{new Date(r.requestedAt).toLocaleDateString()}</td>
+                              <td style={{ padding: '8px 12px', color: ink, fontWeight: 500 }}>{r.reason}</td>
+                              <td style={{ padding: '8px 12px', color: inkSoft }}>{r.requestedBy}</td>
+                              <td style={{ padding: '8px 16px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: 999,
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: 0.08,
+                                  background: statusBg,
+                                  color: statusColor,
+                                  border: `1px solid ${statusBorder}`,
+                                }}>{statusLabel}</span>
+                              </td>
+                              <td style={{ padding: '8px 16px', textAlign: 'right' }}>
+                                {r.status === 'pending' && (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                                    <button onClick={() => handleApproveReversal(r.id)} style={{ padding: 8, background: teal[50], color: teal[500], borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[100]} onMouseLeave={e => e.currentTarget.style.background = teal[50]} title="Approve"><CheckCircle size={18} /></button>
+                                    <button onClick={() => handleRejectReversal(r.id)} style={{ padding: 8, background: `${danger}15`, color: danger, borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = `${danger}25`} onMouseLeave={e => e.currentTarget.style.background = `${danger}15`} title="Reject"><XCircle size={18} /></button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })
                       )}
                     </tbody>
                   </table>
@@ -865,54 +1012,53 @@ const Referrals: React.FC = () => {
 
           {/* Detail Modal */}
           {detailReferral && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={() => setDetailReferral(null)}>
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-lg text-slate-900">Referral Details</h3>
-                  <button onClick={() => setDetailReferral(null)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
-                </div>
-
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Referred Customer</span>
-                    <span className="font-bold text-slate-900">{detailReferral.customerId}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Referrer</span>
-                    <span className="font-bold text-slate-900">{detailReferral.referredByName || detailReferral.referredById || '-'}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Referral Code</span>
-                    <span className="font-mono text-xs text-slate-900">{detailReferral.referralCode || '-'}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Status</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${detailReferral.status === 'active' && detailReferral.pendingInvoiceId ? 'bg-amber-50 text-amber-700 border-amber-100' : detailReferral.status === 'active' ? 'bg-blue-50 text-blue-700 border-blue-100' : detailReferral.status === 'converted' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                      {detailReferral.status === 'active' && detailReferral.pendingInvoiceId ? 'Pending' : detailReferral.status}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Invoice</span>
-                    <span className="font-mono text-xs text-slate-900">#{detailReferral.pendingInvoiceId?.slice(-8) || detailReferral.convertedInvoiceId?.slice(-8) || '-'}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Amount</span>
-                    <span className="font-bold text-emerald-600">{detailReferral.pendingInvoiceAmount ? currency + detailReferral.pendingInvoiceAmount.toLocaleString() : currency + allRewards.filter(r => r.referralId === detailReferral.id).reduce((s, r) => s + r.amount, 0).toLocaleString() || '-'}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Date</span>
-                    <span className="text-slate-900">{new Date(detailReferral.date).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="text-slate-500 font-medium">Reward Amount</span>
-                    <span className="font-bold text-emerald-600">{currency}{allRewards.filter(r => r.referralId === detailReferral.id).reduce((s, r) => s + r.amount, 0).toLocaleString()}</span>
-                  </div>
-                </div>
-
-                <div className="flex justify-end mt-6">
-                  <button onClick={() => setDetailReferral(null)} className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">
-                    Close
+            <div style={{
+              position: 'fixed', inset: 0, zIndex: 50,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(35, 40, 42, 0.2)',
+              backdropFilter: 'blur(4px)',
+            }} onClick={() => setDetailReferral(null)}>
+              <div style={{
+                background: paper,
+                borderRadius: 14,
+                border: `1px solid ${hairline}`,
+                boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
+                width: '100%', maxWidth: 480, margin: '0 16px',
+                padding: 24,
+              }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <h3 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 18, color: ink }}>Referral Details</h3>
+                  <button onClick={() => setDetailReferral(null)} style={{ padding: 8, color: inkSoft, background: 'none', border: 'none', cursor: 'pointer', borderRadius: 8, transition: 'background .15s' }} onMouseEnter={e => e.currentTarget.style.background = teal[50]} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <X size={18} />
                   </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
+                  {[
+                    { label: 'Referred Customer', value: detailReferral.customerId },
+                    { label: 'Referrer', value: detailReferral.referredByName || detailReferral.referredById || '-' },
+                    { label: 'Referral Code', value: detailReferral.referralCode || '-' },
+                    { label: 'Status', value: detailReferral.status === 'active' && detailReferral.pendingInvoiceId ? 'Pending' : detailReferral.status, isBadge: true, badgeBg: teal[50], badgeColor: teal[700], badgeBorder: teal[100] },
+                    { label: 'Invoice', value: `#${detailReferral.pendingInvoiceId?.slice(-8) || detailReferral.convertedInvoiceId?.slice(-8) || '-'}` },
+                    { label: 'Amount', value: detailReferral.pendingInvoiceAmount ? currency + detailReferral.pendingInvoiceAmount.toLocaleString() : currency + allRewards.filter(r => r.referralId === detailReferral.id).reduce((s, r) => s + r.amount, 0).toLocaleString() || '-', isAmount: true },
+                    { label: 'Date', value: new Date(detailReferral.date).toLocaleDateString() },
+                    { label: 'Reward Amount', value: currency + allRewards.filter(r => r.referralId === detailReferral.id).reduce((s, r) => s + r.amount, 0).toLocaleString(), isAmount: true },
+                  ].map((row, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: idx < 7 ? `1px solid ${hairline}` : 'none' }}>
+                      <span style={{ color: inkSoft, fontWeight: 500 }}>{row.label}</span>
+                      {row.isBadge ? (
+                        <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.08, background: row.badgeBg, color: row.badgeColor, border: `1px solid ${row.badgeBorder}` }}>{row.value}</span>
+                      ) : row.isAmount ? (
+                        <span style={{ fontWeight: 700, color: teal[500], fontFamily: "'JetBrains Mono', monospace" }}>{row.value}</span>
+                      ) : (
+                        <span style={{ fontWeight: 600, color: ink, fontFamily: row.label === 'Referral Code' ? "'JetBrains Mono', monospace" : 'inherit', fontSize: row.label === 'Referral Code' ? 12 : 13 }}>{row.value}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+                  <button onClick={() => setDetailReferral(null)} style={{ ...btnGhostStyle, padding: '10px 24px' }}>Close</button>
                 </div>
               </div>
             </div>

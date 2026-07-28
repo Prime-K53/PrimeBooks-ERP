@@ -30,6 +30,47 @@ import {
 /**
  * Customer Payment Hover Card
  */
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+};
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: '1.4px solid #e4ddd1', borderRadius: 9,
+  padding: '9px 12px', outline: 'none'
+};
+const selectStyle: React.CSSProperties = {
+  ...inputStyle, appearance: 'none', cursor: 'pointer', paddingRight: 30,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center'
+};
+const btnPrimaryStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', border: 'none',
+  display: 'flex', alignItems: 'center', gap: 7,
+  boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)'
+};
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: '1.4px solid #e4ddd1', color: inkSoft,
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
+
 const CustomerPaymentHoverCard: React.FC<{
     pos: { x: number, y: number },
     payment: CustomerPayment
@@ -42,41 +83,41 @@ const CustomerPaymentHoverCard: React.FC<{
             className="fixed z-[100] pointer-events-none animate-in fade-in zoom-in-95 duration-200"
             style={{ top: pos.y + 10, left: pos.x + 10 }}
         >
-            <div className="bg-[#000D1A]/95 backdrop-blur-md border border-white/20 rounded-2xl shadow-premium p-4 min-w-[200px] flex flex-col gap-3">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-white">
+            <div className="bg-[#FEFDFB] backdrop-blur-md border border-[#e4ddd1] rounded-2xl shadow-premium p-4 min-w-[200px] flex flex-col gap-3">
+                <div className="flex items-center gap-3 border-b border-[#e4ddd1] pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#eef7f6] flex items-center justify-center text-[#1f8577]">
                         <PaymentIcon size={16} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-tight">Payment Note</p>
-                        <p className="text-xs font-bold text-white font-mono">{payment.id}</p>
+                        <p className="text-[10px] font-bold text-[#1f8577] uppercase tracking-tight">Payment Note</p>
+                        <p className="text-xs font-bold text-[#23282A] font-mono">{payment.id}</p>
                     </div>
                 </div>
 
                 <div className="space-y-2">
                     <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400 font-bold uppercase tracking-tight">Customer</span>
-                        <span className="text-white font-bold truncate max-w-[120px]">{payment.customerName}</span>
+                        <span className="text-[#5c6567] font-bold uppercase tracking-tight">Customer</span>
+                        <span className="text-[#23282A] font-bold truncate max-w-[120px]">{payment.customerName}</span>
                     </div>
                     {payment.subAccountName && (
                         <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-slate-400 font-bold uppercase tracking-tight">Account</span>
-                            <span className="text-blue-400 font-bold truncate max-w-[120px]">{payment.subAccountName}</span>
+                            <span className="text-[#5c6567] font-bold uppercase tracking-tight">Account</span>
+                            <span className="text-[#1f8577] font-bold truncate max-w-[120px]">{payment.subAccountName}</span>
                         </div>
                     )}
                     <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400 font-bold uppercase tracking-tight">Amount</span>
-                        <span className="text-emerald-400 font-bold finance-nums">{currency}{payment.amount.toLocaleString()}</span>
+                        <span className="text-[#5c6567] font-bold uppercase tracking-tight">Amount</span>
+                        <span className="text-[#1f8577] font-bold finance-nums">{currency}{payment.amount.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400 font-bold uppercase tracking-tight">Method</span>
-                        <span className="text-blue-400 font-bold">{payment.paymentMethod}</span>
+                        <span className="text-[#5c6567] font-bold uppercase tracking-tight">Method</span>
+                        <span className="text-[#1f8577] font-bold">{payment.paymentMethod}</span>
                     </div>
                 </div>
 
-                <div className="bg-white/5 rounded-lg p-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tight italic font-mono">Live Secure Ledger</span>
+                <div className="bg-[#eef7f6] rounded-lg p-2 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-[#1f8577] rounded-full animate-pulse"></div>
+                    <span className="text-[9px] text-[#5c6567] font-bold uppercase tracking-tight italic font-mono">Live Secure Ledger</span>
                 </div>
             </div>
         </div>
@@ -100,41 +141,41 @@ const SupplierPaymentHoverCard: React.FC<{
             className="fixed z-[100] pointer-events-none animate-in fade-in zoom-in-95 duration-200"
             style={{ top: pos.y + 10, left: pos.x + 10 }}
         >
-            <div className="bg-[#000D1A]/95 backdrop-blur-md border border-white/20 rounded-2xl shadow-premium p-4 min-w-[200px] flex flex-col gap-3">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+            <div className="bg-[#FEFDFB] backdrop-blur-md border border-[#e4ddd1] rounded-2xl shadow-premium p-4 min-w-[200px] flex flex-col gap-3">
+                <div className="flex items-center gap-3 border-b border-[#e4ddd1] pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#eef7f6] flex items-center justify-center text-[#1f8577]">
                         <Wallet size={16} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-tight">Supplier Payment</p>
-                        <p className="text-xs font-bold text-white font-mono">{payment.id}</p>
+                        <p className="text-[10px] font-bold text-[#1f8577] uppercase tracking-tight">Supplier Payment</p>
+                        <p className="text-xs font-bold text-[#23282A] font-mono">{payment.id}</p>
                     </div>
                 </div>
 
                 <div className="space-y-2">
                     <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400 font-bold uppercase tracking-tight">Supplier</span>
-                        <span className="text-white font-bold truncate max-w-[120px]">{supplier?.name || 'Unknown'}</span>
+                        <span className="text-[#5c6567] font-bold uppercase tracking-tight">Supplier</span>
+                        <span className="text-[#23282A] font-bold truncate max-w-[120px]">{supplier?.name || 'Unknown'}</span>
                     </div>
                     <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400 font-bold uppercase tracking-tight">Amount</span>
-                        <span className="text-emerald-400 font-bold finance-nums">{currency}{payment.amount.toLocaleString()}</span>
+                        <span className="text-[#5c6567] font-bold uppercase tracking-tight">Amount</span>
+                        <span className="text-[#1f8577] font-bold finance-nums">{currency}{payment.amount.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400 font-bold uppercase tracking-tight">Method</span>
-                        <span className="text-blue-400 font-bold">{payment.paymentMethod}</span>
+                        <span className="text-[#5c6567] font-bold uppercase tracking-tight">Method</span>
+                        <span className="text-[#1f8577] font-bold">{payment.paymentMethod}</span>
                     </div>
                     {payment.reference && (
                         <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-slate-400 font-bold uppercase tracking-tight">Ref</span>
-                            <span className="text-white font-medium truncate max-w-[120px]">{payment.reference}</span>
+                            <span className="text-[#5c6567] font-bold uppercase tracking-tight">Ref</span>
+                            <span className="text-[#23282A] font-medium truncate max-w-[120px]">{payment.reference}</span>
                         </div>
                     )}
                 </div>
 
-                <div className="bg-white/5 rounded-lg p-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                    <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tight italic font-mono">Ledger Verified</span>
+                <div className="bg-[#eef7f6] rounded-lg p-2 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-[#1f8577] rounded-full animate-pulse"></div>
+                    <span className="text-[9px] text-[#5c6567] font-bold uppercase tracking-tight italic font-mono">Ledger Verified</span>
                 </div>
             </div>
         </div>
@@ -157,35 +198,35 @@ const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({ payment, onCl
     const supplier = suppliers.find(s => s.id === payment.supplierId);
 
     return (
-        <div className="fixed top-0 right-0 w-[450px] h-full bg-white shadow-2xl z-[120] border-l border-slate-200 animate-in slide-in-from-right duration-300 flex flex-col">
-            <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+        <div className="fixed top-0 right-0 w-[450px] h-full bg-[#FEFDFB] shadow-2xl z-[120] border-l border-[#e4ddd1] animate-in slide-in-from-right duration-300 flex flex-col">
+            <div className="p-6 border-b border-[#e4ddd1] bg-[#eef7f6] flex justify-between items-center">
                 <div>
-                    <h2 className="text-lg font-bold text-slate-900 tracking-tight">Payment Details</h2>
-                    <p className="text-[10px] font-mono font-bold text-slate-400 uppercase">{payment.id}</p>
+                    <h2 className="text-lg font-bold text-[#23282A] tracking-tight">Payment Details</h2>
+                    <p className="text-[10px] font-mono font-bold text-[#5c6567] uppercase">{payment.id}</p>
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={() => { if (confirm("Void this supplier payment?")) onVoid(payment.id); }}
-                        className="p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all"
+                        className="p-2 text-[#5c6567] hover:text-[#b5493f] rounded-lg hover:bg-[#fef2f2] transition-all"
                     >
                         <Trash2 size={18} />
                     </button>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all">
+                    <button onClick={onClose} className="p-2 text-[#5c6567] hover:text-[#23282A] rounded-lg hover:bg-[#eef7f6] transition-all">
                         <X size={20} />
                     </button>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center justify-between p-6 bg-[#FEFDFB] rounded-2xl border border-[#e4ddd1] shadow-sm">
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Total Amount Paid</label>
-                        <p className="text-3xl font-black text-slate-900 finance-nums">{currency}{payment.amount.toLocaleString()}</p>
+                        <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1">Total Amount Paid</label>
+                        <p className="text-3xl font-black text-[#23282A] finance-nums">{currency}{payment.amount.toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${payment.status === 'Cleared' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                            payment.status === 'Voided' ? 'bg-red-50 text-red-700 border-red-100' :
-                                'bg-amber-50 text-amber-700 border-amber-100'
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${payment.status === 'Cleared' ? 'bg-[#eef7f6] text-[#0f544c] border-[#d3ece9]' :
+                            payment.status === 'Voided' ? 'bg-[#fef2f2] text-[#b5493f] border-[#fcd5d0]' :
+                                'bg-[#fbead0] text-[#b97e2b] border-[#eec27a]'
                             }`}>
                             {payment.status}
                         </span>
@@ -194,59 +235,59 @@ const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({ payment, onCl
 
                 <div className="grid grid-cols-2 gap-y-6 gap-x-4">
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Supplier</label>
-                        <p className="font-semibold text-slate-900 text-[13px]">{supplier?.name || 'Unknown'}</p>
+                        <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Supplier</label>
+                        <p className="font-semibold text-[#23282A] text-[13px]">{supplier?.name || 'Unknown'}</p>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Payment Date</label>
-                        <p className="font-semibold text-slate-900 text-[13px]">{new Date(payment.date).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                        <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Payment Date</label>
+                        <p className="font-semibold text-[#23282A] text-[13px]">{new Date(payment.date).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Payment Account</label>
+                        <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Payment Account</label>
                         <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${payment.accountId === '1000' ? 'bg-emerald-400' : (payment.accountId === '1060' ? 'bg-blue-400' : 'bg-amber-400')}`}></div>
-                            <p className="font-semibold text-slate-900 text-[13px]">
+                            <div className={`w-2 h-2 rounded-full ${payment.accountId === '1000' ? 'bg-[#1f8577]' : (payment.accountId === '1060' ? 'bg-[#3fa294]' : 'bg-[#d99a3f]')}`}></div>
+                            <p className="font-semibold text-[#23282A] text-[13px]">
                                 {DEFAULT_ACCOUNTS.find(a => a.id === payment.accountId)?.name || payment.paymentMethod}
                             </p>
                         </div>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Reference</label>
-                        <p className="font-semibold text-slate-900 text-[13px]">{payment.reference || 'N/A'}</p>
+                        <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Reference</label>
+                        <p className="font-semibold text-[#23282A] text-[13px]">{payment.reference || 'N/A'}</p>
                     </div>
                 </div>
 
                 {payment.notes && (
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Notes</label>
-                        <p className="text-[12px] italic text-slate-600">{payment.notes}</p>
+                    <div className="p-3 bg-[#eef7f6] rounded-xl border border-[#e4ddd1]">
+                        <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1">Notes</label>
+                        <p className="text-[12px] italic text-[#5c6567]">{payment.notes}</p>
                     </div>
                 )}
 
                 {/* Allocations Table */}
                 <div className="space-y-3">
-                    <h3 className="text-[14px] font-bold text-slate-900 flex items-center gap-2">
-                        <ArrowRight size={16} className="text-blue-500" />
+                    <h3 className="text-[14px] font-bold text-[#23282A] flex items-center gap-2">
+                        <ArrowRight size={16} className="text-[#1f8577]" />
                         Bill Allocations
                     </h3>
-                    <div className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <div className="border border-[#e4ddd1] rounded-xl overflow-hidden bg-[#FEFDFB] shadow-sm">
                         <table className="w-full text-left text-[13px]">
-                            <thead className="bg-slate-50 border-b border-slate-100">
+                            <thead className="bg-[#eef7f6] border-b border-[#e4ddd1]">
                                 <tr>
                                     <th className="table-header">Bill ID</th>
                                     <th className="table-header text-right">Amount</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-[#e4ddd1]">
                                 {(payment.allocations || []).map((a, i) => (
-                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="table-body-cell font-medium text-blue-600">#{a.purchaseId}</td>
+                                    <tr key={i} className="hover:bg-[#eef7f6]/50 transition-colors">
+                                        <td className="table-body-cell font-medium text-[#1f8577]">#{a.purchaseId}</td>
                                         <td className="table-body-cell text-right font-bold finance-nums">{currency}{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                     </tr>
                                 ))}
                                 {(!payment.allocations || payment.allocations.length === 0) && (
                                     <tr>
-                                        <td colSpan={2} className="table-body-cell text-center text-slate-400 italic">No allocations recorded</td>
+                                        <td colSpan={2} className="table-body-cell text-center text-[#5c6567] italic">No allocations recorded</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -296,34 +337,34 @@ const CustomerPaymentDetailPanel: React.FC<{
     return (
         <div
             ref={panelRef}
-            className={`fixed inset-y-0 right-0 w-[450px] bg-white shadow-2xl z-[120] transform transition-transform duration-300 ease-in-out border-l border-slate-200 flex flex-col font-['Inter',_sans-serif] text-[13px] leading-[1.5] text-slate-700 ${payment ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`fixed inset-y-0 right-0 w-[450px] bg-[#FEFDFB] shadow-2xl z-[120] transform transition-transform duration-300 ease-in-out border-l border-[#e4ddd1] flex flex-col font-['Inter',_sans-serif] text-[13px] leading-[1.5] text-[#23282A] ${payment ? 'translate-x-0' : 'translate-x-full'}`}
         >
             {/* Header */}
-            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div className="px-4 py-3 border-b border-[#e4ddd1] flex justify-between items-center bg-[#FEFDFB]">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-[#eef7f6] text-[#1f8577] flex items-center justify-center">
                         <PaymentIcon size={18} />
                     </div>
                     <div>
-                        <h2 className="text-[20px] font-semibold text-slate-900 leading-tight">Payment Details</h2>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{payment.id}</p>
+                        <h2 className="text-[20px] font-semibold text-[#0b3e39] leading-tight">Payment Details</h2>
+                        <p className="text-[10px] text-[#5c6567] font-bold uppercase tracking-tight">{payment.id}</p>
                     </div>
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
+                    className="p-1.5 hover:bg-[#e4ddd1] rounded-lg transition-colors text-[#5c6567] hover:text-[#23282A]"
                 >
                     <X size={20} />
                 </button>
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex border-b border-slate-100 px-4 bg-white shrink-0">
+            <div className="flex border-b border-[#e4ddd1] px-4 bg-[#FEFDFB] shrink-0">
                 {['Details', 'Accounting'].map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as 'Details' | 'Accounting')}
-                        className={`px-4 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-800'}`}
+                        className={`px-4 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? 'border-[#0b3e39] text-[#0b3e39]' : 'border-transparent text-[#5c6567] hover:text-[#23282A]'}`}
                     >
                         {tab}
                     </button>
@@ -335,18 +376,18 @@ const CustomerPaymentDetailPanel: React.FC<{
                 {activeTab === 'Details' ? (
                     <>
                         {/* Status and Amount Card */}
-                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex justify-between items-center">
+                        <div className="bg-[#eef7f6] rounded-2xl p-4 border border-[#e4ddd1] flex justify-between items-center">
                             <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Total Amount</p>
-                                <p className="text-[24px] font-bold text-slate-900 finance-nums">
+                                <p className="text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1">Total Amount</p>
+                                <p className="text-[24px] font-bold text-[#23282A] finance-nums">
                                     {currency}{payment.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 </p>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Status</p>
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight border ${payment.status === 'Cleared' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                    payment.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                        'bg-red-50 text-red-700 border-red-100'
+                                <p className="text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1">Status</p>
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight border ${payment.status === 'Cleared' ? 'bg-[#eef7f6] text-[#0f544c] border-[#d3ece9]' :
+                                    payment.status === 'Pending' ? 'bg-[#fbead0] text-[#b97e2b] border-[#eec27a]' :
+                                        'bg-[#fef2f2] text-[#b5493f] border-[#fcd5d0]'
                                     }`}>
                                     {payment.status}
                                 </span>
@@ -357,85 +398,85 @@ const CustomerPaymentDetailPanel: React.FC<{
                         <div className="grid grid-cols-2 gap-y-6 gap-x-4">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Customer Name</label>
+                                    <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Customer Name</label>
                                     <button
                                         onClick={() => navigate('/sales-flow/customers', { state: { customerId: payment.customerId } })}
-                                        className="hover:text-blue-600 transition-colors flex items-center gap-1 group"
+                                        className="hover:text-[#1f8577] transition-colors flex items-center gap-1 group"
                                     >
-                                        <ExternalLink size={12} className="text-slate-400 group-hover:text-blue-600" />
+                                        <ExternalLink size={12} className="text-[#5c6567] group-hover:text-[#1f8577]" />
                                     </button>
                                 </div>
-                                <p className="font-semibold text-slate-900 text-[13px]">{payment.customerName}</p>
+                                <p className="font-semibold text-[#23282A] text-[13px]">{payment.customerName}</p>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Payment Date</label>
-                                <p className="font-semibold text-slate-900 text-[13px]">{new Date(payment.date).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                                <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Payment Date</label>
+                                <p className="font-semibold text-[#23282A] text-[13px]">{new Date(payment.date).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Payment Account</label>
+                                <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Payment Account</label>
                                 <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${payment.accountId === '1000' ? 'bg-emerald-400' : (payment.accountId === '1060' ? 'bg-blue-400' : 'bg-amber-400')}`}></div>
-                                    <p className="font-semibold text-slate-900 text-[13px]">
+                            <div className={`w-2 h-2 rounded-full ${payment.accountId === '1000' ? 'bg-[#1f8577]' : (payment.accountId === '1060' ? 'bg-[#3fa294]' : 'bg-[#d99a3f]')}`}></div>
+                                    <p className="font-semibold text-[#23282A] text-[13px]">
                                         {DEFAULT_ACCOUNTS.find(a => a.id === payment.accountId)?.name || payment.paymentMethod}
                                     </p>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Reference</label>
-                                <p className="font-semibold text-slate-900 text-[13px]">{payment.reference || 'N/A'}</p>
+                                <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Reference</label>
+                                <p className="font-semibold text-[#23282A] text-[13px]">{payment.reference || 'N/A'}</p>
                             </div>
                             {payment.subAccountName && (
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Account Context</label>
-                                    <p className="font-semibold text-blue-600 text-[13px]">{payment.subAccountName}</p>
+                                    <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Account Context</label>
+                                    <p className="font-semibold text-[#1f8577] text-[13px]">{payment.subAccountName}</p>
                                 </div>
                             )}
                         </div>
 
                         {/* Allocations Table */}
                         <div className="space-y-3">
-                            <h3 className="text-[14px] font-bold text-slate-900 flex items-center gap-2">
-                                <ArrowRight size={16} className="text-blue-500" />
+                            <h3 className="text-[14px] font-bold text-[#23282A] flex items-center gap-2">
+                                <ArrowRight size={16} className="text-[#1f8577]" />
                                 Document Allocations
                             </h3>
-                            <div className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm">
+                            <div className="border border-[#e4ddd1] rounded-xl overflow-hidden bg-[#FEFDFB] shadow-sm">
                                 <table className="w-full text-left text-[13px]">
-                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                    <thead className="bg-[#eef7f6] border-b border-[#e4ddd1]">
                                         <tr>
                                             <th className="table-header">Document</th>
                                             <th className="table-header">Type</th>
                                             <th className="table-header text-right">Amount</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50">
+                                    <tbody className="divide-y divide-[#e4ddd1]">
                                         {(payment.allocations || []).map((a, i) => (
-                                            <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="table-body-cell font-medium text-blue-600">#{a.invoiceId}</td>
+                                            <tr key={i} className="hover:bg-[#eef7f6]/50 transition-colors">
+                                                <td className="table-body-cell font-medium text-[#1f8577]">#{a.invoiceId}</td>
                                                 <td className="table-body-cell">
-                                                    <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase">Invoice</span>
+                                                    <span className="text-[9px] font-bold text-[#1f8577] bg-[#eef7f6] px-1.5 py-0.5 rounded uppercase">Invoice</span>
                                                 </td>
                                                 <td className="table-body-cell text-right font-bold finance-nums">{currency}{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                             </tr>
                                         ))}
                                         {((payment as any).orderAllocations || []).map((a: any, i: number) => (
-                                            <tr key={`ord-${i}`} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="table-body-cell font-medium text-amber-700">#{a.orderId}</td>
+                                            <tr key={`ord-${i}`} className="hover:bg-[#eef7f6]/50 transition-colors">
+                                                <td className="table-body-cell font-medium text-[#b97e2b]">#{a.orderId}</td>
                                                 <td className="table-body-cell">
-                                                    <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase">Order</span>
+                                                    <span className="text-[9px] font-bold text-[#b97e2b] bg-[#fbead0] px-1.5 py-0.5 rounded uppercase">Order</span>
                                                 </td>
                                                 <td className="table-body-cell text-right font-bold finance-nums">{currency}{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                             </tr>
                                         ))}
                                         {(!payment.allocations || payment.allocations.length === 0) && (!(payment as any).orderAllocations || (payment as any).orderAllocations.length === 0) && (
                                             <tr>
-                                                <td colSpan={3} className="table-body-cell text-center text-slate-400 italic">No allocations recorded</td>
+                                                <td colSpan={3} className="table-body-cell text-center text-[#5c6567] italic">No allocations recorded</td>
                                             </tr>
                                         )}
                                     </tbody>
-                                    <tfoot className="bg-slate-50/80 font-bold border-t border-slate-100">
+                                    <tfoot className="bg-[#eef7f6]/50 font-bold border-t border-[#e4ddd1]">
                                         <tr>
-                                            <td className="table-body-cell text-slate-500" colSpan={2}>Total Allocated</td>
-                                            <td className="table-body-cell text-right text-slate-900 finance-nums">
+                                            <td className="table-body-cell text-[#5c6567]" colSpan={2}>Total Allocated</td>
+                                            <td className="table-body-cell text-right text-[#23282A] finance-nums">
                                                 {currency}{allocated.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </td>
                                         </tr>
@@ -446,9 +487,9 @@ const CustomerPaymentDetailPanel: React.FC<{
 
                         {/* Notes */}
                         {payment.notes && (
-                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">Internal Notes</label>
-                                <p className="text-[12px] italic text-slate-600">{payment.notes}</p>
+                            <div className="p-3 bg-[#eef7f6] rounded-xl border border-[#e4ddd1]">
+                                <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1">Internal Notes</label>
+                                <p className="text-[12px] italic text-[#5c6567]">{payment.notes}</p>
                             </div>
                         )}
                     </>
@@ -456,29 +497,29 @@ const CustomerPaymentDetailPanel: React.FC<{
                     /* Accounting Tab */
                     <div className="space-y-4 animate-in fade-in duration-300">
                         <div className="flex items-center justify-between mb-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <BarChart3 size={14} className="text-blue-500" /> GL Postings
+                            <label className="text-[10px] font-black text-[#5c6567] uppercase tracking-widest flex items-center gap-2">
+                                <BarChart3 size={14} className="text-[#1f8577]" /> GL Postings
                             </label>
-                            <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase">Live Ledger</span>
+                                <span className="text-[9px] font-black bg-[#eef7f6] text-[#0b3e39] px-1.5 py-0.5 rounded uppercase">Live Ledger</span>
                         </div>
 
                         <div className="space-y-3">
                             {ledger.filter(e => e.referenceId === payment.id).map(entry => (
-                                <div key={entry.id} className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-all group">
+                                    <div key={entry.id} className="p-4 bg-[#FEFDFB] border border-[#e4ddd1] rounded-2xl shadow-sm hover:border-[#a6d9d3] transition-all group">
                                     <div className="flex justify-between items-start mb-3">
-                                        <div className="text-[11px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{entry.description}</div>
-                                        <div className="text-[10px] font-black text-slate-900">{currency}{entry.amount.toLocaleString()}</div>
+                                        <div className="text-[11px] font-bold text-[#23282A] group-hover:text-[#0f544c] transition-colors">{entry.description}</div>
+                                        <div className="text-[10px] font-black text-[#23282A]">{currency}{entry.amount.toLocaleString()}</div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50">
-                                            <div className="text-[8px] font-black text-blue-400 uppercase mb-0.5">Debit</div>
-                                            <div className="text-[10px] font-black text-blue-700 truncate">
+                                        <div className="bg-[#eef7f6]/50 p-2 rounded-xl border border-[#e4ddd1]">
+                                            <div className="text-[8px] font-black text-[#5c6567] uppercase mb-0.5">Debit</div>
+                                            <div className="text-[10px] font-black text-[#1f8577] truncate">
                                                 {accounts.find(a => a.id === entry.debitAccountId || a.code === entry.debitAccountId)?.name || entry.debitAccountId}
                                             </div>
                                         </div>
-                                        <div className="bg-rose-50/50 p-2 rounded-xl border border-rose-100/50">
-                                            <div className="text-[8px] font-black text-rose-400 uppercase mb-0.5">Credit</div>
-                                            <div className="text-[10px] font-black text-rose-700 truncate">
+                                        <div className="bg-[#fef2f2] p-2 rounded-xl border border-[#e4ddd1]">
+                                            <div className="text-[8px] font-black text-[#b5493f] uppercase mb-0.5">Credit</div>
+                                            <div className="text-[10px] font-black text-[#b5493f] truncate">
                                                 {accounts.find(a => a.id === entry.creditAccountId || a.code === entry.creditAccountId)?.name || entry.creditAccountId}
                                             </div>
                                         </div>
@@ -486,7 +527,7 @@ const CustomerPaymentDetailPanel: React.FC<{
                                 </div>
                             ))}
                             {ledger.filter(e => e.referenceId === payment.id).length === 0 && (
-                                <div className="p-10 text-center text-slate-400 italic font-medium">No ledger entries found for this payment.</div>
+                                <div className="p-10 text-center text-[#5c6567] italic font-medium">No ledger entries found for this payment.</div>
                             )}
                         </div>
                     </div>
@@ -494,10 +535,10 @@ const CustomerPaymentDetailPanel: React.FC<{
             </div>
 
             {/* Actions */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-wrap gap-2 shrink-0">
+            <div className="p-4 border-t border-[#e4ddd1] bg-[#eef7f6]/50 flex flex-wrap gap-2 shrink-0">
                 <button
                     onClick={() => onPreview(payment)}
-                    className="flex-1 min-w-[120px] bg-blue-600 text-white px-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-95 shadow-sm"
+                    className="flex-1 min-w-[120px] text-white px-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm" style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)' }}
                 >
                     <Printer size={14} /> Preview Receipt
                 </button>
@@ -509,19 +550,19 @@ const CustomerPaymentDetailPanel: React.FC<{
                             notify("No customer ID", "warning");
                         }
                     }}
-                    className="flex-1 min-w-[120px] bg-white border border-blue-200 text-blue-600 px-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-50 transition-all active:scale-95 shadow-sm"
+                    className="flex-1 min-w-[120px] bg-[#FEFDFB] border border-[#e4ddd1] text-[#5c6567] px-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#eef7f6] transition-all active:scale-95 shadow-sm"
                 >
                     <FileBarChart size={14} /> Customer Statement
                 </button>
                 <button
                     onClick={() => { onEdit(payment); onClose(); }}
-                    className="flex-1 min-w-[120px] bg-white border border-slate-200 text-slate-700 px-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 shadow-sm"
+                    className="flex-1 min-w-[120px] bg-[#FEFDFB] border border-[#e4ddd1] text-[#5c6567] px-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#eef7f6] hover:border-[#d4cdc2] transition-all active:scale-95 shadow-sm"
                 >
                     <Edit2 size={14} /> Edit Details
                 </button>
                 <button
                     onClick={() => { onDelete(payment.id); onClose(); }}
-                    className="w-full bg-white border border-rose-100 text-rose-600 px-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 shadow-sm"
+                    className="w-full bg-[#FEFDFB] border border-[#e4ddd1] text-[#b5493f] px-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#fef2f2] transition-all active:scale-95 shadow-sm"
                 >
                     <Trash2 size={14} /> Void Payment
                 </button>
@@ -1246,17 +1287,17 @@ const Payments: React.FC = () => {
         return (
             <div
                 ref={menuRef}
-                className="fixed w-52 bg-white/95 backdrop-blur-xl rounded-xl shadow-premium border border-slate-200 z-[110] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1.5 overflow-y-auto custom-scrollbar"
+                className="fixed w-52 bg-[#FEFDFB]/95 backdrop-blur-xl rounded-xl shadow-premium border border-[#e4ddd1] z-[110] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1.5 overflow-y-auto custom-scrollbar"
                 style={{ top: y, left: x, maxHeight: '90vh' }}
             >
-                <div className="px-3 py-1 mb-1 border-b border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Payment Options</p>
+                <div className="px-3 py-1 mb-1 border-b border-[#e4ddd1]">
+                    <p className="text-[10px] font-bold text-[#5c6567] uppercase tracking-tight">Payment Options</p>
                 </div>
-                <button onClick={() => { setOpenMenuId(null); notify("Remittance email queued.", "success"); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition-colors">
+                <button onClick={() => { setOpenMenuId(null); notify("Remittance email queued.", "success"); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#23282A] hover:bg-[#eef7f6] hover:text-[#1f8577] flex items-center gap-3 transition-colors">
                     <Mail size={14} /> Email Remittance
                 </button>
-                <div className="h-px bg-slate-100 my-1"></div>
-                <button onClick={() => { if (confirm("Void this payment?")) { deleteCustomerPayment(payment.id); notify("Payment voided.", "info"); } setOpenMenuId(null); }} className="w-full text-left px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-3 transition-colors">
+                <div className="h-px bg-[#e4ddd1] my-1"></div>
+                <button onClick={() => { if (confirm("Void this payment?")) { deleteCustomerPayment(payment.id); notify("Payment voided.", "info"); } setOpenMenuId(null); }} className="w-full text-left px-4 py-2 text-xs font-medium text-[#b5493f] hover:bg-[#fef2f2] flex items-center gap-3 transition-colors">
                     <Trash2 size={14} /> Void Payment
                 </button>
             </div>
@@ -1277,11 +1318,11 @@ const Payments: React.FC = () => {
 
             <div className="mb-4 flex flex-col md:flex-row justify-between md:items-center gap-4 shrink-0">
                 <div>
-                    <h1 className="text-[22px] font-semibold text-slate-900 flex items-center gap-2 tracking-tight">
-                        <PaymentIcon className="text-blue-600" size={20} /> 
+                    <h1 className="text-[22px] font-semibold text-[#23282A] flex items-center gap-2 tracking-tight">
+                        <PaymentIcon className="text-[#1f8577]" size={20} /> 
                         {isProcurement ? 'Supplier Payments' : 'Customer Payments'}
                     </h1>
-                    <p className="text-xs font-normal text-slate-500 mt-0.5">
+                    <p className="text-xs font-normal text-[#5c6567] mt-0.5">
                         {isProcurement ? 'Record and manage payments made to your suppliers.' : 'Process and track payments received from your customers.'}
                     </p>
                 </div>
@@ -1289,7 +1330,7 @@ const Payments: React.FC = () => {
                     <button
                         onClick={() => refreshModuleData(true).catch(() => undefined)}
                         disabled={isRefreshing}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex items-center gap-2 rounded-xl border border-[#e4ddd1] bg-[#FEFDFB] px-3 py-1.5 text-xs font-bold text-[#5c6567] shadow-sm transition-all hover:bg-[#eef7f6] disabled:cursor-not-allowed disabled:opacity-60"
                         title="Refresh invoicing and billing data"
                     >
                         <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
@@ -1297,7 +1338,7 @@ const Payments: React.FC = () => {
                     </button>
                     <button
                         onClick={activeTab === 'Received' ? handleOpenCreate : () => setIsSupplierModalOpen(true)}
-                        className="bg-blue-600 text-white px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-blue-700 shadow-sm transition-all"
+                        className="bg-[#1f8577] text-white px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-[#146b60] shadow-sm transition-all"
                     >
                         <Plus size={14} /> {activeTab === 'Received' ? 'New Payment' : 'New Supplier Payment'}
                     </button>
@@ -1680,13 +1721,13 @@ const Payments: React.FC = () => {
                     )}
 
                     <div className="flex gap-6 flex-1 min-h-0 overflow-hidden relative">
-                        <div className={`bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 flex flex-col min-h-0 flex-1 overflow-hidden transition-all duration-300 ${selectedPayment ? 'mr-[450px]' : ''}`}>
-                            <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-50/30">
-                                <div className="relative w-full max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} /><input type="text" placeholder="Search payments, reference..." className="w-full pl-9 pr-3 py-1.5 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 font-normal" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                        <div className={`bg-[#FEFDFB] backdrop-blur-xl rounded-2xl shadow-sm border border-[#e4ddd1] flex flex-col min-h-0 flex-1 overflow-hidden transition-all duration-300 ${selectedPayment ? 'mr-[450px]' : ''}`}>
+                            <div className="p-3 border-b border-[#e4ddd1] flex justify-between items-center bg-[#FEFDFB]">
+                                <div className="relative w-full max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c6567]" size={14} /><input type="text" placeholder="Search payments, reference..." className="w-full pl-9 pr-3 py-1.5 border border-[#e4ddd1] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1f8577] bg-[#FEFDFB] font-normal" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar">
                                 <table className="w-full text-left text-[13px]">
-                                    <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+<thead className="bg-[#eef7f6]/80 backdrop-blur text-[#5c6567] sticky top-0 z-10 shadow-sm">
                                         <tr>
                                             <th className="table-header">Date</th>
                                             <th className="table-header">Payment #</th>
@@ -1698,7 +1739,7 @@ const Payments: React.FC = () => {
                                             <th className="table-header text-right">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100/50 font-normal">
+                                    <tbody className="divide-y divide-[#e4ddd1]/50 font-normal">
                                         {filteredPayments.map(payment => {
                                             const allocated = (payment.allocations || []).reduce((s, a) => s + (a.amount || 0), 0);
                                             const isSelected = selectedPayment?.id === payment.id;
@@ -1706,15 +1747,15 @@ const Payments: React.FC = () => {
                                                 <tr
                                                     key={payment.id}
                                                     id={`pmt-${payment.id}`}
-                                                    className={`transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/60 border-l-4 border-l-blue-500' : 'hover:bg-blue-50/40 border-l-4 border-l-transparent'}`}
+                                                    className={`transition-colors cursor-pointer group ${isSelected ? 'bg-[#eef7f6]/60 border-l-4 border-l-[#1f8577]' : 'hover:bg-[#eef7f6]/40 border-l-4 border-l-transparent'}`}
                                                     onClick={() => setSelectedPayment(payment)}
                                                     onContextMenu={(e) => handleContextMenu(e, payment.id)}
                                                     onMouseEnter={(e) => handleMouseEnter(payment.id, e)}
                                                     onMouseMove={handleMouseMove}
                                                     onMouseLeave={handleMouseLeave}
                                                 >
-                                                    <td className="table-body-cell text-slate-500 font-normal"><div className="flex items-center gap-2"><Calendar size={12} /> {new Date(payment.date).toLocaleDateString()}</div></td>
-                                                    <td className="table-body-cell"><span className="font-mono text-[10px] font-bold text-slate-600 tracking-tight">
+                                                    <td className="table-body-cell text-[#5c6567] font-normal"><div className="flex items-center gap-2"><Calendar size={12} /> {new Date(payment.date).toLocaleDateString()}</div></td>
+                                                    <td className="table-body-cell"><span className="font-mono text-[10px] font-bold text-[#5c6567] tracking-tight">
                                                         <DocLink
                                                             docNumber={payment.id}
                                                             targetPage={isProcurement ? "/procurement/payments" : "/sales-flow/payments"}
@@ -1722,15 +1763,15 @@ const Payments: React.FC = () => {
                                                             currentPage={location.pathname}
                                                         />
                                                     </span></td>
-                                                    <td className="table-body-cell font-bold text-slate-900">{payment.customerName}</td>
+                                                    <td className="table-body-cell font-bold text-[#23282A]">{payment.customerName}</td>
                                                     <td className="table-body-cell">
-                                                        <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[11px] border border-slate-200 font-normal">
+                                                        <span className="bg-[#eef7f6] text-[#5c6567] px-2 py-1 rounded text-[11px] border border-[#e4ddd1] font-normal">
                                                             {DEFAULT_ACCOUNTS.find(a => a.id === payment.accountId)?.name || payment.paymentMethod}
                                                         </span>
                                                     </td>
-                                                    <td className="table-body-cell font-normal"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex w-fit items-center gap-1 ${payment.status === 'Cleared' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : payment.status === 'Pending' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-red-100 text-red-800'}`}>{payment.status}</span></td>
-                                                    <td className="table-body-cell text-right font-bold text-slate-900 finance-nums">{currency}{(payment.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="table-body-cell text-right font-bold text-blue-600 finance-nums">{currency}{allocated.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="table-body-cell font-normal"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex w-fit items-center gap-1 ${payment.status === 'Cleared' ? 'bg-[#eef7f6] text-[#0f544c] border border-[#d3ece9]' : payment.status === 'Pending' ? 'bg-[#fbead0] text-[#b97e2b] border border-[#eec27a]' : 'bg-[#fef2f2] text-[#b5493f] border border-[#fcd5d0]'}`}>{payment.status}</span></td>
+                                                    <td className="table-body-cell text-right font-bold text-[#23282A] finance-nums">{currency}{(payment.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="table-body-cell text-right font-bold text-[#0b3e39] finance-nums">{currency}{allocated.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="table-body-cell text-right" onClick={e => e.stopPropagation()}>
                                                         <div className="flex justify-end gap-1 items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <button
@@ -1738,7 +1779,7 @@ const Payments: React.FC = () => {
                                                                     e.stopPropagation();
                                                                     handlePreviewReceipt(payment);
                                                                 }}
-                                                                className="p-1.5 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
+                                                                className="p-1.5 text-[#5c6567] hover:text-[#23282A] bg-[#eef7f6] hover:bg-[#FEFDFB] border border-transparent hover:border-[#e4ddd1] rounded transition-all"
                                                                 title="View Receipt"
                                                             >
                                                                 <Eye size={14} />
@@ -1752,12 +1793,12 @@ const Payments: React.FC = () => {
                                                                         notify("Cannot generate statement: No customer ID linked", "warning");
                                                                     }
                                                                 }}
-                                                                className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-blue-200 rounded transition-all"
-                                                                title="View Customer Statement"
+                                                                 className="p-1.5 text-[#5c6567] hover:text-[#0f544c] bg-[#eef7f6] hover:bg-[#FEFDFB] border border-transparent hover:border-[#a6d9d3] rounded transition-all"
+                                                                 title="View Customer Statement"
                                                             >
                                                                 <FileBarChart size={14} />
                                                             </button>
-                                                            <button onClick={(e) => { e.stopPropagation(); handleContextMenu(e, payment.id); }} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition-colors"><MoreVertical size={14} /></button>
+                                                            <button onClick={(e) => { e.stopPropagation(); handleContextMenu(e, payment.id); }} className="p-1.5 text-[#5c6567] hover:text-[#23282A] rounded-lg transition-colors"><MoreVertical size={14} /></button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -1773,21 +1814,21 @@ const Payments: React.FC = () => {
                 <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
                     <div className="flex flex-col md:flex-row gap-4 mb-6 shrink-0">
                         <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c6567]" size={16} />
                             <input
                                 type="text"
                                 placeholder="Search supplier payments..."
-                                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full pl-10 pr-4 py-2 border border-[#e4ddd1] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f8577]"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 flex flex-col min-h-0 flex-1 overflow-hidden">
+                    <div className="bg-[#FEFDFB] backdrop-blur-xl rounded-2xl shadow-sm border border-[#e4ddd1] flex flex-col min-h-0 flex-1 overflow-hidden">
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                             <table className="w-full text-left text-[13px]">
-                                <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+                                <thead className="bg-[#eef7f6]/80 backdrop-blur text-[#5c6567] sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th className="table-header">Date</th>
                                         <th className="table-header">Payment #</th>
@@ -1798,7 +1839,7 @@ const Payments: React.FC = () => {
                                         <th className="table-header text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100/50">
+                                <tbody className="divide-y divide-[#e4ddd1]/50">
                                     {supplierPayments
                                         .filter(p =>
                                             (suppliers.find(s => s.id === p.supplierId)?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1810,14 +1851,14 @@ const Payments: React.FC = () => {
                                             <tr
                                                 key={payment.id}
                                                 id={`spmt-${payment.id}`}
-                                                className="hover:bg-blue-50/40 transition-colors cursor-pointer group"
+                                                className="hover:bg-[#eef7f6]/40 transition-colors cursor-pointer group"
                                                 onClick={() => setSelectedSupplierPayment(payment)}
                                                 onMouseEnter={(e) => handleMouseEnter(payment.id, e)}
                                                 onMouseMove={handleMouseMove}
                                                 onMouseLeave={handleMouseLeave}
                                             >
-                                                <td className="table-body-cell text-slate-500"><Calendar size={12} className="inline mr-2" /> {new Date(payment.date).toLocaleDateString()}</td>
-                                                <td className="table-body-cell font-mono text-[10px] font-bold text-slate-600">
+                                                <td className="table-body-cell text-[#5c6567]"><Calendar size={12} className="inline mr-2" /> {new Date(payment.date).toLocaleDateString()}</td>
+                                                <td className="table-body-cell font-mono text-[10px] font-bold text-[#5c6567]">
                                                     <DocLink
                                                         docNumber={payment.id}
                                                         targetPage={isProcurement ? "/procurement/payments" : "/sales-flow/payments"}
@@ -1825,20 +1866,20 @@ const Payments: React.FC = () => {
                                                         currentPage={location.pathname}
                                                     />
                                                 </td>
-                                                <td className="table-body-cell font-bold text-slate-900">{suppliers.find(s => s.id === payment.supplierId)?.name || 'Unknown Supplier'}</td>
+                                                <td className="table-body-cell font-bold text-[#23282A]">{suppliers.find(s => s.id === payment.supplierId)?.name || 'Unknown Supplier'}</td>
                                                 <td className="table-body-cell">
-                                                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[11px] border border-slate-200">
+                                                    <span className="bg-[#eef7f6] text-[#5c6567] px-2 py-1 rounded text-[11px] border border-[#e4ddd1]">
                                                         {DEFAULT_ACCOUNTS.find(a => a.id === payment.accountId)?.name || payment.paymentMethod}
                                                     </span>
                                                 </td>
                                                 <td className="table-body-cell">
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${payment.status === 'Cleared' ? 'bg-emerald-100 text-emerald-700' :
-                                                        payment.status === 'Voided' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${payment.status === 'Cleared' ? 'bg-[#eef7f6] text-[#0f544c] border border-[#d3ece9]' :
+                                                        payment.status === 'Voided' ? 'bg-[#fef2f2] text-[#b5493f] border border-[#fcd5d0]' : 'bg-[#fbead0] text-[#b97e2b] border border-[#eec27a]'
                                                         }`}>
                                                         {payment.status}
                                                     </span>
                                                 </td>
-                                                <td className="table-body-cell text-right font-bold text-slate-900 finance-nums">{currency}{payment.amount.toLocaleString()}</td>
+                                                <td className="table-body-cell text-right font-bold text-[#23282A] finance-nums">{currency}{payment.amount.toLocaleString()}</td>
                                                 <td className="table-body-cell text-right">
                                                     <button
                                                         onClick={(e) => {
@@ -1861,7 +1902,7 @@ const Payments: React.FC = () => {
                                                                 notify('Failed to generate supplier voucher preview', 'error');
                                                             }
                                                         }}
-                                                        className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg transition-colors mr-1"
+                                                        className="p-1.5 text-[#5c6567] hover:text-[#1f8577] rounded-lg transition-colors mr-1"
                                                         title="View Voucher"
                                                     >
                                                         <Eye size={14} />
@@ -1871,7 +1912,7 @@ const Payments: React.FC = () => {
                                                             e.stopPropagation();
                                                             if (confirm("Void this supplier payment?")) voidSupplierPayment(payment.id);
                                                         }}
-                                                        className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                                                        className="p-1.5 text-[#5c6567] hover:text-[#b5493f] rounded-lg transition-colors"
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
@@ -1880,7 +1921,7 @@ const Payments: React.FC = () => {
                                         ))}
                                     {supplierPayments.length === 0 && (
                                         <tr>
-                                            <td colSpan={7} className="p-20 text-center text-slate-300 italic">No supplier payments recorded yet.</td>
+                                            <td colSpan={7} className="p-20 text-center text-[#e4ddd1] italic">No supplier payments recorded yet.</td>
                                         </tr>
                                     )}
                                 </tbody>

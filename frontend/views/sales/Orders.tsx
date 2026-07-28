@@ -508,12 +508,12 @@ const Orders: React.FC = () => {
         const allInvs = invoices || [];
         const invs = allInvs.filter(inv => inv.status !== 'Cancelled' && inv.status !== 'Draft');
         const monthlyData: Record<string, { month: string; revenue: number; profit: number }> = {};
-        const statusData: Record<string, { name: string; value: number; color: string }> = {
-            'Paid': { name: 'Paid', value: 0, color: '#10b981' },
-            'Unpaid': { name: 'Unpaid', value: 0, color: '#3b82f6' },
-            'Overdue': { name: 'Overdue', value: 0, color: '#ef4444' },
-            'Partial': { name: 'Partial', value: 0, color: '#f59e0b' },
-            'Draft': { name: 'Draft', value: 0, color: '#94a3b8' }
+    const statusData: Record<string, { name: string; value: number; color: string }> = {
+            'Paid': { name: 'Paid', value: 0, color: '#1f8577' },
+            'Unpaid': { name: 'Unpaid', value: 0, color: '#d99a3f' },
+            'Overdue': { name: 'Overdue', value: 0, color: '#b5493f' },
+            'Partial': { name: 'Partial', value: 0, color: '#3fa294' },
+            'Draft': { name: 'Draft', value: 0, color: '#5c6567' }
         };
 
         invs.forEach(inv => {
@@ -1409,15 +1409,15 @@ const Orders: React.FC = () => {
                         <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Recipient</label>
-                                    <input type="email" className="w-full p-2.5 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/5 outline-none" value={emailData.to} onChange={e => setWhiteEmailData({ ...emailData, to: e.target.value })} />
+                                    <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Recipient</label>
+                                    <input type="email" className="w-full p-2.5 border border-[#e4ddd1] rounded-xl text-[13px] font-bold text-[#23282A] focus:ring-4 focus:ring-[#1f857710] outline-none" value={emailData.to} onChange={e => setWhiteEmailData({ ...emailData, to: e.target.value })} />
                                 </div>
                                 <div className="flex flex-col justify-end">
                                     {isOnline && (
                                         <button
                                             onClick={() => handleSmartEmailDraft(selectedInvoiceForDetail || editingItem, activeView === 'Invoices' ? 'Invoice' : 'Quotation')}
                                             disabled={isGeneratingEmail}
-                                            className="w-full py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-bold uppercase tracking-tight hover:bg-indigo-100 flex items-center justify-center gap-2 border border-indigo-100 transition-all"
+                                            className="w-full py-2.5 bg-[#eef7f6] text-[#1f8577] rounded-xl text-[10px] font-bold uppercase tracking-tight hover:bg-[#d3ece9] flex items-center justify-center gap-2 border border-[#d3ece9] transition-all"
                                         >
                                             {isGeneratingEmail ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                                             {isGeneratingEmail ? 'Processing Logic...' : 'AI Verify & Enhance'}
@@ -1427,32 +1427,32 @@ const Orders: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5">Subject Line</label>
-                                <input type="text" className="w-full p-2.5 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-800 outline-none" value={emailData.subject} onChange={e => setWhiteEmailData({ ...emailData, subject: e.target.value })} />
+                                <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5">Subject Line</label>
+                                <input type="text" className="w-full p-2.5 border border-[#e4ddd1] rounded-xl text-[13px] font-bold text-[#23282A] outline-none" value={emailData.subject} onChange={e => setWhiteEmailData({ ...emailData, subject: e.target.value })} />
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1.5 flex items-center gap-2">
+                                <label className="block text-[10px] font-bold text-[#5c6567] uppercase tracking-tight mb-1.5 flex items-center gap-2">
                                     <MessageSquare size={14} /> Message Body
                                 </label>
-                                <textarea className="w-full p-4 border border-slate-200 rounded-2xl h-48 resize-none text-[13px] leading-relaxed outline-none font-normal" value={emailData.body} onChange={e => setWhiteEmailData({ ...emailData, body: e.target.value })} />
+                                <textarea className="w-full p-4 border border-[#e4ddd1] rounded-2xl h-48 resize-none text-[13px] leading-relaxed outline-none font-normal" value={emailData.body} onChange={e => setWhiteEmailData({ ...emailData, body: e.target.value })} />
                             </div>
 
-                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-start gap-3">
-                                <ShieldCheck className="text-emerald-500 shrink-0 mt-0.5" size={16} />
+                            <div className="bg-[#eef7f6] p-4 rounded-2xl border border-[#d3ece9] flex items-start gap-3">
+                                <ShieldCheck className="text-[#1f8577] shrink-0 mt-0.5" size={16} />
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-900 uppercase tracking-tight mb-1">Status Verification</p>
-                                    <p className="text-[11px] text-slate-500 leading-snug">
+                                    <p className="text-[10px] font-bold text-[#23282A] uppercase tracking-tight mb-1">Status Verification</p>
+                                    <p className="text-[11px] text-[#5c6567] leading-snug">
                                         Content cross-referenced with ledger. {activeView === 'Exchanges' ? 'Exchange' : 'Invoice'} current status:
-                                        <span className="font-bold text-emerald-600 uppercase ml-1">{(selectedInvoiceForDetail || editingItem)?.status || 'Cleared'}</span>.
+                                        <span className="font-bold text-[#1f8577] uppercase ml-1">{(selectedInvoiceForDetail || editingItem)?.status || 'Cleared'}</span>.
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
-                            <button onClick={() => setIsEmailModalOpen(false)} className="px-6 py-3 border border-slate-300 rounded-2xl font-bold uppercase text-[10px] tracking-tight text-slate-600 hover:bg-white transition-all">Cancel</button>
-                            <button onClick={handleSendFinalEmail} className="px-10 py-3 bg-blue-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-tight hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
+                        <div className="p-6 bg-[#FEFDFB] border-t border-[#e4ddd1] flex justify-end gap-3 shrink-0">
+                            <button onClick={() => setIsEmailModalOpen(false)} className="px-6 py-3 border border-[#e4ddd1] rounded-2xl font-bold uppercase text-[10px] tracking-tight text-[#5c6567] hover:bg-[#eef7f6] hover:text-[#0b3e39] hover:border-[#a6d9d3] transition-all">Cancel</button>
+                            <button onClick={handleSendFinalEmail} className="px-10 py-3 text-white rounded-2xl font-bold uppercase text-[10px] tracking-tight hover:opacity-90 shadow-lg transition-all flex items-center gap-2" style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)' }}>
                                 <Send size={14} /> Transmit Mail
                             </button>
                         </div>
@@ -1462,20 +1462,20 @@ const Orders: React.FC = () => {
 
             <div className="flex flex-wrap items-center justify-between mb-4 gap-3 shrink-0">
                 <div className="shrink-0">
-                    <h1 className="text-[22px] font-semibold text-slate-900 flex items-center gap-2 tracking-tight">
-                        {activeView === 'Quotations' && <FileText className="text-blue-600" size={20} />}
-                        {activeView === 'Invoices' && <FileCheck className="text-blue-600" size={20} />}
-                        {activeView === 'Subscriptions' && <Repeat className="text-blue-600" size={20} />}
-                        {activeView === 'SalesOrders' && <Truck className="text-blue-600" size={20} />}
-                        {activeView === 'Exchanges' && <RefreshCw className="text-blue-600" size={20} />}
-                        {activeView === 'Orders' && <List className="text-blue-600" size={20} />}
+                    <h1 className="text-[22px] font-normal text-[#0b3e39] flex items-center gap-2" style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400 }}>
+                        {activeView === 'Quotations' && <FileText className="text-[#1f8577]" size={20} />}
+                        {activeView === 'Invoices' && <FileCheck className="text-[#1f8577]" size={20} />}
+                        {activeView === 'Subscriptions' && <Repeat className="text-[#1f8577]" size={20} />}
+                        {activeView === 'SalesOrders' && <Truck className="text-[#1f8577]" size={20} />}
+                        {activeView === 'Exchanges' && <RefreshCw className="text-[#1f8577]" size={20} />}
+                        {activeView === 'Orders' && <List className="text-[#1f8577]" size={20} />}
                         {activeView === 'Quotations' ? 'Quotations' :
                             activeView === 'Invoices' ? 'Invoices' :
                                 activeView === 'Subscriptions' ? 'Subscriptions' :
                                     activeView === 'Exchanges' ? 'Sales Exchanges' :
                                         activeView === 'Orders' ? 'Full Orders' : 'Sales Orders'}
                     </h1>
-                    <p className="text-xs font-normal text-slate-500 mt-0.5">
+                    <p className="text-xs font-normal text-[#5c6567] mt-0.5">
                         {activeView === 'Exchanges' ? 'Manage print job replacements and reprints' : 'Manage your sales pipeline and documents'}
                     </p>
                 </div>
@@ -1537,26 +1537,27 @@ const Orders: React.FC = () => {
                     {activeView === 'Exchanges' && (
                         <button
                             onClick={() => setIsRequestModalOpen(true)}
-                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-tight hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
+                            className="flex items-center px-4 py-2 text-white rounded-xl text-[10px] font-bold uppercase tracking-tight hover:opacity-90 shadow-lg transition-all"
+                            style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)' }}
                         >
                             <Plus className="w-4 h-4 mr-2" />
                             New Exchange Request
                         </button>
                     )}
                     {(activeView === 'Invoices' || activeView === 'Orders') && selectedInvoiceIds.length > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-xl animate-in fade-in slide-in-from-right-4">
-                            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-tight">{selectedInvoiceIds.length} Selected</span>
-                            <div className="w-px h-4 bg-blue-200 mx-1"></div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#eef7f6] border border-[#d3ece9] rounded-xl animate-in fade-in slide-in-from-right-4">
+                            <span className="text-[10px] font-bold text-[#0b3e39] uppercase tracking-tight">{selectedInvoiceIds.length} Selected</span>
+                            <div className="w-px h-4 bg-[#a6d9d3] mx-1"></div>
                             <button
                                 onClick={() => handleBulkAction('bulk_delete')}
-                                className="p-1 text-rose-600 hover:bg-rose-100 rounded transition-colors"
+                                className="p-1 text-[#b5493f] hover:bg-[#b5493f15] rounded transition-colors"
                                 title={activeView === 'Orders' ? "Cancel Selected" : "Delete Selected"}
                             >
                                 {activeView === 'Orders' ? <Ban size={16} /> : <Trash2 size={16} />}
                             </button>
                             <button
                                 onClick={() => handleBulkAction('bulk_pay')}
-                                className="p-1 text-emerald-600 hover:bg-emerald-100 rounded transition-colors"
+                                className="p-1 text-[#1f8577] hover:bg-[#1f857715] rounded transition-colors"
                                 title="Record Payment"
                             >
                                 <DollarSign size={16} />
@@ -1564,7 +1565,7 @@ const Orders: React.FC = () => {
                             {activeView === 'Orders' && (
                                 <button
                                     onClick={() => handleBulkAction('bulk_convert')}
-                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                                    className="p-1 text-[#1f8577] hover:bg-[#1f857715] rounded transition-colors"
                                     title="Convert to Invoice"
                                 >
                                     <RefreshCw size={16} />
@@ -1572,7 +1573,7 @@ const Orders: React.FC = () => {
                             )}
                             <button
                                 onClick={() => setSelectedInvoiceIds([])}
-                                className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"
+                                className="p-1 text-[#5c6567] hover:text-[#23282A] rounded transition-colors"
                                 title="Clear Selection"
                             >
                                 <X size={16} />
@@ -1581,10 +1582,10 @@ const Orders: React.FC = () => {
                     )}
                     {activeView === 'Invoices' && (
                         <>
-                            <button onClick={handleCheckLateFees} className="px-3 py-1.5 bg-red-100 text-red-700 rounded-xl text-[10px] font-bold uppercase tracking-tight hover:bg-red-200 flex items-center gap-2" title="Assess Late Fees"><AlertTriangle size={14} /> Fees</button>
+                            <button onClick={handleCheckLateFees} className="px-3 py-1.5 bg-[#b5493f15] text-[#b5493f] rounded-xl text-[10px] font-bold uppercase tracking-tight hover:bg-[#b5493f25] flex items-center gap-2" title="Assess Late Fees"><AlertTriangle size={14} /> Fees</button>
                             <div className="relative">
                                 <select
-                                    className="pl-3 pr-8 py-1.5 rounded-xl border border-slate-200 bg-white text-[10px] font-bold uppercase tracking-tight text-slate-600 focus:ring-4 focus:ring-blue-500/5 outline-none appearance-none shadow-sm"
+                                    className="pl-3 pr-8 py-1.5 rounded-xl border border-[#e4ddd1] bg-[#FEFDFB] text-[10px] font-bold uppercase tracking-tight text-[#5c6567] focus:ring-4 focus:ring-[#1f857710] outline-none appearance-none shadow-sm"
                                     value={moneyBarFilter}
                                     onChange={e => setMoneyBarFilter(e.target.value as 'All' | 'Partial' | 'Unpaid' | 'Overdue' | 'Paid')}
                                 >
@@ -1594,121 +1595,99 @@ const Orders: React.FC = () => {
                                     <option value="Overdue">Filter: Overdue Only</option>
                                     <option value="Paid">Filter: Paid in Full</option>
                                 </select>
-                                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5c6567] pointer-events-none" />
                             </div>
                         </>
                     )}
                     <button
                         onClick={() => refreshModuleData(true).catch(() => undefined)}
                         disabled={isRefreshing}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-tight text-slate-600 shadow-sm transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex items-center gap-2 rounded-xl border border-[#e4ddd1] bg-[#FEFDFB] px-3 py-1.5 text-[10px] font-bold uppercase tracking-tight text-[#5c6567] shadow-sm transition-all hover:bg-[#eef7f6] disabled:cursor-not-allowed disabled:opacity-60"
                         title="Refresh invoicing and billing data"
                     >
                         <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
                         Refresh
                     </button>
-                    <div className="flex bg-white/70 backdrop-blur border border-slate-200/80 rounded-xl p-1 shadow-sm shrink-0">
-                        <button onClick={() => setViewMode('List')} className={`p-1.5 rounded-lg transition-colors ${viewMode === 'List' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><List size={16} /></button>
-                        <button onClick={() => setViewMode('Card')} className={`p-1.5 rounded-lg transition-colors ${viewMode === 'Card' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LayoutGrid size={16} /></button>
+                    <div className="flex bg-[#FEFDFB] border border-[#e4ddd1] rounded-xl p-1 shadow-sm shrink-0">
+                        <button onClick={() => setViewMode('List')} style={viewMode === 'List' ? { background: '#eef7f6', color: '#0b3e39', boxShadow: '0 1px 2px rgba(0,0,0,.06)' } : { color: '#5c6567' }} className="p-1.5 rounded-lg transition-colors"><List size={16} /></button>
+                        <button onClick={() => setViewMode('Card')} style={viewMode === 'Card' ? { background: '#eef7f6', color: '#0b3e39', boxShadow: '0 1px 2px rgba(0,0,0,.06)' } : { color: '#5c6567' }} className="p-1.5 rounded-lg transition-colors"><LayoutGrid size={16} /></button>
                     </div>
                     {activeView !== 'Subscriptions' && (
-                        <button onClick={handleCreate} className="bg-blue-600 text-white px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-tight flex items-center gap-1.5 hover:bg-blue-700 shadow-sm transition-all"><Plus size={12} /> Create New</button>
+                        <button onClick={handleCreate} className="text-white px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-tight flex items-center gap-1.5 hover:opacity-90 shadow-sm transition-all" style={{ background: 'linear-gradient(155deg, #1f8577, #0f544c)' }}><Plus size={12} /> Create New</button>
                     )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 shrink-0 w-full">
-                {activeView === 'Invoices' ? (
-                    <>
-                        {[
-                            { label: 'Total Invoiced', value: `${currency}${invoiceStats.total.toLocaleString(undefined, { maximumFractionDigits: 0 })} `, icon: TrendingUp, color: 'blue' },
-                            { label: 'Annual Profit', value: `${currency}${invoiceStats.annualProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} `, icon: TrendingUp, color: 'emerald' },
-                            { label: 'Outstanding', value: `${currency}${invoiceStats.outstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })} `, icon: Wallet, color: 'indigo' },
-                            { label: 'Overdue Amount', value: `${currency}${invoiceStats.overdue.toLocaleString(undefined, { maximumFractionDigits: 0 })} `, icon: AlertCircle, color: 'rose' }
-                        ].map((item, idx) => {
-                            const colorMap: Record<string, { border: string, bg: string, text: string }> = {
-                                blue: { border: 'border-l-blue-500', bg: 'bg-blue-50', text: 'text-blue-600' },
-                                emerald: { border: 'border-l-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-600' },
-                                indigo: { border: 'border-l-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-600' },
-                                rose: { border: 'border-l-rose-500', bg: 'bg-rose-50', text: 'text-rose-600' },
-                            };
-                            const c = colorMap[item.color] || colorMap.blue;
-                            return (
-                            <div key={idx} className={`bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 ${c.border} hover:bg-slate-50 transition-all duration-200`}>
-                                <div className={`p-2.5 ${c.bg} ${c.text} rounded-lg shrink-0`}>
-                                    <item.icon size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">{item.label}</p>
-                                    <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{item.value}</p>
-                                </div>
-                            </div>
-                            );
-                        })}
-                    </>
-                ) : activeView === 'Orders' ? (
-                    <>
-                        {[
-                            { label: 'Total Orders', value: `${currency}${orderStats.totalOrderValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} `, icon: TrendingUp, color: 'blue' },
-                            { label: 'Completed', value: `${orderStats.completedCount} orders`, icon: CheckCircle, color: 'emerald' },
-                            { label: 'Pending Value', value: `${currency}${orderStats.pendingValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} `, icon: Clock, color: 'amber' },
-                            { label: 'Outstanding', value: `${currency}${orderStats.outstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })} `, icon: Wallet, color: 'indigo' }
-                        ].map((item, idx) => {
-                            const colorMap: Record<string, { border: string, bg: string, text: string }> = {
-                                blue: { border: 'border-l-blue-500', bg: 'bg-blue-50', text: 'text-blue-600' },
-                                emerald: { border: 'border-l-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-600' },
-                                amber: { border: 'border-l-amber-500', bg: 'bg-amber-50', text: 'text-amber-600' },
-                                indigo: { border: 'border-l-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-600' },
-                            };
-                            const c = colorMap[item.color] || colorMap.blue;
-                            return (
-                            <div key={idx} className={`bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 ${c.border} hover:bg-slate-50 transition-all duration-200`}>
-                                <div className={`p-2.5 ${c.bg} ${c.text} rounded-lg shrink-0`}>
-                                    <item.icon size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">{item.label}</p>
-                                    <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{item.value}</p>
-                                </div>
-                            </div>
-                            );
-                        })}
-                    </>
-                ) : null}
-            </div>
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 18 }}>
+                 {activeView === 'Invoices' ? (
+                     <>
+                         {[
+                             { label: 'Total Invoiced', value: `${currency}${invoiceStats.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: TrendingUp, color: '#1f8577', bg: '#eef7f6' },
+                             { label: 'Annual Profit', value: `${currency}${invoiceStats.annualProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: TrendingUp, color: '#1f8577', bg: '#eef7f6' },
+                             { label: 'Outstanding', value: `${currency}${invoiceStats.outstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: Wallet, color: '#1f8577', bg: '#eef7f6' },
+                             { label: 'Overdue Amount', value: `${currency}${invoiceStats.overdue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: AlertCircle, color: '#b5493f', bg: '#fef2f2' }
+                         ].map((item, idx) => (
+                             <div key={idx} onClick={() => {}} style={{ cursor: 'pointer', padding: '14px 16px', borderRadius: 14, background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid ' + item.color, boxShadow: '0 1px 3px rgba(0,0,0,.04)', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'transform .15s ease, box-shadow .15s ease' }}>
+                                 <div style={{ padding: 10, borderRadius: 10, background: item.bg, color: item.color, display: 'inline-flex' }}><item.icon size={20} /></div>
+                                 <div style={{ minWidth: 0 }}>
+                                     <p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>{item.label}</p>
+                                     <p style={{ fontSize: 18, fontWeight: 700, color: '#23282A', margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>{item.value}</p>
+                                 </div>
+                             </div>
+                         ))}
+                     </>
+                 ) : activeView === 'Orders' ? (
+                     <>
+                         {[
+                             { label: 'Total Orders', value: `${currency}${orderStats.totalOrderValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: TrendingUp, color: '#1f8577', bg: '#eef7f6' },
+                             { label: 'Completed', value: `${orderStats.completedCount} orders`, icon: CheckCircle, color: '#1f8577', bg: '#eef7f6' },
+                             { label: 'Pending Value', value: `${currency}${orderStats.pendingValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: Clock, color: '#1f8577', bg: '#eef7f6' },
+                             { label: 'Outstanding', value: `${currency}${orderStats.outstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: Wallet, color: '#1f8577', bg: '#eef7f6' }
+                         ].map((item, idx) => (
+                             <div key={idx} onClick={() => {}} style={{ cursor: 'pointer', padding: '14px 16px', borderRadius: 14, background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid ' + item.color, boxShadow: '0 1px 3px rgba(0,0,0,.04)', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'transform .15s ease, box-shadow .15s ease' }}>
+                                 <div style={{ padding: 10, borderRadius: 10, background: item.bg, color: item.color, display: 'inline-flex' }}><item.icon size={20} /></div>
+                                 <div style={{ minWidth: 0 }}>
+                                     <p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>{item.label}</p>
+                                     <p style={{ fontSize: 18, fontWeight: 700, color: '#23282A', margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>{item.value}</p>
+                                 </div>
+                             </div>
+                         ))}
+                     </>
+                 ) : null}
+             </div>
 
             {activeView === 'Invoices' && showVisualDashboard && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 animate-in fade-in slide-in-from-top-4 duration-500 shrink-0">
-                    <div className="lg:col-span-2 bg-white/90 backdrop-blur-sm border border-slate-200 p-6 rounded-[2.5rem] shadow-sm flex flex-col h-[300px] min-h-0">
+                    <div className="lg:col-span-2 bg-[#FEFDFB] border border-[#e4ddd1] p-6 rounded-[2.5rem] shadow-sm flex flex-col h-[300px] min-h-0">
                         <div className="flex justify-between items-center mb-6 shrink-0">
-                            <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                                <BarChart2 size={16} className="text-blue-600" /> Revenue & Profit Trends
+                            <h3 className="text-[10px] font-bold text-[#23282A] uppercase tracking-tight flex items-center gap-2">
+                                <BarChart2 size={16} className="text-[#1f8577]" /> Revenue & Profit Trends
                             </h3>
                             <div className="flex gap-4 text-[10px] font-bold uppercase tracking-tight">
-                                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Revenue</div>
-                                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Profit</div>
+                                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#1f8577]"></div> Revenue</div>
+                                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#3fa294]"></div> Profit</div>
                             </div>
                         </div>
                         <div className="flex-1 min-h-0 w-full">
                         {/* console.log("Chart container mounted", dashboardData.monthly) */}
                         <ResponsiveContainer width="100%" height="100%" minHeight={180} minWidth={0} aspect={3}>
                             <BarChart data={dashboardData.monthly}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} tickFormatter={(val) => `${currency}${val / 1000} k`} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4ddd1" />
+                                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#5c6567' }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#5c6567' }} tickFormatter={(val) => `${currency}${val / 1000} k`} />
                                     <Tooltip
                                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
                                         formatter={(val) => [`${currency}${val.toLocaleString()} `]}
                                     />
-                                    <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
-                                    <Bar dataKey="profit" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} />
+                                    <Bar dataKey="revenue" fill="#1f8577" radius={[4, 4, 0, 0]} barSize={30} />
+                                    <Bar dataKey="profit" fill="#3fa294" radius={[4, 4, 0, 0]} barSize={30} />
                             </BarChart>
                         </ResponsiveContainer>
                         </div>
                     </div>
-                    <div className="bg-white/90 backdrop-blur-sm border border-slate-200 p-6 rounded-[2.5rem] shadow-sm flex flex-col h-[300px] min-h-0">
-                        <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-tight mb-6 flex items-center gap-2 shrink-0">
-                            <PieChartIcon size={16} className="text-blue-600" /> Status Distribution
+                    <div className="bg-[#FEFDFB] border border-[#e4ddd1] p-6 rounded-[2.5rem] shadow-sm flex flex-col h-[300px] min-h-0">
+                        <h3 className="text-[10px] font-bold text-[#23282A] uppercase tracking-tight mb-6 flex items-center gap-2 shrink-0">
+                            <PieChartIcon size={16} className="text-[#1f8577]" /> Status Distribution
                         </h3>
                         <div className="flex-1 min-h-0 w-full">
                         {/* console.log("Chart container mounted", dashboardData.status) */}
@@ -1724,7 +1703,7 @@ const Orders: React.FC = () => {
                                         dataKey="value"
                                     >
                                         {dashboardData.status.map((entry, index) => (
-                                            <Cell key={`cell - ${index} `} fill={entry.color} />
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
                                         ))}
                                     </Pie>
                                     <Tooltip
@@ -1737,7 +1716,7 @@ const Orders: React.FC = () => {
                             {dashboardData.status.map((s, i) => (
                                 <div key={i} className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }}></div>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{s.name}: {s.value}</span>
+                                    <span className="text-[10px] font-bold text-[#5c6567] uppercase tracking-tight">{s.name}: {s.value}</span>
                                 </div>
                             ))}
                         </div>
@@ -1821,9 +1800,9 @@ const Orders: React.FC = () => {
             </div>
 
             {selectedInvoiceIds.length > 0 && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-8 duration-300 z-[60] border border-white/10">
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#23282A] text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-8 duration-300 z-[60] border border-white/10">
                     <div className="flex items-center gap-3 pr-6 border-r border-white/10">
-                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold">
+                        <div className="w-8 h-8 rounded-full bg-[#1f8577] flex items-center justify-center text-[10px] font-bold">
                             {selectedInvoiceIds.length}
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-tight">
@@ -1836,13 +1815,13 @@ const Orders: React.FC = () => {
                             <>
                                 <button
                                     onClick={() => handleBulkAction('bulk_pay')}
-                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
+                                    className="px-4 py-2 bg-[#1f8577] hover:bg-[#0f544c] rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
                                 >
                                     <CheckCircle size={14} /> Mark Paid
                                 </button>
                                 <button
                                     onClick={() => handleBulkAction('bulk_email')}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
+                                    className="px-4 py-2 bg-[#1f8577] hover:bg-[#0f544c] rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
                                 >
                                     <Mail size={14} /> Bulk Email
                                 </button>
@@ -1852,7 +1831,7 @@ const Orders: React.FC = () => {
                         {activeView === 'Exchanges' && (
                             <button
                                 onClick={() => handleBulkAction('bulk_approve')}
-                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
+                                className="px-4 py-2 bg-[#1f8577] hover:bg-[#0f544c] rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
                             >
                                 <CheckCircle size={14} /> Approve Selected
                             </button>
@@ -1860,13 +1839,13 @@ const Orders: React.FC = () => {
 
                         <button
                             onClick={() => handleBulkAction('bulk_cancel')}
-                            className="px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
+                            className="px-4 py-2 bg-[#5c6567] hover:bg-[#3a4244] rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
                         >
                             <Ban size={14} /> Cancel
                         </button>
                         <button
                             onClick={() => handleBulkAction('bulk_delete')}
-                            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
+                            className="px-4 py-2 bg-[#b5493f] hover:bg-[#8a3a33] rounded-xl text-[10px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2"
                         >
                             <Trash2 size={14} /> Delete
                         </button>
@@ -1874,7 +1853,7 @@ const Orders: React.FC = () => {
                             onClick={() => {
                                 setSelectedInvoiceIds([]);
                             }}
-                            className="p-2 text-slate-400 hover:text-white transition-colors"
+                            className="p-2 text-[#5c6567] hover:text-white transition-colors"
                         >
                             <X size={20} />
                         </button>
