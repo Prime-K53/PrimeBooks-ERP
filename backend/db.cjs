@@ -1035,7 +1035,7 @@ const initDb = () => {
         { table: 'bank_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'budgets', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'chart_of_accounts', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'companies', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+
         { table: 'customer_payments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'customer_referrals', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'departments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
@@ -2213,7 +2213,19 @@ const initDb = () => {
           runIndex('CREATE INDEX IF NOT EXISTS idx_purchase_orders_fy ON purchase_orders(company_id, order_date)'),
           runIndex('CREATE INDEX IF NOT EXISTS idx_goods_receipts_fy ON goods_receipts(company_id, received_date)'),
           runIndex('CREATE INDEX IF NOT EXISTS idx_sales_orders_fy ON sales_orders(company_id, orderDate)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_inventory_transactions_fy ON inventory_transactions(company_id, timestamp)')
+          runIndex('CREATE INDEX IF NOT EXISTS idx_inventory_transactions_fy ON inventory_transactions(company_id, timestamp)'),
+          // Company-scoped unique indexes (backfill for inline UNIQUE constraints missing company_id)
+          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_class_name_per_company ON classes(company_id, name)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_subject_name_per_company ON subjects(company_id, name)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_subject_code_per_company ON subjects(company_id, code)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_logical_number_per_company ON documents(company_id, logical_number)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_exchange_number_per_company ON sales_exchanges(company_id, exchange_number)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_sale_idempotency_key ON sales(company_id, idempotency_key)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_referral_code_per_company ON customer_referrals(company_id, referral_code)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_idempotency_keys ON idempotency_keys(company_id, key)'),
+          runIndex('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_coa_code_per_company ON chart_of_accounts(company_id, code)'),
+          runIndex('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_warehouse_inventory_per_company ON warehouse_inventory(company_id, item_id, warehouse_id)'),
+          runIndex('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_exam_class_per_batch ON examination_classes(company_id, batch_id, class_name)')
         ]).then(() => {
           resolve();
         });

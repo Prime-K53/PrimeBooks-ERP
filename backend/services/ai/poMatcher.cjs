@@ -27,8 +27,10 @@ class POMatcher extends BaseAIService {
 
     for (const po of purchaseOrders) {
       const pos = await this._all(
-        `SELECT * FROM purchase_order_items WHERE purchase_order_id = ?`,
-        [po.id]
+        `SELECT poi.* FROM purchase_order_items poi
+         JOIN purchase_orders po2 ON poi.purchase_order_id = po2.id
+         WHERE poi.purchase_order_id = ? AND po2.company_id = ?`,
+        [po.id, companyId]
       );
 
       const grs = goodsReceipts.filter(g => g.purchase_order_id === po.id);

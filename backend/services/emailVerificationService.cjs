@@ -34,14 +34,18 @@ const requestVerification = async ({ email, companyId = null, purpose = 'email_v
   return { success: true, code, expiresAt };
 };
 
-const verifyCode = async ({ email, code }) => {
+const verifyCode = async ({ email, code, companyId = null }) => {
   return new Promise((resolve, reject) => {
+    const companyFilter = companyId ? 'AND company_id = ?' : '';
+    const params = [email, code];
+    if (companyId) params.push(companyId);
     getDb().get(
       `SELECT * FROM email_verifications
        WHERE email = ? AND code = ? AND purpose = 'email_verification'
          AND verified = 0 AND expires_at > datetime('now')
+         ${companyFilter}
        ORDER BY created_at DESC LIMIT 1`,
-      [email, code],
+      params,
       (err, row) => {
         if (err) return reject(err);
         if (!row) return resolve({ success: false, error: 'Invalid or expired code' });
@@ -59,13 +63,17 @@ const verifyCode = async ({ email, code }) => {
   });
 };
 
-const findLatestPending = async (email) => {
+const findLatestPending = async (email, companyId = null) => {
   return new Promise((resolve, reject) => {
+    const companyFilter = companyId ? 'AND company_id = ?' : '';
+    const params = [email];
+    if (companyId) params.push(companyId);
     getDb().get(
       `SELECT * FROM email_verifications
        WHERE email = ? AND verified = 0 AND expires_at > datetime('now')
+         ${companyFilter}
        ORDER BY created_at DESC LIMIT 1`,
-      [email],
+      params,
       (err, row) => {
         if (err) return reject(err);
         resolve(row || null);

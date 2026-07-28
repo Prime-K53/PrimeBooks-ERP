@@ -379,8 +379,8 @@ const getAllFromLegacyStore = async <T>(storeName: keyof NexusDB): Promise<T[]> 
         if (item !== undefined) items.push(item);
     }
     const cid = await getCurrentCompanyId();
-    if (!cid) return items;
     if (LOCAL_ONLY_STORES.has(String(storeName))) return items;
+    if (!cid) return items.filter((item: any) => !item?._companyId);
     const filtered = items.filter((item: any) => {
         const recordCompany = item?._companyId;
         return !recordCompany || recordCompany === cid;
@@ -396,7 +396,8 @@ const getFromLegacyStore = async <T>(storeName: keyof NexusDB, id: string): Prom
     const record = await db.get(storeName as any, id) as T | undefined;
     if (!record) return undefined;
     const cid = await getCurrentCompanyId();
-    if (!cid) return record;
+    if (LOCAL_ONLY_STORES.has(String(storeName))) return record;
+    if (!cid) return (record as any)?._companyId ? undefined : record;
     const recordCompany = (record as Record<string, unknown>)?._companyId;
     if (recordCompany && recordCompany !== cid) {
         return undefined;
@@ -1414,6 +1415,7 @@ export const dbService = {
 
         const db = await initDB();
         const parsed = JSON.parse(jsonData);
+        const currentCompanyId = await getCurrentCompanyId();
 
         const tx = db.transaction(db.objectStoreNames as any, 'readwrite');
         for (const store of STORE_NAMES) {
@@ -1423,11 +1425,20 @@ export const dbService = {
             const items = parsed.data[store];
             if (Array.isArray(items)) {
                 for (const item of items) {
+                    // Re-stamp with current company ID to prevent cross-company data injection
+                    if (currentCompanyId && !LOCAL_ONLY_STORES.has(store)) {
+                        item._companyId = currentCompanyId;
+                    }
                     await objectStore.put(item);
                 }
             }
         }
         await tx.done;
+
+        // Preserve current company config before clearing localStorage
+        const currentConfig = localStorage.getItem('nexus_company_config');
+        const currentAuth = localStorage.getItem('prime-erp-supabase-auth');
+        const currentUserId = localStorage.getItem('prime_user_id');
 
         try {
             localStorage.clear();
@@ -1435,9 +1446,16 @@ export const dbService = {
             // Ignore local storage clear failures and continue restoring known keys.
         }
 
+        // Restore critical identity keys that must not be overwritten by backup
+        if (currentConfig) localStorage.setItem('nexus_company_config', currentConfig);
+        if (currentAuth) localStorage.setItem('prime-erp-supabase-auth', currentAuth);
+        if (currentUserId) localStorage.setItem('prime_user_id', currentUserId);
+
         if (parsed.settings && typeof parsed.settings === 'object') {
             Object.entries(parsed.settings).forEach(([key, value]) => {
                 if (typeof value === 'string') {
+                    // Skip identity keys that must not be overwritten
+                    if (['nexus_company_config', 'prime-erp-supabase-auth', 'prime_user_id'].includes(key)) return;
                     localStorage.setItem(key, value);
                 }
             });

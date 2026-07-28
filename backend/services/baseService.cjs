@@ -3,7 +3,9 @@ const { getDatabase } = require('../db.cjs');
 const TENANT_TABLES = new Set([
   'users', 'customers', 'suppliers', 'products', 'inventory', 'inventory_transactions',
   'sales', 'invoices', 'sales_orders', 'sale_items', 'sales_exchanges',
-  'customer_payments', 'payment_allocations', 'chart_of_accounts', 'ledger_entries',
+  'sales_exchange_items', 'sales_exchange_approvals',
+  'customer_payments', 'payment_allocations', 'payment_allocation_lines',
+  'chart_of_accounts', 'ledger_entries',
   'budgets', 'transfers', 'expenses', 'income', 'bank_accounts', 'bank_transactions',
   'purchase_orders', 'purchase_order_items', 'goods_receipts', 'material_batches',
   'warehouse_inventory', 'warehouse_snapshots', 'financial_years', 'user_preferences',
@@ -16,11 +18,15 @@ const TENANT_TABLES = new Set([
   'work_orders', 'production_batches', 'material_categories', 'schools', 'classes', 'subjects',
   'market_adjustments', 'market_adjustment_transactions', 'transaction_adjustment_snapshots',
   'reprint_jobs', 'email_verifications', 'vat_transactions',
-  'referrals', 'referral_commissions', 'referral_payouts', 'referral_codes',
-  'engagement_rules', 'engagement_log', 'engagement_scores',
-  'pricing_tiers', 'customer_pricing_tiers', 'item_prices',
-  'membership_tiers', 'member_cards', 'loyalty_points', 'loyalty_transactions',
-  'subscriptions', 'subscription_plans', 'subscription_invoices'
+  'customer_referrals', 'referral_rewards', 'referral_timeline', 'referral_audit_logs',
+  'referral_campaigns', 'referral_analytics', 'referral_reversals', 'referral_settings',
+  'idempotency_keys',
+  'engagement_membership_tiers', 'engagement_customer_tiers', 'engagement_gift_cards',
+  'engagement_gift_card_transactions', 'engagement_promotions', 'engagement_cashback',
+  'engagement_points', 'engagement_point_balances', 'engagement_affiliates',
+  'engagement_affiliate_commissions', 'engagement_customer_rewards', 'engagement_timeline',
+  'engagement_audit', 'engagement_analytics',
+  'exchange_rates', 'currencies', 'accounts_payable', 'accounts_receivable', 'bill_of_materials'
 ]);
 
 const TENANT_COLUMN = 'company_id';
@@ -41,7 +47,7 @@ class BaseService {
    * and the query doesn't already filter by company_id.
    */
   _scopeSql(sql, params, companyId) {
-    if (!companyId) return { sql, params };
+    if (companyId === null || companyId === undefined) return { sql, params };
 
     const upper = sql.trim().toUpperCase();
     if (!upper.startsWith('SELECT') && !upper.startsWith('UPDATE') && !upper.startsWith('DELETE')) {

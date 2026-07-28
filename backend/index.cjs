@@ -2348,8 +2348,8 @@ async function startServer() {
       if (req.body.salary !== undefined && Number(req.body.salary) !== Number(existing.salary)) {
         const { randomUUID } = require('crypto');
         db.run(
-          `INSERT INTO audit_logs (id, timestamp, correlation_id, user_id, user_role, action, entity_type, entity_id, details, old_value, new_value, delta, integrity_hash)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO audit_logs (id, timestamp, correlation_id, user_id, user_role, action, entity_type, entity_id, details, old_value, new_value, delta, integrity_hash, company_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             randomUUID(), new Date().toISOString(), req.headers['x-correlation-id'] || '',
             req.user?.id || 'system', req.user?.role || 'UNKNOWN', 'SALARY_UPDATE',
@@ -2358,7 +2358,8 @@ async function startServer() {
             JSON.stringify({ salary: existing.salary }),
             JSON.stringify({ salary: req.body.salary }),
             JSON.stringify({ from: existing.salary, to: req.body.salary }),
-            ''
+            '',
+            req.companyId || ''
           ]
         );
       }
@@ -3263,9 +3264,9 @@ app.delete('/api/examinations/batch/:batch_id', (req, res) => {
   const { batch_id } = req.params;
   db.serialize(() => {
     db.run("BEGIN TRANSACTION");
-    db.run("DELETE FROM examination_bom_calculations WHERE batch_id = ?", [batch_id]);
-    db.run("DELETE FROM examination_subjects WHERE batch_id = ?", [batch_id]);
-    db.run("DELETE FROM examination_classes WHERE batch_id = ?", [batch_id]);
+    db.run("DELETE FROM examination_bom_calculations WHERE batch_id = ? AND company_id = ?", [batch_id, req.companyId || '']);
+    db.run("DELETE FROM examination_subjects WHERE batch_id = ? AND company_id = ?", [batch_id, req.companyId || '']);
+    db.run("DELETE FROM examination_classes WHERE batch_id = ? AND company_id = ?", [batch_id, req.companyId || '']);
     db.run("DELETE FROM examinations WHERE batch_id = ? AND company_id = ?", [batch_id, req.companyId || ''], (err) => {
       if (err) {
         console.error('[Examination] delete batch error:', err);

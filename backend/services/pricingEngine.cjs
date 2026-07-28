@@ -45,46 +45,52 @@ const calculateAdjustmentTotal = (snapshots) => {
 /**
  * Resolve margin from profit margin service
  */
-const resolveMargin = async (itemId, categoryId) => {
+const resolveMargin = async (itemId, categoryId, companyId = '') => {
+  const companyFilter = companyId ? 'AND company_id = ?' : '';
+  const params = companyId ? [companyId] : [];
   return new Promise((resolve) => {
     if (itemId) {
       getDb().get(
-        "SELECT margin_value, margin_type, scope FROM profit_margin_settings WHERE scope = 'line_item' AND scope_ref_id = ? AND is_active = 1 AND deleted_at IS NULL",
-        [itemId],
+        `SELECT margin_value, margin_type, scope FROM profit_margin_settings ${companyFilter} AND scope = 'line_item' AND scope_ref_id = ? AND is_active = 1 AND deleted_at IS NULL`,
+        [...params, itemId],
         (err, row) => {
           if (err || row) {
             return resolve({ ...row, source: 'line_item' });
           }
-          resolveCategoryMargin(categoryId, resolve);
+          resolveCategoryMargin(categoryId, companyId, resolve);
         }
       );
     } else {
-      resolveCategoryMargin(categoryId, resolve);
+      resolveCategoryMargin(categoryId, companyId, resolve);
     }
   });
 };
 
-const resolveCategoryMargin = (categoryId, resolve) => {
+const resolveCategoryMargin = (categoryId, companyId, resolve) => {
+  const companyFilter = companyId ? 'AND company_id = ?' : '';
+  const params = companyId ? [companyId] : [];
   if (categoryId) {
     getDb().get(
-      "SELECT margin_value, margin_type, scope FROM profit_margin_settings WHERE scope = 'category' AND scope_ref_id = ? AND is_active = 1 AND deleted_at IS NULL",
-      [categoryId],
+      `SELECT margin_value, margin_type, scope FROM profit_margin_settings ${companyFilter} AND scope = 'category' AND scope_ref_id = ? AND is_active = 1 AND deleted_at IS NULL`,
+      [...params, categoryId],
       (err, row) => {
         if (err || row) {
           return resolve({ ...row, source: 'category' });
         }
-        resolveGlobalMargin(resolve);
+        resolveGlobalMargin(companyId, resolve);
       }
     );
   } else {
-    resolveGlobalMargin(resolve);
+    resolveGlobalMargin(companyId, resolve);
   }
 };
 
-const resolveGlobalMargin = (resolve) => {
+const resolveGlobalMargin = (companyId, resolve) => {
+  const companyFilter = companyId ? 'AND company_id = ?' : '';
+  const params = companyId ? [companyId] : [];
   getDb().get(
-    "SELECT margin_value, margin_type, scope FROM profit_margin_settings WHERE scope = 'global' AND is_active = 1 AND deleted_at IS NULL",
-    [],
+    `SELECT margin_value, margin_type, scope FROM profit_margin_settings ${companyFilter} AND scope = 'global' AND is_active = 1 AND deleted_at IS NULL`,
+    params,
     (err, row) => {
       if (err || row) {
         return resolve({ ...row, source: 'global', margin_value: row?.margin_value ?? 0, margin_type: row?.margin_type ?? 'percentage' });
