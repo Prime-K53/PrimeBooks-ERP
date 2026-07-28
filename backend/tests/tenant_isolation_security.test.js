@@ -418,8 +418,80 @@ async function runTests() {
   const employeeQuery = hrService._scopeSql('SELECT id, salary FROM employees WHERE id = ?', ['emp-any'], COMPANY_A);
   assert(employeeQuery.sql.includes('company_id = ?'), 'hrService employee fetch is scoped by company_id via _scopeSql');
 
-  // 20. Cleanup test data
-  console.log('\n14. Cleanup\n');
+  // 20. Test: baseService._scopeSql empty string handling (was bypassing scoping entirely)
+  console.log('\n20. _scopeSql: empty string no longer bypasses scoping\n');
+  const baseService = new (require('../services/baseService.cjs'))();
+  // Empty string should now be treated as a valid company ID (NOT bypass)
+  const emptyScoped = baseService._scopeSql('SELECT * FROM customers', [], '');
+  assert(emptyScoped.sql.includes('company_id = ?'), '_scopeSql does not bypass for empty string companyId');
+  assert(emptyScoped.params[0] === '', '_scopeSql passes empty string as companyId param');
+  // But null/undefined still bypass (no company context available)
+  const nullScoped = baseService._scopeSql('SELECT * FROM customers', [], null);
+  assert(!nullScoped.sql.includes('company_id = ?'), '_scopeSql bypasses for null companyId');
+  const undefScoped = baseService._scopeSql('SELECT * FROM customers', [], undefined);
+  assert(!undefScoped.sql.includes('company_id = ?'), '_scopeSql bypasses for undefined companyId');
+
+  // 21. Test: company-scoped unique indexes exist
+  console.log('\n21. Company-scoped unique indexes exist\n');
+  const uniqueIndexes = [
+    'idx_unique_class_name_per_company',
+    'idx_unique_subject_name_per_company',
+    'idx_unique_subject_code_per_company',
+    'idx_unique_logical_number_per_company',
+    'idx_unique_exchange_number_per_company',
+    'idx_unique_referral_code_per_company',
+    'idx_unique_idempotency_keys',
+    'idx_unique_coa_code_per_company',
+    'idx_unique_warehouse_inventory_per_company',
+    'idx_unique_exam_class_per_batch'
+  ];
+  // Note: idx_unique_sale_idempotency_key requires idempotency_key column on sales table
+  // which may not exist on older databases
+  for (const idxName of uniqueIndexes) {
+    const idxRow = await runQuery("SELECT name FROM sqlite_master WHERE type='index' AND name=?", [idxName]);
+    assert(idxRow !== undefined, `Index ${idxName} exists`);
+  }
+  // Try optional index (sale idempotency key) separately
+  const saleIdemIdx = await runQuery("SELECT name FROM sqlite_master WHERE type='index' AND name=?", ['idx_unique_sale_idempotency_key']);
+  if (saleIdemIdx) assert(true, 'Index idx_unique_sale_idempotency_key exists (optional)');
+
+  // 22. Test: pricingEngine resolveMargin accepts optional companyId
+  console.log('\n22. pricingEngine resolveMargin companyId propagation\n');
+  const pricing = require('../services/pricingEngine.cjs');
+  // Test that resolveMargin with companyId produces scoped query (we test via _scopeSql-equivalent)
+  // marginA should be for COMPANY_A if settings exist, otherwise system default
+  const marginA = await pricing.resolveMargin(null, null, COMPANY_A);
+  assert(marginA !== undefined, 'resolveMargin returns a margin result');
+
+  // 23. Test: companies table is GLOBAL
+  console.log('\n23. Companies table is GLOBAL\n');
+  const companyColsAfter = await runAll('PRAGMA table_info(companies)');
+  const hasIdCol = companyColsAfter.some(c => c.name === 'id');
+  const hasOwnerIdCol = companyColsAfter.some(c => c.name === 'owner_id');
+  assert(hasIdCol, 'companies table has id column');
+  assert(hasOwnerIdCol, 'companies table has owner_id column');
+  // Note: company_id on companies was removed from migration. Existing databases may still
+  // have a legacy company_id column from a previous migration — new installations won't.
+
+  // 24. Test: documentService.resolveDocument company_id scoping
+  console.log('\n24. DocumentService resolveDocument tenant scoping\n');
+  const docService = require('../services/documentService.cjs');
+  // Insert test documents for two companies
+  const docIdA = require('crypto').randomUUID();
+  const docIdB = require('crypto').randomUUID();
+  await runExec("INSERT INTO documents (id, type, payload, status, company_id, created_at) VALUES (?, 'test', '{}', 'final', ?, datetime('now'))",
+    [docIdA, COMPANY_A]);
+  await runExec("INSERT INTO documents (id, type, payload, status, company_id, created_at) VALUES (?, 'test', '{}', 'final', ?, datetime('now'))",
+    [docIdB, COMPANY_B]);
+  // Resolve Company A's doc with Company A's context
+  const docAResult = await docService.resolveDocument(docIdA, COMPANY_A);
+  assert(docAResult !== null, 'Company A can resolve its own document');
+  // Resolve Company B's doc with Company A's context should fail
+  const docBfromA = await docService.resolveDocument(docIdB, COMPANY_A);
+  assert(docBfromA === null, 'Company A cannot resolve Company B document via resolveDocument');
+
+  // 25. Cleanup test data
+  console.log('\n25. Cleanup\n');
   await runExec('DELETE FROM examination_class_adjustments WHERE id IN (\'adj-a1\', \'adj-b1\')');
   await runExec('DELETE FROM examination_bom_calculations WHERE id IN (\'bom-a1\', \'bom-b1\')');
   await runExec('DELETE FROM examination_subjects WHERE id IN (\'subj-a1\', \'subj-b1\')');

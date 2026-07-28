@@ -3079,7 +3079,7 @@ async function startServer() {
 
       // If an ID is provided, resolve the document first
       if (id) {
-        const doc = await documentService.resolveDocument(id);
+        const doc = await documentService.resolveDocument(id, req.companyId || '');
         if (!doc) return sendError(res, 404, 'Document not found', 'NOT_FOUND');
         finalData = JSON.parse(doc.payload);
         finalType = doc.type || finalType;

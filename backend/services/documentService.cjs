@@ -60,12 +60,15 @@ class DocumentService {
       let query;
       let params;
 
+      const companyFilter = cid ? " AND company_id = ?" : " AND (company_id = ? OR company_id IS NULL OR company_id = '')";
+      const queryCid = cid || '';
+
       if (identifierType === 'internalId') {
-        query = "SELECT * FROM documents WHERE id = ?" + (cid ? " AND company_id = ?" : "");
-        params = cid ? [id, cid] : [id];
+        query = "SELECT * FROM documents WHERE id = ?" + companyFilter;
+        params = [id, queryCid];
       } else if (identifierType === 'logicalNumber' && mergedOptions.allowLogicalFallback) {
-        query = "SELECT * FROM documents WHERE logical_number = ?" + (cid ? " AND company_id = ?" : "");
-        params = cid ? [id, cid] : [id];
+        query = "SELECT * FROM documents WHERE logical_number = ?" + companyFilter;
+        params = [id, queryCid];
       } else {
         console.warn(`[DocumentService] Invalid identifier format or fallback disabled: ${id}`);
         return resolve(null);

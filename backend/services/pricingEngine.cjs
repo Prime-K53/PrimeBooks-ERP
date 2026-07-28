@@ -409,5 +409,6 @@ module.exports = {
   calculateSellingPrice,
   calculatePriceCore,
   validateTransactionPrice,
-  roundToCurrency
+  roundToCurrency,
+  resolveMargin
 };
