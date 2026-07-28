@@ -74,7 +74,10 @@ apiClient.interceptors.request.use((config) => {
   try {
     const method = String(config.method || '').toLowerCase();
     if (method === 'get') {
-      const fyId = localStorage.getItem('selectedFinancialYearId');
+      const companyCfg = localStorage.getItem('nexus_company_config');
+      const companyId = companyCfg ? (JSON.parse(companyCfg)?.companyId || '') : '';
+      const prefix = companyId ? `company:${companyId}:` : '';
+      const fyId = localStorage.getItem(`${prefix}selectedFinancialYearId`);
       if (fyId) {
         config.params = { ...(config.params || {}), financial_year_id: fyId };
       }
