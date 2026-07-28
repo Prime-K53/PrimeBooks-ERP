@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Calendar, Filter, Eye, Printer, Download, Clock, TrendingUp, Scale, Activity, Target, CheckCircle2, History } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +7,11 @@ import { useDocumentStore } from '../stores/documentStore';
 import { calculateAccountBalances, getAgedData } from '../services/reportService';
 import { format, parseISO, startOfYear, endOfYear, startOfMonth, endOfMonth } from 'date-fns';
 import { currencyService } from '../services/currencyService';
-import { Dialog, DialogHeader, DialogTitle, DialogFooter } from './Dialog';
+import {
+  modalOverlay, modalCard, accentBar, modalHeader, iconBox, modalTitle, modalSubtitle, closeBtn,
+  labelStyle, inputStyle, selectStyle, btnGhostStyle, tealBtn, modalBody, modalFooter, sectionTitle, sectionSubtitle, formGrid,
+  inkSoft, hairline, paper, teal, ink
+} from '../views/reports/reportModalStyles';
 
 interface ReportOptionsModalProps {
     isOpen: boolean;
@@ -77,7 +80,6 @@ const ReportOptionsModal: React.FC<ReportOptionsModalProps> = ({ isOpen, onClose
             const totalAssets = assets.reduce((s, a) => s + a.amount, 0);
             const prevTotalAssets = assets.reduce((s, a) => s + (a.prevAmount || 0), 0);
 
-            // Calculate Net Income for the period to balance the BS
             const revenue = getAccountRows(['Revenue']);
             const expenses = getAccountRows(['Expense']);
             const netIncome = revenue.reduce((s, a) => s + a.amount, 0) - expenses.reduce((s, a) => s + a.amount, 0);
@@ -182,57 +184,54 @@ const ReportOptionsModal: React.FC<ReportOptionsModalProps> = ({ isOpen, onClose
     };
 
     return (
-        <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogHeader className="flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-200">
-                        <Calendar size={24} />
+        <div style={modalOverlay} onClick={onClose}>
+            <div style={{ ...modalCard, width: 560 }} onClick={(e) => e.stopPropagation()}>
+                <div style={accentBar} />
+                <div style={modalHeader}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={iconBox}><Calendar size={19} color="#fff" /></div>
+                        <div>
+                            <h1 style={modalTitle}>{reportLabel}</h1>
+                            <p style={modalSubtitle}>Configure report period and generation options</p>
+                        </div>
                     </div>
-                    <div>
-                        <DialogTitle className="text-xl font-black text-slate-900 uppercase tracking-tight">{reportLabel}</DialogTitle>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">Report Configuration & Advanced Options</p>
-                    </div>
+                    <button onClick={onClose} aria-label="Close" style={closeBtn}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                    ><X size={15} /></button>
                 </div>
-                <button onClick={onClose} className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-slate-600 rounded-2xl transition-all shadow-sm" title="Close" aria-label="Close">
-                    <X size={20} />
-                </button>
-            </DialogHeader>
-
-            <div className="overflow-y-auto space-y-10 max-h-[60vh]">
-                {/* Date Range Selection */}
-                <section>
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Reporting Period</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-slate-50 rounded-[2rem] border border-slate-200/60">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Start Date</label>
-                            <div className="relative group">
-                                <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                                <input
-                                    type="date"
-                                    value={dateRange.start}
-                                    onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                    className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all shadow-sm"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">End Date</label>
-                            <div className="relative group">
-                                <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                                <input
-                                    type="date"
-                                    value={dateRange.end}
-                                    onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                    className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all shadow-sm"
-                                />
-                            </div>
+                <div style={modalBody}>
+                    <div style={{ marginBottom: 18 }}>
+                        <label style={labelStyle}>Start Date</label>
+                        <div style={{ position: 'relative' }}>
+                            <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />
+                            <input
+                                type="date"
+                                value={dateRange.start}
+                                onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                style={{ ...inputStyle, paddingLeft: 36 }}
+                                onFocus={e => { e.currentTarget.style.borderColor = teal[400]; e.currentTarget.style.background = teal[50]; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
+                            />
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mt-4">
+                    <div style={{ marginBottom: 18 }}>
+                        <label style={labelStyle}>End Date</label>
+                        <div style={{ position: 'relative' }}>
+                            <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />
+                            <input
+                                type="date"
+                                value={dateRange.end}
+                                onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                style={{ ...inputStyle, paddingLeft: 36 }}
+                                onFocus={e => { e.currentTarget.style.borderColor = teal[400]; e.currentTarget.style.background = teal[50]; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
                         {[
                             { label: 'This Year', start: startOfYear(new Date()), end: endOfYear(new Date()) },
                             { label: 'This Month', start: startOfMonth(new Date()), end: endOfMonth(new Date()) },
@@ -242,59 +241,68 @@ const ReportOptionsModal: React.FC<ReportOptionsModalProps> = ({ isOpen, onClose
                             <button
                                 key={opt.label}
                                 onClick={() => setDateRange({ start: opt.start.toISOString().split('T')[0], end: opt.end.toISOString().split('T')[0] })}
-                                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest hover:border-blue-600 hover:text-blue-600 transition-all"
+                                style={{
+                                    padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+                                    border: `1.4px solid ${hairline}`, background: paper, color: inkSoft,
+                                    cursor: 'pointer', transition: 'all .12s', fontFamily: "'Inter', sans-serif"
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.color = teal[700]; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = inkSoft; }}
                             >
                                 {opt.label}
                             </button>
                         ))}
                     </div>
-                </section>
 
-                {/* Advanced Toggles */}
-                <section>
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Advanced Analysis</h3>
-                    </div>
-                    <div className="space-y-4">
+                    <div style={{ marginBottom: 18 }}>
                         <button
                             onClick={() => setCompareWithPrevious(!compareWithPrevious)}
-                            className={`w-full p-6 rounded-[2rem] border transition-all flex items-center justify-between group ${compareWithPrevious ? 'bg-blue-50 border-blue-200 ring-4 ring-blue-50' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
+                            style={{
+                                width: '100%', padding: 16, borderRadius: 12, border: `1.4px solid ${compareWithPrevious ? teal[200] : hairline}`,
+                                background: compareWithPrevious ? teal[50] : paper, cursor: 'pointer', transition: 'all .15s',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: "'Inter', sans-serif"
+                            }}
                         >
-                            <div className="flex items-center gap-6">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${compareWithPrevious ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
-                                    <Activity size={28} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: compareWithPrevious ? teal[600] : teal[50], color: compareWithPrevious ? '#fff' : inkSoft,
+                                    transition: 'all .15s'
+                                }}>
+                                    <Activity size={20} />
                                 </div>
-                                <div className="text-left">
-                                    <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Compare with Previous Period</p>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-1 max-w-sm">Enable side-by-side comparison with the immediately preceding date range of equal length.</p>
+                                <div style={{ textAlign: 'left' }}>
+                                    <p style={{ fontSize: 13, fontWeight: 700, color: ink, margin: 0 }}>Compare with Previous Period</p>
+                                    <p style={{ fontSize: 11, color: inkSoft, margin: '2px 0 0' }}>Enable side-by-side comparison</p>
                                 </div>
                             </div>
-                            <div className={`w-12 h-6 rounded-full relative transition-colors ${compareWithPrevious ? 'bg-blue-600' : 'bg-slate-200'}`}>
-                                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${compareWithPrevious ? 'left-7' : 'left-1'}`} />
+                            <div style={{
+                                width: 44, height: 24, borderRadius: 12, position: 'relative', transition: 'all .15s',
+                                background: compareWithPrevious ? teal[600] : hairline
+                            }}>
+                                <div style={{
+                                    position: 'absolute', top: 2, width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                                    left: compareWithPrevious ? 22 : 2, transition: 'all .15s', boxShadow: '0 1px 3px rgba(0,0,0,.15)'
+                                }} />
                             </div>
                         </button>
                     </div>
-                </section>
+                </div>
+                <div style={modalFooter}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: inkSoft, fontSize: 11, fontWeight: 600 }}>
+                        <Filter size={14} />
+                        <span>{dateRange.start} — {dateRange.end}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <button type="button" onClick={onClose} style={btnGhostStyle}>Cancel</button>
+                        <button type="button" onClick={handlePreview} style={tealBtn}>
+                            <Eye size={14} />
+                            Generate Preview
+                        </button>
+                    </div>
+                </div>
             </div>
-
-            <DialogFooter className="bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-3 text-slate-400">
-                    <Filter size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Selection: {dateRange.start} — {dateRange.end}</span>
-                </div>
-
-                <div className="flex gap-4">
-                    <button
-                        onClick={handlePreview}
-                        className="px-10 py-4 bg-slate-900 text-white rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all flex items-center gap-3 active:scale-95"
-                    >
-                        <Eye size={20} />
-                        Generate Preview
-                    </button>
-                </div>
-            </DialogFooter>
-        </Dialog>
+        </div>
     );
 };
 
