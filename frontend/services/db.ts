@@ -1057,15 +1057,13 @@ export const dbService = {
         if (!LOCAL_ONLY_STORES.has(String(storeName)) && String(storeName) !== 'syncOutbox') {
             try {
                 const cloudValues = await cloudDb.getAll<T>(String(storeName));
-                if (cloudValues !== null) {
+                if (cloudValues !== null && cloudValues.length > 0) {
                     // Silently hydrate local cache for offline availability
-                    if (cloudValues.length > 0) {
-                        try {
-                            for (const item of cloudValues) {
-                                await putToLegacyStore(storeName, item).catch(() => {});
-                            }
-                        } catch { /* cache best-effort */ }
-                    }
+                    try {
+                        for (const item of cloudValues) {
+                            await putToLegacyStore(storeName, item).catch(() => {});
+                        }
+                    } catch { /* cache best-effort */ }
                     return cloudValues;
                 }
             } catch (err) {
