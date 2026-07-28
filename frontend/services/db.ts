@@ -385,9 +385,6 @@ const getAllFromLegacyStore = async <T>(storeName: keyof NexusDB): Promise<T[]> 
         const recordCompany = item?._companyId;
         return !recordCompany || recordCompany === cid;
     });
-    if (filtered.length === 0 && items.length > 0) {
-        return items;
-    }
     return filtered;
 });
 
@@ -402,7 +399,7 @@ const getFromLegacyStore = async <T>(storeName: keyof NexusDB, id: string): Prom
     if (!cid) return record;
     const recordCompany = (record as Record<string, unknown>)?._companyId;
     if (recordCompany && recordCompany !== cid) {
-        return record;
+        return undefined;
     }
     return record;
 });

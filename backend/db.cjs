@@ -998,6 +998,7 @@ const initDb = () => {
         { table: 'inventory_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'material_batches', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'warehouse_inventory', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'warehouse_snapshots', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'material_categories', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'sales_orders', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'sales_exchanges', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
@@ -1028,7 +1029,57 @@ const initDb = () => {
         { table: 'work_orders', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'production_batches', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'sale_items', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'email_verifications', column: 'company_id', type: 'TEXT' }
+        { table: 'email_verifications', column: 'company_id', type: 'TEXT' },
+        { table: 'assets', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'bank_accounts', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'bank_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'budgets', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'chart_of_accounts', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'companies', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'customer_payments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'customer_referrals', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'departments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'employees', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'expenses', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'financial_years', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'goods_receipts', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'idempotency_keys', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'income', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'ledger_entries', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'notifications', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'payment_allocations', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'payment_allocation_lines', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'payroll_runs', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'payslips', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'purchase_order_items', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'purchase_orders', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'referral_analytics', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'referral_audit_logs', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'referral_campaigns', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'referral_reversals', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'referral_rewards', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'referral_settings', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'referral_timeline', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'settings', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'suppliers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'transfers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'user_companies', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'user_preferences', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'vat_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_membership_tiers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_customer_tiers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_gift_cards', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_gift_card_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_promotions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_cashback', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_points', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_point_balances', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_affiliates', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_affiliate_commissions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_customer_rewards', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_timeline', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_audit', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'engagement_analytics', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' }
       ];
 
       // Process migrations: add missing columns to existing tables
@@ -1261,6 +1312,19 @@ const initDb = () => {
       db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_company ON notifications(company_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status)`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS companies (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE,
+        owner_id TEXT,
+        status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'suspended')),
+        subscription_tier TEXT DEFAULT 'free',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      db.run(`CREATE INDEX IF NOT EXISTS idx_companies_owner ON companies(owner_id)`);
 
       db.run(`CREATE TABLE IF NOT EXISTS user_companies (
         id TEXT PRIMARY KEY,

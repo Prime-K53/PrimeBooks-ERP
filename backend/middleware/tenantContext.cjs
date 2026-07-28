@@ -11,6 +11,16 @@ function tenantContext(req, res, next) {
     return next();
   }
 
+  // Validate JWT company_id against x-company-id header (defense against forged headers)
+  if (req.authMode !== 'header' && req.authMode !== 'supabase' && req.user.company_id) {
+    if (req.companyId && req.user.company_id !== req.companyId) {
+      return res.status(403).json({
+        error: 'Cross-company access denied',
+        message: 'Company ID mismatch between authentication token and request header'
+      });
+    }
+  }
+
   // Skip company membership check for header-based auth (trusted local origins only)
   // and for Supabase auth (tenant isolation handled by Supabase RLS)
   if (req.authMode === 'header' || req.authMode === 'supabase') {

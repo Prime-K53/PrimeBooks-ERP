@@ -2342,7 +2342,7 @@ async function startServer() {
       if (req.body.salary !== undefined && (Number(req.body.salary) < 0)) {
         return res.status(400).json({ error: 'Salary cannot be negative' });
       }
-      const existing = await hr._get('SELECT id, salary FROM employees WHERE id = ?', [req.params.id]);
+      const existing = await hr._get('SELECT id, salary FROM employees WHERE id = ?', [req.params.id], req.companyId || '');
       if (!existing) return res.status(404).json({ error: 'Employee not found' });
       const row = await hr.updateEmployee(req.params.id, req.body, req.companyId || '');
       if (req.body.salary !== undefined && Number(req.body.salary) !== Number(existing.salary)) {
