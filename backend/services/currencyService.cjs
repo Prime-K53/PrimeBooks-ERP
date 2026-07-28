@@ -30,8 +30,9 @@ class CurrencyService extends BaseService {
   /**
    * Get exchange rate between two currencies
    */
-  async getExchangeRate(fromCurrency, toCurrency, date = null) {
-    const cacheKey = `${fromCurrency}_${toCurrency}_${date || 'latest'}`;
+  async getExchangeRate(fromCurrency, toCurrency, date = null, companyId = null) {
+    const cid = String(companyId || '').trim();
+    const cacheKey = `${cid || 'global'}:${fromCurrency}_${toCurrency}_${date || 'latest'}`;
     
     // Check cache first
     if (this.exchangeRates.has(cacheKey)) {
@@ -80,8 +81,10 @@ class CurrencyService extends BaseService {
   /**
    * Update exchange rate
    */
-  async updateExchangeRate(fromCurrency, toCurrency, rate, date = null) {
+  async updateExchangeRate(fromCurrency, toCurrency, rate, date = null, companyId = null) {
     const rateDate = date || new Date().toISOString().split('T')[0];
+    const cid = String(companyId || '').trim();
+    const cacheKey = `${cid || 'global'}:${fromCurrency}_${toCurrency}_${rateDate || 'latest'}`;
     
     const svc = this;
     return new Promise((resolve, reject) => {
@@ -93,7 +96,6 @@ class CurrencyService extends BaseService {
         [fromCurrency, toCurrency, rate, rateDate],
         function (err) {
           if (err) return reject(err);
-          const cacheKey = `${fromCurrency}_${toCurrency}_${date || 'latest'}`;
           svc.exchangeRates.delete(cacheKey);
           resolve({ fromCurrency, toCurrency, rate, date: rateDate });
         }

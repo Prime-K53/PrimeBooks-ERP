@@ -27,21 +27,55 @@ interface FinancialYearContextType {
 
 const FinancialYearContext = createContext<FinancialYearContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'selectedFinancialYearId';
+/**
+ * Get the current company ID from the stored config
+ */
+function getCompanyId(): string {
+  try {
+    const config = localStorage.getItem('nexus_company_config');
+    if (config) {
+      const parsed = JSON.parse(config);
+      return parsed.companyId || '';
+    }
+  } catch {
+    // ignore
+  }
+  return '';
+}
 
+/**
+ * Get tenant-scoped storage key
+ */
+function getTenantStorageKey(key: string): string {
+  const companyId = getCompanyId();
+  return companyId ? `company:${companyId}:${key}` : key;
+}
+
+/**
+ * Persist financial year to tenant-scoped localStorage keys
+ */
+function persistFyToLocalStorage(fy: FinancialYear) {
+  const companyId = getCompanyId();
+  const companySuffix = companyId ? `company:${companyId}:` : '';
+  
+  localStorage.setItem(`${companySuffix}selectedFinancialYearId`, fy.id);
+  localStorage.setItem(`${companySuffix}selectedFinancialYearName`, fy.name);
+  localStorage.setItem(`${companySuffix}selectedFinancialYearStart`, fy.start_date);
+  localStorage.setItem(`${companySuffix}selectedFinancialYearEnd`, fy.end_date);
+  localStorage.setItem(`${companySuffix}selectedFinancialYearClosed`, String(fy.is_closed));
+}
+
+/**
+ * Get financial year ID from URL parameters
+ */
 function getFyIdFromUrl(): string | null {
   const params = new URLSearchParams(window.location.search);
   return params.get('financialYear') || params.get('fy') || null;
 }
 
-const persistFyToLocalStorage = (fy: FinancialYear) => {
-  localStorage.setItem(STORAGE_KEY, fy.id);
-  localStorage.setItem('selectedFinancialYearName', fy.name);
-  localStorage.setItem('selectedFinancialYearStart', fy.start_date);
-  localStorage.setItem('selectedFinancialYearEnd', fy.end_date);
-  localStorage.setItem('selectedFinancialYearClosed', String(fy.is_closed));
-};
-
+/**
+ * Provider component for Financial Year context
+ */
 export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { companyConfig, isInitialized } = useAuth();
   const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
@@ -119,7 +153,9 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     // Priority 3: Local storage (device-specific fallback for offline)
-    const storedId = localStorage.getItem(STORAGE_KEY);
+    const companyId = getCompanyId();
+    const companySuffix = companyId ? `company:${companyId}:` : '';
+    const storedId = localStorage.getItem(`${companySuffix}selectedFinancialYearId`);
     if (storedId) {
       const match = years.find((fy: FinancialYear) => fy.id === storedId);
       if (match) {
@@ -152,7 +188,17 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && e.newValue !== e.oldValue) {
+      if (!e.key) return;
+      const companyId = getCompanyId();
+      const companySuffix = companyId ? `company:${companyId}:` : '';
+      const relevantKeys = [
+        `${companySuffix}selectedFinancialYearId`,
+        `${companySuffix}selectedFinancialYearName`,
+        `${companySuffix}selectedFinancialYearStart`,
+        `${companySuffix}selectedFinancialYearEnd`,
+        `${companySuffix}selectedFinancialYearClosed`
+      ];
+      if (relevantKeys.includes(e.key) && e.newValue !== e.oldValue) {
         refreshFinancialYears();
       }
     };

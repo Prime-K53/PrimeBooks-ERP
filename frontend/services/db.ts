@@ -431,7 +431,7 @@ const deleteFromLegacyStore = async (storeName: keyof NexusDB, id: string): Prom
 const SUPABASE_CONFIGURED = isSupabaseConfigured;
 
 const LOCAL_ONLY_STORES = new Set([
-  'syncOutbox', 'files', 'idempotencyKeys',
+  'syncOutbox', 'idempotencyKeys',
   'customerNotificationLogs',
   'alerts', 'auditLogs',
   'productAttributes'

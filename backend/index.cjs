@@ -3631,6 +3631,27 @@ app.get('/api/invoices/:id/details', (req, res) => {
     return ALLOWED_FILE_DIRS.some(allowed => realPath.startsWith(allowed));
   };
 
+  const getTenantFileDir = (companyId) => {
+    const cid = String(companyId || '').trim();
+    if (!cid) return null;
+    return path.resolve(storageDir, 'company', cid);
+  };
+
+  const isPathTenantIsolated = (filePath, companyId) => {
+    if (!companyId) return false;
+    const tenantDir = getTenantFileDir(companyId);
+    if (!tenantDir) return false;
+    const resolved = path.resolve(filePath);
+    const realPath = fs.realpathSync(resolved);
+    return realPath.startsWith(tenantDir);
+  };
+
+  const validateFileOwnership = (filePath, companyId) => {
+    if (!companyId) return false;
+    if (isPathTenantIsolated(filePath, companyId)) return true;
+    return false;
+  };
+
   app.get('/api/read-file', (req, res) => {
     const filePath = req.query.path;
     if (!filePath || typeof filePath !== 'string') {
@@ -3638,6 +3659,10 @@ app.get('/api/invoices/:id/details', (req, res) => {
     }
     if (!isPathAllowed(filePath)) {
       return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+    const companyId = req.companyId || '';
+    if (!validateFileOwnership(filePath, companyId)) {
+      return res.status(403).json({ success: false, error: 'Access denied: file does not belong to your company' });
     }
     try {
       if (!fs.existsSync(filePath)) {
@@ -3669,11 +3694,13 @@ app.get('/api/invoices/:id/details', (req, res) => {
       if (buffer.length > 0 && buffer[0] !== 0x25 && buffer[1] !== 0x50) {
         console.warn('[File] write-temp-pdf: data does not start with PDF magic bytes');
       }
-      const tempDirPath = tempDir;
-      if (!fs.existsSync(tempDirPath)) {
-        fs.mkdirSync(tempDirPath, { recursive: true });
+      const companyId = req.companyId || '';
+      const tenantDir = getTenantFileDir(companyId);
+      const targetDir = tenantDir ? path.join(tenantDir, 'temp') : tempDir;
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
       }
-      const filePath = path.join(tempDirPath, safeName);
+      const filePath = path.join(targetDir, safeName);
       fs.writeFileSync(filePath, buffer);
       res.json({ success: true, path: filePath, size: buffer.length });
     } catch (err) {
@@ -3689,6 +3716,10 @@ app.get('/api/invoices/:id/details', (req, res) => {
     }
     if (!isPathAllowed(filePath)) {
       return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+    const companyId = req.companyId || '';
+    if (!validateFileOwnership(filePath, companyId)) {
+      return res.status(403).json({ success: false, error: 'Access denied: file does not belong to your company' });
     }
     try {
       if (!fs.existsSync(filePath)) {
