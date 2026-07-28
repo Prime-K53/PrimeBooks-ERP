@@ -3,6 +3,10 @@ import { Layers, Package, DollarSign, Check, X, TrendingUp } from 'lucide-react'
 import type { Item, ProductVariant } from '../../../../types';
 import { resolveMinimumMarkup } from '../../../../services/pricingValidationService';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: Item;
 }
@@ -22,10 +26,10 @@ export const VariantsTab: React.FC<Props> = ({ item }) => {
 
   if (!hasVariants) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <Layers size={48} className="mb-4 opacity-50" />
-        <p className="text-sm font-semibold">No Variants</p>
-        <p className="text-xs mt-1">This item has no variants configured.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', color: inkSoft }}>
+        <Layers size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+        <p style={{ fontSize: 14, fontWeight: 600 }}>No Variants</p>
+        <p style={{ fontSize: 12, marginTop: 4 }}>This item has no variants configured.</p>
       </div>
     );
   }
@@ -35,10 +39,10 @@ export const VariantsTab: React.FC<Props> = ({ item }) => {
   const activeCount = variants.filter(v => v.active !== false).length;
 
   const kpis = [
-    { label: 'Total Variants', value: variants.length, icon: <Layers size={16} />, color: 'text-slate-900' },
-    { label: 'Combined Stock', value: totalStock, icon: <Package size={16} />, color: 'text-blue-600' },
-    { label: 'Avg Price', value: avgPrice.toFixed(2), icon: <DollarSign size={16} />, color: 'text-emerald-600', mono: true },
-    { label: 'Active', value: `${activeCount}/${variants.length}`, icon: <TrendingUp size={16} />, color: 'text-emerald-600' },
+    { label: 'Total Variants', value: variants.length, icon: <Layers size={16} />, color: ink },
+    { label: 'Combined Stock', value: totalStock, icon: <Package size={16} />, color: t[500] },
+    { label: 'Avg Price', value: avgPrice.toFixed(2), icon: <DollarSign size={16} />, color: t[500], mono: true },
+    { label: 'Active', value: `${activeCount}/${variants.length}`, icon: <TrendingUp size={16} />, color: t[500] },
   ];
 
   const columns = showPages(item)
@@ -46,31 +50,39 @@ export const VariantsTab: React.FC<Props> = ({ item }) => {
     : ['Name & Attr', 'Cost Price', 'Selling Price', 'Markup', 'Active'];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {kpis.map(k => (
-          <div key={k.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{k.label}</span>
-              <span className="text-slate-400">{k.icon}</span>
+          <div key={k.label} className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
+              <span style={{ color: inkSoft }}>{k.icon}</span>
             </div>
-            <p className={`text-2xl font-bold ${k.color} ${k.mono ? 'font-mono' : ''}`}>{k.value}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, color: k.color, fontFamily: k.mono ? 'monospace' : undefined }}>{k.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <table style={{ width: '100%', fontSize: 14 }}>
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
+            <tr style={{ background: t[50], borderBottom: `1.4px solid ${hairline}` }}>
               {columns.map(h => (
-                <th key={h} className={`px-4 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider ${['Cost Price', 'Selling Price', 'Markup', 'Pages'].includes(h) ? 'text-right' : h === 'Active' ? 'text-center' : 'text-left'}`}>
+                <th key={h} className="prime-table-header" style={{
+                  padding: '12px 16px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: inkSoft,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  textAlign: ['Cost Price', 'Selling Price', 'Markup', 'Pages'].includes(h) ? 'right' as const : h === 'Active' ? 'center' as const : 'left' as const
+                }}>
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {variants.map((v) => {
               const cp = v.costPrice || v.cost || 0;
               const sp = v.sellingPrice || v.price || 0;
@@ -81,10 +93,14 @@ export const VariantsTab: React.FC<Props> = ({ item }) => {
               const autoCp = showPages(item) && costPerPage > 0 ? Number((costPerPage * currentPages).toFixed(2)) : cp;
 
               return (
-                <tr key={v.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-semibold text-slate-800">{v.name}</td>
+                <tr key={v.id} className="prime-table-cell"
+                  style={{ borderTop: `1.4px solid ${hairline}`, transition: 'all .15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <td style={{ padding: '12px 16px', fontWeight: 600, color: ink }}>{v.name}</td>
                   {showPages(item) && (
-                    <td className="px-4 py-3 text-right">
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                       <input
                         type="number"
                         min={1}
@@ -93,19 +109,20 @@ export const VariantsTab: React.FC<Props> = ({ item }) => {
                           const p = Number(e.target.value);
                           if (p >= 1) setEditablePages(prev => ({ ...prev, [v.id]: p }));
                         }}
-                        className="w-20 text-right text-sm border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:border-blue-500"
+                        className="prime-input"
+                        style={{ width: 80, textAlign: 'right', fontSize: 14, border: `1.4px solid ${hairline}`, borderRadius: 4, padding: '2px 6px', outline: 'none', background: paper, color: ink }}
                       />
                     </td>
                   )}
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-600">{autoCp.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-blue-600 font-semibold">{sp.toFixed(2)}</td>
-                  <td className={`px-4 py-3 text-right font-mono tabular-nums font-semibold ${marginOk ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: inkSoft }}>{autoCp.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: t[500], fontWeight: 600 }}>{sp.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: marginOk ? t[500] : danger }}>
                     {margin.toFixed(1)}%
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                     {v.active !== false
-                      ? <Check size={16} className="text-emerald-500 mx-auto" />
-                      : <X size={16} className="text-slate-300 mx-auto" />}
+                      ? <Check size={16} style={{ color: t[500], margin: '0 auto' }} />
+                      : <X size={16} style={{ color: inkSoft, margin: '0 auto' }} />}
                   </td>
                 </tr>
               );

@@ -24,67 +24,76 @@ const ReorderOptimizer: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-6 bg-slate-50/50 overflow-y-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/ai-analytics')} className="p-2 rounded-lg hover:bg-white transition-colors"><ArrowLeft size={20} /></button>
-        <Package className="text-cyan-500" size={28} />
-        <div><h1 className="text-xl font-bold text-slate-800">Reorder Optimizer</h1><p className="text-xs text-slate-500">Smart inventory reorder points</p></div>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 24, background: '#FEFDFB', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button onClick={() => navigate('/ai-analytics')} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#FEFDFB' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        ><ArrowLeft size={20} /></button>
+        <Package color="#1f8577" size={28} />
+        <div><h1 style={{ fontSize: 20, fontWeight: 700, color: '#23282A', margin: 0 }}>Reorder Optimizer</h1><p style={{ fontSize: 11, color: '#5c6567', margin: 0 }}>Smart inventory reorder points</p></div>
       </div>
 
       {!result && !loading && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <Package size={48} className="mx-auto text-cyan-300 mb-4" />
-            <h2 className="text-lg font-semibold text-slate-700 mb-2">Optimize Reorder Points</h2>
-            <p className="text-sm text-slate-500 mb-2">{(inventory || []).length} inventory items loaded</p>
-            <button onClick={runOptimization} className="mt-4 px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">Run Analysis</button>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: 448 }}>
+            <Package size={48} color="#1f8577" style={{ margin: '0 auto 16px', opacity: 0.6 }} />
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: '#23282A', marginBottom: 8 }}>Optimize Reorder Points</h2>
+            <p style={{ fontSize: 13, color: '#5c6567', marginBottom: 8 }}>{(inventory || []).length} inventory items loaded</p>
+            <button onClick={runOptimization} style={{ marginTop: 16, padding: '10px 24px', background: '#1f8577', color: '#fff', borderRadius: 12, fontWeight: 500, border: 'none', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#166b60' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#1f8577' }}
+            >Run Analysis</button>
           </div>
         </div>
       )}
 
-      {loading && <div className="flex-1 flex items-center justify-center"><Loader2 size={40} className="animate-spin text-cyan-500 mx-auto" /></div>}
+      {loading && <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={40} className="animate-spin" color="#1f8577" style={{ margin: '0 auto' }} /></div>}
 
       {result && !loading && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg shrink-0"><Package size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Items</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.summary.totalItems}</p></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #5c6567' }}>
+              <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><Package size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Items</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.summary.totalItems}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-red-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-red-50 text-red-600 rounded-lg shrink-0"><AlertTriangle size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Need Reorder</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.summary.needsReorder}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #b5493f' }}>
+              <div style={{ padding: 10, background: '#fef2f2', color: '#b5493f', borderRadius: 8, flexShrink: 0 }}><AlertTriangle size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Need Reorder</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.summary.needsReorder}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0"><AlertCircle size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Critical</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.summary.criticalItems}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #d99a3f' }}>
+              <div style={{ padding: 10, background: '#fbead0', color: '#d99a3f', borderRadius: 8, flexShrink: 0 }}><AlertCircle size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Critical</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.summary.criticalItems}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg shrink-0"><DollarSign size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Est. Cost</p><p className="text-lg md:text-xl font-semibold text-slate-900">{currency}{(result.summary.totalOrderCost || 0).toLocaleString()}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #1f8577' }}>
+              <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><DollarSign size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Est. Cost</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{currency}{(result.summary.totalOrderCost || 0).toLocaleString()}</p></div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200">
-            <div className="p-3 border-b border-slate-100 font-semibold text-sm text-slate-700">Recommendations</div>
-            <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+          <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <div style={{ padding: 12, borderBottom: '1px solid #e4ddd1', fontWeight: 600, fontSize: 13, color: '#23282A' }}>Recommendations</div>
+            <div style={{ maxHeight: 384, overflowY: 'auto' }}>
               {result.recommendations?.filter((r: any) => r.isRecommended).map((r: any, i: number) => (
-                <div key={i} className="p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-slate-700">{r.itemName}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.urgency >= 80 ? 'bg-red-50 text-red-600' : r.urgency >= 50 ? 'bg-amber-50 text-amber-600' : 'bg-cyan-50 text-cyan-600'}`}>Urgency: {r.urgency}%</span>
+                <div key={i} style={{ padding: 12, borderBottom: i < result.recommendations.filter((rx: any) => rx.isRecommended).length - 1 ? '1px solid #e4ddd1' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#23282A' }}>{r.itemName}</span>
+                    <span style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 9999, background: r.urgency >= 80 ? '#fef2f2' : r.urgency >= 50 ? '#fbead0' : '#eef7f6', color: r.urgency >= 80 ? '#b5493f' : r.urgency >= 50 ? '#d99a3f' : '#1f8577' }}>Urgency: {r.urgency}%</span>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-xs text-slate-500">
-                    <div>Stock: <span className="font-medium text-slate-700">{r.currentStock}</span></div>
-                    <div>Reorder: <span className="font-medium text-slate-700">{r.suggestedReorderPoint}</span></div>
-                    <div>Safety: <span className="font-medium text-slate-700">{r.safetyStock}</span></div>
-                    <div>Order: <span className="font-medium text-emerald-600">{r.suggestedOrderQuantity}</span></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, fontSize: 11, color: '#5c6567' }}>
+                    <div>Stock: <span style={{ fontWeight: 500, color: '#23282A' }}>{r.currentStock}</span></div>
+                    <div>Reorder: <span style={{ fontWeight: 500, color: '#23282A' }}>{r.suggestedReorderPoint}</span></div>
+                    <div>Safety: <span style={{ fontWeight: 500, color: '#23282A' }}>{r.safetyStock}</span></div>
+                    <div>Order: <span style={{ fontWeight: 500, color: '#1f8577' }}>{r.suggestedOrderQuantity}</span></div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <button onClick={runOptimization} className="text-sm text-cyan-500 hover:text-cyan-700 font-medium">Re-run</button>
+          <button onClick={runOptimization} style={{ fontSize: 13, color: '#1f8577', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#166b60' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#1f8577' }}
+          >Re-run</button>
         </div>
       )}
     </div>

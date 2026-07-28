@@ -1,87 +1,106 @@
 import React, { useState } from 'react';
 import { Activity, AlertTriangle, Clock, Server, Key, Users, BarChart3 } from 'lucide-react';
 
-interface APIEndpoint {
-  path: string;
-  method: string;
-  calls24h: number;
-  avgLatency: number;
-  errorRate: number;
-  lastCalled: string;
-}
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
+interface APIEndpoint { path: string; method: string; calls24h: number; avgLatency: number; errorRate: number; lastCalled: string; }
 
 const APIUsageDashboard: React.FC = () => {
-  const [endpoints, setEndpoints] = useState<APIEndpoint[]>([]);
-  const [rateLimit, setRateLimit] = useState(120);
-  const [currentUsage, setCurrentUsage] = useState(0);
+    const [endpoints, setEndpoints] = useState<APIEndpoint[]>([]);
+    const [rateLimit, setRateLimit] = useState(120);
+    const [currentUsage, setCurrentUsage] = useState(0);
+    const usagePct = rateLimit > 0 ? (currentUsage / rateLimit) * 100 : 0;
 
-  const usagePct = rateLimit > 0 ? (currentUsage / rateLimit) * 100 : 0;
+    const statCards = [
+        { label: 'Requests (24h)', value: endpoints.reduce((s, e) => s + e.calls24h, 0) || 0, icon: <Activity size={20} />, borderColor: t[500], bg: t[50], color: t[500] },
+        { label: 'Avg Latency', value: endpoints.length > 0 ? (endpoints.reduce((s, e) => s + e.avgLatency, 0) / endpoints.length).toFixed(0) : '0', suffix: 'ms', icon: <Clock size={20} />, borderColor: '#8b5cf6', bg: '#f5f3ff', color: '#8b5cf6' },
+        { label: 'Error Rate', value: endpoints.length > 0 ? (endpoints.reduce((s, e) => s + e.errorRate, 0) / endpoints.length).toFixed(1) : '0', suffix: '%', icon: <AlertTriangle size={20} />, borderColor: danger, bg: '#fef0ee', color: danger },
+        { label: 'Rate Limit', value: `${currentUsage}/${rateLimit}`, icon: <BarChart3 size={20} />, borderColor: amber[500], bg: amber[100], color: usagePct > 80 ? danger : usagePct > 50 ? amber[500] : t[500] },
+    ];
 
-  return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-slate-900">API Usage & Rate Limiting</h1><p className="text-sm text-slate-500 mt-1">Monitor API consumption, latency, and error rates</p></div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all">
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-            <Activity size={20} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Requests (24h)</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{endpoints.reduce((s, e) => s + e.calls24h, 0) || 0}</p>
-          </div>
+    return (
+        <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto', background: t[50], minHeight: '100%' }}>
+            <div style={{ marginBottom: 24 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0 }}>API Usage & Rate Limiting</h1>
+                <p style={{ fontSize: 13, color: inkSoft, margin: '4px 0 0' }}>Monitor API consumption, latency, and error rates</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+                {statCards.map((c, i) => (
+                    <div key={i} className="prime-card" style={{ background: paper, padding: '12px 16px', borderRadius: 14, border: `1.4px solid ${hairline}`, borderLeft: `4px solid ${c.borderColor}`, display: 'flex', alignItems: 'center', gap: 16, transition: 'all .15s ease' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = t[50]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; }}
+                    >
+                        <div style={{ padding: 10, background: c.bg, color: c.color, borderRadius: 8 }}>{c.icon}</div>
+                        <div>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 4px' }}>{c.label}</p>
+                            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontVariantNumeric: 'tabular-nums' }}>{c.value}{'suffix' in c ? (c as any).suffix : ''}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="prime-card" style={{ background: paper, padding: 20, borderRadius: 14, border: `1.4px solid ${hairline}`, marginBottom: 24 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: ink, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <BarChart3 size={16} color={t[500]} /> Rate Limit Configuration
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div>
+                        <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: inkSoft, marginBottom: 6 }}>Max Requests Per Minute</label>
+                        <input className="prime-input" type="number" value={rateLimit} onChange={e => setRateLimit(parseInt(e.target.value) || 120)} style={{
+                            width: '100%', padding: '9px 12px', borderRadius: 9, border: `1.4px solid ${hairline}`, fontSize: 13.5, color: ink, background: paper, outline: 'none'
+                        }} />
+                    </div>
+                    <div>
+                        <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: inkSoft, marginBottom: 6 }}>Current Usage (this window)</label>
+                        <div style={{ width: '100%', background: t[50], borderRadius: 12, height: 12, marginTop: 8 }}>
+                            <div style={{ background: `linear-gradient(90deg, ${t[500]}, ${t[600]})`, height: 12, borderRadius: 12, transition: 'width .3s', width: `${Math.min(usagePct, 100)}%` }} />
+                        </div>
+                        <p style={{ fontSize: 12, color: inkSoft, marginTop: 4 }}>{currentUsage} of {rateLimit} requests used ({usagePct.toFixed(0)}%)</p>
+                    </div>
+                </div>
+            </div>
+
+            {endpoints.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 40, color: inkSoft }}>
+                    <Activity size={40} style={{ margin: '0 auto 12px', color: hairline }} />
+                    <p style={{ fontWeight: 600 }}>No API activity recorded yet</p>
+                    <p style={{ fontSize: 13, marginTop: 4 }}>Endpoint usage data will appear here as requests are made.</p>
+                </div>
+            ) : (
+                <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'hidden' }}>
+                    <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ borderBottom: `1.4px solid ${hairline}`, background: t[50] }}>
+                                {['Endpoint', 'Method', 'Calls (24h)', 'Avg Latency', 'Error Rate', 'Last Called'].map(h => (
+                                    <th key={h} className="prime-table-header" style={{ textAlign: h === 'Endpoint' || h === 'Method' ? 'left' : 'right', padding: '10px 14px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {endpoints.map(e => (
+                                <tr key={e.path} className="prime-table-cell" style={{ borderBottom: `1px solid ${hairline}`, transition: 'all .15s ease' }}
+                                    onMouseEnter={e2 => { e2.currentTarget.style.background = t[50]; }}
+                                    onMouseLeave={e2 => { e2.currentTarget.style.background = 'transparent'; }}
+                                >
+                                    <td style={{ padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{e.path}</td>
+                                    <td style={{ padding: '10px 14px' }}>
+                                        <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", background: e.method === 'GET' ? t[100] : '#dbeafe', color: e.method === 'GET' ? t[700] : '#1e40af' }}>{e.method}</span>
+                                    </td>
+                                    <td style={{ padding: '10px 14px', textAlign: 'right' }}>{e.calls24h}</td>
+                                    <td style={{ padding: '10px 14px', textAlign: 'right' }}>{e.avgLatency}ms</td>
+                                    <td style={{ padding: '10px 14px', textAlign: 'right', color: e.errorRate > 5 ? danger : ink }}>{e.errorRate}%</td>
+                                    <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, color: inkSoft }}>{e.lastCalled ? new Date(e.lastCalled).toLocaleString() : '—'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-purple-500 hover:bg-slate-50 transition-all">
-          <div className="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
-            <Clock size={20} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Avg Latency</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{endpoints.length > 0 ? (endpoints.reduce((s, e) => s + e.avgLatency, 0) / endpoints.length).toFixed(0) : '0'}ms</p>
-          </div>
-        </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-red-500 hover:bg-slate-50 transition-all">
-          <div className="p-2.5 bg-red-50 text-red-600 rounded-lg">
-            <AlertTriangle size={20} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Error Rate</p>
-            <p className={`text-lg md:text-xl font-semibold finance-nums ${endpoints.some(e => e.errorRate > 5) ? 'text-red-600' : 'text-emerald-600'}`}>{endpoints.length > 0 ? (endpoints.reduce((s, e) => s + e.errorRate, 0) / endpoints.length).toFixed(1) : '0'}%</p>
-          </div>
-        </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all">
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
-            <BarChart3 size={20} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Rate Limit</p>
-            <p className={`text-lg md:text-xl font-semibold finance-nums ${usagePct > 80 ? 'text-red-600' : usagePct > 50 ? 'text-amber-600' : 'text-emerald-600'}`}>{currentUsage}/{rateLimit}</p>
-          </div>
-        </div>
-      </div>
-      <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
-        <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2"><BarChart3 size={16} className="text-indigo-600" />Rate Limit Configuration</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div><label className="block text-xs font-semibold text-slate-700 mb-1">Max Requests Per Minute</label>
-            <input type="number" value={rateLimit} onChange={e => setRateLimit(parseInt(e.target.value) || 120)} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" /></div>
-          <div><label className="block text-xs font-semibold text-slate-700 mb-1">Current Usage (this window)</label>
-            <div className="w-full bg-slate-100 rounded-full h-3 mt-2"><div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all" style={{ width: `${Math.min(usagePct, 100)}%` }} /></div>
-            <p className="text-xs text-slate-400 mt-1">{currentUsage} of {rateLimit} requests used ({usagePct.toFixed(0)}%)</p></div>
-        </div>
-      </div>
-      {endpoints.length === 0 ? (
-        <div className="text-center py-12 text-slate-400"><Activity size={40} className="mx-auto mb-3 text-slate-300" /><p className="font-medium">No API activity recorded yet</p><p className="text-sm mt-1">Endpoint usage data will appear here as requests are made.</p></div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-slate-200 bg-slate-50"><th className="text-left p-3 text-xs font-semibold text-slate-500">Endpoint</th><th className="text-left p-3 text-xs font-semibold text-slate-500">Method</th><th className="text-right p-3 text-xs font-semibold text-slate-500">Calls (24h)</th><th className="text-right p-3 text-xs font-semibold text-slate-500">Avg Latency</th><th className="text-right p-3 text-xs font-semibold text-slate-500">Error Rate</th><th className="text-right p-3 text-xs font-semibold text-slate-500">Last Called</th></tr></thead>
-            <tbody>{endpoints.map(e => <tr key={e.path} className="border-b border-slate-100 hover:bg-slate-50"><td className="p-3 font-mono text-xs">{e.path}</td><td className="p-3"><span className={`px-2 py-0.5 rounded text-[10px] font-mono ${e.method === 'GET' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>{e.method}</span></td><td className="p-3 text-right">{e.calls24h}</td><td className="p-3 text-right">{e.avgLatency}ms</td><td className={`p-3 text-right ${e.errorRate > 5 ? 'text-red-600' : 'text-slate-600'}`}>{e.errorRate}%</td><td className="p-3 text-right text-xs text-slate-400">{e.lastCalled ? new Date(e.lastCalled).toLocaleString() : '—'}</td></tr>)}</tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default APIUsageDashboard;

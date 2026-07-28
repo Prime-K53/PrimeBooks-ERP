@@ -15,6 +15,10 @@ import { useData } from '../../context/DataContext';
 import { ProductionResource, MaintenanceLog } from '../../types';
 import { generateAIResponse } from '../../services/geminiService';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 interface MachineTelemetry {
   resourceId: string;
   status: 'Running' | 'Idle' | 'Down' | 'Maintenance';
@@ -189,31 +193,31 @@ const MachineMaintenance: React.FC = () => {
     });
   }, [currentData]);
 
-  if (!selectedMachine || !currentData) return <div className="p-8 text-white bg-slate-900">Connecting to IoT Gateway...</div>;
+  if (!selectedMachine || !currentData) return <div style={{ padding: '32px', color: '#fff', background: '#0b3e39' }}>Connecting to IoT Gateway...</div>;
 
   return (
     <>
     {/* Report Issue Modal */}
     {showReportModal && selectedMachine && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowReportModal(false)}>
-            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-600" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-slate-700 flex justify-between items-center">
-                    <h2 className="font-bold flex items-center gap-2"><Wrench size={16}/> Report Issue</h2>
-                    <button onClick={() => setShowReportModal(false)}><X size={18} className="text-slate-400 hover:text-white"/></button>
+        <div style={{ position: 'fixed', top: 0, zIndex: 50, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', right: 0, bottom: 0, left: 0 }} onClick={() => setShowReportModal(false)}>
+            <div style={{ background: '#0b3e39', borderRadius: '12px', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', width: '100%', maxWidth: '448px', overflow: 'hidden', border: '1.4px solid #e4ddd1', borderColor: '#146b60' }} onClick={e => e.stopPropagation()}>
+                <div style={{ padding: '16px', borderStyle: 'solid', borderColor: '#0f544c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}><Wrench size={16}/> Report Issue</h2>
+                    <button onClick={() => setShowReportModal(false)}><X size={18} style={{ color: '#5c6567' }}/></button>
                 </div>
-                <div className="p-4 space-y-4">
+                <div style={{ padding: '16px', marginTop: '16px' }}>
                     <div>
-                        <p className="text-sm text-slate-400 mb-1">Machine</p>
-                        <p className="font-bold">{selectedMachine.name}</p>
+                        <p style={{ fontSize: '13px', color: '#5c6567', marginBottom: '4px' }}>Machine</p>
+                        <p style={{ fontWeight: 700 }}>{selectedMachine.name}</p>
                     </div>
                     <div>
-                        <label className="block text-xs text-slate-400 uppercase mb-1">Describe the issue</label>
-                        <textarea className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white resize-none h-24" value={reportNotes} onChange={e => setReportNotes(e.target.value)} placeholder="What happened?" autoFocus/>
+                        <label style={{ display: 'block', fontSize: '11px', color: '#5c6567', textTransform: 'uppercase', marginBottom: '4px' }}>Describe the issue</label>
+                        <textarea style={{ width: '100%', padding: '8px', background: '#0f544c', border: '1.4px solid #e4ddd1', borderColor: '#146b60', borderRadius: '10px', fontSize: '13px', color: '#fff', height: '96px' }} value={reportNotes} onChange={e => setReportNotes(e.target.value)} placeholder="What happened?" autoFocus/>
                     </div>
                     {activeWOs.length > 0 && (
                         <div>
-                            <label className="block text-xs text-slate-400 uppercase mb-1">Related Work Order (optional)</label>
-                            <select className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-sm" value={reportWoId} onChange={e => setReportWoId(e.target.value)}>
+                            <label style={{ display: 'block', fontSize: '11px', color: '#5c6567', textTransform: 'uppercase', marginBottom: '4px' }}>Related Work Order (optional)</label>
+                            <select style={{ width: '100%', padding: '8px', background: '#0f544c', border: '1.4px solid #e4ddd1', borderColor: '#146b60', borderRadius: '10px', fontSize: '13px' }} value={reportWoId} onChange={e => setReportWoId(e.target.value)}>
                                 <option value="">-- None --</option>
                                 {activeWOs.map(wo => (
                                     <option key={wo.id} value={wo.id}>{wo.id} - {wo.productName}</option>
@@ -223,13 +227,13 @@ const MachineMaintenance: React.FC = () => {
                     )}
                     {trackDowntime && (
                         <div>
-                            <label className="block text-xs text-slate-400 uppercase mb-1">Est. Downtime (minutes, optional)</label>
-                            <input type="number" className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-sm" value={reportDowntime} onChange={e => setReportDowntime(e.target.value)} min="1"/>
+                            <label style={{ display: 'block', fontSize: '11px', color: '#5c6567', textTransform: 'uppercase', marginBottom: '4px' }}>Est. Downtime (minutes, optional)</label>
+                            <input type="number" style={{ width: '100%', padding: '8px', background: '#0f544c', border: '1.4px solid #e4ddd1', borderColor: '#146b60', borderRadius: '10px', fontSize: '13px' }} value={reportDowntime} onChange={e => setReportDowntime(e.target.value)} min="1"/>
                         </div>
                     )}
-                    <div className="flex gap-2 pt-2">
-                        <button onClick={() => setShowReportModal(false)} className="flex-1 py-2 bg-slate-700 text-slate-300 rounded-lg font-bold hover:bg-slate-600 text-sm">Cancel</button>
-                        <button onClick={submitReport} disabled={!reportNotes.trim()} className="flex-1 py-2 bg-amber-600 text-white rounded-lg font-bold hover:bg-amber-700 disabled:opacity-50 text-sm flex items-center justify-center gap-2">
+                    <div style={{ display: 'flex', gap: '8px', paddingTop: '8px' }}>
+                        <button onClick={() => setShowReportModal(false)} style={{ flex: 1, paddingTop: '8px', background: '#0f544c', color: '#5c6567', borderRadius: '10px', fontWeight: 700, fontSize: '13px', paddingBottom: '8px' }}>Cancel</button>
+                        <button onClick={submitReport} disabled={!reportNotes.trim()} style={{ flex: 1, paddingTop: '8px', background: '#d99a3f', color: '#fff', borderRadius: '10px', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', paddingBottom: '8px' }}>
                             <MessageSquare size={14}/> Submit Report
                         </button>
                     </div>
@@ -237,23 +241,23 @@ const MachineMaintenance: React.FC = () => {
             </div>
         </div>
     )}
-    <div className="h-[calc(100vh-4rem)] bg-slate-900 text-white flex overflow-hidden font-normal">
-        <div className="w-72 border-r border-slate-700 flex flex-col bg-slate-900 shrink-0">
-            <div className="p-6 border-b border-slate-700">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-blue-400"><Activity size={20}/> Machine Health</h2>
-                <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">IoT Telemetry Feed</p>
+    <div style={{ background: '#0b3e39', color: '#fff', display: 'flex', overflow: 'hidden', fontWeight: 400 }}>
+        <div style={{ width: '288px', borderStyle: 'solid', borderColor: '#0f544c', display: 'flex', flexDirection: 'column', background: '#0b3e39', flexShrink: 0 }}>
+            <div style={{ padding: '24px', borderStyle: 'solid', borderColor: '#0f544c' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#3fa294' }}><Activity size={20}/> Machine Health</h2>
+                <p style={{ fontSize: '11px', color: '#5c6567', marginTop: '4px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '.1em' }}>IoT Telemetry Feed</p>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px', marginTop: '8px' }}>
                 {resources.map(res => (
                     <button 
                         key={res.id}
                         onClick={() => setSelectedMachineId(res.id)}
                         className={`w-full text-left p-4 rounded-2xl border transition-all ${selectedMachineId === res.id ? 'bg-blue-900/40 border-blue-500 shadow-lg' : 'bg-slate-800 border-slate-700 hover:border-slate-600'}`}
                     >
-                        <div className="flex justify-between items-center mb-1">
-                            <span className="font-bold text-sm truncate">{res.name}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <span style={{ fontWeight: 700, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{res.name}</span>
                         </div>
-                        <div className="flex justify-between text-[10px] text-slate-400 uppercase font-black tracking-widest">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#5c6567', textTransform: 'uppercase', fontWeight: 900, letterSpacing: '.1em' }}>
                             <span className={telemetry[res.id]?.status === 'Down' ? 'text-rose-500' : 'text-emerald-500'}>{telemetry[res.id]?.status}</span>
                             <span className={telemetry[res.id]?.temperature > 50 ? 'text-amber-400' : 'text-emerald-400'}>{telemetry[res.id]?.temperature}°C</span>
                         </div>
@@ -262,87 +266,87 @@ const MachineMaintenance: React.FC = () => {
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 bg-slate-950">
-            <div className="flex justify-between items-center mb-10">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                 <div>
-                    <h1 className="text-3xl font-black tracking-tighter flex items-center gap-4">
+                    <h1 style={{ fontSize: '30px', fontWeight: 900, letterSpacing: '-.05em', display: 'flex', alignItems: 'center', gap: '16px' }}>
                         {selectedMachine.name}
-                        <span className="px-4 py-1 rounded-full text-xs font-black uppercase border bg-emerald-500/10 text-emerald-400 border-emerald-500/50 flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <span style={{ paddingLeft: '16px', paddingTop: '4px', borderRadius: '9999px', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', border: '1.4px solid #e4ddd1', background: '#eef7f6', color: '#3fa294', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '16px', paddingBottom: '4px' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '9999px', background: '#eef7f6', animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite' }}></div>
                             {currentData.status}
                         </span>
                     </h1>
-                    <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-2">Resource Node ID: {selectedMachine.id}</p>
+                    <p style={{ color: '#5c6567', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginTop: '8px' }}>Resource Node ID: {selectedMachine.id}</p>
                 </div>
-                <div className="flex gap-3">
+                <div style={{ display: 'flex', gap: '12px' }}>
                     {trackDowntime && (
-                        <button onClick={handleReportIssue} className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-2xl font-black uppercase text-[11px] tracking-widest flex items-center gap-2 shadow-xl shadow-rose-900/20 transition-all active:scale-95">
+                        <button onClick={handleReportIssue} style={{ background: '#b5493f', color: '#fff', paddingLeft: '24px', paddingTop: '12px', borderRadius: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(181,73,63,.2)', transition: 'all .15s ease', paddingRight: '24px', paddingBottom: '12px' }}>
                             <AlertTriangle size={16}/> Log Failure
                         </button>
                     )}
-                    <button onClick={handleServiceSchedule} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black uppercase text-[11px] tracking-widest flex items-center gap-2 shadow-xl shadow-blue-900/20 transition-all active:scale-95">
+                    <button onClick={handleServiceSchedule} style={{ background: '#1f8577', color: '#fff', paddingLeft: '24px', paddingTop: '12px', borderRadius: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(8,46,42,.2)', transition: 'all .15s ease', paddingRight: '24px', paddingBottom: '12px' }}>
                         <Wrench size={16}/> Schedule Service
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-6 mb-10">
-                <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400"><Thermometer size={20}/></div>
-                        <span className="text-[10px] font-black text-slate-500">REAL-TIME</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '24px', marginBottom: '40px' }}>
+                <div style={{ background: '#0b3e39', padding: '24px', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#0b3e39' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                        <div style={{ padding: '12px', background: '#eef7f6', borderRadius: '16px', color: '#3fa294' }}><Thermometer size={20}/></div>
+                        <span style={{ fontWeight: 900, color: '#5c6567' }}>REAL-TIME</span>
                     </div>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Temperature</p>
-                    <h3 className="text-2xl font-black">{currentData.temperature}°C</h3>
+                    <p style={{ color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>Temperature</p>
+                    <h3 style={{ fontSize: '24px', fontWeight: 900 }}>{currentData.temperature}°C</h3>
                 </div>
-                <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-400"><Zap size={20}/></div>
-                        <span className="text-[10px] font-black text-slate-500">SENSORS</span>
+                <div style={{ background: '#0b3e39', padding: '24px', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#0b3e39' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                        <div style={{ padding: '12px', background: '#eef7f6', borderRadius: '16px', color: '#3fa294' }}><Zap size={20}/></div>
+                        <span style={{ fontWeight: 900, color: '#5c6567' }}>SENSORS</span>
                     </div>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Vibration</p>
-                    <h3 className="text-2xl font-black">{currentData.vibration} <span className="text-xs text-slate-500">mm/s</span></h3>
+                    <p style={{ color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>Vibration</p>
+                    <h3 style={{ fontSize: '24px', fontWeight: 900 }}>{currentData.vibration} <span style={{ fontSize: '11px', color: '#5c6567' }}>mm/s</span></h3>
                 </div>
-                <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400"><Activity size={20}/></div>
-                        <span className="text-[10px] font-black text-emerald-500">OPTIMAL</span>
+                <div style={{ background: '#0b3e39', padding: '24px', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#0b3e39' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                        <div style={{ padding: '12px', background: '#eef7f6', borderRadius: '16px', color: '#3fa294' }}><Activity size={20}/></div>
+                        <span style={{ fontWeight: 900, color: '#1f8577' }}>OPTIMAL</span>
                     </div>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Efficiency</p>
-                    <h3 className="text-2xl font-black">{currentData.efficiency}%</h3>
+                    <p style={{ color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>Efficiency</p>
+                    <h3 style={{ fontSize: '24px', fontWeight: 900 }}>{currentData.efficiency}%</h3>
                 </div>
                 
                 {/* AI Prediction Card */}
-                <div className="bg-indigo-900/20 p-6 rounded-[2rem] border border-indigo-500/30 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-20">
-                        <Sparkles size={40} className="text-indigo-400" />
+                <div style={{ padding: '24px', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, right: 0, padding: '16px', opacity: 0.2 }}>
+                        <Sparkles size={40} style={{ color: '#3fa294' }} />
                     </div>
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-indigo-500/20 rounded-2xl text-indigo-300"><RotateCcw size={20}/></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                        <div style={{ padding: '12px', background: '#eef7f6', borderRadius: '16px' }}><RotateCcw size={20}/></div>
                         <button 
                             onClick={analyzeMachineAI}
                             disabled={aiPrediction.loading}
-                            className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-widest flex items-center gap-1"
+                            style={{ fontWeight: 900, color: '#3fa294', textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
-                            {aiPrediction.loading ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                            {aiPrediction.loading ? <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={10} />}
                             Analyze
                         </button>
                     </div>
-                    <p className="text-indigo-300/60 text-[10px] font-black uppercase tracking-widest mb-1">AI Risk Prediction</p>
-                    <div className="flex items-baseline gap-2">
+                    <p style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>AI Risk Prediction</p>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                         <h3 className={`text-2xl font-black ${aiPrediction.risk === 'High' ? 'text-rose-400' : aiPrediction.risk === 'Medium' ? 'text-amber-400' : 'text-emerald-400'}`}>
                             {aiPrediction.risk}
                         </h3>
-                        <span className="text-[10px] font-bold text-indigo-300/40">LEVEL</span>
+                        <span style={{ fontWeight: 700 }}>LEVEL</span>
                     </div>
-                    <p className="text-[10px] text-indigo-200/70 mt-2 line-clamp-1">{aiPrediction.advice || 'Run AI analysis for insights.'}</p>
+                    <p style={{ marginTop: '8px', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{aiPrediction.advice || 'Run AI analysis for insights.'}</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-slate-900 rounded-[3rem] border border-slate-800 p-10 shadow-2xl">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
-                        <Activity size={18} className="text-blue-500"/> Thermal Stability Pulse
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '32px' }}>
+                <div style={{ background: '#0b3e39', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#0b3e39', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)' }}>
+                    <h3 style={{ fontSize: '11px', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Activity size={18} style={{ color: '#1f8577' }}/> Thermal Stability Pulse
                     </h3>
                     <div style={{ width: '100%', height: 320, minHeight: 150 }}>
                         <ResponsiveContainer width="100%" height="100%" minHeight={150} minWidth={0}>
@@ -363,34 +367,34 @@ const MachineMaintenance: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="bg-slate-900 rounded-[3rem] border border-slate-800 p-10 flex flex-col shadow-2xl">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
-                        <ClipboardList size={18} className="text-emerald-500"/> Maintenance Ledger
+                <div style={{ background: '#0b3e39', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#0b3e39', padding: '40px', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)' }}>
+                    <h3 style={{ fontSize: '11px', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <ClipboardList size={18} style={{ color: '#1f8577' }}/> Maintenance Ledger
                     </h3>
-                    <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar">
+                    <div style={{ flex: 1, overflowY: 'auto', marginTop: '16px', scrollbarWidth: 'none' }}>
                         {(maintenanceLogs || []).filter(l => l.resourceId === selectedMachineId).map(log => (
-                            <div key={log.id} className="p-5 rounded-3xl bg-black/40 border border-slate-800 text-xs hover:border-slate-600 transition-colors group">
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="font-black text-blue-400 uppercase tracking-widest">{log.type}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-slate-600 font-mono">{new Date(log.date).toLocaleDateString()}</span>
-                                        <button onClick={() => deleteMaintenanceLog(log.id)} className="text-slate-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12}/></button>
+                            <div key={log.id} style={{ padding: '20px', borderRadius: '24px', background: 'rgba(0,0,0,.4)', border: '1.4px solid #e4ddd1', borderColor: '#0b3e39', fontSize: '11px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <span style={{ fontWeight: 900, color: '#3fa294', textTransform: 'uppercase', letterSpacing: '.1em' }}>{log.type}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ color: '#5c6567', fontFamily: '"JetBrains Mono",monospace' }}>{new Date(log.date).toLocaleDateString()}</span>
+                                        <button onClick={() => deleteMaintenanceLog(log.id)} style={{ color: '#23282A', opacity: 0.0, transition: 'opacity .15s ease' }}><Trash2 size={12}/></button>
                                     </div>
                                 </div>
-                                <p className="text-slate-300 font-medium leading-relaxed">{log.notes}</p>
+                                <p style={{ color: '#5c6567', fontWeight: 500, lineHeight: 1.625 }}>{log.notes}</p>
                                 {log.workOrderId && (
-                                    <div className="mt-2 flex items-center gap-2 text-[10px] font-bold text-blue-500 uppercase tracking-tighter">
+                                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: '#1f8577', textTransform: 'uppercase', letterSpacing: '-.05em' }}>
                                         <ClipboardList size={10}/> WO: {log.workOrderId}
                                     </div>
                                 )}
                                 {log.downtimeMinutes !== undefined && (
-                                    <div className="mt-1 flex items-center gap-2 text-[10px] font-bold text-rose-500 uppercase tracking-tighter">
+                                    <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: '#b5493f', textTransform: 'uppercase', letterSpacing: '-.05em' }}>
                                         <Clock size={10}/> Downtime: {log.downtimeMinutes}m
                                     </div>
                                 )}
                             </div>
                         ))}
-                        {(!maintenanceLogs || maintenanceLogs.length === 0) && <p className="text-center text-slate-500 italic py-20">No maintenance history recorded.</p>}
+                        {(!maintenanceLogs || maintenanceLogs.length === 0) && <p style={{ textAlign: 'center', color: '#5c6567', fontStyle: 'italic', paddingTop: '80px', paddingBottom: '80px' }}>No maintenance history recorded.</p>}
                     </div>
                 </div>
             </div>

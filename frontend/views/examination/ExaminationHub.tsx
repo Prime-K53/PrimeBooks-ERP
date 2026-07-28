@@ -30,6 +30,36 @@ import {
 import { buildRecurringDraftFromExaminationBatch } from '../../utils/recurringConversion';
 import '../inventory/inventory-reference.css';
 
+const teal = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const labelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+};
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  padding: '9px 12px', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none' as const,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  paddingRight: 30,
+  cursor: 'pointer'
+};
+
 const ExaminationHub: React.FC = () => {
   const DEFAULT_TONER_PAGES_PER_UNIT = 20000;
 
@@ -49,7 +79,6 @@ const ExaminationHub: React.FC = () => {
   } = useExamination();
   const { refreshAllData } = useData();
 
-  // 5-minute poll + focus refresh
   useModuleRefresh(async () => {
     await Promise.allSettled([
       loadAllData(),
@@ -64,7 +93,6 @@ const ExaminationHub: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Action menu state
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -103,37 +131,31 @@ const ExaminationHub: React.FC = () => {
       return 0;
     }
 
-    // Priority 1: Use batch-level total_pages from backend (now includes summary mode calculation)
     const explicitTotal = Number(batch?.total_pages ?? batch?.totalPages ?? 0);
     if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
       return Math.round(explicitTotal);
     }
 
-    // Priority 2: Calculate from classes if available (for detail view or if backend didn't have it)
     if (Array.isArray(batch?.classes)) {
       const calculatedFromSubjects = batch.classes.reduce((sum: number, cls: any) => {
         if (!cls || typeof cls !== 'object') {
           return sum;
         }
         
-        // First try to use class-level calculated_total_pages if available
         const classCalcPages = Number(cls?.calculated_total_pages ?? 0);
         if (Number.isFinite(classCalcPages) && classCalcPages > 0) {
           return sum + classCalcPages;
         }
 
-        // Otherwise calculate from subjects
         const subjects = Array.isArray(cls?.subjects) ? cls.subjects : [];
         return sum + subjects.reduce((subjectSum: number, subject: any) => {
           if (!subject || typeof subject !== 'object') {
             return subjectSum;
           }
-          // Use subject's total_pages if available (calculated during batch calculation)
           const subjectTotalPages = Number(subject?.total_pages ?? 0);
           if (Number.isFinite(subjectTotalPages) && subjectTotalPages > 0) {
             return subjectSum + subjectTotalPages;
           }
-          // Fallback: calculate from pages and copies
           const learners = Math.max(0, Math.floor(Number(cls?.number_of_learners) || 0));
           const pages = Math.max(1, Math.floor(Number(subject?.pages) || 0));
           const extraCopies = Math.max(0, Math.floor(Number(subject?.extra_copies) || 0));
@@ -153,13 +175,11 @@ const ExaminationHub: React.FC = () => {
       return 0;
     }
 
-    // Priority 1: Use batch-level total_sheets if available and > 0
     const explicitTotal = resolvePositiveNumber(batch?.total_sheets, batch?.totalSheets);
     if (explicitTotal !== null) {
       return Math.round(explicitTotal);
     }
 
-    // Priority 2: Calculate from subjects' total_sheets (most accurate)
     if (Array.isArray(batch?.classes)) {
       const calculatedFromSubjects = batch.classes.reduce((sum: number, cls: any) => {
         if (!cls || typeof cls !== 'object') {
@@ -170,12 +190,10 @@ const ExaminationHub: React.FC = () => {
           if (!subject || typeof subject !== 'object') {
             return subjectSum;
           }
-          // Use subject's total_sheets if available (calculated during batch calculation)
           const subjectTotalSheets = resolvePositiveNumber(subject?.total_sheets, subject?.totalSheets);
           if (subjectTotalSheets !== null) {
             return subjectSum + subjectTotalSheets;
           }
-          // Fallback: calculate from pages and copies
           const learners = Math.max(0, Math.floor(Number(cls?.number_of_learners) || 0));
           const pages = Math.max(0, Math.floor(Number(subject?.pages ?? subject?.pages_per_paper) || 0));
           const extraCopies = Math.max(0, Math.floor(Number(subject?.extra_copies) || 0));
@@ -196,7 +214,6 @@ const ExaminationHub: React.FC = () => {
       }
     }
 
-    // Priority 3: Calculate from total pages
     const totalPages = getBatchPageCount(batch);
     return totalPages > 0 ? Math.ceil(totalPages / 2) : 0;
   };
@@ -254,33 +271,32 @@ const ExaminationHub: React.FC = () => {
     switch (status) {
       case 'Draft':
         return {
-          badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
+          badgeStyle: { background: teal[50], color: teal[800], border: `1px solid ${teal[200]}` },
           icon: <Clock size={12} />
         };
       case 'Calculated':
         return {
-          badgeClass: 'bg-blue-50 text-blue-700 border border-blue-100',
+          badgeStyle: { background: teal[50], color: teal[700], border: `1px solid ${teal[200]}` },
           icon: <FileText size={12} />
         };
       case 'Approved':
         return {
-          badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+          badgeStyle: { background: amber[100], color: '#92400e', border: `1px solid ${amber[300]}` },
           icon: <CheckCircle size={12} />
         };
       case 'Invoiced':
         return {
-          badgeClass: 'bg-green-50 text-green-700 border border-green-100',
+          badgeStyle: { background: teal[500], color: '#fff', border: `1px solid ${teal[500]}` },
           icon: <DollarSign size={12} />
         };
       default:
         return {
-          badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
+          badgeStyle: { background: teal[50], color: inkSoft, border: `1px solid ${hairline}` },
           icon: <RefreshCw size={12} />
         };
     }
   };
 
-  // Bulk selection handlers
   const toggleBatchSelection = (batchId: string) => {
     const newSelected = new Set(selectedBatchIds);
     if (newSelected.has(batchId)) {
@@ -343,7 +359,6 @@ const ExaminationHub: React.FC = () => {
     }
   };
 
-  // Single batch action handlers
   const handleCalculate = async (batchId: string) => {
     setActionLoading(batchId);
     try {
@@ -457,365 +472,412 @@ const ExaminationHub: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-6 max-w-[1600px] mx-auto w-full font-normal overflow-y-auto custom-scrollbar">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 shrink-0">
-        <div>
-          <h1 className="text-[22px] font-semibold text-slate-900 tracking-tight">Examination Printing</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Batch pricing, cost review, and invoice workflow</p>
+    <div style={{
+      height: '100%', display: 'flex', flexDirection: 'column',
+      padding: '16px 24px', maxWidth: 1600, margin: '0 auto',
+      width: '100%', fontFamily: "'Inter','DM Sans',sans-serif",
+      fontWeight: 400, overflowY: 'auto', color: ink, fontSize: 13.5
+    }}>
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 16,
+        marginBottom: 16, flexShrink: 0
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 600, color: teal[800], letterSpacing: 0.2, margin: 0 }}>
+            Examination Printing
+          </h1>
+          <p style={{ fontSize: 12, color: inkSoft, margin: 0 }}>
+            Batch pricing, cost review, and invoice workflow
+          </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={loadAllData}
-            disabled={loading}
-            className="flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-medium hover:bg-indigo-100 text-sm shadow-sm transition-all border border-indigo-100 disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={loadAllData} disabled={loading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: teal[50], color: teal[700],
+              padding: '8px 16px', borderRadius: 9, fontWeight: 600,
+              fontSize: 13, border: `1px solid ${teal[200]}`,
+              cursor: 'pointer', transition: 'all .15s ease',
+              opacity: loading ? 0.6 : 1
+            }}>
+            <RefreshCw size={16} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
             Refresh
           </button>
-          <button
-            onClick={exportData}
-            className="flex items-center gap-1.5 bg-slate-50 text-slate-700 px-4 py-2 rounded-xl font-medium hover:bg-slate-100 text-sm shadow-sm transition-all border border-slate-200"
-          >
+          <button onClick={exportData}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: paper, color: inkSoft,
+              padding: '8px 16px', borderRadius: 9, fontWeight: 600,
+              fontSize: 13, border: `1.4px solid ${hairline}`,
+              cursor: 'pointer', transition: 'all .15s ease'
+            }}>
             <Download size={16} />
             Export
           </button>
-          <button
-            onClick={() => navigate('/examination/batches/new')}
-            className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-700 text-sm shadow-sm transition-all"
-          >
+          <button onClick={() => navigate('/examination/batches/new')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: teal[500], color: '#fff',
+              padding: '8px 16px', borderRadius: 9, fontWeight: 600,
+              fontSize: 13, border: 'none',
+              cursor: 'pointer', boxShadow: `0 4px 10px -4px rgba(15,84,76,.4)`,
+              transition: 'all .15s ease'
+            }}>
             <Plus size={16} />
             Create Batch
           </button>
         </div>
       </div>
 
-      <div className="kpi-grid-dash mb-6 shrink-0">
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #2563EB' }}>
-          <div className="kpi-card-icon" style={{ color: '#2563EB', background: '#2563EB12' }}>
-            <FileText size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Total Batches</div>
-            <div className="kpi-card-value">{stats.totalBatches}</div>
-            <div className="kpi-card-sub">Active and historical</div>
-          </div>
-        </div>
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #10B981' }}>
-          <div className="kpi-card-icon" style={{ color: '#10B981', background: '#10B98112' }}>
-            <DollarSign size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Total Amount</div>
-            <div className="kpi-card-value">
-              {currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'}
-              {stats.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: 12, marginBottom: 24, flexShrink: 0
+      }}>
+        {[
+          { label: 'Total Batches', value: stats.totalBatches, sub: 'Active and historical', color: ink, borderColor: teal[500], iconColor: teal[500], bg: teal[50], icon: <FileText size={18} /> },
+          { label: 'Total Amount', value: `${currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'}${stats.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, sub: 'Across all batches', color: ink, borderColor: amber[500], iconColor: amber[500], bg: amber[100], icon: <DollarSign size={18} /> },
+          { label: 'Total Toner Needed', value: `${stats.totalTonerNeeded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`, sub: 'For calculated batches', color: ink, borderColor: teal[300], iconColor: teal[600], bg: teal[50], icon: <Droplet size={18} /> },
+          { label: 'Total Papers Needed', value: `${stats.totalPaperNeeded.toLocaleString()} sheets`, sub: `Across ${stats.calculatedBatches} calculated batch(es)`, color: ink, borderColor: amber[300], iconColor: '#b97e2b', bg: amber[100], icon: <FileText size={18} /> },
+          { label: 'Ready / Invoiced', value: `${stats.approvedBatches} / ${stats.invoicedBatches}`, sub: 'Approval lifecycle', color: ink, borderColor: ink, iconColor: inkSoft, bg: teal[50], icon: <CheckCircle size={18} /> }
+        ].map((kpi, i) => (
+          <div key={i} style={{
+            background: paper, borderRadius: 12, padding: '14px 16px',
+            border: `1.4px solid ${hairline}`, borderLeft: `3px solid ${kpi.borderColor}`,
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: '0 1px 3px rgba(0,0,0,.04)'
+          }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 8,
+              background: kpi.bg, color: kpi.iconColor,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {kpi.icon}
             </div>
-            <div className="kpi-card-sub">Across all batches</div>
-          </div>
-        </div>
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #7C3AED' }}>
-          <div className="kpi-card-icon" style={{ color: '#7C3AED', background: '#7C3AED12' }}>
-            <Droplet size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Total Toner Needed</div>
-            <div className="kpi-card-value">
-              {stats.totalTonerNeeded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              <span className="ml-1 text-xs font-semibold text-slate-500">kg</span>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.02 }}>{kpi.label}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: kpi.color, marginTop: 2 }}>{kpi.value}</div>
+              <div style={{ fontSize: 9.5, color: inkSoft, marginTop: 1 }}>{kpi.sub}</div>
             </div>
-            <div className="kpi-card-sub">For calculated batches</div>
           </div>
-        </div>
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #F59E0B' }}>
-          <div className="kpi-card-icon" style={{ color: '#F59E0B', background: '#F59E0B12' }}>
-            <FileText size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Total Papers Needed</div>
-            <div className="kpi-card-value">
-              {stats.totalPaperNeeded.toLocaleString()}
-              <span className="ml-1 text-xs font-semibold text-slate-500">sheets</span>
-            </div>
-            <div className="kpi-card-sub">Across {stats.calculatedBatches} calculated batch(es)</div>
-          </div>
-        </div>
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #16A34A' }}>
-          <div className="kpi-card-icon" style={{ color: '#16A34A', background: '#16A34A12' }}>
-            <CheckCircle size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Ready / Invoiced</div>
-            <div className="kpi-card-value">{stats.approvedBatches} / {stats.invoicedBatches}</div>
-            <div className="kpi-card-sub">Approval lifecycle</div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl p-4 md:p-5 rounded-2xl border border-white/60 shadow-sm mb-4 shrink-0">
-        <div className="flex flex-col lg:flex-row gap-3">
-          <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+      <div style={{
+        background: paper, padding: '16px 20px', borderRadius: 12,
+        border: `1.4px solid ${hairline}`, marginBottom: 16, flexShrink: 0
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search batches, exam type, or school"
-              className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+              style={inputStyle}
             />
           </div>
-          <select
-            value={selectedSchool}
-            onChange={(event) => setSelectedSchool(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 min-w-[220px]"
-          >
-            <option value="">All Schools</option>
-            {schools.map((school) => (
-              <option key={school.id} value={school.id}>
-                {school.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedStatus}
-            onChange={(event) => setSelectedStatus(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 min-w-[180px]"
-          >
-            <option value="">All Statuses</option>
-            <option value="Draft">Draft</option>
-            <option value="Calculated">Calculated</option>
-            <option value="Approved">Approved</option>
-            <option value="Invoiced">Invoiced</option>
-          </select>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <select
+              value={selectedSchool}
+              onChange={(event) => setSelectedSchool(event.target.value)}
+              style={{ ...selectStyle, minWidth: 220 }}
+            >
+              <option value="">All Schools</option>
+              {schools.map((school) => (
+                <option key={school.id} value={school.id}>
+                  {school.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedStatus}
+              onChange={(event) => setSelectedStatus(event.target.value)}
+              style={{ ...selectStyle, minWidth: 180 }}
+            >
+              <option value="">All Statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Calculated">Calculated</option>
+              <option value="Approved">Approved</option>
+              <option value="Invoiced">Invoiced</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Bulk Action Bar */}
       {selectedBatchIds.size > 0 && (
-        <div className="flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-rose-800">
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: `${danger}10`, border: `1px solid ${danger}25`,
+          borderRadius: 12, padding: '12px 16px', marginBottom: 16
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: danger }}>
               {selectedBatchIds.size} batch{selectedBatchIds.size !== 1 ? 'es' : ''} selected
             </span>
-            <button
-              onClick={clearSelection}
-              className="text-xs text-rose-600 hover:text-rose-800 underline"
-            >
+            <button onClick={clearSelection} style={{
+              fontSize: 12, color: danger, textDecoration: 'underline',
+              background: 'none', border: 'none', cursor: 'pointer'
+            }}>
               Clear selection
             </button>
           </div>
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={isDeleting}
-            className="inline-flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-rose-700 transition-colors disabled:opacity-60"
-          >
+          <button onClick={() => setShowDeleteConfirm(true)} disabled={isDeleting}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: danger, color: '#fff',
+              padding: '6px 12px', borderRadius: 9, fontSize: 13, fontWeight: 600,
+              border: 'none', cursor: 'pointer', opacity: isDeleting ? 0.6 : 1
+            }}>
             <Trash2 size={14} />
             {isDeleting ? 'Deleting...' : 'Delete Selected'}
           </button>
         </div>
       )}
 
-      <div className="flex-1 min-h-0">
+      <div style={{ flex: 1, minHeight: 0 }}>
         {batchLoadError ? (
-          <div className="bg-rose-50 rounded-2xl border border-rose-200 shadow-sm p-10 text-center">
-            <RefreshCw className="h-10 w-10 mx-auto mb-3 text-rose-400" />
-            <p className="text-base font-semibold text-rose-800">Unable to load batches</p>
-            <p className="text-sm text-rose-700 mt-1">{batchLoadError}</p>
-            <button
-              onClick={loadAllData}
-              disabled={loading}
-              className="mt-4 inline-flex items-center gap-1.5 bg-rose-100 text-rose-700 px-4 py-2 rounded-xl font-medium hover:bg-rose-200 text-sm shadow-sm transition-all border border-rose-200 disabled:opacity-60"
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          <div style={{
+            background: paper, borderRadius: 12,
+            border: `1.4px solid ${hairline}`, padding: 40, textAlign: 'center'
+          }}>
+            <RefreshCw size={40} style={{ margin: '0 auto 12', color: danger }} />
+            <p style={{ fontSize: 14, fontWeight: 700, color: danger, margin: 0 }}>Unable to load batches</p>
+            <p style={{ fontSize: 12, color: inkSoft, marginTop: 4 }}>{batchLoadError}</p>
+            <button onClick={loadAllData} disabled={loading}
+              style={{
+                marginTop: 16, display: 'flex', alignItems: 'center', gap: 6,
+                background: `${danger}10`, color: danger,
+                padding: '8px 16px', borderRadius: 9, fontWeight: 600,
+                fontSize: 13, border: `1px solid ${danger}25`,
+                cursor: 'pointer', opacity: loading ? 0.6 : 1
+              }}>
+              <RefreshCw size={16} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
               Retry
             </button>
           </div>
         ) : filteredBatches.length === 0 ? (
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-sm p-10 text-center">
-            <FileText className="h-10 w-10 mx-auto mb-3 text-slate-300" />
-            <p className="text-base font-semibold text-slate-800">No batches found</p>
-            <p className="text-sm text-slate-500 mt-1">Adjust filters or create a new examination batch.</p>
+          <div style={{
+            background: paper, borderRadius: 12,
+            border: `1.4px solid ${hairline}`, padding: 40, textAlign: 'center'
+          }}>
+            <FileText size={40} style={{ margin: '0 auto 12', color: teal[200] }} />
+            <p style={{ fontSize: 14, fontWeight: 700, color: ink, margin: 0 }}>No batches found</p>
+            <p style={{ fontSize: 12, color: inkSoft, marginTop: 4 }}>Adjust filters or create a new examination batch.</p>
           </div>
         ) : (
-          <div className="bg-white/90 rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm">
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left text-[13px]">
-<thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+          <div style={{
+            background: paper, borderRadius: 12, overflow: 'hidden',
+            border: `1.4px solid ${hairline}`
+          }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', textAlign: 'left', fontSize: 13, borderCollapse: 'collapse' }}>
+                <thead style={{ background: teal[50], position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
-                      <th className="table-header w-10 px-1 text-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedBatchIds.size === filteredBatches.length && filteredBatches.length > 0}
-                          onChange={toggleSelectAll}
-                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </th>
-                      <th className="table-header flex-1 min-w-[100px]">Batch</th>
-                      <th className="table-header flex-1 min-w-[140px]">School</th>
-                      <th className="table-header flex-1 min-w-[90px]">Exam Type</th>
-                      <th className="table-header flex-1 min-w-[100px]">Academic</th>
-                      <th className="table-header flex-1 min-w-[70px] text-right">Classes</th>
-                      <th className="table-header flex-1 min-w-[100px] text-right">Amount</th>
-                      <th className="table-header flex-1 min-w-[80px]">Status</th>
-                      <th className="table-header w-10 text-right">Action</th>
-                    </tr>
+                    <th style={{ width: 40, padding: '10px 6px', textAlign: 'center', color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08 }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedBatchIds.size === filteredBatches.length && filteredBatches.length > 0}
+                        onChange={toggleSelectAll}
+                        style={{ accentColor: teal[600] }}
+                      />
+                    </th>
+                    <th style={{ color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, padding: '10px 12px' }}>Batch</th>
+                    <th style={{ color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, padding: '10px 12px' }}>School</th>
+                    <th style={{ color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, padding: '10px 12px' }}>Exam Type</th>
+                    <th style={{ color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, padding: '10px 12px' }}>Academic</th>
+                    <th style={{ color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, padding: '10px 12px', textAlign: 'right' }}>Classes</th>
+                    <th style={{ color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, padding: '10px 12px', textAlign: 'right' }}>Amount</th>
+                    <th style={{ color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, padding: '10px 12px' }}>Status</th>
+                    <th style={{ width: 40, padding: '10px 6px', textAlign: 'right', color: inkSoft, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08 }}>Action</th>
+                  </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100/50">
+                <tbody style={{ borderCollapse: 'collapse' }}>
                   {filteredBatches.map((batch) => {
                     const statusConfig = getStatusConfig(batch.status);
                     const schoolName = getSchoolName(String(batch.school_id));
                     const batchReference = String(batch.batch_number || batch.batchNumber || batch.id || '').trim();
                     return (
-                      <tr
-                        key={batch.id}
-                        className="hover:bg-blue-50/50 transition-colors cursor-pointer"
+                      <tr key={batch.id}
                         onClick={(event) => handleBatchRowClick(event, batch)}
                         onContextMenu={(e) => {
                           e.preventDefault();
                           setOpenMenuId(batch.id);
                         }}
+                        style={{ cursor: 'pointer', borderBottom: `1px solid ${hairline}` }}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                       >
-<td className="table-body-cell w-10 px-1">
+                        <td style={{ width: 40, padding: '8px 6px', textAlign: 'center' }}>
                           <input
                             type="checkbox"
                             checked={selectedBatchIds.has(batch.id)}
                             onChange={() => toggleBatchSelection(batch.id)}
-                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            style={{ accentColor: teal[600] }}
                           />
                         </td>
-                        <td className="table-body-cell flex-1 min-w-[100px]">
-                          <div className="font-semibold text-slate-900 font-mono">{batchReference || batch.id}</div>
+                        <td style={{ padding: '8px 12px' }}>
+                          <div style={{ fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{batchReference || batch.id}</div>
                         </td>
-                        <td className="table-body-cell flex-1 min-w-[140px] text-slate-600">
+                        <td style={{ padding: '8px 12px', color: inkSoft }}>
                           {schoolName}
-                          {batch.sub_account_name && <span className="text-slate-400 ml-1">({batch.sub_account_name})</span>}
+                          {batch.sub_account_name && <span style={{ color: inkSoft, marginLeft: 4 }}>({batch.sub_account_name})</span>}
                         </td>
-                        <td className="table-body-cell flex-1 min-w-[90px] text-slate-700">{batch.exam_type}</td>
-                        <td className="table-body-cell flex-1 min-w-[100px] text-slate-600">{batch.academic_year} Term {batch.term}</td>
-                        <td className="table-body-cell flex-1 min-w-[70px] text-right finance-nums text-slate-700">{getBatchClassCount(batch)}</td>
-                        <td className="table-body-cell flex-1 min-w-[100px] text-right font-semibold finance-nums text-slate-900">
+                        <td style={{ padding: '8px 12px', color: ink }}>{batch.exam_type}</td>
+                        <td style={{ padding: '8px 12px', color: inkSoft }}>{batch.academic_year} Term {batch.term}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', color: ink }}>{getBatchClassCount(batch)}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: ink }}>
                           {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'}
-                          {(batch.total_amount || 0).toLocaleString(undefined, {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 2
-                          })}
+                          {(batch.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                         </td>
-                        <td className="table-body-cell flex-1 min-w-[80px]">
-                          <span className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold ${statusConfig.badgeClass}`}>
+                        <td style={{ padding: '8px 12px' }}>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            borderRadius: 8, padding: '3px 10px',
+                            fontSize: 11, fontWeight: 600, ...statusConfig.badgeStyle
+                          }}>
                             {statusConfig.icon}
                             {batch.status}
                           </span>
                         </td>
-                        <td className="table-body-cell w-10 text-right">
-                          <div className="relative">
+                        <td style={{ padding: '8px 6px', textAlign: 'right' }}>
+                          <div style={{ position: 'relative' }}>
                             <button
                               type="button"
                               onClick={() => setOpenMenuId(openMenuId === batch.id ? null : batch.id)}
                               disabled={actionLoading === batch.id}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors disabled:opacity-50"
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                width: 32, height: 32, borderRadius: 8,
+                                color: inkSoft, cursor: 'pointer',
+                                background: paper, border: `1px solid ${hairline}`,
+                                transition: 'all .15s ease'
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
                             >
                               {actionLoading === batch.id ? (
-                                <RefreshCw size={16} className="animate-spin" />
+                                <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
                               ) : (
                                 <MoreVertical size={16} />
                               )}
                             </button>
                             
                             {openMenuId === batch.id && (
-                              <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
-                                {/* View/Edit - Available for all statuses */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const batchRef = String(batch.batch_number || batch.batchNumber || batch.id || '').trim();
-                                    navigate(`/examination/batches/${batch.id}`, { state: { name: batchRef } });
+                              <div style={{
+                                position: 'absolute', right: 0, marginTop: 4, width: 192,
+                                background: paper, borderRadius: 12,
+                                boxShadow: '0 8px 24px rgba(0,0,0,.15)',
+                                border: `1px solid ${hairline}`, padding: '4px 0', zIndex: 50
+                              }}>
+                                <button type="button" onClick={() => {
+                                  const batchRef = String(batch.batch_number || batch.batchNumber || batch.id || '').trim();
+                                  navigate(`/examination/batches/${batch.id}`, { state: { name: batchRef } });
+                                }}
+                                  style={{
+                                    width: '100%', padding: '8px 16px', textAlign: 'left', fontSize: 13,
+                                    color: ink, background: 'transparent', border: 'none',
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                >
-                                  <Edit3 size={14} className="text-slate-500" />
+                                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                  <Edit3 size={14} color={inkSoft} />
                                   {batch.status === 'Draft' || batch.status === 'Calculated' ? 'Edit' : 'View Details'}
                                 </button>
                                 
-                                {/* Calculate - Only for Draft */}
                                 {batch.status === 'Draft' && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCalculate(batch.id)}
-                                    disabled={actionLoading === batch.id}
-                                    className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                  >
-                                    <Calculator size={14} className="text-blue-500" />
+                                  <button type="button" onClick={() => handleCalculate(batch.id)} disabled={actionLoading === batch.id}
+                                    style={{
+                                      width: '100%', padding: '8px 16px', textAlign: 'left', fontSize: 13,
+                                      color: ink, background: 'transparent', border: 'none',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <Calculator size={14} color={teal[500]} />
                                     Calculate
                                   </button>
                                 )}
                                 
-                                {/* Approve - Only for Calculated */}
                                 {batch.status === 'Calculated' && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleApprove(batch.id)}
-                                    disabled={actionLoading === batch.id}
-                                    className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                  >
-                                    <CheckSquare size={14} className="text-emerald-500" />
+                                  <button type="button" onClick={() => handleApprove(batch.id)} disabled={actionLoading === batch.id}
+                                    style={{
+                                      width: '100%', padding: '8px 16px', textAlign: 'left', fontSize: 13,
+                                      color: ink, background: 'transparent', border: 'none',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <CheckSquare size={14} color={amber[500]} />
                                     Approve
                                   </button>
                                 )}
                                 
-                                {/* Generate Invoice - Only for Approved */}
                                 {batch.status === 'Approved' && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleGenerateInvoice(batch.id)}
-                                    disabled={actionLoading === batch.id}
-                                    className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                  >
-                                    <FileOutput size={14} className="text-violet-500" />
+                                  <button type="button" onClick={() => handleGenerateInvoice(batch.id)} disabled={actionLoading === batch.id}
+                                    style={{
+                                      width: '100%', padding: '8px 16px', textAlign: 'left', fontSize: 13,
+                                      color: ink, background: 'transparent', border: 'none',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <FileOutput size={14} color={teal[500]} />
                                     Generate Invoice
                                   </button>
                                 )}
                                 
-                                {/* View Invoice - Only for Invoiced */}
                                 {batch.status === 'Invoiced' && batch.invoice_id && (
-                                  <button
-                                    type="button"
-                                    onClick={() => navigate(`/sales/invoice/${batch.invoice_id}`)}
-                                    className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                  >
-                                    <FileText size={14} className="text-green-500" />
+                                  <button type="button" onClick={() => navigate(`/sales/invoice/${batch.invoice_id}`)}
+                                    style={{
+                                      width: '100%', padding: '8px 16px', textAlign: 'left', fontSize: 13,
+                                      color: ink, background: 'transparent', border: 'none',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <FileText size={14} color={teal[600]} />
                                     View Invoice
                                   </button>
                                 )}
 
-                                <button
-                                  type="button"
-                                  onClick={() => handleConvertToRecurring(batch)}
-                                  className="w-full px-4 py-2 text-left text-sm text-indigo-700 hover:bg-indigo-50 flex items-center gap-2"
-                                >
-                                  <Repeat size={14} className="text-indigo-500" />
+                                <button type="button" onClick={() => handleConvertToRecurring(batch)}
+                                  style={{
+                                    width: '100%', padding: '8px 16px', textAlign: 'left', fontSize: 13,
+                                    color: teal[800], background: 'transparent', border: 'none',
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                  <Repeat size={14} color={teal[500]} />
                                   Convert to Recurring
                                 </button>
                                 
-                                <div className="border-t border-slate-100 my-1" />
+                                <div style={{ borderTop: `1px solid ${hairline}`, margin: '4px 0' }} />
                                 
-                                {/* Delete - Only for Draft and Calculated */}
                                 {(batch.status === 'Draft' || batch.status === 'Calculated') && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteSingle(batch.id)}
-                                    disabled={actionLoading === batch.id}
-                                    className="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2"
-                                  >
-                                    <Trash2 size={14} className="text-rose-500" />
+                                  <button type="button" onClick={() => handleDeleteSingle(batch.id)} disabled={actionLoading === batch.id}
+                                    style={{
+                                      width: '100%', padding: '8px 16px', textAlign: 'left', fontSize: 13,
+                                      color: danger, background: 'transparent', border: 'none',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = `${danger}10`}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <Trash2 size={14} color={danger} />
                                     Delete
                                   </button>
                                 )}
                                 
-                                {/* Close menu */}
-                                <button
-                                  type="button"
-                                  onClick={() => setOpenMenuId(null)}
-                                  className="w-full px-4 py-2 text-left text-sm text-slate-500 hover:bg-slate-50 flex items-center gap-2"
-                                >
-                                  <X size={14} className="text-slate-400" />
+                                <button type="button" onClick={() => setOpenMenuId(null)}
+                                  style={{
+                                    width: '100%', padding: '8px 16px', textAlign: 'left', fontSize: 13,
+                                    color: inkSoft, background: 'transparent', border: 'none',
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                  <X size={14} color={inkSoft} />
                                   Close
                                 </button>
                               </div>
@@ -832,7 +894,6 @@ const ExaminationHub: React.FC = () => {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
@@ -842,20 +903,19 @@ const ExaminationHub: React.FC = () => {
         }} onClick={() => { if (!isDeleting) setShowDeleteConfirm(false); }}>
           <div style={{
             width: 480, maxWidth: '100%',
-            background: '#FEFDFB', borderRadius: 14, padding: 28,
+            background: paper, borderRadius: 14, padding: 28,
             boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
             position: 'relative'
           }} onClick={(e) => e.stopPropagation()}>
-            {/* accent stripe */}
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: 4,
               borderRadius: '14px 14px 0 0',
-              background: 'linear-gradient(90deg, #146b60, #3fa294 40%, #d99a3f 100%)'
+              background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
             }} />
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginTop: 8 }}>
               <div style={{
                 flexShrink: 0, width: 44, height: 44, borderRadius: 10,
-                background: 'rgba(213,43,30,.12)', color: '#b5493f',
+                background: `${danger}15`, color: danger,
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 <Trash2 size={22} />
@@ -863,17 +923,17 @@ const ExaminationHub: React.FC = () => {
               <div style={{ flex: 1 }}>
                 <h2 style={{
                   fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
-                  fontSize: 20, margin: 0, color: '#0b3e39', letterSpacing: 0.2
+                  fontSize: 20, margin: 0, color: teal[800], letterSpacing: 0.2
                 }}>
                   Delete Batches
                 </h2>
-                <p style={{ fontSize: 13, color: '#5c6567', marginTop: 8, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: inkSoft, marginTop: 8, lineHeight: 1.5 }}>
                   Are you sure you want to delete <strong>{selectedBatchIds.size} batch{selectedBatchIds.size !== 1 ? 'es' : ''}</strong>?
                   This action cannot be undone.
                 </p>
                 <div style={{
                   marginTop: 12, padding: 12, borderRadius: 9,
-                  background: '#fbead080', border: '1px solid #eec27a',
+                  background: `${amber[100]}80`, border: `1px solid ${amber[300]}`,
                   fontSize: 12, color: '#92400e'
                 }}>
                   <strong>Note:</strong> Only Draft or Calculated batches can be deleted. 
@@ -886,7 +946,7 @@ const ExaminationHub: React.FC = () => {
                 style={{
                   fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
                   padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
-                  background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567',
+                  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
                   transition: 'all .15s ease'
                 }}>
                 Cancel
@@ -895,10 +955,10 @@ const ExaminationHub: React.FC = () => {
                 style={{
                   fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
                   padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
-                  background: '#b5493f', color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                  background: danger, color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
                   opacity: isDeleting ? 0.6 : 1, transition: 'all .15s ease'
                 }}>
-                <RefreshCw size={14} className={isDeleting ? 'animate-spin' : ''} />
+                <RefreshCw size={14} style={isDeleting ? { animation: 'spin 1s linear infinite' } : {}} />
                 {isDeleting ? 'Deleting...' : `Delete ${selectedBatchIds.size} Batch${selectedBatchIds.size !== 1 ? 'es' : ''}`}
               </button>
             </div>

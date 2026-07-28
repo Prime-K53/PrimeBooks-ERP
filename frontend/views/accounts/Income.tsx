@@ -8,6 +8,8 @@ import { Income } from '../../types';
 import { DEFAULT_ACCOUNTS, ACCOUNT_IDS } from '../../constants';
 import { getDefaultDate, validateDateInFY } from '../../utils/financialYearUtils';
 
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1';
+
 const IncomeView: React.FC = () => {
   const { income, addIncome, updateIncome, deleteIncome } = useFinance();
   const { companyConfig, user, notify } = useAuth();
@@ -183,7 +185,7 @@ const IncomeView: React.FC = () => {
                 <p className="text-slate-500 mt-1">Manage non-sales revenue like grants, prizes, or interest.</p>
             </div>
             <div className="flex gap-4">
-                <div className="bg-white border border-slate-200 px-4 py-2 rounded-lg shadow-sm flex items-center gap-2">
+                <div className="prime-card" style={{ background: paper, border: `1.4px solid ${hairline}`, padding: '8px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="text-xs font-bold text-slate-500 uppercase">Total Income</span>
                     <span className="text-xl font-bold text-emerald-600">{currency}{totalIncome.toLocaleString()}</span>
                 </div>
@@ -193,8 +195,8 @@ const IncomeView: React.FC = () => {
             </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+        <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="p-4 flex justify-between items-center" style={{ borderBottom: `1.4px solid ${hairline}`, background: '#eef7f6' }}>
                 <div className="relative w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
                     <input 
@@ -208,7 +210,7 @@ const IncomeView: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-white text-slate-600 border-b border-slate-100 sticky top-0 z-10">
+                    <thead className="bg-white sticky top-0 z-10" style={{ color: inkSoft, borderBottom: `1.4px solid ${hairline}` }}>
                         <tr>
                             <th className="p-4">Date</th>
                             <th className="p-4">Description</th>

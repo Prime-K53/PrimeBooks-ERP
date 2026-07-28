@@ -9,6 +9,8 @@ import { BOMComponent } from '../../types';
 import { OfflineImage } from '../../components/OfflineImage';
 import { bomService } from '../../services/bomService';
 
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1';
+
 const NewBatch: React.FC = () => {
   const { boms, produceBatch } = useProduction();
   const { inventory } = useInventory();
@@ -133,15 +135,15 @@ const NewBatch: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
          <div>
            <h1 className="text-title">New Production Batch</h1>
-           <p className="text-[12px] text-slate-500 mt-0.5">Manufacture finished goods from raw materials</p>
+           <p className="text-[12px] mt-0.5" style={{ color: inkSoft }}>Manufacture finished goods from raw materials</p>
          </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Configuration Panel */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h3 className="font-bold text-slate-900 text-[13px] mb-4 flex items-center gap-2 uppercase tracking-tight">
+          <div className="prime-card" style={{ background: paper, padding: 24, borderRadius: 14, border: `1.4px solid ${hairline}` }}>
+            <h3 className="font-bold text-[13px] mb-4 flex items-center gap-2 uppercase tracking-tight" style={{ color: ink }}>
               <Package className="text-blue-600" size={16}/>
               Batch Configuration
             </h3>
@@ -208,18 +210,18 @@ const NewBatch: React.FC = () => {
           </div>
 
           {selectedBom && (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <h3 className="font-bold text-slate-900 text-[13px] mb-4 uppercase tracking-tight">Cost Estimation</h3>
+            <div className="prime-card" style={{ background: paper, padding: 24, borderRadius: 14, border: `1.4px solid ${hairline}` }}>
+              <h3 className="font-bold text-[13px] mb-4 uppercase tracking-tight" style={{ color: ink }}>Cost Estimation</h3>
               <div className="space-y-2 text-[13px]">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Material Cost</span>
+                  <span style={{ color: inkSoft }}>Total Material Cost</span>
                   <span className="font-bold finance-nums">{currency}{totalMaterialCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Labor/Overhead</span>
+                  <span style={{ color: inkSoft }}>Total Labor/Overhead</span>
                   <span className="font-bold finance-nums">{currency}{totalLaborCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="border-t border-slate-100 my-2 pt-2 flex justify-between text-[15px] font-bold text-slate-800">
+                <div className="my-2 pt-2 flex justify-between text-[15px] font-bold" style={{ borderTop: `1.4px solid ${hairline}`, color: ink }}>
                   <span>Total Batch Cost</span>
                   <span className="finance-nums">{currency}{totalBatchCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
@@ -248,8 +250,8 @@ const NewBatch: React.FC = () => {
 
         {/* Materials Checklist Panel */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
-            <div className="p-6 border-b border-slate-200 bg-slate-50">
+          <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div className="p-6" style={{ borderBottom: `1.4px solid ${hairline}`, background: '#eef7f6' }}>
               <h3 className="font-bold text-slate-800 text-[13px] uppercase tracking-tight">Material Requirements & Availability</h3>
             </div>
             

@@ -21,6 +21,9 @@ import { AuditTimeline } from '../../shared/components/AuditTimeline';
 import { ConfirmDialog, ConfirmDialogType } from '../../../components/ConfirmDialog';
 import { generateNextId } from '../../../utils/helpers';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f', 200: '#f5d8a0' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
 
 interface ProductDetailsProps {
     item: Item;
@@ -29,6 +32,9 @@ interface ProductDetailsProps {
     onAdjust: (item: Item) => void;
     onUpdate?: (item: Item) => void;
 }
+
+const btnSec: React.CSSProperties = { padding: '6px 12px', borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, transition: 'all .15s' };
+const cardInner: React.CSSProperties = { background: paper, borderRadius: 16, border: `1.4px solid ${hairline}`, padding: 24, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' };
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, onAdjust, onUpdate }) => {
     const { companyConfig, isOnline, notify, auditLogs } = useAuth();
@@ -125,7 +131,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
     // Variant Stock Distribution for Pie Chart
     const variantStockChartData = useMemo(() => {
         if (!hasVariants || !supportsStockRecords) return [];
-        const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+        const colors = ['#1f8577', '#146b60', '#0b3e39', '#a6d9d3', '#d3ece9', '#eef7f6', '#0f544c', '#5c6567'];
         return variants.map((v, idx) => ({
             name: v.name,
             value: v.stock || 0,
@@ -179,7 +185,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                   window.print();
                   window.close();
                 };
-              </script>
+              <\/script>
             </body>
           </html>
         `);
@@ -235,12 +241,12 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
 
     // Logistics & Supply Chain Info
     const logisticsData = [
-        { label: 'Bin Location', value: item.binLocation || 'Not Assigned', icon: Package, color: 'text-slate-600' },
-        { label: 'QC Status', value: item.qcStatus || 'Passed', icon: ClipboardCheck, color: item.qcStatus === 'Failed' ? 'text-red-600' : 'text-green-600' },
-        { label: 'Lead Time', value: `${item.leadTimeDays || 0} Days`, icon: Calendar, color: 'text-blue-600' },
-        { label: 'MOQ', value: `${item.minOrderQty || 0} ${item.unit}`, icon: ShoppingCart, color: 'text-purple-600' },
-        { label: 'Reorder Point', value: `${item.reorderPoint || 0} ${item.unit}`, icon: AlertTriangle, color: 'text-orange-600' },
-        { label: 'Manufacturer', value: item.manufacturer || 'N/A', icon: Factory, color: 'text-slate-600' },
+        { label: 'Bin Location', value: item.binLocation || 'Not Assigned', icon: Package, color: inkSoft },
+        { label: 'QC Status', value: item.qcStatus || 'Passed', icon: ClipboardCheck, color: item.qcStatus === 'Failed' ? danger : t[500] },
+        { label: 'Lead Time', value: `${item.leadTimeDays || 0} Days`, icon: Calendar, color: t[500] },
+        { label: 'MOQ', value: `${item.minOrderQty || 0} ${item.unit}`, icon: ShoppingCart, color: t[500] },
+        { label: 'Reorder Point', value: `${item.reorderPoint || 0} ${item.unit}`, icon: AlertTriangle, color: inkSoft },
+        { label: 'Manufacturer', value: item.manufacturer || 'N/A', icon: Factory, color: inkSoft },
     ];
 
     // 2. Financials
@@ -393,28 +399,28 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
     }, [salesHistory]);
 
     return (
-        <div className="flex flex-col h-full bg-slate-50/50 animate-fadeIn relative font-normal">
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: t[50], position: 'relative', fontFamily: 'inherit' }}>
             {/* Label Modal */}
             {showLabelModal && (
-                <div className="fixed inset-0 z-[80] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white p-8 rounded-2xl w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95 border border-white/50">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-lg">Print Label Preview</h3>
-                            <button onClick={() => setShowLabelModal(false)}><X size={20} className="text-slate-400 hover:text-slate-600" /></button>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(4px)' }}>
+                    <div className="prime-card" style={{ background: paper, padding: 32, borderRadius: 16, width: '100%', maxWidth: 384, textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.15)', border: `1.4px solid rgba(255,255,255,0.5)` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <h3 style={{ fontWeight: 700, fontSize: 18 }}>Print Label Preview</h3>
+                            <button onClick={() => setShowLabelModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}><X size={20} style={{ color: inkSoft }} /></button>
                         </div>
-                        <div id="product-label-printable" className="border-2 border-black p-6 rounded-xl mb-6 bg-white text-left shadow-sm">
-                            <h4 className="font-bold text-xl text-black mb-2 line-clamp-2">{item.name}</h4>
-                            <div className="my-3 font-barcode text-4xl tracking-widest text-center opacity-80">||| |||| || |||||| |||</div>
-                            <div className="flex justify-between items-end mt-2">
-                                <p className="font-mono text-sm font-bold">{item.sku}</p>
-                                <p className="font-bold text-2xl">{currency}{(item.type === 'Raw Material' ? item.cost : item.price || 0).toFixed(2)}</p>
+                        <div id="product-label-printable" style={{ border: '2px solid #000', padding: 24, borderRadius: 12, marginBottom: 24, background: paper, textAlign: 'left', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                            <h4 style={{ fontWeight: 700, fontSize: 20, color: '#000', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.name}</h4>
+                            <div style={{ margin: '12px 0', fontFamily: 'monospace', fontSize: 36, letterSpacing: 4, textAlign: 'center', opacity: 0.8 }}>||| |||| || |||||| |||</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 }}>
+                                <p style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 700 }}>{item.sku}</p>
+                                <p style={{ fontWeight: 700, fontSize: 24 }}>{currency}{(item.type === 'Raw Material' ? item.cost : item.price || 0).toFixed(2)}</p>
                             </div>
                         </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowLabelModal(false)} className="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl font-bold hover:bg-slate-50 text-sm">Cancel</button>
+                        <div style={{ display: 'flex', gap: 12 }}>
+                            <button onClick={() => setShowLabelModal(false)} className="prime-btn-secondary" style={{ flex: 1, padding: '10px 0', borderRadius: 12, border: `1.4px solid ${hairline}`, background: paper, color: ink, fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
                             <button
-                                onClick={handlePrintLabel}
-                                className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-200"
+                                onClick={handlePrintLabel} className="prime-btn"
+                                style={{ flex: 1, padding: '10px 0', borderRadius: 12, background: t[500], color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                             >
                                 <Printer size={16} />
                                 Print
@@ -425,54 +431,54 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
             )}
 
             {/* 1. Header Section */}
-            <div className="bg-white/70 backdrop-blur-xl border-b border-slate-200/60 px-6 py-4">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                        <button onClick={onBack} className="p-2 hover:bg-white rounded-xl text-slate-500 transition-colors border border-transparent hover:border-slate-200 hover:shadow-sm">
+            <div style={{ background: paper, borderBottom: `1.4px solid ${hairline}`, padding: '16px 24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <button onClick={onBack} className="prime-btn-secondary" style={{ padding: 8, background: 'transparent', borderRadius: 12, color: inkSoft, border: '1.4px solid transparent', cursor: 'pointer', transition: 'all .15s' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.boxShadow = 'none'; }}>
                             <ArrowLeft size={20} />
                         </button>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-[20px] font-bold text-slate-900 tracking-tight">{item.name}</h1>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <h1 style={{ fontSize: 20, fontWeight: 700, color: ink, letterSpacing: -0.02 }}>{item.name}</h1>
                                 {item.isProtected && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-white border border-slate-900 uppercase tracking-wider">
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: ink, color: '#fff', border: `1.4px solid ${ink}`, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                         <ShieldCheck size={10} /> Protected
                                     </span>
                                 )}
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${item.type === 'Product' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                                <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, border: `1.4px solid ${hairline}`, textTransform: 'uppercase', letterSpacing: 0.5, background: item.type === 'Product' ? t[50] : amber[100], color: item.type === 'Product' ? t[600] : amber[500] }}>
                                     {item.type}
                                 </span>
                             </div>
-                            <div className="text-[12px] text-slate-500 flex items-center gap-3 mt-1">
-                                <span className="font-mono bg-slate-100/50 px-1.5 rounded">{item.sku}</span>
-                                <span>•</span>
+                            <div style={{ fontSize: 12, color: inkSoft, display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+                                <span style={{ fontFamily: 'monospace', background: t[50], padding: '2px 6px', borderRadius: 4 }}>{item.sku}</span>
+                                <span>&bull;</span>
                                 <span>{item.category}</span>
                             </div>
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div style={{ display: 'flex', gap: 8 }}>
                         {supportsStockRecords && (
-                            <button onClick={() => onAdjust(item)} className="zoho-button-secondary px-3 py-1.5 flex items-center gap-1.5">
+                            <button onClick={() => onAdjust(item)} className="prime-btn-secondary" style={btnSec}>
                                 <ArrowRightLeft size={14} /> Adjust
                             </button>
                         )}
-                        <button onClick={() => onEdit(item)} className="zoho-button-secondary px-3 py-1.5 flex items-center gap-1.5">
+                        <button onClick={() => onEdit(item)} className="prime-btn-secondary" style={btnSec}>
                             <Edit2 size={14} /> Edit
                         </button>
-                        <button onClick={() => setShowLabelModal(true)} className="zoho-button-secondary p-1.5" title="Print Label">
+                        <button onClick={() => setShowLabelModal(true)} className="prime-btn-secondary" style={{ ...btnSec, padding: '6px' }} title="Print Label">
                             <Printer size={16} />
                         </button>
                         {item.isProtected ? (
-                            <div
-                                className="p-1.5 text-slate-400 bg-slate-100 border border-slate-200 rounded cursor-not-allowed"
-                                title="This core system item cannot be deleted"
-                            >
-                                <Trash2 size={16} className="opacity-50" />
+                            <div style={{ padding: 6, color: inkSoft, background: t[100], border: `1.4px solid ${hairline}`, borderRadius: 4, cursor: 'not-allowed' }} title="This core system item cannot be deleted">
+                                <Trash2 size={16} style={{ opacity: 0.5 }} />
                             </div>
                         ) : (
-                            <button
-                                className="p-1.5 text-slate-400 hover:text-red-600 bg-white border border-slate-100 rounded shadow-sm transition-colors"
+                            <button className="prime-btn-secondary" style={{ padding: 6, color: inkSoft, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 4, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'all .15s' }}
                                 title="Delete Item"
+                                onMouseEnter={e => e.currentTarget.style.color = danger}
+                                onMouseLeave={e => e.currentTarget.style.color = inkSoft}
                                 onClick={() => {
                                     setConfirmState({
                                         open: true,
@@ -493,88 +499,88 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                     {supportsStockRecords ? (
                         <>
-                            <div className="glass-card p-4 rounded-2xl flex flex-col justify-center border border-white/60">
-                                <div className="text-label uppercase mb-1 tracking-wider">Available Stock</div>
-                                <div className="flex items-baseline gap-1">
-                                    <span className={`text-[20px] font-black finance-nums ${stockAvailable <= (item.minStockLevel || 0) ? 'text-red-600' : 'text-slate-900'}`}>
+                            <div className="prime-card" style={{ padding: 16, borderRadius: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', border: `1.4px solid ${hairline}`, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Available Stock</div>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                                    <span style={{ fontSize: 20, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: stockAvailable <= (item.minStockLevel || 0) ? danger : ink }}>
                                         {stockAvailable}
                                     </span>
-                                    <span className="text-[10px] text-slate-500 font-medium">{item.unit}</span>
+                                    <span style={{ fontSize: 10, color: inkSoft, fontWeight: 500 }}>{item.unit}</span>
                                 </div>
-                                <div className="text-[11px] text-slate-400 mt-0.5 finance-nums">Total On Hand: {item.stock}</div>
+                                <div style={{ fontSize: 11, color: inkSoft, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>Total On Hand: {item.stock}</div>
                             </div>
 
-                            <div className="glass-card p-4 rounded-2xl flex flex-col justify-center border border-white/60">
-                                <div className="text-label uppercase mb-1 tracking-wider">Allocated / On Order</div>
-                                <div className="flex justify-between items-center mt-1">
-                                    <div className="text-center">
-                                        <div className="text-[13px] font-bold text-amber-600 finance-nums">{stockAllocated}</div>
-                                        <div className="text-[9px] text-slate-400 font-medium">Reserved</div>
+                            <div className="prime-card" style={{ padding: 16, borderRadius: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', border: `1.4px solid ${hairline}`, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Allocated / On Order</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: amber[500], fontVariantNumeric: 'tabular-nums' }}>{stockAllocated}</div>
+                                        <div style={{ fontSize: 9, color: inkSoft, fontWeight: 500 }}>Reserved</div>
                                     </div>
-                                    <div className="w-px h-6 bg-slate-200/50"></div>
-                                    <div className="text-center">
-                                        <div className="text-[13px] font-bold text-blue-600 finance-nums">{stockOnOrder}</div>
-                                        <div className="text-[9px] text-slate-400 font-medium">Inbound</div>
+                                    <div style={{ width: 1, height: 24, background: hairline }}></div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{stockOnOrder}</div>
+                                        <div style={{ fontSize: 9, color: inkSoft, fontWeight: 500 }}>Inbound</div>
                                     </div>
                                 </div>
                             </div>
                         </>
                     ) : (
                         <>
-                            <div className="glass-card p-4 rounded-2xl flex flex-col justify-center border border-white/60">
-                                <div className="text-label uppercase mb-1 tracking-wider">Stock Records</div>
-                                <div className="text-[20px] font-black text-slate-900">Disabled</div>
-                                <div className="text-[11px] text-slate-400 mt-0.5">This {item.type.toLowerCase()} is price-tracked only.</div>
+                            <div className="prime-card" style={{ padding: 16, borderRadius: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', border: `1.4px solid ${hairline}`, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Stock Records</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: ink }}>Disabled</div>
+                                <div style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>This {item.type.toLowerCase()} is price-tracked only.</div>
                             </div>
 
-                            <div className="glass-card p-4 rounded-2xl flex flex-col justify-center border border-white/60">
-                                <div className="text-label uppercase mb-1 tracking-wider">Inventory Policy</div>
-                                <div className="text-[13px] font-bold text-slate-700">No stock log or quantity adjustments</div>
-                                <div className="text-[11px] text-slate-400 mt-0.5">Use variants and pricing only.</div>
+                            <div className="prime-card" style={{ padding: 16, borderRadius: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', border: `1.4px solid ${hairline}`, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Inventory Policy</div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: ink }}>No stock log or quantity adjustments</div>
+                                <div style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>Use variants and pricing only.</div>
                             </div>
                         </>
                     )}
 
-<div className="glass-card p-4 rounded-2xl flex flex-col justify-center border border-white/60">
-                        <div className="text-label uppercase mb-1 tracking-wider">Pricing</div>
-                        <div className="flex justify-between text-[12px] mt-1">
-                            <span className="text-slate-500 font-medium">Last Cost:</span>
-                            <span className="font-bold text-slate-700 finance-nums">{currency}{(lastCost || 0).toFixed(2)}</span>
+                    <div className="prime-card" style={{ padding: 16, borderRadius: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', border: `1.4px solid ${hairline}`, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Pricing</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 4 }}>
+                            <span style={{ color: inkSoft, fontWeight: 500 }}>Last Cost:</span>
+                            <span style={{ fontWeight: 700, color: ink, fontVariantNumeric: 'tabular-nums' }}>{currency}{(lastCost || 0).toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-[12px] mt-0.5">
-                            <span className="text-slate-500 font-medium">{item.type === 'Raw Material' ? 'Base Cost:' : 'Price (Inc):'}</span>
-                            <span className={`font-black finance-nums ${(item as Item & { pricingConfig?: { manualOverride?: boolean } }).pricingConfig?.manualOverride ? 'text-blue-600 underline decoration-dotted' : 'text-slate-900'}`}>{currency}{(item.type === 'Raw Material' ? item.cost : item.price || 0).toFixed(2)}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 2 }}>
+                            <span style={{ color: inkSoft, fontWeight: 500 }}>{item.type === 'Raw Material' ? 'Base Cost:' : 'Price (Inc):'}</span>
+                            <span style={{ fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: (item as Item & { pricingConfig?: { manualOverride?: boolean } }).pricingConfig?.manualOverride ? t[500] : ink, textDecoration: (item as Item & { pricingConfig?: { manualOverride?: boolean } }).pricingConfig?.manualOverride ? 'underline dotted' : 'none' }}>{currency}{(item.type === 'Raw Material' ? item.cost : item.price || 0).toFixed(2)}</span>
                         </div>
                         {(item as Item & { pricingConfig?: { manualOverride?: boolean } }).pricingConfig?.manualOverride && (
-                            <div className="mt-2 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-medium">
+                            <div style={{ marginTop: 8, fontSize: 10, background: t[50], color: t[500], padding: '4px 8px', borderRadius: 4, fontWeight: 500 }}>
                                 Manual Override Active
                             </div>
                         )}
                     </div>
 
-                    <div className="glass-card p-4 rounded-2xl flex flex-col justify-center border border-white/60">
-                        <div className="text-label uppercase mb-1 tracking-wider">Manufacturing Loss</div>
-                        <div className="flex items-center gap-2 mt-1">
-                            <div className={`text-[20px] font-black finance-nums ${(wastePct || 0) > 10 ? 'text-red-600' : 'text-emerald-600'}`}>{(wastePct || 0).toFixed(1)}%</div>
-                            <Recycle size={14} className={(wastePct || 0) > 10 ? 'text-red-500' : 'text-emerald-500'} />
+                    <div className="prime-card" style={{ padding: 16, borderRadius: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', border: `1.4px solid ${hairline}`, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Manufacturing Loss</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                            <div style={{ fontSize: 20, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: (wastePct || 0) > 10 ? danger : t[500] }}>{(wastePct || 0).toFixed(1)}%</div>
+                            <Recycle size={14} style={{ color: (wastePct || 0) > 10 ? danger : t[500] }} />
                         </div>
-                        <div className="text-[9px] text-slate-400 mt-0.5 font-medium">Historical Scrap Rate</div>
+                        <div style={{ fontSize: 9, color: inkSoft, marginTop: 2, fontWeight: 500 }}>Historical Scrap Rate</div>
                     </div>
                 </div>
             </div>
 
             {/* 2. Alerts Section */}
             {(supportsStockRecords && (item.stock <= (item.minStockLevel || 0) || stockAvailable < 0) && !((item as Item & { printConsumptionEnabled?: boolean }).printConsumptionEnabled)) && (
-                <div className="px-6 py-3 bg-red-50/80 backdrop-blur border-b border-red-100 flex items-center gap-3 text-xs text-red-800">
-                    <AlertTriangle size={14} className="shrink-0" />
-                    <span className="font-bold">Low Stock Warning:</span>
+                <div style={{ padding: '12px 24px', background: '#fef2f2', borderBottom: '1.4px solid #fecaca', display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: danger }}>
+                    <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700 }}>Low Stock Warning:</span>
                     Available stock below min level ({item.minStockLevel} {item.unit}).
                     <button
-                        onClick={handleCreatePO}
-                        className="ml-auto text-[10px] bg-white/50 hover:bg-white px-3 py-1 rounded-lg font-bold text-red-900 transition-colors border border-red-100 shadow-sm"
+                        onClick={handleCreatePO} className="prime-btn-secondary"
+                        style={{ marginLeft: 'auto', fontSize: 10, background: paper, padding: '4px 12px', borderRadius: 9, fontWeight: 700, color: '#991b1b', cursor: 'pointer', border: `1.4px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
                     >
                         Create PO
                     </button>
@@ -583,22 +589,22 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
 
             {/* Variant Badge in Header */}
             {hasVariants && (
-                <div className="px-6 py-2 bg-blue-50/50 border-b border-blue-100 flex items-center gap-3">
-                    <Layers size={14} className="text-blue-600" />
-                    <span className="text-[12px] font-bold text-blue-700">
+                <div style={{ padding: '8px 24px', background: t[50], borderBottom: `1.4px solid ${t[100]}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Layers size={14} style={{ color: t[500] }} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: t[600] }}>
                         This product has {variants.length} variant{variants.length > 1 ? 's' : ''}
                     </span>
                     {supportsStockRecords ? (
-                        <span className="text-[11px] text-blue-500">
+                        <span style={{ fontSize: 11, color: t[500] }}>
                             Total Stock: {variantTotalStock.toLocaleString()} {item.unit}
                         </span>
                     ) : (
-                        <span className="text-[11px] text-blue-500">
+                        <span style={{ fontSize: 11, color: t[500] }}>
                             Stock records are disabled for {item.type.toLowerCase()} items
                         </span>
                     )}
                     {topVariant && (
-                        <span className="ml-auto flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium">
+                        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: t[500], fontWeight: 500 }}>
                             <Award size={12} /> Top Seller: {topVariant.name} ({topVariant.unitsSold} units)
                         </span>
                     )}
@@ -606,79 +612,85 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
             )}
 
             {/* 3. Tabs Navigation */}
-            <div className="flex gap-1 px-6 pt-4 bg-transparent overflow-x-auto no-scrollbar">
+            <div style={{ display: 'flex', gap: 4, padding: '16px 24px 0', background: 'transparent', overflowX: 'auto' }}>
                 {visibleTabs.map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-4 py-2 text-[13px] font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === tab
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'
-                            }`}
-                    >
+                    <button key={tab} onClick={() => setActiveTab(tab)} className="prime-btn-secondary"
+                        style={{
+                            padding: '8px 16px',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            transition: 'all .15s',
+                            borderBottom: '2px solid',
+                            whiteSpace: 'nowrap',
+                            background: 'none',
+                            cursor: 'pointer',
+                            border: 'none',
+                            borderBottom: activeTab === tab ? `2px solid ${t[500]}` : '2px solid transparent',
+                            color: activeTab === tab ? t[500] : inkSoft,
+                        }}>
                         {tab}
                         {tab === 'Variants' && hasVariants && (
-                            <span className="ml-1.5 px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded text-[10px]">{variants.length}</span>
+                            <span style={{ marginLeft: 6, padding: '2px 6px', background: t[100], color: t[500], borderRadius: 4, fontSize: 10 }}>{variants.length}</span>
                         )}
                     </button>
                 ))}
             </div>
 
             {/* 4. Tab Content */}
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
                 {activeTab === 'Overview' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60 space-y-4">
-                            <h3 className="text-label font-bold flex items-center gap-2 uppercase tracking-wider"><Package size={16} className="text-blue-500" /> Item Identity</h3>
-                            <div className="grid grid-cols-2 gap-4 text-[13px]">
-                                <div><div className="text-slate-400 font-bold mb-1 uppercase text-[10px]">SKU / Code</div><div className="font-mono font-medium text-slate-700">{item.sku}</div></div>
-                                <div><div className="text-slate-400 font-bold mb-1 uppercase text-[10px]">Unit of Measure</div><div className="font-medium text-slate-700">{item.unit}</div></div>
-                                <div className="col-span-2"><div className="text-slate-400 font-bold mb-1 uppercase text-[10px]">Description</div><div className="text-slate-600 leading-relaxed">{item.description || 'No description provided.'}</div></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+                        <div className="prime-card" style={{ ...cardInner, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <h3 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                <Package size={16} style={{ color: t[500] }} /> Item Identity
+                            </h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: 13 }}>
+                                <div><div style={{ color: inkSoft, fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', fontSize: 10 }}>SKU / Code</div><div style={{ fontFamily: 'monospace', fontWeight: 500, color: ink }}>{item.sku}</div></div>
+                                <div><div style={{ color: inkSoft, fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', fontSize: 10 }}>Unit of Measure</div><div style={{ fontWeight: 500, color: ink }}>{item.unit}</div></div>
+                                <div style={{ gridColumn: 'span 2' }}><div style={{ color: inkSoft, fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', fontSize: 10 }}>Description</div><div style={{ color: ink, lineHeight: 1.625 }}>{item.description || 'No description provided.'}</div></div>
                             </div>
                         </div>
-                        <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60 space-y-4">
-                            <h3 className="text-label font-bold flex items-center gap-2 uppercase tracking-wider"><DollarSign size={16} className="text-emerald-500" /> Current Pricing</h3>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center p-3 bg-white/50 rounded-xl border border-slate-100">
-                                    <span className="text-[13px] font-bold text-slate-600">{item.type === 'Raw Material' ? 'Material Cost' : 'Retail Price (Inc)'}</span>
-                                    <span className="font-bold text-slate-900 text-[13px] finance-nums">{currency}{(item.type === 'Raw Material' ? item.cost : item.price || 0).toFixed(2)}</span>
+                        <div className="prime-card" style={{ ...cardInner, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <h3 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                <DollarSign size={16} style={{ color: t[500] }} /> Current Pricing
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, background: paper, borderRadius: 12, border: `1.4px solid ${hairline}` }}>
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: inkSoft }}>{item.type === 'Raw Material' ? 'Material Cost' : 'Retail Price (Inc)'}</span>
+                                    <span style={{ fontWeight: 700, color: ink, fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{currency}{(item.type === 'Raw Material' ? item.cost : item.price || 0).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between items-center p-3 border-b border-slate-100/50 last:border-0">
-                                    <span className="text-[13px] text-slate-500 font-medium">Net Price (Excl)</span>
-                                    <span className="font-medium text-slate-700 text-[13px] finance-nums">{currency}{(netSellingPrice || 0).toFixed(2)}</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1.4px solid ${hairline}` }}>
+                                    <span style={{ fontSize: 13, color: inkSoft, fontWeight: 500 }}>Net Price (Excl)</span>
+                                    <span style={{ fontWeight: 500, color: ink, fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{currency}{(netSellingPrice || 0).toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Variant Quick Overview (shown in Overview tab if has variants) */}
                         {hasVariants && (
-                            <div className="md:col-span-2 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-6 rounded-2xl border border-blue-100">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-label font-bold text-blue-900 flex items-center gap-2 uppercase tracking-wider">
+                            <div style={{ gridColumn: 'span 2', background: `linear-gradient(135deg, ${t[50]}, ${t[50]})`, padding: 16, borderRadius: 16, border: `1.4px solid ${t[100]}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                    <h3 style={{ fontSize: 11, fontWeight: 700, color: t[600], display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                         <Layers size={16} /> Variant Summary
                                     </h3>
-                                    <button
-                                        onClick={() => setActiveTab('Variants')}
-                                        className="text-[11px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
-                                    >
-                                        View All Variants <ArrowRightLeft size={12} className="rotate-180" />
+                                    <button onClick={() => setActiveTab('Variants')} className="prime-btn-secondary" style={{ fontSize: 11, color: t[500], fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        View All Variants <ArrowRightLeft size={12} style={{ transform: 'rotate(180deg)' }} />
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                                     {variants.slice(0, 4).map((v, idx) => (
-                                        <div key={v.id} className="bg-white/70 p-4 rounded-xl border border-blue-100">
-                                            <div className="text-[11px] font-bold text-slate-500 truncate">{v.name}</div>
+                                        <div key={v.id} className="prime-card" style={{ background: paper, padding: 16, borderRadius: 12, border: `1.4px solid ${t[100]}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                            <div style={{ fontSize: 11, fontWeight: 700, color: inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</div>
                                             {supportsStockRecords ? (
                                                 <>
-                                                    <div className="text-[18px] font-black text-slate-900 finance-nums mt-1">{v.stock || 0}</div>
-                                                    <div className="text-[10px] text-slate-400">in stock</div>
-                                                    <div className="text-[12px] font-bold text-blue-600 mt-2 finance-nums">{currency}{(v.price || 0).toFixed(2)}</div>
+                                                    <div style={{ fontSize: 18, fontWeight: 900, color: ink, fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{v.stock || 0}</div>
+                                                    <div style={{ fontSize: 10, color: inkSoft }}>in stock</div>
+                                                    <div style={{ fontSize: 12, fontWeight: 700, color: t[500], marginTop: 8, fontVariantNumeric: 'tabular-nums' }}>{currency}{(v.price || 0).toFixed(2)}</div>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div className="text-[18px] font-black text-blue-600 finance-nums mt-1">{currency}{(v.price || 0).toFixed(2)}</div>
-                                                    <div className="text-[10px] text-slate-400">selling price</div>
-                                                    <div className="text-[11px] text-slate-500 mt-2 truncate">
+                                                    <div style={{ fontSize: 18, fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{currency}{(v.price || 0).toFixed(2)}</div>
+                                                    <div style={{ fontSize: 10, color: inkSoft }}>selling price</div>
+                                                    <div style={{ fontSize: 11, color: inkSoft, marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         {Object.values(v.attributes || {}).join(' / ') || 'No attribute'}
                                                     </div>
                                                 </>
@@ -686,8 +698,8 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                                         </div>
                                     ))}
                                     {variants.length > 4 && (
-                                        <div className="bg-white/50 p-4 rounded-xl border border-blue-100 flex items-center justify-center">
-                                            <span className="text-[12px] text-blue-600 font-bold">+{variants.length - 4} more</span>
+                                        <div className="prime-card" style={{ background: t[50], padding: 16, borderRadius: 12, border: `1.4px solid ${t[100]}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <span style={{ fontSize: 12, color: t[500], fontWeight: 700 }}>+{variants.length - 4} more</span>
                                         </div>
                                     )}
                                 </div>
@@ -696,68 +708,54 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                     </div>
                 )}
 
-                {/* VARIANTS TAB - Full Variant Analytics */}
                 {activeTab === 'Variants' && (
-                    <div className="space-y-6">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                         {!hasVariants ? (
-                            <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-12 text-center">
-                                <Layers size={48} className="mx-auto text-slate-300 mb-4" />
-                                <h3 className="text-lg font-bold text-slate-700 mb-2">No Variants Configured</h3>
-                                <p className="text-[13px] text-slate-500 mb-4">This product doesn't have any variants yet.</p>
-                                <button
-                                    onClick={() => onEdit(item)}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700"
-                                >
+                            <div className="prime-card" style={{ ...cardInner, padding: 48, textAlign: 'center' }}>
+                                <Layers size={48} style={{ margin: '0 auto 16px', color: inkSoft }} />
+                                <h3 style={{ fontSize: 18, fontWeight: 700, color: ink, marginBottom: 8 }}>No Variants Configured</h3>
+                                <p style={{ fontSize: 13, color: inkSoft, marginBottom: 16 }}>This product doesn't have any variants yet.</p>
+                                <button onClick={() => onEdit(item)} className="prime-btn" style={{ padding: '8px 16px', background: t[500], color: '#fff', borderRadius: 9, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                                     Add Variants
                                 </button>
                             </div>
                         ) : (
                             <>
-                                {/* Variant Performance Summary Cards */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="bg-white/70 backdrop-blur-xl p-4 rounded-2xl border border-white/60">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Variants</div>
-                                        <div className="text-[24px] font-black text-slate-900">{variants.length}</div>
-                                    </div>
-                                    <div className="bg-white/70 backdrop-blur-xl p-4 rounded-2xl border border-white/60">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{supportsStockRecords ? 'Combined Stock' : 'Average Price'}</div>
-                                        <div className="text-[24px] font-black text-blue-600 finance-nums">
-                                            {supportsStockRecords ? variantTotalStock.toLocaleString() : `${currency}${averageVariantPrice.toFixed(2)}`}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                                    {[
+                                        { label: 'Total Variants', value: variants.length, color: ink },
+                                        { label: supportsStockRecords ? 'Combined Stock' : 'Average Price', value: supportsStockRecords ? variantTotalStock.toLocaleString() : `${currency}${averageVariantPrice.toFixed(2)}`, color: t[500] },
+                                        { label: 'Total Units Sold', value: variantSalesData.reduce((sum, v) => sum + v.unitsSold, 0).toLocaleString(), color: t[500] },
+                                        { label: 'Total Revenue', value: `${currency}${variantSalesData.reduce((sum, v) => sum + v.revenue, 0).toLocaleString()}`, color: t[500] },
+                                    ].map((k, i) => (
+                                        <div key={i} className="prime-card" style={{ ...cardInner, padding: 16 }}>
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</div>
+                                            <div style={{ fontSize: 24, fontWeight: 900, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
                                         </div>
-                                    </div>
-                                    <div className="bg-white/70 backdrop-blur-xl p-4 rounded-2xl border border-white/60">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Units Sold</div>
-                                        <div className="text-[24px] font-black text-emerald-600 finance-nums">{variantSalesData.reduce((sum, v) => sum + v.unitsSold, 0).toLocaleString()}</div>
-                                    </div>
-                                    <div className="bg-white/70 backdrop-blur-xl p-4 rounded-2xl border border-white/60">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</div>
-                                        <div className="text-[24px] font-black text-blue-600 finance-nums">{currency}{variantSalesData.reduce((sum, v) => sum + v.revenue, 0).toLocaleString()}</div>
-                                    </div>
+                                    ))}
                                 </div>
 
-                                {/* Top Performer Badge */}
                                 {topVariant && topVariant.unitsSold > 0 && (
-                                    <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-4 rounded-2xl border border-emerald-100 flex items-center gap-4">
-                                        <div className="p-3 bg-emerald-100 rounded-xl">
-                                            <Award size={24} className="text-emerald-600" />
+                                    <div style={{ background: `linear-gradient(135deg, ${t[50]}, ${t[50]})`, padding: 16, borderRadius: 16, border: `1.4px solid ${t[100]}`, display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                        <div style={{ padding: 12, background: t[100], borderRadius: 12 }}>
+                                            <Award size={24} style={{ color: t[500] }} />
                                         </div>
                                         <div>
-                                            <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Top Performing Variant</div>
-                                            <div className="text-[16px] font-black text-slate-900">{topVariant.name}</div>
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: t[500], textTransform: 'uppercase', letterSpacing: 0.5 }}>Top Performing Variant</div>
+                                            <div style={{ fontSize: 16, fontWeight: 900, color: ink }}>{topVariant.name}</div>
                                         </div>
-                                        <div className="ml-auto text-right">
-                                            <div className="text-[20px] font-black text-emerald-600 finance-nums">{topVariant.unitsSold.toLocaleString()}</div>
-                                            <div className="text-[10px] text-slate-500">units sold</div>
+                                        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                                            <div style={{ fontSize: 20, fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{topVariant.unitsSold.toLocaleString()}</div>
+                                            <div style={{ fontSize: 10, color: inkSoft }}>units sold</div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Variant Charts Row */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
                                     {supportsStockRecords ? (
-                                        <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60">
-                                            <h4 className="text-label font-bold mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                <PieChartIcon size={14} className="text-blue-500" /> Stock Distribution
+                                        <div className="prime-card" style={{ ...cardInner }}>
+                                            <h4 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                                <PieChartIcon size={14} style={{ color: t[500] }} /> Stock Distribution
                                             </h4>
                                             <div style={{ width: '100%', height: 200, minHeight: 150 }}>
                                                 <ResponsiveContainer width="100%" height="100%" minHeight={150} minWidth={0}>
@@ -775,111 +773,112 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                                             ))}
                                                         </Pie>
-                                                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                                                        <Tooltip contentStyle={{ borderRadius: 12, border: 'none' }} />
                                                     </PieChart>
                                                 </ResponsiveContainer>
                                             </div>
-                                            <div className="flex flex-wrap gap-2 mt-4">
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
                                                 {variantStockChartData.slice(0, 6).map((entry, idx) => (
-                                                    <div key={idx} className="flex items-center gap-1.5 text-[10px]">
-                                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                                                        <span className="text-slate-600 truncate max-w-[80px]">{entry.name}</span>
+                                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10 }}>
+                                                        <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: entry.color }} />
+                                                        <span style={{ color: inkSoft, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60">
-                                            <h4 className="text-label font-bold mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                <DollarSign size={14} className="text-blue-500" /> Variant Pricing
+                                        <div className="prime-card" style={{ ...cardInner }}>
+                                            <h4 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                                <DollarSign size={14} style={{ color: t[500] }} /> Variant Pricing
                                             </h4>
-                                            <div className="space-y-3">
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                                 {variantPriceBands.length > 0 ? variantPriceBands.map((variant) => (
-                                                    <div key={variant.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white/60 px-4 py-3">
+                                                    <div key={variant.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, border: `1.4px solid ${hairline}`, background: paper, padding: '12px 16px' }}>
                                                         <div>
-                                                            <div className="text-[12px] font-bold text-slate-800">{variant.name}</div>
-                                                            <div className="text-[10px] text-slate-400">{Object.values(variant.attributes || {}).join(' / ') || 'No attribute'}</div>
+                                                            <div style={{ fontSize: 12, fontWeight: 700, color: ink }}>{variant.name}</div>
+                                                            <div style={{ fontSize: 10, color: inkSoft }}>{Object.values(variant.attributes || {}).join(' / ') || 'No attribute'}</div>
                                                         </div>
-                                                        <div className="text-[13px] font-black text-blue-600 finance-nums">{currency}{(variant.price || 0).toFixed(2)}</div>
+                                                        <div style={{ fontSize: 13, fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{(variant.price || 0).toFixed(2)}</div>
                                                     </div>
                                                 )) : (
-                                                    <div className="text-[13px] text-slate-400 italic">No variant pricing data yet.</div>
+                                                    <div style={{ fontSize: 13, color: inkSoft, fontStyle: 'italic' }}>No variant pricing data yet.</div>
                                                 )}
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Sales by Variant Bar Chart */}
-                                    <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60">
-                                        <h4 className="text-label font-bold mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                            <BarChart3 size={14} className="text-blue-500" /> Sales by Variant
+                                    <div className="prime-card" style={{ ...cardInner }}>
+                                        <h4 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                            <BarChart3 size={14} style={{ color: t[500] }} /> Sales by Variant
                                         </h4>
                                         <div style={{ width: '100%', height: 200, minHeight: 150 }}>
                                             <ResponsiveContainer width="100%" height="100%" minHeight={150} minWidth={0}>
                                                 <BarChart data={variantSalesChartData} layout="vertical">
-                                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                                                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                                                    <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} width={100} />
-                                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                                                    <Bar dataKey="Units Sold" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={16} />
+                                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={hairline} />
+                                                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: inkSoft }} />
+                                                    <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: inkSoft }} width={100} />
+                                                    <Tooltip contentStyle={{ borderRadius: 12, border: 'none' }} />
+                                                    <Bar dataKey="Units Sold" fill={t[500]} radius={[0, 4, 4, 0]} barSize={16} />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Variant Details Table */}
-                                <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-                                    <div className="p-4 border-b border-slate-100">
-                                        <h4 className="text-label font-bold flex items-center gap-2 uppercase tracking-wider">
-                                            <Layers size={14} className="text-blue-500" /> Variant Performance Breakdown
+                                <div className="prime-card" style={{ ...cardInner, padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ padding: '16px 24px', borderBottom: `1.4px solid ${hairline}` }}>
+                                        <h4 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                            <Layers size={14} style={{ color: t[500] }} /> Variant Performance Breakdown
                                         </h4>
                                     </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse">
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                                             <thead>
-                                                <tr className="bg-slate-50/50">
-                                                    <th className="table-header py-3 px-4">Variant</th>
-                                                    {supportsStockRecords && <th className="table-header py-3 px-4 text-center">Stock</th>}
-                                                    <th className="table-header py-3 px-4 text-right">Cost</th>
-                                                    <th className="table-header py-3 px-4 text-right">Price</th>
-                                                    <th className="table-header py-3 px-4 text-right">Units Sold</th>
-                                                    <th className="table-header py-3 px-4 text-right">Revenue</th>
-                                                    <th className="table-header py-3 px-4 text-right">Markup</th>
+                                                <tr style={{ background: t[50] }}>
+                                                    <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: inkSoft }}>Variant</th>
+                                                    {supportsStockRecords && <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: 'center' }}>Stock</th>}
+                                                    <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: 'right' }}>Cost</th>
+                                                    <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: 'right' }}>Price</th>
+                                                    <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: 'right' }}>Units Sold</th>
+                                                    <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: 'right' }}>Revenue</th>
+                                                    <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: 'right' }}>Markup</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                 {variantSalesData.map((v, idx) => {
-                                                     // If this product or variant uses print consumption, we don't show low-stock warnings
-const variantObj = variants.find(x => x.id === v.id) || {} as { printConsumptionEnabled?: boolean };
-                                                      const suppressedLowStock = (item as Item & { printConsumptionEnabled?: boolean }).printConsumptionEnabled || variantObj.printConsumptionEnabled;
-                                                     const isLowStock = supportsStockRecords && !suppressedLowStock && v.stock <= (item.minStockLevel || 0);
+                                            <tbody style={{}}>
+                                                {variantSalesData.map((v, idx) => {
+                                                    const variantObj = variants.find(x => x.id === v.id) || {} as { printConsumptionEnabled?: boolean };
+                                                    const suppressedLowStock = (item as Item & { printConsumptionEnabled?: boolean }).printConsumptionEnabled || variantObj.printConsumptionEnabled;
+                                                    const isLowStock = supportsStockRecords && !suppressedLowStock && v.stock <= (item.minStockLevel || 0);
                                                     const isTopSeller = topVariant?.id === v.id;
                                                     return (
-                                                        <tr key={v.id} className={`hover:bg-slate-50/50 transition-colors ${isTopSeller ? 'bg-emerald-50/30' : ''}`}>
-                                                            <td className="table-body-cell py-3 px-4">
-                                                                <div className="flex items-center gap-2">
-                                                                    {isTopSeller && <Award size={14} className="text-emerald-500" />}
+                                                        <tr key={v.id} className="prime-table-cell"
+                                                            style={{ borderTop: `1.4px solid ${hairline}`, transition: 'all .15s', background: isTopSeller ? t[50] : 'transparent' }}
+                                                            onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                                                            onMouseLeave={e => e.currentTarget.style.background = isTopSeller ? t[50] : 'transparent'}
+                                                        >
+                                                            <td className="prime-table-cell" style={{ padding: '12px 16px' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                    {isTopSeller && <Award size={14} style={{ color: t[500] }} />}
                                                                     <div>
-                                                                        <div className="font-bold text-slate-800 text-[12px]">{v.name}</div>
-                                                                        <div className="text-[10px] text-slate-400 font-mono">{v.sku}</div>
+                                                                        <div style={{ fontWeight: 700, color: ink, fontSize: 12 }}>{v.name}</div>
+                                                                        <div style={{ fontSize: 10, color: inkSoft, fontFamily: 'monospace' }}>{v.sku}</div>
                                                                     </div>
                                                                 </div>
                                                             </td>
                                                             {supportsStockRecords && (
-                                                                <td className="table-body-cell py-3 px-4 text-center">
-                                                                    <span className={`font-bold finance-nums ${isLowStock ? 'text-red-600' : 'text-slate-700'}`}>
+                                                                <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                                                    <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isLowStock ? danger : ink }}>
                                                                         {v.stock.toLocaleString()}
                                                                     </span>
-                                                                    {isLowStock && <AlertTriangle size={12} className="inline ml-1 text-red-500" />}
+                                                                    {isLowStock && <AlertTriangle size={12} style={{ display: 'inline', marginLeft: 4, color: danger }} />}
                                                                 </td>
                                                             )}
-                                                            <td className="table-body-cell py-3 px-4 text-right finance-nums">{currency}{v.cost.toFixed(2)}</td>
-                                                            <td className="table-body-cell py-3 px-4 text-right font-bold text-blue-600 finance-nums">{currency}{v.price.toFixed(2)}</td>
-                                                            <td className="table-body-cell py-3 px-4 text-right font-bold finance-nums">{v.unitsSold.toLocaleString()}</td>
-                                                            <td className="table-body-cell py-3 px-4 text-right font-bold text-emerald-600 finance-nums">{currency}{v.revenue.toFixed(2)}</td>
-                                                            <td className="table-body-cell py-3 px-4 text-right">
-                                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${v.margin >= 25 ? 'bg-emerald-100 text-emerald-700' : v.margin >= 10 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{currency}{v.cost.toFixed(2)}</td>
+                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{v.price.toFixed(2)}</td>
+                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{v.unitsSold.toLocaleString()}</td>
+                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{v.revenue.toFixed(2)}</td>
+                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                                                <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 700, background: v.margin >= 25 ? t[100] : v.margin >= 10 ? amber[100] : '#fef2f2', color: v.margin >= 25 ? t[600] : v.margin >= 10 ? amber[500] : danger }}>
                                                                     {v.margin.toFixed(1)}%
                                                                 </span>
                                                             </td>
@@ -896,97 +895,93 @@ const variantObj = variants.find(x => x.id === v.id) || {} as { printConsumption
                 )}
 
                 {activeTab === 'Logistics' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {logisticsData.map((item, idx) => (
-                            <div key={idx} className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60 flex items-center gap-4">
-                                <div className={`p-3 rounded-2xl bg-white shadow-sm ${item.color}`}>
-                                    <item.icon size={24} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+                        {logisticsData.map((ld, idx) => (
+                            <div key={idx} className="prime-card" style={{ ...cardInner, display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <div style={{ padding: 12, borderRadius: 16, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', color: inkSoft }}>
+                                    <ld.icon size={24} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.label}</p>
-                                    <p className="text-[14px] font-black text-slate-900 finance-nums">{item.value}</p>
+                                    <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{ld.label}</p>
+                                    <p style={{ fontSize: 14, fontWeight: 900, color: ink, fontVariantNumeric: 'tabular-nums' }}>{ld.value}</p>
                                 </div>
                             </div>
                         ))}
 
-                        {/* Manufacturing & Technical Section */}
-                        <div className="md:col-span-2 lg:col-span-3 bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60">
-                            <h3 className="text-label font-bold text-slate-900 mb-6 flex items-center gap-2 uppercase tracking-widest">
-                                <Activity size={16} className="text-blue-500" /> Technical & Manufacturer Data
+                        <div className="prime-card" style={{ ...cardInner, gridColumn: 'span 3' }}>
+                            <h3 style={{ fontSize: 11, fontWeight: 700, color: ink, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                <Activity size={16} style={{ color: t[500] }} /> Technical & Manufacturer Data
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Manufacturer</p>
-                                        <p className="text-[13px] font-bold text-slate-700">{item.manufacturer || 'None Specified'}</p>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                    <div style={{ padding: 16, background: t[50], borderRadius: 16, border: `1.4px solid ${hairline}` }}>
+                                        <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', marginBottom: 4 }}>Manufacturer</p>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: ink }}>{item.manufacturer || 'None Specified'}</p>
                                     </div>
-                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Part Number (MPN)</p>
-                                        <p className="font-mono text-[13px] font-bold text-slate-700">{item.manufacturerPartNumber || 'N/A'}</p>
+                                    <div style={{ padding: 16, background: t[50], borderRadius: 16, border: `1.4px solid ${hairline}` }}>
+                                        <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', marginBottom: 4 }}>Part Number (MPN)</p>
+                                        <p style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: ink }}>{item.manufacturerPartNumber || 'N/A'}</p>
                                     </div>
                                 </div>
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Expiry / Shelf Life</p>
-                                        <p className="text-[13px] font-bold text-slate-700">{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'Non-perishable'}</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                    <div style={{ padding: 16, background: t[50], borderRadius: 16, border: `1.4px solid ${hairline}` }}>
+                                        <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', marginBottom: 4 }}>Expiry / Shelf Life</p>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: ink }}>{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'Non-perishable'}</p>
                                     </div>
-                                    <div className={`p-4 rounded-2xl border ${item.isHazardous ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Safety Class</p>
-                                        <p className={`text-[13px] font-bold ${item.isHazardous ? 'text-red-700' : 'text-emerald-700'}`}>
+                                    <div style={{ padding: 16, borderRadius: 16, border: `1.4px solid ${hairline}`, background: item.isHazardous ? '#fef2f2' : t[50] }}>
+                                        <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', marginBottom: 4 }}>Safety Class</p>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: item.isHazardous ? danger : t[500] }}>
                                             {item.isHazardous ? 'Hazardous Material (HAZMAT)' : 'Standard / Safe'}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
-                                    <h4 className="text-[12px] font-bold text-blue-700 uppercase mb-4 flex items-center gap-2">
+                                <div style={{ background: t[50], padding: 24, borderRadius: 16, border: `1.4px solid ${t[100]}` }}>
+                                    <h4 style={{ fontSize: 12, fontWeight: 700, color: t[600], textTransform: 'uppercase', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <Truck size={14} /> Supply Chain Health
                                     </h4>
                                     {supportsStockRecords ? (
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-center text-[13px]">
-                                                <span className="text-slate-500">Reorder Level:</span>
-                                                <span className="font-bold text-slate-900 finance-nums">{item.reorderPoint || 0} {item.unit}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-[13px]">
-                                                <span className="text-slate-500">Min Stock Level:</span>
-                                                <span className="font-bold text-slate-900 finance-nums">{item.minStockLevel || 0} {item.unit}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-[13px]">
-                                                <span className="text-slate-500">Typical Lead Time:</span>
-                                                <span className="font-bold text-blue-600 finance-nums">{item.leadTimeDays || 0} Days</span>
-                                            </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                            {[
+                                                { label: 'Reorder Level:', value: `${item.reorderPoint || 0} ${item.unit}` },
+                                                { label: 'Min Stock Level:', value: `${item.minStockLevel || 0} ${item.unit}` },
+                                                { label: 'Typical Lead Time:', value: `${item.leadTimeDays || 0} Days` },
+                                            ].map((r, i) => (
+                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
+                                                    <span style={{ color: inkSoft }}>{r.label}</span>
+                                                    <span style={{ fontWeight: 700, color: r.label.includes('Lead Time') ? t[500] : ink, fontVariantNumeric: 'tabular-nums' }}>{r.value}</span>
+                                                </div>
+                                            ))}
                                         </div>
                                     ) : (
-                                        <div className="space-y-3">
-                                            <p className="text-[13px] font-bold text-slate-800">Stock records are disabled for {item.type.toLowerCase()} items.</p>
-                                            <p className="text-[12px] text-slate-500">This view keeps pricing and reference data, but it won’t track stock movements, reorder levels, or quantity adjustments.</p>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                            <p style={{ fontSize: 13, fontWeight: 700, color: ink }}>Stock records are disabled for {item.type.toLowerCase()} items.</p>
+                                            <p style={{ fontSize: 12, color: inkSoft }}>This view keeps pricing and reference data, but it won't track stock movements, reorder levels, or quantity adjustments.</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Unit Conversion (For Materials) */}
                             {item.type === 'Raw Material' && item.purchaseUnit && item.usageUnit && (
-                                <div className="mt-8 pt-8 border-t border-slate-100">
-                                    <h4 className="text-[12px] font-bold text-slate-900 uppercase mb-4 flex items-center gap-2">
-                                        <ArrowRightLeft size={16} className="text-blue-500" /> Material Unit Conversion
+                                <div style={{ marginTop: 32, paddingTop: 32, borderTop: `1.4px solid ${hairline}` }}>
+                                    <h4 style={{ fontSize: 12, fontWeight: 700, color: ink, textTransform: 'uppercase', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <ArrowRightLeft size={16} style={{ color: t[500] }} /> Material Unit Conversion
                                     </h4>
-                                    <div className="bg-blue-50/30 p-4 rounded-xl border border-blue-100 inline-flex items-center gap-6">
-                                        <div className="text-center">
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Purchased In</p>
-                                            <p className="text-[13px] font-black text-slate-700">{item.purchaseUnit}</p>
+                                    <div style={{ background: t[50], padding: 16, borderRadius: 12, border: `1.4px solid ${t[100]}`, display: 'inline-flex', alignItems: 'center', gap: 24 }}>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <p style={{ fontSize: 10, color: inkSoft, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Purchased In</p>
+                                            <p style={{ fontSize: 13, fontWeight: 900, color: ink }}>{item.purchaseUnit}</p>
                                         </div>
-                                        <div className="flex flex-col items-center">
-                                            <div className="text-[10px] font-black text-blue-600 mb-1">x{item.conversionRate}</div>
-                                            <ArrowRight size={14} className="text-blue-400" />
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                            <div style={{ fontSize: 10, fontWeight: 900, color: t[500], marginBottom: 4 }}>x{item.conversionRate}</div>
+                                            <ArrowRight size={14} style={{ color: t[500] }} />
                                         </div>
-                                        <div className="text-center">
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Used In</p>
-                                            <p className="text-[13px] font-black text-slate-700">{item.usageUnit}</p>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <p style={{ fontSize: 10, color: inkSoft, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Used In</p>
+                                            <p style={{ fontSize: 13, fontWeight: 900, color: ink }}>{item.usageUnit}</p>
                                         </div>
-                                        <div className="ml-6 pl-6 border-l border-blue-100">
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Conversion Rule</p>
-                                            <p className="text-[12px] font-medium text-blue-800 italic">
+                                        <div style={{ marginLeft: 24, paddingLeft: 24, borderLeft: `1.4px solid ${t[100]}` }}>
+                                            <p style={{ fontSize: 10, color: inkSoft, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Conversion Rule</p>
+                                            <p style={{ fontSize: 12, fontWeight: 500, color: t[600], fontStyle: 'italic' }}>
                                                 1 {item.purchaseUnit} contains {item.conversionRate} {item.usageUnit}s
                                             </p>
                                         </div>
@@ -998,34 +993,36 @@ const variantObj = variants.find(x => x.id === v.id) || {} as { printConsumption
                 )}
 
                 {activeTab === 'Sales History' && (
-                    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-                        <div className="p-6 border-b border-slate-100">
-                            <h3 className="text-label font-bold flex items-center gap-2 uppercase tracking-wider"><ShoppingCart size={16} className="text-blue-500" /> Sales History</h3>
+                    <div className="prime-card" style={{ ...cardInner, padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 24px', borderBottom: `1.4px solid ${hairline}` }}>
+                            <h3 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                <ShoppingCart size={16} style={{ color: t[500] }} /> Sales History
+                            </h3>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr className="bg-slate-50/50">
-                                        <th className="table-header py-3 px-6">Date</th>
-                                        <th className="table-header py-3 px-6">Reference</th>
-                                        <th className="table-header py-3 px-6">Customer</th>
-                                        <th className="table-header py-3 px-6 text-right">Quantity</th>
-                                        <th className="table-header py-3 px-6 text-right">Price</th>
+                                    <tr style={{ background: t[50] }}>
+                                        {['Date', 'Reference', 'Customer', 'Quantity', 'Price'].map(h => (
+                                            <th key={h} className="prime-table-header" style={{ padding: '12px 24px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: h === 'Quantity' || h === 'Price' ? 'right' as const : 'left' as const }}>{h}</th>
+                                        ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody>
                                     {salesHistory.length > 0 ? salesHistory.map((s, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="table-body-cell py-3 px-6">{new Date(s.date).toLocaleDateString()}</td>
-                                            <td className="table-body-cell py-3 px-6 font-mono text-[11px]">{s.ref}</td>
-                                            <td className="table-body-cell py-3 px-6 font-bold text-slate-700">{s.entity}</td>
-                                            <td className="table-body-cell py-3 px-6 text-right font-bold finance-nums">{Math.abs(s.qty)}</td>
-                                            <td className="table-body-cell py-3 px-6 text-right font-black text-blue-600 finance-nums">{currency}{(s.price || 0).toFixed(2)}</td>
+                                        <tr key={idx} className="prime-table-cell"
+                                            style={{ borderTop: `1.4px solid ${hairline}`, transition: 'all .15s' }}
+                                            onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px' }}>{new Date(s.date).toLocaleDateString()}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', fontFamily: 'monospace', fontSize: 11 }}>{s.ref}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', fontWeight: 700, color: ink }}>{s.entity}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{Math.abs(s.qty)}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{(s.price || 0).toFixed(2)}</td>
                                         </tr>
                                     )) : (
-                                        <tr>
-                                            <td colSpan={5} className="py-12 text-center text-slate-400 italic text-[13px]">No sales history found for this item.</td>
-                                        </tr>
+                                        <tr><td colSpan={5} style={{ padding: '48px 0', textAlign: 'center', color: inkSoft, fontStyle: 'italic', fontSize: 13 }}>No sales history found for this item.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -1034,34 +1031,36 @@ const variantObj = variants.find(x => x.id === v.id) || {} as { printConsumption
                 )}
 
                 {activeTab === 'Purchase History' && (
-                    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-                        <div className="p-6 border-b border-slate-100">
-                            <h3 className="text-label font-bold flex items-center gap-2 uppercase tracking-wider"><Truck size={16} className="text-emerald-500" /> Purchase History</h3>
+                    <div className="prime-card" style={{ ...cardInner, padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 24px', borderBottom: `1.4px solid ${hairline}` }}>
+                            <h3 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                <Truck size={16} style={{ color: t[500] }} /> Purchase History
+                            </h3>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr className="bg-slate-50/50">
-                                        <th className="table-header py-3 px-6">Date</th>
-                                        <th className="table-header py-3 px-6">Reference</th>
-                                        <th className="table-header py-3 px-6">Supplier</th>
-                                        <th className="table-header py-3 px-6 text-right">Quantity</th>
-                                        <th className="table-header py-3 px-6 text-right">Cost</th>
+                                    <tr style={{ background: t[50] }}>
+                                        {['Date', 'Reference', 'Supplier', 'Quantity', 'Cost'].map(h => (
+                                            <th key={h} className="prime-table-header" style={{ padding: '12px 24px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: h === 'Quantity' || h === 'Cost' ? 'right' as const : 'left' as const }}>{h}</th>
+                                        ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody>
                                     {purchaseHistory.length > 0 ? purchaseHistory.map((p, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="table-body-cell py-3 px-6">{new Date(p.date).toLocaleDateString()}</td>
-                                            <td className="table-body-cell py-3 px-6 font-mono text-[11px]">{p.ref}</td>
-                                            <td className="table-body-cell py-3 px-6 font-bold text-slate-700">{p.entity}</td>
-                                            <td className="table-body-cell py-3 px-6 text-right font-bold finance-nums">{p.qty}</td>
-                                            <td className="table-body-cell py-3 px-6 text-right font-black text-emerald-600 finance-nums">{currency}{(p.price || 0).toFixed(2)}</td>
+                                        <tr key={idx} className="prime-table-cell"
+                                            style={{ borderTop: `1.4px solid ${hairline}`, transition: 'all .15s' }}
+                                            onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px' }}>{new Date(p.date).toLocaleDateString()}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', fontFamily: 'monospace', fontSize: 11 }}>{p.ref}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', fontWeight: 700, color: ink }}>{p.entity}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{p.qty}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{(p.price || 0).toFixed(2)}</td>
                                         </tr>
                                     )) : (
-                                        <tr>
-                                            <td colSpan={5} className="py-12 text-center text-slate-400 italic text-[13px]">No purchase history found for this item.</td>
-                                        </tr>
+                                        <tr><td colSpan={5} style={{ padding: '48px 0', textAlign: 'center', color: inkSoft, fontStyle: 'italic', fontSize: 13 }}>No purchase history found for this item.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -1070,44 +1069,50 @@ const variantObj = variants.find(x => x.id === v.id) || {} as { printConsumption
                 )}
 
                 {activeTab === 'Stock Log' && (
-                    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-                        <div className="p-6 border-b border-slate-100">
-                            <h3 className="text-label font-bold flex items-center gap-2 uppercase tracking-wider"><Activity size={16} className="text-purple-500" /> Complete Stock Log</h3>
+                    <div className="prime-card" style={{ ...cardInner, padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 24px', borderBottom: `1.4px solid ${hairline}` }}>
+                            <h3 style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                <Activity size={16} style={{ color: t[500] }} /> Complete Stock Log
+                            </h3>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr className="bg-slate-50/50">
-                                        <th className="table-header py-3 px-6">Date</th>
-                                        <th className="table-header py-3 px-6">Type</th>
-                                        <th className="table-header py-3 px-6">Reference</th>
-                                        <th className="table-header py-3 px-6">Entity / Source</th>
-                                        <th className="table-header py-3 px-6 text-right">Change</th>
+                                    <tr style={{ background: t[50] }}>
+                                        {['Date', 'Type', 'Reference', 'Entity / Source', 'Change'].map(h => (
+                                            <th key={h} className="prime-table-header" style={{ padding: '12px 24px', fontSize: 11, fontWeight: 600, color: inkSoft, textAlign: h === 'Change' ? 'right' as const : 'left' as const }}>{h}</th>
+                                        ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {stockLog.length > 0 ? stockLog.map((log, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="table-body-cell py-3 px-6">{new Date(log.date).toLocaleDateString()}</td>
-                                            <td className="table-body-cell py-3 px-6">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${log.type === 'Sale' ? 'bg-blue-50 text-blue-600' :
-                                                    log.type === 'Purchase' ? 'bg-emerald-50 text-emerald-600' :
-                                                        log.type === 'Production' ? 'bg-purple-50 text-purple-600' :
-                                                            'bg-slate-50 text-slate-600'
-                                                    }`}>
-                                                    {log.type}
-                                                </span>
-                                            </td>
-                                            <td className="table-body-cell py-3 px-6 font-mono text-[11px]">{log.ref}</td>
-                                            <td className="table-body-cell py-3 px-6 text-slate-600">{log.entity}</td>
-                                            <td className={`table-body-cell py-3 px-6 text-right font-bold finance-nums ${log.qty >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {log.qty > 0 ? '+' : ''}{log.qty}
-                                            </td>
-                                        </tr>
-                                    )) : (
-                                        <tr>
-                                            <td colSpan={5} className="py-12 text-center text-slate-400 italic text-[13px]">No activity logs found.</td>
-                                        </tr>
+                                <tbody>
+                                    {stockLog.length > 0 ? stockLog.map((log, idx) => {
+                                        const typeColors: Record<string, { bg: string; color: string }> = {
+                                            Sale: { bg: t[50], color: t[500] },
+                                            Purchase: { bg: t[50], color: t[500] },
+                                            Production: { bg: t[50], color: t[500] },
+                                        };
+                                        const tc = typeColors[log.type] || { bg: t[100], color: inkSoft };
+                                        return (
+                                            <tr key={idx} className="prime-table-cell"
+                                                style={{ borderTop: `1.4px solid ${hairline}`, transition: 'all .15s' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                <td className="prime-table-cell" style={{ padding: '12px 24px' }}>{new Date(log.date).toLocaleDateString()}</td>
+                                                <td className="prime-table-cell" style={{ padding: '12px 24px' }}>
+                                                    <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', background: tc.bg, color: tc.color }}>
+                                                        {log.type}
+                                                    </span>
+                                                </td>
+                                                <td className="prime-table-cell" style={{ padding: '12px 24px', fontFamily: 'monospace', fontSize: 11 }}>{log.ref}</td>
+                                                <td className="prime-table-cell" style={{ padding: '12px 24px', color: inkSoft }}>{log.entity}</td>
+                                                <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: log.qty >= 0 ? t[500] : danger }}>
+                                                    {log.qty > 0 ? '+' : ''}{log.qty}
+                                                </td>
+                                            </tr>
+                                        );
+                                    }) : (
+                                        <tr><td colSpan={5} style={{ padding: '48px 0', textAlign: 'center', color: inkSoft, fontStyle: 'italic', fontSize: 13 }}>No activity logs found.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -1116,57 +1121,59 @@ const variantObj = variants.find(x => x.id === v.id) || {} as { printConsumption
                 )}
 
                 {activeTab === 'Analytics' && (
-                    <div className="grid grid-cols-1 gap-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60">
-                                <h3 className="text-label font-bold mb-6 flex items-center gap-2 uppercase tracking-wider"><BarChart3 size={16} className="text-blue-500" /> Sales Trend (Units)</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+                            <div className="prime-card" style={{ ...cardInner }}>
+                                <h3 style={{ fontSize: 11, fontWeight: 700, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>
+                                    <BarChart3 size={16} style={{ color: t[500] }} /> Sales Trend (Units)
+                                </h3>
                                 <div style={{ width: '100%', height: 300, minHeight: 150 }}>
                                     <ResponsiveContainer width="100%" height="100%" minHeight={150} minWidth={0}>
                                         <BarChart data={chartData}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                                            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} cursor={{ fill: '#f1f5f9' }} />
-                                            <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} name="Units Sold" />
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={hairline} />
+                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: inkSoft }} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: inkSoft }} />
+                                            <Tooltip contentStyle={{ borderRadius: 12, border: 'none' }} cursor={{ fill: t[50] }} />
+                                            <Bar dataKey="value" fill={t[500]} radius={[4, 4, 0, 0]} barSize={30} name="Units Sold" />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
                             </div>
-                            <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-white/60">
-                                <h3 className="text-label font-bold mb-6 uppercase tracking-wider">Profitability Overview</h3>
-                                <div className="space-y-6 text-[13px]">
-                                    <div className="flex justify-between border-b pb-2"><span className="text-slate-500">Net Revenue</span><span className="font-bold finance-nums">{currency}{(totalNetRevenue || 0).toFixed(2)}</span></div>
-                                    <div className="flex justify-between border-b pb-2"><span className="text-slate-500">COGS (at Last Cost)</span><span className="font-bold finance-nums">-{currency}{(estCOGS || 0).toFixed(2)}</span></div>
-                                    <div className="flex justify-between text-[14px] font-black"><span className="text-slate-900 uppercase">Gross Profit</span><span className={`finance-nums ${grossProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{currency}{(grossProfit || 0).toFixed(2)}</span></div>
-                                    <div className="p-4 bg-slate-50/50 rounded-xl text-center border border-slate-100">
-                                        <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Average Markup</span>
-                                        <span className="text-[24px] font-black text-blue-600 finance-nums">{totalNetRevenue > 0 ? ((grossProfit / totalNetRevenue) * 100).toFixed(1) : 0}%</span>
+                            <div className="prime-card" style={{ ...cardInner }}>
+                                <h3 style={{ fontSize: 11, fontWeight: 700, marginBottom: 24, textTransform: 'uppercase', letterSpacing: 0.5, color: ink }}>Profitability Overview</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontSize: 13 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1.4px solid ${hairline}`, paddingBottom: 8 }}><span style={{ color: inkSoft }}>Net Revenue</span><span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{currency}{(totalNetRevenue || 0).toFixed(2)}</span></div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1.4px solid ${hairline}`, paddingBottom: 8 }}><span style={{ color: inkSoft }}>COGS (at Last Cost)</span><span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>-{currency}{(estCOGS || 0).toFixed(2)}</span></div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 900 }}><span style={{ color: ink, textTransform: 'uppercase' }}>Gross Profit</span><span style={{ fontVariantNumeric: 'tabular-nums', color: grossProfit >= 0 ? t[500] : danger }}>{currency}{(grossProfit || 0).toFixed(2)}</span></div>
+                                    <div style={{ padding: 16, background: t[50], borderRadius: 12, textAlign: 'center', border: `1.4px solid ${hairline}` }}>
+                                        <span style={{ display: 'block', fontSize: 10, color: inkSoft, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Average Markup</span>
+                                        <span style={{ fontSize: 24, fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{totalNetRevenue > 0 ? ((grossProfit / totalNetRevenue) * 100).toFixed(1) : 0}%</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-gradient-to-br from-purple-50 to-indigo-50/50 p-6 rounded-2xl border border-purple-100 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-label font-bold text-purple-900 flex items-center gap-2 uppercase tracking-wider"><Sparkles size={16} /> AI Optimal Price Suggestions</h3>
+                        <div style={{ background: `linear-gradient(135deg, ${t[50]}, ${t[50]})`, padding: 24, borderRadius: 16, border: `1.4px solid ${t[100]}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <h3 style={{ fontSize: 11, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}><Sparkles size={16} style={{ color: t[500] }} /> AI Optimal Price Suggestions</h3>
                                 {isOnline ? (
-                                    <button onClick={handleAiPriceSuggestion} disabled={isAiPricingLoading} className="bg-white border border-purple-200 text-purple-600 px-4 py-2 rounded-lg text-[12px] font-bold hover:bg-purple-50 flex items-center gap-2 transition-all">
-                                        {isAiPricingLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                    <button onClick={handleAiPriceSuggestion} disabled={isAiPricingLoading} className="prime-btn-secondary" style={{ background: paper, border: `1.4px solid ${t[100]}`, color: t[500], padding: '8px 16px', borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: isAiPricingLoading ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .15s' }}>
+                                        {isAiPricingLoading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={14} />}
                                         {isAiPricingLoading ? 'Analyzing BOM Data...' : 'Generate New Pricing'}
                                     </button>
-                                ) : <span className="text-[12px] text-slate-400">Online only</span>}
+                                ) : <span style={{ fontSize: 12, color: inkSoft }}>Online only</span>}
                             </div>
                             {aiPriceSuggestion ? (
-                                <div className="bg-white p-5 rounded-xl border border-purple-100 text-slate-700 text-[13px] prose prose-sm max-w-none leading-relaxed">
+                                <div className="prime-card" style={{ background: paper, padding: 20, borderRadius: 12, border: `1.4px solid ${t[100]}`, color: ink, fontSize: 13, lineHeight: 1.625 }}>
                                     <ReactMarkdown>{aiPriceSuggestion}</ReactMarkdown>
                                 </div>
-                            ) : <div className="text-center py-6 text-slate-400 text-[12px] italic">Uses real-time scrap rates and BOM component costs for accuracy.</div>}
+                            ) : <div style={{ textAlign: 'center', padding: '24px 0', color: inkSoft, fontSize: 12, fontStyle: 'italic' }}>Uses real-time scrap rates and BOM component costs for accuracy.</div>}
                         </div>
                     </div>
                 )}
 
                 {activeTab === 'Security' && (
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 overflow-hidden flex flex-col h-[600px]">
+                    <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', padding: 24, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 600 }}>
                         <AuditTimeline 
                             logs={(auditLogs || []).filter((log: any) => 
                                 log.entityId === item.id || 

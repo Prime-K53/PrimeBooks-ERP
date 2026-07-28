@@ -2,6 +2,10 @@ import React from 'react';
 import { ShoppingCart, ClipboardList, DollarSign, Package } from 'lucide-react';
 import type { Purchase } from '../../../../types';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   purchases: Purchase[];
   itemId: string;
@@ -10,10 +14,10 @@ interface Props {
 export const PurchaseHistoryTab: React.FC<Props> = ({ purchases, itemId }) => {
   if (purchases.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <ShoppingCart size={48} className="mb-4 opacity-50" />
-        <p className="text-sm font-semibold">No Purchase History</p>
-        <p className="text-xs mt-1">No purchase orders have been placed for this item.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', color: inkSoft }}>
+        <ShoppingCart size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+        <p style={{ fontSize: 14, fontWeight: 600 }}>No Purchase History</p>
+        <p style={{ fontSize: 12, marginTop: 4 }}>No purchase orders have been placed for this item.</p>
       </div>
     );
   }
@@ -28,59 +32,68 @@ export const PurchaseHistoryTab: React.FC<Props> = ({ purchases, itemId }) => {
   }, 0);
 
   const kpis = [
-    { label: 'Total Orders', value: purchases.length, icon: <ClipboardList size={16} />, color: 'text-slate-900' },
-    { label: 'Total Quantity', value: totalQty, icon: <Package size={16} />, color: 'text-blue-600' },
-    { label: 'Total Spent', value: totalCost.toFixed(2), icon: <DollarSign size={16} />, color: 'text-red-600' },
+    { label: 'Total Orders', value: purchases.length, icon: <ClipboardList size={16} />, color: ink },
+    { label: 'Total Quantity', value: totalQty, icon: <Package size={16} />, color: t[500] },
+    { label: 'Total Spent', value: totalCost.toFixed(2), icon: <DollarSign size={16} />, color: danger },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
         {kpis.map(k => (
-          <div key={k.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{k.label}</span>
-              <span className="text-slate-400">{k.icon}</span>
+          <div key={k.label} className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
+              <span style={{ color: inkSoft }}>{k.icon}</span>
             </div>
-            <p className={`text-xl font-bold ${k.color} font-mono`}>{k.value}</p>
+            <p style={{ fontSize: 20, fontWeight: 700, color: k.color, fontFamily: 'monospace' }}>{k.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <table style={{ width: '100%', fontSize: 14 }}>
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
+            <tr style={{ background: t[50], borderBottom: `1.4px solid ${hairline}` }}>
               {['PO #', 'Supplier', 'Date', 'Quantity', 'Unit Cost', 'Total', 'Status'].map(h => (
-                <th key={h} className={`px-4 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider ${h === 'Quantity' || h === 'Unit Cost' || h === 'Total' ? 'text-right' : 'text-left'}`}>
+                <th key={h} className="prime-table-header" style={{
+                  padding: '12px 16px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: inkSoft,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  textAlign: h === 'Quantity' || h === 'Unit Cost' || h === 'Total' ? 'right' as const : 'left' as const
+                }}>
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {purchases.map((p) => {
               const line = p.items?.find(i => i.itemId === itemId);
               if (!line) return null;
               return (
-                <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">{p.id?.slice(0, 12)}</td>
-                  <td className="px-4 py-3 text-slate-600">{p.supplierId || p.supplierName || '—'}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{p.date ? new Date(p.date).toLocaleDateString() : '—'}</td>
-                  <td className="px-4 py-3 text-right font-mono font-bold tabular-nums">{line.quantity}</td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums">{line.cost?.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right font-mono font-bold tabular-nums">{(line.cost * line.quantity).toFixed(2)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full ${
-                      p.status === 'Received' ? 'bg-emerald-50 text-emerald-700' :
-                      p.status === 'Ordered' ? 'bg-blue-50 text-blue-700' :
-                      'bg-amber-50 text-amber-700'
-                    }`}>
-                      <span className={`w-1 h-1 rounded-full ${
-                        p.status === 'Received' ? 'bg-emerald-500' :
-                        p.status === 'Ordered' ? 'bg-blue-500' :
-                        'bg-amber-500'
-                      }`} />
+                <tr key={p.id} className="prime-table-cell"
+                  style={{ borderTop: `1.4px solid ${hairline}`, transition: 'all .15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: ink }}>{p.id?.slice(0, 12)}</td>
+                  <td style={{ padding: '12px 16px', color: inkSoft }}>{p.supplierId || p.supplierName || '—'}</td>
+                  <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft }}>{p.date ? new Date(p.date).toLocaleDateString() : '—'}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{line.quantity}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>{line.cost?.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{(line.cost * line.quantity).toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600,
+                      padding: '4px 10px', borderRadius: 9999,
+                      background: p.status === 'Received' ? t[50] : p.status === 'Ordered' ? t[50] : amber[100],
+                      color: p.status === 'Received' ? t[600] : p.status === 'Ordered' ? t[600] : amber[500]
+                    }}>
+                      <span style={{ width: 4, height: 4, borderRadius: '50%', background: p.status === 'Received' ? t[500] : p.status === 'Ordered' ? t[500] : amber[500] }} />
                       {p.status || 'Draft'}
                     </span>
                   </td>

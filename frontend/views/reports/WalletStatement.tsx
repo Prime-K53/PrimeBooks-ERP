@@ -11,6 +11,16 @@ import {
 import { currencyService } from '../../services/currencyService';
 import { exportToCSV } from '../../utils/helpers';
 
+const teal = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const inputStyle: React.CSSProperties = { width: '100%', fontFamily: "'Inter',sans-serif", fontSize: 13.5, color: ink, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '9px 12px', outline: 'none' };
+
 const WalletStatement: React.FC = () => {
   const { companyConfig, user } = useAuth();
   const { walletTransactions = [] } = useFinance();
@@ -42,9 +52,9 @@ const WalletStatement: React.FC = () => {
   }, [walletTransactions, selectedCustomerId]);
 
   const getWalletStatus = (balance: number) => {
-    if (balance > 0) return { label: 'Active', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-    if (balance === 0) return { label: 'Zero Balance', color: 'bg-slate-50 text-slate-500 border-slate-200' };
-    return { label: 'Negative', color: 'bg-rose-50 text-rose-700 border-rose-200' };
+    if (balance > 0) return { label: 'Active', color: teal[50], textColor: teal[700], borderColor: teal[200] };
+    if (balance === 0) return { label: 'Zero Balance', color: paper, textColor: inkSoft, borderColor: hairline };
+    return { label: 'Negative', color: `${danger}15`, textColor: danger, borderColor: danger };
   };
 
   const walletStatus = getWalletStatus(selectedCustomer?.walletBalance || 0);
@@ -67,28 +77,14 @@ const WalletStatement: React.FC = () => {
   }, [prePeriodTx]);
 
   const filteredTx = useMemo(() => {
-    let txs = [...customerWalletTx].sort(
-      (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-
-    if (dateCutoff) {
-      txs = txs.filter((tx: any) => new Date(tx.date) >= dateCutoff);
-    }
-
+    let txs = [...customerWalletTx].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    if (dateCutoff) txs = txs.filter((tx: any) => new Date(tx.date) >= dateCutoff);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       txs = txs.filter((tx: any) =>
-        (tx.reference || '').toLowerCase().includes(q) ||
-        (tx.description || '').toLowerCase().includes(q) ||
-        (tx.id || '').toLowerCase().includes(q) ||
-        (tx.source || '').toLowerCase().includes(q)
-      );
+        (tx.reference || '').toLowerCase().includes(q) || (tx.description || '').toLowerCase().includes(q) || (tx.id || '').toLowerCase().includes(q) || (tx.source || '').toLowerCase().includes(q));
     }
-
-    if (txTypeFilter !== 'all') {
-      txs = txs.filter((tx: any) => tx.type === txTypeFilter);
-    }
-
+    if (txTypeFilter !== 'all') txs = txs.filter((tx: any) => tx.type === txTypeFilter);
     return txs;
   }, [customerWalletTx, dateCutoff, searchQuery, txTypeFilter]);
 
@@ -98,38 +94,27 @@ const WalletStatement: React.FC = () => {
   }, [customerWalletTx, dateCutoff]);
 
   const totalTopups = useMemo(() =>
-    inPeriodTx.filter((t: any) => t.type === 'Deposit' || t.type === 'Top-up' || t.type === 'Credit')
-      .reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0), [inPeriodTx]);
+    inPeriodTx.filter((t: any) => t.type === 'Deposit' || t.type === 'Top-up' || t.type === 'Credit').reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0), [inPeriodTx]);
 
   const totalSpending = useMemo(() =>
-    inPeriodTx.filter((t: any) => t.type === 'Deduction' || t.type === 'Spending' || t.type === 'Payment')
-      .reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0), [inPeriodTx]);
+    inPeriodTx.filter((t: any) => t.type === 'Deduction' || t.type === 'Spending' || t.type === 'Payment').reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0), [inPeriodTx]);
 
   const totalRefunds = useMemo(() =>
-    inPeriodTx.filter((t: any) => t.type === 'Refund')
-      .reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0), [inPeriodTx]);
+    inPeriodTx.filter((t: any) => t.type === 'Refund').reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0), [inPeriodTx]);
 
   const totalAdjustments = useMemo(() =>
-    inPeriodTx.filter((t: any) => t.type === 'Adjustment')
-      .reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0), [inPeriodTx]);
+    inPeriodTx.filter((t: any) => t.type === 'Adjustment').reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0), [inPeriodTx]);
 
   const ledgerEntries = useMemo(() => {
     let runningBalance = openingBalance;
-    const sorted = [...filteredTx].sort(
-      (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    const sorted = [...filteredTx].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
     return sorted.map((tx: any) => {
       const amt = Number(tx.amount) || 0;
       const isCredit = tx.type === 'Deposit' || tx.type === 'Credit' || tx.type === 'Top-up' || tx.type === 'Refund';
       const isDebit = tx.type === 'Deduction' || tx.type === 'Debit' || tx.type === 'Spending' || tx.type === 'Payment' || tx.type === 'Adjustment';
       if (isCredit) runningBalance += amt;
       if (isDebit) runningBalance -= amt;
-      return {
-        ...tx,
-        runningBalance,
-        isCredit,
-        isDebit,
-      };
+      return { ...tx, runningBalance, isCredit, isDebit };
     });
   }, [filteredTx, openingBalance]);
 
@@ -142,18 +127,18 @@ const WalletStatement: React.FC = () => {
     `${currency}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const getTxTypeBadge = (type: string) => {
-    const map: Record<string, string> = {
-      'Deposit': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      'Top-up': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      'Credit': 'bg-blue-50 text-blue-700 border-blue-200',
-      'Deduction': 'bg-rose-50 text-rose-700 border-rose-200',
-      'Debit': 'bg-rose-50 text-rose-700 border-rose-200',
-      'Spending': 'bg-amber-50 text-amber-700 border-amber-200',
-      'Payment': 'bg-violet-50 text-violet-700 border-violet-200',
-      'Refund': 'bg-cyan-50 text-cyan-700 border-cyan-200',
-      'Adjustment': 'bg-slate-50 text-slate-700 border-slate-200',
+    const map: Record<string, { bg: string; text: string; border: string }> = {
+      'Deposit': { bg: teal[50], text: teal[700], border: teal[200] },
+      'Top-up': { bg: teal[50], text: teal[700], border: teal[200] },
+      'Credit': { bg: teal[50], text: teal[600], border: teal[200] },
+      'Deduction': { bg: `${danger}15`, text: danger, border: `${danger}55` },
+      'Debit': { bg: `${danger}15`, text: danger, border: `${danger}55` },
+      'Spending': { bg: amber[100], text: amber[500], border: amber[300] },
+      'Payment': { bg: `${teal[50]}`, text: teal[700], border: teal[200] },
+      'Refund': { bg: teal[50], text: teal[500], border: teal[200] },
+      'Adjustment': { bg: paper, text: inkSoft, border: hairline },
     };
-    return map[type] || 'bg-slate-50 text-slate-600 border-slate-200';
+    return map[type] || { bg: paper, text: inkSoft, border: hairline };
   };
 
   const uniqueTxTypes = useMemo(() => {
@@ -179,275 +164,191 @@ const WalletStatement: React.FC = () => {
 
   if (!selectedCustomerId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
-        <Landmark size={48} className="text-slate-300" />
-        <p className="text-lg font-semibold">Select a customer to view wallet statement</p>
-        <select
-          value=""
-          onChange={e => setSelectedCustomerId(e.target.value)}
-          className="mt-2 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-blue-500 transition-colors shadow-sm min-w-[300px]"
-        >
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: inkSoft, gap: 16, padding: 40, fontFamily: "'Inter',sans-serif", fontSize: 13 }}>
+        <Landmark size={48} style={{ color: `#d0cbc2` }} />
+        <p style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>Select a customer to view wallet statement</p>
+        <select value="" onChange={e => setSelectedCustomerId(e.target.value)}
+          style={{ ...inputStyle, maxWidth: 300, marginTop: 8, cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 30 }}
+          className="prime-select">
           <option value="">Choose a customer...</option>
-          {customers.map((c: any) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
+          {customers.map((c: any) => (<option key={c.id} value={c.id}>{c.name}</option>))}
         </select>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5 animate-fadeIn">
-      {/* Wallet Details Header */}
-      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-2xl shadow-xl shadow-indigo-200/50 text-white">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white/15 rounded-xl backdrop-blur-sm">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: "'Inter',sans-serif", fontSize: 13, color: ink }}>
+      <div style={{ background: `linear-gradient(135deg, ${teal[700]}, ${teal[900]})`, padding: 24, borderRadius: 14, boxShadow: `0 8px 24px -8px rgba(11,62,57,.4)`, color: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ padding: 12, background: 'rgba(255,255,255,.15)', borderRadius: 12, backdropFilter: 'blur(8px)' }}>
               <Wallet size={28} />
             </div>
             <div>
-              <h2 className="text-lg font-bold tracking-tight">Wallet Statement</h2>
-              <p className="text-indigo-200 text-sm font-medium mt-0.5">{selectedCustomer?.name}</p>
+              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: -0.01 }}>Wallet Statement</h2>
+              <p style={{ color: teal[100], fontSize: 13, fontWeight: 500, margin: '2px 0 0' }}>{selectedCustomer?.name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-widest">Current Balance</p>
-              <p className="text-2xl font-black finance-nums">{formatCurrency(selectedCustomer?.walletBalance || 0)}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ color: teal[100], fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.06, margin: 0 }}>Current Balance</p>
+              <p style={{ fontSize: 24, fontWeight: 900, margin: 0 }}>{formatCurrency(selectedCustomer?.walletBalance || 0)}</p>
             </div>
-            <div className={`px-3 py-1 rounded-full text-[10px] font-bold border ${walletStatus.color} text-indigo-900 bg-white/90`}>
+            <div style={{ padding: '4px 12px', borderRadius: 999, fontSize: 10, fontWeight: 700, border: `1.4px solid ${walletStatus.borderColor}`, background: walletStatus.color, color: walletStatus.textColor }}>
               {walletStatus.label}
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-6 mt-4 pt-4 border-t border-white/10">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginTop: 16, paddingTop: 16, borderTop: '1.4px solid rgba(255,255,255,.1)' }}>
           <div>
-            <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-widest">Wallet ID</p>
-            <p className="font-mono text-sm font-bold">{selectedCustomer?.id ? `WLT-${selectedCustomer.id.slice(0, 8)}` : 'N/A'}</p>
+            <p style={{ color: teal[100], fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.06, margin: 0 }}>Wallet ID</p>
+            <p style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 700, margin: 0 }}>{selectedCustomer?.id ? `WLT-${selectedCustomer.id.slice(0, 8)}` : 'N/A'}</p>
           </div>
           <div>
-            <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-widest">Currency</p>
-            <p className="font-bold">{currency}</p>
+            <p style={{ color: teal[100], fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.06, margin: 0 }}>Currency</p>
+            <p style={{ fontWeight: 700, margin: 0 }}>{currency}</p>
           </div>
           <div>
-            <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-widest">Last Updated</p>
-            <p className="font-bold">{walletTransactions.length > 0 ? format(new Date(walletTransactions[0].date), 'MMM dd, yyyy HH:mm') : 'N/A'}</p>
+            <p style={{ color: teal[100], fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.06, margin: 0 }}>Last Updated</p>
+            <p style={{ fontWeight: 700, margin: 0 }}>{walletTransactions.length > 0 ? format(new Date(walletTransactions[0].date), 'MMM dd, yyyy HH:mm') : 'N/A'}</p>
           </div>
         </div>
       </div>
 
-      {/* Summary Widgets */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Opening Balance</p>
-          <p className="text-lg font-black text-slate-900 finance-nums">{formatCurrency(openingBalance)}</p>
-          <p className="text-[9px] text-slate-400 mt-0.5">{dateRange === 'all' ? 'Since inception' : `Before ${dateCutoff?.toLocaleDateString()}`}</p>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Top-ups</p>
-          <p className="text-lg font-black text-emerald-600 finance-nums">{formatCurrency(totalTopups)}</p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <ArrowUpRight size={10} className="text-emerald-500" />
-            <span className="text-[9px] text-emerald-500 font-medium">{inPeriodTx.filter((t: any) => t.type === 'Deposit' || t.type === 'Top-up').length} txns</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+        {[
+          { label: 'Opening Balance', value: formatCurrency(openingBalance), sub: dateRange === 'all' ? 'Since inception' : `Before ${dateCutoff?.toLocaleDateString()}`, color: ink, bg: paper },
+          { label: 'Total Top-ups', value: formatCurrency(totalTopups), sub: `${inPeriodTx.filter((t: any) => t.type === 'Deposit' || t.type === 'Top-up').length} txns`, color: teal[600], bg: paper, icon: ArrowUpRight, iconColor: teal[500] },
+          { label: 'Total Spending', value: formatCurrency(totalSpending), sub: `${inPeriodTx.filter((t: any) => t.type === 'Deduction' || t.type === 'Spending' || t.type === 'Payment').length} txns`, color: danger, bg: paper, icon: ArrowDownLeft, iconColor: danger },
+          { label: 'Refunds', value: formatCurrency(totalRefunds), sub: '', color: teal[500], bg: paper },
+          { label: 'Adjustments', value: formatCurrency(totalAdjustments), sub: '', color: amber[500], bg: paper },
+          { label: 'Closing Balance', value: formatCurrency(closingBalance), sub: '', color: '#fff', bg: teal[800] },
+        ].map(item => (
+          <div key={item.label} style={{ background: item.bg, padding: 16, borderRadius: 12, border: item.bg === paper ? `1.4px solid ${hairline}` : 'none', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, margin: '0 0 4px' }}>{item.label}</p>
+            <p style={{ fontSize: 18, fontWeight: 900, color: item.color, margin: 0 }}>{item.value}</p>
+            {item.sub && <p style={{ fontSize: 9, color: inkSoft, margin: '2px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>{item.icon && <item.icon size={10} style={{ color: (item as any).iconColor }} />}{item.sub}</p>}
           </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Spending</p>
-          <p className="text-lg font-black text-rose-600 finance-nums">{formatCurrency(totalSpending)}</p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <ArrowDownLeft size={10} className="text-rose-500" />
-            <span className="text-[9px] text-rose-500 font-medium">{inPeriodTx.filter((t: any) => t.type === 'Deduction' || t.type === 'Spending' || t.type === 'Payment').length} txns</span>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Refunds</p>
-          <p className="text-lg font-black text-cyan-600 finance-nums">{formatCurrency(totalRefunds)}</p>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Adjustments</p>
-          <p className="text-lg font-black text-amber-600 finance-nums">{formatCurrency(totalAdjustments)}</p>
-        </div>
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl shadow-sm text-white">
-          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1">Closing Balance</p>
-          <p className="text-lg font-black finance-nums">{formatCurrency(closingBalance)}</p>
-        </div>
+        ))}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="p-3 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+      <div style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+        <div style={{ padding: 12, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 2, background: teal[50], padding: 2, borderRadius: 9 }}>
             {(['all', '1m', '3m', '6m', '12m'] as const).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
-                  dateRange === range ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
+              <button key={range} onClick={() => setDateRange(range)}
+                style={{ padding: '6px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer', background: dateRange === range ? paper : 'transparent', color: dateRange === range ? teal[500] : inkSoft, boxShadow: dateRange === range ? '0 1px 2px rgba(0,0,0,.06)' : 'none' }}>
                 {range === 'all' ? 'All' : range}
               </button>
             ))}
           </div>
-
-          <div className="flex-1 min-w-[160px]">
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search transactions..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2.5 py-1.5 text-xs font-medium outline-none focus:border-blue-500 transition-colors"
-              />
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />
+              <input type="text" placeholder="Search transactions..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                style={{ ...inputStyle, padding: '6px 10px 6px 30px', fontSize: 12, background: teal[50] }}
+                className="prime-input" />
             </div>
           </div>
-
-          <select
-            value={txTypeFilter}
-            onChange={e => setTxTypeFilter(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:border-blue-500"
-          >
+          <select value={txTypeFilter} onChange={e => setTxTypeFilter(e.target.value)}
+            style={{ ...inputStyle, padding: '6px 10px', fontSize: 12, background: teal[50], width: 'auto', cursor: 'pointer' }}
+            className="prime-select">
             <option value="all">All Types</option>
-            {uniqueTxTypes.map(t => (
-              <option key={String(t)} value={String(t)}>{String(t)}</option>
-            ))}
+            {uniqueTxTypes.map(t => (<option key={String(t)} value={String(t)}>{String(t)}</option>))}
           </select>
-
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-2 rounded-lg transition-all ${showFilters ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
-            title="Advanced filters"
-          >
+          <button onClick={() => setShowFilters(!showFilters)}
+            style={{ padding: 8, borderRadius: 9, border: 'none', cursor: 'pointer', background: showFilters ? teal[50] : 'transparent', color: showFilters ? teal[500] : inkSoft }}>
             <Filter size={15} />
           </button>
-
-          <div className="h-5 w-px bg-slate-200" />
-
-          <button
-            onClick={() => { setSelectedCustomerId(''); setSearchQuery(''); }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] font-semibold bg-white hover:bg-slate-50 transition-all"
-          >
-            <RefreshCw size={12} />
-            Reset
+          <div style={{ width: 1, height: 20, background: hairline }} />
+          <button onClick={() => { setSelectedCustomerId(''); setSearchQuery(''); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 9, border: `1.4px solid ${hairline}`, fontSize: 11, fontWeight: 600, background: paper, cursor: 'pointer', color: inkSoft }}>
+            <RefreshCw size={12} /> Reset
           </button>
-
-          <button
-            onClick={handleExportCSV}
-            disabled={ledgerEntries.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-bold hover:bg-emerald-100 transition-all disabled:opacity-50"
-          >
-            <Download size={13} />
-            Export CSV
+          <button onClick={handleExportCSV} disabled={ledgerEntries.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 9, border: 'none', fontSize: 11, fontWeight: 700, background: teal[50], color: teal[700], cursor: ledgerEntries.length === 0 ? 'not-allowed' : 'pointer', opacity: ledgerEntries.length === 0 ? 0.5 : 1 }}>
+            <Download size={13} /> Export CSV
           </button>
-
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[11px] font-bold hover:bg-slate-100 transition-all"
-          >
-            <Printer size={13} />
-            Print
+          <button onClick={() => window.print()}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 9, border: 'none', fontSize: 11, fontWeight: 700, background: teal[50], color: inkSoft, cursor: 'pointer' }}>
+            <Printer size={13} /> Print
           </button>
         </div>
       </div>
 
-      {/* Transaction Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText size={15} className="text-indigo-600" />
-            <h3 className="font-bold text-slate-900 text-sm">Transaction History</h3>
+      <div style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,.04)', overflow: 'hidden' }}>
+        <div style={{ padding: '12px 20px', borderBottom: `1.4px solid ${teal[100]}`, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileText size={15} style={{ color: teal[600] }} />
+            <h3 style={{ fontWeight: 700, color: ink, fontSize: 13, margin: 0 }}>Transaction History</h3>
           </div>
-          <span className="text-[10px] text-slate-400 font-mono bg-slate-100 px-2 py-0.5 rounded">
+          <span style={{ fontSize: 10, color: inkSoft, fontFamily: "'JetBrains Mono',monospace", background: teal[50], padding: '2px 8px', borderRadius: 4 }}>
             {ledgerEntries.length} transaction{ledgerEntries.length !== 1 ? 's' : ''}
           </span>
         </div>
-
-        <div className="overflow-x-auto">
+        <div style={{ overflowX: 'auto' }}>
           {ledgerEntries.length === 0 ? (
-            <div className="text-center py-12">
-              <Wallet size={36} className="mx-auto text-slate-300 mb-3" />
-              <p className="text-slate-400 font-medium text-sm">No wallet transactions for this period.</p>
+            <div style={{ textAlign: 'center', padding: 48 }}>
+              <Wallet size={36} style={{ margin: '0 auto 12', color: `#d0cbc2` }} />
+              <p style={{ color: inkSoft, fontWeight: 500, fontSize: 13, margin: 0 }}>No wallet transactions for this period.</p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
+            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 sticky top-0">
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Date & Time</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Transaction ID</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Credit</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Debit</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Running Balance</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Source</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ref Document</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Created By</th>
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Actions</th>
+                <tr style={{ background: teal[50], borderBottom: `1.4px solid ${teal[100]}`, position: 'sticky', top: 0 }}>
+                  {['Date & Time', 'Transaction ID', 'Description', 'Credit', 'Debit', 'Running Balance', 'Source', 'Ref Document', 'Created By', 'Actions'].map(h => (
+                    <th key={h} style={{ padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, textAlign: h === 'Credit' || h === 'Debit' || h === 'Running Balance' || h === 'Actions' ? 'center' : 'left' }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody>
                 {ledgerEntries.map((tx: any, idx: number) => (
                   <React.Fragment key={tx.id || idx}>
-                    <tr
-                      className={`hover:bg-slate-50/50 transition-colors cursor-pointer ${tx.isDebit ? 'text-rose-600' : ''}`}
-                      onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}
-                    >
-                      <td className="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap font-medium">
+                    <tr onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}
+                      style={{ borderBottom: `1.4px solid ${teal[50]}`, cursor: 'pointer' }}
+                      onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: inkSoft, whiteSpace: 'nowrap', fontWeight: 500 }}>
                         <div>{format(new Date(tx.date), 'MMM dd, yyyy')}</div>
-                        <div className="text-[9px] text-slate-400">{format(new Date(tx.date), 'HH:mm')}</div>
+                        <div style={{ fontSize: 9, color: inkSoft }}>{format(new Date(tx.date), 'HH:mm')}</div>
                       </td>
-                      <td className="px-3 py-2.5 text-[11px] font-mono text-slate-500">
-                        {(tx.id || '').slice(0, 12)}...
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${getTxTypeBadge(tx.type)}`}>
-                            {tx.type}
-                          </span>
-                          <span className="text-[11px] text-slate-700 font-medium">{tx.description || tx.type}</span>
+                      <td style={{ padding: '10px 12px', fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: inkSoft }}>{(tx.id || '').slice(0, 12)}...</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700, border: `1.4px solid ${getTxTypeBadge(tx.type).border}`, background: getTxTypeBadge(tx.type).bg, color: getTxTypeBadge(tx.type).text }}>{tx.type}</span>
+                          <span style={{ fontSize: 11, color: ink, fontWeight: 500 }}>{tx.description || tx.type}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 text-right text-[11px] font-bold text-emerald-600 finance-nums">
-                        {tx.isCredit ? formatCurrency(tx.amount) : '-'}
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-[11px] font-bold text-rose-600 finance-nums">
-                        {tx.isDebit ? formatCurrency(tx.amount) : '-'}
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-[11px] font-bold text-slate-900 finance-nums">
-                        {formatCurrency(tx.runningBalance)}
-                      </td>
-                      <td className="px-3 py-2.5 text-[11px] text-slate-500">{tx.source || 'Manual'}</td>
-                      <td className="px-3 py-2.5 text-[11px] font-mono text-slate-400">{tx.reference || '-'}</td>
-                      <td className="px-3 py-2.5 text-[11px] text-slate-500">{tx.createdBy || user?.name || 'System'}</td>
-                      <td className="px-3 py-2.5 text-center">
-                        <button
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
-                          title="View details"
-                        >
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: teal[600] }}>{tx.isCredit ? formatCurrency(tx.amount) : '-'}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: danger }}>{tx.isDebit ? formatCurrency(tx.amount) : '-'}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: ink }}>{formatCurrency(tx.runningBalance)}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: inkSoft }}>{tx.source || 'Manual'}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: inkSoft }}>{tx.reference || '-'}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: inkSoft }}>{tx.createdBy || user?.name || 'System'}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        <button style={{ padding: 6, background: 'transparent', border: 'none', color: inkSoft, cursor: 'pointer', borderRadius: 6 }}
+                          onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[600]; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = inkSoft; }}>
                           <Eye size={13} />
                         </button>
                       </td>
                     </tr>
                     {expandedTx === tx.id && (
-                      <tr className="bg-slate-50/50">
-                        <td colSpan={10} className="px-6 py-3">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                            <div>
-                              <p className="font-bold text-slate-400 uppercase text-[9px] tracking-widest mb-1">Full ID</p>
-                              <p className="font-mono text-slate-700">{tx.id}</p>
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-400 uppercase text-[9px] tracking-widest mb-1">Amount</p>
-                              <p className="font-bold text-slate-900">{formatCurrency(tx.amount)}</p>
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-400 uppercase text-[9px] tracking-widest mb-1">Running Balance</p>
-                              <p className="font-bold text-slate-900">{formatCurrency(tx.runningBalance)}</p>
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-400 uppercase text-[9px] tracking-widest mb-1">Reference</p>
-                              <p className="font-mono text-slate-600">{tx.reference || 'N/A'}</p>
-                            </div>
+                      <tr style={{ background: teal[50] }}>
+                        <td colSpan={10} style={{ padding: '12px 24px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, fontSize: 12 }}>
+                            {[
+                              { label: 'Full ID', value: tx.id },
+                              { label: 'Amount', value: formatCurrency(tx.amount), bold: true },
+                              { label: 'Running Balance', value: formatCurrency(tx.runningBalance), bold: true },
+                              { label: 'Reference', value: tx.reference || 'N/A' },
+                            ].map(f => (
+                              <div key={f.label}>
+                                <p style={{ fontWeight: 700, color: inkSoft, textTransform: 'uppercase', fontSize: 9, letterSpacing: 0.06, margin: '0 0 4px' }}>{f.label}</p>
+                                <p style={{ color: ink, margin: 0, fontWeight: f.bold ? 700 : 400 }}>{f.value}</p>
+                              </div>
+                            ))}
                           </div>
                         </td>
                       </tr>

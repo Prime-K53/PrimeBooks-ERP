@@ -50,64 +50,76 @@ const AuditInvestigator: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-6 bg-slate-50/50 overflow-y-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/ai-analytics')} className="p-2 rounded-lg hover:bg-white"><ArrowLeft size={20} /></button>
-        <Shield className="text-slate-500" size={28} />
-        <div><h1 className="text-xl font-bold text-slate-800">Audit Investigator</h1><p className="text-xs text-slate-500">AI-powered audit trail analysis</p></div>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 24, background: '#FEFDFB', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button onClick={() => navigate('/ai-analytics')} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#FEFDFB' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        ><ArrowLeft size={20} /></button>
+        <Shield color="#5c6567" size={28} />
+        <div><h1 style={{ fontSize: 20, fontWeight: 700, color: '#23282A', margin: 0 }}>Audit Investigator</h1><p style={{ fontSize: 11, color: '#5c6567', margin: 0 }}>AI-powered audit trail analysis</p></div>
       </div>
-      <div className="flex gap-2 mb-4">
-        <input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && runInvestigation()} placeholder="Ask about audit data (e.g., 'Any anomalies?')" className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
-        <button onClick={() => runInvestigation()} disabled={loading} className="px-4 py-2 bg-slate-600 text-white rounded-xl hover:bg-slate-700 disabled:opacity-50"><Search size={18} /></button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && runInvestigation()} placeholder="Ask about audit data (e.g., 'Any anomalies?')" style={{ flex: 1, padding: '8px 16px', borderRadius: 12, border: '1.4px solid #e4ddd1', fontSize: 13, outline: 'none', background: '#FEFDFB', color: '#23282A' }} />
+        <button onClick={() => runInvestigation()} disabled={loading} style={{ padding: '8px 16px', background: '#5c6567', color: '#fff', borderRadius: 12, border: 'none', cursor: 'pointer', opacity: loading ? 0.5 : 1, display: 'flex', alignItems: 'center' }}
+          onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#4a5254' }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#5c6567' }}
+        ><Search size={18} /></button>
       </div>
 
       {!result && !loading && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <Shield size={48} className="mx-auto text-slate-300 mb-4" />
-            <h2 className="text-lg font-semibold text-slate-700 mb-2">Investigate Audit Trail</h2>
-            <p className="text-sm text-slate-500 mb-2">{(ledger || []).length} ledger entries, {(invoices || []).length} invoices loaded</p>
-            <button onClick={() => runInvestigation('')} className="mt-4 px-6 py-2.5 bg-slate-600 text-white rounded-xl font-medium hover:bg-slate-700">Run Full Audit Scan</button>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: 448 }}>
+            <Shield size={48} color="#5c6567" style={{ margin: '0 auto 16px', opacity: 0.6 }} />
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: '#23282A', marginBottom: 8 }}>Investigate Audit Trail</h2>
+            <p style={{ fontSize: 13, color: '#5c6567', marginBottom: 8 }}>{(ledger || []).length} ledger entries, {(invoices || []).length} invoices loaded</p>
+            <button onClick={() => runInvestigation('')} style={{ marginTop: 16, padding: '10px 24px', background: '#5c6567', color: '#fff', borderRadius: 12, fontWeight: 500, border: 'none', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#4a5254' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#5c6567' }}
+            >Run Full Audit Scan</button>
           </div>
         </div>
       )}
 
-      {loading && <div className="flex-1 flex items-center justify-center"><Loader2 size={40} className="animate-spin text-slate-500 mx-auto" /></div>}
+      {loading && <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={40} className="animate-spin" color="#5c6567" style={{ margin: '0 auto' }} /></div>}
 
       {result && !loading && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg shrink-0"><Search size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Findings</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.totalFindings}</p></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #5c6567' }}>
+              <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><Search size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Findings</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.totalFindings}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-red-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-red-50 text-red-600 rounded-lg shrink-0"><AlertTriangle size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">High</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.highSeverity}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #b5493f' }}>
+              <div style={{ padding: 10, background: '#fef2f2', color: '#b5493f', borderRadius: 8, flexShrink: 0 }}><AlertTriangle size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>High</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.highSeverity}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0"><Shield size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Medium</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.mediumSeverity}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #d99a3f' }}>
+              <div style={{ padding: 10, background: '#fbead0', color: '#d99a3f', borderRadius: 8, flexShrink: 0 }}><Shield size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Medium</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.mediumSeverity}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg shrink-0"><CheckCircle2 size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Low</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.lowSeverity}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #5c6567' }}>
+              <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><CheckCircle2 size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Low</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.lowSeverity}</p></div>
             </div>
           </div>
-          {result.answer && <div className="bg-white rounded-xl p-4 border border-slate-200"><div className="text-sm text-slate-700 whitespace-pre-wrap">{result.answer}</div></div>}
-          <div className="bg-white rounded-xl border border-slate-200">
-            <div className="p-3 border-b border-slate-100 font-semibold text-sm text-slate-700">Findings</div>
-            <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
+          {result.answer && <div style={{ background: '#FEFDFB', borderRadius: 12, padding: 16, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}><div style={{ fontSize: 13, color: '#23282A', whiteSpace: 'pre-wrap' }}>{result.answer}</div></div>}
+          <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <div style={{ padding: 12, borderBottom: '1px solid #e4ddd1', fontWeight: 600, fontSize: 13, color: '#23282A' }}>Findings</div>
+            <div style={{ maxHeight: 256, overflowY: 'auto' }}>
               {result.findings?.filter((f: any) => f.severity > 0).map((f: any, i: number) => (
-                <div key={i} className="p-3 flex items-start gap-3">
-                  {f.severity >= 5 ? <AlertTriangle size={16} className="text-amber-400 mt-0.5" /> : <CheckCircle2 size={16} className="text-slate-400 mt-0.5" />}
-                  <div className="flex-1"><div className="text-sm font-medium text-slate-700">{f.title}</div><div className="text-xs text-slate-500">{f.description}</div></div>
-                  <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${f.severity >= 7 ? 'bg-red-50 text-red-600' : f.severity >= 4 ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-500'}`}>{f.severity}/10</div>
+                <div key={i} style={{ padding: 12, display: 'flex', alignItems: 'flex-start', gap: 12, borderBottom: i < result.findings.filter((fx: any) => fx.severity > 0).length - 1 ? '1px solid #e4ddd1' : 'none' }}>
+                  {f.severity >= 5 ? <AlertTriangle size={16} color="#d99a3f" style={{ marginTop: 2 }} /> : <CheckCircle2 size={16} color="#5c6567" style={{ marginTop: 2 }} />}
+                  <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 500, color: '#23282A' }}>{f.title}</div><div style={{ fontSize: 11, color: '#5c6567' }}>{f.description}</div></div>
+                  <div style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 9999, background: f.severity >= 7 ? '#fef2f2' : f.severity >= 4 ? '#fbead0' : '#eef7f6', color: f.severity >= 7 ? '#b5493f' : f.severity >= 4 ? '#d99a3f' : '#5c6567' }}>{f.severity}/10</div>
                 </div>
               ))}
             </div>
           </div>
-          <button onClick={() => runInvestigation('')} className="text-sm text-slate-500 hover:text-slate-700 font-medium">Re-run</button>
+          <button onClick={() => runInvestigation('')} style={{ fontSize: 13, color: '#5c6567', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#23282A' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#5c6567' }}
+          >Re-run</button>
         </div>
       )}
     </div>

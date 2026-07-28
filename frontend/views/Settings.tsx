@@ -65,6 +65,10 @@ import CustomizeDashboard from '../components/dashboard/CustomizeDashboard';
 import { useDashboardStore } from '../stores/dashboardStore';
 import { ConfirmDialog, ConfirmDialogType } from '../components/ConfirmDialog';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 // Pricing settings validation using reusable utility
 
 // QBO Theme Styles
@@ -697,47 +701,47 @@ const Settings: React.FC = () => {
     const deferredTemplatePreviewConfig = useDeferredValue(config);
 
     return (
-        <div className="h-full flex flex-col bg-[#F4F5F8] overflow-hidden font-sans">
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'Inter,"DM Sans",sans-serif' }}>
             {/* QBO Header Strategy */}
-            <div className="bg-white border-b border-[#D4D7DC] px-8 py-4 flex justify-between items-center shrink-0 z-10">
+            <div style={{ background: '#FEFDFB', borderStyle: 'solid', border: '1.4px solid #e4ddd1', paddingLeft: '32px', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, zIndex: 10, paddingRight: '32px', paddingBottom: '16px' }}>
                 <div>
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-[#6B6C6F] uppercase tracking-widest mb-1">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>
                         <span>Settings</span>
                         <span className="text-[#D4D7DC]">/</span>
-                        <span className="text-blue-600">{activeGroupTitle}</span>
+                        <span style={{ color: '#1f8577' }}>{activeGroupTitle}</span>
                     </div>
-                    <h1 className="text-xl font-bold text-[#393A3D] flex items-center gap-2">
+                    <h1 style={{ fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {activeItemLabel}
                     </h1>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={handleSave} className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-2 active:scale-95 shadow-md shadow-blue-500/10">
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={handleSave} style={{ background: '#1f8577', color: '#fff', paddingLeft: '24px', paddingTop: '8px', borderRadius: '9999px', fontWeight: 700, fontSize: '13px', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(31,133,119,.1)', paddingRight: '24px', paddingBottom: '8px' }}>
                         <CheckCircle2 size={18} /> Save Settings
                     </button>
                 </div>
             </div>
 
-            <div className="flex flex-1 overflow-hidden">
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                 {/* QBO Sidebar Style */}
-                <div className="w-80 bg-white border-r border-[#D4D7DC] flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
-                    <div className="p-6 pb-2">
-                        <div className="relative">
-                            <Gauge className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B6C6F]" size={16} />
+                <div style={{ width: '320px', background: '#FEFDFB', borderStyle: 'solid', border: '1.4px solid #e4ddd1', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto' }}>
+                    <div style={{ padding: '24px', paddingBottom: '8px' }}>
+                        <div style={{ position: 'relative' }}>
+                            <Gauge style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} size={16} />
                             <input
                                 type="text"
                                 placeholder="Search settings..."
-                                className="w-full pl-10 pr-4 py-2 bg-[#F4F5F8] border border-[#D4D7DC] rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all font-medium text-[#393A3D]"
+                                style={{ width: '100%', paddingLeft: '40px', paddingRight: '16px', paddingTop: '8px', border: '1.4px solid #e4ddd1', borderRadius: '8px', fontSize: '13px', outline: 'none', transition: 'all .15s ease', fontWeight: 500, paddingBottom: '8px' }}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="p-4 space-y-6">
+                    <div style={{ padding: '16px', marginTop: '24px' }}>
                         {filteredGroups.map(group => (
                             <div key={group.title}>
-                                <h3 className="px-4 text-[10px] font-black text-[#6B6C6F] uppercase tracking-widest mb-3">{group.title}</h3>
-                                <div className="space-y-0.5">
+                                <h3 style={{ paddingLeft: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingRight: '16px' }}>{group.title}</h3>
+                                <div style={{ marginTop: '2px' }}>
                                     {group.items.map(item => (
                                         <button
                                             key={item.id}
@@ -752,7 +756,7 @@ const Settings: React.FC = () => {
                                                 : 'border-transparent text-[#6B6C6F] hover:bg-[#F4F5F8]'
                                                 }`}
                                         >
-                                            <div className="flex items-center gap-3">
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 <item.icon size={18} className={activeTab === item.id ? 'text-blue-600' : 'text-[#6B6C6F]'} />
                                                 <span className={`text-[13px] font-bold ${activeTab === item.id ? 'text-blue-600' : 'text-[#393A3D]'}`}>{item.label}</span>
                                             </div>
@@ -765,20 +769,20 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#F4F5F8] p-10">
-                    <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-400">
+                <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
+                    <div style={{ maxWidth: '896px', marginLeft: 'auto', transitionDuration: '400ms' }}>
 
                         {activeTab === 'General' && (
-                            <div className="space-y-8">
-                                <section className="white-card overflow-hidden">
-                                    <div className="settings-section-header flex justify-between items-center">
+                            <div style={{ marginTop: '32px' }}>
+                                <section style={{ overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div>
-                                            <h3 className="text-sm font-bold text-[#393A3D]">Organization Profile</h3>
-                                            <p className="text-[11px] text-[#6B6C6F] mt-0.5">Basic information about your business.</p>
+                                            <h3 style={{ fontSize: '13px', fontWeight: 700 }}>Organization Profile</h3>
+                                            <p style={{ marginTop: '2px' }}>Basic information about your business.</p>
                                         </div>
                                     </div>
-                                    <div className="p-8 grid grid-cols-2 gap-x-12 gap-y-6">
-                                        <div className="col-span-2">
+                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: '48px', rowGap: '24px' }}>
+                                        <div style={{ gridColumn: 'span 2 / span 2' }}>
                                             <label className="settings-label">Legal Company Name</label>
                                             <input
                                                 type="text"
@@ -788,7 +792,7 @@ const Settings: React.FC = () => {
                                                 onChange={e => setConfig({ ...config, companyName: e.target.value })}
                                             />
                                         </div>
-                                        <div className="col-span-2">
+                                        <div style={{ gridColumn: 'span 2 / span 2' }}>
                                             <label className="settings-label">Tagline / Business Motto</label>
                                             <input
                                                 type="text"
@@ -797,7 +801,7 @@ const Settings: React.FC = () => {
                                                 value={config.tagline || ''}
                                                 onChange={e => setConfig({ ...config, tagline: e.target.value })}
                                             />
-                                            <p className="text-[10px] text-slate-400 mt-1.5 font-medium italic">This will appear on your invoices and documents.</p>
+                                            <p style={{ color: '#5c6567', marginTop: '6px', fontWeight: 500, fontStyle: 'italic' }}>This will appear on your invoices and documents.</p>
                                         </div>
                                         <div>
                                             <label className="settings-label">Business Email</label>
@@ -822,16 +826,16 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <section className="white-card overflow-hidden">
+                                <section style={{ overflow: 'hidden' }}>
                                     <div className="settings-section-header">
-                                        <h3 className="text-sm font-bold text-[#393A3D]">Address & Regional Settings</h3>
-                                        <p className="text-[11px] text-[#6B6C6F] mt-0.5">Physical location and formatting preferences.</p>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700 }}>Address & Regional Settings</h3>
+                                        <p style={{ marginTop: '2px' }}>Physical location and formatting preferences.</p>
                                     </div>
-                                    <div className="p-8 grid grid-cols-2 gap-x-12 gap-y-6">
-                                        <div className="col-span-2">
+                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: '48px', rowGap: '24px' }}>
+                                        <div style={{ gridColumn: 'span 2 / span 2' }}>
                                             <label className="settings-label">Primary Office Address</label>
                                             <textarea
-                                                className="settings-input h-20 resize-none py-3"
+                                                style={{ height: '80px', paddingTop: '12px', paddingBottom: '12px' }}
                                                 placeholder={getPlaceholder.address()}
                                                 value={config.addressLine1}
                                                 onChange={e => setConfig({ ...config, addressLine1: e.target.value })}
@@ -857,11 +861,11 @@ const Settings: React.FC = () => {
                                                 onChange={e => setConfig({ ...config, country: e.target.value })}
                                             />
                                         </div>
-                                        <div className="col-span-2 grid grid-cols-2 gap-12 pt-4 border-t border-slate-50 mt-2">
+                                        <div style={{ gridColumn: 'span 2 / span 2', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px', paddingTop: '16px', borderStyle: 'solid', borderColor: '#e4ddd1', marginTop: '8px' }}>
                                             <div>
                                                 <label className="settings-label">Business Currency</label>
-                                                <div className="relative">
-                                                    <Wallet className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                                <div style={{ position: 'relative' }}>
+                                                    <Wallet style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567' }} size={14} />
                                                     <input
                                                         type="text"
                                                         className="settings-input"
@@ -874,7 +878,7 @@ const Settings: React.FC = () => {
                                             <div>
                                                 <label className="settings-label">System Date Format</label>
                                                 <select
-                                                    className="settings-input appearance-none"
+                                                    style={{ appearance: 'none' }}
                                                     value={config.dateFormat}
                                                     onChange={e => setConfig({ ...config, dateFormat: e.target.value })}
                                                 >
@@ -887,38 +891,38 @@ const Settings: React.FC = () => {
                                     </div>
                                  </section>
 
-                                <section className="white-card overflow-hidden border-red-200">
-                                    <div className="settings-section-header flex justify-between items-center bg-red-50 border-b-red-200">
+                                <section style={{ overflow: 'hidden', borderColor: '#b5493f' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fef2f2', borderStyle: 'solid' }}>
                                         <div>
-                                            <h3 className="text-sm font-bold text-red-700">Danger Zone</h3>
-                                            <p className="text-[11px] text-red-500 mt-0.5">Irreversible actions that affect your entire company.</p>
+                                            <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#b5493f' }}>Danger Zone</h3>
+                                            <p style={{ color: '#b5493f', marginTop: '2px' }}>Irreversible actions that affect your entire company.</p>
                                         </div>
                                     </div>
-                                    <div className="p-8 flex items-center justify-between">
+                                    <div style={{ padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                         <div>
-                                            <p className="text-sm font-bold text-[#393A3D]">Delete this company</p>
-                                            <p className="text-[11px] text-[#6B6C6F] mt-0.5">Permanently remove {config.companyName || 'your company'} from Supabase and reset all local data.</p>
+                                            <p style={{ fontSize: '13px', fontWeight: 700 }}>Delete this company</p>
+                                            <p style={{ marginTop: '2px' }}>Permanently remove {config.companyName || 'your company'} from Supabase and reset all local data.</p>
                                         </div>
                                         <button
                                             onClick={handleDeleteCompany}
-                                            className="bg-red-600 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-red-700 transition-all flex items-center gap-2 active:scale-95 shadow-md shadow-red-500/10"
+                                            style={{ background: '#b5493f', color: '#fff', paddingLeft: '24px', paddingTop: '10px', borderRadius: '9999px', fontWeight: 700, fontSize: '13px', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(181,73,63,.1)', paddingRight: '24px', paddingBottom: '10px' }}
                                         >
                                             <Trash2 size={16} /> Delete Company
                                         </button>
                                     </div>
                                 </section>
 
-                                <section className="white-card overflow-hidden">
-                                    <div className="settings-section-header flex justify-between items-center">
+                                <section style={{ overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div>
-                                            <h3 className="text-sm font-bold text-[#393A3D]">Dashboard</h3>
-                                            <p className="text-[11px] text-[#6B6C6F] mt-0.5">Customize your dashboard layout and visible widgets.</p>
+                                            <h3 style={{ fontSize: '13px', fontWeight: 700 }}>Dashboard</h3>
+                                            <p style={{ marginTop: '2px' }}>Customize your dashboard layout and visible widgets.</p>
                                         </div>
                                     </div>
-                                    <div className="p-8">
+                                    <div style={{ padding: '32px' }}>
                                         <button
                                             onClick={() => setCustomizeOpen(true)}
-                                            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"
+                                            style={{ paddingLeft: '20px', paddingTop: '10px', background: '#1f8577', color: '#fff', borderRadius: '12px', fontSize: '13px', fontWeight: 600, boxShadow: '0 1px 3px rgba(0,0,0,.1)', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '20px', paddingBottom: '10px' }}
                                         >
                                             Open Dashboard Customizer
                                         </button>
@@ -930,19 +934,19 @@ const Settings: React.FC = () => {
                      }
 
                     {activeTab === 'Appearance' && (
-                            <div className="space-y-8">
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">Theme Preferences</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">Control the visual style of your workspace.</p>
+                            <div style={{ marginTop: '32px' }}>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Theme Preferences</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Control the visual style of your workspace.</p>
                                     </div>
-                                    <div className="p-8 space-y-6">
-                                        <div className="flex justify-between items-center group/item hover:bg-slate-50 transition-all -mx-8 px-8 py-4">
+                                    <div style={{ padding: '32px', marginTop: '24px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all .15s ease', paddingLeft: '32px', paddingTop: '16px', paddingRight: '32px', paddingBottom: '16px' }}>
                                             <div>
-                                                <p className="font-bold text-slate-800 text-sm">Application Theme</p>
-                                                <p className="text-[11px] text-slate-500 mt-0.5">Switch between light, dark, or system preferences.</p>
+                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Application Theme</p>
+                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Switch between light, dark, or system preferences.</p>
                                             </div>
-                                            <div className="flex p-1 bg-slate-100 rounded-lg">
+                                            <div style={{ display: 'flex', padding: '4px', background: '#eef7f6', borderRadius: '10px' }}>
                                                  {['Light', 'Dark', 'System'].map(mode => (
                                                     <button
                                                         key={mode}
@@ -966,35 +970,35 @@ const Settings: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="h-px bg-slate-100" />
+                                        <div style={{ height: '1px', background: '#eef7f6' }} />
 
-                                        <div className="flex justify-between items-center group/item hover:bg-slate-50 transition-all -mx-8 px-8 py-4">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all .15s ease', paddingLeft: '32px', paddingTop: '16px', paddingRight: '32px', paddingBottom: '16px' }}>
                                             <div>
-                                                <p className="font-bold text-slate-800 text-sm">Experimental Glassmorphism</p>
-                                                <p className="text-[11px] text-slate-500 mt-0.5">Enable frosted glass effects on high-performance cards.</p>
+                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Experimental Glassmorphism</p>
+                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Enable frosted glass effects on high-performance cards.</p>
                                             </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
+                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input 
                                                     type="checkbox" 
-                                                    className="sr-only peer" 
+                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }} 
                                                     checked={config.appearance?.glassmorphism || false}
                                                     onChange={e => setConfig({ ...config, appearance: { ...config.appearance, glassmorphism: e.target.checked } })}
                                                 />
-                                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                             </label>
                                         </div>
 
-                                        <div className="h-px bg-slate-100" />
+                                        <div style={{ height: '1px', background: '#eef7f6' }} />
 
-                                        <div className="flex justify-between items-center group/item hover:bg-slate-50 transition-all -mx-8 px-8 py-4">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all .15s ease', paddingLeft: '32px', paddingTop: '16px', paddingRight: '32px', paddingBottom: '16px' }}>
                                             <div>
-                                                <p className="font-bold text-slate-800 text-sm">Rows Per Page</p>
-                                                <p className="text-[11px] text-slate-500 mt-0.5">Default number of items shown on list views.</p>
+                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Rows Per Page</p>
+                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Default number of items shown on list views.</p>
                                             </div>
                                             <select
                                                 value={rowsPerPage}
                                                 onChange={e => { const v = Number(e.target.value); setRowsPerPage(v); try { localStorage.setItem('prime:pagination:default', String(v)); } catch (e) { logger.error("Operation failed", e as Error); } }}
-                                                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
+                                                style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', paddingLeft: '12px', paddingTop: '8px', fontSize: '13px', fontWeight: 700, color: '#23282A', outline: 'none', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '12px', paddingBottom: '8px' }}
                                             >
                                                 <option value={10}>10</option>
                                                 <option value={15}>15</option>
@@ -1016,29 +1020,29 @@ const Settings: React.FC = () => {
                         )}
 
                         {activeTab === 'Branding' && (
-                            <div className="space-y-8 text-slate-800">
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">Visual Identity</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">These assets will be used on all automated documents.</p>
+                            <div style={{ marginTop: '32px', color: '#23282A' }}>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Visual Identity</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>These assets will be used on all automated documents.</p>
                                     </div>
-                                    <div className="p-8 grid grid-cols-2 gap-12">
+                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
                                         <div>
                                             <label className="settings-label">Company Logo</label>
                                             <div
                                                 onClick={() => logoRef.current?.click()}
-                                                className="group relative aspect-video rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-blue-400 hover:bg-white transition-all overflow-hidden shadow-inner"
+                                                style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '12px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', background: '#eef7f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', transition: 'all .15s ease', overflow: 'hidden', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}
                                             >
                                                 {logoPreviewSource ? (
                                                     <>
-                                                        <OfflineImage src={logoPreviewSource} alt="Company Logo" className="w-full h-full object-contain p-6" />
-                                                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                                            <button className="bg-white text-slate-900 px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 transition-all">
+                                                        <OfflineImage src={logoPreviewSource} alt="Company Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '24px' }} />
+                                                        <div style={{ position: 'absolute', top: 0, background: 'rgba(11,62,57,.6)', opacity: 0.0, transition: 'opacity .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', right: 0, bottom: 0, left: 0 }}>
+                                                            <button style={{ background: '#FEFDFB', color: '#23282A', paddingLeft: '16px', paddingTop: '8px', borderRadius: '10px', fontWeight: 700, fontSize: '11px', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>
                                                                 <RefreshCw size={14} /> Change Logo
                                                             </button>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); setConfig({ ...config, logo: undefined, logoBase64: undefined }); }}
-                                                                className="bg-red-500 text-white p-2.5 rounded-lg shadow-xl hover:bg-red-600 transition-colors"
+                                                                style={{ background: '#fef2f2', color: '#fff', padding: '10px', borderRadius: '10px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}
                                                             >
                                                                 <Trash2 size={16} />
                                                             </button>
@@ -1046,16 +1050,16 @@ const Settings: React.FC = () => {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-500 border border-slate-100">
+                                                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEFDFB', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', transition: 'all .15s ease', transitionDuration: '500ms', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
                                                             <Camera size={24} />
                                                         </div>
-                                                        <div className="text-center">
-                                                            <p className="text-[13px] font-bold text-slate-700">Upload Corporate Logo</p>
-                                                            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">PNG or JPG (Max 2MB)</p>
+                                                        <div style={{ textAlign: 'center' }}>
+                                                            <p style={{ fontWeight: 700, color: '#23282A' }}>Upload Corporate Logo</p>
+                                                            <p style={{ color: '#5c6567', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 900 }}>PNG or JPG (Max 2MB)</p>
                                                         </div>
                                                     </>
                                                 )}
-                                                <input type="file" ref={logoRef} className="hidden" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={(e) => handleAssetUpload(e, 'logo')} />
+                                                <input type="file" ref={logoRef} style={{ display: 'hidden' }} accept="image/png,image/jpeg,image/jpg,image/webp" onChange={(e) => handleAssetUpload(e, 'logo')} />
                                             </div>
                                         </div>
 
@@ -1063,18 +1067,18 @@ const Settings: React.FC = () => {
                                             <label className="settings-label">Digital Signature</label>
                                             <div
                                                 onClick={() => sigRef.current?.click()}
-                                                className="group relative aspect-video rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-blue-400 hover:bg-white transition-all overflow-hidden shadow-inner"
+                                                style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '12px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', background: '#eef7f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', transition: 'all .15s ease', overflow: 'hidden', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}
                                             >
                                                 {signaturePreviewSource ? (
                                                     <>
-                                                        <OfflineImage src={signaturePreviewSource} alt="Authorized Signature" className="w-full h-full object-contain p-6 grayscale" />
-                                                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                                            <button className="bg-white text-slate-900 px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 transition-all">
+                                                        <OfflineImage src={signaturePreviewSource} alt="Authorized Signature" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '24px', filter: 'grayscale(100%)' }} />
+                                                        <div style={{ position: 'absolute', top: 0, background: 'rgba(11,62,57,.6)', opacity: 0.0, transition: 'opacity .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', right: 0, bottom: 0, left: 0 }}>
+                                                            <button style={{ background: '#FEFDFB', color: '#23282A', paddingLeft: '16px', paddingTop: '8px', borderRadius: '10px', fontWeight: 700, fontSize: '11px', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>
                                                                 <RefreshCw size={14} /> Change Sig
                                                             </button>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); setConfig({ ...config, signature: undefined, signatureBase64: undefined }); }}
-                                                                className="bg-red-500 text-white p-2.5 rounded-lg shadow-xl hover:bg-red-600 transition-colors"
+                                                                style={{ background: '#fef2f2', color: '#fff', padding: '10px', borderRadius: '10px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}
                                                             >
                                                                 <Trash2 size={16} />
                                                             </button>
@@ -1082,16 +1086,16 @@ const Settings: React.FC = () => {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-500 border border-slate-100">
+                                                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEFDFB', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', transition: 'all .15s ease', transitionDuration: '500ms', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
                                                             <PenTool size={24} />
                                                         </div>
-                                                        <div className="text-center">
-                                                            <p className="text-[13px] font-bold text-slate-700">Upload Digital Signature</p>
-                                                            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">Transparent PNG Recommended</p>
+                                                        <div style={{ textAlign: 'center' }}>
+                                                            <p style={{ fontWeight: 700, color: '#23282A' }}>Upload Digital Signature</p>
+                                                            <p style={{ color: '#5c6567', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 900 }}>Transparent PNG Recommended</p>
                                                         </div>
                                                     </>
                                                 )}
-                                                <input type="file" ref={sigRef} className="hidden" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={(e) => handleAssetUpload(e, 'signature')} />
+                                                <input type="file" ref={sigRef} style={{ display: 'hidden' }} accept="image/png,image/jpeg,image/jpg,image/webp" onChange={(e) => handleAssetUpload(e, 'signature')} />
                                             </div>
                                         </div>
                                     </div>
@@ -1103,26 +1107,26 @@ const Settings: React.FC = () => {
 
 
                         {activeTab === 'Currencies' && (
-                            <div className="space-y-8">
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">Currency Formatting</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">Control how monetary values are displayed across the system.</p>
+                            <div style={{ marginTop: '32px' }}>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Currency Formatting</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Control how monetary values are displayed across the system.</p>
                                     </div>
-                                    <div className="p-8 grid grid-cols-2 gap-12">
+                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
                                         <div>
                                             <label className="settings-label">Currency Symbol</label>
-                                            <div className="flex gap-3">
+                                            <div style={{ display: 'flex', gap: '12px' }}>
                                                 <input
                                                     type="text"
-                                                    className="settings-input w-24 text-center"
+                                                    style={{ width: '96px', textAlign: 'center' }}
                                                     placeholder="e.g. K"
                                                     value={config.currencySymbol}
                                                     onChange={e => setConfig({ ...config, currencySymbol: e.target.value })}
                                                 />
-                                                <div className="flex-1 p-3 bg-slate-50 rounded-lg flex items-center justify-center font-black text-slate-400 gap-2 border border-slate-100 shadow-inner">
-                                                    <span className="text-lg">{config.currencySymbol}</span>
-                                                    <span className="text-xs uppercase tracking-widest">Active Symbol</span>
+                                                <div style={{ flex: 1, padding: '12px', background: '#eef7f6', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#5c6567', gap: '8px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}>
+                                                    <span style={{ fontSize: '16px' }}>{config.currencySymbol}</span>
+                                                    <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em' }}>Active Symbol</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1139,9 +1143,9 @@ const Settings: React.FC = () => {
                                                 <option value={3}>3 (e.g. 10.500)</option>
                                             </select>
                                         </div>
-                                        <div className="col-span-2 pt-4 border-t border-slate-50">
+                                        <div style={{ gridColumn: 'span 2 / span 2', paddingTop: '16px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
                                             <label className="settings-label">Rounding Rule</label>
-                                            <div className="grid grid-cols-3 gap-4">
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
                                                 {(['Nearest', 'Up', 'Down'] as const).map(method => (
                                                     <button
                                                         key={method}
@@ -1156,37 +1160,37 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">Monthly Revenue Target</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">Set your monthly revenue goal for dashboard tracking.</p>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Monthly Revenue Target</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Set your monthly revenue goal for dashboard tracking.</p>
                                     </div>
-                                    <div className="p-8">
-                                        <div className="relative max-w-xs">
-                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">{config.currencySymbol}</div>
+                                    <div style={{ padding: '32px' }}>
+                                        <div style={{ position: 'relative', maxWidth: '320px' }}>
+                                            <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567', fontSize: '11px', fontWeight: 700 }}>{config.currencySymbol}</div>
                                             <input
                                                 type="number"
-                                                className="settings-input pl-10"
+                                                style={{ paddingLeft: '40px' }}
                                                 placeholder="e.g. 500000"
                                                 value={config.monthlyRevenueTarget || ''}
                                                 onChange={e => setConfig({ ...config, monthlyRevenueTarget: Number(e.target.value) })}
                                             />
                                         </div>
-                                        <p className="text-[10px] text-slate-400 mt-1.5 font-medium italic">Your progress percentage against this target will be tracked on the dashboard.</p>
+                                        <p style={{ color: '#5c6567', marginTop: '6px', fontWeight: 500, fontStyle: 'italic' }}>Your progress percentage against this target will be tracked on the dashboard.</p>
                                     </div>
                                 </section>
                             </div>
                         )}
 
                         {activeTab === 'SalesModule' && (
-                            <div className="space-y-8">
-                                <section className="white-card overflow-hidden">
+                            <div style={{ marginTop: '32px' }}>
+                                <section style={{ overflow: 'hidden' }}>
                                     <div className="settings-section-header">
-                                        <h3 className="text-sm font-bold text-[#393A3D]">Global Pricing Mode</h3>
-                                        <p className="text-[11px] text-[#6B6C6F] mt-0.5">Select whether the system uses VAT or Market Adjustments for sales tracking.</p>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700 }}>Global Pricing Mode</h3>
+                                        <p style={{ marginTop: '2px' }}>Select whether the system uses VAT or Market Adjustments for sales tracking.</p>
                                     </div>
-                                    <div className="p-8">
-                                        <div className="flex bg-[#F4F5F8] p-1 rounded-xl w-fit border border-[#D4D7DC]">
+                                    <div style={{ padding: '32px' }}>
+                                        <div style={{ display: 'flex', padding: '4px', borderRadius: '12px', width: 'fit-content', border: '1.4px solid #e4ddd1' }}>
                                             <button 
                                                 onClick={() => setConfig({ 
                                                     ...config, 
@@ -1208,35 +1212,35 @@ const Settings: React.FC = () => {
                                                 Market Adjustment Mode
                                             </button>
                                         </div>
-                                        <p className="text-[11px] text-[#6B6C6F] mt-4 italic font-medium">
+                                        <p style={{ marginTop: '16px', fontStyle: 'italic', fontWeight: 500 }}>
                                             * These features are mutually exclusive. Switching modes may affect how prices are calculated in the POS and Sales modules.
                                         </p>
                                     </div>
                                 </section>
 
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">Smart Pricing Rounding Engine</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">Round only final selling prices after BOM and margin calculations to protect profit.</p>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Smart Pricing Rounding Engine</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Round only final selling prices after BOM and margin calculations to protect profit.</p>
                                     </div>
-                                    <div className="p-8 space-y-8">
-                                        <div className="flex justify-between items-center">
+                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
-                                                <p className="font-bold text-slate-800 text-sm">Enable Rounding Engine</p>
-                                                <p className="text-[11px] text-slate-500 mt-0.5">Apply rounding when product selling prices are calculated and saved. Cost price and BOM internals are untouched.</p>
+                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Enable Rounding Engine</p>
+                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Apply rounding when product selling prices are calculated and saved. Cost price and BOM internals are untouched.</p>
                                             </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
+                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="sr-only peer"
+                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                     checked={activePricingSettings.enableRounding}
                                                     onChange={e => updatePricingSettings({ enableRounding: e.target.checked })}
                                                 />
-                                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                             </label>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-6">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '24px' }}>
                                             <div>
                                                 <label className="settings-label">Default Rounding Method</label>
                                                 <select
@@ -1260,36 +1264,36 @@ const Settings: React.FC = () => {
                                                     onChange={e => updatePricingSettings({ customStep: Math.max(1, parseInt(e.target.value) || 1) })}
                                                 />
                                                 {getFieldError('customStep') && (
-                                                  <p className="text-red-500 text-xs mt-1">{getFieldError('customStep')}</p>
+                                                  <p style={{ color: '#b5493f', fontSize: '11px', marginTop: '4px' }}>{getFieldError('customStep')}</p>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <label className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                     checked={activePricingSettings.applyToPOS}
                                                     onChange={e => updatePricingSettings({ applyToPOS: e.target.checked })}
                                                     disabled
                                                 />
                                                 Legacy: Apply to POS
                                             </label>
-                                            <label className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                     checked={activePricingSettings.applyToInvoices}
                                                     onChange={e => updatePricingSettings({ applyToInvoices: e.target.checked })}
                                                     disabled
                                                 />
                                                 Legacy: Apply to Invoices
                                             </label>
-                                            <label className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                     checked={activePricingSettings.applyToQuotations}
                                                     onChange={e => updatePricingSettings({ applyToQuotations: e.target.checked })}
                                                     disabled
@@ -1297,35 +1301,35 @@ const Settings: React.FC = () => {
                                                 Legacy: Apply to Quotations
                                             </label>
                                         </div>
-                                        <p className="text-[11px] text-slate-500 -mt-4">
+                                        <p style={{ color: '#5c6567' }}>
                                             Transaction-level rounding is disabled. POS, Invoice, and Quotation read stored selling prices only.
                                         </p>
 
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <label className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                     checked={activePricingSettings.allowManualOverride}
                                                     onChange={e => updatePricingSettings({ allowManualOverride: e.target.checked })}
                                                     disabled
                                                 />
                                                 Legacy: Manual Override
                                             </label>
-                                            <label className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                     checked={activePricingSettings.showOriginalPrice}
                                                     onChange={e => updatePricingSettings({ showOriginalPrice: e.target.checked })}
                                                     disabled
                                                 />
                                                 Legacy: Show Original Price
                                             </label>
-                                            <label className="flex items-center gap-2 text-xs text-slate-700 font-semibold">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#23282A', fontWeight: 600 }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                     checked={activePricingSettings.profitProtectionMode}
                                                     onChange={e => updatePricingSettings({ profitProtectionMode: e.target.checked })}
                                                 />
@@ -1333,16 +1337,16 @@ const Settings: React.FC = () => {
                                             </label>
                                         </div>
 
-                                        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
-                                            <div className="flex justify-between items-center">
+                                        <div style={{ padding: '16px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', marginTop: '16px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
-                                                    <p className="text-xs font-bold text-slate-800">Smart Threshold Rules</p>
-                                                    <p className="text-[11px] text-slate-500">Example: below 10,000 use 50; from 10,000 use 100.</p>
+                                                    <p style={{ fontSize: '11px', fontWeight: 700, color: '#23282A' }}>Smart Threshold Rules</p>
+                                                    <p style={{ color: '#5c6567' }}>Example: below 10,000 use 50; from 10,000 use 100.</p>
                                                 </div>
-                                                <label className="inline-flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
                                                     <input
                                                         type="checkbox"
-                                                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                        style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                         checked={Boolean(activePricingSettings.enableSmartThresholds)}
                                                         onChange={e => updatePricingSettings({ enableSmartThresholds: e.target.checked })}
                                                     />
@@ -1350,9 +1354,9 @@ const Settings: React.FC = () => {
                                                 </label>
                                             </div>
                                             {(activePricingSettings.thresholdRules || DEFAULT_PRICING_SETTINGS.thresholdRules || []).slice(0, 2).map((rule, idx) => (
-                                                <div key={idx} className="grid grid-cols-4 gap-3 items-end">
+                                                <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', alignItems: 'end' }}>
                                                     <div>
-                                                        <label className="text-[10px] font-semibold text-slate-500">Min Price</label>
+                                                        <label style={{ fontWeight: 600, color: '#5c6567' }}>Min Price</label>
                                                         <input
                                                             type="number"
                                                             className={`settings-input ${getArrayFieldError('thresholdRules', idx, 'minPrice') ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
@@ -1368,11 +1372,11 @@ const Settings: React.FC = () => {
                                                             }}
                                                         />
                                                         {getArrayFieldError('thresholdRules', idx, 'minPrice') && (
-                                                          <p className="text-red-500 text-xs mt-1">{getArrayFieldError('thresholdRules', idx, 'minPrice')}</p>
+                                                          <p style={{ color: '#b5493f', fontSize: '11px', marginTop: '4px' }}>{getArrayFieldError('thresholdRules', idx, 'minPrice')}</p>
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <label className="text-[10px] font-semibold text-slate-500">Max Price</label>
+                                                        <label style={{ fontWeight: 600, color: '#5c6567' }}>Max Price</label>
                                                         <input
                                                             type="number"
                                                             className="settings-input"
@@ -1389,7 +1393,7 @@ const Settings: React.FC = () => {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="text-[10px] font-semibold text-slate-500">Step</label>
+                                                        <label style={{ fontWeight: 600, color: '#5c6567' }}>Step</label>
                                                         <input
                                                             type="number"
                                                             min={1}
@@ -1407,11 +1411,11 @@ const Settings: React.FC = () => {
                                                             }}
                                                         />
                                                         {getArrayFieldError('thresholdRules', idx, 'step') && (
-                                                          <p className="text-red-500 text-xs mt-1">{getArrayFieldError('thresholdRules', idx, 'step')}</p>
+                                                          <p style={{ color: '#b5493f', fontSize: '11px', marginTop: '4px' }}>{getArrayFieldError('thresholdRules', idx, 'step')}</p>
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <label className="text-[10px] font-semibold text-slate-500">Method</label>
+                                                        <label style={{ fontWeight: 600, color: '#5c6567' }}>Method</label>
                                                         <select
                                                             className="settings-input"
                                                             value={rule.method || 'ALWAYS_UP_CUSTOM'}
@@ -1433,106 +1437,106 @@ const Settings: React.FC = () => {
                                             ))}
                                         </div>
 
-                                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                                            <p className="text-xs font-bold text-blue-700">Rounding Analytics</p>
-                                            <p className="text-[11px] text-blue-700/90 mt-1">
+                                        <div style={{ padding: '16px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9' }}>
+                                            <p style={{ fontSize: '11px', fontWeight: 700, color: '#0f544c' }}>Rounding Analytics</p>
+                                            <p style={{ color: '#0f544c', marginTop: '4px' }}>
                                                 Extra profit captured by rounding: {currency}{Number(roundingAnalytics.totalExtraProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </p>
-                                            <p className="text-[11px] text-blue-700/90">
+                                            <p style={{ color: '#0f544c' }}>
                                                 Rounded price recalculations: {Number(roundingAnalytics.roundedTransactions || 0)}
                                             </p>
                                         </div>
                                     </div>
                                 </section>
 
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">POS Interface & Terminal</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">Configure how the point of sale behaves on this terminal.</p>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>POS Interface & Terminal</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Configure how the point of sale behaves on this terminal.</p>
                                     </div>
-                                    <div className="p-8 space-y-8">
-                                        <div className="grid grid-cols-2 gap-12">
-                                            <div className="space-y-6">
-                                                <div className="flex justify-between items-center group/item">
+                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
+                                            <div style={{ marginTop: '24px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-bold text-slate-800 text-sm">Show Item Images</p>
-                                                        <p className="text-[11px] text-slate-500 mt-0.5">Display thumbnails in the product grid.</p>
+                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Show Item Images</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Display thumbnails in the product grid.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.transactionSettings?.pos?.showItemImages}
                                                             onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showItemImages: e.target.checked } } })}
                                                         />
-                                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-bold text-slate-800 text-sm">Enable Shortcuts</p>
-                                                        <p className="text-[11px] text-slate-500 mt-0.5">Use F-keys for quick POS actions.</p>
+                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Enable Shortcuts</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Use F-keys for quick POS actions.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.transactionSettings?.pos?.enableShortcuts}
                                                             onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, enableShortcuts: e.target.checked } } })}
                                                         />
-                                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-bold text-slate-800 text-sm">Allow Returns/Refunds</p>
-                                                        <p className="text-[11px] text-slate-500 mt-0.5">Enable the refund button in the POS interface.</p>
+                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Allow Returns/Refunds</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Enable the refund button in the POS interface.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                     checked={config.transactionSettings?.pos?.allowReturns}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, allowReturns: e.target.checked } } })}
                                                         />
-                                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-bold text-slate-800 text-sm">Show Shortcut Hints</p>
-                                                        <p className="text-[11px] text-slate-500 mt-0.5">Show F1, F2, F3, F10 shortcut hints on POS toolbar.</p>
+                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Show Shortcut Hints</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Show F1, F2, F3, F10 shortcut hints on POS toolbar.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.transactionSettings?.pos?.showShortcutHints !== false}
                                                             onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showShortcutHints: e.target.checked } } })}
                                                         />
-                                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-bold text-slate-800 text-sm">Enable Item Discounts</p>
-                                                        <p className="text-[11px] text-slate-500 mt-0.5">Allow manual discounts on individual items.</p>
+                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Enable Item Discounts</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Allow manual discounts on individual items.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.transactionSettings?.pos?.allowDiscounts}
                                                             onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, allowDiscounts: e.target.checked } } })}
                                                         />
-                                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
                                             </div>
-                                            <div className="space-y-6">
+                                            <div style={{ marginTop: '24px' }}>
                                                 <div>
                                                     <label className="settings-label">POS Grid columns</label>
-                                                    <div className="grid grid-cols-4 gap-2">
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
                                                         {[3, 4, 5, 6].map(cols => (
                                                             <button
                                                                 key={cols}
@@ -1544,19 +1548,19 @@ const Settings: React.FC = () => {
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-bold text-slate-800 text-sm">Show Category Filters</p>
-                                                        <p className="text-[11px] text-slate-500 mt-0.5">Display product categories for easy filtering.</p>
+                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Show Category Filters</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Display product categories for easy filtering.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                     checked={config.transactionSettings?.pos?.showCategoryFilters}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showCategoryFilters: e.target.checked } } })}
                                                         />
-                                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
                                             </div>
@@ -1564,19 +1568,19 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">POS Service Pricing</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">Set default prices and material costs for common retail services. Profit margin = selling price âˆ’ cost.</p>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>POS Service Pricing</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Set default prices and material costs for common retail services. Profit margin = selling price âˆ’ cost.</p>
                                     </div>
-                                    <div className="p-8 grid grid-cols-2 gap-12">
+                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
                                         <div>
                                             <label className="settings-label">Photocopy Price ({currency})</label>
-                                            <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-300 text-xs">{currency}</span>
+                                            <div style={{ position: 'relative' }}>
+                                                <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
                                                 <input
                                                     type="number"
-                                                    className="settings-input pl-10"
+                                                    style={{ paddingLeft: '40px' }}
                                                     placeholder="e.g. 50"
                                                     value={config.transactionSettings?.pos?.photocopyPrice || 0}
                                                        onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, photocopyPrice: parseFloat(e.target.value) || 0 } } })}
@@ -1586,11 +1590,11 @@ const Settings: React.FC = () => {
 
                                         <div>
                                             <label className="settings-label">Type & Printing Price ({currency})</label>
-                                            <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-300 text-xs">{currency}</span>
+                                            <div style={{ position: 'relative' }}>
+                                                <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
                                                 <input
                                                     type="number"
-                                                    className="settings-input pl-10"
+                                                    style={{ paddingLeft: '40px' }}
                                                     placeholder="e.g. 200"
                                                     value={config.transactionSettings?.pos?.typePrintingPrice || 0}
                                                        onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, typePrintingPrice: parseFloat(e.target.value) || 0 } } })}
@@ -1602,55 +1606,55 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">Receipt & Printing</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">Customize transaction receipts and printing behavior.</p>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Receipt & Printing</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Customize transaction receipts and printing behavior.</p>
                                     </div>
-                                    <div className="p-8 space-y-8">
-                                        <div className="flex justify-between items-center group/item">
+                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
-                                                <p className="font-bold text-slate-800 text-sm">Auto-Print Receipt</p>
-                                                <p className="text-[11px] text-slate-500 mt-0.5">Trigger print dialog automatically after checkout.</p>
+                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Auto-Print Receipt</p>
+                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Trigger print dialog automatically after checkout.</p>
                                             </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
+                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="sr-only peer"
+                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                     checked={config.transactionSettings?.autoPrintReceipt}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, autoPrintReceipt: e.target.checked } })}
                                                 />
-                                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                             </label>
                                         </div>
-                                        <div className="flex justify-between items-center group/item">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
-                                                <p className="font-bold text-slate-800 text-sm">Show Receipt Preview</p>
-                                                <p className="text-[11px] text-slate-500 mt-0.5">Display receipt preview after checkout.</p>
+                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Show Receipt Preview</p>
+                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Display receipt preview after checkout.</p>
                                             </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
+                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="sr-only peer"
+                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                     checked={config.transactionSettings?.showReceiptPreview !== false}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, showReceiptPreview: e.target.checked } })}
                                                 />
-                                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                             </label>
                                         </div>
-                                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-                                            <div className="flex items-center gap-3">
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 <div className={`p-2 rounded-lg ${printerConnected ? 'bg-blue-100' : 'bg-slate-200'}`}>
                                                     <Printer size={20} className={printerConnected ? 'text-blue-600' : 'text-slate-500'} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-800 text-sm">Thermal Printer</p>
+                                                    <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Thermal Printer</p>
                                                     <p className={`text-[11px] ${printerConnected ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>
                                                         {printerConnected ? printerDeviceName : 'Not connected'}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <button
                                                     onClick={async () => {
                                                         setIsConnectingPrinter(true);
@@ -1670,7 +1674,7 @@ const Settings: React.FC = () => {
                                                         }
                                                     }}
                                                     disabled={isConnectingPrinter}
-                                                    className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-700 disabled:opacity-50 flex items-center gap-2"
+                                                    style={{ paddingLeft: '16px', paddingTop: '8px', background: '#0b3e39', color: '#fff', fontSize: '13px', fontWeight: 600, borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '16px', paddingBottom: '8px' }}
                                                 >
                                                     <Usb size={14} />
                                                     {isConnectingPrinter ? 'Connecting...' : printerConnected ? 'Reconnect' : 'Connect Printer'}
@@ -1699,7 +1703,7 @@ const Settings: React.FC = () => {
                                                                 notify('Test print failed', 'error');
                                                             }
                                                         }}
-                                                        className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                                                        style={{ paddingLeft: '16px', paddingTop: '8px', background: '#1f8577', color: '#fff', fontSize: '13px', fontWeight: 600, borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '16px', paddingBottom: '8px' }}
                                                     >
                                                         <Printer size={14} />
                                                         Test Print
@@ -1710,7 +1714,7 @@ const Settings: React.FC = () => {
                                         <div>
                                             <label className="settings-label">Receipt Footer Message</label>
                                             <textarea
-                                                className="settings-input h-24 resize-none"
+                                                style={{ height: '96px' }}
                                                 value={config.transactionSettings?.pos?.receiptFooter || ''}
                                                 onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, receiptFooter: e.target.value } } })}
                                                 placeholder="e.g. Thank you for your business!"
@@ -1719,26 +1723,26 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30">
-                                        <h3 className="text-sm font-bold text-slate-800">Advanced POS Terminal Settings</h3>
-                                        <p className="text-[11px] text-slate-500 mt-0.5">Control default behavior and terminal-specific settings.</p>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Advanced POS Terminal Settings</h3>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Control default behavior and terminal-specific settings.</p>
                                     </div>
-                                    <div className="p-8 grid grid-cols-2 gap-12">
-                                        <div className="space-y-6">
-                                            <div className="flex justify-between items-center group/item">
+                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
+                                        <div style={{ marginTop: '24px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
-                                                    <p className="font-bold text-slate-800 text-sm">Quick Item Entry</p>
-                                                    <p className="text-[11px] text-slate-500 mt-0.5">Focus SKU input automatically after adding item.</p>
+                                                    <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Quick Item Entry</p>
+                                                    <p style={{ color: '#5c6567', marginTop: '2px' }}>Focus SKU input automatically after adding item.</p>
                                                 </div>
-                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
-                                                        className="sr-only peer"
+                                                        style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                         checked={config.transactionSettings?.quickItemEntry}
                                                         onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, quickItemEntry: e.target.checked } })}
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                    <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                 </label>
                                             </div>
                                             <div>
@@ -1763,7 +1767,7 @@ const Settings: React.FC = () => {
                                                 value={config.transactionSettings?.posDefaultCustomer || ''}
                                                 onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, posDefaultCustomer: e.target.value } })}
                                             />
-                                            <p className="text-[10px] text-slate-400 mt-2 italic">The default customer profile used for anonymous POS sales.</p>
+                                            <p style={{ color: '#5c6567', marginTop: '8px', fontStyle: 'italic' }}>The default customer profile used for anonymous POS sales.</p>
                                         </div>
                                     </div>
                                 </section>
@@ -1773,15 +1777,15 @@ const Settings: React.FC = () => {
 
 
                         {activeTab === 'Templates' && (
-                            <div className="space-y-8">
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30 font-bold text-sm text-slate-800">
+                            <div style={{ marginTop: '32px' }}>
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
                                         Invoice Layout & Engine
                                     </div>
-                                    <div className="p-8 space-y-8">
+                                    <div style={{ padding: '32px', marginTop: '32px' }}>
                                         <div>
                                             <label className="settings-label">Template Engine</label>
-                                            <div className="grid grid-cols-4 gap-3">
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
                                                 {(['Classic', 'Modern', 'Professional', 'Clean'] as const).map(engine => (
                                                     <button
                                                         key={engine}
@@ -1794,7 +1798,7 @@ const Settings: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: '48px', rowGap: '24px' }}>
                                             {[
                                                 { key: 'showCompanyLogo', label: 'Show Company Logo', sub: 'Display logo on top right/left.' },
                                                 { key: 'showPaymentTerms', label: 'Include Payment Terms', sub: 'Add terms & conditions footer.' },
@@ -1802,19 +1806,19 @@ const Settings: React.FC = () => {
                                                 { key: 'showAccountSummary', label: 'Show Account Summary', sub: 'Replaces Payment Terms with an account balance summary.' },
                                                 { key: 'showOutstandingAndWalletBalances', label: 'Invoice Balance Details', sub: 'Show outstanding and wallet balances on general invoices.' }
                                             ].map(item => (
-                                                <div key={item.key} className="flex justify-between items-center group/item p-3 -mx-3 hover:bg-slate-50/50 rounded-xl transition-all">
+                                                <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderRadius: '12px', transition: 'all .15s ease' }}>
                                                     <div>
-                                                        <p className="font-bold text-slate-800 text-[13px]">{item.label}</p>
-                                                        <p className="text-[10px] text-slate-500">{item.sub}</p>
+                                                        <p style={{ fontWeight: 700, color: '#23282A' }}>{item.label}</p>
+                                                        <p style={{ color: '#5c6567' }}>{item.sub}</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.invoiceTemplates[item.key as keyof InvoiceTemplatesConfig]}
                                                             onChange={e => setConfig({ ...config, invoiceTemplates: { ...config.invoiceTemplates, [item.key]: e.target.checked } })}
                                                         />
-                                                        <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '40px', height: '20px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
                                             ))}
@@ -1822,24 +1826,24 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <section className="white-card p-0 overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/30 font-bold text-sm text-slate-800">
+                                <section style={{ padding: 0, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
                                         Typography & Page Metrics
                                     </div>
-                                    <div className="p-8 space-y-8">
-                                        <div className="max-w-[360px] space-y-6">
+                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                        <div style={{ marginTop: '24px' }}>
                                             <div>
                                                 <label className="settings-label">Main Accent Color</label>
-                                                <div className="flex items-center gap-4">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                                     <input
                                                         type="color"
-                                                        className="w-12 h-12 rounded-xl cursor-pointer border-none p-0 bg-transparent"
+                                                        style={{ width: '48px', height: '48px', borderRadius: '12px', cursor: 'pointer', border: 'none', padding: 0, background: 'transparent' }}
                                                         value={normalizedTemplateSettings.accentColor}
                                                         onChange={e => setConfig({ ...config, invoiceTemplates: { ...config.invoiceTemplates, accentColor: e.target.value } })}
                                                     />
                                                     <input
                                                         type="text"
-                                                        className="settings-input font-mono text-xs"
+                                                        style={{ fontFamily: '"JetBrains Mono",monospace', fontSize: '11px' }}
                                                         placeholder="e.g. #2CA01C"
                                                         value={normalizedTemplateSettings.accentColor}
                                                         onChange={e => setConfig({ ...config, invoiceTemplates: { ...config.invoiceTemplates, accentColor: e.target.value } })}
@@ -1868,11 +1872,11 @@ const Settings: React.FC = () => {
                                                     type="range"
                                                     min="10"
                                                     max="16"
-                                                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                    style={{ width: '100%', height: '8px', background: '#eef7f6', borderRadius: '10px', appearance: 'none', cursor: 'pointer' }}
                                                     value={normalizedTemplateSettings.bodyFontSize}
                                                     onChange={e => setConfig({ ...config, invoiceTemplates: { ...config.invoiceTemplates, bodyFontSize: parseInt(e.target.value, 10) } })}
                                                 />
-                                                <p className="mt-2 text-[10px] text-slate-400 font-medium">Tuned to keep the Prime document readable without disturbing page flow.</p>
+                                                <p style={{ marginTop: '8px', color: '#5c6567', fontWeight: 500 }}>Tuned to keep the Prime document readable without disturbing page flow.</p>
                                             </div>
 
                                             <div>
@@ -1881,7 +1885,7 @@ const Settings: React.FC = () => {
                                                     type="range"
                                                     min="12"
                                                     max="32"
-                                                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                    style={{ width: '100%', height: '8px', background: '#eef7f6', borderRadius: '10px', appearance: 'none', cursor: 'pointer' }}
                                                     value={normalizedTemplateSettings.companyNameFontSize}
                                                     onChange={e => setConfig({ ...config, invoiceTemplates: { ...config.invoiceTemplates, companyNameFontSize: parseInt(e.target.value, 10) } })}
                                                 />
@@ -1893,20 +1897,20 @@ const Settings: React.FC = () => {
                                                     type="range"
                                                     min="80"
                                                     max="220"
-                                                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                    style={{ width: '100%', height: '8px', background: '#eef7f6', borderRadius: '10px', appearance: 'none', cursor: 'pointer' }}
                                                     value={normalizedTemplateSettings.logoWidth}
                                                     onChange={e => setConfig({ ...config, invoiceTemplates: { ...config.invoiceTemplates, logoWidth: parseInt(e.target.value, 10) } })}
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                                            <div className="flex items-start justify-between gap-4 mb-4">
+                                        <div style={{ background: '#eef7f6', borderRadius: '16px', padding: '24px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                                            <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Exact Prime Preview</p>
-                                                    <p className="mt-1 text-xs text-slate-500">This is the actual PDF renderer used for the document export, refreshed live from the unsaved template settings.</p>
+                                                    <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em' }}>Exact Prime Preview</p>
+                                                    <p style={{ marginTop: '4px', fontSize: '11px', color: '#5c6567' }}>This is the actual PDF renderer used for the document export, refreshed live from the unsaved template settings.</p>
                                                 </div>
-                                                <div className="rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 border border-slate-200">
+                                                <div style={{ borderRadius: '9999px', background: '#FEFDFB', paddingLeft: '12px', paddingTop: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#5c6567', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', paddingRight: '12px', paddingBottom: '4px' }}>
                                                     Invoice
                                                 </div>
                                             </div>
@@ -1918,18 +1922,18 @@ const Settings: React.FC = () => {
                         )}
 
                         {activeTab === 'GLMapping' && (
-                            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                            <div style={{ marginTop: '48px' }}>
                                 <section>
-                                    <div className="flex justify-between items-center mb-8">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                                         <div>
-                                            <h3 className="text-[11px] font-black text-[#6B6C6F] uppercase tracking-[0.2em] flex items-center gap-3">
-                                                <Binary size={18} className="text-blue-600" /> Chart of Accounts Mapping
+                                            <h3 style={{ fontWeight: 900, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <Binary size={18} style={{ color: '#1f8577' }} /> Chart of Accounts Mapping
                                             </h3>
-                                            <p className="text-xs text-[#6B6C6F] mt-1">Direct system transactions to specific ledger accounts.</p>
+                                            <p style={{ fontSize: '11px', marginTop: '4px' }}>Direct system transactions to specific ledger accounts.</p>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-10">
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
                                         {[
                                             { key: 'defaultSalesAccount', label: 'Sales Revenue', icon: ShoppingBag, desc: 'Income from sales' },
                                             { key: 'defaultInventoryAccount', label: 'Inventory Asset', icon: Box, desc: 'Stock value account' },
@@ -1938,21 +1942,21 @@ const Settings: React.FC = () => {
                                             { key: 'accountsPayable', label: 'Accounts Payable', icon: Users, desc: 'Supplier debt' },
                                             { key: 'bankAccount', label: 'Primary Bank Account', icon: Landmark, desc: 'Default cash/bank' }
                                         ].map(item => (
-                                            <div key={item.key} className="p-6 bg-white rounded-lg border border-[#D4D7DC] shadow-sm group hover:border-blue-600 transition-all flex flex-col gap-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="p-3 bg-[#F4F5F8] rounded-md text-[#6B6C6F] group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                                            <div key={item.key} style={{ padding: '24px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                    <div style={{ padding: '12px', borderRadius: '8px', transition: 'all .15s ease' }}>
                                                         <item.icon size={20} />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-[#393A3D] uppercase tracking-tighter text-sm">{item.label}</p>
-                                                        <p className="text-[10px] text-[#6B6C6F] font-bold uppercase tracking-widest">{item.desc}</p>
+                                                        <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.05em', fontSize: '13px' }}>{item.label}</p>
+                                                        <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em' }}>{item.desc}</p>
                                                     </div>
                                                 </div>
-                                                <div className="relative">
-                                                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-[#D4D7DC]" size={14} />
+                                                <div style={{ position: 'relative' }}>
+                                                    <Hash style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} size={14} />
                                                     <input
                                                         type="text"
-                                                        className="w-full pl-10 pr-5 py-3 bg-[#F4F5F8] border border-[#D4D7DC] rounded-md font-mono font-bold text-blue-600 outline-none focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 transition-all text-xs"
+                                                        style={{ width: '100%', paddingLeft: '40px', paddingRight: '20px', paddingTop: '12px', border: '1.4px solid #e4ddd1', borderRadius: '8px', fontFamily: '"JetBrains Mono",monospace', fontWeight: 700, color: '#1f8577', outline: 'none', transition: 'all .15s ease', fontSize: '11px', paddingBottom: '12px' }}
                                                         value={config.glMapping[item.key] || ''}
                                                         onChange={e => setConfig({ ...config, glMapping: { ...(config.glMapping || {}), [item.key]: e.target.value } })}
                                                         placeholder="e.g. 1000-0001"
@@ -1966,21 +1970,21 @@ const Settings: React.FC = () => {
                         )}
 
                         {activeTab === 'PaymentDetails' && (
-                            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                            <div style={{ marginTop: '48px' }}>
                                 <section>
-                                    <div className="flex justify-between items-center mb-8">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                                         <div>
-                                            <h3 className="text-[11px] font-black text-[#6B6C6F] uppercase tracking-[0.2em] flex items-center gap-3">
-                                                <Landmark size={18} className="text-blue-600" /> Payment Details
+                                            <h3 style={{ fontWeight: 900, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <Landmark size={18} style={{ color: '#1f8577' }} /> Payment Details
                                             </h3>
-                                            <p className="text-xs text-[#6B6C6F] mt-1">Manage bank and mobile money accounts for payments.</p>
+                                            <p style={{ fontSize: '11px', marginTop: '4px' }}>Manage bank and mobile money accounts for payments.</p>
                                         </div>
                                     </div>
 
                                     {/* Bank Accounts */}
-                                    <div className="mb-8">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h4 className="font-bold text-[#393A3D]">Bank Accounts</h4>
+                                    <div style={{ marginBottom: '32px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                            <h4 style={{ fontWeight: 700 }}>Bank Accounts</h4>
                                             <button
                                                 onClick={() => {
                                                     const newAccount = {
@@ -2004,15 +2008,15 @@ const Settings: React.FC = () => {
                                                         }
                                                     });
                                                 }}
-                                                className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-bold hover:bg-[#1f8a14] transition-all"
+                                                style={{ paddingLeft: '12px', paddingTop: '6px', background: '#1f8577', color: '#fff', borderRadius: '8px', fontSize: '11px', fontWeight: 700, transition: 'all .15s ease', paddingRight: '12px', paddingBottom: '6px' }}
                                             >
                                                 + Add Bank Account
                                             </button>
                                         </div>
-                                        <div className="space-y-3">
+                                        <div style={{ marginTop: '12px' }}>
                                             {(config.transactionSettings?.paymentDetails?.bankAccounts || []).map((bank, idx) => (
-                                                <div key={bank.id} className="p-4 bg-white rounded-lg border border-[#D4D7DC] shadow-sm">
-                                                    <div className="grid grid-cols-4 gap-3">
+                                                <div key={bank.id} style={{ padding: '16px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
                                                         <input
                                                             type="text"
                                                             placeholder="e.g. Standard Bank"
@@ -2049,7 +2053,7 @@ const Settings: React.FC = () => {
                                                                 setConfig({ ...config, transactionSettings: { ...config.transactionSettings, paymentDetails: { ...(config.transactionSettings?.paymentDetails || { bankAccounts: [], mobileMoneyAccounts: [] }), bankAccounts: updated } } });
                                                             }}
                                                         />
-                                                        <div className="flex items-center gap-2">
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                             <input
                                                                 type="text"
                                                                 placeholder="e.g. 012345"
@@ -2067,7 +2071,7 @@ const Settings: React.FC = () => {
                                                                     const updated = (config.transactionSettings?.paymentDetails?.bankAccounts || []).filter((_, i) => i !== idx);
                                                                     setConfig({ ...config, transactionSettings: { ...config.transactionSettings, paymentDetails: { ...(config.transactionSettings?.paymentDetails || { bankAccounts: [], mobileMoneyAccounts: [] }), bankAccounts: updated } } });
                                                                 }}
-                                                                className="p-2 text-red-500 hover:bg-red-50 rounded"
+                                                                style={{ padding: '8px', color: '#b5493f', borderRadius: '6px' }}
                                                             >
                                                                 <Trash2 size={16} />
                                                             </button>
@@ -2076,15 +2080,15 @@ const Settings: React.FC = () => {
                                                 </div>
                                             ))}
                                             {(config.transactionSettings?.paymentDetails?.bankAccounts || []).length === 0 && (
-                                                <p className="text-sm text-slate-400 text-center py-4">No bank accounts added yet.</p>
+                                                <p style={{ fontSize: '13px', color: '#5c6567', textAlign: 'center', paddingTop: '16px', paddingBottom: '16px' }}>No bank accounts added yet.</p>
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Mobile Money Accounts */}
                                     <div>
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h4 className="font-bold text-[#393A3D]">Mobile Money Accounts</h4>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                            <h4 style={{ fontWeight: 700 }}>Mobile Money Accounts</h4>
                                             <button
                                                 onClick={() => {
                                                     const newAccount = {
@@ -2107,15 +2111,15 @@ const Settings: React.FC = () => {
                                                         }
                                                     });
                                                 }}
-                                                className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-bold hover:bg-[#1f8a14] transition-all"
+                                                style={{ paddingLeft: '12px', paddingTop: '6px', background: '#1f8577', color: '#fff', borderRadius: '8px', fontSize: '11px', fontWeight: 700, transition: 'all .15s ease', paddingRight: '12px', paddingBottom: '6px' }}
                                             >
                                                 + Add Mobile Money
                                             </button>
                                         </div>
-                                        <div className="space-y-3">
+                                        <div style={{ marginTop: '12px' }}>
                                             {(config.transactionSettings?.paymentDetails?.mobileMoneyAccounts || []).map((mm, idx) => (
-                                                <div key={mm.id} className="p-4 bg-white rounded-lg border border-[#D4D7DC] shadow-sm">
-                                                    <div className="grid grid-cols-3 gap-3">
+                                                <div key={mm.id} style={{ padding: '16px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
                                                         <select
                                                             className="settings-input"
                                                             value={mm.network}
@@ -2141,7 +2145,7 @@ const Settings: React.FC = () => {
                                                                 setConfig({ ...config, transactionSettings: { ...config.transactionSettings, paymentDetails: { ...(config.transactionSettings?.paymentDetails || { bankAccounts: [], mobileMoneyAccounts: [] }), mobileMoneyAccounts: updated } } });
                                                             }}
                                                         />
-                                                        <div className="flex items-center gap-2">
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                             <input
                                                                 type="text"
                                                                 placeholder="e.g. 0888123456"
@@ -2159,7 +2163,7 @@ const Settings: React.FC = () => {
                                                                     const updated = (config.transactionSettings?.paymentDetails?.mobileMoneyAccounts || []).filter((_, i) => i !== idx);
                                                                     setConfig({ ...config, transactionSettings: { ...config.transactionSettings, paymentDetails: { ...(config.transactionSettings?.paymentDetails || { bankAccounts: [], mobileMoneyAccounts: [] }), mobileMoneyAccounts: updated } } });
                                                                 }}
-                                                                className="p-2 text-red-500 hover:bg-red-50 rounded"
+                                                                style={{ padding: '8px', color: '#b5493f', borderRadius: '6px' }}
                                                             >
                                                                 <Trash2 size={16} />
                                                             </button>
@@ -2168,7 +2172,7 @@ const Settings: React.FC = () => {
                                                 </div>
                                             ))}
                                             {(config.transactionSettings?.paymentDetails?.mobileMoneyAccounts || []).length === 0 && (
-                                                <p className="text-sm text-slate-400 text-center py-4">No mobile money accounts added yet.</p>
+                                                <p style={{ fontSize: '13px', color: '#5c6567', textAlign: 'center', paddingTop: '16px', paddingBottom: '16px' }}>No mobile money accounts added yet.</p>
                                             )}
                                         </div>
                                     </div>
@@ -2178,70 +2182,70 @@ const Settings: React.FC = () => {
 
                         {
                             activeTab === 'Transactions' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                                <div style={{ marginTop: '48px' }}>
                                     <section>
-                                        <div className="flex justify-between items-center mb-8">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                                             <div>
-                                                <h3 className="text-[11px] font-black text-[#6B6C6F] uppercase tracking-[0.2em] flex items-center gap-3">
-                                                    <Hash size={18} className="text-blue-600" /> Transaction Numbering Logic
+                                                <h3 style={{ fontWeight: 900, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <Hash size={18} style={{ color: '#1f8577' }} /> Transaction Numbering Logic
                                                 </h3>
-                                                <p className="text-xs text-[#6B6C6F] mt-1">Set one numbering pattern. Each document keeps its own built-in prefix automatically.</p>
+                                                <p style={{ fontSize: '11px', marginTop: '4px' }}>Set one numbering pattern. Each document keeps its own built-in prefix automatically.</p>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-10">
-                                            <div className="p-6 bg-white rounded-lg border border-[#D4D7DC] shadow-sm flex flex-col gap-6">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="p-4 bg-[#F4F5F8] rounded-md text-blue-600">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
+                                            <div style={{ padding: '24px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'start', gap: '16px' }}>
+                                                    <div style={{ padding: '16px', borderRadius: '8px', color: '#1f8577' }}>
                                                         <Hash size={24} />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-[#393A3D] uppercase tracking-tighter text-lg">Global Numbering Pattern</p>
-                                                        <p className="text-xs text-[#6B6C6F] mt-1 max-w-xl">
+                                                        <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.05em', fontSize: '16px' }}>Global Numbering Pattern</p>
+                                                        <p style={{ fontSize: '11px', marginTop: '4px', maxWidth: '576px' }}>
                                                             Prefixes such as `INV`, `QTN`, `DN`, `POS`, and `RCPT` are fixed by the system.
                                                             Only the numeric pattern below is shared across all documents.
                                                         </p>
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-6">
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '24px' }}>
                                                     <div>
-                                                        <label className="text-[9px] font-black text-slate-400 uppercase block mb-3 px-1">Padding</label>
+                                                        <label style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', display: 'block', marginBottom: '12px', paddingLeft: '4px', paddingRight: '4px' }}>Padding</label>
                                                         <input
                                                             type="number"
                                                             min={1}
                                                             placeholder="e.g. 4"
-                                                            className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl text-center font-bold text-sm outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 transition-all"
+                                                            style={{ width: '100%', padding: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', textAlign: 'center', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease' }}
                                                             value={sharedNumberingRule.padding || 4}
                                                             onChange={e => updateSharedNumbering({ padding: parseInt(e.target.value, 10) || 1 })}
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="text-[9px] font-black text-slate-400 uppercase block mb-3 px-1">Start At</label>
+                                                        <label style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', display: 'block', marginBottom: '12px', paddingLeft: '4px', paddingRight: '4px' }}>Start At</label>
                                                         <input
                                                             type="number"
                                                             min={1}
                                                             placeholder="e.g. 1"
-                                                            className="w-full p-3 bg-[#F4F5F8] border border-[#D4D7DC] rounded-md text-center font-bold text-sm outline-none focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 transition-all"
+                                                            style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderRadius: '8px', textAlign: 'center', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease' }}
                                                             value={sharedNumberingRule.startNumber || 1}
                                                             onChange={e => updateSharedNumbering({ startNumber: parseInt(e.target.value, 10) || 1 })}
                                                         />
                                                     </div>
-                                                    <div className="col-span-2">
-                                                        <label className="text-[9px] font-black text-slate-400 uppercase block mb-3 px-1">Prefix Extension / Branch (Optional)</label>
+                                                    <div style={{ gridColumn: 'span 2 / span 2' }}>
+                                                        <label style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', display: 'block', marginBottom: '12px', paddingLeft: '4px', paddingRight: '4px' }}>Prefix Extension / Branch (Optional)</label>
                                                         <input
                                                             type="text"
                                                             placeholder="e.g. P7, HQ, BRANCH01"
-                                                            className="w-full p-3 bg-[#F4F5F8] border border-[#D4D7DC] rounded-md font-bold text-sm outline-none focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 transition-all"
+                                                            style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderRadius: '8px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease' }}
                                                             value={sharedNumberingRule.extension || ''}
                                                             onChange={e => updateSharedNumbering({ extension: e.target.value })}
                                                         />
-                                                        <p className="text-[10px] text-slate-400 mt-2 italic px-1">This will be added after the document prefix (e.g. INV-P7/0001).</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '8px', fontStyle: 'italic', paddingLeft: '4px', paddingRight: '4px' }}>This will be added after the document prefix (e.g. INV-P7/0001).</p>
                                                     </div>
-                                                    <div className="col-span-2">
-                                                        <label className="text-[9px] font-black text-slate-400 uppercase block mb-3 px-1">Reset Sequence</label>
+                                                    <div style={{ gridColumn: 'span 2 / span 2' }}>
+                                                        <label style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', display: 'block', marginBottom: '12px', paddingLeft: '4px', paddingRight: '4px' }}>Reset Sequence</label>
                                                         <select
-                                                            className="w-full p-3 bg-[#F4F5F8] border border-[#D4D7DC] rounded-md font-bold text-sm outline-none focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 transition-all cursor-pointer"
+                                                            style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderRadius: '8px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', cursor: 'pointer' }}
                                                             value={sharedNumberingRule.resetInterval || 'Never'}
                                                             onChange={e => updateSharedNumbering({ resetInterval: e.target.value as NumberingRule['resetInterval'] })}
                                                         >
@@ -2253,21 +2257,21 @@ const Settings: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+                                                <div style={{ borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', background: '#eef7f6', paddingLeft: '16px', paddingTop: '12px', fontSize: '11px', color: '#0b3e39', paddingRight: '16px', paddingBottom: '12px' }}>
                                                     One change here updates the numbering style used throughout sales, POS, procurement, inventory, and supporting transaction documents.
                                                 </div>
                                             </div>
 
-                                            <div className="p-6 bg-slate-900 rounded-lg shadow-xl text-white border border-white/5">
-                                                <div className="flex items-center gap-3 mb-6">
-                                                    <FileCheck size={18} className="text-blue-600" />
+                                            <div style={{ padding: '24px', background: '#0b3e39', borderRadius: '10px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', color: '#fff', border: '1.4px solid #e4ddd1', borderColor: '#fff' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                                                    <FileCheck size={18} style={{ color: '#1f8577' }} />
                                                     <div>
-                                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Live Preview</p>
-                                                        <p className="text-xs text-slate-300 mt-1">Every document keeps its own prefix, then follows the shared pattern.</p>
+                                                        <p style={{ fontWeight: 900, color: '#1f8577', textTransform: 'uppercase', letterSpacing: '.1em' }}>Live Preview</p>
+                                                        <p style={{ fontSize: '11px', color: '#5c6567', marginTop: '4px' }}>Every document keeps its own prefix, then follows the shared pattern.</p>
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                                                     {[
                                                         { key: 'invoice', label: 'Sales Invoice' },
                                                         { key: 'quotation', label: 'Quotation' },
@@ -2276,9 +2280,9 @@ const Settings: React.FC = () => {
                                                         { key: 'RCPT', label: 'Customer Receipt' },
                                                         { key: 'exambatch', label: 'Exam Batch' }
                                                     ].map(preview => (
-                                                        <div key={preview.key} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                                                            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black">{preview.label}</p>
-                                                            <p className="mt-2 font-mono text-sm text-white">{formatNumberingPreview(preview.key, sharedNumberingRule)}</p>
+                                                        <div key={preview.key} style={{ borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.1)', background: 'rgba(254,253,251,.05)', paddingLeft: '16px', paddingTop: '12px', paddingRight: '16px', paddingBottom: '12px' }}>
+                                                            <p style={{ textTransform: 'uppercase', letterSpacing: '.1em', color: '#5c6567', fontWeight: 900 }}>{preview.label}</p>
+                                                            <p style={{ marginTop: '8px', fontFamily: '"JetBrains Mono",monospace', fontSize: '13px', color: '#fff' }}>{formatNumberingPreview(preview.key, sharedNumberingRule)}</p>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -2286,43 +2290,43 @@ const Settings: React.FC = () => {
                                         </div>
                                     </section>
 
-                                    <section className="pt-10 border-t border-slate-100">
-                                        <div className="flex justify-between items-end mb-10">
+                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: '40px' }}>
                                             <div>
-                                                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
-                                                    <Shield size={18} className="text-blue-600" /> Approval Thresholds & Controls
+                                                <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <Shield size={18} style={{ color: '#1f8577' }} /> Approval Thresholds & Controls
                                                 </h3>
-                                                <p className="text-xs text-slate-500 mt-1">Define which transactions require administrative authorization.</p>
+                                                <p style={{ fontSize: '11px', color: '#5c6567', marginTop: '4px' }}>Define which transactions require administrative authorization.</p>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-10">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '40px' }}>
                                             {[
                                                 { key: 'purchaseorder', label: 'Purchase Orders', icon: ShoppingBag, desc: 'External procurement' },
                                                 { key: 'quotation', label: 'Sales Quotations', icon: PenTool, desc: 'Customer proposals' },
                                                 { key: 'expense', label: 'Operating Expenses', icon: ExternalLink, desc: 'Direct cost recording' }
                                             ].map(item => (
-                                                <div key={item.key} className="bg-white p-6 rounded-lg border border-[#D4D7DC] shadow-sm group hover:border-blue-600 transition-all flex flex-col h-full">
-                                                    <div className="flex items-center gap-4 mb-6">
-                                                        <div className="p-3 bg-[#F4F5F8] rounded-md text-[#6B6C6F] group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                                                <div key={item.key} style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+                                                        <div style={{ padding: '12px', borderRadius: '8px', transition: 'all .15s ease' }}>
                                                             <item.icon size={20} />
                                                         </div>
                                                         <div>
-                                                            <p className="font-bold text-[#393A3D] uppercase tracking-tighter text-sm">{item.label}</p>
-                                                            <p className="text-[10px] text-[#6B6C6F] font-bold uppercase tracking-widest mt-0.5">{item.desc}</p>
+                                                            <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.05em', fontSize: '13px' }}>{item.label}</p>
+                                                            <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginTop: '2px' }}>{item.desc}</p>
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex-1 space-y-8">
-                                                        <div className="flex justify-between items-center group/toggle">
+                                                    <div style={{ flex: 1, marginTop: '32px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                             <div>
-                                                                <p className="text-[10px] font-black text-slate-600 uppercase tracking-tight">Require Approval</p>
-                                                                <p className="text-[8px] text-slate-400 font-bold mt-1">Enable for this type.</p>
+                                                                <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em' }}>Require Approval</p>
+                                                                <p style={{ color: '#5c6567', fontWeight: 700, marginTop: '4px' }}>Enable for this type.</p>
                                                             </div>
-                                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                                 <input
                                                                     type="checkbox"
-                                                                    className="sr-only peer"
+                                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                                     checked={config.transactionSettings?.approvalThresholds?.[item.key] !== undefined}
                                                                     onChange={e => {
                                                                         const thresholds: Record<string, number> = { ...(config.transactionSettings?.approvalThresholds || {}) };
@@ -2334,23 +2338,23 @@ const Settings: React.FC = () => {
                                                                         setConfig({ ...config, transactionSettings: { ...config.transactionSettings, approvalThresholds: thresholds } });
                                                                     }}
                                                                 />
-                                                                <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                                                <div style={{ width: '40px', height: '20px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                             </label>
                                                         </div>
 
                                                         {config.transactionSettings?.approvalThresholds?.[item.key] !== undefined && (
-                                                            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                                                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Threshold Amount ({currency})</label>
-                                                                <div className="relative">
-                                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-300 text-xs">{currency}</span>
+                                                            <div style={{ transitionDuration: '300ms' }}>
+                                                                <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', paddingRight: '4px' }}>Threshold Amount ({currency})</label>
+                                                                <div style={{ position: 'relative' }}>
+                                                                    <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
                                                                     <input
                                                                         type="number"
-                                                                        className="w-full bg-[#F4F5F8] border border-[#D4D7DC] rounded-md pl-10 pr-5 py-3 font-bold text-[#393A3D] outline-none focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 transition-all text-sm"
+                                                                        style={{ width: '100%', border: '1.4px solid #e4ddd1', borderRadius: '8px', paddingLeft: '40px', paddingRight: '20px', paddingTop: '12px', fontWeight: 700, outline: 'none', transition: 'all .15s ease', fontSize: '13px', paddingBottom: '12px' }}
                                                                         value={config.transactionSettings?.approvalThresholds?.[item.key] || 0}
                                                                         onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, approvalThresholds: { ...config.transactionSettings?.approvalThresholds, [item.key]: parseFloat(e.target.value) || 0 } } })}
                                                                     />
                                                                 </div>
-                                                                <p className="text-[9px] text-slate-400 mt-3 font-medium italic leading-relaxed">
+                                                                <p style={{ color: '#5c6567', marginTop: '12px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.625 }}>
                                                                     {config.transactionSettings?.approvalThresholds?.[item.key] === 0
                                                                         ? "Approval required for ALL transactions of this type."
                                                                         : `Approval only required for amounts exceeding ${currency}${config.transactionSettings?.approvalThresholds?.[item.key]}.`}
@@ -2368,29 +2372,29 @@ const Settings: React.FC = () => {
 
 
 
-                                    <section className="pt-10 border-t border-slate-100">
-                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-                                            <Cpu size={18} className="text-blue-600" /> External API Connections
+                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <Cpu size={18} style={{ color: '#1f8577' }} /> External API Connections
                                         </h3>
-                                        <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 space-y-8 shadow-sm">
+                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                             {(config.integrationSettings?.externalApis || []).map((api, idx) => (
-                                                <div key={api.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-lg border border-slate-100 group hover:border-blue-200 transition-all">
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="p-5 bg-white rounded-2xl shadow-sm text-slate-400 group-hover:text-blue-600 transition-all">
+                                                <div key={api.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', transition: 'all .15s ease' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                                        <div style={{ padding: '20px', background: '#FEFDFB', borderRadius: '16px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', color: '#5c6567', transition: 'all .15s ease' }}>
                                                             <Globe size={24} />
                                                         </div>
                                                         <div>
-                                                            <p className="font-black text-slate-800 uppercase text-sm">{api.name}</p>
-                                                            <p className="text-xs text-slate-500 font-mono mt-1">{api.baseUrl}</p>
+                                                            <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '13px' }}>{api.name}</p>
+                                                            <p style={{ fontSize: '11px', color: '#5c6567', fontFamily: '"JetBrains Mono",monospace', marginTop: '4px' }}>{api.baseUrl}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-6">
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                                                         <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${api.enabled ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'}`}>
                                                             {api.enabled ? 'Active' : 'Disabled'}
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-600/10 rounded-xl transition-all" title="Edit settings" aria-label="Edit API settings"><Settings2 size={18} /></button>
-                                                            <button className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Delete" aria-label="Delete API credential"><Trash2 size={18} /></button>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <button style={{ padding: '10px', color: '#5c6567', borderRadius: '12px', transition: 'all .15s ease' }} title="Edit settings" aria-label="Edit API settings"><Settings2 size={18} /></button>
+                                                            <button style={{ padding: '10px', color: '#5c6567', borderRadius: '12px', transition: 'all .15s ease' }} title="Delete" aria-label="Delete API credential"><Trash2 size={18} /></button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2413,29 +2417,29 @@ const Settings: React.FC = () => {
                                                     });
                                                     notify('New API connection added. Configure details below.', 'info');
                                                 }}
-                                                className="w-full py-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 font-black uppercase text-[11px] tracking-widest hover:border-blue-600 hover:text-blue-600 hover:bg-blue-600/30 transition-all flex items-center justify-center gap-3"
+                                                style={{ width: '100%', paddingTop: '24px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', borderRadius: '10px', color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingBottom: '24px' }}
                                             >
                                                 <Plus size={18} /> Connect New Service
                                             </button>
                                         </div>
                                     </section>
 
-                                    <section className="pt-10 border-t border-slate-100">
-                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-                                            <Webhook size={18} className="text-blue-600" /> Webhook Outlets
+                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <Webhook size={18} style={{ color: '#1f8577' }} /> Webhook Outlets
                                         </h3>
-                                        <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 space-y-8 shadow-sm">
+                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                             {(config.integrationSettings?.webhooks || []).map((hook, idx) => (
-                                                <div key={hook.id} className="p-6 bg-slate-50 rounded-lg border border-slate-100 group hover:border-blue-600/50 transition-all">
-                                                    <div className="flex justify-between items-start mb-6">
+                                                <div key={hook.id} style={{ padding: '24px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', transition: 'all .15s ease' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '24px' }}>
                                                         <div>
-                                                            <p className="font-black text-slate-800 uppercase text-xs tracking-widest mb-1">Destination URL</p>
-                                                            <p className="text-[11px] text-slate-500 font-mono mt-1 bg-white/50 px-3 py-1.5 rounded-lg border border-slate-200/50">{hook.url}</p>
+                                                            <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '.1em', marginBottom: '4px' }}>Destination URL</p>
+                                                            <p style={{ color: '#5c6567', fontFamily: '"JetBrains Mono",monospace', marginTop: '4px', background: 'rgba(254,253,251,.5)', paddingLeft: '12px', paddingTop: '6px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', paddingRight: '12px', paddingBottom: '6px' }}>{hook.url}</p>
                                                         </div>
-                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                             <input
                                                                 type="checkbox"
-                                                                className="sr-only peer"
+                                                                style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                                 checked={hook.enabled}
                                                                 onChange={e => {
                                                                     const updatedHooks = [...(config.integrationSettings?.webhooks || [])];
@@ -2443,12 +2447,12 @@ const Settings: React.FC = () => {
                                                                     setConfig({ ...config, integrationSettings: { ...config.integrationSettings, webhooks: updatedHooks } });
                                                                 }}
                                                             />
-                                                            <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                            <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                         </label>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-3">
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                                                         {(hook.events || []).map(event => (
-                                                            <span key={event} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm group-hover:border-blue-600/50 transition-all">{event}</span>
+                                                            <span key={event} style={{ paddingLeft: '16px', paddingTop: '8px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>{event}</span>
                                                         ))}
                                                     </div>
                                                 </div>
@@ -2471,7 +2475,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     });
                                                     notify('New webhook endpoint added. Configure URL and events below.', 'info');
                                                 }}
-                                                className="w-full py-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 font-black uppercase text-[11px] tracking-widest hover:border-blue-600 hover:text-blue-600 hover:bg-blue-600/30 transition-all flex items-center justify-center gap-3"
+                                                style={{ width: '100%', paddingTop: '24px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', borderRadius: '10px', color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingBottom: '24px' }}
                                             >
                                                 <Plus size={18} /> Register Webhook
                                             </button>
@@ -2483,13 +2487,13 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                         {
                             activeTab === 'Modules' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
-                                    <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 shadow-sm space-y-10">
-                                        <div className="flex items-center gap-3">
-                                            <ShoppingBag size={18} className="text-blue-600" />
-                                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Feature Management</h3>
+                                <div style={{ marginTop: '48px' }}>
+                                    <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', marginTop: '40px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <ShoppingBag size={18} style={{ color: '#1f8577' }} />
+                                            <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase' }}>Feature Management</h3>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-10">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
                                             {[
                                                 { key: 'manufacturing', label: 'Manufacturing Node', desc: 'BOMs, Work Orders and Shop Floor Kiosk', icon: Cpu },
                                                 { key: 'payroll', label: 'Payroll Engine', desc: 'Staff directory, payslips and wage ledger', icon: Users },
@@ -2497,24 +2501,24 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                 { key: 'crm', label: 'CRM & Comms', icon: Smartphone, desc: 'Lead tracking and SMS/WhatsApp broadcast' },
                                                 { key: 'loyalty', label: 'Loyalty Rewards', icon: Zap, desc: 'Point accumulation and redemption logic' }
                                             ].map(mod => (
-                                                <div key={mod.key} className="p-6 bg-white rounded-lg border border-[#D4D7DC] shadow-sm flex items-center justify-between group hover:border-blue-600 transition-all">
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="p-4 bg-[#F4F5F8] rounded-md border border-[#D4D7DC] text-[#6B6C6F] group-hover:text-blue-600 group-hover:border-blue-600 transition-all shadow-sm">
+                                                <div key={mod.key} style={{ padding: '24px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all .15s ease' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                                        <div style={{ padding: '16px', borderRadius: '8px', border: '1.4px solid #e4ddd1', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                                             <mod.icon size={28} />
                                                         </div>
-                                                        <div className="min-w-0">
-                                                            <p className="font-black text-slate-900 uppercase tracking-tighter text-lg">{mod.label}</p>
-                                                            <p className="text-xs text-slate-500 leading-tight pr-4 mt-1.5 font-medium">{mod.desc}</p>
+                                                        <div style={{ minWidth: 0 }}>
+                                                            <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', letterSpacing: '-.05em', fontSize: '16px' }}>{mod.label}</p>
+                                                            <p style={{ fontSize: '11px', color: '#5c6567', lineHeight: 1.25, paddingRight: '16px', marginTop: '6px', fontWeight: 500 }}>{mod.desc}</p>
                                                         </div>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.enabledModules[mod.key]}
                                                             onChange={e => setConfig({ ...config, enabledModules: { ...config.enabledModules, [mod.key]: e.target.checked } })}
                                                         />
-                                                        <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '56px', height: '28px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
 </div>
                                             ))}
@@ -2526,17 +2530,17 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                             {
                                 activeTab === 'Inventory' && (
-                                    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
-                                    <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 shadow-sm space-y-10">
-                                        <div className="flex items-center gap-3">
-                                            <Box size={18} className="text-blue-600" />
-                                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Stock & Inventory Policy</h3>
+                                    <div style={{ marginTop: '48px' }}>
+                                    <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', marginTop: '40px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <Box size={18} style={{ color: '#1f8577' }} />
+                                            <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase' }}>Stock & Inventory Policy</h3>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-10">
-                                            <div className="bg-slate-50/50 p-6 rounded-lg border border-slate-100 space-y-8">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
+                                            <div style={{ background: '#eef7f6', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', marginTop: '32px' }}>
                                                 <div>
-                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-1">Valuation Method</label>
-                                                    <div className="grid grid-cols-3 gap-3">
+                                                    <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '16px', paddingLeft: '4px', paddingRight: '4px' }}>Valuation Method</label>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
                                                         {['AVCO', 'FIFO', 'LIFO'].map(method => (
                                                             <button
                                                                 key={method}
@@ -2548,61 +2552,61 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="h-px bg-slate-200/50"></div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ height: '1px', background: '#d3ece9' }}></div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-black text-slate-800 uppercase text-sm tracking-tight group-hover/item:text-blue-600 transition-colors">Allow Negative Stock</p>
-                                                        <p className="text-[10px] text-slate-500 mt-1 font-medium">Allow sales and production even if stock is zero.</p>
+                                                        <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '13px', letterSpacing: '-.025em', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Allow Negative Stock</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500 }}>Allow sales and production even if stock is zero.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.inventorySettings?.allowNegativeStock}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, allowNegativeStock: e.target.checked } })}
                                                         />
-                                                        <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
-                                                <div className="h-px bg-slate-200/50"></div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ height: '1px', background: '#d3ece9' }}></div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-black text-slate-800 uppercase text-sm tracking-tight group-hover/item:text-blue-600 transition-colors">Auto-Generate Barcodes</p>
-                                                        <p className="text-[10px] text-slate-500 mt-1 font-medium">Create unique barcodes for new items automatically.</p>
+                                                        <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '13px', letterSpacing: '-.025em', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Auto-Generate Barcodes</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500 }}>Create unique barcodes for new items automatically.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.inventorySettings?.autoBarcode}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, autoBarcode: e.target.checked } })}
                                                         />
-                                                        <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
-                                                <div className="h-px bg-slate-200/50"></div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ height: '1px', background: '#d3ece9' }}></div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-black text-slate-800 uppercase text-sm tracking-tight group-hover/item:text-blue-600 transition-colors">Track Batch Numbers</p>
-                                                        <p className="text-[10px] text-slate-500 mt-1 font-medium">Enable lot/batch tracking for perishable goods.</p>
+                                                        <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '13px', letterSpacing: '-.025em', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Track Batch Numbers</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500 }}>Enable lot/batch tracking for perishable goods.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.inventorySettings?.trackBatches}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, trackBatches: e.target.checked } })}
                                                         />
-                                                        <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
                                             </div>
 
-                                            <div className="bg-slate-50/50 p-6 rounded-lg border border-slate-100 space-y-8">
+                                            <div style={{ background: '#eef7f6', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', marginTop: '32px' }}>
                                                 <div>
-                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-1">Default Warehouse</label>
+                                                    <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '16px', paddingLeft: '4px', paddingRight: '4px' }}>Default Warehouse</label>
                                                     <select
-                                                        className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all text-sm shadow-sm"
+                                                        style={{ width: '100%', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '16px', paddingLeft: '20px', paddingTop: '16px', fontWeight: 700, color: '#23282A', outline: 'none', transition: 'all .15s ease', fontSize: '13px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '20px', paddingBottom: '16px' }}
                                                         value={config.inventorySettings?.defaultWarehouseId || ''}
                                                         onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, defaultWarehouseId: e.target.value } })}
                                                     >
@@ -2612,36 +2616,36 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         <option value="wh-transit">In-Transit Buffer</option>
                                                     </select>
                                                 </div>
-                                                <div className="h-px bg-slate-200/50"></div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ height: '1px', background: '#d3ece9' }}></div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-black text-slate-800 uppercase text-sm tracking-tight group-hover/item:text-blue-600 transition-colors">Track Serial Numbers</p>
-                                                        <p className="text-[10px] text-slate-500 mt-1 font-medium">Enable unique serial tracking for electronics.</p>
+                                                        <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '13px', letterSpacing: '-.025em', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Track Serial Numbers</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500 }}>Enable unique serial tracking for electronics.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.inventorySettings?.trackSerialNumbers}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, trackSerialNumbers: e.target.checked } })}
                                                         />
-                                                        <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
-                                                <div className="h-px bg-slate-200/50"></div>
-                                                <div className="flex justify-between items-center group/item">
+                                                <div style={{ height: '1px', background: '#d3ece9' }}></div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <p className="font-black text-slate-800 uppercase text-sm tracking-tight group-hover/item:text-blue-600 transition-colors">Low Stock Alerts</p>
-                                                        <p className="text-[10px] text-slate-500 mt-1 font-medium">Notify users when items fall below reorder level.</p>
+                                                        <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '13px', letterSpacing: '-.025em', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Low Stock Alerts</p>
+                                                        <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500 }}>Notify users when items fall below reorder level.</p>
                                                     </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            className="sr-only peer"
+                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                             checked={config.inventorySettings?.lowStockAlerts}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, lowStockAlerts: e.target.checked } })}
                                                         />
-                                                        <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                     </label>
                                                 </div>
                                             </div>
@@ -2671,24 +2675,24 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                         {
                             activeTab === 'Security' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                                <div style={{ marginTop: '48px' }}>
                                     <section>
-                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-                                            <ShieldAlert size={18} className="text-rose-600" /> System Security Policy
+                                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <ShieldAlert size={18} style={{ color: '#b5493f' }} /> System Security Policy
                                         </h3>
 
-                                        <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 space-y-8 shadow-sm group hover:border-rose-100 transition-all">
-                                            <div className="grid grid-cols-2 gap-10">
-                                                <div className="space-y-8">
-                                                    <div className="flex justify-between items-center group/item">
+                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
+                                                <div style={{ marginTop: '32px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <div>
-                                                            <p className="font-black text-slate-800 uppercase text-base group-hover/item:text-rose-600 transition-colors">Password Protection</p>
-                                                            <p className="text-[10px] text-slate-500 mt-1 font-medium italic">Require login before users can reach the main workspace.</p>
+                                                            <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '14px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Password Protection</p>
+                                                            <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500, fontStyle: 'italic' }}>Require login before users can reach the main workspace.</p>
                                                         </div>
-                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                             <input
                                                                 type="checkbox"
-                                                                className="sr-only peer"
+                                                                style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                                 checked={normalizedSecuritySettings.passwordProtectionEnabled}
                                                                 onChange={e => setConfig({
                                                                     ...config,
@@ -2698,18 +2702,18 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                                     }
                                                                 })}
                                                             />
-                                                            <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                            <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                         </label>
                                                     </div>
-                                                    <div className="flex justify-between items-center group/item">
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <div>
-                                                            <p className="font-black text-slate-800 uppercase text-base group-hover/item:text-rose-600 transition-colors">Complex Password Rules</p>
-                                                            <p className="text-[10px] text-slate-500 mt-1 font-medium italic">Enforce length, number, and special-character checks when setting access passwords.</p>
+                                                            <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '14px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Complex Password Rules</p>
+                                                            <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500, fontStyle: 'italic' }}>Enforce length, number, and special-character checks when setting access passwords.</p>
                                                         </div>
-                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                             <input
                                                                 type="checkbox"
-                                                                className="sr-only peer"
+                                                                style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                                 checked={normalizedSecuritySettings.enforcePasswordComplexity}
                                                                 onChange={e => setConfig({
                                                                     ...config,
@@ -2719,55 +2723,55 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                                     }
                                                                 })}
                                                             />
-                                                            <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                            <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                         </label>
                                                     </div>
-                                                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+                                                    <div style={{ borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', background: '#eef7f6', padding: '16px', marginTop: '12px' }}>
                                                         <div>
-                                                            <p className="font-black text-slate-800 uppercase text-sm">Access Password</p>
-                                                            <p className="text-[10px] text-slate-500 mt-1 font-medium italic">
+                                                            <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '13px' }}>Access Password</p>
+                                                            <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500, fontStyle: 'italic' }}>
                                                                 {normalizedSecuritySettings.passwordProtectionEnabled
                                                                     ? 'Set or replace the administrator password used when protection is enabled.'
                                                                     : 'You can prepare a password now, even while open access remains enabled.'}
                                                             </p>
                                                         </div>
-                                                        <div className="grid grid-cols-1 gap-3">
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '12px' }}>
                                                             <input
                                                                 type="password"
                                                                 value={accessPassword}
                                                                 onChange={e => setAccessPassword(e.target.value)}
                                                                 placeholder={primaryAdminUser?.password ? 'Leave blank to keep' : 'e.g. Secret123!'}
-                                                                className="w-full px-5 py-4 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-rose-500/5 focus:border-rose-500 transition-all"
+                                                                style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
                                                             />
                                                             <input
                                                                 type="password"
                                                                 value={confirmAccessPassword}
                                                                 onChange={e => setConfirmAccessPassword(e.target.value)}
                                                                 placeholder="Repeat password"
-                                                                className="w-full px-5 py-4 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-rose-500/5 focus:border-rose-500 transition-all"
+                                                                style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
                                                             />
                                                         </div>
                                                         {accessPassword && normalizedSecuritySettings.enforcePasswordComplexity && !accessPasswordValidation.valid && (
-                                                            <p className="text-[10px] font-semibold text-amber-600">
+                                                            <p style={{ fontWeight: 600, color: '#d99a3f' }}>
                                                                 {accessPasswordValidation.errors[0] || 'Password strength rules are not satisfied.'}
                                                             </p>
                                                         )}
                                                         {confirmAccessPassword && accessPassword !== confirmAccessPassword && (
-                                                            <p className="text-[10px] font-semibold text-rose-600">Access passwords do not match.</p>
+                                                            <p style={{ fontWeight: 600, color: '#b5493f' }}>Access passwords do not match.</p>
                                                         )}
                                                     </div>
-                                                    <div className="h-px bg-slate-50"></div>
-                                                    <div className="flex justify-between items-center group/item p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                                                    <div style={{ height: '1px', background: '#eef7f6' }}></div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', background: '#eef7f6', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
                                                         <div>
-                                                            <p className="font-black text-slate-800 uppercase text-base group-hover/item:text-blue-600 transition-colors">Multi-Factor Authentication</p>
-                                                            <p className="text-[10px] text-slate-500 mt-1 font-medium italic">Require a 6-digit TOTP code for administrative access.</p>
-                                                            <div className="mt-3 flex gap-2">
+                                                            <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '14px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Multi-Factor Authentication</p>
+                                                            <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500, fontStyle: 'italic' }}>Require a 6-digit TOTP code for administrative access.</p>
+                                                            <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                                                                 {normalizedSecuritySettings.requireTwoFactor ? (
-                                                                     <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-200 flex items-center gap-1.5 shadow-sm shadow-blue-500/10">
+                                                                     <span style={{ paddingLeft: '12px', paddingTop: '4px', background: '#d3ece9', color: '#0f544c', borderRadius: '9999px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px 0 rgba(31,133,119,.1)', paddingRight: '12px', paddingBottom: '4px' }}>
                                                                          <CheckCircle2 size={12} /> Active & Configured
                                                                      </span>
                                                                 ) : (
-                                                                     <span className="px-3 py-1 bg-slate-100 text-slate-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-slate-200 flex items-center gap-1.5">
+                                                                     <span style={{ paddingLeft: '12px', paddingTop: '4px', background: '#eef7f6', color: '#5c6567', borderRadius: '9999px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '6px', paddingRight: '12px', paddingBottom: '4px' }}>
                                                                          <Smartphone size={12} /> Not Configured
                                                                      </span>
                                                                 )}
@@ -2777,25 +2781,25 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                             {normalizedSecuritySettings.requireTwoFactor ? (
                                                                 <button 
                                                                     onClick={() => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, requireTwoFactor: false } })}
-                                                                    className="px-6 py-3 bg-white border border-rose-200 text-rose-500 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-rose-50 transition-all shadow-sm active:scale-95"
+                                                                    style={{ paddingLeft: '24px', paddingTop: '12px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#b5493f', color: '#b5493f', borderRadius: '12px', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '24px', paddingBottom: '12px' }}
                                                                 >
                                                                     Deactivate 2FA
                                                                 </button>
                                                             ) : (
                                                                 <button 
                                                                     onClick={() => setShow2FASetup(true)}
-                                                                    className="px-8 py-3 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+                                                                    style={{ paddingLeft: '32px', paddingTop: '12px', background: '#1f8577', color: '#fff', borderRadius: '12px', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', boxShadow: '0 4px 14px 0 rgba(31,133,119,.2)', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '32px', paddingBottom: '12px' }}
                                                                 >
                                                                     <Smartphone size={16} /> Setup MFA Now
                                                                 </button>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="h-px bg-slate-50"></div>
+                                                    <div style={{ height: '1px', background: '#eef7f6' }}></div>
                                                     <div className="group/field">
-                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 group-hover/field:text-rose-600 transition-colors">Audit Log Level</label>
+                                                        <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Audit Log Level</label>
                                                         <select
-                                                            className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-rose-500/5 focus:border-rose-500 transition-all"
+                                                            style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
                                                             value={normalizedSecuritySettings.auditLogLevel || 'Standard'}
                                                             onChange={e => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, auditLogLevel: e.target.value as SecuritySettingsConfig['auditLogLevel'] } })}
                                                         >
@@ -2806,32 +2810,32 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-8">
+                                                <div style={{ marginTop: '32px' }}>
                                                     <div className="group/field">
-                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 group-hover/field:text-rose-600 transition-colors">Session Idle Timeout (Min)</label>
+                                                        <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Session Idle Timeout (Min)</label>
                                                         <input
                                                             type="number"
-                                                            className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-rose-500/5 focus:border-rose-500 transition-all"
+                                                            style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
                                                             placeholder="e.g. 30"
                                                             value={normalizedSecuritySettings.sessionTimeoutMinutes || 30}
                                                             onChange={e => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, sessionTimeoutMinutes: parseInt(e.target.value) || 0 } })}
                                                         />
                                                     </div>
                                                     <div className="group/field">
-                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 group-hover/field:text-rose-600 transition-colors">Force Password Change (Days)</label>
+                                                        <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Force Password Change (Days)</label>
                                                         <input
                                                             type="number"
-                                                            className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-rose-500/5 focus:border-rose-500 transition-all"
+                                                            style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
                                                             placeholder="e.g. 90"
                                                             value={normalizedSecuritySettings.forcePasswordChangeDays || 90}
                                                             onChange={e => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, forcePasswordChangeDays: parseInt(e.target.value) || 0 } })}
                                                         />
                                                     </div>
                                                     <div className="group/field">
-                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 group-hover/field:text-rose-600 transition-colors">Lockout Attempts</label>
+                                                        <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Lockout Attempts</label>
                                                         <input
                                                             type="number"
-                                                            className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-rose-500/5 focus:border-rose-500 transition-all"
+                                                            style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
                                                             placeholder="e.g. 5"
                                                             value={normalizedSecuritySettings.lockoutAttempts || 5}
                                                             onChange={e => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, lockoutAttempts: parseInt(e.target.value) || 0 } })}
@@ -2843,117 +2847,117 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                     </section>
 
                                     <section>
-                                        <div className="flex justify-between items-end mb-10">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: '40px' }}>
                                             <div>
-                                                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-3">
-                                                    <Beaker size={18} className="text-blue-600" /> Quality Audit Terminal
+                                                <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <Beaker size={18} style={{ color: '#1f8577' }} /> Quality Audit Terminal
                                                 </h3>
-                                                <p className="text-[10px] text-slate-500 font-medium italic">Physical-to-Ledger verification sweep.</p>
+                                                <p style={{ color: '#5c6567', fontWeight: 500, fontStyle: 'italic' }}>Physical-to-Ledger verification sweep.</p>
                                             </div>
                                             <button
                                                 onClick={runIntegritySuite}
                                                 disabled={isProcessing}
-                                                className="bg-[#393A3D] text-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-black flex items-center gap-3 shadow-md transition-all disabled:opacity-50 active:scale-95 border border-white/5"
+                                                style={{ color: '#fff', paddingLeft: '32px', paddingTop: '16px', borderRadius: '9999px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', transition: 'all .15s ease', border: '1.4px solid #e4ddd1', borderColor: '#fff', paddingRight: '32px', paddingBottom: '16px' }}
                                             >
-                                                {isProcessing ? <RefreshCw size={20} className="animate-spin text-blue-600" /> : <Zap size={20} className="text-blue-600" />}
+                                                {isProcessing ? <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite', color: '#1f8577' }} /> : <Zap size={20} style={{ color: '#1f8577' }} />}
                                                 {isProcessing ? 'Auditing...' : 'Run Logic Sweep'}
                                             </button>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-10 mb-12">
-                                            <div className="bg-white p-6 rounded-lg border border-[#D4D7DC] shadow-sm group hover:border-blue-600 transition-all">
-                                                <p className="text-[10px] font-bold text-[#6B6C6F] uppercase tracking-widest mb-2">Pass Status</p>
-                                                <div className="text-5xl font-bold text-[#393A3D] flex items-baseline gap-2">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '40px', marginBottom: '48px' }}>
+                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
+                                                <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Pass Status</p>
+                                                <div style={{ fontSize: '48px', fontWeight: 700, display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                     {testResults.length > 0 ? '100%' : '0%'}
-                                                    <span className="text-xs font-bold text-blue-600">SEALED</span>
+                                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#1f8577' }}>SEALED</span>
                                                 </div>
                                             </div>
-                                            <div className="bg-white p-6 rounded-lg border border-[#D4D7DC] shadow-sm group hover:border-blue-600 transition-all">
-                                                <p className="text-[10px] font-bold text-[#6B6C6F] uppercase tracking-widest mb-2">Logical Drifts</p>
-                                                <div className="text-5xl font-bold text-blue-600 transition-transform group-hover:scale-110">0</div>
+                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
+                                                <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Logical Drifts</p>
+                                                <div style={{ fontSize: '48px', fontWeight: 700, color: '#1f8577', transition: 'transform .15s ease' }}>0</div>
                                             </div>
-                                            <div className="bg-[#393A3D] p-6 rounded-lg shadow-md text-white border border-white/5 group overflow-hidden relative">
-                                                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform"><Database size={120} /></div>
-                                                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2 relative z-10">Ledger Sync</p>
-                                                <div className="text-3xl font-bold uppercase tracking-tighter relative z-10">ACCURATE</div>
+                                            <div style={{ padding: '24px', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', color: '#fff', border: '1.4px solid #e4ddd1', borderColor: '#fff', overflow: 'hidden', position: 'relative' }}>
+                                                <div style={{ position: 'absolute', opacity: 0.1, transition: 'transform .15s ease' }}><Database size={120} /></div>
+                                                <p style={{ fontWeight: 700, color: '#1f8577', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px', position: 'relative', zIndex: 10 }}>Ledger Sync</p>
+                                                <div style={{ fontSize: '30px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.05em', position: 'relative', zIndex: 10 }}>ACCURATE</div>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4 mb-16">
+                                        <div style={{ marginTop: '16px', marginBottom: '64px' }}>
                                             {testResults.map((r, i) => (
-                                                <div key={i} className="flex items-center justify-between p-6 bg-white rounded-lg border border-[#D4D7DC] shadow-sm animate-in slide-in-from-left-4 duration-500 group hover:border-blue-600 transition-all" style={{ animationDelay: `${i * 150}ms` }}>
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="p-4 bg-[#F4F5F8] text-[#6B6C6F] rounded-md border border-[#D4D7DC] group-hover:text-blue-600 group-hover:border-blue-600 transition-all">
+                                                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transitionDuration: '500ms', transition: 'all .15s ease' }} style={{ animationDelay: `${i * 150}ms` }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                                        <div style={{ padding: '16px', borderRadius: '8px', border: '1.4px solid #e4ddd1', transition: 'all .15s ease' }}>
                                                             <FileCheck size={28} />
                                                         </div>
                                                         <div>
-                                                            <div className="font-bold text-[#393A3D] uppercase tracking-tighter text-lg group-hover:text-blue-600 transition-colors">{r.name}</div>
-                                                            <div className="text-[10px] text-[#6B6C6F] font-bold uppercase tracking-widest mt-1">{r.cases} Real-time Records Scanned</div>
+                                                            <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.05em', fontSize: '16px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>{r.name}</div>
+                                                            <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginTop: '4px' }}>{r.cases} Real-time Records Scanned</div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="text-[10px] font-bold text-blue-600 tracking-[0.2em]">{r.status}</div>
-                                                        <CheckCircle2 size={28} className="text-blue-600 group-hover:scale-110 transition-transform" />
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                                        <div style={{ fontWeight: 700, color: '#1f8577' }}>{r.status}</div>
+                                                        <CheckCircle2 size={28} style={{ color: '#1f8577', transition: 'transform .15s ease' }} />
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
 
-                                        <div className="h-px bg-slate-100 mb-16"></div>
+                                        <div style={{ height: '1px', background: '#eef7f6', marginBottom: '64px' }}></div>
 
-                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-                                            <Database size={18} className="text-blue-600" /> Persistence & Backups
+                                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <Database size={18} style={{ color: '#1f8577' }} /> Persistence & Backups
                                         </h3>
                                         <input
                                             ref={restoreInputRef}
                                             type="file"
                                             accept=".db,.json,application/octet-stream,application/json"
-                                            className="hidden"
+                                            style={{ display: 'hidden' }}
                                             onChange={handleRestoreBackupFile}
                                         />
-                                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-12">
-                                            <div className="bg-white p-6 rounded-lg border border-[#D4D7DC] shadow-sm flex flex-col items-center text-center group hover:border-blue-600 transition-all">
-                                                <div className="w-20 h-20 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform"><HardDriveDownload size={40} /></div>
-                                                <h4 className="text-2xl font-bold text-[#393A3D] mb-2">Backup Database</h4>
-                                                <p className="text-sm text-[#6B6C6F] leading-relaxed mb-4 max-w-xs mx-auto">Create a full offline snapshot of your live IndexedDB data and saved local system settings.</p>
-                                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-6">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '40px', marginBottom: '48px' }}>
+                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
+                                                <div style={{ width: '80px', height: '80px', borderRadius: '10px', background: '#eef7f6', color: '#1f8577', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease' }}><HardDriveDownload size={40} /></div>
+                                                <h4 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Backup Database</h4>
+                                                <p style={{ fontSize: '13px', lineHeight: 1.625, marginBottom: '16px', maxWidth: '320px', marginLeft: 'auto' }}>Create a full offline snapshot of your live IndexedDB data and saved local system settings.</p>
+                                                <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#5c6567', marginBottom: '24px' }}>
                                                     Last backup: {backupStatus.lastBackupAt ? new Date(backupStatus.lastBackupAt).toLocaleString() : 'Not yet created'}
                                                 </div>
-                                                <button onClick={handleManualBackupDownload} className="w-full py-4 bg-[#393A3D] text-white rounded-md font-bold uppercase text-[11px] tracking-widest hover:bg-black transition-all shadow-md active:scale-95">Download Vault Binary</button>
+                                                <button onClick={handleManualBackupDownload} style={{ width: '100%', paddingTop: '16px', color: '#fff', borderRadius: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', paddingBottom: '16px' }}>Download Vault Binary</button>
                                             </div>
-                                            <div className="bg-white p-6 rounded-lg border border-[#D4D7DC] shadow-sm flex flex-col items-center text-center group hover:border-blue-600 transition-all">
-                                                <div className="w-20 h-20 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform"><Database size={40} /></div>
-                                                <h4 className="text-2xl font-bold text-[#393A3D] mb-2">Restore Database</h4>
-                                                <p className="text-sm text-[#6B6C6F] leading-relaxed mb-4 max-w-xs mx-auto">Restore a previously downloaded Prime ERP backup file and reload the full local database state.</p>
-                                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-6">
+                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
+                                                <div style={{ width: '80px', height: '80px', borderRadius: '10px', background: '#eef7f6', color: '#1f8577', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease' }}><Database size={40} /></div>
+                                                <h4 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Restore Database</h4>
+                                                <p style={{ fontSize: '13px', lineHeight: 1.625, marginBottom: '16px', maxWidth: '320px', marginLeft: 'auto' }}>Restore a previously downloaded Prime ERP backup file and reload the full local database state.</p>
+                                                <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#5c6567', marginBottom: '24px' }}>
                                                     Last restore: {backupStatus.lastRestoreAt ? `${new Date(backupStatus.lastRestoreAt).toLocaleString()}${backupStatus.lastRestoreFile ? ` â€¢ ${backupStatus.lastRestoreFile}` : ''}` : 'No restore executed'}
                                                 </div>
                                                 <button
                                                     onClick={handleRestoreBackupRequest}
                                                     disabled={isRestoringBackup}
-                                                    className="w-full py-4 bg-blue-600 text-white rounded-md font-bold uppercase text-[11px] tracking-widest hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                    style={{ width: '100%', paddingTop: '16px', background: '#1f8577', color: '#fff', borderRadius: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', paddingBottom: '16px' }}
                                                 >
                                                     {isRestoringBackup ? 'Restoring Database...' : 'Restore From Backup'}
                                                 </button>
                                             </div>
-                                            <div className="bg-rose-50 p-6 rounded-lg border border-rose-100 flex flex-col items-center text-center group hover:bg-rose-100/50 transition-all">
-                                                <div className="w-20 h-20 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform"><RefreshCw size={40} /></div>
-                                                <h4 className="text-2xl font-bold text-rose-900 mb-2">Reset to Factory Samples</h4>
-                                                <p className="text-sm text-rose-800 opacity-60 leading-relaxed mb-8 max-w-xs mx-auto">Irreversibly purge all current data and reload the system with printing & production sample data.</p>
-                                                <button onClick={() => confirm("IRREVERSIBLE ACTION: This will delete all your current work and reload printing/production samples. Proceed?") && resetSystem()} className="w-full py-4 bg-rose-600 text-white rounded-md font-bold uppercase text-[11px] tracking-widest hover:bg-rose-700 transition-all shadow-md active:scale-95">Reset System Data</button>
+                                            <div style={{ background: '#fef2f2', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#b5493f', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
+                                                <div style={{ width: '80px', height: '80px', borderRadius: '10px', background: '#fee2e2', color: '#b5493f', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease' }}><RefreshCw size={40} /></div>
+                                                <h4 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Reset to Factory Samples</h4>
+                                                <p style={{ fontSize: '13px', opacity: 0.6, lineHeight: 1.625, marginBottom: '32px', maxWidth: '320px', marginLeft: 'auto' }}>Irreversibly purge all current data and reload the system with printing & production sample data.</p>
+                                                <button onClick={() => confirm("IRREVERSIBLE ACTION: This will delete all your current work and reload printing/production samples. Proceed?") && resetSystem()} style={{ width: '100%', paddingTop: '16px', background: '#b5493f', color: '#fff', borderRadius: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', paddingBottom: '16px' }}>Reset System Data</button>
                                             </div>
                                         </div>
 
-                                        <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 space-y-8 shadow-sm group hover:border-blue-600 transition-all">
-                                            <div className="flex justify-between items-center group/item">
+                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
-                                                    <p className="font-black text-slate-800 uppercase text-base group-hover/item:text-blue-600 transition-colors">Automated Cloud Backups</p>
-                                                    <p className="text-[10px] text-slate-500 mt-1 font-medium italic">Schedule encrypted snapshots to secure cloud storage.</p>
+                                                    <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '14px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Automated Cloud Backups</p>
+                                                    <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500, fontStyle: 'italic' }}>Schedule encrypted snapshots to secure cloud storage.</p>
                                                 </div>
-                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
-                                                        className="sr-only peer"
+                                                        style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
                                                         checked={config.backupSettings?.autoBackupEnabled}
                                                         onChange={e => setConfig({
                                                             ...config,
@@ -2963,15 +2967,15 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                             }
                                                         })}
                                                     />
-                                                    <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                    <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
                                                 </label>
                                             </div>
-                                            <div className="h-px bg-slate-100"></div>
-                                            <div className="grid grid-cols-2 gap-10">
+                                            <div style={{ height: '1px', background: '#eef7f6' }}></div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
                                                 <div className="group/field">
-                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 group-hover/field:text-blue-600 transition-colors">Backup Frequency</label>
+                                                    <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Backup Frequency</label>
                                                     <select
-                                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all"
+                                                        style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
                                                         value={config.backupSettings?.backupFrequency || 'Daily'}
                                                         onChange={e => setConfig({
                                                             ...config,
@@ -2987,12 +2991,12 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     </select>
                                                 </div>
                                                 <div className="group/field">
-                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 group-hover/field:text-blue-600 transition-colors">Retention Limit</label>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="relative flex-1">
+                                                    <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Retention Limit</label>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                        <div style={{ position: 'relative', flex: 1 }}>
                                                             <input
                                                                 type="number"
-                                                                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all"
+                                                                style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
                                                                 value={config.backupSettings?.retentionCount || 30}
                                                                 onChange={e => setConfig({
                                                                     ...config,
@@ -3003,7 +3007,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                                 })}
                                                             />
                                                         </div>
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Versions</span>
+                                                        <span style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em' }}>Versions</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -3016,7 +3020,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                         {
                             activeTab === 'Privacy' && (
-                                <div className="animate-in fade-in slide-in-from-bottom-4 p-6 bg-white rounded-xl border border-slate-200">
+                                <div style={{ padding: '24px', background: '#FEFDFB', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
                                     <ComplianceSettings config={complianceConfig} onChange={setComplianceConfig} />
                                 </div>
                             )
@@ -3024,18 +3028,18 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                         {
                             activeTab === 'System' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                                <div style={{ marginTop: '48px' }}>
                                     <section>
-                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-                                            <Cpu size={18} className="text-blue-600" /> Hardware Fingerprint
+                                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <Cpu size={18} style={{ color: '#1f8577' }} /> Hardware Fingerprint
                                         </h3>
-                                        <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 shadow-sm">
-                                            <div className="flex items-center justify-between p-8 bg-slate-50 rounded-3xl border border-slate-100">
+                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '32px', background: '#eef7f6', borderRadius: '24px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
                                                 <div>
-                                                    <p className="font-black text-slate-900 uppercase tracking-tighter text-lg">Unique Device Identifier</p>
-                                                    <p className="text-xs text-slate-500 font-bold">Provide this fingerprint to your administrator to generate a license key.</p>
-                                                    <div className="mt-4 flex items-center gap-3">
-                                                        <code className="bg-slate-900 text-blue-400 px-4 py-2 rounded-lg font-mono text-sm font-bold shadow-xl">
+                                                    <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', letterSpacing: '-.05em', fontSize: '16px' }}>Unique Device Identifier</p>
+                                                    <p style={{ fontSize: '11px', color: '#5c6567', fontWeight: 700 }}>Provide this fingerprint to your administrator to generate a license key.</p>
+                                                    <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                        <code style={{ background: '#0b3e39', color: '#3fa294', paddingLeft: '16px', paddingTop: '8px', borderRadius: '10px', fontFamily: '"JetBrains Mono",monospace', fontSize: '13px', fontWeight: 700, boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', paddingRight: '16px', paddingBottom: '8px' }}>
                                                             {systemInfo?.fingerprint || 'GENERATING...'}
                                                         </code>
                                                         <button
@@ -3043,13 +3047,13 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                                 navigator.clipboard.writeText(systemInfo?.fingerprint || '');
                                                                 notify('Fingerprint copied to clipboard', 'success');
                                                             }}
-                                                            className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600 transition-colors"
+                                                            style={{ padding: '8px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}
                                                         >
                                                             <Save size={16} />
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div className="p-6 bg-blue-100 text-blue-600 rounded-2xl">
+                                                <div style={{ padding: '24px', background: '#d3ece9', color: '#1f8577', borderRadius: '16px' }}>
                                                     <Binary size={32} />
                                                 </div>
                                             </div>
@@ -3057,12 +3061,12 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                     </section>
 
                                     <section>
-                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-                                            <ShieldCheck size={18} className="text-blue-600" /> License Status
+                                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <ShieldCheck size={18} style={{ color: '#1f8577' }} /> License Status
                                         </h3>
-                                        <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 shadow-sm">
+                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                             <div className={`flex items-center justify-between p-8 rounded-3xl border ${systemInfo?.license?.valid ? 'bg-blue-50 border-blue-100' : 'bg-rose-50 border-rose-100'}`}>
-                                                <div className="flex items-center gap-6">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                                                     <div className={`p-5 rounded-2xl ${systemInfo?.license?.valid ? 'bg-blue-100 text-blue-600' : 'bg-rose-100 text-rose-600'}`}>
                                                         {systemInfo?.license?.valid ? <CheckCircle2 size={32} /> : <AlertTriangle size={32} />}
                                                     </div>
@@ -3105,7 +3109,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                             };
                                                             input.click();
                                                         }}
-                                                        className="px-6 py-3 bg-rose-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20"
+                                                        style={{ paddingLeft: '24px', paddingTop: '12px', background: '#b5493f', color: '#fff', borderRadius: '12px', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 1px 3px rgba(0,0,0,.1)', paddingRight: '24px', paddingBottom: '12px' }}
                                                     >
                                                         Activate Now
                                                     </button>
@@ -3115,21 +3119,21 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                     </section>
 
                                     <section>
-                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-                                            <Info size={18} className="text-slate-600" /> System Information
+                                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <Info size={18} style={{ color: '#5c6567' }} /> System Information
                                         </h3>
-                                        <div className="grid grid-cols-3 gap-10">
-                                            <div className="bg-white p-6 rounded-lg border border-[#D4D7DC] shadow-sm">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Platform</p>
-                                                <p className="text-lg font-black text-slate-900 capitalize">{window.navigator.platform}</p>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '40px' }}>
+                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                                <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Platform</p>
+                                                <p style={{ fontSize: '16px', fontWeight: 900, color: '#23282A', textTransform: 'capitalize' }}>{window.navigator.platform}</p>
                                             </div>
-                                            <div className="bg-white p-6 rounded-lg border border-[#D4D7DC] shadow-sm">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Environment</p>
-                                                <p className="text-lg font-black text-slate-900">Standalone Offline</p>
+                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                                <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Environment</p>
+                                                <p style={{ fontSize: '16px', fontWeight: 900, color: '#23282A' }}>Standalone Offline</p>
                                             </div>
-                                            <div className="bg-white p-6 rounded-lg border border-[#D4D7DC] shadow-sm">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Build Version</p>
-                                                <p className="text-lg font-black text-slate-900">v2.4.0-standalone</p>
+                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                                <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Build Version</p>
+                                                <p style={{ fontSize: '16px', fontWeight: 900, color: '#23282A' }}>v2.4.0-standalone</p>
                                             </div>
                                         </div>
                                     </section>
@@ -3138,14 +3142,14 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                         }
 
                         {activeTab === 'ProfitMargins' && (
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                                        <TrendingUp size={20} className="text-white" />
+                            <div style={{ marginTop: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '16px', background: '#1f8577', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(0,0,0,.1)' }}>
+                                        <TrendingUp size={20} style={{ color: '#fff' }} />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-900">Profit Markup Overrides</h2>
-                                        <p className="text-xs text-slate-500">Manage global, category and line-item pricing markups. Requires Admin or Finance Manager role.</p>
+                                        <h2 style={{ fontSize: '16px', fontWeight: 900, color: '#23282A' }}>Profit Markup Overrides</h2>
+                                        <p style={{ fontSize: '11px', color: '#5c6567' }}>Manage global, category and line-item pricing markups. Requires Admin or Finance Manager role.</p>
                                     </div>
                                 </div>
                                 <ProfitMarkupSettings />
@@ -3154,7 +3158,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                         {
                             activeTab === 'Attributes' && (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                                <div style={{ marginTop: '24px' }}>
                                     <AttributesTab />
                                 </div>
                             )
@@ -3168,7 +3172,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                         {
                             activeTab === 'Pricing' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                                <div style={{ marginTop: '48px' }}>
                                     <PricingAdminTab config={config} setConfig={setConfig} notify={notify} />
                                 </div>
                             )
@@ -3319,34 +3323,34 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <CalendarDays size={20} className="text-white" />
+        <div style={{ marginTop: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '16px', background: '#1f8577', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(0,0,0,.1)' }}>
+                    <CalendarDays size={20} style={{ color: '#fff' }} />
                 </div>
                 <div>
-                    <h2 className="text-lg font-black text-slate-900">Financial Years</h2>
-                    <p className="text-xs text-slate-500">Manage financial year periods. The active year is used for all transactions and reports.</p>
+                    <h2 style={{ fontSize: '16px', fontWeight: 900, color: '#23282A' }}>Financial Years</h2>
+                    <p style={{ fontSize: '11px', color: '#5c6567' }}>Manage financial year periods. The active year is used for all transactions and reports.</p>
                 </div>
             </div>
 
-            <div className="white-card overflow-hidden">
-                <div className="settings-section-header flex justify-between items-center">
+            <div style={{ overflow: 'hidden' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h3 className="text-sm font-bold text-[#393A3D]">All Financial Years</h3>
-                        <p className="text-[11px] text-[#6B6C6F] mt-0.5">Create, close, or delete financial years.</p>
+                        <h3 style={{ fontSize: '13px', fontWeight: 700 }}>All Financial Years</h3>
+                        <p style={{ marginTop: '2px' }}>Create, close, or delete financial years.</p>
                     </div>
                     <button
                         onClick={() => setShowCreateForm(!showCreateForm)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"
+                        style={{ paddingLeft: '16px', paddingTop: '8px', background: '#1f8577', color: '#fff', borderRadius: '12px', fontSize: '13px', fontWeight: 600, boxShadow: '0 1px 3px rgba(0,0,0,.1)', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '16px', paddingBottom: '8px' }}
                     >
                         <Plus size={16} /> New Financial Year
                     </button>
                 </div>
 
                 {showCreateForm && (
-                    <div className="p-6 border-b border-slate-100 bg-slate-50/30">
-                        <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
+                    <div style={{ padding: '24px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6' }}>
+                        <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                             <div>
                                 <label className="settings-label">Year Name</label>
                                 <input
@@ -3378,18 +3382,18 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                                     required
                                 />
                             </div>
-                            <div className="flex items-end gap-2">
+                            <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                                    style={{ paddingLeft: '16px', paddingTop: '8px', background: '#1f8577', color: '#fff', borderRadius: '12px', fontSize: '13px', fontWeight: 600, paddingRight: '16px', paddingBottom: '8px' }}
                                 >
                                     {submitting ? 'Creating...' : 'Create'}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={resetForm}
-                                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-300"
+                                    style={{ paddingLeft: '16px', paddingTop: '8px', background: '#d3ece9', color: '#23282A', borderRadius: '12px', fontSize: '13px', fontWeight: 600, paddingRight: '16px', paddingBottom: '8px' }}
                                 >
                                     Cancel
                                 </button>
@@ -3398,20 +3402,20 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                     </div>
                 )}
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', textAlign: 'left', fontSize: '13px' }}>
                         <thead>
-                            <tr className="border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wider">
-                                <th className="px-6 py-3 font-semibold">Name</th>
-                                <th className="px-6 py-3 font-semibold">Period</th>
-                                <th className="px-6 py-3 font-semibold">Status</th>
-                                <th className="px-6 py-3 font-semibold text-right">Actions</th>
+                            <tr style={{ borderStyle: 'solid', borderColor: '#e4ddd1', fontSize: '11px', color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                                <th style={{ paddingLeft: '24px', paddingTop: '12px', fontWeight: 600, paddingRight: '24px', paddingBottom: '12px' }}>Name</th>
+                                <th style={{ paddingLeft: '24px', paddingTop: '12px', fontWeight: 600, paddingRight: '24px', paddingBottom: '12px' }}>Period</th>
+                                <th style={{ paddingLeft: '24px', paddingTop: '12px', fontWeight: 600, paddingRight: '24px', paddingBottom: '12px' }}>Status</th>
+                                <th style={{ paddingLeft: '24px', paddingTop: '12px', fontWeight: 600, textAlign: 'right', paddingRight: '24px', paddingBottom: '12px' }}>Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody style={{ borderColor: '#e4ddd1' }}>
                             {availableFinancialYears.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-slate-400 text-sm">
+                                    <td colSpan={4} style={{ paddingLeft: '24px', paddingTop: '32px', textAlign: 'center', color: '#5c6567', fontSize: '13px', paddingRight: '24px', paddingBottom: '32px' }}>
                                         No financial years configured. Create one to get started.
                                     </td>
                                 </tr>
@@ -3421,27 +3425,27 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                                     const isDefault = fy.is_default === 1;
                                     return (
                                         <tr key={fy.id} className={`hover:bg-slate-50/50 transition-colors ${isActive ? 'bg-blue-50/30' : ''}`}>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-slate-800">{fy.name}</span>
-                                                    {isDefault && <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Default</span>}
-                                                    {isActive && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Active</span>}
+                                            <td style={{ paddingLeft: '24px', paddingTop: '16px', paddingRight: '24px', paddingBottom: '16px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontWeight: 600, color: '#23282A' }}>{fy.name}</span>
+                                                    {isDefault && <span style={{ fontWeight: 700, color: '#1f8577', background: '#d3ece9', paddingLeft: '8px', paddingTop: '2px', borderRadius: '9999px', paddingRight: '8px', paddingBottom: '2px' }}>Default</span>}
+                                                    {isActive && <span style={{ fontWeight: 700, color: '#1f8577', background: '#d3ece9', paddingLeft: '8px', paddingTop: '2px', borderRadius: '9999px', paddingRight: '8px', paddingBottom: '2px' }}>Active</span>}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-600">
+                                            <td style={{ paddingLeft: '24px', paddingTop: '16px', color: '#5c6567', paddingRight: '24px', paddingBottom: '16px' }}>
                                                 {fy.start_date} – {fy.end_date}
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td style={{ paddingLeft: '24px', paddingTop: '16px', paddingRight: '24px', paddingBottom: '16px' }}>
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${fy.status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'}`}>
                                                     {fy.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
+                                            <td style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'right', paddingRight: '24px', paddingBottom: '16px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                                                     {!isDefault && fy.status === 'Active' && (
                                                         <button
                                                             onClick={() => handleSetActive(fy)}
-                                                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                                            style={{ fontSize: '11px', color: '#1f8577', fontWeight: 500 }}
                                                         >
                                                             Set Active
                                                         </button>
@@ -3449,7 +3453,7 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                                                     {fy.status === 'Active' && (
                                                         <button
                                                             onClick={() => handleClose(fy)}
-                                                            className="text-xs text-amber-600 hover:text-amber-800 font-medium"
+                                                            style={{ fontSize: '11px', color: '#d99a3f', fontWeight: 500 }}
                                                         >
                                                             Close
                                                         </button>
@@ -3457,7 +3461,7 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                                                     {!isDefault && (
                                                         <button
                                                             onClick={() => handleDelete(fy)}
-                                                            className="text-xs text-rose-600 hover:text-rose-800 font-medium"
+                                                            style={{ fontSize: '11px', color: '#b5493f', fontWeight: 500 }}
                                                         >
                                                             Delete
                                                         </button>

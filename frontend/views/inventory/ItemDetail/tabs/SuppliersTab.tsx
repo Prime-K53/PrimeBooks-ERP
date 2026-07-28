@@ -2,6 +2,10 @@ import React from 'react';
 import { Building2, DollarSign, Clock, Package, Phone, Mail, User } from 'lucide-react';
 import type { Item, Supplier } from '../../../../types';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: Item;
   suppliers: Supplier[];
@@ -12,97 +16,97 @@ export const SuppliersTab: React.FC<Props> = ({ item, suppliers }) => {
   const alternateSuppliers = suppliers.filter(s => s.id !== item.preferredSupplierId);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-          <span className="p-1.5 rounded-lg bg-white shadow-sm text-emerald-600"><Building2 size={16} /></span>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Preferred Supplier</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <div style={{ padding: '14px 20px', background: t[50], borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ padding: 6, borderRadius: 9, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', color: t[500] }}><Building2 size={16} /></span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Preferred Supplier</span>
         </div>
-        <div className="p-5">
+        <div style={{ padding: 20 }}>
           {preferredSupplier ? (
             <>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2.5 bg-emerald-50 rounded-xl"><Building2 size={20} className="text-emerald-600" /></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ padding: 10, background: t[50], borderRadius: 12 }}><Building2 size={20} style={{ color: t[500] }} /></div>
                 <div>
-                  <h4 className="font-semibold text-slate-800">{preferredSupplier.name}</h4>
-                  <p className="text-xs text-slate-400">Primary source for this item</p>
+                  <h4 style={{ fontWeight: 600, color: ink }}>{preferredSupplier.name}</h4>
+                  <p style={{ fontSize: 12, color: inkSoft }}>Primary source for this item</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, fontSize: 14 }}>
                 <div>
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Name</span>
-                  <span className="font-semibold text-slate-700">{preferredSupplier.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Name</span>
+                  <span style={{ fontWeight: 600, color: ink }}>{preferredSupplier.name}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Code</span>
-                  <span className="font-mono text-slate-700">{preferredSupplier.code || preferredSupplier.id}</span>
+                  <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Code</span>
+                  <span style={{ fontFamily: 'monospace', color: ink }}>{preferredSupplier.code || preferredSupplier.id}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Contact</span>
-                  <span className="text-slate-700">{preferredSupplier.contactPerson || preferredSupplier.email || '—'}</span>
+                  <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Contact</span>
+                  <span style={{ color: ink }}>{preferredSupplier.contactPerson || preferredSupplier.email || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Phone</span>
-                  <span className="text-slate-700">{preferredSupplier.phone || '—'}</span>
+                  <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Phone</span>
+                  <span style={{ color: ink }}>{preferredSupplier.phone || '—'}</span>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center py-6 text-slate-400">
-              <Building2 size={32} className="mb-2 opacity-50" />
-              <p className="text-sm font-medium">No preferred supplier assigned</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0', color: inkSoft }}>
+              <Building2 size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
+              <p style={{ fontSize: 14, fontWeight: 500 }}>No preferred supplier assigned</p>
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1.4px solid ${hairline}`, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, fontSize: 14 }}>
             <div>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">
-                <Clock size={11} className="inline mr-1" />Lead Time
+              <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>
+                <Clock size={11} style={{ display: 'inline', marginRight: 4 }} />Lead Time
               </span>
-              <span className="font-semibold text-slate-700">{item.leadTimeDays || 0} days</span>
+              <span style={{ fontWeight: 600, color: ink }}>{item.leadTimeDays || 0} days</span>
             </div>
             <div>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">
-                <Package size={11} className="inline mr-1" />MOQ
+              <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>
+                <Package size={11} style={{ display: 'inline', marginRight: 4 }} />MOQ
               </span>
-              <span className="font-semibold text-slate-700">{item.minOrderQty || 0}</span>
+              <span style={{ fontWeight: 600, color: ink }}>{item.minOrderQty || 0}</span>
             </div>
             <div>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">
-                <DollarSign size={11} className="inline mr-1" />Last Cost
+              <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>
+                <DollarSign size={11} style={{ display: 'inline', marginRight: 4 }} />Last Cost
               </span>
-              <span className="font-mono font-semibold text-slate-700">{(item.costPrice || item.cost || 0).toFixed(2)}</span>
+              <span style={{ fontFamily: 'monospace', fontWeight: 600, color: ink }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span>
             </div>
             <div>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Supplier SKU</span>
-              <span className="font-mono text-slate-700">{(item as Item & { supplierCode?: string }).supplierCode || '—'}</span>
+              <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Supplier SKU</span>
+              <span style={{ fontFamily: 'monospace', color: ink }}>{(item as Item & { supplierCode?: string }).supplierCode || '—'}</span>
             </div>
           </div>
         </div>
       </div>
 
       {alternateSuppliers.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-            <span className="p-1.5 rounded-lg bg-white shadow-sm text-slate-500"><User size={16} /></span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Alternate Suppliers ({alternateSuppliers.length})</span>
+        <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+          <div style={{ padding: '14px 20px', background: t[50], borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ padding: 6, borderRadius: 9, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', color: inkSoft }}><User size={16} /></span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Alternate Suppliers ({alternateSuppliers.length})</span>
           </div>
-          <div className="p-5 space-y-3">
+          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {alternateSuppliers.map(s => (
-              <div key={s.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-white rounded-lg shadow-sm">
-                    <Building2 size={16} className="text-slate-400" />
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: t[50], borderRadius: 12, border: `1.4px solid ${hairline}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ padding: 6, background: paper, borderRadius: 9, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                    <Building2 size={16} style={{ color: inkSoft }} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-700">{s.name}</p>
-                    <p className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
-                      {s.contactPerson && <span className="flex items-center gap-1"><User size={10} />{s.contactPerson}</span>}
-                      {s.email && <span className="flex items-center gap-1"><Mail size={10} />{s.email}</span>}
+                    <p style={{ fontSize: 14, fontWeight: 600, color: ink }}>{s.name}</p>
+                    <p style={{ fontSize: 12, color: inkSoft, display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                      {s.contactPerson && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={10} />{s.contactPerson}</span>}
+                      {s.email && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Mail size={10} />{s.email}</span>}
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-slate-400 flex items-center gap-1">
+                <span style={{ fontSize: 12, color: inkSoft, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Phone size={10} />{s.phone || '—'}
                 </span>
               </div>
@@ -112,10 +116,10 @@ export const SuppliersTab: React.FC<Props> = ({ item, suppliers }) => {
       )}
 
       {!preferredSupplier && alternateSuppliers.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-          <Building2 size={48} className="mb-4 opacity-50" />
-          <p className="text-sm font-semibold">No Suppliers</p>
-          <p className="text-xs mt-1">Add suppliers in the Purchasing module.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', color: inkSoft }}>
+          <Building2 size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+          <p style={{ fontSize: 14, fontWeight: 600 }}>No Suppliers</p>
+          <p style={{ fontSize: 12, marginTop: 4 }}>Add suppliers in the Purchasing module.</p>
         </div>
       )}
     </div>

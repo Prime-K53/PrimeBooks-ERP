@@ -13,36 +13,36 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    background: '#f8fafc',
+    background: '#FEFDFB',
     fontFamily: "'Inter', system-ui, sans-serif",
     overflow: 'hidden',
   },
   header: {
-    background: '#ffffff',
+    background: '#FEFDFB',
     padding: '12px 24px',
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    borderBottom: '1px solid #e2e8f0',
+    borderBottom: '1.4px solid #e4ddd1',
   },
   headerIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    background: '#6366f1',
+    background: '#1f8577',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     color: '#fff',
   },
   headerText: {
-    color: '#0f172a',
+    color: '#23282A',
     fontSize: 16,
     fontWeight: 700,
     letterSpacing: '-0.3px',
   },
   headerSub: {
-    color: '#64748b',
+    color: '#5c6567',
     fontSize: 12,
     fontWeight: 400,
     marginTop: 1,
@@ -52,15 +52,13 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: 'repeat(6, 1fr)',
     gap: 12,
     padding: '16px 28px',
-    background: '#f8fafc',
+    background: '#FEFDFB',
   },
   statCard: {
-    background: 'rgba(255,255,255,0.75)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
+    background: '#FEFDFB',
     borderRadius: 14,
     padding: '16px 18px',
-    border: '1px solid rgba(255,255,255,0.8)',
+    border: '1.4px solid #e4ddd1',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
     display: 'flex',
     alignItems: 'center',
@@ -78,12 +76,12 @@ const styles: Record<string, React.CSSProperties> = {
   statValue: {
     fontSize: 20,
     fontWeight: 700,
-    color: '#0f172a',
+    color: '#23282A',
     lineHeight: 1.2,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#5c6567',
     fontWeight: 500,
     marginTop: 2,
   },
@@ -101,23 +99,23 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
   },
   kpiCard: {
-    background: '#fff',
+    background: '#FEFDFB',
     borderRadius: 14,
     padding: '18px 20px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-    border: '1px solid #f1f5f9',
+    border: '1.4px solid #e4ddd1',
   },
   kpiLabel: {
     fontSize: 12,
     fontWeight: 500,
-    color: '#94a3b8',
+    color: '#5c6567',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
   kpiValue: {
     fontSize: 24,
     fontWeight: 700,
-    color: '#0f172a',
+    color: '#23282A',
     marginTop: 6,
     letterSpacing: '-0.5px',
   },
@@ -135,18 +133,18 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
   },
   insightsCard: {
-    background: '#fff',
+    background: '#FEFDFB',
     borderRadius: 14,
     padding: '18px 20px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-    border: '1px solid #f1f5f9',
+    border: '1.4px solid #e4ddd1',
   },
   chartCard: {
-    background: '#fff',
+    background: '#FEFDFB',
     borderRadius: 14,
     padding: '18px 20px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-    border: '1px solid #f1f5f9',
+    border: '1.4px solid #e4ddd1',
   },
   sectionHeader: {
     display: 'flex',
@@ -154,22 +152,21 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     fontSize: 14,
     fontWeight: 600,
-    color: '#0f172a',
+    color: '#23282A',
   },
   insightItem: {
     display: 'flex',
     alignItems: 'center',
     gap: 10,
     padding: '10px 12px',
-    background: '#f8fafc',
+    background: '#eef7f6',
     borderRadius: 10,
-    transition: 'background 0.15s',
   },
   insightIcon: {
     width: 28,
     height: 28,
     borderRadius: 8,
-    background: '#fff',
+    background: '#FEFDFB',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -177,38 +174,38 @@ const styles: Record<string, React.CSSProperties> = {
   },
   insightText: {
     fontSize: 13,
-    color: '#334155',
+    color: '#23282A',
     lineHeight: 1.4,
   },
   activityCard: {
-    background: '#fff',
+    background: '#FEFDFB',
     borderRadius: 14,
     padding: '18px 20px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-    border: '1px solid #f1f5f9',
+    border: '1.4px solid #e4ddd1',
   },
   activityItem: {
     display: 'flex',
     alignItems: 'center',
     gap: 12,
     padding: '10px 8px',
-    borderBottom: '1px solid #f1f5f9',
+    borderBottom: '1.4px solid #e4ddd1',
   },
   activityDot: {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    background: '#10b981',
+    background: '#1f8577',
     flexShrink: 0,
   },
   activityTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#0f172a',
+    color: '#23282A',
   },
   activitySub: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: '#5c6567',
   },
   activityAmount: {
     fontSize: 13,
@@ -217,7 +214,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   activityTime: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: '#5c6567',
     whiteSpace: 'nowrap',
     marginLeft: 8,
   },
@@ -304,12 +301,12 @@ const AIWorkspaceDashboard: React.FC = () => {
 
       <div style={styles.statsRow}>
         {[
-          { icon: <DollarSign size={18} />, color: '#6366f1', bg: '#eef2ff', value: `${currency} ${totalRevenue.toLocaleString()}`, label: 'Total Revenue' },
-          { icon: <DollarSign size={18} />, color: '#10b981', bg: '#d1fae5', value: `${currency} ${profit.toLocaleString()}`, label: 'Net Profit' },
-          { icon: <TrendingUp size={18} />, color: '#f59e0b', bg: '#fef3c7', value: `${profitMargin.toFixed(1)}%`, label: 'Profit Margin' },
-          { icon: <Users size={18} />, color: '#8b5cf6', bg: '#ede9fe', value: activeCustomersCount.toString(), label: 'Active Customers' },
-          { icon: <FileText size={18} />, color: '#ec4899', bg: '#fce7f3', value: unpaidInvoices.length.toString(), label: 'Unpaid' },
-          { icon: <AlertTriangle size={18} />, color: '#ef4444', bg: '#fee2e2', value: aiInsightsCount.toString(), label: 'AI Alerts' },
+          { icon: <DollarSign size={18} />, color: '#1f8577', bg: '#eef7f6', value: `${currency} ${totalRevenue.toLocaleString()}`, label: 'Total Revenue' },
+          { icon: <DollarSign size={18} />, color: '#1f8577', bg: '#d3ece9', value: `${currency} ${profit.toLocaleString()}`, label: 'Net Profit' },
+          { icon: <TrendingUp size={18} />, color: '#d99a3f', bg: '#fbead0', value: `${profitMargin.toFixed(1)}%`, label: 'Profit Margin' },
+          { icon: <Users size={18} />, color: '#1f8577', bg: '#eef7f6', value: activeCustomersCount.toString(), label: 'Active Customers' },
+          { icon: <FileText size={18} />, color: '#1f8577', bg: '#eef7f6', value: unpaidInvoices.length.toString(), label: 'Unpaid' },
+          { icon: <AlertTriangle size={18} />, color: '#b5493f', bg: '#fef2f2', value: aiInsightsCount.toString(), label: 'AI Alerts' },
         ].map((stat, i) => (
           <div key={i} style={styles.statCard}>
             <div style={{ ...styles.statIcon, background: stat.bg, color: stat.color }}>
@@ -330,31 +327,31 @@ const AIWorkspaceDashboard: React.FC = () => {
           transition={{ duration: 0.4 }}
           style={styles.kpiRow}
         >
-          <div style={{ ...styles.kpiCard, borderTop: '3px solid #6366f1' }}>
+          <div style={{ ...styles.kpiCard, borderTop: '3px solid #1f8577' }}>
             <div style={styles.kpiLabel}>Total Revenue</div>
             <div style={styles.kpiValue}>{currency} {(totalRevenue).toLocaleString()}</div>
-            <div style={{ ...styles.kpiTrend, color: (revenueTrend ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>
+            <div style={{ ...styles.kpiTrend, color: (revenueTrend ?? 0) >= 0 ? '#1f8577' : '#b5493f' }}>
               {(revenueTrend ?? 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
               <span>{Math.abs(revenueTrend ?? 0).toFixed(1)}% vs last period</span>
             </div>
           </div>
-          <div style={{ ...styles.kpiCard, borderTop: '3px solid #10b981' }}>
+          <div style={{ ...styles.kpiCard, borderTop: '3px solid #1f8577' }}>
             <div style={styles.kpiLabel}>Net Profit</div>
             <div style={styles.kpiValue}>{currency} {profit.toLocaleString()}</div>
-            <div style={{ ...styles.kpiTrend, color: profit >= 0 ? '#10b981' : '#ef4444' }}>
+            <div style={{ ...styles.kpiTrend, color: profit >= 0 ? '#1f8577' : '#b5493f' }}>
               {profit >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
               <span>{profitMargin.toFixed(1)}% margin</span>
             </div>
           </div>
-          <div style={{ ...styles.kpiCard, borderTop: '3px solid #f59e0b' }}>
+          <div style={{ ...styles.kpiCard, borderTop: '3px solid #d99a3f' }}>
             <div style={styles.kpiLabel}>Total Expenses</div>
             <div style={styles.kpiValue}>{currency} {totalExpenses.toLocaleString()}</div>
-            <div style={{ ...styles.kpiTrend, color: (expenseTrend ?? 0) <= 0 ? '#10b981' : '#ef4444' }}>
+            <div style={{ ...styles.kpiTrend, color: (expenseTrend ?? 0) <= 0 ? '#1f8577' : '#b5493f' }}>
               {(expenseTrend ?? 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
               <span>{Math.abs(expenseTrend ?? 0).toFixed(1)}% vs last period</span>
             </div>
           </div>
-          <div style={{ ...styles.kpiCard, borderTop: '3px solid #8b5cf6' }}>
+          <div style={{ ...styles.kpiCard, borderTop: '3px solid #1f8577' }}>
             <div style={styles.kpiLabel}>Active Customers</div>
             <div style={styles.kpiValue}>{activeCustomersCount}</div>
             <div style={styles.kpiTrend}>
@@ -372,7 +369,7 @@ const AIWorkspaceDashboard: React.FC = () => {
             style={styles.insightsCard}
           >
             <div style={styles.sectionHeader}>
-              <Lightbulb size={16} color="#f59e0b" />
+              <Lightbulb size={16} color="#d99a3f" />
               <span>AI Insights</span>
             </div>
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -391,17 +388,17 @@ const AIWorkspaceDashboard: React.FC = () => {
                   style={{
                     ...styles.insightItem,
                     borderLeft: `3px solid ${
-                      insight.severity === 'critical' ? '#ef4444' :
-                      insight.severity === 'warning' ? '#f59e0b' :
-                      insight.severity === 'positive' ? '#10b981' : '#6366f1'
+                      insight.severity === 'critical' ? '#b5493f' :
+                      insight.severity === 'warning' ? '#d99a3f' :
+                      insight.severity === 'positive' ? '#1f8577' : '#5c6567'
                     }`,
                   }}
                 >
                   <div style={{
                     ...styles.insightIcon,
-                    color: insight.severity === 'critical' ? '#ef4444' :
-                           insight.severity === 'warning' ? '#f59e0b' :
-                           insight.severity === 'positive' ? '#10b981' : '#6366f1',
+                    color: insight.severity === 'critical' ? '#b5493f' :
+                           insight.severity === 'warning' ? '#d99a3f' :
+                           insight.severity === 'positive' ? '#1f8577' : '#5c6567',
                   }}>
                     {insight.icon}
                   </div>
@@ -418,19 +415,19 @@ const AIWorkspaceDashboard: React.FC = () => {
             style={styles.chartCard}
           >
             <div style={styles.sectionHeader}>
-              <BarChart3 size={16} color="#6366f1" />
+              <BarChart3 size={16} color="#1f8577" />
               <span>Revenue vs Expenses</span>
             </div>
             <div style={{ height: 200, position: 'relative', marginTop: 12 }}>
               <svg width="100%" height="100%" viewBox="0 0 300 150" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.6" />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.05" />
+                    <stop offset="0%" stopColor="#1f8577" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="#1f8577" stopOpacity="0.05" />
                   </linearGradient>
                   <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0.05" />
+                    <stop offset="0%" stopColor="#b5493f" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#b5493f" stopOpacity="0.05" />
                   </linearGradient>
                 </defs>
                 {(() => {
@@ -450,20 +447,20 @@ const AIWorkspaceDashboard: React.FC = () => {
                   return (
                     <>
                       <path d={revArea} fill="url(#revGrad)" />
-                      <path d={revPath} fill="none" stroke="#6366f1" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                      <path d={revPath} fill="none" stroke="#1f8577" strokeWidth="2" vectorEffect="non-scaling-stroke" />
                       <path d={expArea} fill="url(#expGrad)" />
-                      <path d={expPath} fill="none" stroke="#ef4444" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                      <path d={expPath} fill="none" stroke="#b5493f" strokeWidth="2" vectorEffect="non-scaling-stroke" />
                     </>
                   );
                 })()}
               </svg>
               <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 4 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b' }}>
-                  <span style={{ width: 10, height: 3, borderRadius: 2, background: '#6366f1' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#5c6567' }}>
+                  <span style={{ width: 10, height: 3, borderRadius: 2, background: '#1f8577' }} />
                   Revenue
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b' }}>
-                  <span style={{ width: 10, height: 3, borderRadius: 2, background: '#ef4444' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#5c6567' }}>
+                  <span style={{ width: 10, height: 3, borderRadius: 2, background: '#b5493f' }} />
                   Expenses
                 </div>
               </div>
@@ -478,7 +475,7 @@ const AIWorkspaceDashboard: React.FC = () => {
           style={styles.activityCard}
         >
           <div style={styles.sectionHeader}>
-            <Activity size={16} color="#10b981" />
+            <Activity size={16} color="#1f8577" />
             <span>Recent Activity</span>
           </div>
           <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -495,7 +492,7 @@ const AIWorkspaceDashboard: React.FC = () => {
                   <span style={styles.activityTitle}>Sale #{sale.id}</span>
                   <span style={styles.activitySub}> {sale.customerName || 'Unknown'}</span>
                 </div>
-                <div style={{ ...styles.activityAmount, color: '#10b981' }}>+{currency} {(sale.totalAmount || 0).toLocaleString()}</div>
+                <div style={{ ...styles.activityAmount, color: '#1f8577' }}>+{currency} {(sale.totalAmount || 0).toLocaleString()}</div>
                 <div style={styles.activityTime}>{sale.date ? new Date(sale.date).toLocaleDateString() : ''}</div>
               </motion.div>
             ))}
@@ -507,17 +504,17 @@ const AIWorkspaceDashboard: React.FC = () => {
                 transition={{ delay: 0.35 + (sales?.length || 0 + i) * 0.05 }}
                 style={styles.activityItem}
               >
-                <div style={{ ...styles.activityDot, background: '#ef4444' }} />
+                <div style={{ ...styles.activityDot, background: '#b5493f' }} />
                 <div style={{ flex: 1 }}>
                   <span style={styles.activityTitle}>{exp.category || 'Expense'}</span>
                   <span style={styles.activitySub}> {exp.description || ''}</span>
                 </div>
-                <div style={{ ...styles.activityAmount, color: '#ef4444' }}>-{currency} {(exp.amount || 0).toLocaleString()}</div>
+                <div style={{ ...styles.activityAmount, color: '#b5493f' }}>-{currency} {(exp.amount || 0).toLocaleString()}</div>
                 <div style={styles.activityTime}>{exp.date ? new Date(exp.date).toLocaleDateString() : ''}</div>
               </motion.div>
             ))}
             {(!sales || sales.length === 0) && (!expenses || expenses.length === 0) && (
-              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '16px 0' }}>No recent activity</div>
+              <div style={{ textAlign: 'center', color: '#5c6567', padding: '16px 0' }}>No recent activity</div>
             )}
           </div>
         </motion.div>

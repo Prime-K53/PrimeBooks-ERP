@@ -2,6 +2,10 @@ import React from 'react';
 import { Scale, ArrowRight, ShoppingCart, TrendingUp, Beaker } from 'lucide-react';
 import type { Item } from '../../../../types';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: Item;
 }
@@ -16,64 +20,64 @@ export const UnitsTab: React.FC<Props> = ({ item }) => {
   const conversionRate = item.conversionFactor || ext.conversionRate || 1;
 
   const cards = [
-    { label: 'Base Unit', value: baseUnit, icon: <Scale size={16} />, color: 'text-slate-900' },
-    { label: 'Purchase Unit', value: purchaseUnit || '—', icon: <ShoppingCart size={16} />, color: 'text-blue-600' },
-    { label: 'Sales Unit', value: salesUnit || '—', icon: <TrendingUp size={16} />, color: 'text-emerald-600' },
-    { label: 'Consumption Unit', value: consumptionUnit || '—', icon: <Beaker size={16} />, color: 'text-amber-600' },
+    { label: 'Base Unit', value: baseUnit, icon: <Scale size={16} />, color: ink },
+    { label: 'Purchase Unit', value: purchaseUnit || '—', icon: <ShoppingCart size={16} />, color: t[500] },
+    { label: 'Sales Unit', value: salesUnit || '—', icon: <TrendingUp size={16} />, color: t[500] },
+    { label: 'Consumption Unit', value: consumptionUnit || '—', icon: <Beaker size={16} />, color: amber[500] },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {cards.map(c => (
-          <div key={c.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{c.label}</span>
-              <span className={c.color}>{c.icon}</span>
+          <div key={c.label} className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{c.label}</span>
+              <span style={{ color: c.color }}>{c.icon}</span>
             </div>
-            <p className={`text-xl font-bold ${c.color} ${c.value !== '—' ? '' : 'text-slate-300'}`}>{c.value}</p>
+            <p style={{ fontSize: 20, fontWeight: 700, color: c.value !== '—' ? c.color : inkSoft }}>{c.value}</p>
           </div>
         ))}
       </div>
 
       {purchaseUnit && !conversions.length && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-            <span className="p-1.5 rounded-lg bg-white shadow-sm text-slate-500"><Scale size={16} /></span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Conversion</span>
+        <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+          <div style={{ padding: '14px 20px', background: t[50], borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ padding: 6, borderRadius: 9, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', color: inkSoft }}><Scale size={16} /></span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Conversion</span>
           </div>
-          <div className="p-5 flex items-center gap-4">
-            <div className="px-4 py-2.5 bg-slate-100 rounded-xl">
-              <span className="font-bold text-slate-800">1 {purchaseUnit}</span>
+          <div style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ padding: '10px 16px', background: t[100], borderRadius: 12 }}>
+              <span style={{ fontWeight: 700, color: ink }}>1 {purchaseUnit}</span>
             </div>
-            <ArrowRight size={20} className="text-slate-300 flex-shrink-0" />
-            <div className="px-4 py-2.5 bg-blue-50 rounded-xl border border-blue-200">
-              <span className="font-bold text-blue-600">{conversionRate} {baseUnit}</span>
+            <ArrowRight size={20} style={{ color: inkSoft, flexShrink: 0 }} />
+            <div style={{ padding: '10px 16px', background: t[50], borderRadius: 12, border: `1.4px solid ${t[100]}` }}>
+              <span style={{ fontWeight: 700, color: t[500] }}>{conversionRate} {baseUnit}</span>
             </div>
           </div>
         </div>
       )}
 
       {conversions.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-            <span className="p-1.5 rounded-lg bg-white shadow-sm text-slate-500"><Scale size={16} /></span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Conversion Tree ({conversions.length})</span>
+        <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+          <div style={{ padding: '14px 20px', background: t[50], borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ padding: 6, borderRadius: 9, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', color: inkSoft }}><Scale size={16} /></span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Conversion Tree ({conversions.length})</span>
           </div>
-          <div className="p-5 space-y-3">
+          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {conversions.map((c, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="px-3 py-1.5 bg-white rounded-lg shadow-sm">
-                  <span className="font-bold text-slate-800">1 {c.fromUnit}</span>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: t[50], borderRadius: 12, border: `1.4px solid ${hairline}` }}>
+                <div style={{ padding: '6px 12px', background: paper, borderRadius: 9, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                  <span style={{ fontWeight: 700, color: ink }}>1 {c.fromUnit}</span>
                 </div>
-                <ArrowRight size={16} className="text-slate-300 flex-shrink-0" />
-                <div className="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
-                  <span className="font-bold text-blue-600">{c.factor} {c.toUnit}</span>
+                <ArrowRight size={16} style={{ color: inkSoft, flexShrink: 0 }} />
+                <div style={{ padding: '6px 12px', background: t[50], borderRadius: 9, border: `1.4px solid ${t[100]}` }}>
+                  <span style={{ fontWeight: 700, color: t[500] }}>{c.factor} {c.toUnit}</span>
                 </div>
-                <div className="flex gap-1 ml-auto">
-                  {c.fromUnit === purchaseUnit && <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">Purchasing</span>}
-                  {c.toUnit === consumptionUnit && <span className="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-semibold">Consumption</span>}
-                  {(c.fromUnit === salesUnit || c.toUnit === salesUnit) && <span className="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-semibold">Sales</span>}
+                <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
+                  {c.fromUnit === purchaseUnit && <span style={{ fontSize: 10, padding: '2px 8px', background: t[50], color: t[600], borderRadius: 9999, fontWeight: 600 }}>Purchasing</span>}
+                  {c.toUnit === consumptionUnit && <span style={{ fontSize: 10, padding: '2px 8px', background: amber[100], color: amber[500], borderRadius: 9999, fontWeight: 600 }}>Consumption</span>}
+                  {(c.fromUnit === salesUnit || c.toUnit === salesUnit) && <span style={{ fontSize: 10, padding: '2px 8px', background: t[50], color: t[600], borderRadius: 9999, fontWeight: 600 }}>Sales</span>}
                 </div>
               </div>
             ))}
@@ -82,10 +86,10 @@ export const UnitsTab: React.FC<Props> = ({ item }) => {
       )}
 
       {!purchaseUnit && !conversions.length && (
-        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-          <Scale size={48} className="mb-4 opacity-50" />
-          <p className="text-sm font-semibold">No Unit Conversions</p>
-          <p className="text-xs mt-1">Configure purchase or sales units to enable conversions.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', color: inkSoft }}>
+          <Scale size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+          <p style={{ fontSize: 14, fontWeight: 600 }}>No Unit Conversions</p>
+          <p style={{ fontSize: 12, marginTop: 4 }}>Configure purchase or sales units to enable conversions.</p>
         </div>
       )}
     </div>

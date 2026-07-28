@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Calendar, Package } from 'lucide-react';
 import { OfflineImage } from '../../components/OfflineImage';
 
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1';
+
 const ProductionHistory: React.FC = () => {
   const { batches = [], boms = [] } = useProduction();
   const { inventory = [] } = useInventory();
@@ -15,10 +17,10 @@ const ProductionHistory: React.FC = () => {
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
       <div className="header-container">
         <h1 className="text-title">Production History</h1>
-        <p className="text-[12px] text-slate-500 mt-0.5">Log of all manufacturing batches and costs</p>
+        <p className="text-[12px] mt-0.5" style={{ color: inkSoft }}>Log of all manufacturing batches and costs</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'hidden' }}>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="table-header sticky top-0 z-10 shadow-sm border-b border-slate-200">

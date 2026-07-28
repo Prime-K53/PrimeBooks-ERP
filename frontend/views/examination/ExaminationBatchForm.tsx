@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/services/logger';
 import { useNavigate } from 'react-router-dom';
 import { useExamination } from '../../context/ExaminationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useFinance } from '../../context/FinanceContext';
 import { ArrowLeft, Save, Plus, Search, Building2, ChevronDown, X, Users, ChevronRight } from 'lucide-react';
+import { useSales } from '../../context/SalesContext';
 import { Customer } from '../../types';
 import { dbService } from '../../services/db';
 import { toast } from '../../components/Toast';
@@ -30,6 +31,15 @@ const inputStyle: React.CSSProperties = {
   border: `1.4px solid ${hairline}`, borderRadius: 9,
   padding: '9px 12px', outline: 'none',
   transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  paddingRight: 30,
+  cursor: 'pointer'
 };
 const btnGhostStyle: React.CSSProperties = {
   fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
@@ -209,238 +219,263 @@ const ExaminationBatchForm: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-6 max-w-[1600px] mx-auto w-full font-normal overflow-y-auto custom-scrollbar">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+    <div style={{
+      height: '100%', display: 'flex', flexDirection: 'column',
+      padding: '16px 24px', maxWidth: 1600, margin: '0 auto',
+      width: '100%', fontFamily: "'Inter','DM Sans',sans-serif",
+      fontWeight: 400, overflowY: 'auto', color: ink, fontSize: 13.5
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
-          <h1 className="text-[22px] font-semibold text-slate-900 tracking-tight">Create Examination Batch</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Set school, term, exam type, and billing profile</p>
+          <h1 style={{ fontSize: 22, fontWeight: 600, color: teal[800], letterSpacing: 0.2, margin: 0 }}>
+            Create Examination Batch
+          </h1>
+          <p style={{ fontSize: 12, color: inkSoft, marginTop: 2 }}>Set school, term, exam type, and billing profile</p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate('/examination/batches')}
-          className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-700 px-4 py-2 rounded-xl font-medium hover:bg-slate-100 text-sm shadow-sm transition-all border border-slate-200"
-        >
+        <button type="button" onClick={() => navigate('/examination/batches')}
+          style={btnGhostStyle}>
           <ArrowLeft size={16} />
           Back to Batches
         </button>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl p-5 md:p-6 rounded-2xl border border-white/60 shadow-sm">
-        <div className="mb-5">
-          <h2 className="text-base font-semibold text-slate-900">Batch Details</h2>
-          <p className="text-xs text-slate-500 mt-1">Create a new examination batch and assign it to a school account.</p>
+      <div style={{
+        background: paper, borderRadius: 12,
+        border: `1.4px solid ${hairline}`, padding: '20px 24px'
+      }}>
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: ink, margin: 0 }}>Batch Details</h2>
+          <p style={{ fontSize: 12, color: inkSoft, marginTop: 4 }}>Create a new examination batch and assign it to a school account.</p>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-5">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-               <div className="flex items-center justify-between mb-1.5">
-                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">School / Client</label>
-                 <button
-                   type="button"
-                   onClick={() => setShowAddCustomer(true)}
-                   className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                 >
-                   <Plus size={12} />
-                   Add New
-                 </button>
-               </div>
-                <div className="relative" ref={customerRef}>
-                  <div
-                    className={`flex items-center gap-2 w-full rounded-xl border bg-white px-3 py-2 text-sm cursor-text outline-none transition-all ${
-                      showCustomerDropdown ? 'ring-2 ring-blue-100 border-blue-300' : 'border-slate-200'
-                    }`}
-                    onClick={() => { customerInputRef.current?.focus(); setShowCustomerDropdown(true); }}
-                  >
-                    <Search size={14} className="text-slate-400 shrink-0" />
-                    <input
-                      ref={customerInputRef}
-                      type="text"
-                      value={customerSearch}
-                      onChange={(e) => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); }}
-                      onFocus={() => setShowCustomerDropdown(true)}
-                      placeholder={
-                        contextLoading && sortedCustomers.length === 0
-                          ? 'Loading customers...'
-                          : formData.school_id && !showCustomerDropdown
-                            ? selectedCustomerFull?.name || 'Search customers...'
-                            : 'Search customers...'
-                      }
-                      className="flex-1 outline-none bg-transparent text-sm text-slate-700 placeholder:text-slate-400"
-                    />
-                    {formData.school_id && !showCustomerDropdown ? (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleChange('school_id', ''); setCustomerSearch(''); }}
-                        className="text-slate-400 hover:text-slate-600"
-                      >
-                        <X size={14} />
-                      </button>
-                    ) : (
-                      <ChevronDown size={14} className="text-slate-400" />
-                    )}
-                  </div>
-
-                  {showCustomerDropdown && (
-                    <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto custom-scrollbar">
-                      {filteredCustomers.length === 0 ? (
-                        <div className="p-3 text-sm text-slate-400 text-center">
-                          {customerSearch.trim() ? 'No customers found' : 'No customers available'}
-                        </div>
-                      ) : (
-                        filteredCustomers.map((customer) => {
-                          const isSelected = String(customer.id) === String(formData.school_id);
-                          const hasSubAccounts = customer.subAccounts && customer.subAccounts.length > 0;
-                          return (
-                            <button
-                              key={customer.id}
-                              type="button"
-                              className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                                isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
-                              }`}
-                              onClick={() => {
-                                handleChange('school_id', customer.id);
-                                handleChange('sub_account_name', '');
-                                setCustomerSearch('');
-                                setShowCustomerDropdown(false);
-                              }}
-                            >
-                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-                                <Building2 size={14} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium truncate">{customer.name}</span>
-                                  {hasSubAccounts && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold shrink-0">
-                                      <Users size={10} />
-                                      {customer.subAccounts.length}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-[11px] text-slate-400 truncate">
-                                  {customer.email || customer.phone || 'No contact info'}
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })
-                      )}
-                    </div>
+        <form onSubmit={handleSubmit} noValidate>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={labelStyle}>School / Client</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>School / Client</span>
+                <button type="button" onClick={() => setShowAddCustomer(true)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: teal[500], background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <Plus size={12} />
+                  Add New
+                </button>
+              </div>
+              <div style={{ position: 'relative' }} ref={customerRef}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', borderRadius: 9, border: `1.4px solid ${showCustomerDropdown ? teal[200] : hairline}`,
+                  background: paper, padding: '7px 12px', cursor: 'text',
+                  transition: 'border-color .15s ease'
+                }}
+                  onClick={() => { customerInputRef.current?.focus(); setShowCustomerDropdown(true); }}>
+                  <Search size={14} color={inkSoft} />
+                  <input
+                    ref={customerInputRef}
+                    type="text"
+                    value={customerSearch}
+                    onChange={(e) => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); }}
+                    onFocus={() => setShowCustomerDropdown(true)}
+                    placeholder={
+                      contextLoading && sortedCustomers.length === 0
+                        ? 'Loading customers...'
+                        : formData.school_id && !showCustomerDropdown
+                          ? selectedCustomerFull?.name || 'Search customers...'
+                          : 'Search customers...'
+                    }
+                    style={{
+                      flex: 1, outline: 'none', background: 'transparent',
+                      fontSize: 13, color: ink, border: 'none',
+                      fontFamily: "'Inter', sans-serif"
+                    }}
+                  />
+                  {formData.school_id && !showCustomerDropdown ? (
+                    <button type="button" onClick={(e) => { e.stopPropagation(); handleChange('school_id', ''); setCustomerSearch(''); }}
+                      style={{ color: inkSoft, background: 'none', border: 'none', cursor: 'pointer' }}>
+                      <X size={14} />
+                    </button>
+                  ) : (
+                    <ChevronDown size={14} color={inkSoft} />
                   )}
                 </div>
-             </div>
- 
-             {selectedCustomerFull && selectedCustomerFull.subAccounts && selectedCustomerFull.subAccounts.length > 0 ? (
-               <div>
-                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                   Sub Account
-                 </label>
-                 <select
-                   id="sub-account"
-                   name="sub_account_name"
-                   value={formData.sub_account_name}
-                   onChange={(event) => handleChange('sub_account_name', event.target.value)}
-                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-                 >
-                   <option value="">Select sub-account (or leave for main account)</option>
-                   {selectedCustomerFull.subAccounts.map((sub: any) => (
-                     <option key={sub.id} value={sub.name}>
-                       {sub.name}
-                     </option>
-                   ))}
-                 </select>
-               </div>
-             ) : (
-               <div>
-                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Creation Date</label>
-                 <input
-                   id="batch-date"
-                   name="batch_date"
-                   type="date"
-                   value={formData.batch_date}
-                   onChange={(event) => handleChange('batch_date', event.target.value)}
-                   required
-                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-                 />
-               </div>
-             )}
- 
-             <div>
-               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Valid Until</label>
-               <input
-                 id="valid-until"
-                 name="valid_until"
-                 type="date"
-                 value={formData.valid_until}
-                 onChange={(event) => handleChange('valid_until', event.target.value)}
-                 required
-                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-               />
-             </div>
- 
-             <div>
-               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Academic Year</label>
-               <input
-                 id="academic-year"
-                 name="academic_year"
-                 value={formData.academic_year}
-                 onChange={(event) => handleChange('academic_year', event.target.value)}
-                 placeholder="e.g. 2026"
-                 required
-                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-               />
-             </div>
- 
-             <div>
-               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Term</label>
-               <select
-                 id="term"
-                 name="term"
-                 value={formData.term}
-                 onChange={(event) => handleChange('term', event.target.value)}
-                 required
-                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-               >
-                 <option value="1">Term 1</option>
-                 <option value="2">Term 2</option>
-                 <option value="3">Term 3</option>
-               </select>
-             </div>
- 
-             <div>
-               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Exam Type</label>
-               <select
-                 id="exam-type"
-                 name="exam_type"
-                 value={formData.exam_type}
-                 onChange={(event) => handleChange('exam_type', event.target.value)}
-                 required
-                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-               >
-                 <option value="Mid-Term">Mid-Term</option>
-                 <option value="End-of-Term">End-of-Term</option>
-                 <option value="Mock">Mock</option>
-                 <option value="Assessment">Assessment</option>
-               </select>
-             </div>
- 
-             {/* Sales Account field - hidden but kept for functionality */}
-             <div className="hidden">
-               <input
-                 type="hidden"
-                 value={formData.sales_account_id}
-                 onChange={(event) => handleChange('sales_account_id', event.target.value)}
-               />
-</div>
+
+                {showCustomerDropdown && (
+                  <div style={{
+                    position: 'absolute', zIndex: 50, marginTop: 4, width: '100%',
+                    background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9,
+                    boxShadow: '0 8px 24px rgba(0,0,0,.12)',
+                    maxHeight: 240, overflowY: 'auto'
+                  }}>
+                    {filteredCustomers.length === 0 ? (
+                      <div style={{ padding: 12, fontSize: 13, color: inkSoft, textAlign: 'center' }}>
+                        {customerSearch.trim() ? 'No customers found' : 'No customers available'}
+                      </div>
+                    ) : (
+                      filteredCustomers.map((customer) => {
+                        const isSelected = String(customer.id) === String(formData.school_id);
+                        const hasSubAccounts = customer.subAccounts && customer.subAccounts.length > 0;
+                        return (
+                          <button key={customer.id} type="button"
+                            style={{
+                              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                              padding: '8px 12px', textAlign: 'left', border: 'none',
+                              background: isSelected ? teal[50] : 'transparent',
+                              color: isSelected ? teal[800] : ink,
+                              cursor: 'pointer', transition: 'background .1s'
+                            }}
+                            onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = teal[50]; }}
+                            onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                            onClick={() => {
+                              handleChange('school_id', customer.id);
+                              handleChange('sub_account_name', '');
+                              setCustomerSearch('');
+                              setShowCustomerDropdown(false);
+                            }}>
+                            <div style={{
+                              width: 32, height: 32, borderRadius: 8,
+                              background: teal[50], display: 'flex',
+                              alignItems: 'center', justifyContent: 'center',
+                              color: inkSoft, flexShrink: 0
+                            }}>
+                              <Building2 size={14} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customer.name}</span>
+                                {hasSubAccounts && (
+                                  <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    padding: '1px 6px', borderRadius: 12,
+                                    background: amber[100], color: '#92400e', fontSize: 10, fontWeight: 600
+                                  }}>
+                                    <Users size={10} />
+                                    {customer.subAccounts.length}
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: 11, color: inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {customer.email || customer.phone || 'No contact info'}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-700 text-sm shadow-sm transition-all disabled:opacity-60"
-            >
+            {selectedCustomerFull && selectedCustomerFull.subAccounts && selectedCustomerFull.subAccounts.length > 0 ? (
+              <div>
+                <label style={labelStyle}>Sub Account</label>
+                <select
+                  id="sub-account"
+                  name="sub_account_name"
+                  value={formData.sub_account_name}
+                  onChange={(event) => handleChange('sub_account_name', event.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="">Select sub-account (or leave for main account)</option>
+                  {selectedCustomerFull.subAccounts.map((sub: any) => (
+                    <option key={sub.id} value={sub.name}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label style={labelStyle}>Creation Date</label>
+                <input
+                  id="batch-date"
+                  name="batch_date"
+                  type="date"
+                  value={formData.batch_date}
+                  onChange={(event) => handleChange('batch_date', event.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              </div>
+            )}
+
+            <div>
+              <label style={labelStyle}>Valid Until</label>
+              <input
+                id="valid-until"
+                name="valid_until"
+                type="date"
+                value={formData.valid_until}
+                onChange={(event) => handleChange('valid_until', event.target.value)}
+                required
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Academic Year</label>
+              <input
+                id="academic-year"
+                name="academic_year"
+                value={formData.academic_year}
+                onChange={(event) => handleChange('academic_year', event.target.value)}
+                placeholder="e.g. 2026"
+                required
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Term</label>
+              <select
+                id="term"
+                name="term"
+                value={formData.term}
+                onChange={(event) => handleChange('term', event.target.value)}
+                required
+                style={selectStyle}
+              >
+                <option value="1">Term 1</option>
+                <option value="2">Term 2</option>
+                <option value="3">Term 3</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Exam Type</label>
+              <select
+                id="exam-type"
+                name="exam_type"
+                value={formData.exam_type}
+                onChange={(event) => handleChange('exam_type', event.target.value)}
+                required
+                style={selectStyle}
+              >
+                <option value="Mid-Term">Mid-Term</option>
+                <option value="End-of-Term">End-of-Term</option>
+                <option value="Mock">Mock</option>
+                <option value="Assessment">Assessment</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'none' }}>
+              <input
+                type="hidden"
+                value={formData.sales_account_id}
+                onChange={(event) => handleChange('sales_account_id', event.target.value)}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 16, marginTop: 8, borderTop: `1px solid ${hairline}` }}>
+            <button type="submit" disabled={loading}
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+                transition: 'all .15s ease', opacity: loading ? 0.6 : 1
+              }}>
               <Save size={16} />
               {loading ? 'Creating...' : 'Create Batch'}
             </button>

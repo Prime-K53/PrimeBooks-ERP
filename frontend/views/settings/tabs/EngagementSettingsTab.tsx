@@ -38,28 +38,28 @@ export const EngagementSettingsTab: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Engagement Settings</h2>
-          <p className="text-sm text-slate-500">Configure loyalty, cashback, membership, and rewards</p>
+          <h2 className="text-lg font-bold text-[#23282A]">Engagement Settings</h2>
+          <p className="text-sm text-[#5c6567]">Configure loyalty, cashback, membership, and rewards</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">
+          <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#23282A] bg-white border border-[#e4ddd1] rounded-lg hover:bg-[#eef7f6]">
             <RotateCcw size={12} /> Reset
           </button>
-          <button onClick={handleSave} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+          <button onClick={handleSave} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-[#1f8577] rounded-lg hover:bg-[#1a7366]">
             <Save size={12} /> {saved ? 'Saved!' : 'Save'}
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1 border-b border-slate-200 pb-2">
+      <div className="flex flex-wrap gap-1 border-b border-[#e4ddd1] pb-2">
         {subTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               activeSubTab === tab.id
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-slate-500 hover:bg-slate-100'
+                ? 'bg-[#eef7f6] text-[#1f8577]'
+                : 'text-[#5c6567] hover:bg-[#eef7f6]'
             }`}
           >
             {tab.icon}
@@ -84,8 +84,8 @@ export const EngagementSettingsTab: React.FC = () => {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-2 px-4 bg-white rounded-lg border border-slate-100">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+    <div className="flex items-center justify-between py-2 px-4" style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1' }}>
+      <span className="text-sm font-medium text-[#23282A]">{label}</span>
       <div className="w-48">{children}</div>
     </div>
   )
@@ -95,7 +95,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
   return (
     <button
       onClick={() => onChange(!value)}
-      className={`w-10 h-5 rounded-full transition-colors relative ${value ? 'bg-blue-600' : 'bg-slate-300'}`}
+      className={`w-10 h-5 rounded-full transition-colors relative ${value ? 'bg-[#1f8577]' : 'bg-[#e4ddd1]'}`}
     >
       <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
     </button>
@@ -111,7 +111,7 @@ function NumberField({ value, onChange, min, max, step }: { value: number; onCha
       min={min}
       max={max}
       step={step}
-      className="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 text-right font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      className="w-full text-sm border border-[#e4ddd1] rounded-lg px-2.5 py-1.5 text-right font-medium focus:ring-2 focus:ring-[#1f8577] focus:border-[#1f8577]"
     />
   )
 }
@@ -238,22 +238,22 @@ function RewardSettings({ settings, update }: { settings: EngagementSettings; up
 
       <div className="pt-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-bold text-slate-700">Milestone Rewards</h4>
-          <button onClick={addMilestone} className="text-xs font-bold text-blue-600 hover:text-blue-700">+ Add Milestone</button>
+          <h4 className="text-sm font-bold text-[#23282A]">Milestone Rewards</h4>
+          <button onClick={addMilestone} className="text-xs font-bold text-[#1f8577] hover:text-[#1f8577]">+ Add Milestone</button>
         </div>
         {milestones.map((m, i) => (
-          <div key={i} className="flex items-center gap-2 py-2 px-3 bg-white rounded-lg border border-slate-100 mb-1">
+          <div key={i} className="flex items-center gap-2 py-2 px-3 mb-1" style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1' }}>
             <input
               type="text"
               value={m.name}
               onChange={(e) => updateMilestone(i, { name: e.target.value })}
-              className="flex-1 text-sm border border-slate-200 rounded px-2 py-1"
+              className="flex-1 text-sm border border-[#e4ddd1] rounded px-2 py-1"
               placeholder="Name"
             />
             <select
               value={m.type}
               onChange={(e) => updateMilestone(i, { type: e.target.value as any })}
-              className="text-xs border border-slate-200 rounded px-2 py-1"
+              className="text-xs border border-[#e4ddd1] rounded px-2 py-1"
             >
               <option value="purchase_count">Purchase Count</option>
               <option value="total_spend">Total Spend</option>
@@ -263,13 +263,13 @@ function RewardSettings({ settings, update }: { settings: EngagementSettings; up
               type="number"
               value={m.threshold}
               onChange={(e) => updateMilestone(i, { threshold: parseInt(e.target.value) || 0 })}
-              className="w-16 text-sm border border-slate-200 rounded px-2 py-1 text-right"
+              className="w-16 text-sm border border-[#e4ddd1] rounded px-2 py-1 text-right"
               placeholder="Threshold"
             />
             <select
               value={m.rewardType}
               onChange={(e) => updateMilestone(i, { rewardType: e.target.value as any })}
-              className="text-xs border border-slate-200 rounded px-2 py-1"
+              className="text-xs border border-[#e4ddd1] rounded px-2 py-1"
             >
               <option value="points">Points</option>
               <option value="wallet_credit">Wallet Credit</option>
@@ -280,10 +280,10 @@ function RewardSettings({ settings, update }: { settings: EngagementSettings; up
               type="number"
               value={m.rewardValue}
               onChange={(e) => updateMilestone(i, { rewardValue: parseFloat(e.target.value) || 0 })}
-              className="w-20 text-sm border border-slate-200 rounded px-2 py-1 text-right"
+              className="w-20 text-sm border border-[#e4ddd1] rounded px-2 py-1 text-right"
               placeholder="Value"
             />
-            <button onClick={() => removeMilestone(i)} className="text-rose-500 hover:text-rose-700 text-xs font-bold">X</button>
+            <button onClick={() => removeMilestone(i)} className="text-[#b5493f] hover:text-rose-700 text-xs font-bold">X</button>
           </div>
         ))}
       </div>

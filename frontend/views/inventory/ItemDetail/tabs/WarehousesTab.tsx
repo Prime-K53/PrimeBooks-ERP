@@ -2,6 +2,10 @@ import React from 'react';
 import { Warehouse, MapPin, Thermometer, AlertTriangle, Layers, Hash, Barcode, Shield } from 'lucide-react';
 import type { Item } from '../../../../types';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: Item;
 }
@@ -20,84 +24,84 @@ export const WarehousesTab: React.FC<Props> = ({ item }) => {
   };
 
   const conditions = [
-    { label: 'Hazardous', enabled: item.hazardous, color: 'bg-red-500' },
-    { label: 'Temperature Controlled', enabled: item.temperatureControlled, color: 'bg-blue-500' },
-    { label: 'Batch Controlled', enabled: item.batchControlled, color: 'bg-purple-500' },
-    { label: 'Lot Tracking', enabled: item.lotTracking, color: 'bg-amber-500' },
-    { label: 'Serial Tracking', enabled: item.serialTracking, color: 'bg-emerald-500' },
-    { label: 'Expiration Tracking', enabled: item.expirationTracking, color: 'bg-red-500' },
+    { label: 'Hazardous', enabled: item.hazardous, color: '#ef4444' },
+    { label: 'Temperature Controlled', enabled: item.temperatureControlled, color: t[500] },
+    { label: 'Batch Controlled', enabled: item.batchControlled, color: '#a855f7' },
+    { label: 'Lot Tracking', enabled: item.lotTracking, color: amber[500] },
+    { label: 'Serial Tracking', enabled: item.serialTracking, color: t[500] },
+    { label: 'Expiration Tracking', enabled: item.expirationTracking, color: '#ef4444' },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-          <span className="p-1.5 rounded-lg bg-white shadow-sm text-slate-500"><Warehouse size={16} /></span>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <div style={{ padding: '14px 20px', background: t[50], borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ padding: 6, borderRadius: 9, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', color: inkSoft }}><Warehouse size={16} /></span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>
             {hasMultiWarehouse ? `Warehouses (${locationStock.length})` : 'Primary Warehouse'}
           </span>
         </div>
         {!hasMultiWarehouse ? (
-          <div className="p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-blue-50 rounded-xl"><Warehouse size={20} className="text-blue-600" /></div>
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{ padding: 10, background: t[50], borderRadius: 12 }}><Warehouse size={20} style={{ color: t[500] }} /></div>
               <div>
-                <h4 className="font-semibold text-slate-800">{primaryWarehouse.name}</h4>
-                <p className="text-xs text-slate-400">Primary Warehouse</p>
+                <h4 style={{ fontWeight: 600, color: ink }}>{primaryWarehouse.name}</h4>
+                <p style={{ fontSize: 12, color: inkSoft }}>Primary Warehouse</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, fontSize: 14 }}>
               <div>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Storage Location</span>
-                <span className="font-semibold text-slate-700">{primaryWarehouse.location || '—'}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Storage Location</span>
+                <span style={{ fontWeight: 600, color: ink }}>{primaryWarehouse.location || '—'}</span>
               </div>
               <div>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Shelf</span>
-                <span className="font-semibold text-slate-700">{primaryWarehouse.shelf || '—'}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Shelf</span>
+                <span style={{ fontWeight: 600, color: ink }}>{primaryWarehouse.shelf || '—'}</span>
               </div>
               <div>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Bin</span>
-                <span className="font-mono font-semibold text-slate-700">{primaryWarehouse.bin || '—'}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Bin</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 600, color: ink }}>{primaryWarehouse.bin || '—'}</span>
               </div>
               <div>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Quantity</span>
-                <span className="text-xl font-bold text-slate-900">{primaryWarehouse.quantity}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Quantity</span>
+                <span style={{ fontSize: 20, fontWeight: 700, color: ink }}>{primaryWarehouse.quantity}</span>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-4 text-xs text-slate-500">
-              <span>Reserved: <strong className="text-amber-600">{primaryWarehouse.reserved}</strong></span>
-              <span>Available: <strong className={Math.max(0, primaryWarehouse.quantity - primaryWarehouse.reserved) > 0 ? 'text-emerald-600' : 'text-red-600'}>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: inkSoft }}>
+              <span>Reserved: <strong style={{ color: amber[500] }}>{primaryWarehouse.reserved}</strong></span>
+              <span>Available: <strong style={{ color: Math.max(0, primaryWarehouse.quantity - primaryWarehouse.reserved) > 0 ? t[500] : danger }}>
                 {Math.max(0, primaryWarehouse.quantity - primaryWarehouse.reserved)}
               </strong></span>
             </div>
           </div>
         ) : (
-          <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div style={{ padding: 20, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {locationStock.map((ls, i: number) => (
-              <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <MapPin size={16} className="text-slate-400" />
-                  <span className="font-semibold text-slate-800">{ls.warehouseId}</span>
+              <div key={i} style={{ background: t[50], borderRadius: 12, padding: 16, border: `1.4px solid ${hairline}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <MapPin size={16} style={{ color: inkSoft }} />
+                  <span style={{ fontWeight: 600, color: ink }}>{ls.warehouseId}</span>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{ls.quantity}</p>
-                <p className="text-xs text-slate-400">{item.unit || 'pcs'} in stock</p>
+                <p style={{ fontSize: 24, fontWeight: 700, color: ink }}>{ls.quantity}</p>
+                <p style={{ fontSize: 12, color: inkSoft }}>{item.unit || 'pcs'} in stock</p>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-          <span className="p-1.5 rounded-lg bg-white shadow-sm text-slate-500"><Shield size={16} /></span>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Storage Conditions</span>
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <div style={{ padding: '14px 20px', background: t[50], borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ padding: 6, borderRadius: 9, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', color: inkSoft }}><Shield size={16} /></span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Storage Conditions</span>
         </div>
-        <div className="p-5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div style={{ padding: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {conditions.map(c => (
-              <div key={c.label} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-50">
-                <span className={`w-2 h-2 rounded-full ${c.enabled ? c.color : 'bg-slate-200'}`} />
-                <span className={`text-sm ${c.enabled ? 'text-slate-700 font-medium' : 'text-slate-400'}`}>{c.label}</span>
+              <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, borderRadius: 9, background: t[50] }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.enabled ? c.color : hairline }} />
+                <span style={{ fontSize: 14, color: c.enabled ? ink : inkSoft, fontWeight: c.enabled ? 500 : 400 }}>{c.label}</span>
               </div>
             ))}
           </div>

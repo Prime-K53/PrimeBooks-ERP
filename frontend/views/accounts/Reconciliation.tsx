@@ -4,6 +4,8 @@ import { Scale, CheckCircle, AlertTriangle, Search, Calendar } from 'lucide-reac
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
 
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1';
+
 const Reconciliation: React.FC = () => {
   const { accounts, ledger, toggleReconciled } = useFinance();
   const { companyConfig } = useAuth();
@@ -66,7 +68,7 @@ const Reconciliation: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 shrink-0">
             {/* Controls */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <div className="prime-card" style={{ background: paper, padding: 16, borderRadius: 14, border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Select Bank Account</label>
                     <select 
@@ -113,8 +115,8 @@ const Reconciliation: React.FC = () => {
 
         {/* Transactions List */}
         {selectedAccountId && (
-            <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div className="flex-1 prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div className="p-3" style={{ borderBottom: `1.4px solid ${hairline}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#eef7f6' }}>
                     <h3 className="font-bold text-sm text-slate-800">Transactions</h3>
                     <div className="relative w-56">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14}/>
@@ -123,7 +125,7 @@ const Reconciliation: React.FC = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-white text-slate-600 border-b border-slate-200 sticky top-0 z-10 text-xs">
+                        <thead className="bg-white sticky top-0 z-10 text-xs" style={{ color: inkSoft, borderBottom: `1.4px solid ${hairline}` }}>
                             <tr>
                                 <th className="p-3 w-16 text-center">Status</th>
                                 <th className="p-3">Date</th>
@@ -160,7 +162,7 @@ const Reconciliation: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-                <div className="p-3 border-t border-slate-200 bg-slate-50 flex justify-between items-center text-xs">
+                <div className="p-3 flex justify-between items-center text-xs" style={{ borderTop: `1.4px solid ${hairline}`, background: '#eef7f6' }}>
                     <div className="text-slate-500">
                         Showing {filteredTransactions.length} transactions.
                     </div>

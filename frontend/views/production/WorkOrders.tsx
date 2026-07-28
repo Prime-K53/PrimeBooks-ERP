@@ -21,6 +21,10 @@ import { attachDocumentSecurity } from '../../utils/documentSecurity';
 import { enrichDocumentCustomerData } from '../../utils/documentCustomerData';
 import QualityInspection from '../../components/QualityInspection';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 /**
  * Job Hover Card
  */
@@ -32,39 +36,39 @@ const JobHoverCard: React.FC<{
 
     return (
         <div
-            className="fixed z-[100] pointer-events-none animate-in fade-in zoom-in-95 duration-200"
+            style={{ position: 'fixed', pointerEvents: 'none', transitionDuration: '200ms' }}
             style={{ top: pos.y + 10, left: pos.x + 10 }}
         >
-            <div className="bg-slate-900/90 backdrop-blur-md border border-white/20 rounded-2xl shadow-premium p-4 min-w-[220px] flex flex-col gap-3">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-                    <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-white">
+            <div style={{ background: 'rgba(11,62,57,.9)', backdropFilter: 'blur(12px)', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.2)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderStyle: 'solid', borderColor: 'rgba(255,255,255,.1)', paddingBottom: '12px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                         <Target size={16} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-purple-400 uppercase tracking-tight">Production Status</p>
-                        <p className="text-[13px] font-bold text-white font-mono">{wo.id}</p>
+                        <p style={{ fontWeight: 700, color: '#3fa294', textTransform: 'uppercase', letterSpacing: '-.025em' }}>Production Status</p>
+                        <p style={{ fontWeight: 700, color: '#fff', fontFamily: '"JetBrains Mono",monospace' }}>{wo.id}</p>
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Product</span>
-                        <span className="text-[13px] text-white font-bold truncate max-w-[120px]">{wo.productName}</span>
+                <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em' }}>Product</span>
+                        <span style={{ color: '#fff', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wo.productName}</span>
                     </div>
-                    <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Progress</span>
-                            <span className="text-[13px] text-blue-400 font-bold finance-nums">{(progress || 0).toFixed(0)}%</span>
+                    <div style={{ marginTop: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em' }}>Progress</span>
+                            <span style={{ color: '#3fa294', fontWeight: 700 }}>{(progress || 0).toFixed(0)}%</span>
                         </div>
-                        <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500" style={{ width: `${progress}%` }}></div>
+                        <div style={{ width: '100%', background: 'rgba(254,253,251,.1)', height: '4px', borderRadius: '9999px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', background: '#eef7f6' }} style={{ width: `${progress}%` }}></div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white/5 rounded-lg p-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></div>
-                    <span className="text-[10px] text-slate-300 font-bold uppercase tracking-tight">Tracking Live</span>
+                <div style={{ background: 'rgba(254,253,251,.05)', borderRadius: '10px', padding: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '9999px', animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite' }}></div>
+                    <span style={{ color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em' }}>Tracking Live</span>
                 </div>
             </div>
         </div>
@@ -305,7 +309,7 @@ const WorkOrders: React.FC = () => {
     };
 
     return (
-        <div className="p-4 md:p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col font-normal">
+        <div style={{ padding: '16px', marginLeft: 'auto', display: 'flex', flexDirection: 'column', fontWeight: 400 }}>
             {hoveredId && hoverPos && hoveredWO && <JobHoverCard pos={hoverPos} wo={hoveredWO} />}
 
             {isModalOpen && (
@@ -338,35 +342,35 @@ const WorkOrders: React.FC = () => {
             {/* Advanced Options Popup Menu */}
             {showAdvancedMenu && (
                 <>
-                    <div className="fixed inset-0 z-[80]" onClick={() => setShowAdvancedMenu(null)}></div>
+                    <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0 }} onClick={() => setShowAdvancedMenu(null)}></div>
                     <div
-                        className="fixed z-[90] bg-white rounded-2xl shadow-premium border border-slate-200 p-1 min-w-[200px] animate-in zoom-in-95 duration-100"
+                        style={{ position: 'fixed', background: '#FEFDFB', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', padding: '4px', transitionDuration: '100ms' }}
                         style={{ left: Math.min(advancedMenuPos.x, window.innerWidth - 220), top: Math.min(advancedMenuPos.y, window.innerHeight - 300) }}
                     >
-                        <div className="px-3 py-2 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-tight">Advanced Protocols</div>
-                        <div className="py-1">
-                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'set_status', 'QA')} className="w-full text-left px-4 py-2 text-[13px] font-bold text-slate-700 hover:bg-purple-50 flex items-center gap-3"><RefreshCw size={14} /> Move to QA</button>
-                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'set_status', 'In Progress')} className="w-full text-left px-4 py-2 text-[13px] font-bold text-slate-700 hover:bg-blue-50 flex items-center gap-3"><Play size={14} /> Force Resume</button>
-                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'extend_date')} className="w-full text-left px-4 py-2 text-[13px] font-bold text-slate-700 hover:bg-amber-50 flex items-center gap-3"><Calendar size={14} /> Extend Due Date</button>
+                        <div style={{ paddingLeft: '12px', paddingTop: '8px', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '12px', paddingBottom: '8px' }}>Advanced Protocols</div>
+                        <div style={{ paddingTop: '4px', paddingBottom: '4px' }}>
+                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'set_status', 'QA')} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '12px', paddingRight: '16px', paddingBottom: '8px' }}><RefreshCw size={14} /> Move to QA</button>
+                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'set_status', 'In Progress')} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '12px', paddingRight: '16px', paddingBottom: '8px' }}><Play size={14} /> Force Resume</button>
+                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'extend_date')} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '12px', paddingRight: '16px', paddingBottom: '8px' }}><Calendar size={14} /> Extend Due Date</button>
                         </div>
-                        <div className="border-t border-slate-100 py-1">
-                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'set_priority', 'CRITICAL')} className="w-full text-left px-4 py-2 text-[13px] font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-3"><AlertTriangle size={14} /> Mark Critical</button>
-                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'delete')} className="w-full text-left px-4 py-2 text-[13px] font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 flex items-center gap-3"><Trash2 size={14} /> Terminate Order</button>
+                        <div style={{ borderStyle: 'solid', borderColor: '#e4ddd1', paddingTop: '4px', paddingBottom: '4px' }}>
+                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'set_priority', 'CRITICAL')} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontWeight: 700, color: '#b5493f', display: 'flex', alignItems: 'center', gap: '12px', paddingRight: '16px', paddingBottom: '8px' }}><AlertTriangle size={14} /> Mark Critical</button>
+                            <button onClick={() => handleAdvancedAction(showAdvancedMenu, 'delete')} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontWeight: 700, color: '#5c6567', display: 'flex', alignItems: 'center', gap: '12px', paddingRight: '16px', paddingBottom: '8px' }}><Trash2 size={14} /> Terminate Order</button>
                         </div>
                     </div>
                 </>
             )}
 
-            <div className="mb-4 flex justify-between items-center shrink-0 header-container">
+            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                 <div>
-                    <h1 className="text-title flex items-center gap-2 uppercase">
-                        <Target className="text-blue-600" /> Production Queue
+                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase' }}>
+                        <Target style={{ color: '#1f8577' }} /> Production Queue
                     </h1>
-                    <p className="text-[13px] text-slate-500 mt-0.5">Manufacturing pipeline control and logistics</p>
+                    <p style={{ color: '#5c6567', marginTop: '2px' }}>Manufacturing pipeline control and logistics</p>
                 </div>
-                <div className="flex gap-4 items-center">
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                     {/* Filter buttons for examination vs regular work orders */}
-                    <div className="flex bg-white/70 backdrop-blur border border-white/60 rounded-xl p-1 shadow-sm">
+                    <div style={{ display: 'flex', background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(8px)', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.6)', borderRadius: '12px', padding: '4px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                         <button 
                             onClick={() => setFilterType('all')} 
                             className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-colors ${filterType === 'all' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
@@ -386,20 +390,20 @@ const WorkOrders: React.FC = () => {
                             ðŸ­ Regular
                         </button>
                     </div>
-                    <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <div style={{ position: 'relative' }}>
+                        <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567', pointerEvents: 'none' }} />
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             placeholder="Search work orders..."
-                            className="w-44 pl-8 pr-3 py-1.5 bg-white/70 backdrop-blur border border-white/60 rounded-xl text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200/50"
+                            style={{ width: '176px', paddingLeft: '32px', paddingRight: '12px', paddingTop: '6px', background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(8px)', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.6)', borderRadius: '12px', color: '#23282A', paddingBottom: '6px' }}
                         />
                     </div>
                     {selectedIds.length > 0 && (
                         <button
                             onClick={handleBatchDelete}
-                            className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-[13px] font-bold hover:bg-rose-100 transition-all border border-rose-100 uppercase tracking-tight animate-in fade-in slide-in-from-right-4"
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '16px', paddingTop: '8px', background: '#fef2f2', color: '#b5493f', borderRadius: '12px', fontWeight: 700, transition: 'all .15s ease', border: '1.4px solid #e4ddd1', borderColor: '#b5493f', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '16px', paddingBottom: '8px' }}
                         >
                             <Trash2 size={16} /> Delete ({selectedIds.length})
                         </button>
@@ -412,18 +416,18 @@ const WorkOrders: React.FC = () => {
                     </button>
                     <button
                         onClick={() => navigate('/production/shop-floor')}
-                        className="zoho-button-secondary bg-slate-900 text-white hover:bg-slate-800 border-none"
+                        style={{ background: '#0b3e39', color: '#fff', border: 'none' }}
                     >
                         <MonitorPlay size={16} /> Terminal View
                     </button>
-                    <div className="flex bg-white/70 backdrop-blur border border-white/60 rounded-xl p-1 shadow-sm">
+                    <div style={{ display: 'flex', background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(8px)', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.6)', borderRadius: '12px', padding: '4px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                         <button onClick={() => setViewType('List')} className={`p-1.5 rounded-lg transition-colors ${viewType === 'List' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><ListIcon size={16} /></button>
                         <button onClick={() => setViewType('Kanban')} className={`p-1.5 rounded-lg transition-colors ${viewType === 'Kanban' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LayoutGrid size={16} /></button>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-hidden relative">
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
                 {(() => {
                     // Filter work orders based on filterType
                     const filteredWorkOrders = workOrders.filter(wo => {
@@ -455,27 +459,27 @@ const WorkOrders: React.FC = () => {
                     }
 
                     return (
-                    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden h-full flex flex-col">
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            <table className="w-full text-left">
-                                <thead className="table-header sticky top-0 z-10 shadow-sm border-b border-slate-200">
+                    <div style={{ background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(20px)', borderRadius: '16px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.6)', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                            <table style={{ width: '100%', textAlign: 'left' }}>
+                                <thead style={{ display: 'table', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,.05)', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
                                     <tr>
-                                        <th className="px-4 py-2 w-10">
+                                        <th style={{ paddingLeft: '16px', paddingTop: '8px', width: '40px', paddingRight: '16px', paddingBottom: '8px' }}>
                                             <input
                                                 type="checkbox"
-                                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                 checked={filteredWorkOrders.length > 0 && selectedIds.length === filteredWorkOrders.length}
                                                 onChange={handleToggleSelectAll}
                                             />
                                         </th>
-                                        <th className="px-4 py-2 uppercase tracking-tight">Order Specification</th>
-                                        <th className="px-4 py-2 text-center uppercase tracking-tight">Batch Target</th>
-                                        <th className="px-4 py-2 uppercase tracking-tight">Delivery Due</th>
-                                        <th className="px-4 py-2 uppercase tracking-tight">Current Phase</th>
-                                        <th className="px-4 py-2 text-right uppercase tracking-tight">Actions</th>
+                                        <th style={{ paddingLeft: '16px', paddingTop: '8px', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '16px', paddingBottom: '8px' }}>Order Specification</th>
+                                        <th style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '16px', paddingBottom: '8px' }}>Batch Target</th>
+                                        <th style={{ paddingLeft: '16px', paddingTop: '8px', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '16px', paddingBottom: '8px' }}>Delivery Due</th>
+                                        <th style={{ paddingLeft: '16px', paddingTop: '8px', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '16px', paddingBottom: '8px' }}>Current Phase</th>
+                                        <th style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '-.025em', paddingRight: '16px', paddingBottom: '8px' }}>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100/50">
+                                <tbody style={{ borderColor: '#e4ddd1' }}>
                                     {filteredWorkOrders.map(wo => {
                                         const isExamination = wo.source === 'examination';
                                         return (
@@ -487,38 +491,38 @@ const WorkOrders: React.FC = () => {
                                             onMouseMove={handleMouseMove}
                                             onMouseLeave={handleMouseLeave}
                                         >
-                                            <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                                            <td style={{ paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }} onClick={(e) => e.stopPropagation()}>
                                                 <input
                                                     type="checkbox"
-                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
                                                     checked={selectedIds.includes(wo.id)}
                                                     onChange={(e) => handleToggleSelect(wo.id, e)}
                                                 />
                                             </td>
-                                            <td className="table-body-cell px-4 py-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="font-bold text-slate-800 text-[13px]">{wo.productName}</div>
+                                            <td style={{ display: 'table', paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <div style={{ fontWeight: 700, color: '#23282A' }}>{wo.productName}</div>
                                                     {isExamination && (
-                                                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase tracking-widest border border-purple-200">
+                                                        <span style={{ paddingLeft: '8px', paddingTop: '2px', background: '#d3ece9', color: '#0f544c', borderRadius: '6px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', paddingRight: '8px', paddingBottom: '2px' }}>
                                                             ðŸ“ Exam
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-wrap gap-2 mt-1">
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
                                                     {wo.attributes && Object.entries(wo.attributes).map(([key, value]) => {
                                                         if (key === 'variantId') return null;
                                                         const label = key === 'batch_number' ? 'Batch' : key;
                                                         return (
-                                                            <span key={key} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase tracking-tight border border-slate-200">
+                                                            <span key={key} style={{ paddingLeft: '6px', paddingTop: '2px', background: '#eef7f6', color: '#5c6567', borderRadius: '6px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', paddingRight: '6px', paddingBottom: '2px' }}>
                                                                 {label}: {String(value)}
                                                             </span>
                                                         );
                                                     })}
                                                 </div>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="font-mono text-slate-400 font-bold text-[10px] uppercase tracking-tight">#{wo.id}</span>
-                                                    <span className="text-slate-300 text-[10px]">â€¢</span>
-                                                    <span className="text-slate-500 font-bold text-[10px] uppercase tracking-tight">{isExamination 
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                                                    <span style={{ fontFamily: '"JetBrains Mono",monospace', color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em' }}>#{wo.id}</span>
+                                                    <span style={{ color: '#5c6567' }}>â€¢</span>
+                                                    <span style={{ color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em' }}>{isExamination 
                                                         ? (() => {
                                                             const customer = (customers || []).find(c => c.id === wo.customerId);
                                                             return customer?.name || wo.customerName || 'Unknown School';
@@ -527,16 +531,16 @@ const WorkOrders: React.FC = () => {
                                                     }</span>
                                                 </div>
                                             </td>
-                                            <td className="table-body-cell px-4 py-2 text-center">
-                                                <div className="text-[13px] font-bold text-slate-900 finance-nums">{wo.quantityCompleted || 0} / {wo.quantityPlanned || 0}</div>
-                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Units Logged</div>
+                                            <td style={{ display: 'table', paddingLeft: '16px', paddingTop: '8px', textAlign: 'center', paddingRight: '16px', paddingBottom: '8px' }}>
+                                                <div style={{ fontWeight: 700, color: '#23282A' }}>{wo.quantityCompleted || 0} / {wo.quantityPlanned || 0}</div>
+                                                <div style={{ color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em' }}>Units Logged</div>
                                             </td>
-                                            <td className="table-body-cell px-4 py-2">
-                                                <div className="text-[13px] font-bold text-slate-700 finance-nums text-left">{new Date(wo.dueDate).toLocaleDateString()}</div>
-                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Production Deadline</div>
+                                            <td style={{ display: 'table', paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
+                                                <div style={{ fontWeight: 700, color: '#23282A', textAlign: 'left' }}>{new Date(wo.dueDate).toLocaleDateString()}</div>
+                                                <div style={{ color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em' }}>Production Deadline</div>
                                             </td>
-                                            <td className="table-body-cell px-4 py-2">
-                                                <div className="flex flex-col gap-1.5">
+                                            <td style={{ display: 'table', paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-black border uppercase tracking-widest w-fit ${wo.priority === 'Critical' ? 'bg-red-50 text-red-600 border-red-100' :
                                                         wo.priority === 'High' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                             wo.priority === 'Low' ? 'bg-slate-50 text-slate-400 border-slate-100' :
@@ -549,12 +553,12 @@ const WorkOrders: React.FC = () => {
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="table-body-cell px-4 py-2 text-right">
-                                                <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                            <td style={{ display: 'table', paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', paddingRight: '16px', paddingBottom: '8px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', opacity: 0.0, transition: 'all .15s ease', transitionDuration: '200ms' }}>
                                                     {wo.status === 'Draft' && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); updateWorkOrderStatus(wo.id, 'Scheduled'); notify('Work order scheduled', 'info'); }}
-                                                            className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white border border-blue-100 shadow-sm transition-all"
+                                                            style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                             title="Schedule"
                                                         >
                                                             <Calendar size={13} />
@@ -563,7 +567,7 @@ const WorkOrders: React.FC = () => {
                                                     {wo.status === 'Scheduled' && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); updateWorkOrderStatus(wo.id, 'In Progress'); notify('Production started', 'info'); }}
-                                                            className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white border border-blue-100 shadow-sm transition-all"
+                                                            style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                             title="Start Production"
                                                         >
                                                             <Play size={13} fill="currentColor" />
@@ -573,14 +577,14 @@ const WorkOrders: React.FC = () => {
                                                         <>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); updateWorkOrderStatus(wo.id, 'QA'); notify('Moved to Quality Assurance', 'info'); }}
-                                                                className="p-1.5 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-600 hover:text-white border border-purple-100 shadow-sm transition-all"
+                                                                style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                                 title="Move to QA"
                                                             >
                                                                 <ShieldCheck size={13} />
                                                             </button>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); updateWorkOrderStatus(wo.id, 'On Hold'); notify('Work order on hold', 'info'); }}
-                                                                className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-600 hover:text-white border border-amber-100 shadow-sm transition-all"
+                                                                style={{ padding: '6px', background: '#fbead0', color: '#d99a3f', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#fbead0', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                                 title="Put on Hold"
                                                             >
                                                                 <PauseCircle size={13} />
@@ -590,7 +594,7 @@ const WorkOrders: React.FC = () => {
                                                     {wo.status === 'On Hold' && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); updateWorkOrderStatus(wo.id, 'In Progress'); notify('Work order resumed', 'info'); }}
-                                                            className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white border border-blue-100 shadow-sm transition-all"
+                                                            style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                             title="Resume Production"
                                                         >
                                                             <Play size={13} fill="currentColor" />
@@ -600,14 +604,14 @@ const WorkOrders: React.FC = () => {
                                                         <>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setQcOrder(wo); }}
-                                                            className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white border border-indigo-100 shadow-sm transition-all"
+                                                            style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                             title="Quality Inspection"
                                                         >
                                                             <ShieldCheck size={13} />
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); updateWorkOrderStatus(wo.id, 'Completed'); notify('Work order completed', 'success'); }}
-                                                            className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white border border-emerald-100 shadow-sm transition-all"
+                                                            style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                             title="Complete Order"
                                                         >
                                                             <CheckSquare size={13} />
@@ -617,7 +621,7 @@ const WorkOrders: React.FC = () => {
                                                     {wo.status !== 'Completed' && wo.status !== 'Cancelled' && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); if (confirm('Cancel this work order?')) updateWorkOrderStatus(wo.id, 'Cancelled'); }}
-                                                            className="p-1.5 bg-slate-50 text-slate-400 rounded-lg hover:bg-rose-50 hover:text-rose-600 border border-slate-100 shadow-sm transition-all"
+                                                            style={{ padding: '6px', background: '#eef7f6', color: '#5c6567', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                             title="Cancel Job"
                                                         >
                                                             <XCircle size={13} />
@@ -626,7 +630,7 @@ const WorkOrders: React.FC = () => {
                                                     {wo.status === 'Completed' && !(wo.id as string)?.startsWith('WO-EXAM-') && !wo.linkedBatchId && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleConvertInvoice(wo); }}
-                                                            className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white border border-emerald-100 shadow-sm transition-all"
+                                                            style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                             title="Bill Customer"
                                                         >
                                                             <FileText size={13} />
@@ -634,14 +638,14 @@ const WorkOrders: React.FC = () => {
                                                     )}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handlePreviewPDF(wo); }}
-                                                        className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white border border-indigo-100 shadow-sm transition-all"
+                                                        style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                         title="Preview PDF"
                                                     >
                                                         <Eye size={13} />
                                                     </button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleDownloadPDF(wo); }}
-                                                        className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white border border-blue-100 shadow-sm transition-all"
+                                                        style={{ padding: '6px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                         title="Download PDF"
                                                     >
                                                         <FileDown size={14} />
@@ -651,14 +655,14 @@ const WorkOrders: React.FC = () => {
                                                             e.stopPropagation();
                                                             handleOpenEdit(wo);
                                                         }}
-                                                        className="p-1.5 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-600 hover:text-white border border-slate-100 shadow-sm transition-all"
+                                                        style={{ padding: '6px', background: '#eef7f6', color: '#5c6567', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                         title="View Work Order"
                                                     >
                                                         <Eye size={14} />
                                                     </button>
                                                     <button
                                                         onClick={(e) => handleOpenAdvanced(e, wo.id)}
-                                                        className="p-1.5 bg-white text-slate-400 hover:text-blue-600 rounded-lg border border-slate-200 shadow-sm transition-all"
+                                                        style={{ padding: '6px', background: '#FEFDFB', color: '#5c6567', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}
                                                         title="More Options"
                                                     >
                                                         <Settings size={13} />
@@ -672,11 +676,11 @@ const WorkOrders: React.FC = () => {
                             </table>
                         </div>
                         {filteredWorkOrders.length === 0 && (
-                            <div className="flex-1 flex items-center justify-center p-12">
-                                <div className="text-center">
-                                    <Target className="mx-auto h-12 w-12 text-slate-300" />
-                                    <h3 className="mt-4 text-sm font-semibold text-slate-600">No work orders found</h3>
-                                    <p className="mt-2 text-sm text-slate-500">
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px' }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <Target style={{ marginLeft: 'auto', height: '48px', width: '48px', color: '#5c6567' }} />
+                                    <h3 style={{ marginTop: '16px', fontSize: '13px', fontWeight: 600, color: '#5c6567' }}>No work orders found</h3>
+                                    <p style={{ marginTop: '8px', fontSize: '13px', color: '#5c6567' }}>
                                         {filterType === 'examination' 
                                             ? 'No examination work orders. Calculate an examination batch to create work orders.'
                                             : filterType === 'regular'

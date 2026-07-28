@@ -12,6 +12,10 @@ import Dialog from '../components/Dialog';
 import { cloudDb } from '../services/cloudDb';
 import './profile.css';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 const TIMEZONES = [
   { label: 'UTC (GMT)', value: 'UTC' },
   { label: 'Africa/Blantyre (Malawi)', value: 'Africa/Blantyre' },
@@ -246,11 +250,11 @@ const Profile: React.FC = () => {
   const username = user?.username || '';
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar pf-shell">
-      <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div style={{ height: '100%', overflowY: 'auto' }}>
+      <div style={{ maxWidth: '1024px', marginLeft: 'auto', padding: '16px', marginTop: '24px' }}>
         {/* Header */}
         <div className="pf-header-row">
-          <div className="flex items-center gap-4">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button onClick={() => navigate(-1)} className="pf-back-btn" title="Go back">
               <ArrowLeft size={20} />
             </button>
@@ -271,24 +275,24 @@ const Profile: React.FC = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px' }}>
           {/* Left Column - Profile Card */}
-          <div className="lg:col-span-4 space-y-6">
+          <div style={{ marginTop: '24px' }}>
             <div className="pf-card">
-              <div className="h-24 bg-gradient-to-r from-indigo-500 to-purple-600" />
-              <div className="px-5 pb-5 -mt-12 flex flex-col items-center text-center">
+              <div style={{ height: '96px' }} />
+              <div style={{ paddingLeft: '20px', paddingBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingRight: '20px' }}>
                 {/* Profile Photo */}
-                <div className="relative group">
-                  <div className="w-24 h-24 rounded-full border-4 border-[#FCFCFD] bg-slate-100 shadow-xl overflow-hidden flex items-center justify-center text-slate-400">
+                <div style={{ position: 'relative' }}>
+                  <div style={{ width: '96px', height: '96px', borderRadius: '9999px', borderWidth: '4px', border: '1.4px solid #e4ddd1', background: '#eef7f6', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567' }}>
                     {profileData.profilePhoto ? (
-                      <img src={profileData.profilePhoto} alt={displayName} className="w-full h-full object-cover" />
+                      <img src={profileData.profilePhoto} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <span className="text-3xl font-semibold text-indigo-600">{initials}</span>
+                      <span style={{ fontSize: '30px', fontWeight: 600, color: '#1f8577' }}>{initials}</span>
                     )}
                   </div>
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute inset-0 bg-black/40 text-[#FCFCFD] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ position: 'absolute', top: 0, background: 'rgba(0,0,0,.4)', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.0, transition: 'opacity .15s ease', right: 0, bottom: 0, left: 0 }}
                     title="Change photo"
                   >
                     <Camera size={24} />
@@ -296,17 +300,17 @@ const Profile: React.FC = () => {
                   <input 
                     type="file" 
                     ref={fileInputRef} 
-                    className="hidden" 
+                    style={{ display: 'hidden' }} 
                     accept="image/jpeg,image/png,image/webp"
                     onChange={handlePhotoUpload}
                   />
                 </div>
 
                 {/* Name & Role */}
-                <div className="mt-4 w-full">
+                <div style={{ marginTop: '16px', width: '100%' }}>
                   {isEditingName ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
+                    <div style={{ marginTop: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <input
                           autoFocus
                           value={profileData.fullName}
@@ -323,18 +327,18 @@ const Profile: React.FC = () => {
                           }}
                           className={`pf-input text-center ${nameError ? 'border-rose-500' : 'border-indigo-500'}`}
                         />
-                        <button onClick={handleNameSave} className="pf-btn-ghost text-emerald-600 hover:bg-emerald-50"><Check size={18} /></button>
-                        <button onClick={() => { setIsEditingName(false); setNameError(null); setProfileData(prev => ({ ...prev, fullName: originalData.fullName })); }} className="pf-btn-ghost text-rose-600 hover:bg-rose-50"><X size={18} /></button>
+                        <button onClick={handleNameSave} style={{ color: '#1f8577' }}><Check size={18} /></button>
+                        <button onClick={() => { setIsEditingName(false); setNameError(null); setProfileData(prev => ({ ...prev, fullName: originalData.fullName })); }} style={{ color: '#b5493f' }}><X size={18} /></button>
                       </div>
-                      {nameError && <p className="pf-meta text-rose-500 font-medium">{nameError}</p>}
+                      {nameError && <p style={{ color: '#b5493f', fontWeight: 500 }}>{nameError}</p>}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center gap-2 group">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                       <h2 className="pf-name">{displayName}</h2>
                       {(user?.isSuperAdmin || user?.role === 'Admin') && (
                         <button 
                           onClick={() => setIsEditingName(true)}
-                          className="pf-btn-ghost opacity-0 group-hover:opacity-100"
+                          style={{ opacity: 0.0 }}
                         >
                           <Edit2 size={14} />
                         </button>
@@ -344,25 +348,25 @@ const Profile: React.FC = () => {
                   <p className="pf-username">@{username}</p>
                 </div>
 
-                <div className="flex items-center gap-2 mt-4">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px' }}>
                   <span className="pf-badge">{role}</span>
                 </div>
 
                 {/* Photo Actions */}
-                <div className="grid grid-cols-2 gap-2 w-full mt-5 pt-5 border-t border-slate-100">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '8px', width: '100%', marginTop: '20px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 transition-colors text-slate-600"
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '8px', borderRadius: '12px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', color: '#5c6567' }}
                   >
-                    <Upload size={16} className="text-indigo-500" />
-                    <span className="pf-meta font-medium uppercase tracking-tight">Upload</span>
+                    <Upload size={16} style={{ color: '#1f8577' }} />
+                    <span style={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: '-.025em' }}>Upload</span>
                   </button>
                   <button 
                     onClick={() => setProfileData(prev => ({ ...prev, profilePhoto: '' }))}
-                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 transition-colors text-slate-600"
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '8px', borderRadius: '12px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', color: '#5c6567' }}
                   >
-                    <Trash2 size={16} className="text-rose-500" />
-                    <span className="pf-meta font-medium uppercase tracking-tight">Remove</span>
+                    <Trash2 size={16} style={{ color: '#b5493f' }} />
+                    <span style={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: '-.025em' }}>Remove</span>
                   </button>
                 </div>
               </div>
@@ -370,36 +374,36 @@ const Profile: React.FC = () => {
 
             {/* Quick Stats */}
             <div className="pf-stats-card">
-              <div className="flex items-center justify-between mb-4">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <span className="pf-stats-label">Activity Summary</span>
-                <Activity size={16} className="text-indigo-400" />
+                <Activity size={16} style={{ color: '#3fa294' }} />
               </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13.5px] font-normal text-slate-400">Total Actions</span>
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 400, color: '#5c6567' }}>Total Actions</span>
                   <span className="pf-stats-value">{stats.total}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[13.5px] font-normal text-slate-400">Today</span>
-                  <span className="pf-stats-value text-indigo-400">{stats.today}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 400, color: '#5c6567' }}>Today</span>
+                  <span style={{ color: '#3fa294' }}>{stats.today}</span>
                 </div>
-                <div className="pt-4 border-t border-[#1E293B]">
-                  <span className="pf-stats-label block mb-1">Last Action</span>
-                  <p className="text-[13.5px] font-medium truncate text-slate-200">{stats.lastAction}</p>
+                <div style={{ paddingTop: '16px', borderStyle: 'solid', border: '1.4px solid #e4ddd1' }}>
+                  <span style={{ display: 'block', marginBottom: '4px' }}>Last Action</span>
+                  <p style={{ fontWeight: 500, overflow: 'hidden', color: '#a6d9d3', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.lastAction}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Right Column - Forms */}
-          <div className="lg:col-span-8 space-y-6">
+          <div style={{ marginTop: '24px' }}>
             {/* General Information */}
             <div className="pf-card">
               <div className="pf-card-header">
-                <UserIcon size={16} className="text-indigo-500" />
+                <UserIcon size={16} style={{ color: '#1f8577' }} />
                 <h3 className="pf-section-title">Personal Details</h3>
               </div>
-              <div className="pf-card-body grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '20px' }}>
                 <div className="pf-input-group">
                   <label className="pf-label"><Mail size={12} /> Work Email</label>
                   <input
@@ -447,22 +451,22 @@ const Profile: React.FC = () => {
             {/* Password Management */}
             <div className="pf-card">
               <div className="pf-card-header">
-                <Key size={16} className="text-indigo-500" />
+                <Key size={16} style={{ color: '#1f8577' }} />
                 <h3 className="pf-section-title">Security</h3>
               </div>
-              <div className="pf-card-body space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '16px' }}>
                   <div className="pf-input-group">
                     <label className="pf-label">New Password</label>
-                    <div className="relative">
+                    <div style={{ position: 'relative' }}>
                       <input
                         type={showPasswords ? 'text' : 'password'}
                         value={newPassword}
                         onChange={e => setNewPassword(e.target.value)}
-                        className="pf-input pr-10"
+                        style={{ paddingRight: '40px' }}
                         placeholder="Enter new password"
                       />
-                      <button onClick={() => setShowPasswords(!showPasswords)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 pf-btn-ghost">
+                      <button onClick={() => setShowPasswords(!showPasswords)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567' }}>
                         {showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
@@ -480,26 +484,26 @@ const Profile: React.FC = () => {
                 </div>
 
                 {newPassword && (
-                  <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                  <div style={{ padding: '12px', borderRadius: '12px', border: '1.4px solid #e4ddd1' }}>
                     {!passwordValidation.valid ? (
-                      <p className="pf-meta text-rose-500 font-medium flex items-center gap-1.5">
+                      <p style={{ color: '#b5493f', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <AlertCircle size={14} /> {passwordValidation.errors[0]}
                       </p>
                     ) : (
-                      <p className="pf-meta text-emerald-600 font-medium flex items-center gap-1.5">
+                      <p style={{ color: '#1f8577', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <CheckCircle2 size={14} /> Password complexity requirements met
                       </p>
                     )}
                   </div>
                 )}
 
-                <div className="flex justify-end pt-2">
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px' }}>
                   <button
                     onClick={handleChangePassword}
                     disabled={saving || !newPassword || !confirmPassword || !!passwordValidation.errors?.length}
-                    className="pf-btn-primary bg-slate-900 hover:bg-slate-800"
+                    style={{ background: '#0b3e39' }}
                   >
-                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}
+                    {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Shield size={16} />}
                     Update Security
                   </button>
                 </div>
@@ -509,27 +513,27 @@ const Profile: React.FC = () => {
             {/* Recent Activity */}
             <div className="pf-card">
               <div className="pf-card-header">
-                <History size={16} className="text-indigo-500" />
+                <History size={16} style={{ color: '#1f8577' }} />
                 <h3 className="pf-section-title">Recent Logs</h3>
               </div>
-              <div className="max-h-64 overflow-y-auto custom-scrollbar">
+              <div style={{ overflowY: 'auto' }}>
                 {userLogs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                    <Activity size={32} className="mb-2 opacity-30" />
-                    <p className="pf-meta font-medium uppercase tracking-widest">No activity history</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: '48px', color: '#5c6567', paddingBottom: '48px' }}>
+                    <Activity size={32} style={{ marginBottom: '8px', opacity: 0.3 }} />
+                    <p style={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.1em' }}>No activity history</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-slate-100">
+                  <div style={{ borderColor: '#e4ddd1' }}>
                     {userLogs.slice(0, 10).map((log: any) => (
                       <div key={log.id} className="pf-log-item">
                         <div className="pf-log-icon">
                           <Activity size={14} />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div style={{ flex: 1, minWidth: 0 }}>
                           <p className="pf-log-action">{log.action}</p>
                           <p className="pf-log-date">{new Date(log.date).toLocaleString()}</p>
                         </div>
-                        <ChevronRight size={14} className="text-slate-300" />
+                        <ChevronRight size={14} style={{ color: '#5c6567' }} />
                       </div>
                     ))}
                   </div>
@@ -546,30 +550,30 @@ const Profile: React.FC = () => {
         onClose={() => setShowSummaryModal(false)}
         title="Review Profile Changes"
       >
-        <div className="space-y-6">
-          <p className="text-sm text-slate-500">You are about to save the following updates to your profile:</p>
-          <div className="space-y-3 bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
+        <div style={{ marginTop: '24px' }}>
+          <p style={{ fontSize: '13px', color: '#5c6567' }}>You are about to save the following updates to your profile:</p>
+          <div style={{ marginTop: '12px', padding: '16px', borderRadius: '16px', border: '1.4px solid #e4ddd1' }}>
             {changedFields.map(field => (
               <div key={field} className="pf-change-item">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                <span className="font-semibold text-[#1E293B]">{field}</span>
-                <span className="text-[#64748B] font-normal">was modified</span>
+                <div style={{ width: '6px', height: '6px', borderRadius: '9999px', background: '#eef7f6' }} />
+                <span style={{ fontWeight: 600 }}>{field}</span>
+                <span style={{ fontWeight: 400 }}>was modified</span>
               </div>
             ))}
           </div>
-          <div className="flex gap-3 pt-2">
+          <div style={{ display: 'flex', gap: '12px', paddingTop: '8px' }}>
             <button
               onClick={() => setShowSummaryModal(false)}
-              className="pf-btn-secondary flex-1 justify-center"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
               Cancel
             </button>
             <button
               onClick={handleBatchSave}
               disabled={saving}
-              className="pf-btn-primary flex-1 justify-center"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+              {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Check size={16} />}
               Confirm & Save
             </button>
           </div>
@@ -582,39 +586,39 @@ const Profile: React.FC = () => {
         onClose={() => setShowCropModal(false)}
         title="Adjust Profile Photo"
       >
-        <div className="space-y-6">
-          <div className="aspect-square w-full bg-slate-100 rounded-2xl overflow-hidden relative flex items-center justify-center">
+        <div style={{ marginTop: '24px' }}>
+          <div style={{ aspectRatio: '1/1', width: '100%', background: '#eef7f6', borderRadius: '16px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {tempImage && (
-              <img src={tempImage} alt="Preview" className="max-w-full max-h-full object-contain" />
+              <img src={tempImage} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
             )}
-            <div className="absolute inset-0 border-2 border-dashed border-white/50 m-8 rounded-full pointer-events-none" />
+            <div style={{ position: 'absolute', top: 0, borderWidth: '2px', borderStyle: 'dashed', borderColor: 'rgba(255,255,255,.5)', margin: '32px', borderRadius: '9999px', pointerEvents: 'none', right: 0, bottom: 0, left: 0 }} />
           </div>
-          <div className="flex items-center justify-center gap-6">
-             <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Predefined</span>
-                <div className="flex gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px' }}>
+             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em' }}>Predefined</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   {PREDEFINED_AVATARS.map((url, i) => (
                     <button 
                       key={i} 
                       onClick={() => { setTempImage(url); }}
-                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform overflow-hidden"
+                      style={{ width: '40px', height: '40px', borderRadius: '9999px', borderWidth: '2px', borderColor: '#fff', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease', overflow: 'hidden' }}
                     >
-                      <img src={url} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
+                      <img src={url} alt={`Avatar ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </button>
                   ))}
                 </div>
              </div>
           </div>
-          <div className="flex gap-3">
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button
               onClick={() => setShowCropModal(false)}
-              className="pf-btn-secondary flex-1 justify-center"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
               Cancel
             </button>
             <button
               onClick={handleCropSave}
-              className="pf-btn-primary flex-1 justify-center"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
               <ImageIcon size={16} />
               Set Photo

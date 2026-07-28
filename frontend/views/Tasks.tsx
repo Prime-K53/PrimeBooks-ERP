@@ -12,6 +12,10 @@ import { useData } from '../context/DataContext';
 import { CRMTask } from '../types';
 import { OfflineImage } from '../components/OfflineImage';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 const CATEGORIES = ['General', 'Client', 'Internal', 'Meeting', 'Follow-up', 'Invoice', 'Project'] as const;
 const PRIORITIES: CRMTask['priority'][] = ['Urgent', 'High', 'Medium', 'Low'];
 const PRIORITY_ORDER: Record<string, number> = { Urgent: 0, High: 1, Medium: 2, Low: 3 };
@@ -269,18 +273,18 @@ const Tasks: React.FC = () => {
           ${task.status === 'Completed' ? 'bg-emerald-50/20' : overdue ? 'border-l-red-400 border-l-4' : dueToday ? 'border-l-amber-400 border-l-4' : ''}
         `}
       >
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             {task.status === 'Completed' ? (
-              <CheckCircle size={14} className="text-emerald-500 animate-check-pop" />
+              <CheckCircle size={14} style={{ color: '#1f8577' }} />
             ) : completingId === task.id ? (
-              <div className="w-3.5 h-3.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              <div style={{ width: '14px', height: '14px', borderWidth: '2px', border: '1.4px solid #e4ddd1', borderStyle: 'solid', borderRadius: '9999px', animation: 'spin 1s linear infinite' }} />
             ) : (
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wider ${getPriorityColor(task.priority)}`}>{task.priority}</span>
             )}
-            {task.hasAlarm && <Bell size={12} className="text-blue-500 animate-pulse" />}
+            {task.hasAlarm && <Bell size={12} style={{ color: '#1f8577', animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite' }} />}
             {task.category && task.category !== 'General' && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-bold uppercase tracking-wider">{task.category}</span>
+              <span style={{ paddingLeft: '6px', paddingTop: '2px', borderRadius: '6px', background: '#eef7f6', color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', paddingRight: '6px', paddingBottom: '2px' }}>{task.category}</span>
             )}
           </div>
           <button
@@ -292,26 +296,26 @@ const Tasks: React.FC = () => {
         </div>
         <h4 className={`font-bold text-slate-800 mb-1 text-sm leading-tight group-hover:text-blue-600 transition-colors ${task.status === 'Completed' ? 'line-through opacity-50' : ''}`}>{task.title}</h4>
         {task.notes && (
-          <p className="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed">{task.notes}</p>
+          <p style={{ fontSize: '11px', color: '#5c6567', marginBottom: '12px', display: '-webkit-box', lineHeight: 1.625, WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{task.notes}</p>
         )}
 
         {task.relatedTo && (
-          <div className="text-[10px] text-slate-500 mb-3 flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 w-fit">
+          <div style={{ color: '#5c6567', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', background: '#eef7f6', paddingLeft: '8px', paddingTop: '4px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', width: 'fit-content', paddingRight: '8px', paddingBottom: '4px' }}>
             {task.relatedTo.type === 'WorkOrder' ? <Briefcase size={10} /> : <User size={10} />}
-            <span className="truncate max-w-[150px] font-medium">{task.relatedTo.name}</span>
+            <span style={{ overflow: 'hidden', fontWeight: 500, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.relatedTo.name}</span>
           </div>
         )}
 
-        <div className="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-3 mt-1">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#5c6567', borderStyle: 'solid', borderColor: '#e4ddd1', paddingTop: '12px', marginTop: '4px' }}>
           <span className={`flex items-center gap-1.5 ${overdue ? 'text-red-500 font-bold' : dueToday ? 'text-amber-600 font-bold' : ''}`}>
             <Clock size={12} /> {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No date'}
           </span>
-          <div className="flex items-center gap-2" title={`Assigned to: ${assignedUser?.name || 'Unassigned'}`}>
-            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold border border-white shadow-sm text-[10px] overflow-hidden">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} title={`Assigned to: ${assignedUser?.name || 'Unassigned'}`}>
+            <div style={{ width: '24px', height: '24px', borderRadius: '9999px', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', fontWeight: 700, border: '1.4px solid #e4ddd1', borderColor: '#fff', boxShadow: '0 1px 2px rgba(0,0,0,.05)', overflow: 'hidden' }}>
               <OfflineImage
                 src={assignedUser?.avatar}
                 alt={assignedUser?.name || '?'}
-                className="w-full h-full object-cover"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 fallback={assignedUser?.name?.charAt(0) || '?'}
               />
             </div>
@@ -325,22 +329,22 @@ const Tasks: React.FC = () => {
     const columnTasks = sortedTasks.filter(t => t.status === status);
     return (
       <div
-        className="flex-1 min-w-[300px] bg-slate-50/50 rounded-2xl border border-slate-200/60 flex flex-col h-full overflow-hidden"
+        style={{ flex: 1, background: '#eef7f6', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
         onDragOver={handleDragOver}
         onDrop={(e) => handleDrop(e, status)}
       >
-        <div className="p-4 border-b border-slate-200/60 flex justify-between items-center bg-slate-100/50">
-          <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2">
+        <div style={{ padding: '16px', borderStyle: 'solid', borderColor: '#e4ddd1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#eef7f6' }}>
+          <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div className={`w-2 h-2 rounded-full ${status === 'Pending' ? 'bg-slate-400' : status === 'In Progress' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
             {title}
           </h3>
-          <span className="bg-white px-2 py-0.5 rounded-md text-xs text-slate-500 font-bold border border-slate-200 shadow-sm">{columnTasks.length}</span>
+          <span style={{ background: '#FEFDFB', paddingLeft: '8px', paddingTop: '2px', borderRadius: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 700, border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '8px', paddingBottom: '2px' }}>{columnTasks.length}</span>
         </div>
-        <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+        <div style={{ padding: '12px', flex: 1, overflowY: 'auto', marginTop: '12px' }}>
           {columnTasks.map(task => <TaskCard key={task.id} task={task} />)}
           {columnTasks.length === 0 && (
-            <div className="h-32 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 text-xs opacity-50">
-              <CheckCircle size={24} className="mb-2 opacity-20" />
+            <div style={{ height: '128px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#5c6567', fontSize: '11px', opacity: 0.5 }}>
+              <CheckCircle size={24} style={{ marginBottom: '8px', opacity: 0.2 }} />
               No tasks in {title}
             </div>
           )}
@@ -361,45 +365,45 @@ const Tasks: React.FC = () => {
           type="checkbox"
           checked={selectedIds.has(task.id)}
           onChange={() => toggleSelect(task.id)}
-          className="w-4 h-4 rounded border-slate-300 text-blue-600 shrink-0"
+          style={{ width: '16px', height: '16px', borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577', flexShrink: 0 }}
         />
         <button
           onClick={() => handleStatusUpdate(task, task.status === 'Completed' ? 'Pending' : 'Completed')}
-          className="shrink-0"
+          style={{ flexShrink: 0 }}
         >
           {task.status === 'Completed' ? (
-            <CheckCircle size={18} className="text-emerald-500" />
+            <CheckCircle size={18} style={{ color: '#1f8577' }} />
           ) : (
-            <Circle size={18} className="text-slate-300 hover:text-emerald-400 transition-colors" />
+            <Circle size={18} style={{ color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }} />
           )}
         </button>
-        <div className="flex-1 min-w-0 flex items-center gap-3">
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span className={`font-medium truncate ${task.status === 'Completed' ? 'line-through' : ''}`}>
             {task.title}
           </span>
           {task.category && task.category !== 'General' && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-bold uppercase shrink-0">{task.category}</span>
+            <span style={{ paddingLeft: '6px', paddingTop: '2px', borderRadius: '6px', background: '#eef7f6', color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', flexShrink: 0, paddingRight: '6px', paddingBottom: '2px' }}>{task.category}</span>
           )}
           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wider shrink-0 ${getPriorityColor(task.priority)}`}>
             {task.priority}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400 shrink-0">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: '#5c6567', flexShrink: 0 }}>
           <span className={`flex items-center gap-1 ${overdue ? 'text-red-500 font-bold' : ''}`}>
             <Clock size={12} />
             {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-'}
           </span>
-          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold border border-white shadow-sm text-[10px] overflow-hidden" title={assignedUser?.name || 'Unassigned'}>
+          <div style={{ width: '24px', height: '24px', borderRadius: '9999px', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', fontWeight: 700, border: '1.4px solid #e4ddd1', borderColor: '#fff', boxShadow: '0 1px 2px rgba(0,0,0,.05)', overflow: 'hidden' }} title={assignedUser?.name || 'Unassigned'}>
             <OfflineImage
               src={assignedUser?.avatar}
               alt={assignedUser?.name || '?'}
-              className="w-full h-full object-cover"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               fallback={assignedUser?.name?.charAt(0) || '?'}
             />
           </div>
           <button
             onClick={(e) => handleContextMenu(e, task.id)}
-            className="p-1 rounded text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-all"
+            style={{ padding: '4px', borderRadius: '6px', color: '#5c6567', opacity: 0.0, transition: 'all .15s ease' }}
           >
             <MoreVertical size={14} />
           </button>
@@ -416,36 +420,36 @@ const Tasks: React.FC = () => {
     return (
       <div
         ref={menuRef}
-        className="fixed w-52 bg-white/95 backdrop-blur-xl rounded-xl shadow-premium border border-slate-200 z-[100] animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1.5"
+        style={{ position: 'fixed', width: '208px', background: 'rgba(254,253,251,.95)', backdropFilter: 'blur(20px)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', transitionDuration: '100ms', display: 'flex', flexDirection: 'column', paddingTop: '6px', paddingBottom: '6px' }}
         style={{ top: menuPos.y, left: menuPos.x }}
       >
-        <div className="px-3 py-1 mb-1 border-b border-slate-100">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Task Options</p>
+        <div style={{ paddingLeft: '12px', paddingTop: '4px', marginBottom: '4px', borderStyle: 'solid', borderColor: '#e4ddd1', paddingRight: '12px', paddingBottom: '4px' }}>
+          <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em' }}>Task Options</p>
         </div>
 
-        <button onClick={() => handleEditTask(task)} className="w-full text-left px-4 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition-colors">
+        <button onClick={() => handleEditTask(task)} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontSize: '11px', fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '12px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>
           <Edit2 size={14} /> Edit Details
         </button>
 
         {task.status !== 'Completed' ? (
-          <button onClick={() => handleStatusUpdate(task, 'Completed')} className="w-full text-left px-4 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 flex items-center gap-3 transition-colors">
+          <button onClick={() => handleStatusUpdate(task, 'Completed')} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontSize: '11px', fontWeight: 500, color: '#0f544c', display: 'flex', alignItems: 'center', gap: '12px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>
             <CheckCircle size={14} /> Mark as Done
           </button>
         ) : (
-          <button onClick={() => handleStatusUpdate(task, 'Pending')} className="w-full text-left px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-3 transition-colors">
+          <button onClick={() => handleStatusUpdate(task, 'Pending')} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontSize: '11px', fontWeight: 500, color: '#b97e2b', display: 'flex', alignItems: 'center', gap: '12px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>
             <RefreshCw size={14} /> Set to Pending
           </button>
         )}
 
         {task.status === 'Pending' && (
-          <button onClick={() => handleStatusUpdate(task, 'In Progress')} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors">
+          <button onClick={() => handleStatusUpdate(task, 'In Progress')} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontSize: '11px', fontWeight: 500, color: '#0f544c', display: 'flex', alignItems: 'center', gap: '12px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>
             <Play size={14} /> Start Progress
           </button>
         )}
 
-        <div className="h-px bg-slate-100 my-1" />
+        <div style={{ height: '1px', background: '#eef7f6', margin: '4px', marginTop: '4px', marginBottom: '4px' }} />
 
-        <button onClick={() => handleDeleteTask(task.id)} className="w-full text-left px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-3 transition-colors">
+        <button onClick={() => handleDeleteTask(task.id)} style={{ width: '100%', textAlign: 'left', paddingLeft: '16px', paddingTop: '8px', fontSize: '11px', fontWeight: 500, color: '#b5493f', display: 'flex', alignItems: 'center', gap: '12px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>
           <Trash2 size={14} /> Delete Task
         </button>
       </div>
@@ -453,28 +457,28 @@ const Tasks: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col relative overflow-hidden">
+    <div style={{ padding: '24px', marginLeft: 'auto', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
       {renderContextMenu()}
 
       {/* Task Form Modal */}
       {showTaskModal && (
-        <div className="fixed inset-0 z-[110] bg-slate-900/60 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-premium w-full max-w-lg overflow-hidden animate-in zoom-in-95 border border-white/40">
-            <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                {editingTask ? <Edit2 className="text-blue-600" size={20} /> : <CheckSquare className="text-blue-600" size={20} />}
+        <div style={{ position: 'fixed', top: 0, background: 'rgba(11,62,57,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)', right: 0, bottom: 0, left: 0 }}>
+          <div style={{ background: '#FEFDFB', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', width: '100%', maxWidth: '512px', overflow: 'hidden', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.4)' }}>
+            <div style={{ padding: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {editingTask ? <Edit2 style={{ color: '#1f8577' }} size={20} /> : <CheckSquare style={{ color: '#1f8577' }} size={20} />}
                 {editingTask ? 'Edit Task' : 'New Task'}
               </h2>
-              <button onClick={() => setShowTaskModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-200">
+              <button onClick={() => setShowTaskModal(false)} style={{ color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease', padding: '4px', borderRadius: '9999px' }}>
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleSaveTask} className="p-6 space-y-5 overflow-y-auto max-h-[70vh] custom-scrollbar">
+            <form onSubmit={handleSaveTask} style={{ padding: '24px', marginTop: '20px', overflowY: 'auto' }}>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Task Title</label>
+                <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '6px' }}>Task Title</label>
                 <input
                   type="text"
-                  className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/5 outline-none font-bold text-slate-800 shadow-sm"
+                  style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '13px', outline: 'none', fontWeight: 700, color: '#23282A', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
                   placeholder="What needs to be done?"
                   value={taskTitle}
                   onChange={e => setTaskTitle(e.target.value)}
@@ -482,13 +486,13 @@ const Tasks: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                  <label style={{ display: 'flex', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '6px', alignItems: 'center', gap: '8px' }}>
                     <Tag size={14} /> Category
                   </label>
                   <select
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:ring-4 focus:ring-blue-500/5 outline-none font-bold text-slate-700 shadow-sm"
+                    style={{ width: '100%', padding: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '13px', background: '#FEFDFB', outline: 'none', fontWeight: 700, color: '#23282A', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
                     value={taskCategory}
                     onChange={e => setTaskCategory(e.target.value)}
                   >
@@ -496,11 +500,11 @@ const Tasks: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                  <label style={{ display: 'flex', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '6px', alignItems: 'center', gap: '8px' }}>
                     <Flag size={14} /> Priority
                   </label>
                   <select
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:ring-4 focus:ring-blue-500/5 outline-none font-bold text-slate-700 shadow-sm"
+                    style={{ width: '100%', padding: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '13px', background: '#FEFDFB', outline: 'none', fontWeight: 700, color: '#23282A', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
                     value={taskPriority}
                     onChange={e => setTaskPriority(e.target.value as CRMTask['priority'])}
                   >
@@ -513,35 +517,35 @@ const Tasks: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                <label style={{ display: 'flex', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '6px', alignItems: 'center', gap: '8px' }}>
                   <AlignLeft size={14} /> Description
                 </label>
                 <textarea
-                  className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/5 outline-none h-24 resize-none shadow-sm"
+                  style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '13px', outline: 'none', height: '96px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
                   placeholder="Add details, notes, or checklist..."
                   value={taskDescription}
                   onChange={e => setTaskDescription(e.target.value)}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                  <label style={{ display: 'flex', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '6px', alignItems: 'center', gap: '8px' }}>
                     <Calendar size={14} /> Due Date
                   </label>
                   <input
                     type="date"
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/5 outline-none font-medium shadow-sm"
+                    style={{ width: '100%', padding: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '13px', outline: 'none', fontWeight: 500, boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
                     value={taskDate}
                     onChange={e => setTaskDate(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                  <label style={{ display: 'flex', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '6px', alignItems: 'center', gap: '8px' }}>
                     <User size={14} /> Assign To
                   </label>
                   <select
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:ring-4 focus:ring-blue-500/5 outline-none font-bold text-slate-700 shadow-sm"
+                    style={{ width: '100%', padding: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '13px', background: '#FEFDFB', outline: 'none', fontWeight: 700, color: '#23282A', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
                     value={taskAssignee}
                     onChange={e => setTaskAssignee(e.target.value)}
                   >
@@ -552,24 +556,24 @@ const Tasks: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div style={{ padding: '16px', background: '#eef7f6', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', marginTop: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded text-blue-600"
+                    style={{ width: '16px', height: '16px', borderRadius: '6px', color: '#1f8577' }}
                     checked={hasReminder}
                     onChange={e => setHasReminder(e.target.checked)}
                   />
-                  <span className="text-[10px] font-black text-blue-900 uppercase tracking-widest flex items-center gap-1.5">
+                  <span style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Bell size={12} /> Set Reminder Alert
                   </span>
                 </label>
                 {hasReminder && (
                   <div className="animate-in slide-in-from-top-1">
-                    <label className="block text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1 ml-1">Notify Me On</label>
+                    <label style={{ display: 'block', fontWeight: 900, color: '#3fa294', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px', marginLeft: '4px' }}>Notify Me On</label>
                     <input
                       type="datetime-local"
-                      className="w-full p-2.5 bg-white border border-blue-100 rounded-xl text-xs focus:ring-4 focus:ring-blue-500/5 outline-none font-bold shadow-sm"
+                      style={{ width: '100%', padding: '10px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', borderRadius: '12px', fontSize: '11px', outline: 'none', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
                       value={reminderTime}
                       onChange={e => setReminderTime(e.target.value)}
                     />
@@ -580,7 +584,7 @@ const Tasks: React.FC = () => {
               <button
                 type="submit"
                 disabled={!taskTitle}
-                className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale mt-2 active:scale-95"
+                style={{ width: '100%', paddingTop: '14px', background: '#1f8577', color: '#fff', borderRadius: '16px', fontWeight: 900, textTransform: 'uppercase', boxShadow: '0 4px 14px 0 rgba(31,133,119,.2)', transition: 'all .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '8px', paddingBottom: '14px' }}
               >
                 <Save size={16} /> {editingTask ? 'Update Task' : 'Create Task'}
               </button>
@@ -590,32 +594,32 @@ const Tasks: React.FC = () => {
       )}
 
       {/* Toolbar */}
-      <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+      <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'start', gap: '16px', flexShrink: 0 }}>
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 flex items-center gap-3 tracking-tight">
-            <CheckSquare className="text-blue-600" size={28} /> Task Manager
+          <h1 style={{ fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '12px', letterSpacing: '-.025em' }}>
+            <CheckSquare style={{ color: '#1f8577' }} size={28} /> Task Manager
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">Collaborate and track team activities across the system</p>
+          <p style={{ fontSize: '13px', color: '#5c6567', marginTop: '4px', fontWeight: 500 }}>Collaborate and track team activities across the system</p>
         </div>
 
-        <div className="flex flex-wrap gap-3 w-full md:w-auto">
-          <div className="relative group flex-1 md:flex-none">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', width: '100%' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567' }} size={14} />
             <input
               type="text"
               placeholder="Search tasks..."
-              className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs w-full md:w-64 outline-none focus:ring-4 focus:ring-blue-500/5 shadow-sm transition-all"
+              style={{ paddingLeft: '36px', paddingRight: '16px', paddingTop: '8px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '11px', width: '100%', outline: 'none', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', paddingBottom: '8px' }}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <div className="flex bg-white/70 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-sm">
+          <div style={{ display: 'flex', background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(12px)', padding: '4px', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
             <button onClick={() => setFilter('All')} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${filter === 'All' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}>All</button>
             <button onClick={() => setFilter('My Tasks')} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${filter === 'My Tasks' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}>My Tasks</button>
           </div>
 
-          <div className="flex bg-white/70 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-sm">
+          <div style={{ display: 'flex', background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(12px)', padding: '4px', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
             <button onClick={() => setViewMode('Board')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'Board' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`} title="Board View">
               <Columns size={16} />
             </button>
@@ -626,7 +630,7 @@ const Tasks: React.FC = () => {
 
           <button
             onClick={handleOpenNewTask}
-            className="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+            style={{ background: '#1f8577', color: '#fff', paddingLeft: '20px', paddingTop: '8px', borderRadius: '12px', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(31,133,119,.2)', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '8px' }}
           >
             <Plus size={16} /> New Task
           </button>
@@ -634,91 +638,91 @@ const Tasks: React.FC = () => {
       </div>
 
       {/* Stats Bar (QBO Style) */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg shrink-0">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
+        <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+          <div style={{ padding: '10px', background: '#eef7f6', color: '#5c6567', borderRadius: '10px', flexShrink: 0 }}>
             <List size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{stats.total}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Total</p>
+            <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{stats.total}</p>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0">
+        <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#d99a3f', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+          <div style={{ padding: '10px', background: '#fbead0', color: '#d99a3f', borderRadius: '10px', flexShrink: 0 }}>
             <Clock size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Pending</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{stats.pending}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Pending</p>
+            <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{stats.pending}</p>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+        <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+          <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', flexShrink: 0 }}>
             <Play size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">In Progress</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{stats.inProgress}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>In Progress</p>
+            <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{stats.inProgress}</p>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
+        <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+          <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', flexShrink: 0 }}>
             <CheckCircle size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Done</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{stats.completed}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Done</p>
+            <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{stats.completed}</p>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-violet-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-violet-50 text-violet-600 rounded-lg shrink-0">
+        <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+          <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', flexShrink: 0 }}>
             <Calendar size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Due Today</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{stats.dueToday}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Due Today</p>
+            <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{stats.dueToday}</p>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-rose-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg shrink-0">
+        <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#b5493f', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+          <div style={{ padding: '10px', background: '#fef2f2', color: '#b5493f', borderRadius: '10px', flexShrink: 0 }}>
             <AlertCircle size={20} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Overdue</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900">{stats.overdue}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Overdue</p>
+            <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{stats.overdue}</p>
           </div>
         </div>
       </div>
 
       {/* Bulk Actions */}
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200 shrink-0 animate-in slide-in-from-top-1">
-          <span className="text-xs font-bold text-blue-700">{selectedIds.size} selected</span>
-          <button onClick={handleBulkStatus.bind(null, 'Completed')} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-emerald-700 transition-colors">
+        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#eef7f6', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', flexShrink: 0 }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: '#0f544c' }}>{selectedIds.size} selected</span>
+          <button onClick={handleBulkStatus.bind(null, 'Completed')} style={{ paddingLeft: '12px', paddingTop: '6px', background: '#1f8577', color: '#fff', borderRadius: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.05em', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '12px', paddingBottom: '6px' }}>
             Mark Done
           </button>
-          <button onClick={handleBulkStatus.bind(null, 'In Progress')} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-700 transition-colors">
+          <button onClick={handleBulkStatus.bind(null, 'In Progress')} style={{ paddingLeft: '12px', paddingTop: '6px', background: '#1f8577', color: '#fff', borderRadius: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.05em', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '12px', paddingBottom: '6px' }}>
             Start Progress
           </button>
-          <button onClick={handleBulkStatus.bind(null, 'Pending')} className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-amber-700 transition-colors">
+          <button onClick={handleBulkStatus.bind(null, 'Pending')} style={{ paddingLeft: '12px', paddingTop: '6px', background: '#d99a3f', color: '#fff', borderRadius: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.05em', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '12px', paddingBottom: '6px' }}>
             Set Pending
           </button>
-          <button onClick={handleBulkDelete} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-700 transition-colors ml-auto">
+          <button onClick={handleBulkDelete} style={{ paddingLeft: '12px', paddingTop: '6px', background: '#b5493f', color: '#fff', borderRadius: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.05em', transition: 'color .15s ease,background .15s ease,border-color .15s ease', marginLeft: 'auto', paddingRight: '12px', paddingBottom: '6px' }}>
             Delete All
           </button>
         </div>
       )}
 
       {/* Info Strip */}
-      <div className="mb-4 flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2 shrink-0">
-        <Info size={12} className="text-blue-500" />
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', paddingLeft: '8px', flexShrink: 0, paddingRight: '8px' }}>
+        <Info size={12} style={{ color: '#1f8577' }} />
         Tip: Set reminders to get desktop alerts for critical deadlines. Drag cards between columns to update status.
       </div>
 
       {/* Board View */}
       {viewMode === 'Board' && (
-        <div className="flex-1 flex gap-6 overflow-x-auto pb-6 custom-scrollbar min-h-0">
+        <div style={{ flex: 1, display: 'flex', gap: '24px', overflowX: 'auto', paddingBottom: '24px', minHeight: 0 }}>
           <KanbanColumn status="Pending" title="Ready to Start" />
           <KanbanColumn status="In Progress" title="In Progress" />
           <KanbanColumn status="Completed" title="Finalized" />
@@ -727,28 +731,28 @@ const Tasks: React.FC = () => {
 
       {/* List View */}
       {viewMode === 'List' && (
-        <div className="flex-1 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-            <div className="w-4 shrink-0" />
-            <div className="w-4 shrink-0" />
-            <button onClick={() => setSortBy('title')} className="flex-1 flex items-center gap-1 hover:text-slate-600 transition-colors text-left">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', background: '#FEFDFB', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '16px', paddingTop: '10px', background: '#eef7f6', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.05em', paddingRight: '16px', paddingBottom: '10px' }}>
+            <div style={{ width: '16px', flexShrink: 0 }} />
+            <div style={{ width: '16px', flexShrink: 0 }} />
+            <button onClick={() => setSortBy('title')} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', textAlign: 'left' }}>
               Task <ArrowUpDown size={10} />
             </button>
-            <button onClick={() => setSortBy('priority')} className="flex items-center gap-1 hover:text-slate-600 transition-colors w-20 shrink-0">
+            <button onClick={() => setSortBy('priority')} style={{ display: 'flex', alignItems: 'center', gap: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', width: '80px', flexShrink: 0 }}>
               Priority <ArrowUpDown size={10} />
             </button>
-            <button onClick={() => setSortBy('dueDate')} className="flex items-center gap-1 hover:text-slate-600 transition-colors w-28 shrink-0">
+            <button onClick={() => setSortBy('dueDate')} style={{ display: 'flex', alignItems: 'center', gap: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', width: '112px', flexShrink: 0 }}>
               Due Date <ArrowUpDown size={10} />
             </button>
-            <div className="w-20 shrink-0 text-center">Assignee</div>
-            <div className="w-8 shrink-0" />
+            <div style={{ width: '80px', flexShrink: 0, textAlign: 'center' }}>Assignee</div>
+            <div style={{ width: '32px', flexShrink: 0 }} />
           </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div style={{ flex: 1, overflowY: 'auto' }}>
             {sortedTasks.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-16">
-                <CheckSquare size={48} className="mb-4 opacity-20" />
-                <p className="text-sm font-bold">No tasks found</p>
-                <p className="text-xs mt-1">
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#5c6567', paddingTop: '64px', paddingBottom: '64px' }}>
+                <CheckSquare size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
+                <p style={{ fontSize: '13px', fontWeight: 700 }}>No tasks found</p>
+                <p style={{ fontSize: '11px', marginTop: '4px' }}>
                   {searchTerm ? 'Try a different search term' : 'Create your first task to get started'}
                 </p>
               </div>

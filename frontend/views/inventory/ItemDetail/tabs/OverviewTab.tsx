@@ -4,6 +4,10 @@ import type { Item } from '../../../../types';
 import { resolveMinimumMarkup } from '../../../../services/pricingValidationService';
 import { generateBarcodeDataUrl, saveBarcodeAsImage } from '../../../../utils/barcodeGenerator';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: Item;
 }
@@ -105,28 +109,28 @@ export const OverviewTab: React.FC<Props> = ({ item }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: 24 }}>
       {sections.map(section => (
-        <div key={section.title} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-            <span className="p-1.5 rounded-lg bg-white shadow-sm text-slate-500">{section.icon}</span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{section.title}</span>
+        <div key={section.title} className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+          <div style={{ padding: '14px 20px', background: t[50], borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ padding: 6, borderRadius: 9, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', color: inkSoft }}>{section.icon}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{section.title}</span>
           </div>
-          <div className="p-5">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3.5 text-sm">
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px 24px', fontSize: 14 }}>
               {section.fields.map(f => {
                 if ((f as any).barcode && barcodeText) {
                   return (
-                    <div key={f.label} className="col-span-2">
-                      <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-0.5">
-                        {f.label}{!item.barcode && barcodeText ? <span className="text-[8px] text-slate-300 font-normal ml-1">(using SKU)</span> : ''}
+                    <div key={f.label} style={{ gridColumn: 'span 2' }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 2 }}>
+                        {f.label}{!item.barcode && barcodeText ? <span style={{ fontSize: 8, color: inkSoft, fontWeight: 400, marginLeft: 4 }}>(using SKU)</span> : ''}
                       </span>
-                      <div className="flex items-center gap-3 flex-wrap">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                         {barcodeDataUrl && (
                           <>
-                            <img src={barcodeDataUrl} alt={`Barcode ${barcodeText}`} className="h-10 border border-slate-200 rounded" />
-                            <button onClick={handleSaveBarcode}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded transition-colors cursor-pointer">
+                            <img src={barcodeDataUrl} alt={`Barcode ${barcodeText}`} style={{ height: 40, border: `1.4px solid ${hairline}`, borderRadius: 4 }} />
+                            <button onClick={handleSaveBarcode} className="prime-btn-secondary"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: 10, fontWeight: 500, color: '#fff', background: t[500], border: 'none', borderRadius: 4, cursor: 'pointer', transition: 'background .15s' }}>
                               <Download size={12} /> Save Image
                             </button>
                           </>
@@ -137,15 +141,15 @@ export const OverviewTab: React.FC<Props> = ({ item }) => {
                 }
                 if ((f as any).qrcode && item.qrCode) {
                   return (
-                    <div key={f.label} className="col-span-2">
-                      <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-0.5">{f.label}</span>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="font-mono text-slate-700 text-sm">{item.qrCode}</span>
+                    <div key={f.label} style={{ gridColumn: 'span 2' }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 2 }}>{f.label}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <span style={{ fontFamily: 'monospace', color: ink, fontSize: 14 }}>{item.qrCode}</span>
                         {qrDataUrl && (
                           <>
-                            <img src={qrDataUrl} alt={`QR ${item.qrCode}`} className="h-10 w-10 border border-slate-200 rounded" />
-                            <button onClick={handleSaveQR}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded transition-colors cursor-pointer">
+                            <img src={qrDataUrl} alt={`QR ${item.qrCode}`} style={{ height: 40, width: 40, border: `1.4px solid ${hairline}`, borderRadius: 4 }} />
+                            <button onClick={handleSaveQR} className="prime-btn-secondary"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: 10, fontWeight: 500, color: '#fff', background: t[500], border: 'none', borderRadius: 4, cursor: 'pointer', transition: 'background .15s' }}>
                               <Download size={12} /> Save Image
                             </button>
                           </>
@@ -155,9 +159,14 @@ export const OverviewTab: React.FC<Props> = ({ item }) => {
                   );
                 }
                 return (
-                  <div key={f.label} className={f.span === 2 ? 'col-span-2' : ''}>
-                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-0.5">{f.label}</span>
-                    <span className={`${f.bold ? 'font-semibold' : ''} ${f.mono ? 'font-mono' : ''} ${f.accent ? 'text-blue-600' : 'text-slate-700'} ${f.capitalize ? 'capitalize' : ''} ${f.enabled ? 'text-emerald-600' : ''}`}>
+                  <div key={f.label} style={f.span === 2 ? { gridColumn: 'span 2' } : {}}>
+                    <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 2 }}>{f.label}</span>
+                    <span style={{
+                      fontWeight: f.bold ? 600 : 400,
+                      fontFamily: f.mono ? 'monospace' : undefined,
+                      color: f.accent ? t[500] : f.enabled ? t[500] : ink,
+                      textTransform: f.capitalize ? 'capitalize' as const : undefined,
+                    }}>
                       {f.value}
                     </span>
                   </div>

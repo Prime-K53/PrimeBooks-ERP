@@ -8,6 +8,10 @@ import {
 import { useProduction } from '../../context/ProductionContext';
 import { useAuth } from '../../context/AuthContext';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 const GangRunEstimator: React.FC = () => {
     const { workOrders, updateWorkOrder } = useProduction();
     const { companyConfig, notify } = useAuth();
@@ -68,126 +72,126 @@ const GangRunEstimator: React.FC = () => {
     };
 
     return (
-        <div className="h-[calc(100vh-4rem)] flex flex-col bg-[#f8fafc] font-sans overflow-hidden">
-            <div className="px-10 py-8 border-b border-slate-200 bg-white/70 backdrop-blur-md flex justify-between items-center shrink-0">
+        <div style={{ display: 'flex', flexDirection: 'column', fontFamily: 'Inter,"DM Sans",sans-serif', overflow: 'hidden' }}>
+            <div style={{ paddingLeft: '40px', paddingTop: '32px', borderStyle: 'solid', borderColor: '#e4ddd1', background: 'rgba(254,253,251,.7)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, paddingRight: '40px', paddingBottom: '32px' }}>
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
-                        <Scale size={32} className="text-blue-600"/> Production Sheet Intelligence
+                    <h1 style={{ fontSize: '30px', fontWeight: 900, color: '#23282A', textTransform: 'uppercase', letterSpacing: '-.05em', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Scale size={32} style={{ color: '#1f8577' }}/> Production Sheet Intelligence
                     </h1>
-                    <p className="text-sm text-slate-500 mt-1">Mathematical gang-run optimization for maximum yield.</p>
+                    <p style={{ fontSize: '13px', color: '#5c6567', marginTop: '4px' }}>Mathematical gang-run optimization for maximum yield.</p>
                 </div>
                 <button 
                     onClick={() => setShowSaveModal(true)}
-                    className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg flex items-center gap-2"
+                    style={{ background: '#0b3e39', color: '#fff', paddingLeft: '24px', paddingTop: '10px', borderRadius: '12px', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 10px 15px -3px rgba(0,0,0,.1)', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '24px', paddingBottom: '10px' }}
                 >
                     <Save size={16}/> Apply to Job
                 </button>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
-                <div className="w-96 border-r border-slate-200 bg-white overflow-y-auto p-8 space-y-10 custom-scrollbar shrink-0">
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                <div style={{ width: '384px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#FEFDFB', overflowY: 'auto', padding: '32px', marginTop: '40px', flexShrink: 0 }}>
                     <section>
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                            <Layers size={14} className="text-blue-500"/> Parent Sheet Matrix (mm)
+                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Layers size={14} style={{ color: '#1f8577' }}/> Parent Sheet Matrix (mm)
                         </h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Width</label>
-                                <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={parentSize.w} onChange={e => setParentSize({...parentSize, w: parseFloat(e.target.value)})}/>
+                                <label style={{ display: 'block', fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', marginBottom: '8px' }}>Width</label>
+                                <input type="number" style={{ width: '100%', padding: '12px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700 }} value={parentSize.w} onChange={e => setParentSize({...parentSize, w: parseFloat(e.target.value)})}/>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Height</label>
-                                <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={parentSize.h} onChange={e => setParentSize({...parentSize, h: parseFloat(e.target.value)})}/>
+                                <label style={{ display: 'block', fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', marginBottom: '8px' }}>Height</label>
+                                <input type="number" style={{ width: '100%', padding: '12px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700 }} value={parentSize.h} onChange={e => setParentSize({...parentSize, h: parseFloat(e.target.value)})}/>
                             </div>
                         </div>
                     </section>
 
                     <section>
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                            <Maximize size={14} className="text-purple-500"/> Cut Size Matrix (mm)
+                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Maximize size={14} style={{ color: '#1f8577' }}/> Cut Size Matrix (mm)
                         </h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Final Width</label>
-                                <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-purple-600" value={finalSize.w} onChange={e => setFinalSize({...finalSize, w: parseFloat(e.target.value)})}/>
+                                <label style={{ display: 'block', fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', marginBottom: '8px' }}>Final Width</label>
+                                <input type="number" style={{ width: '100%', padding: '12px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, color: '#1f8577' }} value={finalSize.w} onChange={e => setFinalSize({...finalSize, w: parseFloat(e.target.value)})}/>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Final Height</label>
-                                <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-purple-600" value={finalSize.h} onChange={e => setFinalSize({...finalSize, h: parseFloat(e.target.value)})}/>
+                                <label style={{ display: 'block', fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', marginBottom: '8px' }}>Final Height</label>
+                                <input type="number" style={{ width: '100%', padding: '12px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, color: '#1f8577' }} value={finalSize.h} onChange={e => setFinalSize({...finalSize, h: parseFloat(e.target.value)})}/>
                             </div>
                         </div>
                     </section>
 
                     <section>
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Technical Offsets</h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <label className="text-xs font-bold text-slate-600">Sheet Margin</label>
-                                <input type="number" className="w-20 p-2 border border-slate-200 rounded-lg text-right text-xs" value={margin} onChange={e => setMargin(parseFloat(e.target.value))}/>
+                        <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '24px' }}>Technical Offsets</h3>
+                        <div style={{ marginTop: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#5c6567' }}>Sheet Margin</label>
+                                <input type="number" style={{ width: '80px', padding: '8px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', textAlign: 'right', fontSize: '11px' }} value={margin} onChange={e => setMargin(parseFloat(e.target.value))}/>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <label className="text-xs font-bold text-slate-600">Gutter (Gap)</label>
-                                <input type="number" className="w-20 p-2 border border-slate-200 rounded-lg text-right text-xs" value={gutter} onChange={e => setGutter(parseFloat(e.target.value))}/>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#5c6567' }}>Gutter (Gap)</label>
+                                <input type="number" style={{ width: '80px', padding: '8px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', textAlign: 'right', fontSize: '11px' }} value={gutter} onChange={e => setGutter(parseFloat(e.target.value))}/>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <label className="text-xs font-bold text-slate-600">Bleed Radius</label>
-                                <input type="number" className="w-20 p-2 border border-slate-200 rounded-lg text-right text-xs" value={bleed} onChange={e => setBleed(parseFloat(e.target.value))}/>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#5c6567' }}>Bleed Radius</label>
+                                <input type="number" style={{ width: '80px', padding: '8px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', textAlign: 'right', fontSize: '11px' }} value={bleed} onChange={e => setBleed(parseFloat(e.target.value))}/>
                             </div>
                         </div>
                     </section>
 
-                    <section className="pt-6 border-t border-slate-100">
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Order Target</label>
-                        <input type="number" className="w-full p-4 bg-slate-900 text-white rounded-2xl text-2xl font-black tracking-tighter" value={targetQty} onChange={e => setTargetQty(parseInt(e.target.value))}/>
+                    <section style={{ paddingTop: '24px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                        <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px' }}>Order Target</label>
+                        <input type="number" style={{ width: '100%', padding: '16px', background: '#0b3e39', color: '#fff', borderRadius: '16px', fontSize: '24px', fontWeight: 900, letterSpacing: '-.05em' }} value={targetQty} onChange={e => setTargetQty(parseInt(e.target.value))}/>
                     </section>
                 </div>
 
-                <main className="flex-1 p-10 overflow-y-auto custom-scrollbar">
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-10">
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform"><CheckCircle size={48}/></div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Yield</p>
-                            <h3 className="text-3xl font-black text-slate-900">{result.bestYield} <span className="text-sm font-bold text-slate-400 uppercase">Up</span></h3>
-                            <p className="text-[9px] font-bold text-blue-500 mt-2 uppercase tracking-tight">{result.orientation} Fit</p>
+                <main style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '32px', marginBottom: '40px' }}>
+                        <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', top: 0, right: 0, padding: '16px', opacity: .05, transition: 'transform .15s ease' }}><CheckCircle size={48}/></div>
+                            <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>Max Yield</p>
+                            <h3 style={{ fontSize: '30px', fontWeight: 900, color: '#23282A' }}>{result.bestYield} <span style={{ fontSize: '13px', fontWeight: 700, color: '#5c6567', textTransform: 'uppercase' }}>Up</span></h3>
+                            <p style={{ fontWeight: 700, color: '#1f8577', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '-.025em' }}>{result.orientation} Fit</p>
                         </div>
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Stock Pull</p>
-                            <h3 className="text-3xl font-black text-slate-900">{result.sheetsNeeded} <span className="text-sm font-bold text-slate-400 uppercase">Sheets</span></h3>
-                            <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Parent Material Count</p>
+                        <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                            <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>Stock Pull</p>
+                            <h3 style={{ fontSize: '30px', fontWeight: 900, color: '#23282A' }}>{result.sheetsNeeded} <span style={{ fontSize: '13px', fontWeight: 700, color: '#5c6567', textTransform: 'uppercase' }}>Sheets</span></h3>
+                            <p style={{ fontWeight: 700, color: '#5c6567', marginTop: '8px', textTransform: 'uppercase' }}>Parent Material Count</p>
                         </div>
-                        <div className="bg-slate-900 p-6 rounded-3xl shadow-xl text-white">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Waste Factor</p>
+                        <div style={{ background: '#0b3e39', padding: '24px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', color: '#fff' }}>
+                            <p style={{ fontWeight: 900, color: '#3fa294', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>Waste Factor</p>
                             <h3 className={`text-3xl font-black ${result.wastePercent > 25 ? 'text-rose-400' : 'text-emerald-400'}`}>{result.wastePercent.toFixed(1)}%</h3>
-                            <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Unutilized Area</p>
+                            <p style={{ fontWeight: 700, color: '#5c6567', marginTop: '8px', textTransform: 'uppercase' }}>Unutilized Area</p>
                         </div>
-                        <div className="bg-blue-600 p-6 rounded-3xl shadow-xl text-white">
-                            <p className="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-1">Imposition Logic</p>
-                            <h3 className="text-xl font-bold uppercase tracking-tighter mt-1">Ready for RIP</h3>
-                            <div className="mt-4 flex items-center gap-1">
+                        <div style={{ background: '#1f8577', padding: '24px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', color: '#fff' }}>
+                            <p style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>Imposition Logic</p>
+                            <h3 style={{ fontSize: '20px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.05em', marginTop: '4px' }}>Ready for RIP</h3>
+                            <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <CheckCircle size={14} className="text-emerald-300"/>
-                                <span className="text-[9px] font-black uppercase">Mathematically Optimized</span>
+                                <span style={{ fontWeight: 900, textTransform: 'uppercase' }}>Mathematically Optimized</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-slate-100"></div>
+                    <div style={{ background: '#FEFDFB', padding: '40px', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, pointerEvents: 'none', background: '#eef7f6', right: 0, bottom: 0, left: 0 }}></div>
                         
-                        <h3 className="font-bold text-slate-400 uppercase tracking-[0.3em] text-[10px] mb-10">Imposition Preview Matrix</h3>
+                        <h3 style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px' }}>Imposition Preview Matrix</h3>
                         
                         <div 
-                            className="bg-slate-100 border-2 border-slate-300 rounded shadow-2xl relative transition-all duration-500"
+                            style={{ background: '#eef7f6', borderWidth: '2px', borderColor: '#e4ddd1', borderRadius: '6px', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', position: 'relative', transition: 'all .15s ease', transitionDuration: '500ms' }}
                             style={{ 
                                 width: '400px', 
                                 height: `${(parentSize.h / parentSize.w) * 400}px`,
                                 padding: `${(margin / parentSize.w) * 400}px`
                             }}
                         >
-                            <div className="w-full h-full border border-dashed border-blue-200 flex flex-wrap gap-[2px] content-start overflow-hidden">
+                            <div style={{ width: '100%', height: '100%', border: '1.4px solid #e4ddd1', borderStyle: 'dashed', borderColor: '#a6d9d3', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', overflow: 'hidden' }}>
                                 {Array.from({ length: result.bestYield }).map((_, i) => (
                                     <div 
                                         key={i} 
-                                        className="bg-white border border-blue-500/20 rounded-sm shadow-inner animate-in fade-in zoom-in-95 duration-500"
+                                        style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', borderRadius: '4px', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)', transitionDuration: '500ms' }}
                                         style={{ 
                                             width: `${((finalSize.w + bleed*2) / parentSize.w) * 400}px`,
                                             height: `${((finalSize.h + bleed*2) / parentSize.h) * ((parentSize.h / parentSize.w) * 400)}px`
@@ -197,25 +201,25 @@ const GangRunEstimator: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mt-12 flex gap-10 items-center text-xs text-slate-400 font-bold uppercase tracking-widest">
-                            <span className="flex items-center gap-2"><Ruler size={14}/> {parentSize.w}mm x {parentSize.h}mm</span>
-                            <span className="flex items-center gap-2"><Info size={14}/> {bleed}mm Bleed + {gutter}mm Gutter</span>
+                        <div style={{ marginTop: '48px', display: 'flex', gap: '40px', alignItems: 'center', fontSize: '11px', color: '#5c6567', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Ruler size={14}/> {parentSize.w}mm x {parentSize.h}mm</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Info size={14}/> {bleed}mm Bleed + {gutter}mm Gutter</span>
                         </div>
                     </div>
                 </main>
             </div>
 
             {showSaveModal && (
-                <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                            <h3 className="font-black text-slate-900 uppercase tracking-tighter">Apply to Work Order</h3>
+                <div style={{ position: 'fixed', top: 0, background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)', right: 0, bottom: 0, left: 0 }}>
+                    <div style={{ background: '#FEFDFB', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', width: '100%', maxWidth: '448px', overflow: 'hidden' }}>
+                        <div style={{ padding: '24px', borderStyle: 'solid', borderColor: '#e4ddd1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#eef7f6' }}>
+                            <h3 style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', letterSpacing: '-.05em' }}>Apply to Work Order</h3>
                             <button onClick={() => setShowSaveModal(false)}><X/></button>
                         </div>
-                        <div className="p-6">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Select Target Job</label>
+                        <div style={{ padding: '24px' }}>
+                            <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Select Target Job</label>
                             <select 
-                                className="w-full p-3 border border-slate-200 rounded-xl text-sm mb-6"
+                                style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '13px', marginBottom: '24px' }}
                                 value={selectedWoId}
                                 onChange={e => setSelectedWoId(e.target.value)}
                             >
@@ -224,7 +228,7 @@ const GangRunEstimator: React.FC = () => {
                                     <option key={wo.id} value={wo.id}>{wo.id} - {wo.productName}</option>
                                 ))}
                             </select>
-                            <button onClick={handleApplyToOrder} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:bg-blue-700">
+                            <button onClick={handleApplyToOrder} style={{ width: '100%', paddingTop: '16px', background: '#1f8577', color: '#fff', borderRadius: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', paddingBottom: '16px' }}>
                                 Save Optimization Data
                             </button>
                         </div>

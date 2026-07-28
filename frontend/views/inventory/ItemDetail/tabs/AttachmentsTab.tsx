@@ -1,15 +1,19 @@
 import React from 'react';
 import { Paperclip, File, FileImage, FileText, Download, Eye } from 'lucide-react';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: any;
 }
 
 const getFileIcon = (mime?: string) => {
-  if (!mime) return <File size={20} className="text-slate-400" />;
-  if (mime.startsWith('image/')) return <FileImage size={20} className="text-violet-500" />;
-  if (mime.includes('pdf')) return <FileText size={20} className="text-red-500" />;
-  return <File size={20} className="text-blue-500" />;
+  if (!mime) return <File size={20} style={{ color: inkSoft }} />;
+  if (mime.startsWith('image/')) return <FileImage size={20} style={{ color: '#8b5cf6' }} />;
+  if (mime.includes('pdf')) return <FileText size={20} style={{ color: danger }} />;
+  return <File size={20} style={{ color: t[500] }} />;
 };
 
 export const AttachmentsTab: React.FC<Props> = ({ item }) => {
@@ -17,24 +21,24 @@ export const AttachmentsTab: React.FC<Props> = ({ item }) => {
 
   if (attachments.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <Paperclip size={48} className="mb-4 opacity-50" />
-        <p className="text-sm font-semibold">No Attachments</p>
-        <p className="text-xs mt-1">No files have been attached to this item.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', color: inkSoft }}>
+        <Paperclip size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+        <p style={{ fontSize: 14, fontWeight: 600 }}>No Attachments</p>
+        <p style={{ fontSize: 12, marginTop: 4 }}>No files have been attached to this item.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
         {attachments.map((att, i) => (
-          <div key={att.id || i} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-sm transition-all shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 bg-slate-50 rounded-xl">{getFileIcon(att.type)}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">{att.name || `Attachment ${i + 1}`}</p>
-                <p className="text-xs text-slate-400 mt-0.5">
+          <div key={att.id || i} className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'all .15s' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{ padding: 10, background: t[50], borderRadius: 12 }}>{getFileIcon(att.type)}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name || `Attachment ${i + 1}`}</p>
+                <p style={{ fontSize: 12, color: inkSoft, marginTop: 2 }}>
                   {att.type || 'Unknown type'}
                   {att.size ? ` · ${(att.size / 1024).toFixed(1)} KB` : ''}
                   {att.uploadedAt ? ` · ${new Date(att.uploadedAt).toLocaleDateString()}` : ''}
@@ -42,13 +46,13 @@ export const AttachmentsTab: React.FC<Props> = ({ item }) => {
               </div>
             </div>
             {att.url && (
-              <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                <a href={att.url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-all">
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: `1.4px solid ${hairline}` }}>
+                <a href={att.url} target="_blank" rel="noopener noreferrer" className="prime-btn-secondary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: t[50], color: t[600], border: 'none', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'none', transition: 'background .15s' }}>
                   <Eye size={12} /> View
                 </a>
-                <a href={att.url} download
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-100 transition-all">
+                <a href={att.url} download className="prime-btn-secondary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: t[50], color: inkSoft, border: 'none', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'none', transition: 'background .15s' }}>
                   <Download size={12} /> Download
                 </a>
               </div>

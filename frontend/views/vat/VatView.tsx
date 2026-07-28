@@ -8,40 +8,35 @@ const VatView: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'Dashboard' | 'Reports' | 'Settings'>('Dashboard');
 
     return (
-        <div className="h-full flex flex-col">
-            {/* Header */}
-            <div className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-slate-800">VAT management</h1>
-                <div className="flex space-x-1 bg-slate-100 p-1 rounded-xl">
-                    <button
-                        onClick={() => setActiveTab('Dashboard')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors
-                            ${activeTab === 'Dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                        <LayoutDashboard size={16} className="mr-2" />
-                        Dashboard
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('Reports')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors
-                            ${activeTab === 'Reports' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                        <FileText size={16} className="mr-2" />
-                        Returns & reports
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('Settings')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors
-                            ${activeTab === 'Settings' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                        <Settings size={16} className="mr-2" />
-                        Configuration
-                    </button>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{
+                background: '#FEFDFB', borderBottom: '1px solid #e4ddd1',
+                padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#23282A', margin: 0 }}>VAT management</h1>
+                <div className="prime-btn-secondary" style={{ display: 'flex', gap: 4, background: '#eef7f6', padding: 4, borderRadius: 12 }}>
+                    {(['Dashboard', 'Reports', 'Settings'] as const).map(tab => (
+                        <button key={tab} onClick={() => setActiveTab(tab)}
+                            style={{
+                                padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                                border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                                background: activeTab === tab ? '#FEFDFB' : 'transparent',
+                                color: activeTab === tab ? '#1f8577' : '#5c6567',
+                                boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                                transition: 'all .15s ease'
+                            }}
+                            onMouseEnter={e => { if (activeTab !== tab) { e.currentTarget.style.color = '#23282A'; } }}
+                            onMouseLeave={e => { if (activeTab !== tab) { e.currentTarget.style.color = '#5c6567'; } }}
+                        >
+                            {tab === 'Dashboard' && <LayoutDashboard size={16} />}
+                            {tab === 'Reports' && <FileText size={16} />}
+                            {tab === 'Settings' && <Settings size={16} />}
+                            {tab === 'Reports' ? 'Returns & reports' : tab === 'Settings' ? 'Configuration' : 'Dashboard'}
+                        </button>
+                    ))}
                 </div>
             </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-auto p-6 bg-slate-50">
+            <div style={{ flex: 1, overflow: 'auto', padding: 24, background: '#eef7f6' }}>
                 {activeTab === 'Dashboard' && <VatDashboard />}
                 {activeTab === 'Reports' && <VatReports />}
                 {activeTab === 'Settings' && <VatSettings />}

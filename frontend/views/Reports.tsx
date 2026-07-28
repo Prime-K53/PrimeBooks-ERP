@@ -30,6 +30,10 @@ import WalletStatement from './reports/WalletStatement';
 import CustomerStatement from './reports/CustomerStatement';
 import { currencyService } from '../services/currencyService';
 import { getRevenueSourceLabel } from '../services/revenueAnalysisService';
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 import {
   buildRevenueReportingSnapshot,
   buildRevenueReportingSnapshotFromLines,
@@ -152,53 +156,53 @@ const Reports: React.FC = () => {
       : 0;
 
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all duration-200">
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0"><TrendingUp size={20} /></div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Markup Rate</p>
+      <div style={{ marginTop: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '12px' }}>
+          <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+            <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', flexShrink: 0 }}><TrendingUp size={20} /></div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Markup Rate</p>
               <p className={`text-lg md:text-xl font-semibold ${marginPercent >= 20 ? 'text-emerald-600' : 'text-amber-600'}`}>{marginPercent.toFixed(1)}%</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{selectedCustomerName ? `${selectedCustomerName} scope` : 'All revenue sources'}</p>
+              <p style={{ color: '#5c6567', marginTop: '2px' }}>{selectedCustomerName ? `${selectedCustomerName} scope` : 'All revenue sources'}</p>
             </div>
           </div>
 
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all duration-200">
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg shrink-0"><BarChart3 size={20} /></div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Profit Markup</p>
-              <p className="text-lg md:text-xl font-semibold text-blue-600">{formatCurrency(marginReport.totals.profitMargin)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{marginReport.totals.transactionCount} transactions</p>
+          <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+            <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', flexShrink: 0 }}><BarChart3 size={20} /></div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Profit Markup</p>
+              <p style={{ fontSize: '16px', fontWeight: 600, color: '#1f8577' }}>{formatCurrency(marginReport.totals.profitMargin)}</p>
+              <p style={{ color: '#5c6567', marginTop: '2px' }}>{marginReport.totals.transactionCount} transactions</p>
             </div>
           </div>
 
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-indigo-500 hover:bg-slate-50 transition-all duration-200">
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg shrink-0"><Coins size={20} /></div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Market Adjustments</p>
-              <p className="text-lg md:text-xl font-semibold text-indigo-600">{formatCurrency(marginReport.totals.adjustmentTotal)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{adjustmentShare.toFixed(1)}% of revenue</p>
+          <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
+            <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', flexShrink: 0 }}><Coins size={20} /></div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Market Adjustments</p>
+              <p style={{ fontSize: '16px', fontWeight: 600, color: '#1f8577' }}>{formatCurrency(marginReport.totals.adjustmentTotal)}</p>
+              <p style={{ color: '#5c6567', marginTop: '2px' }}>{adjustmentShare.toFixed(1)}% of revenue</p>
             </div>
           </div>
 
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-cyan-500 hover:bg-slate-50 transition-all duration-200">
+          <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
             <div className={`p-2.5 rounded-lg shrink-0 ${marginReport.totals.roundingTotal >= 0 ? 'bg-cyan-50 text-cyan-600' : 'bg-rose-50 text-rose-600'}`}>
               <Activity size={20} />
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Rounding Impact</p>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Rounding Impact</p>
               <p className={`text-lg md:text-xl font-semibold ${marginReport.totals.roundingTotal >= 0 ? 'text-cyan-600' : 'text-rose-600'}`}>
                 {marginReport.totals.roundingTotal >= 0 ? '+' : ''}{formatCurrency(marginReport.totals.roundingTotal)}
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Net round up / down</p>
+              <p style={{ color: '#5c6567', marginTop: '2px' }}>Net round up / down</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 text-sm tracking-tight mb-4 flex items-center gap-2">
-              <TrendingUp size={18} className="text-emerald-500" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px' }}>
+          <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+            <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', letterSpacing: '-.025em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp size={18} style={{ color: '#1f8577' }} />
               Markup Trend
             </h3>
             <div style={{ width: '100%', height: 256, minHeight: 160 }}>
@@ -233,9 +237,9 @@ const Reports: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 text-sm tracking-tight mb-4 flex items-center gap-2">
-              <Activity size={18} className="text-blue-500" />
+          <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+            <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', letterSpacing: '-.025em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Activity size={18} style={{ color: '#1f8577' }} />
               Source Performance
             </h3>
             <div style={{ width: '100%', height: 256, minHeight: 160 }}>
@@ -266,33 +270,33 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <h3 className="font-bold text-slate-800 text-sm tracking-tight mb-4 flex items-center gap-2">
-            <Activity size={18} className="text-blue-500" />
+        <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', overflow: 'hidden' }}>
+          <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', letterSpacing: '-.025em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Activity size={18} style={{ color: '#1f8577' }} />
             Revenue Source Matrix
           </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr className="text-slate-400 font-bold text-[10px] tracking-widest border-b border-slate-100 uppercase">
-                  <th className="px-4 py-3">Source</th>
-                  <th className="px-4 py-3 text-right">Transactions</th>
-                  <th className="px-4 py-3 text-right">Revenue</th>
-                  <th className="px-4 py-3 text-right">Material Cost</th>
-                  <th className="px-4 py-3 text-right">Adjustments</th>
-                  <th className="px-4 py-3 text-right">Profit Markup</th>
-                  <th className="px-4 py-3 text-right">Rounding</th>
+                <tr style={{ color: '#5c6567', fontWeight: 700, letterSpacing: '.1em', borderStyle: 'solid', borderColor: '#e4ddd1', textTransform: 'uppercase' }}>
+                  <th style={{ paddingLeft: '16px', paddingTop: '12px', paddingRight: '16px', paddingBottom: '12px' }}>Source</th>
+                  <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Transactions</th>
+                  <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Revenue</th>
+                  <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Material Cost</th>
+                  <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Adjustments</th>
+                  <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Profit Markup</th>
+                  <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Rounding</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody style={{ borderColor: '#e4ddd1' }}>
                 {marginReport.sources.map((source) => (
-                  <tr key={source.source} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-slate-700">{getRevenueSourceLabel(source.source)}</td>
-                    <td className="px-4 py-3 text-right text-slate-500 tabular-nums">{source.transactionCount}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-slate-900 tabular-nums">{formatCurrency(source.revenue)}</td>
-                    <td className="px-4 py-3 text-right text-slate-600 font-semibold tabular-nums">{formatCurrency(source.materialCost)}</td>
-                    <td className="px-4 py-3 text-right text-indigo-700 font-semibold tabular-nums">{formatCurrency(source.adjustmentTotal)}</td>
-                    <td className="px-4 py-3 text-right text-emerald-700 font-semibold tabular-nums">{formatCurrency(source.profitMargin)}</td>
+                  <tr key={source.source} style={{ transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
+                    <td style={{ paddingLeft: '16px', paddingTop: '12px', fontWeight: 600, color: '#23282A', paddingRight: '16px', paddingBottom: '12px' }}>{getRevenueSourceLabel(source.source)}</td>
+                    <td style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', color: '#5c6567', fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '12px' }}>{source.transactionCount}</td>
+                    <td style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', fontWeight: 600, color: '#23282A', fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '12px' }}>{formatCurrency(source.revenue)}</td>
+                    <td style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', color: '#5c6567', fontWeight: 600, fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '12px' }}>{formatCurrency(source.materialCost)}</td>
+                    <td style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', color: '#0f544c', fontWeight: 600, fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '12px' }}>{formatCurrency(source.adjustmentTotal)}</td>
+                    <td style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', color: '#0f544c', fontWeight: 600, fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '12px' }}>{formatCurrency(source.profitMargin)}</td>
                     <td className={`px-4 py-3 text-right font-semibold tabular-nums ${source.roundingTotal >= 0 ? 'text-blue-700' : 'text-rose-600'}`}>
                       {source.roundingTotal >= 0 ? '+' : ''}
                       {formatCurrency(source.roundingTotal)}
@@ -304,36 +308,36 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-          <div className="xl:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <h3 className="font-bold text-slate-800 text-sm tracking-tight mb-4 flex items-center gap-2">
-              <BarChart3 size={18} className="text-emerald-500" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px' }}>
+          <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', overflow: 'hidden' }}>
+            <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', letterSpacing: '-.025em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BarChart3 size={18} style={{ color: '#1f8577' }} />
               Top Items by Markup
             </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
-                  <tr className="text-slate-400 font-bold text-[10px] tracking-widest border-b border-slate-100 uppercase">
-                    <th className="px-4 py-3">Item</th>
-                    <th className="px-4 py-3">Source</th>
-                    <th className="px-4 py-3 text-right">Revenue</th>
-                    <th className="px-4 py-3 text-right">Adjustments</th>
-                    <th className="px-4 py-3 text-right">Profit Markup</th>
+                  <tr style={{ color: '#5c6567', fontWeight: 700, letterSpacing: '.1em', borderStyle: 'solid', borderColor: '#e4ddd1', textTransform: 'uppercase' }}>
+                    <th style={{ paddingLeft: '16px', paddingTop: '12px', paddingRight: '16px', paddingBottom: '12px' }}>Item</th>
+                    <th style={{ paddingLeft: '16px', paddingTop: '12px', paddingRight: '16px', paddingBottom: '12px' }}>Source</th>
+                    <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Revenue</th>
+                    <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Adjustments</th>
+                    <th style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', paddingRight: '16px', paddingBottom: '12px' }}>Profit Markup</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody style={{ borderColor: '#e4ddd1' }}>
                   {marginReport.topItems.slice(0, 10).map((item) => (
-                    <tr key={`${item.source}-${item.itemName}`} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-700">{item.itemName}</td>
-                      <td className="px-4 py-3 text-slate-500">{getRevenueSourceLabel(item.source)}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-slate-900 tabular-nums">{formatCurrency(item.revenue)}</td>
-                      <td className="px-4 py-3 text-right text-indigo-700 font-semibold tabular-nums">{formatCurrency(item.adjustmentTotal)}</td>
-                      <td className="px-4 py-3 text-right text-emerald-700 font-semibold tabular-nums">{formatCurrency(item.profitMargin)}</td>
+                    <tr key={`${item.source}-${item.itemName}`} style={{ transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
+                      <td style={{ paddingLeft: '16px', paddingTop: '12px', fontWeight: 600, color: '#23282A', paddingRight: '16px', paddingBottom: '12px' }}>{item.itemName}</td>
+                      <td style={{ paddingLeft: '16px', paddingTop: '12px', color: '#5c6567', paddingRight: '16px', paddingBottom: '12px' }}>{getRevenueSourceLabel(item.source)}</td>
+                      <td style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', fontWeight: 600, color: '#23282A', fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '12px' }}>{formatCurrency(item.revenue)}</td>
+                      <td style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', color: '#0f544c', fontWeight: 600, fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '12px' }}>{formatCurrency(item.adjustmentTotal)}</td>
+                      <td style={{ paddingLeft: '16px', paddingTop: '12px', textAlign: 'right', color: '#0f544c', fontWeight: 600, fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '12px' }}>{formatCurrency(item.profitMargin)}</td>
                     </tr>
                   ))}
                   {marginReport.topItems.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-10 text-center text-slate-400">No item markup data found for this scope.</td>
+                      <td colSpan={5} style={{ paddingLeft: '16px', paddingTop: '40px', textAlign: 'center', color: '#5c6567', paddingRight: '16px', paddingBottom: '40px' }}>No item markup data found for this scope.</td>
                     </tr>
                   )}
                 </tbody>
@@ -341,28 +345,28 @@ const Reports: React.FC = () => {
             </div>
           </div>
 
-          <div className="xl:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 text-sm tracking-tight mb-4 flex items-center gap-2">
-              <Coins size={18} className="text-indigo-500" />
+          <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+            <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', letterSpacing: '-.025em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Coins size={18} style={{ color: '#1f8577' }} />
               Adjustment Ledger
             </h3>
-            <div className="space-y-3">
+            <div style={{ marginTop: '12px' }}>
               {marginReport.topAdjustments.slice(0, 8).map((adjustment) => (
-                <div key={`${adjustment.source}-${adjustment.adjustmentName}`} className="flex items-center justify-between p-3 bg-indigo-50/40 rounded-xl border border-indigo-100/60">
+                <div key={`${adjustment.source}-${adjustment.adjustmentName}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#eef7f6', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9' }}>
                   <div>
-                    <p className="font-semibold text-slate-700 text-sm">{adjustment.adjustmentName}</p>
-                    <p className="text-[11px] text-slate-500">
+                    <p style={{ fontWeight: 600, color: '#23282A', fontSize: '13px' }}>{adjustment.adjustmentName}</p>
+                    <p style={{ color: '#5c6567' }}>
                       {getRevenueSourceLabel(adjustment.source)} · {adjustment.transactionCount} transaction(s)
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-indigo-700 tabular-nums text-sm">{formatCurrency(adjustment.totalAmount)}</p>
-                    <p className="text-[11px] text-slate-500">{adjustment.applicationCount} application(s)</p>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontWeight: 700, color: '#0f544c', fontVariantNumeric: 'tabular-nums', fontSize: '13px' }}>{formatCurrency(adjustment.totalAmount)}</p>
+                    <p style={{ color: '#5c6567' }}>{adjustment.applicationCount} application(s)</p>
                   </div>
                 </div>
               ))}
               {marginReport.topAdjustments.length === 0 && (
-                <div className="text-center text-slate-400 py-10 text-sm">No adjustment rows captured in this scope.</div>
+                <div style={{ textAlign: 'center', color: '#5c6567', paddingTop: '40px', fontSize: '13px', paddingBottom: '40px' }}>No adjustment rows captured in this scope.</div>
               )}
             </div>
           </div>
@@ -372,16 +376,16 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#f8fafc] font-sans text-[13px] leading-[1.5] text-slate-700 overflow-hidden">
-      <div className="bg-white border-b border-slate-200 shrink-0 px-6 py-4 flex flex-col gap-4">
-        <div className="flex justify-between items-center">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', fontFamily: 'Inter,"DM Sans",sans-serif', color: '#23282A', overflow: 'hidden' }}>
+      <div style={{ background: '#FEFDFB', borderStyle: 'solid', borderColor: '#e4ddd1', flexShrink: 0, paddingLeft: '24px', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '24px', paddingBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 className="font-bold text-2xl text-slate-900 tracking-tight">Business Intelligence</h2>
-            <p className="text-slate-500 text-sm font-medium">Financial insights and performance metrics</p>
+            <h2 style={{ fontWeight: 700, fontSize: '24px', color: '#23282A', letterSpacing: '-.025em' }}>Business Intelligence</h2>
+            <p style={{ color: '#5c6567', fontSize: '13px', fontWeight: 500 }}>Financial insights and performance metrics</p>
           </div>
-          <div className="flex gap-2">
+          <div style={{ display: 'flex', gap: '8px' }}>
             {activeCategory === 'Margin Performance' && (
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#eef7f6', padding: '4px', borderRadius: '12px' }}>
                 {(['all', 'week', 'month', 'quarter', 'year'] as const).map((range) => (
                   <button
                     key={range}
@@ -396,7 +400,7 @@ const Reports: React.FC = () => {
               </div>
             )}
 
-            <div className="relative mr-4">
+            <div style={{ position: 'relative', marginRight: '16px' }}>
               <button
                 onClick={() => setIsCustomerFilterOpen(!isCustomerFilterOpen)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-sm font-semibold tracking-wide ${
@@ -408,7 +412,7 @@ const Reports: React.FC = () => {
                 {selectedCustomerId && (
                   <X
                     size={16}
-                    className="ml-1 hover:text-rose-500 transition-colors"
+                    style={{ marginLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}
                     onClick={(event) => {
                       event.stopPropagation();
                       setSelectedCustomerId('');
@@ -419,11 +423,11 @@ const Reports: React.FC = () => {
               </button>
 
               {isCustomerFilterOpen && (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="text-[12px] font-semibold text-slate-400 tracking-widest block">Select customer</label>
-                      <button onClick={() => setIsCustomerFilterOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', width: '288px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', zIndex: 50, padding: '16px' }}>
+                  <div style={{ marginTop: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <label style={{ fontWeight: 600, color: '#5c6567', letterSpacing: '.1em', display: 'block' }}>Select customer</label>
+                      <button onClick={() => setIsCustomerFilterOpen(false)} style={{ color: '#5c6567' }}>
                         <X size={14} />
                       </button>
                     </div>
@@ -433,7 +437,7 @@ const Reports: React.FC = () => {
                         setSelectedCustomerId(event.target.value);
                         setSelectedSubAccountNames([]);
                       }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[13px] font-medium outline-none focus:border-blue-500 transition-colors"
+                      style={{ width: '100%', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', paddingLeft: '12px', paddingTop: '8px', fontWeight: 500, outline: 'none', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '12px', paddingBottom: '8px' }}
                     >
                       <option value="">All customers</option>
                       {customers.map((customer: any) => (
@@ -442,11 +446,11 @@ const Reports: React.FC = () => {
                     </select>
 
                     {selectedCustomerId && availableSubAccounts.length > 0 && (
-                      <div className="pt-2 border-t border-slate-100">
-                        <label className="text-[12px] font-semibold text-slate-400 tracking-widest mb-2 block">Filter sub-accounts</label>
-                        <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
+                      <div style={{ paddingTop: '8px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                        <label style={{ fontWeight: 600, color: '#5c6567', letterSpacing: '.1em', marginBottom: '8px', display: 'block' }}>Filter sub-accounts</label>
+                        <div style={{ marginTop: '6px', overflowY: 'auto' }}>
                           {availableSubAccounts.map((subAccount) => (
-                            <label key={subAccount} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors group">
+                            <label key={subAccount} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '6px', borderRadius: '10px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
                               <input
                                 type="checkbox"
                                 checked={selectedSubAccountNames.includes(subAccount)}
@@ -457,13 +461,13 @@ const Reports: React.FC = () => {
                                     setSelectedSubAccountNames(selectedSubAccountNames.filter((entry) => entry !== subAccount));
                                   }
                                 }}
-                                className="w-4 h-4 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                style={{ width: '16px', height: '16px', borderRadius: '8px', borderColor: '#e4ddd1', color: '#1f8577', cursor: 'pointer' }}
                               />
-                              <span className="text-[13px] font-medium text-slate-600 group-hover:text-blue-600 transition-colors">{subAccount}</span>
+                              <span style={{ fontWeight: 500, color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>{subAccount}</span>
                             </label>
                           ))}
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-2 font-medium">Leave unchecked to include all sub-accounts.</p>
+                        <p style={{ color: '#5c6567', marginTop: '8px', fontWeight: 500 }}>Leave unchecked to include all sub-accounts.</p>
                       </div>
                     )}
                   </div>
@@ -471,10 +475,10 @@ const Reports: React.FC = () => {
               )}
             </div>
 
-            <div className="flex bg-white rounded-xl border border-slate-200 p-1 shadow-sm">
+            <div style={{ display: 'flex', background: '#FEFDFB', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', padding: '4px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
               <button
                 onClick={() => window.print()}
-                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                style={{ padding: '8px', color: '#5c6567', borderRadius: '10px', transition: 'all .15s ease' }}
                 title="Print report"
               >
                 <Printer size={20} />
@@ -485,8 +489,8 @@ const Reports: React.FC = () => {
 
       </div>
 
-      <div id="report-content" className="flex-1 min-h-0 overflow-y-auto p-6 custom-scrollbar bg-slate-50/50">
-        <div className="max-w-[1600px] mx-auto">
+      <div id="report-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '24px', background: '#eef7f6' }}>
+        <div style={{ marginLeft: 'auto' }}>
           {activeCategory === 'Overview' && <RevenueDashboard />}
           {activeCategory === 'Sales Audit' && <SalesAudit />}
           {activeCategory === 'Margin Performance' && renderMarginPerformance()}

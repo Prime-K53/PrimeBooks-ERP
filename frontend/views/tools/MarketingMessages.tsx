@@ -736,20 +736,18 @@ const MarketingMessages: React.FC = () => {
 
   const Printer = (props: any) => <FileText {...props} />;
 
+  const dt = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+  const paper = '#FEFDFB'; const ink = '#23282A'; const inkSoft = '#5c6567'; const hairline = '#e4ddd1'; const danger = '#b5493f';
+  const dAmber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f' };
+
   const renderChatMessage = (message: any, index: number) => {
     const isOutbound = message.direction === 'outbound';
     return (
-      <div key={message.id || index} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
-        <div className={`max-w-[70%] px-4 py-2 rounded-2xl ${
-          isOutbound
-            ? 'bg-green-600 text-white rounded-br-md'
-            : 'bg-white text-slate-800 rounded-bl-md shadow-sm'
-        }`}>
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-          <div className={`flex items-center justify-end gap-1 mt-1 ${
-            isOutbound ? 'text-green-200' : 'text-slate-400'
-          }`}>
-            <span className="text-[10px]">
+      <div key={message.id || index} style={{ display: 'flex', justifyContent: isOutbound ? 'flex-end' : 'flex-start' }}>
+        <div style={{ maxWidth: '70%', padding: '8px 16px', borderRadius: 16, background: isOutbound ? `linear-gradient(135deg, ${dt[500]}, ${dt[700]})` : paper, color: isOutbound ? '#fff' : ink, borderBottomRightRadius: isOutbound ? 4 : 16, borderBottomLeftRadius: isOutbound ? 16 : 4, boxShadow: isOutbound ? 'none' : '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <p style={{ fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.45, margin: 0 }}>{message.content}</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4, color: isOutbound ? 'rgba(255,255,255,0.75)' : inkSoft }}>
+            <span style={{ fontSize: 10 }}>
               {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
             {isOutbound && (
@@ -765,97 +763,77 @@ const MarketingMessages: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-green-100 border-t-green-600 rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium">Loading WhatsApp Hub...</p>
+      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FBF8F2' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 48, height: 48, border: '4px solid #d3ece9', borderTopColor: dt[600], borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+          <p style={{ color: inkSoft, fontWeight: 500 }}>Loading WhatsApp Hub...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex bg-slate-100 overflow-hidden">
+    <div style={{ height: '100%', display: 'flex', background: '#FBF8F2', overflow: 'hidden' }}>
       {/* Sidebar - Chat List */}
-      <div className="w-80 bg-white border-r border-slate-200 flex flex-col">
-        <div className="p-4 border-b border-slate-200">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-green-100 rounded-xl">
-              <MessageCircle className="w-5 h-5 text-green-600" />
+      <div style={{ width: 320, background: paper, borderRight: `1px solid ${hairline}`, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: 16, borderBottom: `1px solid ${hairline}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <div className="prime-btn-secondary" style={{ padding: 8, background: dt[50], borderRadius: 12 }}>
+              <MessageCircle style={{ width: 20, height: 20, color: dt[600] }} />
             </div>
             <div>
-              <h1 className="font-bold text-slate-800">WhatsApp Hub</h1>
-              <div className="flex items-center gap-2">
-                <p className={`text-xs flex items-center gap-1 ${
-                  waConfigured ? 'text-green-600' : 'text-slate-400'
-                }`}>
-                  <span className={`w-2 h-2 rounded-full ${
-                    waConfigured ? 'bg-green-500' : 'bg-slate-300'
-                  }`}></span>
+              <h1 style={{ fontWeight: 700, color: ink, margin: 0, fontSize: 17 }}>WhatsApp Hub</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <p style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, color: waConfigured ? dt[600] : inkSoft, margin: 0 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: waConfigured ? dt[500] : hairline, display: 'inline-block' }}></span>
                   {waConfigured ? 'Connected' : 'Disconnected'}
                 </p>
                 {waConfigured ? (
-                  <button
-                    onClick={handleDisconnectWhatsApp}
-                    className="text-[10px] font-bold text-red-500 hover:text-red-600 underline"
-                  >
-                    Disconnect
-                  </button>
+                  <button onClick={handleDisconnectWhatsApp} className="prime-btn-secondary" style={{ fontSize: 10, fontWeight: 700, color: danger, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Disconnect</button>
                 ) : (
-                  <button
-                    onClick={() => setShowWASettings(true)}
-                    className="text-[10px] font-bold text-green-600 hover:text-green-700 underline"
-                  >
-                    Connect
-                  </button>
+                  <button onClick={() => setShowWASettings(true)} className="prime-btn-secondary" style={{ fontSize: 10, fontWeight: 700, color: dt[500], background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Connect</button>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            <div className="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all">
-              <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
-                <MessageCircle size={16} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
+            <div className="prime-card" style={{ background: paper, padding: '8px 10px', borderRadius: 10, border: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 8, borderLeft: `4px solid ${dt[500]}` }}>
+              <div style={{ padding: 6, background: dt[50], color: dt[600], borderRadius: 8, display: 'flex' }}>
+                <MessageCircle size={14} />
               </div>
               <div>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Unread</p>
-                <p className="text-sm md:text-base font-semibold text-slate-900 finance-nums">{unreadCount}</p>
+                <p style={{ fontSize: 8, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.3, margin: 0, lineHeight: 1.2 }}>Unread</p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: ink, margin: 0, lineHeight: 1.3 }}>{unreadCount}</p>
               </div>
             </div>
-            <div className="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3 border-l-4 border-l-purple-500 hover:bg-slate-50 transition-all">
-              <div className="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
-                <Send size={16} />
+            <div className="prime-card" style={{ background: paper, padding: '8px 10px', borderRadius: 10, border: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 8, borderLeft: `4px solid ${dAmber[500]}` }}>
+              <div style={{ padding: 6, background: dAmber[100], color: dAmber[500], borderRadius: 8, display: 'flex' }}>
+                <Send size={14} />
               </div>
               <div>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Campaigns</p>
-                <p className="text-sm md:text-base font-semibold text-slate-900 finance-nums">{totalCampaigns}</p>
+                <p style={{ fontSize: 8, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.3, margin: 0, lineHeight: 1.2 }}>Campaigns</p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: ink, margin: 0, lineHeight: 1.3 }}>{totalCampaigns}</p>
               </div>
             </div>
-            <div className="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all">
-              <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
-                <CheckCircle size={16} />
+            <div className="prime-card" style={{ background: paper, padding: '8px 10px', borderRadius: 10, border: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 8, borderLeft: `4px solid ${dt[500]}` }}>
+              <div style={{ padding: 6, background: dt[50], color: dt[600], borderRadius: 8, display: 'flex' }}>
+                <CheckCircle size={14} />
               </div>
               <div>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-0.5">Sent</p>
-                <p className="text-sm md:text-base font-semibold text-slate-900 finance-nums">{totalSent}</p>
+                <p style={{ fontSize: 8, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.3, margin: 0, lineHeight: 1.2 }}>Sent</p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: ink, margin: 0, lineHeight: 1.3 }}>{totalSent}</p>
               </div>
             </div>
           </div>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft, pointerEvents: 'none' }} />
+            <input className="prime-input" type="text" placeholder="Search conversations..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '8px 12px 8px 36px', background: t[50], border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} />
           </div>
         </div>
 
-        <div className="flex border-b border-slate-200 flex-wrap">
+        <div className="prime-btn-secondary" style={{ display: 'flex', background: t[50], padding: 3, margin: '0 12px', borderRadius: 10 }}>
           {[
             { id: 'inbox', label: 'Inbox', badge: unreadCount },
             { id: 'campaigns', label: 'Campaigns' },
@@ -864,60 +842,41 @@ const MarketingMessages: React.FC = () => {
             { id: 'accounts', label: 'Accounts' },
             { id: 'activity', label: 'Activity' },
           ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveView(tab.id)}
-              className={`flex-1 px-1 py-3 text-xs font-medium border-b-2 transition-colors ${
-                activeView === tab.id 
-                  ? 'border-green-600 text-green-600' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-            >
+            <button key={tab.id} onClick={() => setActiveView(tab.id)} style={{ flex: 1, padding: '6px 4px', fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer', borderRadius: 8, transition: 'all .15s ease', background: activeView === tab.id ? paper : 'transparent', color: activeView === tab.id ? dt[500] : inkSoft, boxShadow: activeView === tab.id ? '0 1px 2px rgba(0,0,0,0.06)' : 'none', lineHeight: 1.3 }}>
               {tab.label}
-              {tab.badge ? (
-                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px]">{tab.badge}</span>
-              ) : null}
+              {tab.badge ? <span style={{ marginLeft: 4, padding: '1px 6px', background: danger, color: '#fff', borderRadius: 10, fontSize: 9, display: 'inline-block' }}>{tab.badge}</span> : null}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-auto">
+        <div style={{ flex: 1, overflow: 'auto' }}>
           {activeView === 'inbox' ? (
             filteredChats.length === 0 ? (
-              <div className="text-center py-12 px-4">
-                <MessageCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500 text-sm">No conversations yet</p>
-                <button onClick={() => setShowNewCampaign(true)} className="mt-3 text-green-600 font-medium text-sm hover:underline">
-                  Start a new campaign
-                </button>
+              <div style={{ textAlign: 'center', padding: '48px 16px' }}>
+                <MessageCircle size={48} style={{ color: hairline, margin: '0 auto 12px', display: 'block' }} />
+                <p style={{ color: inkSoft, fontSize: 13 }}>No conversations yet</p>
+                <button onClick={() => setShowNewCampaign(true)} className="prime-btn-secondary" style={{ marginTop: 12, color: dt[500], fontWeight: 500, fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Start a new campaign</button>
               </div>
             ) : (
               filteredChats.map(chat => (
-                <div
-                  key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
-                  className={`p-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors ${
-                    selectedChat?.id === chat.id ? 'bg-green-50 border-l-4 border-l-green-500' : ''
-                  }`}
+                <div key={chat.id} onClick={() => setSelectedChat(chat)} style={{ padding: 12, borderBottom: `1px solid ${hairline}`, cursor: 'pointer', transition: 'background 0.1s', background: selectedChat?.id === chat.id ? dt[50] : 'transparent', borderLeft: selectedChat?.id === chat.id ? `4px solid ${dt[500]}` : '4px solid transparent' }}
+                  onMouseEnter={e => { if (selectedChat?.id !== chat.id) e.currentTarget.style.background = t[50]; }}
+                  onMouseLeave={e => { if (selectedChat?.id !== chat.id) e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold flex-shrink-0">
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: dt[100], display: 'flex', alignItems: 'center', justifyContent: 'center', color: dt[600], fontWeight: 700, flexShrink: 0, fontSize: 15 }}>
                       {chat.customerName?.charAt(0).toUpperCase() || '?'}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <h3 className="font-medium text-slate-800 truncate text-sm">{chat.customerName}</h3>
-                        <span className="text-xs text-slate-400 flex-shrink-0">
-                          {new Date(chat.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <h3 style={{ fontWeight: 500, color: ink, margin: 0, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.customerName}</h3>
+                        <span style={{ fontSize: 12, color: inkSoft, flexShrink: 0 }}>{new Date(chat.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                      <p className="text-xs text-slate-500 truncate">{chat.lastMessage}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {chat.status === 'unread' && <span className="w-2 h-2 bg-green-500 rounded-full"></span>}
-                        {chat.priority === 'high' && <Star size={10} className="text-yellow-500 fill-yellow-500" />}
-                        {chat.tags?.map(tag => (
-                          <span key={tag} className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{tag}</span>
-                        ))}
+                      <p style={{ fontSize: 12, color: inkSoft, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.lastMessage}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        {chat.status === 'unread' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: dt[500], display: 'inline-block' }}></span>}
+                        {chat.priority === 'high' && <Star size={10} style={{ color: dAmber[500], fill: dAmber[500] }} />}
+                        {chat.tags?.map(tag => <span key={tag} style={{ fontSize: 10, background: t[50], padding: '1px 6px', borderRadius: 4, color: inkSoft }}>{tag}</span>)}
                       </div>
                     </div>
                   </div>
@@ -925,49 +884,29 @@ const MarketingMessages: React.FC = () => {
               ))
             )
           ) : activeView === 'templates' ? (
-            <div className="p-2 space-y-2">
-              <button
-                onClick={() => setShowNewTemplate(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 mb-2"
-              >
-                <Plus size={16} />
-                New Template
+            <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <button onClick={() => setShowNewTemplate(true)} className="prime-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 10, background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer', lineHeight: 1.4 }}>
+                <Plus size={16} /> New Template
               </button>
-              <select
-                value={templateCategory}
-                onChange={(e) => setTemplateCategory(e.target.value)}
-                className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg"
-              >
+              <select value={templateCategory} onChange={(e) => setTemplateCategory(e.target.value)} className="prime-select" style={{ width: '100%', fontSize: 12, padding: 8, background: t[50], border: `1.4px solid ${hairline}`, borderRadius: 9, color: ink, outline: 'none', cursor: 'pointer' }}>
                 {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg"
-              >
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="prime-select" style={{ width: '100%', fontSize: 12, padding: 8, background: t[50], border: `1.4px solid ${hairline}`, borderRadius: 9, color: ink, outline: 'none', cursor: 'pointer' }}>
                 <option value="newest">Newest First</option>
                 <option value="popular">Most Used</option>
                 <option value="alpha">Alphabetical</option>
               </select>
             </div>
           ) : activeView === 'campaigns' ? (
-            <div className="p-2">
-              <button
-                onClick={() => setShowNewCampaign(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-              >
-                <Plus size={16} />
-                New Campaign
+            <div style={{ padding: 8 }}>
+              <button onClick={() => setShowNewCampaign(true)} className="prime-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 10, background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer', lineHeight: 1.4 }}>
+                <Plus size={16} /> New Campaign
               </button>
             </div>
           ) : activeView === 'automation' ? (
-            <div className="p-2">
-              <button
-                onClick={() => setShowNewAutomation(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
-              >
-                <Plus size={16} />
-                New Flow
+            <div style={{ padding: 8 }}>
+              <button onClick={() => setShowNewAutomation(true)} className="prime-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 10, background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer', lineHeight: 1.4 }}>
+                <Plus size={16} /> New Flow
               </button>
             </div>
           ) : null}
@@ -975,138 +914,91 @@ const MarketingMessages: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* INBOX VIEW */}
         {activeView === 'inbox' && selectedChat ? (
           <>
-            <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setSelectedChat(null)} className="lg:hidden text-slate-500" title="Back" aria-label="Back to chat list"><ArrowLeft size={20} /></button>
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">
+            <div style={{ background: paper, borderBottom: `1px solid ${hairline}`, padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button onClick={() => setSelectedChat(null)} className="prime-btn-secondary" style={{ background: 'none', border: 'none', cursor: 'pointer', color: inkSoft, display: 'flex', padding: 4 }}><ArrowLeft size={20} /></button>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: dt[100], display: 'flex', alignItems: 'center', justifyContent: 'center', color: dt[600], fontWeight: 700, fontSize: 16 }}>
                   {selectedChat.customerName?.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h2 className="font-semibold text-slate-800">{selectedChat.customerName}</h2>
-                  <p className="text-xs text-green-600 flex items-center gap-1">
+                  <h2 style={{ fontWeight: 600, color: ink, margin: 0, fontSize: 15 }}>{selectedChat.customerName}</h2>
+                  <p style={{ fontSize: 12, color: dt[600], display: 'flex', alignItems: 'center', gap: 4, margin: 0 }}>
                     <Phone size={10} />{selectedChat.customerPhone}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg" title="Call" aria-label="Call customer"><PhoneCall size={18} /></button>
-                <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg" title="Video call" aria-label="Video call"><Video size={18} /></button>
-                <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg" title="More options" aria-label="More options"><MoreVertical size={18} /></button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button className="prime-btn-secondary" style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: inkSoft, borderRadius: 8 }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><PhoneCall size={18} /></button>
+                <button className="prime-btn-secondary" style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: inkSoft, borderRadius: 8 }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Video size={18} /></button>
+                <button className="prime-btn-secondary" style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: inkSoft, borderRadius: 8 }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><MoreVertical size={18} /></button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-4 space-y-3 bg-slate-50">
+            <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12, background: t[50] }}>
               {selectedChat.messages?.map((msg, i) => renderChatMessage(msg, i))}
               <div ref={messagesEndRef} />
             </div>
 
             {showTemplatePreview && (
-              <div className="bg-amber-50 border-t border-amber-200 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-amber-800">Quick Reply: {showTemplatePreview.name}</span>
-                  <button onClick={() => setShowTemplatePreview(null)} className="text-amber-600" title="Close" aria-label="Close template preview"><X size={16} /></button>
+              <div style={{ background: dAmber[100], borderTop: `1px solid ${dAmber[300]}`, padding: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>Quick Reply: {showTemplatePreview.name}</span>
+                  <button onClick={() => setShowTemplatePreview(null)} className="prime-btn-secondary" style={{ background: 'none', border: 'none', cursor: 'pointer', color: dAmber[500] }}><X size={16} /></button>
                 </div>
-                <p className="text-xs text-amber-700 mb-2 line-clamp-2">{showTemplatePreview.content}</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handlePreviewSendTemplate(showTemplatePreview)}
-                    className="flex-1 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600"
-                  >
-                    Send Template
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCampaignForm(prev => ({ ...prev, message: showTemplatePreview.content, templateId: showTemplatePreview.id }));
-                      setShowTemplatePreview(null);
-                    }}
-                    className="px-3 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-sm"
-                  >
-                    Copy
-                  </button>
+                <p style={{ fontSize: 12, color: '#23282A', margin: '0 0 8px', lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{showTemplatePreview.content}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => handlePreviewSendTemplate(showTemplatePreview)} className="prime-btn" style={{ flex: 1, padding: 8, background: `linear-gradient(135deg, ${dAmber[500]}, #b97e2b)`, color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', lineHeight: 1.4 }}>Send Template</button>
+                  <button onClick={() => { setCampaignForm(prev => ({ ...prev, message: showTemplatePreview.content, templateId: showTemplatePreview.id })); setShowTemplatePreview(null); }} className="prime-btn-secondary" style={{ padding: '8px 12px', border: `1.4px solid ${dAmber[300]}`, borderRadius: 8, color: '#23282A', background: paper, cursor: 'pointer', fontSize: 13 }}>Copy</button>
                 </div>
               </div>
             )}
 
-            <div className="bg-white border-t border-slate-200 p-3">
+            <div style={{ background: paper, borderTop: `1px solid ${hairline}`, padding: 12 }}>
               {smartReplies.length > 0 && (
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles size={14} className="text-indigo-500" />
-                      <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">AI Suggested Replies</span>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Sparkles size={14} style={{ color: inkSoft }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: ink, textTransform: 'uppercase', letterSpacing: 0.5 }}>AI Suggested Replies</span>
                     </div>
-                    <button
-                      onClick={generateSmartReplies}
-                      className="text-[10px] text-indigo-400 hover:text-indigo-600 font-bold uppercase tracking-wider"
-                      disabled={loadingReplies}
-                    >
-                      {loadingReplies ? '...' : 'Refresh'}
-                    </button>
+                    <button onClick={generateSmartReplies} className="prime-btn-secondary" style={{ fontSize: 10, color: inkSoft, fontWeight: 700, background: 'none', border: 'none', cursor: loadingReplies ? 'default' : 'pointer', textTransform: 'uppercase', letterSpacing: 0.5 }} disabled={loadingReplies}>{loadingReplies ? '...' : 'Refresh'}</button>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                     {smartReplies.map((reply, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => applySmartReply(reply)}
-                        className="px-2 py-2 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-100 transition-colors text-left leading-tight"
-                      >
-                        <span className="block text-[10px] font-bold text-indigo-400 uppercase mb-0.5">{reply.label}</span>
-                        <span className="line-clamp-2">{reply.text.replace(/{{name}}/g, selectedChat?.customerName || 'Customer')}</span>
+                      <button key={idx} onClick={() => applySmartReply(reply)} className="prime-btn-secondary" style={{ padding: '6px 8px', fontSize: 12, background: t[50], color: dt[700], borderRadius: 8, border: `1px solid ${dt[100]}`, cursor: 'pointer', textAlign: 'left', lineHeight: 1.3 }}>
+                        <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: dt[500], textTransform: 'uppercase', marginBottom: 2 }}>{reply.label}</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{reply.text.replace(/{{name}}/g, selectedChat?.customerName || 'Customer')}</span>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-2 mb-2">
-                <button onClick={() => setShowTemplatePreview(templates[0] || null)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg" title="Templates">
-                  <FileText size={20} />
-                </button>
-                <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg" title="Attach image" aria-label="Attach image"><Image size={20} /></button>
-                <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg" title="Emoji picker" aria-label="Open emoji picker"><Smile size={20} /></button>
-                <div className="flex-1" />
-                <button
-                  onClick={() => setShowAISettings(true)}
-                  className={`p-2 rounded-lg transition-colors ${aiConfig.enabled ? 'text-indigo-500 hover:bg-indigo-50' : 'text-slate-400 hover:bg-slate-100'}`}
-                  title={aiConfig.enabled ? 'AI Settings' : 'AI Not Configured'}
-                >
-                  <Sparkles size={18} className={aiConfig.enabled ? '' : 'opacity-50'} />
-                </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <button onClick={() => setShowTemplatePreview(templates[0] || null)} className="prime-btn-secondary" style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: inkSoft, borderRadius: 8 }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><FileText size={20} /></button>
+                <button className="prime-btn-secondary" style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: inkSoft, borderRadius: 8 }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Image size={20} /></button>
+                <button className="prime-btn-secondary" style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: inkSoft, borderRadius: 8 }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Smile size={20} /></button>
+                <div style={{ flex: 1 }} />
+                <button onClick={() => setShowAISettings(true)} className="prime-btn-secondary" style={{ padding: 8, borderRadius: 8, border: 'none', cursor: 'pointer', color: aiConfig.enabled ? dt[500] : inkSoft }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Sparkles size={18} style={{ opacity: aiConfig.enabled ? 1 : 0.5 }} /></button>
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder="Type a message..."
-                  className="flex-1 px-4 py-2 bg-slate-100 border-0 rounded-full text-sm focus:ring-2 focus:ring-green-500"
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim()}
-                  className="p-2 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50"
-                >
-                  <Send size={18} />
-                </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="prime-input" type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && sendMessage()} placeholder="Type a message..." style={{ flex: 1, padding: '10px 16px', background: t[50], border: `1.4px solid ${hairline}`, borderRadius: 24, fontSize: 13, color: ink, outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif" }} />
+                <button onClick={sendMessage} disabled={!newMessage.trim()} className="prime-btn" style={{ padding: 10, background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: newMessage.trim() ? 1 : 0.5, width: 40, height: 40 }}><Send size={18} /></button>
               </div>
             </div>
           </>
         ) : activeView === 'inbox' ? (
-          <div className="flex-1 flex items-center justify-center bg-slate-50">
-            <div className="text-center max-w-md p-8">
-              <div className="inline-flex p-4 bg-green-100 rounded-full mb-4">
-                <MessageCircle className="w-8 h-8 text-green-600" />
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: t[50] }}>
+            <div style={{ textAlign: 'center', maxWidth: 400, padding: 32 }}>
+              <div style={{ padding: 16, background: dt[50], borderRadius: '50%', display: 'inline-flex', marginBottom: 16 }}>
+                <MessageCircle size={32} style={{ color: dt[600] }} />
               </div>
-              <h2 className="text-xl font-bold text-slate-800 mb-2">WhatsApp Inbox</h2>
-              <p className="text-slate-500 mb-4">Select a conversation or create a campaign</p>
-              <button
-                onClick={() => setShowNewCampaign(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-              >
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: '0 0 8px' }}>WhatsApp Inbox</h2>
+              <p style={{ color: inkSoft, marginBottom: 16 }}>Select a conversation or create a campaign</p>
+              <button onClick={() => setShowNewCampaign(true)} className="prime-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', border: 'none', borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: 'pointer', lineHeight: 1.4 }}>
                 <Send size={18} />New Campaign
               </button>
             </div>
@@ -1115,67 +1007,50 @@ const MarketingMessages: React.FC = () => {
 
         {/* CAMPAIGNS VIEW */}
         {activeView === 'campaigns' && (
-          <div className="flex-1 overflow-auto p-6 bg-slate-50">
-            <div className="flex items-center justify-between mb-6">
+          <div style={{ flex: 1, overflow: 'auto', padding: 24, background: t[50] }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
               <div>
-                <h2 className="text-xl font-bold text-slate-800">Campaigns</h2>
-                <p className="text-sm text-slate-500">{campaigns.length} total campaigns</p>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>Campaigns</h2>
+                <p style={{ fontSize: 13, color: inkSoft, margin: '2px 0 0' }}>{campaigns.length} total campaigns</p>
               </div>
-              <button
-                onClick={() => setShowNewCampaign(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-              >
+              <button onClick={() => setShowNewCampaign(true)} className="prime-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', border: 'none', borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: 'pointer', lineHeight: 1.4 }}>
                 <Plus size={18} />New Campaign
               </button>
             </div>
 
             {campaigns.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
-                <Send className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500 font-medium">No campaigns yet</p>
-                <button onClick={() => setShowNewCampaign(true)} className="text-green-600 font-medium hover:underline">
-                  Create your first campaign
-                </button>
+              <div className="prime-card" style={{ textAlign: 'center', padding: 48, background: paper, borderRadius: 14, border: `1.4px solid ${hairline}` }}>
+                <Send size={48} style={{ color: hairline, margin: '0 auto 12px', display: 'block' }} />
+                <p style={{ color: inkSoft, fontWeight: 500 }}>No campaigns yet</p>
+                <button onClick={() => setShowNewCampaign(true)} className="prime-btn-secondary" style={{ color: dt[500], fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', marginTop: 8, fontSize: 13 }}>Create your first campaign</button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
                 {campaigns.map(campaign => (
-                  <div key={campaign.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-semibold text-slate-800">{campaign.name}</h3>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusColor(campaign.status)}`}>
-                        {campaign.status}
-                      </span>
+                  <div key={campaign.id} className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <h3 style={{ fontWeight: 600, color: ink, margin: 0, fontSize: 14 }}>{campaign.name}</h3>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: dt[50], color: dt[700] }}>{campaign.status}</span>
                     </div>
-                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">{campaign.message}</p>
-                    <div className="grid grid-cols-3 gap-2 text-center mb-3">
-                      <div className="bg-slate-50 rounded-lg p-2">
-                        <div className="text-lg font-bold text-slate-800">{campaign.sentCount}</div>
-                        <div className="text-[10px] text-slate-500">Sent</div>
+                    <p style={{ fontSize: 13, color: inkSoft, margin: '0 0 12px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{campaign.message}</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center', marginBottom: 12 }}>
+                      <div style={{ background: t[50], borderRadius: 8, padding: 8 }}>
+                        <div style={{ fontSize: 17, fontWeight: 700, color: ink }}>{campaign.sentCount}</div>
+                        <div style={{ fontSize: 10, color: inkSoft }}>Sent</div>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-2">
-                        <div className="text-lg font-bold text-green-600">{campaign.deliveredCount}</div>
-                        <div className="text-[10px] text-slate-500">Delivered</div>
+                      <div style={{ background: t[50], borderRadius: 8, padding: 8 }}>
+                        <div style={{ fontSize: 17, fontWeight: 700, color: dt[600] }}>{campaign.deliveredCount}</div>
+                        <div style={{ fontSize: 10, color: inkSoft }}>Delivered</div>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-2">
-                        <div className="text-lg font-bold text-blue-600">{campaign.readCount}</div>
-                        <div className="text-[10px] text-slate-500">Read</div>
+                      <div style={{ background: t[50], borderRadius: 8, padding: 8 }}>
+                        <div style={{ fontSize: 17, fontWeight: 700, color: dt[500] }}>{campaign.readCount}</div>
+                        <div style={{ fontSize: 10, color: inkSoft }}>Read</div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => setViewingCampaign(campaign)}
-                        className="flex-1 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100"
-                      >
-                        View
-                      </button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setViewingCampaign(campaign)} className="prime-btn-secondary" style={{ flex: 1, padding: 8, fontSize: 13, fontWeight: 600, color: dt[600], background: dt[50], border: 'none', borderRadius: 8, cursor: 'pointer', lineHeight: 1.4 }}>View</button>
                       {campaign.status === 'draft' && (
-                        <button 
-                          onClick={() => handleSendCampaign(campaign.id)}
-                          className="px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                        >
-                          <Send size={16} />
-                        </button>
+                        <button onClick={() => handleSendCampaign(campaign.id)} className="prime-btn" style={{ padding: '8px 12px', fontSize: 13, fontWeight: 600, color: '#fff', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, border: 'none', borderRadius: 8, cursor: 'pointer', lineHeight: 1.4 }}><Send size={16} /></button>
                       )}
                     </div>
                   </div>
@@ -1187,56 +1062,37 @@ const MarketingMessages: React.FC = () => {
 
         {/* TEMPLATES VIEW */}
         {activeView === 'templates' && (
-          <div className="flex-1 overflow-auto p-6 bg-slate-50">
-            <div className="flex items-center justify-between mb-6">
+          <div style={{ flex: 1, overflow: 'auto', padding: 24, background: t[50] }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
               <div>
-                <h2 className="text-xl font-bold text-slate-800">Message Templates</h2>
-                <p className="text-sm text-slate-500">{templates.length} WhatsApp-approved templates</p>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>Message Templates</h2>
+                <p style={{ fontSize: 13, color: inkSoft, margin: '2px 0 0' }}>{templates.length} WhatsApp-approved templates</p>
               </div>
-              <button
-                onClick={() => setShowNewTemplate(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-              >
+              <button onClick={() => setShowNewTemplate(true)} className="prime-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', border: 'none', borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: 'pointer', lineHeight: 1.4 }}>
                 <Plus size={18} />New Template
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
               {filteredTemplates.slice(0, 50).map(template => (
-                <div key={template.id} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                <div key={template.id} className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {getCategoryIcon(template.category)}
-                      <h3 className="font-semibold text-slate-800 text-sm">{template.name}</h3>
+                      <h3 style={{ fontWeight: 600, color: ink, fontSize: 13, margin: 0 }}>{template.name}</h3>
                     </div>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      template.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {template.status}
-                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: template.status === 'active' ? dt[50] : t[50], color: template.status === 'active' ? dt[700] : inkSoft }}>{template.status}</span>
                   </div>
-                  <p className="text-xs text-slate-600 mb-3 line-clamp-4 whitespace-pre-wrap">{template.content}</p>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
-                    <span className="bg-slate-100 px-2 py-1 rounded">{template.category}</span>
+                  <p style={{ fontSize: 12, color: inkSoft, margin: '0 0 12px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', whiteSpace: 'pre-wrap' }}>{template.content}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: inkSoft, marginBottom: 12 }}>
+                    <span style={{ background: t[50], padding: '2px 8px', borderRadius: 4 }}>{template.category}</span>
                     <span>Used {template.usageCount}×</span>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(template.content);
-                        notify('Copied to clipboard!', 'success');
-                      }}
-                      className="flex-1 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200"
-                    >
-                      <Copy size={12} className="inline mr-1" />Copy
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => { navigator.clipboard.writeText(template.content); notify('Copied to clipboard!', 'success'); }} className="prime-btn-secondary" style={{ flex: 1, padding: 8, fontSize: 12, fontWeight: 600, color: inkSoft, background: t[50], border: 'none', borderRadius: 8, cursor: 'pointer', lineHeight: 1.4 }}>
+                      <Copy size={12} style={{ display: 'inline', marginRight: 4 }} />Copy
                     </button>
-                    <button 
-                      onClick={() => {
-                        setShowTemplatePreview(template);
-                        setShowTemplatePreviewModal(true);
-                      }}
-                      className="flex-1 py-2 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100"
-                    >
+                    <button onClick={() => { setShowTemplatePreview(template); setShowTemplatePreviewModal(true); }} className="prime-btn-secondary" style={{ flex: 1, padding: 8, fontSize: 12, fontWeight: 600, color: dt[600], background: dt[50], border: 'none', borderRadius: 8, cursor: 'pointer', lineHeight: 1.4 }}>
                       Preview
                     </button>
                   </div>
@@ -1248,80 +1104,58 @@ const MarketingMessages: React.FC = () => {
 
         {/* AUTOMATION VIEW */}
         {activeView === 'automation' && (
-          <div className="flex-1 overflow-auto p-6 bg-slate-50">
-            <div className="flex items-center justify-between mb-6">
+          <div style={{ flex: 1, overflow: 'auto', padding: 24, background: t[50] }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
               <div>
-                <h2 className="text-xl font-bold text-slate-800">Automation Flows</h2>
-                <p className="text-sm text-slate-500">{automations.length} active flows</p>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>Automation Flows</h2>
+                <p style={{ fontSize: 13, color: inkSoft, margin: '2px 0 0' }}>{automations.length} active flows</p>
               </div>
-              <button
-                onClick={() => setShowNewAutomation(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-              >
+              <button onClick={() => setShowNewAutomation(true)} className="prime-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', border: 'none', borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: 'pointer', lineHeight: 1.4 }}>
                 <Plus size={18} />New Flow
               </button>
             </div>
 
             {automations.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
-                <Bot className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500 font-medium">No automation flows yet</p>
-                <button onClick={() => setShowNewAutomation(true)} className="text-green-600 font-medium hover:underline">
-                  Create your first flow
-                </button>
+              <div className="prime-card" style={{ textAlign: 'center', padding: 48, background: paper, borderRadius: 14, border: `1.4px solid ${hairline}` }}>
+                <Bot size={48} style={{ color: hairline, margin: '0 auto 12px', display: 'block' }} />
+                <p style={{ color: inkSoft, fontWeight: 500 }}>No automation flows yet</p>
+                <button onClick={() => setShowNewAutomation(true)} className="prime-btn-secondary" style={{ color: dt[500], fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', marginTop: 8 }}>Create your first flow</button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 16 }}>
                 {automations.map(flow => (
-                  <div key={flow.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <GitBranch size={18} className="text-purple-600" />
+                  <div key={flow.id} className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, padding: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ padding: 8, background: dt[50], borderRadius: 10 }}>
+                          <GitBranch size={18} style={{ color: dt[600] }} />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-slate-800">{flow.name}</h3>
-                          <p className="text-xs text-slate-500">Trigger: {flow.trigger}</p>
+                          <h3 style={{ fontWeight: 600, color: ink, margin: 0, fontSize: 14 }}>{flow.name}</h3>
+                          <p style={{ fontSize: 12, color: inkSoft, margin: '2px 0 0' }}>Trigger: {flow.trigger}</p>
                         </div>
                       </div>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        flow.status === 'active' ? 'bg-green-100 text-green-700' : 
-                        flow.status === 'paused' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {flow.status}
-                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: flow.status === 'active' ? dt[50] : flow.status === 'paused' ? dAmber[100] : t[50], color: flow.status === 'active' ? dt[700] : flow.status === 'paused' ? '#23282A' : inkSoft }}>{flow.status}</span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: inkSoft, marginBottom: 12 }}>
                       <span>{flow.steps.length} steps</span>
                       <span>{flow.stats.triggered} triggered</span>
                       <span>{flow.stats.completed} completed</span>
                     </div>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => setEditingFlow(flow)}
-                        className="flex-1 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200"
-                      >
-                        <Settings size={14} className="inline mr-1" />Edit
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setEditingFlow(flow)} className="prime-btn-secondary" style={{ flex: 1, padding: 8, fontSize: 13, fontWeight: 600, color: inkSoft, background: t[50], border: 'none', borderRadius: 8, cursor: 'pointer', lineHeight: 1.4 }}>
+                        <Settings size={14} style={{ display: 'inline', marginRight: 4 }} />Edit
                       </button>
                       {flow.status === 'active' ? (
-                        <button 
-                          onClick={() => whatsAppMarketingService.toggleAutomation(flow.id).then(loadData)}
-                          className="flex-1 py-2 text-sm font-medium text-yellow-600 bg-yellow-50 rounded-lg hover:bg-yellow-100"
-                        >
-                          <Pause size={14} className="inline mr-1" />Pause
+                        <button onClick={() => whatsAppMarketingService.toggleAutomation(flow.id).then(loadData)} className="prime-btn-secondary" style={{ flex: 1, padding: 8, fontSize: 13, fontWeight: 600, color: dAmber[500], background: dAmber[100], border: 'none', borderRadius: 8, cursor: 'pointer', lineHeight: 1.4 }}>
+                          <Pause size={14} style={{ display: 'inline', marginRight: 4 }} />Pause
                         </button>
                       ) : (
-                        <button 
-                          onClick={() => whatsAppMarketingService.toggleAutomation(flow.id).then(loadData)}
-                          className="flex-1 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100"
-                        >
-                          <Play size={14} className="inline mr-1" />Activate
+                        <button onClick={() => whatsAppMarketingService.toggleAutomation(flow.id).then(loadData)} className="prime-btn-secondary" style={{ flex: 1, padding: 8, fontSize: 13, fontWeight: 600, color: dt[600], background: dt[50], border: 'none', borderRadius: 8, cursor: 'pointer', lineHeight: 1.4 }}>
+                          <Play size={14} style={{ display: 'inline', marginRight: 4 }} />Activate
                         </button>
                       )}
-                      <button 
-                        onClick={() => handleDeleteAutomation(flow.id)}
-                        className="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
-                      >
+                      <button onClick={() => handleDeleteAutomation(flow.id)} className="prime-btn-secondary" style={{ padding: '8px 12px', fontSize: 13, fontWeight: 600, color: danger, background: '#fef7f6', border: 'none', borderRadius: 8, cursor: 'pointer', lineHeight: 1.4 }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -1447,96 +1281,73 @@ const MarketingMessages: React.FC = () => {
 
         {/* ACTIVITY LOG VIEW */}
         {activeView === 'activity' && (
-          <div className="flex-1 overflow-auto p-6 bg-slate-50">
-            <div className="flex items-center justify-between mb-6">
+          <div style={{ flex: 1, overflow: 'auto', padding: 24, background: t[50] }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
               <div>
-                <h2 className="text-xl font-bold text-slate-800">WhatsApp Activity Log</h2>
-                <p className="text-sm text-slate-500">{activityLog.length} recorded messages</p>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>WhatsApp Activity Log</h2>
+                <p style={{ fontSize: 13, color: inkSoft, margin: '2px 0 0' }}>{activityLog.length} recorded messages</p>
               </div>
-              <div className="flex gap-2">
-                <select
-                  value={activityFilters.dateRange || 'all'}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setActivityFilters(prev => ({ ...prev, dateRange: val === 'all' ? undefined : val }));
-                    setTimeout(loadActivityLog, 100);
-                  }}
-                  className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
-                >
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select value={activityFilters.dateRange || 'all'} onChange={(e) => { const val = e.target.value; setActivityFilters(prev => ({ ...prev, dateRange: val === 'all' ? undefined : val })); setTimeout(loadActivityLog, 100); }} className="prime-select" style={{ padding: '6px 12px', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, cursor: 'pointer', outline: 'none' }}>
                   <option value="all">All Time</option>
                   <option value="today">Today</option>
                   <option value="week">This Week</option>
                   <option value="month">This Month</option>
                 </select>
-                <select
-                  value={activityFilters.status || 'all'}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setActivityFilters(prev => ({ ...prev, status: val === 'all' ? undefined : val }));
-                    setTimeout(loadActivityLog, 100);
-                  }}
-                  className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
-                >
+                <select value={activityFilters.status || 'all'} onChange={(e) => { const val = e.target.value; setActivityFilters(prev => ({ ...prev, status: val === 'all' ? undefined : val })); setTimeout(loadActivityLog, 100); }} className="prime-select" style={{ padding: '6px 12px', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, cursor: 'pointer', outline: 'none' }}>
                   <option value="all">All Status</option>
                   <option value="sent">Sent</option>
                   <option value="delivered">Delivered</option>
                   <option value="failed">Failed</option>
                   <option value="received">Received</option>
                 </select>
-                <button onClick={loadActivityLog} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">
-                  <RefreshCw size={18} className="text-slate-600" />
-                </button>
+                <button onClick={loadActivityLog} className="prime-btn-secondary" style={{ padding: 8, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, cursor: 'pointer', display: 'flex' }}><RefreshCw size={18} style={{ color: inkSoft }} /></button>
               </div>
             </div>
 
             {activityLog.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
-                <MessageCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500 font-medium">No messages yet</p>
-                <p className="text-xs text-slate-400 mt-1">Messages sent through connected accounts will appear here</p>
+              <div className="prime-card" style={{ textAlign: 'center', padding: 48, background: paper, borderRadius: 14, border: `1.4px solid ${hairline}` }}>
+                <MessageCircle size={48} style={{ color: hairline, margin: '0 auto 12px', display: 'block' }} />
+                <p style={{ color: inkSoft, fontWeight: 500 }}>No messages yet</p>
+                <p style={{ fontSize: 12, color: inkSoft, marginTop: 4 }}>Messages sent through connected accounts will appear here</p>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Recipient</th>
-                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Message</th>
-                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Status</th>
-                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Direction</th>
-                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
+              <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'hidden' }}>
+                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                  <thead style={{ background: t[50] }}>
+                    <tr style={{ borderBottom: `1.4px solid ${hairline}` }}>
+                      <th className="prime-table-header" style={{ textAlign: 'left', padding: '10px 16px', fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>Recipient</th>
+                      <th className="prime-table-header" style={{ textAlign: 'left', padding: '10px 16px', fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>Message</th>
+                      <th className="prime-table-header" style={{ textAlign: 'left', padding: '10px 16px', fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</th>
+                      <th className="prime-table-header" style={{ textAlign: 'left', padding: '10px 16px', fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>Direction</th>
+                      <th className="prime-table-header" style={{ textAlign: 'left', padding: '10px 16px', fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody>
                     {activityLog.map((msg) => (
-                      <tr key={msg.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-slate-800">{msg.recipient_name || msg.recipient}</p>
-                          <p className="text-xs text-slate-400">{msg.recipient}</p>
+                      <tr key={msg.id} style={{ borderBottom: `1px solid ${hairline}`, transition: 'background 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td className="prime-table-cell" style={{ padding: '10px 16px' }}>
+                          <p style={{ fontWeight: 500, color: ink, margin: 0, fontSize: 13 }}>{msg.recipient_name || msg.recipient}</p>
+                          <p style={{ fontSize: 12, color: inkSoft, margin: '2px 0 0' }}>{msg.recipient}</p>
                         </td>
-                        <td className="px-4 py-3 max-w-xs">
-                          <p className="truncate text-slate-600">{msg.message_content}</p>
-                          {msg.template_id && <p className="text-xs text-indigo-500">Template: {msg.template_id}</p>}
+                        <td className="prime-table-cell" style={{ padding: '10px 16px', maxWidth: 240 }}>
+                          <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: ink, margin: 0 }}>{msg.message_content}</p>
+                          {msg.template_id && <p style={{ fontSize: 12, color: dt[500], margin: '2px 0 0' }}>Template: {msg.template_id}</p>}
                         </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            msg.status === 'sent' ? 'bg-green-100 text-green-700' :
-                            msg.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
-                            msg.status === 'failed' ? 'bg-red-100 text-red-700' :
-                            msg.status === 'received' ? 'bg-purple-100 text-purple-700' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
+                        <td className="prime-table-cell" style={{ padding: '10px 16px' }}>
+                          <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 600, borderRadius: 20, background: msg.status === 'sent' ? dt[50] : msg.status === 'delivered' ? '#dbeafe' : msg.status === 'failed' ? '#fef7f6' : msg.status === 'received' ? t[50] : t[50], color: msg.status === 'sent' ? dt[700] : msg.status === 'delivered' ? '#1d4ed8' : msg.status === 'failed' ? danger : msg.status === 'received' ? dt[700] : inkSoft }}>
                             {msg.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-medium ${
-                            msg.direction === 'outbound' ? 'text-green-600' : 'text-purple-600'
-                          }`}>
+                        <td className="prime-table-cell" style={{ padding: '10px 16px' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: msg.direction === 'outbound' ? dt[600] : dt[500] }}>
                             {msg.direction === 'outbound' ? 'Outgoing' : 'Incoming'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-500">
+                        <td className="prime-table-cell" style={{ padding: '10px 16px', fontSize: 12, color: inkSoft }}>
                           {new Date(msg.created_at).toLocaleString()}
                         </td>
                       </tr>
@@ -1551,163 +1362,93 @@ const MarketingMessages: React.FC = () => {
 
       {/* New Campaign Modal */}
       {showNewCampaign && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          <div className="prime-card" style={{ background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', width: '100%', maxWidth: 560, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/25">
-                  <Send size={20} className="text-white" />
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: paper }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)` }}>
+                  <Send size={20} style={{ color: '#fff' }} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">New Campaign</h2>
-                  <p className="text-[11px] text-slate-500 font-medium">Create a marketing message</p>
+                  <h2 style={{ fontSize: 17, fontWeight: 700, color: ink, margin: 0 }}>New Campaign</h2>
+                  <p style={{ fontSize: 11, color: inkSoft, margin: '2px 0 0' }}>Create a marketing message</p>
                 </div>
               </div>
-              <button onClick={() => setShowNewCampaign(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="Close" aria-label="Close campaign dialog">
-                <X size={20} className="text-slate-400" />
-              </button>
+              <button onClick={() => setShowNewCampaign(false)} className="prime-btn-secondary" style={{ padding: 8, border: `1px solid ${hairline}`, borderRadius: 8, background: paper, cursor: 'pointer', display: 'flex' }}><X size={18} style={{ color: inkSoft }} /></button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div style={{ flex: 1, overflow: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Campaign Name *</label>
-                  <input
-                    type="text"
-                    value={campaignForm.name}
-                    onChange={(e) => setCampaignForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all"
-                    placeholder="e.g., Summer Sale 2024"
-                  />
+                  <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>Campaign Name *</label>
+                  <input className="prime-input" type="text" value={campaignForm.name} onChange={(e) => setCampaignForm(prev => ({ ...prev, name: e.target.value }))} style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} placeholder="e.g., Summer Sale 2024" />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Schedule (Optional)</label>
-                  <input
-                    type="datetime-local"
-                    value={campaignForm.scheduledAt}
-                    onChange={(e) => setCampaignForm(prev => ({ ...prev, scheduledAt: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all"
-                  />
+                  <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>Schedule (Optional)</label>
+                  <input className="prime-input" type="datetime-local" value={campaignForm.scheduledAt} onChange={(e) => setCampaignForm(prev => ({ ...prev, scheduledAt: e.target.value }))} style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Description</label>
-                <input
-                  type="text"
-                  value={campaignForm.description}
-                  onChange={(e) => setCampaignForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all"
-                  placeholder="Brief description"
-                />
+                <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>Description</label>
+                <input className="prime-input" type="text" value={campaignForm.description} onChange={(e) => setCampaignForm(prev => ({ ...prev, description: e.target.value }))} style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} placeholder="Brief description" />
               </div>
 
               {/* Template */}
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Template (Optional)</label>
-                <select
-                  value={campaignForm.templateId}
-                  onChange={(e) => handleTemplateSelect(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all appearance-none cursor-pointer"
-                >
+                <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>Template (Optional)</label>
+                <select value={campaignForm.templateId} onChange={(e) => handleTemplateSelect(e.target.value)} className="prime-select" style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }}>
                   <option value="">Select a template...</option>
-                  {templates.slice(0, 20).map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
-                  ))}
+                  {templates.slice(0, 20).map(t => <option key={t.id} value={t.id}>{t.name} ({t.category})</option>)}
                 </select>
               </div>
 
               {/* Message */}
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Message *</label>
-                <textarea
-                  value={campaignForm.message}
-                  onChange={(e) => setCampaignForm(prev => ({ ...prev, message: e.target.value }))}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all resize-none h-28"
-                  placeholder="Enter your message or select a template..."
-                />
-                <p className="text-[10px] text-slate-400 mt-1.5 font-medium">Use {'{{name}}'} for customer name, {'{{company}}'} for company name</p>
+                <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>Message *</label>
+                <textarea value={campaignForm.message} onChange={(e) => setCampaignForm(prev => ({ ...prev, message: e.target.value }))} className="prime-input" style={{ width: '100%', padding: '10px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', resize: 'none', height: 112, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box', lineHeight: 1.5 }} placeholder="Enter your message or select a template..." />
+                <p style={{ fontSize: 10, color: inkSoft, marginTop: 4 }}>Use {'{{name}}'} for customer name, {'{{company}}'} for company name</p>
               </div>
 
               {/* Targeting Mode */}
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-3">Targeting Mode</label>
-                <div className="flex bg-white p-1 rounded-xl border border-slate-200 mb-4">
+              <div style={{ background: t[50], borderRadius: 10, padding: 16, border: `1px solid ${hairline}` }}>
+                <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 12 }}>Targeting Mode</label>
+                <div className="prime-btn-secondary" style={{ display: 'flex', background: paper, padding: 3, borderRadius: 10, border: `1px solid ${hairline}`, marginBottom: 12 }}>
                   {(['customers', 'manual', 'group'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setCampaignTarget(mode)}
-                      className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
-                        campaignTarget === mode 
-                          ? 'bg-green-600 text-white shadow-sm' 
-                          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                      }`}
-                    >
+                    <button key={mode} onClick={() => setCampaignTarget(mode)} style={{ flex: 1, padding: 8, fontSize: 12, fontWeight: 700, borderRadius: 8, border: 'none', transition: 'all .15s ease', cursor: 'pointer', background: campaignTarget === mode ? `linear-gradient(135deg, ${dt[500]}, ${dt[700]})` : 'transparent', color: campaignTarget === mode ? '#fff' : inkSoft, lineHeight: 1.4 }}>
                       {mode.charAt(0).toUpperCase() + mode.slice(1)}
                     </button>
                   ))}
                 </div>
 
                 {campaignTarget === 'customers' && (
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <input
-                        type="text"
-                        value={customerSearch}
-                        onChange={(e) => setCustomerSearch(e.target.value)}
-                        placeholder="Search customers..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none"
-                      />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ position: 'relative' }}>
+                      <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft, pointerEvents: 'none' }} />
+                      <input className="prime-input" type="text" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} placeholder="Search customers..." style={{ width: '100%', padding: '8px 12px 8px 36px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} />
                     </div>
-                    <div className="max-h-48 overflow-auto border border-slate-100 rounded-xl divide-y divide-slate-50 custom-scrollbar bg-white">
-                      {customers
-                        .filter((c: any) => 
-                          (c.name?.toLowerCase().includes(customerSearch.toLowerCase()) || 
-                          c.phone?.includes(customerSearch))
-                        )
-                        .map((customer: any) => (
-                          <label key={customer.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={selectedCustomerIds.includes(customer.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedCustomerIds(prev => [...prev, customer.id]);
-                                } else {
-                                  setSelectedCustomerIds(prev => prev.filter(id => id !== customer.id));
-                                }
-                              }}
-                              className="w-4 h-4 text-green-600 rounded border-slate-300 focus:ring-green-500"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-slate-800 truncate">{customer.name}</p>
-                              <p className="text-xs text-slate-500">{customer.phone || 'No phone'}</p>
-                            </div>
-                          </label>
-                        ))}
+                    <div style={{ maxHeight: 120, overflow: 'auto', border: `1px solid ${hairline}`, borderRadius: 9, background: paper }}>
+                      {customers.filter((c: any) => c.name?.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone?.includes(customerSearch)).map((customer: any) => (
+                        <label key={customer.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, cursor: 'pointer', borderBottom: `1px solid ${hairline}` }}
+                          onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <input type="checkbox" checked={selectedCustomerIds.includes(customer.id)} onChange={(e) => { if (e.target.checked) { setSelectedCustomerIds(prev => [...prev, customer.id]); } else { setSelectedCustomerIds(prev => prev.filter(id => id !== customer.id)); } }} style={{ accentColor: dt[500], width: 16, height: 16 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customer.name}</p>
+                            <p style={{ fontSize: 12, color: inkSoft, margin: 0 }}>{customer.phone || 'No phone'}</p>
+                          </div>
+                        </label>
+                      ))}
                     </div>
-                    <div className="flex justify-between items-center text-xs text-slate-500">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: inkSoft }}>
                       <span>{selectedCustomerIds.length} customers selected</span>
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => {
-                            const allIds = customers.map((c: any) => c.id);
-                            setSelectedCustomerIds(allIds);
-                          }}
-                          className="text-green-600 font-bold hover:underline"
-                        >
-                          Select All
-                        </button>
-                        <button 
-                          onClick={() => setSelectedCustomerIds([])}
-                          className="text-red-500 font-bold hover:underline"
-                        >
-                          Deselect All
-                        </button>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <button onClick={() => { const allIds = customers.map((c: any) => c.id); setSelectedCustomerIds(allIds); }} className="prime-btn-secondary" style={{ color: dt[500], fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 12 }}>Select All</button>
+                        <button onClick={() => setSelectedCustomerIds([])} className="prime-btn-secondary" style={{ color: danger, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 12 }}>Deselect All</button>
                       </div>
                     </div>
                   </div>
@@ -1715,33 +1456,20 @@ const MarketingMessages: React.FC = () => {
 
                 {campaignTarget === 'manual' && (
                   <div>
-                    <textarea
-                      value={recipientInput}
-                      onChange={(e) => setRecipientInput(e.target.value)}
-                      className="w-full p-3 bg-white border border-slate-200 rounded-xl h-24 text-sm focus:ring-2 focus:ring-green-500 outline-none"
-                      placeholder="Enter phone numbers (one per line or comma-separated)&#10;+254712345678&#10;+254798765432"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold">Paste numbers from Excel or CSV</p>
+                    <textarea value={recipientInput} onChange={(e) => setRecipientInput(e.target.value)} className="prime-input" style={{ width: '100%', padding: 10, border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', height: 96, resize: 'none', fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} placeholder={"Enter phone numbers (one per line or comma-separated)\n+254712345678\n+254798765432"} />
+                    <p style={{ fontSize: 10, color: inkSoft, marginTop: 4, textTransform: 'uppercase', fontWeight: 700 }}>Paste numbers from Excel or CSV</p>
                   </div>
                 )}
 
                 {campaignTarget === 'group' && (
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <Link className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <input
-                        type="text"
-                        value={groupLink}
-                        onChange={(e) => setGroupLink(e.target.value)}
-                        placeholder="Paste WhatsApp Group Invitation Link"
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none"
-                      />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ position: 'relative' }}>
+                      <Link size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft, pointerEvents: 'none' }} />
+                      <input className="prime-input" type="text" value={groupLink} onChange={(e) => setGroupLink(e.target.value)} placeholder="Paste WhatsApp Group Invitation Link" style={{ width: '100%', padding: '8px 12px 8px 36px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} />
                     </div>
-                    <div className="p-3 bg-blue-50 rounded-xl flex items-start gap-3 border border-blue-100">
-                      <Info size={16} className="text-blue-500 mt-0.5 shrink-0" />
-                      <p className="text-xs text-blue-700 leading-relaxed">
-                        Messages will be sent directly to the selected group when you click Create Campaign.
-                      </p>
+                    <div style={{ padding: 10, background: t[50], borderRadius: 10, display: 'flex', gap: 10, alignItems: 'flex-start', border: `1px solid ${dt[100]}` }}>
+                      <Info size={16} style={{ color: dt[500], flexShrink: 0, marginTop: 1 }} />
+                      <p style={{ fontSize: 12, color: dt[800], margin: 0, lineHeight: 1.5 }}>Messages will be sent directly to the selected group when you click Create Campaign.</p>
                     </div>
                   </div>
                 )}
@@ -1749,43 +1477,19 @@ const MarketingMessages: React.FC = () => {
 
               {/* Business Link */}
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2 flex items-center gap-2">
-                  <ExternalLink size={14} className="text-green-600" />
-                  Business Broadcast / Custom Link (Optional)
+                <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <ExternalLink size={14} style={{ color: dt[500] }} /> Business Broadcast / Custom Link (Optional)
                 </label>
-                <input
-                  type="text"
-                  value={broadcastLink}
-                  onChange={(e) => setBroadcastLink(e.target.value)}
-                  placeholder="e.g., WhatsApp Business Broadcast URL"
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all"
-                />
-                <p className="text-[10px] text-slate-400 mt-1.5 font-medium">
-                  If provided, this link will open after campaign creation
-                </p>
+                <input className="prime-input" type="text" value={broadcastLink} onChange={(e) => setBroadcastLink(e.target.value)} placeholder="e.g., WhatsApp Business Broadcast URL" style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} />
+                <p style={{ fontSize: 10, color: inkSoft, marginTop: 4 }}>If provided, this link will open after campaign creation</p>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-3 bg-slate-50/50">
-              <button
-                onClick={() => setShowNewCampaign(false)}
-                className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handlePreviewCampaign}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors"
-              >
-                Preview
-              </button>
-              <button
-                onClick={handleCreateCampaign}
-                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold text-sm hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/25"
-              >
-                {campaignForm.scheduledAt ? 'Schedule Campaign' : 'Create Campaign'}
-              </button>
+            <div style={{ padding: '12px 20px', borderTop: `1px solid ${hairline}`, display: 'flex', gap: 12 }}>
+              <button onClick={() => setShowNewCampaign(false)} className="prime-btn-secondary" style={{ flex: 1, padding: '10px 16px', border: `1.4px solid ${hairline}`, borderRadius: 10, fontWeight: 600, fontSize: 13, color: ink, background: 'transparent', cursor: 'pointer', lineHeight: 1.4 }}>Cancel</button>
+              <button onClick={handlePreviewCampaign} className="prime-btn" style={{ flex: 1, padding: '10px 16px', borderRadius: 10, fontWeight: 600, fontSize: 13, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', lineHeight: 1.4 }}>Preview</button>
+              <button onClick={handleCreateCampaign} className="prime-btn" style={{ flex: 1, padding: '10px 16px', borderRadius: 10, fontWeight: 600, fontSize: 13, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', lineHeight: 1.4 }}>{campaignForm.scheduledAt ? 'Schedule Campaign' : 'Create Campaign'}</button>
             </div>
           </div>
         </div>
@@ -1793,59 +1497,40 @@ const MarketingMessages: React.FC = () => {
 
       {/* AI Settings Modal */}
       {showAISettings && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Sparkles size={20} className="text-indigo-600" />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          <div className="prime-card" style={{ background: paper, borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: `1px solid ${hairline}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ padding: 8, background: dt[50], borderRadius: 8 }}>
+                  <Sparkles size={20} style={{ color: dt[600] }} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">AI Settings</h2>
-                  <p className="text-xs text-slate-500">Configure AI for smart replies & templates</p>
+                  <h2 style={{ fontSize: 17, fontWeight: 700, color: ink, margin: 0 }}>AI Settings</h2>
+                  <p style={{ fontSize: 12, color: inkSoft, margin: '2px 0 0' }}>Configure AI for smart replies & templates</p>
                 </div>
               </div>
-              <button onClick={() => setShowAISettings(false)} className="p-2 hover:bg-slate-100 rounded-lg" title="Close" aria-label="Close AI settings">
-                <X size={20} className="text-slate-400" />
-              </button>
+              <button onClick={() => setShowAISettings(false)} className="prime-btn-secondary" style={{ padding: 8, border: `1px solid ${hairline}`, borderRadius: 8, background: paper, cursor: 'pointer', display: 'flex' }}><X size={18} style={{ color: inkSoft }} /></button>
             </div>
-            <div className="p-6 space-y-5">
-              <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${aiConfig.enabled ? 'bg-green-500' : 'bg-slate-300'}`} />
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: t[50], borderRadius: 10, border: `1px solid ${dt[100]}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: aiConfig.enabled ? dt[500] : hairline }} />
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">AI Features</p>
-                    <p className="text-xs text-slate-500">{aiConfig.enabled ? 'Smart replies & template generation active' : 'AI is currently disabled'}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>AI Features</p>
+                    <p style={{ fontSize: 12, color: inkSoft, margin: 0 }}>{aiConfig.enabled ? 'Smart replies & template generation active' : 'AI is currently disabled'}</p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={aiConfig.enabled}
-                    onChange={(e) => setAIConfig(prev => ({ ...prev, enabled: e.target.checked }))}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={aiConfig.enabled} onChange={(e) => setAIConfig(prev => ({ ...prev, enabled: e.target.checked }))} style={{ display: 'none' }} />
+                  <div style={{ width: 44, height: 24, borderRadius: 12, background: aiConfig.enabled ? dt[500] : hairline, position: 'relative', transition: 'background .2s' }}>
+                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: aiConfig.enabled ? 22 : 2, transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+                  </div>
                 </label>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">AI Provider</label>
-                <select
-                  value={aiConfig.provider}
-                  onChange={(e) => {
-                    const provider = e.target.value;
-                    const defaults: Record<string, { endpoint: string; model: string }> = {
-                      openai: { endpoint: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
-                      anthropic: { endpoint: 'https://api.anthropic.com/v1', model: 'claude-3-haiku-20240307' },
-                      ollama: { endpoint: 'http://localhost:11434/v1', model: 'llama3' },
-                      openrouter: { endpoint: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini' },
-                    };
-                    const def = defaults[provider] || defaults.openai;
-                    setAIConfig(prev => ({ ...prev, provider, endpoint: def.endpoint, model: def.model }));
-                  }}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                >
+                <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>AI Provider</label>
+                <select value={aiConfig.provider} onChange={(e) => { const provider = e.target.value; const defaults: Record<string, { endpoint: string; model: string }> = { openai: { endpoint: 'https://api.openai.com/v1', model: 'gpt-4o-mini' }, anthropic: { endpoint: 'https://api.anthropic.com/v1', model: 'claude-3-haiku-20240307' }, ollama: { endpoint: 'http://localhost:11434/v1', model: 'llama3' }, openrouter: { endpoint: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini' } }; const def = defaults[provider] || defaults.openai; setAIConfig(prev => ({ ...prev, provider, endpoint: def.endpoint, model: def.model })); }} className="prime-select" style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }}>
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
                   <option value="openrouter">OpenRouter</option>
@@ -1855,55 +1540,25 @@ const MarketingMessages: React.FC = () => {
 
               {aiConfig.provider !== 'ollama' && (
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">API Key</label>
-                  <input
-                    type="password"
-                    value={aiConfig.apiKey}
-                    onChange={(e) => setAIConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="sk-..."
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1.5">Your key is stored locally and never sent anywhere except the selected provider</p>
+                  <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>API Key</label>
+                  <input className="prime-input" type="password" value={aiConfig.apiKey} onChange={(e) => setAIConfig(prev => ({ ...prev, apiKey: e.target.value }))} style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} placeholder="sk-..." />
+                  <p style={{ fontSize: 10, color: inkSoft, marginTop: 4 }}>Your key is stored locally and never sent anywhere except the selected provider</p>
                 </div>
               )}
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">API Endpoint</label>
-                <input
-                  type="text"
-                  value={aiConfig.endpoint}
-                  onChange={(e) => setAIConfig(prev => ({ ...prev, endpoint: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
+                <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>API Endpoint</label>
+                <input className="prime-input" type="text" value={aiConfig.endpoint} onChange={(e) => setAIConfig(prev => ({ ...prev, endpoint: e.target.value }))} style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Model</label>
-                <input
-                  type="text"
-                  value={aiConfig.model}
-                  onChange={(e) => setAIConfig(prev => ({ ...prev, model: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
+                <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>Model</label>
+                <input className="prime-input" type="text" value={aiConfig.model} onChange={(e) => setAIConfig(prev => ({ ...prev, model: e.target.value }))} style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} />
               </div>
             </div>
-            <div className="p-6 border-t border-slate-100 flex gap-3">
-              <button
-                onClick={() => setShowAISettings(false)}
-                className="flex-1 py-3 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  await aiService.saveConfig(aiConfig as AIConfig);
-                  setShowAISettings(false);
-                  notify('AI settings saved!', 'success');
-                }}
-                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
-              >
-                Save Settings
-              </button>
+            <div style={{ padding: 12, borderTop: `1px solid ${hairline}`, display: 'flex', gap: 12 }}>
+              <button onClick={() => setShowAISettings(false)} className="prime-btn-secondary" style={{ flex: 1, padding: '10px 16px', border: `1.4px solid ${hairline}`, borderRadius: 10, fontWeight: 600, fontSize: 13, color: ink, background: 'transparent', cursor: 'pointer', lineHeight: 1.4 }}>Cancel</button>
+              <button onClick={async () => { await aiService.saveConfig(aiConfig as AIConfig); setShowAISettings(false); notify('AI settings saved!', 'success'); }} className="prime-btn" style={{ flex: 1, padding: '10px 16px', borderRadius: 10, fontWeight: 600, fontSize: 13, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', lineHeight: 1.4 }}>Save Settings</button>
             </div>
           </div>
         </div>
@@ -1911,83 +1566,45 @@ const MarketingMessages: React.FC = () => {
 
       {/* WhatsApp API Config Modal */}
       {showWASettings && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <MessageCircle size={20} className="text-green-600" />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          <div className="prime-card" style={{ background: paper, borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: `1px solid ${hairline}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ padding: 8, background: dt[50], borderRadius: 8 }}>
+                  <MessageCircle size={20} style={{ color: dt[600] }} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">WhatsApp API Configuration</h2>
-                  <p className="text-xs text-slate-500">{waConfigured ? 'Update your Meta WhatsApp API credentials' : 'Enter your Meta WhatsApp API credentials'}</p>
+                  <h2 style={{ fontSize: 17, fontWeight: 700, color: ink, margin: 0 }}>WhatsApp API Configuration</h2>
+                  <p style={{ fontSize: 12, color: inkSoft, margin: '2px 0 0' }}>{waConfigured ? 'Update your Meta WhatsApp API credentials' : 'Enter your Meta WhatsApp API credentials'}</p>
                 </div>
               </div>
-              <button onClick={() => { setShowWASettings(false); setWAPhoneNumberId(''); setWAAccessToken(''); }} className="p-2 hover:bg-slate-100 rounded-lg" title="Close" aria-label="Close WhatsApp settings">
-                <X size={20} className="text-slate-400" />
-              </button>
+              <button onClick={() => { setShowWASettings(false); setWAPhoneNumberId(''); setWAAccessToken(''); }} className="prime-btn-secondary" style={{ padding: 8, border: `1px solid ${hairline}`, borderRadius: 8, background: paper, cursor: 'pointer', display: 'flex' }}><X size={18} style={{ color: inkSoft }} /></button>
             </div>
-            <div className="p-6 space-y-5">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-                <p className="font-medium mb-1">WhatsApp Business Cloud API</p>
-                <p className="text-xs text-blue-600">Configure your Meta WhatsApp Business API credentials to send messages. Get these from the Meta Developer Portal.</p>
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ background: t[50], border: `1px solid ${dt[100]}`, borderRadius: 10, padding: 12, fontSize: 13, color: dt[800] }}>
+                <p style={{ fontWeight: 600, margin: '0 0 4px' }}>WhatsApp Business Cloud API</p>
+                <p style={{ fontSize: 12, color: dt[600], margin: 0 }}>Configure your Meta WhatsApp Business API credentials to send messages. Get these from the Meta Developer Portal.</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone Number ID</label>
-                <input
-                  type="text"
-                  value={waPhoneNumberId}
-                  onChange={(e) => setWAPhoneNumberId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Enter your WhatsApp Phone Number ID"
-                />
+                <label className="prime-label" style={{ fontSize: 12, fontWeight: 600, color: ink, marginBottom: 6, display: 'block' }}>Phone Number ID</label>
+                <input className="prime-input" type="text" value={waPhoneNumberId} onChange={(e) => setWAPhoneNumberId(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} placeholder="Enter your WhatsApp Phone Number ID" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Access Token</label>
-                <input
-                  type="password"
-                  value={waAccessToken}
-                  onChange={(e) => setWAAccessToken(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Enter your Permanent Access Token"
-                />
+                <label className="prime-label" style={{ fontSize: 12, fontWeight: 600, color: ink, marginBottom: 6, display: 'block' }}>Access Token</label>
+                <input className="prime-input" type="password" value={waAccessToken} onChange={(e) => setWAAccessToken(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: '#fff', outline: 'none', lineHeight: 1.4, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} placeholder="Enter your Permanent Access Token" />
               </div>
 
               {waConfigured && (
-                <div className="flex gap-3">
-                  <button
-                    onClick={async () => {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (user) await whatsappClient.disconnect(user.id);
-                      setWAAccount(null);
-                      setWAConfigured(false);
-                      setShowWASettings(false);
-                      notify('Disconnected', 'success');
-                    }}
-                    className="flex-1 py-2.5 bg-red-50 text-red-600 rounded-xl font-medium hover:bg-red-100"
-                  >
-                    Disconnect
-                  </button>
-                  <button
-                    onClick={handleSaveConfig}
-                    disabled={configuringWA}
-                    className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {configuringWA ? 'Saving...' : 'Update'}
-                  </button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button onClick={async () => { const { data: { user } } = await supabase.auth.getUser(); if (user) await whatsappClient.disconnect(user.id); setWAAccount(null); setWAConfigured(false); setShowWASettings(false); notify('Disconnected', 'success'); }} className="prime-btn-secondary" style={{ flex: 1, padding: '8px 16px', borderRadius: 9, fontWeight: 600, fontSize: 13, color: danger, background: '#fef7f6', border: 'none', cursor: 'pointer', lineHeight: 1.4 }}>Disconnect</button>
+                  <button onClick={handleSaveConfig} disabled={configuringWA} className="prime-btn" style={{ flex: 1, padding: '8px 16px', borderRadius: 9, fontWeight: 600, fontSize: 13, border: 'none', cursor: configuringWA ? 'default' : 'pointer', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', opacity: configuringWA ? 0.7 : 1, lineHeight: 1.4 }}>{configuringWA ? 'Saving...' : 'Update'}</button>
                 </div>
               )}
 
               {!waConfigured && (
-                <button
-                  onClick={handleSaveConfig}
-                  disabled={configuringWA}
-                  className="w-full py-2.5 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 disabled:opacity-50"
-                >
-                  {configuringWA ? 'Saving...' : 'Save Configuration'}
-                </button>
+                <button onClick={handleSaveConfig} disabled={configuringWA} className="prime-btn" style={{ width: '100%', padding: '8px 16px', borderRadius: 9, fontWeight: 600, fontSize: 13, border: 'none', cursor: configuringWA ? 'default' : 'pointer', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', opacity: configuringWA ? 0.7 : 1, lineHeight: 1.4 }}>{configuringWA ? 'Saving...' : 'Save Configuration'}</button>
               )}
             </div>
           </div>

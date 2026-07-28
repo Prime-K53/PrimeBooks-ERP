@@ -8,6 +8,12 @@ import { localFileStorage } from '../../services/localFileStorage';
 import { OfflineImage } from '../../components/OfflineImage';
 import { useConfirmDialog } from '../../components/ConfirmDialog';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f' };
+const paper = '#FEFDFB'; const ink = '#23282A'; const inkSoft = '#5c6567'; const hairline = '#e4ddd1'; const danger = '#b5493f';
+
+const inputBase = { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, padding: '8px 12px', borderRadius: 9, border: `1.4px solid ${hairline}`, background: '#fff', color: ink, outline: 'none', lineHeight: 1.4, width: '100%', boxSizing: 'border-box' as const };
+
 const UserManagement: React.FC = () => {
   const { allUsers, userGroups, manageUser, deleteUser, manageUserGroup, deleteUserGroup, passwordPolicy, updatePasswordPolicy, checkPermission, validatePasswordStrength, notify } = useAuth();
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
@@ -124,71 +130,74 @@ const UserManagement: React.FC = () => {
   };
 
   const renderUsers = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-800">System Users</h2>
-        <button onClick={() => { setEditUser({ id: '', active: true, mfaEnabled: false, groupIds: [], securityLevel: 'Standard' }); setPasswordError([]); setIsUserModalOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium hover:bg-blue-700">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0 }}>System Users</h2>
+        <button onClick={() => { setEditUser({ id: '', active: true, mfaEnabled: false, groupIds: [], securityLevel: 'Standard' }); setPasswordError([]); setIsUserModalOpen(true); }} className="prime-btn" style={{ background: `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', lineHeight: 1.4 }}>
           <Plus size={18}/> Add User
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+      <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <table style={{ width: '100%', textAlign: 'left', fontSize: 13, borderCollapse: 'collapse' }}>
+          <thead style={{ background: t[50] }}>
             <tr>
-              <th className="p-4">User</th>
-              <th className="p-4">Role</th>
-              <th className="p-4">Groups</th>
-              <th className="p-4">Security</th>
-              <th className="p-4">Status</th>
-              <th className="p-4 text-right">Actions</th>
+              <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>User</th>
+              <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Role</th>
+              <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Groups</th>
+              <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Security</th>
+              <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</th>
+              <th className="prime-table-header" style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody style={{ borderTop: `1.4px solid ${hairline}` }}>
             {allUsers.map(u => (
-              <tr key={u.id} className="hover:bg-slate-50 group">
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs overflow-hidden border border-blue-200">
-                      <OfflineImage src={u.avatar} alt={u.name} className="w-full h-full object-cover" fallback={u.name.substring(0, 2)}/>
+              <tr key={u.id} style={{ borderBottom: `1px solid ${hairline}`, transition: 'background 0.1s' }}
+                onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <td className="prime-table-cell" style={{ padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: t[100], display: 'flex', alignItems: 'center', justifyContent: 'center', color: t[600], fontWeight: 700, fontSize: 11, overflow: 'hidden', border: `1px solid ${t[200]}` }}>
+                      <OfflineImage src={u.avatar} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} fallback={u.name.substring(0, 2)}/>
                     </div>
                     <div>
-                      <div className="font-medium text-slate-900">{u.name}</div>
-                      <div className="text-xs text-slate-500">@{u.username}</div>
+                      <div style={{ fontWeight: 500, color: ink }}>{u.name}</div>
+                      <div style={{ fontSize: 12, color: inkSoft }}>@{u.username}</div>
                     </div>
                   </div>
                 </td>
-                <td className="p-4 text-slate-600">{u.role}</td>
-                <td className="p-4">
-                  <div className="flex gap-1 flex-wrap">
+                <td className="prime-table-cell" style={{ padding: '12px 16px', color: ink }}>{u.role}</td>
+                <td className="prime-table-cell" style={{ padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     {u.groupIds?.map(gid => {
                       const g = userGroups.find(grp => grp.id === gid);
-                      return g ? <span key={gid} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs border border-slate-200">{g.name}</span> : null;
+                      return g ? <span key={gid} style={{ padding: '2px 8px', background: t[50], color: t[700], borderRadius: 4, fontSize: 11, border: `1px solid ${t[100]}` }}>{g.name}</span> : null;
                     })}
                   </div>
                 </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${u.mfaEnabled ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
-                      <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-700">{u.securityLevel || 'Standard'}</span>
+                <td className="prime-table-cell" style={{ padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: u.mfaEnabled ? t[500] : amber[500], flexShrink: 0 }}></div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: ink }}>{u.securityLevel || 'Standard'}</span>
                           <button 
                             onClick={() => !u.mfaEnabled && startMfaSetup(u)}
-                            className={`text-[10px] uppercase font-black tracking-widest ${u.mfaEnabled ? 'text-emerald-600' : 'text-blue-600 hover:underline'}`}
+                            style={{ fontSize: 10, fontFamily: "'Inter','DM Sans',sans-serif", textTransform: 'uppercase', fontWeight: 800, letterSpacing: 1, background: 'none', border: 'none', cursor: u.mfaEnabled ? 'default' : 'pointer', padding: 0, color: u.mfaEnabled ? t[600] : t[500] }}
                           >
                               {u.mfaEnabled ? 'MFA ACTIVE' : 'SETUP MFA'}
                           </button>
                       </div>
                   </div>
                 </td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                <td className="prime-table-cell" style={{ padding: '12px 16px' }}>
+                  <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, display: 'inline-block', background: u.active ? '#d3ece9' : '#fbead0', color: u.active ? t[800] : '#23282A' }}>
                     {u.active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
-                <td className="p-4 text-right flex justify-end gap-2">
-                  <button onClick={() => { setEditUser({...u, password: ''}); setPasswordError([]); setIsUserModalOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 size={16}/></button>
-                  <button onClick={() => deleteUser(u.id)} className="p-2 text-slate-400 hover:text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
+                <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right' }}>
+                  <button onClick={() => { setEditUser({...u, password: ''}); setPasswordError([]); setIsUserModalOpen(true); }} className="prime-btn-secondary" style={{ padding: 6, background: 'none', border: 'none', color: inkSoft, cursor: 'pointer', borderRadius: 6 }} onMouseEnter={e => e.currentTarget.style.color = t[500]} onMouseLeave={e => e.currentTarget.style.color = inkSoft}><Edit2 size={16}/></button>
+                  <button onClick={() => deleteUser(u.id)} className="prime-btn-secondary" style={{ padding: 6, background: 'none', border: 'none', color: inkSoft, cursor: 'pointer', borderRadius: 6 }} onMouseEnter={e => e.currentTarget.style.color = danger} onMouseLeave={e => e.currentTarget.style.color = inkSoft}><Trash2 size={16}/></button>
                 </td>
               </tr>
             ))}
@@ -199,35 +208,35 @@ const UserManagement: React.FC = () => {
   );
 
   const renderGroups = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-800">User Groups & Roles</h2>
-        <button onClick={() => { setEditGroup({ id: '', permissions: [] }); setIsGroupModalOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium hover:bg-blue-700">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0 }}>User Groups & Roles</h2>
+        <button onClick={() => { setEditGroup({ id: '', permissions: [] }); setIsGroupModalOpen(true); }} className="prime-btn" style={{ background: `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', lineHeight: 1.4 }}>
           <Plus size={18}/> New Group
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
         {userGroups.map(g => (
-          <div key={g.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
+          <div key={g.id} className="prime-card" style={{ background: paper, padding: 20, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
-                <h3 className="font-bold text-slate-900">{g.name}</h3>
-                <p className="text-xs text-slate-500 mt-1">{g.description || 'No description'}</p>
+                <h3 style={{ fontWeight: 700, color: ink, margin: 0, fontSize: 15 }}>{g.name}</h3>
+                <p style={{ fontSize: 12, color: inkSoft, margin: '4px 0 0' }}>{g.description || 'No description'}</p>
               </div>
-              <div className="flex gap-1">
-                 <button onClick={() => { setEditGroup(g); setIsGroupModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 rounded"><Edit2 size={16}/></button>
-                 <button onClick={() => deleteUserGroup(g.id)} className="p-1.5 text-slate-400 hover:text-red-600 rounded"><Trash2 size={16}/></button>
+              <div style={{ display: 'flex', gap: 4 }}>
+                 <button onClick={() => { setEditGroup(g); setIsGroupModalOpen(true); }} className="prime-btn-secondary" style={{ padding: 6, background: 'none', border: 'none', color: inkSoft, cursor: 'pointer', borderRadius: 6 }} onMouseEnter={e => e.currentTarget.style.color = t[500]} onMouseLeave={e => e.currentTarget.style.color = inkSoft}><Edit2 size={16}/></button>
+                 <button onClick={() => deleteUserGroup(g.id)} className="prime-btn-secondary" style={{ padding: 6, background: 'none', border: 'none', color: inkSoft, cursor: 'pointer', borderRadius: 6 }} onMouseEnter={e => e.currentTarget.style.color = danger} onMouseLeave={e => e.currentTarget.style.color = inkSoft}><Trash2 size={16}/></button>
               </div>
             </div>
-            <div className="text-xs text-slate-600 mb-2 font-medium uppercase tracking-wider">Permissions</div>
-            <div className="flex flex-wrap gap-2">
+            <div style={{ fontSize: 11, color: inkSoft, marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Permissions</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {(g.permissions || []).slice(0, 5).map(p => (
-                <span key={p} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs border border-blue-100">
+                <span key={p} style={{ padding: '3px 8px', background: t[50], color: t[700], borderRadius: 6, fontSize: 11, border: `1px solid ${t[100]}` }}>
                   {AVAILABLE_PERMISSIONS.find(ap => ap.id === p)?.label || p}
                 </span>
               ))}
-              {(g.permissions || []).length > 5 && <span className="text-xs text-slate-400 flex items-center">+{g.permissions.length - 5} more</span>}
+              {(g.permissions || []).length > 5 && <span style={{ fontSize: 12, color: inkSoft, display: 'flex', alignItems: 'center' }}>+{g.permissions.length - 5} more</span>}
             </div>
           </div>
         ))}
@@ -236,53 +245,43 @@ const UserManagement: React.FC = () => {
   );
 
   const renderPolicies = () => (
-    <div className="max-w-2xl">
-       <h2 className="text-lg font-bold text-slate-800 mb-6">Global Security Policies</h2>
-       <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm space-y-6">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-6">
+    <div style={{ maxWidth: 560 }}>
+       <h2 style={{ fontSize: 18, fontWeight: 700, color: ink, margin: '0 0 20px' }}>Global Security Policies</h2>
+       <div className="prime-card" style={{ background: paper, padding: 24, borderRadius: 14, border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${hairline}`, paddingBottom: 20 }}>
              <div>
-                <h3 className="font-bold text-slate-900">Password Complexity</h3>
-                <p className="text-sm text-slate-500">Minimum requirements for user passwords</p>
+                <h3 style={{ fontWeight: 700, color: ink, margin: 0, fontSize: 15 }}>Password Complexity</h3>
+                <p style={{ fontSize: 13, color: inkSoft, margin: '2px 0 0' }}>Minimum requirements for user passwords</p>
              </div>
-             <div className="text-right space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                   <span className="text-sm text-slate-700">Require Special Character</span>
-                   <input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={passwordPolicy.requireSpecialChar} onChange={e => updatePasswordPolicy({...passwordPolicy, requireSpecialChar: e.target.checked})}/>
+             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: ink }}>
+                   <input type="checkbox" style={{ width: 16, height: 16, accentColor: t[500] }} checked={passwordPolicy.requireSpecialChar} onChange={e => updatePasswordPolicy({...passwordPolicy, requireSpecialChar: e.target.checked})}/>
+                   Require Special Character
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                   <span className="text-sm text-slate-700">Require Number</span>
-                   <input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={passwordPolicy.requireNumber} onChange={e => updatePasswordPolicy({...passwordPolicy, requireNumber: e.target.checked})}/>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: ink }}>
+                   <input type="checkbox" style={{ width: 16, height: 16, accentColor: t[500] }} checked={passwordPolicy.requireNumber} onChange={e => updatePasswordPolicy({...passwordPolicy, requireNumber: e.target.checked})}/>
+                   Require Number
                 </label>
              </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Minimum Length</label>
-                <input 
-                  type="number" 
-                  className="w-full p-2 border border-slate-200 rounded-lg"
-                  value={passwordPolicy.minLength}
-                  onChange={e => updatePasswordPolicy({...passwordPolicy, minLength: parseInt(e.target.value)})}
-                />
+                <label className="prime-label" style={{ fontSize: 12, fontWeight: 600, color: ink, marginBottom: 6, display: 'block' }}>Minimum Length</label>
+                <input className="prime-input" type="number" style={inputBase} value={passwordPolicy.minLength} onChange={e => updatePasswordPolicy({...passwordPolicy, minLength: parseInt(e.target.value)})} />
              </div>
              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Expiration (Days)</label>
-                <input 
-                  type="number" 
-                  className="w-full p-2 border border-slate-200 rounded-lg"
-                  value={passwordPolicy.expiryDays}
-                  onChange={e => updatePasswordPolicy({...passwordPolicy, expiryDays: parseInt(e.target.value)})}
-                />
+                <label className="prime-label" style={{ fontSize: 12, fontWeight: 600, color: ink, marginBottom: 6, display: 'block' }}>Expiration (Days)</label>
+                <input className="prime-input" type="number" style={inputBase} value={passwordPolicy.expiryDays} onChange={e => updatePasswordPolicy({...passwordPolicy, expiryDays: parseInt(e.target.value)})} />
              </div>
           </div>
           
-          <div className="pt-4 bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-start gap-3">
-             <Lock className="text-blue-600 shrink-0 mt-1" size={20}/>
+          <div style={{ padding: 16, background: t[50], borderRadius: 10, border: `1px solid ${t[100]}`, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+             <Lock style={{ color: t[600], flexShrink: 0, marginTop: 2 }} size={20}/>
              <div>
-                <h4 className="font-bold text-blue-800 text-sm">MFA Enforcement</h4>
-                <p className="text-xs text-blue-600 mt-1">Multi-Factor Authentication is currently optional. Enable strict mode to force MFA for all Admin and Manager accounts.</p>
-                <button onClick={handleEnforceMfa} className="mt-3 text-xs bg-blue-600 text-white px-3 py-1.5 rounded font-bold hover:bg-blue-700 shadow-sm">Enforce MFA Across System</button>
+                <h4 style={{ fontWeight: 700, color: t[800], fontSize: 13, margin: 0 }}>MFA Enforcement</h4>
+                <p style={{ fontSize: 12, color: t[600], margin: '4px 0' }}>Multi-Factor Authentication is currently optional. Enable strict mode to force MFA for all Admin and Manager accounts.</p>
+                <button onClick={handleEnforceMfa} className="prime-btn" style={{ marginTop: 8, background: `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer', lineHeight: 1.4 }}>Enforce MFA Across System</button>
              </div>
           </div>
        </div>
@@ -290,41 +289,41 @@ const UserManagement: React.FC = () => {
   );
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
+    <div style={{ padding: 24, maxWidth: 1600, margin: '0 auto', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink }}>
       {/* User Modal */}
       {isUserModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animate-fadeIn">
-              <h2 className="text-xl font-bold mb-4">{editUser.id ? 'Edit User' : 'New User'}</h2>
-              <form onSubmit={handleUserSubmit} className="space-y-4">
-                 <div className="flex justify-center mb-4">
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="relative group w-24 h-24 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden flex items-center justify-center cursor-pointer shadow-sm hover:border-blue-400 transition-colors" onClick={() => fileInputRef.current?.click()}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+           <div className="prime-card" style={{ background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', width: '100%', maxWidth: 480, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>{editUser.id ? 'Edit User' : 'New User'}</h2>
+              <form onSubmit={handleUserSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                        <div style={{ position: 'relative', width: 96, height: 96, borderRadius: '50%', background: t[50], border: `2px solid ${hairline}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => fileInputRef.current?.click()}>
                             {editUser.avatar ? (
-                                <OfflineImage src={editUser.avatar} alt="Avatar" className="w-full h-full object-cover"/>
+                                <OfflineImage src={editUser.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
                             ) : (
-                                <Camera size={24} className="text-slate-400"/>
+                                <Camera size={24} color={inkSoft}/>
                             )}
-                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold">Change</div>
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload}/>
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 700 }}>Change</div>
+                            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleAvatarUpload}/>
                         </div>
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs text-blue-600 font-bold hover:underline">Upload Photo</button>
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="prime-btn-secondary" style={{ fontSize: 12, color: t[500], fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>Upload Photo</button>
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-2 gap-4">
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
-                       <label className="text-xs font-bold text-slate-500 uppercase">Username</label>
-                       <input type="text" className="w-full p-2 border rounded-lg mt-1" value={editUser.username} onChange={e => setEditUser({...editUser, username: e.target.value})}/>
+                       <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Username</label>
+                       <input className="prime-input" type="text" style={inputBase} value={editUser.username} onChange={e => setEditUser({...editUser, username: e.target.value})}/>
                     </div>
                     <div>
-                       <label className="text-xs font-bold text-slate-500 uppercase">Full Name</label>
-                       <input type="text" className="w-full p-2 border rounded-lg mt-1" value={editUser.name} onChange={e => setEditUser({...editUser, name: e.target.value})}/>
+                       <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Full Name</label>
+                       <input className="prime-input" type="text" style={inputBase} value={editUser.name} onChange={e => setEditUser({...editUser, name: e.target.value})}/>
                     </div>
                  </div>
                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase">Role</label>
-                    <select className="w-full p-2 border rounded-lg mt-1" value={editUser.role} onChange={e => setEditUser({...editUser, role: e.target.value})}>
+                    <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Role</label>
+                    <select className="prime-select" style={{ ...inputBase, appearance: 'auto' as any, cursor: 'pointer' }} value={editUser.role} onChange={e => setEditUser({...editUser, role: e.target.value})}>
                        <option value="Admin">Admin</option>
                        <option value="Manager">Manager</option>
                        <option value="Cashier">Cashier</option>
@@ -332,34 +331,24 @@ const UserManagement: React.FC = () => {
                     </select>
                  </div>
                  <div>
-                     <label className="text-xs font-bold text-slate-500 uppercase">Password {editUser.id && '(Leave blank to keep current)'}</label>
-                     <input 
-                       type="password" 
-                       className={`w-full p-2 border rounded-lg mt-1 ${passwordError.length > 0 ? 'border-red-500 bg-red-50' : ''}`} 
-                       value={editUser.password || ''} 
-                       onChange={e => setEditUser({...editUser, password: e.target.value})}
-                       placeholder={editUser.id ? "********" : "Enter password"}
-                     />
-                     {passwordError.map((err, i) => <div key={i} className="text-xs text-red-600 mt-1">{err}</div>)}
+                     <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Password {editUser.id && '(Leave blank to keep current)'}</label>
+                     <input className="prime-input" type="password" style={{ ...inputBase, borderColor: passwordError.length > 0 ? danger : hairline, background: passwordError.length > 0 ? '#fef7f6' : '#fff' }} value={editUser.password || ''} onChange={e => setEditUser({...editUser, password: e.target.value})} placeholder={editUser.id ? "********" : "Enter password"} />
+                     {passwordError.map((err, i) => <div key={i} style={{ fontSize: 12, color: danger, marginTop: 2 }}>{err}</div>)}
                  </div>
-                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                       <input type="checkbox" checked={editUser.active} onChange={e => setEditUser({...editUser, active: e.target.checked})} className="w-4 h-4 rounded text-blue-600"/>
-                       <span className="text-sm font-medium">Active Account</span>
+                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: `1px solid ${hairline}` }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                       <input type="checkbox" checked={editUser.active} onChange={e => setEditUser({...editUser, active: e.target.checked})} style={{ accentColor: t[500], width: 16, height: 16 }}/>
+                       Active Account
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                       <input type="checkbox" checked={editUser.mfaEnabled} onChange={e => setEditUser({...editUser, mfaEnabled: e.target.checked})} className="w-4 h-4 rounded text-blue-600"/>
-                       <span className="text-sm font-medium">MFA Enabled</span>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                       <input type="checkbox" checked={editUser.mfaEnabled} onChange={e => setEditUser({...editUser, mfaEnabled: e.target.checked})} style={{ accentColor: t[500], width: 16, height: 16 }}/>
+                       MFA Enabled
                     </label>
                  </div>
-                 <div className="flex gap-3 mt-6">
-                    <button type="button" onClick={() => setIsUserModalOpen(false)} className="flex-1 py-2 border rounded-lg font-bold text-slate-600">Cancel</button>
-                    <button 
-                        type="submit" 
-                        disabled={isSaving}
-                        className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 disabled:opacity-70 shadow-md"
-                    >
-                        {isSaving ? <Loader2 size={16} className="animate-spin"/> : 'Save User'}
+                 <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                    <button type="button" onClick={() => setIsUserModalOpen(false)} className="prime-btn-secondary" style={{ flex: 1, padding: '10px 16px', border: `1.4px solid ${hairline}`, borderRadius: 10, fontWeight: 600, color: ink, background: 'transparent', cursor: 'pointer', fontSize: 13, lineHeight: 1.4 }}>Cancel</button>
+                    <button type="submit" disabled={isSaving} className="prime-btn" style={{ flex: 1, padding: '10px 16px', borderRadius: 10, fontWeight: 600, fontSize: 13, lineHeight: 1.4, border: 'none', cursor: isSaving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: isSaving ? `linear-gradient(135deg, ${t[500]}, ${t[700]})` : `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff', opacity: isSaving ? 0.7 : 1 }}>
+                        {isSaving ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }}/> Saving...</> : 'Save User'}
                     </button>
                  </div>
               </form>
@@ -369,62 +358,52 @@ const UserManagement: React.FC = () => {
 
       {/* MFA SETUP MODAL */}
       {showMfaSetup && (
-          <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
-                  <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
-                      <h2 className="text-xl font-bold flex items-center gap-3">
-                          <ShieldCheck className="text-emerald-400"/> Security Activation
+          <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(4px)' }}>
+              <div className="prime-card" style={{ background: paper, borderRadius: 14, width: '100%', maxWidth: 420, overflow: 'hidden', boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)' }}>
+                  <div style={{ padding: 16, background: t[800], color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <ShieldCheck style={{ color: t[200] }}/> Security Activation
                       </h2>
-                      <button onClick={() => setShowMfaSetup(false)}><X/></button>
+                      <button onClick={() => setShowMfaSetup(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X/></button>
                   </div>
                   
-                  <div className="p-8 text-center">
+                  <div style={{ padding: '24px 32px', textAlign: 'center' }}>
                       {mfaStep === 1 ? (
-                          <div className="animate-fadeIn">
-                              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <div>
+                              <div style={{ width: 64, height: 64, background: t[50], color: t[600], borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                                   <Smartphone size={32}/>
                               </div>
-                              <h3 className="text-lg font-bold text-slate-800 mb-2">Authenticator App</h3>
-                              <p className="text-sm text-slate-500 mb-6">Scan this QR code with Google Authenticator or Microsoft Authenticator.</p>
+                              <h3 style={{ fontSize: 17, fontWeight: 700, color: ink, margin: '0 0 8px' }}>Authenticator App</h3>
+                              <p style={{ fontSize: 13, color: inkSoft, marginBottom: 20 }}>Scan this QR code with Google Authenticator or Microsoft Authenticator.</p>
                               
-                              <div className="w-48 h-48 bg-slate-100 rounded-xl mx-auto mb-6 flex items-center justify-center border-2 border-slate-200">
-                                  <QrCode size={120} className="text-slate-800 opacity-80"/>
+                              <div style={{ width: 160, height: 160, background: t[50], borderRadius: 12, margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${hairline}` }}>
+                                  <QrCode size={100} style={{ color: ink, opacity: 0.8 }}/>
                               </div>
                               
-                              <div className="mb-6">
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Manual Entry Code</p>
-                                  <div className="font-mono bg-slate-50 p-2 rounded border border-slate-200 text-blue-600 font-bold select-all tracking-wider">
+                              <div style={{ marginBottom: 20 }}>
+                                  <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Manual Entry Code</p>
+                                  <div style={{ fontFamily: "'JetBrains Mono', monospace", background: t[50], padding: 8, borderRadius: 8, border: `1px solid ${hairline}`, color: t[600], fontWeight: 700, fontSize: 14 }}>
                                       {tempMfaSecret}
                                   </div>
                               </div>
                               
-                              <div className="space-y-4">
-                                  <input 
-                                      type="text" 
-                                      className="w-full text-center text-2xl font-black tracking-[0.5em] p-3 border-2 border-blue-100 rounded-xl outline-none focus:border-blue-600"
-                                      placeholder="000000"
-                                      maxLength={6}
-                                      value={mfaCode}
-                                      onChange={e => setMfaCode(e.target.value)}
-                                  />
-                                  <button 
-                                      onClick={verifyMfaCode}
-                                      className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-black shadow-lg transition-all active:scale-95"
-                                  >
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                  <input type="text" style={{ width: '100%', textAlign: 'center', fontSize: 22, fontWeight: 800, letterSpacing: '0.3em', padding: 10, border: `2px solid ${t[100]}`, borderRadius: 10, outline: 'none', background: '#fff', color: ink, fontFamily: "'Inter','DM Sans',sans-serif", boxSizing: 'border-box' }} placeholder="000000" maxLength={6} value={mfaCode} onChange={e => setMfaCode(e.target.value)} />
+                                  <button onClick={verifyMfaCode} className="prime-btn" style={{ width: '100%', padding: 12, background: t[800], color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer', lineHeight: 1.4 }}>
                                       Verify & Activate
                                   </button>
                               </div>
                           </div>
                       ) : (
-                          <div className="py-12 animate-in zoom-in-95">
-                              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <div style={{ padding: '32px 0' }}>
+                              <div style={{ width: 80, height: 80, background: t[100], color: t[600], borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                                   <Check size={40} strokeWidth={3}/>
                               </div>
-                              <h3 className="text-2xl font-bold text-slate-900 mb-2">MFA Verified</h3>
-                              <p className="text-slate-500 mb-8">Elevated security has been applied to this account.</p>
-                              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 inline-block">
-                                  <p className="text-xs font-bold text-slate-400 uppercase">Security Level</p>
-                                  <p className="text-emerald-600 font-black">ELEVATED</p>
+                              <h3 style={{ fontSize: 22, fontWeight: 700, color: ink, margin: '0 0 8px' }}>MFA Verified</h3>
+                              <p style={{ color: inkSoft, marginBottom: 24 }}>Elevated security has been applied to this account.</p>
+                              <div className="prime-label" style={{ background: t[50], padding: 12, borderRadius: 10, border: `1px solid ${hairline}`, display: 'inline-block' }}>
+                                  <p style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', margin: 0 }}>Security Level</p>
+                                  <p style={{ color: t[600], fontWeight: 800, margin: '2px 0 0', fontSize: 15 }}>ELEVATED</p>
                               </div>
                           </div>
                       )}
@@ -435,39 +414,34 @@ const UserManagement: React.FC = () => {
 
       {/* Group Modal */}
       {isGroupModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col animate-fadeIn">
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                 <h2 className="text-xl font-bold">{editGroup.id ? 'Edit User Group' : 'Create User Group'}</h2>
-                 <button onClick={() => setIsGroupModalOpen(false)}><X/></button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+           <div className="prime-card" style={{ background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', width: '100%', maxWidth: 900, height: '80vh', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '16px 20px', borderBottom: `1px solid ${hairline}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                 <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>{editGroup.id ? 'Edit User Group' : 'Create User Group'}</h2>
+                 <button onClick={() => setIsGroupModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: inkSoft }}><X/></button>
               </div>
-              <div className="flex-1 overflow-hidden flex">
-                 <div className="w-1/3 p-6 border-r border-slate-100 space-y-4">
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+                 <div style={{ width: '33.33%', padding: 16, borderRight: `1px solid ${hairline}`, display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div>
-                       <label className="text-xs font-bold text-slate-500 uppercase">Group Name</label>
-                       <input type="text" className="w-full p-2 border rounded-lg mt-1" value={editGroup.name} onChange={e => setEditGroup({...editGroup, name: e.target.value})}/>
+                       <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Group Name</label>
+                       <input className="prime-input" type="text" style={inputBase} value={editGroup.name} onChange={e => setEditGroup({...editGroup, name: e.target.value})}/>
                     </div>
                     <div>
-                       <label className="text-xs font-bold text-slate-500 uppercase">Description</label>
-                       <textarea className="w-full p-2 border rounded-lg mt-1 h-24 resize-none" value={editGroup.description} onChange={e => setEditGroup({...editGroup, description: e.target.value})}/>
+                       <label className="prime-label" style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Description</label>
+                       <textarea className="prime-input" style={{ ...inputBase, height: 96, resize: 'none', boxSizing: 'border-box' }} value={editGroup.description} onChange={e => setEditGroup({...editGroup, description: e.target.value})}/>
                     </div>
                  </div>
-                 <div className="flex-1 p-6 overflow-y-auto bg-slate-50">
-                    <h3 className="text-sm font-bold text-slate-700 mb-4">Permissions Matrix</h3>
-                    <div className="grid grid-cols-2 gap-4">
+                 <div style={{ flex: 1, padding: 16, overflowY: 'auto', background: t[50] }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: ink, margin: '0 0 16px' }}>Permissions Matrix</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                        {Array.from(new Set(AVAILABLE_PERMISSIONS.map(p => p.module))).map(module => (
-                          <div key={module} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 pb-2 border-b border-slate-100">{module}</h4>
-                             <div className="space-y-2">
+                          <div key={module} className="prime-card" style={{ background: paper, padding: 14, borderRadius: 10, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+                             <h4 style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', margin: '0 0 10px', paddingBottom: 8, borderBottom: `1px solid ${hairline}` }}>{module}</h4>
+                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {AVAILABLE_PERMISSIONS.filter(p => p.module === module).map(perm => (
-                                   <label key={perm.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                                      <input 
-                                        type="checkbox" 
-                                        className="w-4 h-4 rounded border-slate-300 text-blue-600"
-                                        checked={editGroup.permissions?.includes(perm.id)}
-                                        onChange={() => togglePermission(perm.id)}
-                                      />
-                                      <span className="text-sm text-slate-700">{perm.label}</span>
+                                   <label key={perm.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13, color: ink, padding: 4, borderRadius: 4 }}>
+                                      <input type="checkbox" style={{ accentColor: t[500], width: 16, height: 16 }} checked={editGroup.permissions?.includes(perm.id)} onChange={() => togglePermission(perm.id)} />
+                                      {perm.label}
                                    </label>
                                 ))}
                              </div>
@@ -476,36 +450,36 @@ const UserManagement: React.FC = () => {
                     </div>
                  </div>
               </div>
-              <div className="p-6 border-t border-slate-100 bg-white flex justify-end gap-3">
-                 <button onClick={() => setIsGroupModalOpen(false)} className="px-6 py-2 border rounded-lg font-medium">Cancel</button>
-                 <button onClick={handleGroupSubmit} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg">Save Group</button>
+              <div style={{ padding: '12px 20px', borderTop: `1px solid ${hairline}`, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                 <button onClick={() => setIsGroupModalOpen(false)} className="prime-btn-secondary" style={{ padding: '8px 20px', border: `1.4px solid ${hairline}`, borderRadius: 10, fontWeight: 600, color: ink, background: 'transparent', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+                 <button onClick={handleGroupSubmit} className="prime-btn" style={{ padding: '8px 20px', borderRadius: 10, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff' }}>Save Group</button>
               </div>
            </div>
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 24 }}>
          <div>
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-               <Shield className="text-blue-600"/> Security & Access Control
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+               <Shield style={{ color: t[500] }}/> Security & Access Control
             </h1>
-            <p className="text-slate-500 mt-1">Configure user accounts, permission roles, and global security policies.</p>
+            <p style={{ color: inkSoft, margin: '4px 0 0', fontSize: 13 }}>Configure user accounts, permission roles, and global security policies.</p>
          </div>
       </div>
 
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-8 w-fit">
-         <button onClick={() => setActiveTab('Users')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'Users' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+      <div className="prime-btn-secondary" style={{ display: 'flex', gap: 4, background: t[50], padding: 4, borderRadius: 12, width: 'fit-content', marginBottom: 24 }}>
+         <button onClick={() => setActiveTab('Users')} style={{ padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Users' ? paper : 'transparent', color: activeTab === 'Users' ? t[500] : inkSoft, boxShadow: activeTab === 'Users' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', lineHeight: 1.4 }}>
             Users
          </button>
-         <button onClick={() => setActiveTab('Groups')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'Groups' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+         <button onClick={() => setActiveTab('Groups')} style={{ padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Groups' ? paper : 'transparent', color: activeTab === 'Groups' ? t[500] : inkSoft, boxShadow: activeTab === 'Groups' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', lineHeight: 1.4 }}>
             Groups & Roles
          </button>
-         <button onClick={() => setActiveTab('Policies')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'Policies' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+         <button onClick={() => setActiveTab('Policies')} style={{ padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Policies' ? paper : 'transparent', color: activeTab === 'Policies' ? t[500] : inkSoft, boxShadow: activeTab === 'Policies' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', lineHeight: 1.4 }}>
             Security Policies
          </button>
       </div>
 
-      <div className="animate-fadeIn">
+      <div>
          {activeTab === 'Users' && renderUsers()}
          {activeTab === 'Groups' && renderGroups()}
          {activeTab === 'Policies' && renderPolicies()}

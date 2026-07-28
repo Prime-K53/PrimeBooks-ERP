@@ -28,78 +28,87 @@ const CashFlowForecaster: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-6 bg-slate-50/50 overflow-y-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/ai-analytics')} className="p-2 rounded-lg hover:bg-white transition-colors"><ArrowLeft size={20} /></button>
-        <TrendingUp className="text-emerald-500" size={28} />
-        <div><h1 className="text-xl font-bold text-slate-800">Cash Flow Forecaster</h1><p className="text-xs text-slate-500">Project future cash position</p></div>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 24, background: '#FEFDFB', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button onClick={() => navigate('/ai-analytics')} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#FEFDFB' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        ><ArrowLeft size={20} /></button>
+        <TrendingUp color="#1f8577" size={28} />
+        <div><h1 style={{ fontSize: 20, fontWeight: 700, color: '#23282A', margin: 0 }}>Cash Flow Forecaster</h1><p style={{ fontSize: 11, color: '#5c6567', margin: 0 }}>Project future cash position</p></div>
       </div>
 
       {!result && !loading && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <TrendingUp size={48} className="mx-auto text-emerald-300 mb-4" />
-            <h2 className="text-lg font-semibold text-slate-700 mb-2">Project Future Cash Position</h2>
-            <p className="text-sm text-slate-500 mb-4">{(invoices || []).length} invoices, {(expenses || []).length} expenses, {(ledger || []).length} ledger entries loaded</p>
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <label className="text-sm text-slate-600">Period:</label>
-              <select value={days} onChange={e => setDays(Number(e.target.value))} className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm">
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: 448 }}>
+            <TrendingUp size={48} color="#1f8577" style={{ margin: '0 auto 16px', opacity: 0.6 }} />
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: '#23282A', marginBottom: 8 }}>Project Future Cash Position</h2>
+            <p style={{ fontSize: 13, color: '#5c6567', marginBottom: 16 }}>{(invoices || []).length} invoices, {(expenses || []).length} expenses, {(ledger || []).length} ledger entries loaded</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
+              <label style={{ fontSize: 13, color: '#5c6567' }}>Period:</label>
+              <select value={days} onChange={e => setDays(Number(e.target.value))} style={{ padding: '6px 12px', borderRadius: 8, border: '1.4px solid #e4ddd1', fontSize: 13, background: '#FEFDFB', color: '#23282A' }}>
                 <option value={30}>30 days</option><option value={60}>60 days</option><option value={90}>90 days</option><option value={180}>180 days</option>
               </select>
             </div>
-            <button onClick={runForecast} className="px-6 py-2.5 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors">Run Forecast</button>
+            <button onClick={runForecast} style={{ padding: '10px 24px', background: '#1f8577', color: '#fff', borderRadius: 12, fontWeight: 500, border: 'none', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#166b60' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#1f8577' }}
+            >Run Forecast</button>
           </div>
         </div>
       )}
 
-      {loading && <div className="flex-1 flex items-center justify-center"><Loader2 size={40} className="animate-spin text-emerald-500 mx-auto" /></div>}
+      {loading && <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={40} className="animate-spin" color="#1f8577" style={{ margin: '0 auto' }} /></div>}
 
       {result && !loading && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg shrink-0"><DollarSign size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Start Balance</p><p className="text-lg md:text-xl font-semibold text-slate-900">{currency}{(result.summary.startingBalance || 0).toLocaleString()}</p></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #5c6567' }}>
+              <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><DollarSign size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Start Balance</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{currency}{(result.summary.startingBalance || 0).toLocaleString()}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0"><TrendingUp size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Projected ({days}d)</p><p className={`text-lg md:text-xl font-semibold ${result.summary.finalProjectedBalance >= 0 ? 'text-slate-900' : 'text-red-600'}`}>{currency}{(result.summary.finalProjectedBalance || 0).toLocaleString()}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #1f8577' }}>
+              <div style={{ padding: 10, background: '#d3ece9', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><TrendingUp size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Projected ({days}d)</p><p style={{ fontSize: 18, fontWeight: 600, color: result.summary.finalProjectedBalance >= 0 ? '#23282A' : '#b5493f', margin: 0 }}>{currency}{(result.summary.finalProjectedBalance || 0).toLocaleString()}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0"><TrendingDown size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Min Balance</p><p className={`text-lg md:text-xl font-semibold ${result.summary.minimumProjectedBalance >= 0 ? 'text-slate-900' : 'text-red-600'}`}>{currency}{(result.summary.minimumProjectedBalance || 0).toLocaleString()}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #d99a3f' }}>
+              <div style={{ padding: 10, background: '#fbead0', color: '#d99a3f', borderRadius: 8, flexShrink: 0 }}><TrendingDown size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Min Balance</p><p style={{ fontSize: 18, fontWeight: 600, color: result.summary.minimumProjectedBalance >= 0 ? '#23282A' : '#b5493f', margin: 0 }}>{currency}{(result.summary.minimumProjectedBalance || 0).toLocaleString()}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-violet-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-violet-50 text-violet-600 rounded-lg shrink-0"><AlertTriangle size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5 capitalize">Risk: {result.summary.riskLevel}</p><p className={`text-lg md:text-xl font-semibold capitalize ${result.summary.riskLevel === 'low' ? 'text-emerald-600' : result.summary.riskLevel === 'medium' ? 'text-amber-600' : 'text-red-600'}`}>{result.summary.riskLevel}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #1f8577' }}>
+              <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><AlertTriangle size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0', textTransform: 'capitalize' }}>Risk: {result.summary.riskLevel}</p><p style={{ fontSize: 18, fontWeight: 600, color: result.summary.riskLevel === 'low' ? '#1f8577' : result.summary.riskLevel === 'medium' ? '#d99a3f' : '#b5493f', margin: 0, textTransform: 'capitalize' }}>{result.summary.riskLevel}</p></div>
             </div>
           </div>
 
           {result.summary.daysUntilNegative >= 0 && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-              <AlertTriangle className="text-red-500" size={20} />
-              <div><div className="font-medium text-red-800 text-sm">Cash depletion warning</div><div className="text-xs text-red-600">Projected negative in {result.summary.daysUntilNegative} days</div></div>
+            <div style={{ padding: 16, background: '#fef2f2', border: '1.4px solid #b5493f', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <AlertTriangle color="#b5493f" size={20} />
+              <div><div style={{ fontWeight: 500, color: '#23282A', fontSize: 13 }}>Cash depletion warning</div><div style={{ fontSize: 11, color: '#b5493f' }}>Projected negative in {result.summary.daysUntilNegative} days</div></div>
             </div>
           )}
 
-          <div className="bg-white rounded-xl border border-slate-200">
-            <div className="p-3 border-b border-slate-100 font-semibold text-sm text-slate-700">Daily Projection</div>
-            <div className="overflow-x-auto max-h-64 overflow-y-auto">
-              <table className="w-full text-xs">
-                <thead><tr className="bg-slate-50 text-slate-500"><th className="text-left p-2">Date</th><th className="text-right p-2">Inflow</th><th className="text-right p-2">Outflow</th><th className="text-right p-2">Net</th><th className="text-right p-2">Balance</th></tr></thead>
+          <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <div style={{ padding: 12, borderBottom: '1px solid #e4ddd1', fontWeight: 600, fontSize: 13, color: '#23282A' }}>Daily Projection</div>
+            <div style={{ overflowX: 'auto', maxHeight: 256, overflowY: 'auto' }}>
+              <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+                <thead><tr style={{ background: '#eef7f6', color: '#5c6567' }}><th style={{ textAlign: 'left', padding: 8, fontWeight: 600 }}>Date</th><th style={{ textAlign: 'right', padding: 8, fontWeight: 600 }}>Inflow</th><th style={{ textAlign: 'right', padding: 8, fontWeight: 600 }}>Outflow</th><th style={{ textAlign: 'right', padding: 8, fontWeight: 600 }}>Net</th><th style={{ textAlign: 'right', padding: 8, fontWeight: 600 }}>Balance</th></tr></thead>
                 <tbody>{result.projection?.map((p: any, i: number) => (
-                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                    <td className="p-2 text-slate-700">{p.date}</td>
-                    <td className="p-2 text-right text-emerald-600">{currency}{(p.inflow || 0).toLocaleString()}</td>
-                    <td className="p-2 text-right text-red-600">{currency}{(p.outflow || 0).toLocaleString()}</td>
-                    <td className={`p-2 text-right font-medium ${(p.netFlow || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{currency}{(p.netFlow || 0).toLocaleString()}</td>
-                    <td className={`p-2 text-right font-medium ${(p.balance || 0) >= 0 ? 'text-slate-800' : 'text-red-600'}`}>{currency}{(p.balance || 0).toLocaleString()}</td>
+                  <tr key={i} style={{ background: i % 2 === 0 ? '#FEFDFB' : '#FEFDFB' }}>
+                    <td style={{ padding: 8, color: '#23282A', textAlign: 'left' }}>{p.date}</td>
+                    <td style={{ padding: 8, textAlign: 'right', color: '#1f8577' }}>{currency}{(p.inflow || 0).toLocaleString()}</td>
+                    <td style={{ padding: 8, textAlign: 'right', color: '#b5493f' }}>{currency}{(p.outflow || 0).toLocaleString()}</td>
+                    <td style={{ padding: 8, textAlign: 'right', fontWeight: 500, color: (p.netFlow || 0) >= 0 ? '#1f8577' : '#b5493f' }}>{currency}{(p.netFlow || 0).toLocaleString()}</td>
+                    <td style={{ padding: 8, textAlign: 'right', fontWeight: 500, color: (p.balance || 0) >= 0 ? '#23282A' : '#b5493f' }}>{currency}{(p.balance || 0).toLocaleString()}</td>
                   </tr>
                 ))}</tbody>
               </table>
             </div>
           </div>
-          <button onClick={runForecast} className="text-sm text-emerald-500 hover:text-emerald-700 font-medium">Re-run</button>
+          <button onClick={runForecast} style={{ fontSize: 13, color: '#1f8577', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#166b60' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#1f8577' }}
+          >Re-run</button>
         </div>
       )}
     </div>

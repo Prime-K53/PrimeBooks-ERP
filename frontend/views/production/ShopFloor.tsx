@@ -14,6 +14,10 @@ import { OfflineImage } from '../../components/OfflineImage';
 import { format } from 'date-fns';
 import { ConfirmDialog, ConfirmDialogType } from '../../components/ConfirmDialog';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 const ShopFloor: React.FC = () => {
   const { workOrders, updateWorkOrderStatus, logProductionStep, completeWorkOrder, boms } = useProduction();
   const { inventory } = useInventory();
@@ -124,55 +128,55 @@ const ShopFloor: React.FC = () => {
   const selectedBom = selectedWo ? boms.find(b => b.id === selectedWo.bomId) : null;
 
   return (
-    <div className="h-[calc(100vh-4rem)] bg-white flex flex-col overflow-hidden font-sans">
+    <div style={{ background: '#FEFDFB', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'Inter,"DM Sans",sans-serif' }}>
       {/* Top Header */}
-      <div className="h-14 border-b border-slate-100 px-6 flex items-center justify-between shrink-0 bg-white">
-        <div className="flex items-center gap-3">
+      <div style={{ height: '56px', borderStyle: 'solid', borderColor: '#e4ddd1', paddingLeft: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: '#FEFDFB', paddingRight: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {selectedWo && (
             <button 
               onClick={() => setSelectedWo(null)}
-              className="p-1.5 hover:bg-slate-50 rounded-md text-slate-400 transition-colors"
+              style={{ padding: '6px', borderRadius: '8px', color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}
             >
               <ArrowLeft size={18} />
             </button>
           )}
-          <div className="flex items-center gap-2">
-            <Terminal size={16} className="text-blue-600" />
-            <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Terminal size={16} style={{ color: '#1f8577' }} />
+            <h2 style={{ fontWeight: 700, color: '#23282A', textTransform: 'uppercase', letterSpacing: '.05em' }}>
               {selectedWo ? `Job / ${selectedWo.id}` : 'Production Hub'}
             </h2>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567' }} />
             <input 
               type="text" 
               placeholder="Search by ID or product..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-100 rounded-md text-[12px] w-64 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
+              style={{ paddingLeft: '36px', paddingRight: '16px', paddingTop: '6px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '8px', width: '256px', outline: 'none', transition: 'all .15s ease', paddingBottom: '6px' }}
             />
           </div>
-          <div className="h-4 w-px bg-slate-100" />
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <p className="text-[11px] font-bold text-slate-900 leading-none">{user?.username || 'Operator'}</p>
-              <div className="flex items-center gap-1 mt-0.5 justify-end">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                <p className="text-[9px] font-medium text-slate-400 uppercase tracking-tight">Terminal Active</p>
+          <div style={{ height: '16px', width: '1px', background: '#eef7f6' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontWeight: 700, color: '#23282A', lineHeight: 1 }}>{user?.username || 'Operator'}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', justifyContent: 'flex-end' }}>
+                <div style={{ width: '6px', height: '6px', background: '#eef7f6', borderRadius: '9999px', animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite' }} />
+                <p style={{ fontWeight: 500, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em' }}>Terminal Active</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div style={{ flex: 1, overflow: 'hidden' }}>
         {!selectedWo ? (
-          <div className="h-full flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar">
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '24px', marginTop: '24px', overflowY: 'auto' }}>
             {/* Simple Stats Bar */}
-            <div className="grid grid-cols-4 gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
               {[
                 { label: 'Active', value: activeJobs.length, color: 'text-blue-600', bg: 'bg-blue-50' },
                 { label: 'Queue', value: queueJobs.length, color: 'text-slate-600', bg: 'bg-slate-50' },
@@ -180,84 +184,84 @@ const ShopFloor: React.FC = () => {
                 { label: 'OEE', value: '94.2%', color: 'text-emerald-600', bg: 'bg-emerald-50' }
               ].map((stat, i) => (
                 <div key={i} className={`${stat.bg} p-4 rounded-lg border border-slate-100`}>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>{stat.label}</p>
                   <p className={`text-xl font-black ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px', flex: 1, minHeight: 0 }}>
               {/* Active Jobs List */}
-              <div className="flex flex-col min-h-0">
-                <div className="flex items-center gap-2 mb-3">
-                  <Activity size={14} className="text-blue-500" />
-                  <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Active Production</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <Activity size={14} style={{ color: '#1f8577' }} />
+                  <h3 style={{ fontWeight: 700, color: '#23282A', textTransform: 'uppercase', letterSpacing: '.1em' }}>Active Production</h3>
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                <div style={{ flex: 1, overflowY: 'auto', marginTop: '8px', paddingRight: '8px' }}>
                    {activeJobs.map(wo => (
                      <button 
                        key={wo.id}
                        onClick={() => setSelectedWo(wo)}
-                       className="w-full flex items-center gap-4 bg-white p-3 border border-slate-100 rounded-lg hover:border-blue-200 hover:shadow-sm transition-all text-left group"
+                       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '16px', background: '#FEFDFB', padding: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', transition: 'all .15s ease', textAlign: 'left' }}
                      >
-                       <div className="w-12 h-12 bg-blue-50 rounded border border-blue-200 overflow-hidden shrink-0 flex items-center justify-center">
-                         <Package size={20} className="text-blue-600"/>
+                       <div style={{ width: '48px', height: '48px', background: '#eef7f6', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <Package size={20} style={{ color: '#1f8577' }}/>
                        </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-tight">#{wo.id}</span>
-                          {wo.isConfidential && <ShieldAlert size={12} className="text-rose-500" />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                          <span style={{ fontWeight: 700, color: '#1f8577', textTransform: 'uppercase', letterSpacing: '-.025em' }}>#{wo.id}</span>
+                          {wo.isConfidential && <ShieldAlert size={12} style={{ color: '#b5493f' }} />}
                         </div>
-                        <h4 className="text-[13px] font-bold text-slate-900 truncate">{wo.productName}</h4>
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500" style={{width: `${Math.min(100, (wo.quantityCompleted/wo.quantityPlanned)*100)}%`}} />
+                        <h4 style={{ fontWeight: 700, color: '#23282A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wo.productName}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
+                          <div style={{ flex: 1, height: '4px', background: '#eef7f6', borderRadius: '9999px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', background: '#eef7f6' }} style={{width: `${Math.min(100, (wo.quantityCompleted/wo.quantityPlanned)*100)}%`}} />
                           </div>
-                          <span className="text-[10px] font-bold text-slate-400 finance-nums">{wo.quantityCompleted}/{wo.quantityPlanned}</span>
+                          <span style={{ fontWeight: 700, color: '#5c6567' }}>{wo.quantityCompleted}/{wo.quantityPlanned}</span>
                         </div>
                       </div>
-                      <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                      <ChevronRight size={14} style={{ color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }} />
                     </button>
                   ))}
                   {activeJobs.length === 0 && (
-                    <div className="py-12 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-400">
-                      <Cpu size={24} className="opacity-20 mb-2" />
-                      <p className="text-[12px] italic">No active jobs</p>
+                    <div style={{ paddingTop: '48px', border: '1.4px solid #e4ddd1', borderStyle: 'dashed', borderColor: '#e4ddd1', borderRadius: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#5c6567', paddingBottom: '48px' }}>
+                      <Cpu size={24} style={{ opacity: 0.2, marginBottom: '8px' }} />
+                      <p style={{ fontStyle: 'italic' }}>No active jobs</p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Queue List */}
-              <div className="flex flex-col min-h-0">
-                <div className="flex items-center gap-2 mb-3">
-                  <History size={14} className="text-slate-400" />
-                  <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Manufacturing Queue</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <History size={14} style={{ color: '#5c6567' }} />
+                  <h3 style={{ fontWeight: 700, color: '#23282A', textTransform: 'uppercase', letterSpacing: '.1em' }}>Manufacturing Queue</h3>
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                <div style={{ flex: 1, overflowY: 'auto', marginTop: '8px', paddingRight: '8px' }}>
                    {queueJobs.map(wo => (
-                     <div key={wo.id} className="flex items-center justify-between bg-white p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors">
-                       <div className="flex items-center gap-3 min-w-0">
-                         <div className="w-10 h-10 bg-blue-50 rounded border border-blue-200 overflow-hidden shrink-0 flex items-center justify-center">
-                           <Package size={16} className="text-blue-600"/>
+                     <div key={wo.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FEFDFB', padding: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                         <div style={{ width: '40px', height: '40px', background: '#eef7f6', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                           <Package size={16} style={{ color: '#1f8577' }}/>
                          </div>
-                        <div className="min-w-0">
-                          <p className="text-[12px] font-bold text-slate-900 truncate">{wo.productName}</p>
-                          <p className="text-[10px] font-medium text-slate-400 uppercase">Qty: {wo.quantityPlanned} • {wo.id}</p>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontWeight: 700, color: '#23282A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wo.productName}</p>
+                          <p style={{ fontWeight: 500, color: '#5c6567', textTransform: 'uppercase' }}>Qty: {wo.quantityPlanned} • {wo.id}</p>
                         </div>
                       </div>
                       <button 
                         onClick={() => handleStartJob(wo)}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-1.5 shadow-sm"
+                        style={{ paddingLeft: '12px', paddingTop: '6px', background: '#1f8577', color: '#fff', borderRadius: '6px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '12px', paddingBottom: '6px' }}
                       >
                         <Play size={10} fill="currentColor" /> Start
                       </button>
                     </div>
                   ))}
                   {queueJobs.length === 0 && (
-                    <div className="py-12 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-400">
-                      <Clock size={24} className="opacity-20 mb-2" />
-                      <p className="text-[12px] italic">Queue is clear</p>
+                    <div style={{ paddingTop: '48px', border: '1.4px solid #e4ddd1', borderStyle: 'dashed', borderColor: '#e4ddd1', borderRadius: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#5c6567', paddingBottom: '48px' }}>
+                      <Clock size={24} style={{ opacity: 0.2, marginBottom: '8px' }} />
+                      <p style={{ fontStyle: 'italic' }}>Queue is clear</p>
                     </div>
                   )}
                 </div>
@@ -266,88 +270,88 @@ const ShopFloor: React.FC = () => {
           </div>
         ) : (
           /* SELECTED JOB VIEW - Minimalist Focus */
-          <div className="h-full flex overflow-hidden animate-in fade-in duration-300">
+          <div style={{ height: '100%', display: 'flex', overflow: 'hidden', transitionDuration: '300ms' }}>
             {/* Left Info Panel */}
-            <div className="w-80 border-r border-slate-100 bg-slate-50/30 p-6 flex flex-col overflow-y-auto custom-scrollbar">
-              <div className="flex flex-col items-center text-center mb-8">
-                <div className="w-24 h-24 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mb-4">
-                  <OfflineImage src={selectedProduct?.image} alt={selectedWo.productName} className="w-full h-full object-cover" />
+            <div style={{ width: '320px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '32px' }}>
+                <div style={{ width: '96px', height: '96px', background: '#FEFDFB', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: '16px' }}>
+                  <OfflineImage src={selectedProduct?.image} alt={selectedWo.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded uppercase mb-2 border border-blue-100">
+                <span style={{ paddingLeft: '8px', paddingTop: '2px', background: '#eef7f6', color: '#1f8577', fontWeight: 700, borderRadius: '6px', textTransform: 'uppercase', marginBottom: '8px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', paddingRight: '8px', paddingBottom: '2px' }}>
                   {selectedWo.id}
                 </span>
-                <h2 className="text-[16px] font-bold text-slate-900 leading-tight mb-2">{selectedWo.productName}</h2>
+                <h2 style={{ fontWeight: 700, color: '#23282A', lineHeight: 1.25, marginBottom: '8px' }}>{selectedWo.productName}</h2>
                 {selectedWo.isConfidential && (
-                  <div className="flex items-center gap-1.5 text-rose-600 bg-rose-50 px-2 py-1 rounded border border-rose-100">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#b5493f', background: '#fef2f2', paddingLeft: '8px', paddingTop: '4px', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#b5493f', paddingRight: '8px', paddingBottom: '4px' }}>
                     <ShieldAlert size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">Confidential</span>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.025em' }}>Confidential</span>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-8">
-                <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Planned</p>
-                  <p className="text-lg font-black text-slate-900 finance-nums">{selectedWo.quantityPlanned}</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px', marginBottom: '32px' }}>
+                <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', textAlign: 'center' }}>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '2px' }}>Planned</p>
+                  <p style={{ fontSize: '16px', fontWeight: 900, color: '#23282A' }}>{selectedWo.quantityPlanned}</p>
                 </div>
-                <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">Done</p>
-                  <p className="text-lg font-black text-blue-600 finance-nums">{selectedWo.quantityCompleted}</p>
+                <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', textAlign: 'center' }}>
+                  <p style={{ fontWeight: 700, color: '#3fa294', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '2px' }}>Done</p>
+                  <p style={{ fontSize: '16px', fontWeight: 900, color: '#1f8577' }}>{selectedWo.quantityCompleted}</p>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex justify-between items-center text-[11px] font-bold text-slate-400 border-b border-slate-100 pb-2">
-                  <span className="uppercase tracking-tight">Machine Status</span>
-                  <span className="text-emerald-600">OPTIMAL</span>
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, color: '#5c6567', borderStyle: 'solid', borderColor: '#e4ddd1', paddingBottom: '8px' }}>
+                  <span style={{ textTransform: 'uppercase', letterSpacing: '-.025em' }}>Machine Status</span>
+                  <span style={{ color: '#1f8577' }}>OPTIMAL</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px] font-bold text-slate-400 border-b border-slate-100 pb-2">
-                  <span className="uppercase tracking-tight">Workstation Temp</span>
-                  <span className="text-slate-900">42°C</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, color: '#5c6567', borderStyle: 'solid', borderColor: '#e4ddd1', paddingBottom: '8px' }}>
+                  <span style={{ textTransform: 'uppercase', letterSpacing: '-.025em' }}>Workstation Temp</span>
+                  <span style={{ color: '#23282A' }}>42°C</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px] font-bold text-slate-400 border-b border-slate-100 pb-2">
-                  <span className="uppercase tracking-tight">OEE Efficiency</span>
-                  <span className="text-slate-900">94.2%</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, color: '#5c6567', borderStyle: 'solid', borderColor: '#e4ddd1', paddingBottom: '8px' }}>
+                  <span style={{ textTransform: 'uppercase', letterSpacing: '-.025em' }}>OEE Efficiency</span>
+                  <span style={{ color: '#23282A' }}>94.2%</span>
                 </div>
               </div>
             </div>
 
             {/* Main Action Area */}
-            <div className="flex-1 flex flex-col min-w-0 bg-white">
-              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                <div className="max-w-4xl mx-auto space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#FEFDFB' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
+                <div style={{ maxWidth: '896px', marginLeft: 'auto', marginTop: '32px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '32px' }}>
                     {/* Good Units Panel */}
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                      <h3 className="text-[12px] font-bold text-emerald-600 mb-6 flex items-center gap-2 uppercase tracking-wider">
+                    <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                      <h3 style={{ fontWeight: 700, color: '#1f8577', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '.05em' }}>
                         <CheckCircle size={16}/> Log Good Output
                       </h3>
-                      <div className="flex items-center gap-4 mb-6">
-                        <button onClick={() => setQtyInput(Math.max(0, qtyInput-1))} className="w-10 h-10 rounded bg-slate-100 hover:bg-slate-200 transition-colors text-slate-600 font-bold">-</button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+                        <button onClick={() => setQtyInput(Math.max(0, qtyInput-1))} style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eef7f6', transition: 'color .15s ease,background .15s ease,border-color .15s ease', color: '#5c6567', fontWeight: 700 }}>-</button>
                         <input 
                           type="number" 
-                          className="flex-1 text-center bg-transparent text-[32px] font-black border-b border-slate-100 focus:border-emerald-500 outline-none py-2 text-slate-900 finance-nums" 
+                          style={{ flex: 1, textAlign: 'center', background: 'transparent', fontWeight: 900, borderStyle: 'solid', borderColor: '#e4ddd1', outline: 'none', paddingTop: '8px', color: '#23282A', paddingBottom: '8px' }} 
                           value={qtyInput} 
                           onChange={e => setQtyInput(parseInt(e.target.value) || 0)} 
                         />
-                        <button onClick={() => setQtyInput(qtyInput+1)} className="w-10 h-10 rounded bg-slate-100 hover:bg-slate-200 transition-colors text-slate-600 font-bold">+</button>
+                        <button onClick={() => setQtyInput(qtyInput+1)} style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eef7f6', transition: 'color .15s ease,background .15s ease,border-color .15s ease', color: '#5c6567', fontWeight: 700 }}>+</button>
                       </div>
                       <button 
                         onClick={() => handleLog('Complete')} 
-                        className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[13px] font-bold uppercase tracking-[0.15em] transition-all active:scale-[0.98] shadow-md shadow-emerald-50"
+                        style={{ width: '100%', paddingTop: '14px', background: '#1f8577', color: '#fff', borderRadius: '6px', fontWeight: 700, textTransform: 'uppercase', transition: 'all .15s ease', boxShadow: '0 4px 14px 0 rgba(31,133,119,.05)', paddingBottom: '14px' }}
                       >
                         Log Batch
                       </button>
                     </div>
 
                     {/* Waste Panel */}
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                      <h3 className="text-[12px] font-bold text-rose-600 mb-6 flex items-center gap-2 uppercase tracking-wider">
+                    <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                      <h3 style={{ fontWeight: 700, color: '#b5493f', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '.05em' }}>
                         <AlertTriangle size={16}/> Log Quality Loss
                       </h3>
-                      <div className="space-y-4 mb-6">
+                      <div style={{ marginTop: '16px', marginBottom: '24px' }}>
                         <select 
-                          className="w-full bg-slate-50 border border-slate-100 rounded p-2.5 text-[12px] font-bold text-slate-700 outline-none focus:border-rose-300" 
+                          style={{ width: '100%', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '6px', padding: '10px', fontWeight: 700, color: '#23282A', outline: 'none' }} 
                           value={selectedWasteMaterial} 
                           onChange={e => setSelectedWasteMaterial(e.target.value)}
                         >
@@ -365,15 +369,15 @@ const ShopFloor: React.FC = () => {
                         </select>
 
                         {selectedWo.isConfidential ? (
-                          <div className="space-y-3 p-3 bg-rose-50/50 rounded border border-rose-100">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input type="checkbox" className="w-3.5 h-3.5 text-rose-600 rounded" checked={wasteDestroyed} onChange={e => setWasteDestroyed(e.target.checked)}/>
-                              <span className="text-[10px] font-bold text-rose-700 uppercase">Confirmed Destruction</span>
+                          <div style={{ marginTop: '12px', padding: '12px', background: '#fef2f2', borderRadius: '6px', border: '1.4px solid #e4ddd1', borderColor: '#b5493f' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                              <input type="checkbox" style={{ width: '14px', height: '14px', color: '#b5493f', borderRadius: '6px' }} checked={wasteDestroyed} onChange={e => setWasteDestroyed(e.target.checked)}/>
+                              <span style={{ fontWeight: 700, color: '#b5493f', textTransform: 'uppercase' }}>Confirmed Destruction</span>
                             </label>
                             <input 
                               type="text" 
                               placeholder="Cert ID" 
-                              className="w-full bg-white border border-rose-100 rounded px-2 py-1.5 text-[11px] font-bold text-rose-900 placeholder-rose-300 finance-nums"
+                              style={{ width: '100%', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#b5493f', borderRadius: '6px', paddingLeft: '8px', paddingTop: '6px', fontWeight: 700, paddingRight: '8px', paddingBottom: '6px' }}
                               value={destructionCert}
                               onChange={e => setDestructionCert(e.target.value)}
                             />
@@ -381,7 +385,7 @@ const ShopFloor: React.FC = () => {
                         ) : (
                           <input 
                             type="text" 
-                            className="w-full bg-slate-50 border border-slate-100 rounded p-2.5 text-[12px] font-bold outline-none" 
+                            style={{ width: '100%', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '6px', padding: '10px', fontWeight: 700, outline: 'none' }} 
                             placeholder="Reason..." 
                             value={noteInput} 
                             onChange={e => setNoteInput(e.target.value)} 
@@ -390,7 +394,7 @@ const ShopFloor: React.FC = () => {
                       </div>
                       <button 
                         onClick={() => handleLog('Log Waste')} 
-                        className="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[13px] font-bold uppercase tracking-[0.15em] transition-all active:scale-[0.98] shadow-md shadow-rose-50"
+                        style={{ width: '100%', paddingTop: '14px', background: '#b5493f', color: '#fff', borderRadius: '6px', fontWeight: 700, textTransform: 'uppercase', transition: 'all .15s ease', boxShadow: '0 4px 14px 0 rgba(181,73,63,.05)', paddingBottom: '14px' }}
                       >
                         Log Loss
                       </button>
@@ -398,33 +402,33 @@ const ShopFloor: React.FC = () => {
                   </div>
 
                   {/* Activity Log */}
-                  <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-                    <div className="px-5 py-3 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
-                      <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                        <History size={14} className="text-slate-400" /> Session Activity
+                  <div style={{ background: '#FEFDFB', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', overflow: 'hidden' }}>
+                    <div style={{ paddingLeft: '20px', paddingTop: '12px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '20px', paddingBottom: '12px' }}>
+                      <h3 style={{ fontWeight: 700, color: '#23282A', textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <History size={14} style={{ color: '#5c6567' }} /> Session Activity
                       </h3>
                     </div>
-                    <div className="max-h-60 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                    <div style={{ overflowY: 'auto', padding: '8px', marginTop: '4px' }}>
                       {selectedWo.logs.slice().reverse().map((log, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded transition-colors group">
-                          <div className="flex items-center gap-3">
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '6px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div className={`w-1.5 h-1.5 rounded-full ${
                               log.action === 'Complete' ? 'bg-emerald-500' : 
                               log.action === 'Start' ? 'bg-blue-500' : 'bg-rose-500'
                             }`} />
                             <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-bold text-slate-900 uppercase">{log.action}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontWeight: 700, color: '#23282A', textTransform: 'uppercase' }}>{log.action}</span>
                                 {log.qtyProcessed && (
-                                  <span className="text-[10px] font-bold text-slate-400 finance-nums">
+                                  <span style={{ fontWeight: 700, color: '#5c6567' }}>
                                     {log.qtyProcessed} units
                                   </span>
                                 )}
                               </div>
-                              {log.notes && <p className="text-[10px] text-slate-400 mt-0.5">{log.notes}</p>}
+                              {log.notes && <p style={{ color: '#5c6567', marginTop: '2px' }}>{log.notes}</p>}
                             </div>
                           </div>
-                          <span className="text-[10px] font-medium text-slate-300 finance-nums">{format(new Date(log.timestamp), 'HH:mm')}</span>
+                          <span style={{ fontWeight: 500, color: '#5c6567' }}>{format(new Date(log.timestamp), 'HH:mm')}</span>
                         </div>
                       ))}
                     </div>

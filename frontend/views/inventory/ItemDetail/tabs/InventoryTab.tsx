@@ -2,32 +2,36 @@ import React from 'react';
 import { Package, AlertTriangle, TrendingDown, TrendingUp, BarChart3, Layers } from 'lucide-react';
 import type { Item } from '../../../../types';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: Item;
   stockCalc: { currentStock: number; reserved: number; available: number; incoming: number; committed: number; inventoryValue: number } | null;
 }
 
 function stockColor(current: number, min: number): string {
-  if (current <= 0) return 'text-red-600';
-  if (current <= min) return 'text-amber-600';
-  return 'text-emerald-600';
+  if (current <= 0) return danger;
+  if (current <= min) return amber[500];
+  return t[500];
 }
 
-const KPI_BG: Record<string, string> = {
-  good: 'bg-emerald-50 border-emerald-200',
-  warn: 'bg-amber-50 border-amber-200',
-  bad: 'bg-red-50 border-red-200',
-  neutral: 'bg-slate-50 border-slate-200',
-  info: 'bg-blue-50 border-blue-200',
+const KPI_BG: Record<string, React.CSSProperties> = {
+  good: { background: t[50], border: `1.4px solid ${t[100]}` },
+  warn: { background: amber[100], border: `1.4px solid ${amber[100]}` },
+  bad: { background: '#fef2f2', border: '1.4px solid #fecaca' },
+  neutral: { background: t[50], border: `1.4px solid ${hairline}` },
+  info: { background: t[50], border: `1.4px solid ${t[100]}` },
 };
 
 export const InventoryTab: React.FC<Props> = ({ item, stockCalc }) => {
   if (!stockCalc) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <Package size={48} className="mb-4 opacity-50" />
-        <p className="text-sm font-semibold">Stock tracking is not available</p>
-        <p className="text-xs mt-1">This item type does not support inventory tracking.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', color: inkSoft }}>
+        <Package size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+        <p style={{ fontSize: 14, fontWeight: 600 }}>Stock tracking is not available</p>
+        <p style={{ fontSize: 12, marginTop: 4 }}>This item type does not support inventory tracking.</p>
       </div>
     );
   }
@@ -54,65 +58,67 @@ export const InventoryTab: React.FC<Props> = ({ item, stockCalc }) => {
   const maxThreshold = Math.max(maxStock, stockCalc.currentStock, 1);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {kpis.map(k => (
-          <div key={k.label} className={`rounded-xl border p-4 ${KPI_BG[k.bg]} shadow-sm`}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{k.label}</span>
-              <span className="text-slate-400">{k.icon}</span>
+          <div key={k.label} className="prime-card" style={{ ...KPI_BG[k.bg], borderRadius: 12, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
+              <span style={{ color: inkSoft }}>{k.icon}</span>
             </div>
-            <p className={`text-2xl font-bold ${stockColor(k.value, minStock)}`}>{k.value}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">{k.unit}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, color: stockColor(k.value, minStock) }}>{k.value}</p>
+            <p style={{ fontSize: 10, color: inkSoft, marginTop: 2 }}>{k.unit}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {thresholds.map(t => (
-          <div key={t.label} className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">{t.label}</span>
-            <p className="text-lg font-bold text-slate-800">{t.value}</p>
+          <div key={t.label} className="prime-card" style={{ background: paper, borderRadius: 12, padding: 16, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>{t.label}</span>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink }}>{t.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, padding: 20, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <BarChart3 size={16} className="text-slate-400" />
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Inventory Value</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <BarChart3 size={16} style={{ color: inkSoft }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Inventory Value</span>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stockCalc.inventoryValue.toFixed(2)}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, color: ink }}>{stockCalc.inventoryValue.toFixed(2)}</p>
           </div>
           {stockCalc.currentStock <= minStock && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
-              <AlertTriangle size={16} className="text-amber-600" />
-              <span className="text-xs font-semibold text-amber-700">Low Stock Warning</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: amber[100], border: `1.4px solid ${amber[100]}`, borderRadius: 12 }}>
+              <AlertTriangle size={16} style={{ color: amber[500] }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: amber[500] }}>Low Stock Warning</span>
             </div>
           )}
         </div>
         {maxStock > 0 && (
-          <div className="space-y-2">
-            <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ position: 'relative', height: 12, background: t[100], borderRadius: 9999, overflow: 'hidden' }}>
               {thresholds.map((t, i) => {
                 if (t.value <= 0) return null;
                 const pct = Math.min(100, (t.value / maxThreshold) * 100);
-                const colors = ['bg-red-400', 'bg-blue-400', 'bg-amber-400', 'bg-emerald-400'];
+                const colors = ['#f87171', '#60a5fa', '#fbbf24', '#34d399'];
                 return (
-                  <div key={i} className={`absolute top-0 h-full w-0.5 ${colors[i]}`} style={{ left: `${pct}%`, opacity: 0.5 }} />
+                  <div key={i} style={{ position: 'absolute', top: 0, height: '100%', width: 2, backgroundColor: colors[i], left: `${pct}%`, opacity: 0.5 }} />
                 );
               })}
               <div
-                className={`h-full rounded-full transition-all ${
-                  stockCalc.currentStock <= minStock ? 'bg-red-500' :
-                  stockCalc.currentStock <= maxStock * 0.5 ? 'bg-amber-500' : 'bg-emerald-500'
-                }`}
-                style={{ width: `${Math.min(100, (stockCalc.currentStock / maxThreshold) * 100)}%` }}
+                style={{
+                  height: '100%',
+                  borderRadius: 9999,
+                  transition: 'all .3s',
+                  background: stockCalc.currentStock <= minStock ? '#ef4444' : stockCalc.currentStock <= maxStock * 0.5 ? amber[500] : t[500],
+                  width: `${Math.min(100, (stockCalc.currentStock / maxThreshold) * 100)}%`
+                }}
               />
             </div>
-            <div className="flex justify-between text-[10px] text-slate-400">
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: inkSoft }}>
               <span>0</span>
               {thresholds.filter(t => t.value > 0).map(t => (
                 <span key={t.label}>{t.label}: {t.value}</span>

@@ -35,42 +35,42 @@ const skillCards = [
     title: 'Invoice Intelligence',
     desc: 'AI-powered invoice analysis and processing',
     path: '/smart-features/invoice-intelligence',
-    color: '#6366f1',
+    color: '#1f8577',
   },
   {
     icon: <Shield size={20} />,
     title: 'Customer Risk',
     desc: 'Predictive risk scoring for your customers',
     path: '/smart-features/customer-risk',
-    color: '#f59e0b',
+    color: '#1f8577',
   },
   {
     icon: <BarChart3 size={20} />,
     title: 'Smart Sales Dashboard',
     desc: 'AI-driven sales performance insights',
     path: '/smart-features/sales-dashboard',
-    color: '#10b981',
+    color: '#1f8577',
   },
   {
     icon: <MessageSquare size={20} />,
     title: 'NL Reporting',
     desc: 'Natural language financial queries',
     path: '/smart-features/natural-language-reporting',
-    color: '#06b6d4',
+    color: '#1f8577',
   },
   {
     icon: <AlertTriangle size={20} />,
     title: 'Anomaly Detection',
     desc: 'Detect fraud and unusual patterns',
     path: '/smart-features/anomaly-detection',
-    color: '#d946ef',
+    color: '#1f8577',
   },
   {
     icon: <Zap size={20} />,
     title: 'Report Summaries',
     desc: 'Auto-generated executive report summaries',
     path: '/smart-features/report-summaries',
-    color: '#3b82f6',
+    color: '#1f8577',
   },
 ];
 
@@ -79,36 +79,36 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    background: '#f8fafc',
+    background: '#FEFDFB',
     fontFamily: "'Inter', system-ui, sans-serif",
     overflow: 'hidden',
   },
   header: {
-    background: '#ffffff',
+    background: '#FEFDFB',
     padding: '12px 24px',
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    borderBottom: '1px solid #e2e8f0',
+    borderBottom: '1.4px solid #e4ddd1',
   },
   headerIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    background: '#6366f1',
+    background: '#1f8577',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     color: '#fff',
   },
   headerText: {
-    color: '#0f172a',
+    color: '#23282A',
     fontSize: 16,
     fontWeight: 700,
     letterSpacing: '-0.3px',
   },
   headerSub: {
-    color: '#64748b',
+    color: '#5c6567',
     fontSize: 12,
     fontWeight: 400,
     marginTop: 1,
@@ -124,16 +124,16 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    background: '#ffffff',
+    background: '#FEFDFB',
     borderRadius: 12,
-    border: '1px solid #e2e8f0',
+    border: '1.4px solid #e4ddd1',
     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
     overflow: 'hidden',
     minWidth: 0,
   },
   chatHeader: {
     padding: '12px 20px',
-    borderBottom: '1px solid #e2e8f0',
+    borderBottom: '1.4px solid #e4ddd1',
     display: 'flex',
     alignItems: 'center',
     gap: 8,
@@ -141,13 +141,13 @@ const styles: Record<string, React.CSSProperties> = {
   chatHeaderTitle: {
     fontSize: 14,
     fontWeight: 600,
-    color: '#0f172a',
+    color: '#23282A',
   },
   chatHeaderStatus: {
     fontSize: 10,
-    color: '#10b981',
+    color: '#1f8577',
     fontWeight: 600,
-    background: '#d1fae5',
+    background: '#d3ece9',
     padding: '2px 8px',
     borderRadius: 8,
   },
@@ -196,27 +196,27 @@ const styles: Record<string, React.CSSProperties> = {
   },
   messageTime: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: '#5c6567',
     marginTop: 4,
     textAlign: 'right',
   },
   inputArea: {
-    borderTop: '1px solid #e2e8f0',
+    borderTop: '1.4px solid #e4ddd1',
     padding: '12px 16px',
     display: 'flex',
     gap: 8,
     alignItems: 'flex-end',
-    background: '#f8fafc',
+    background: '#FEFDFB',
   },
   inputField: {
     flex: 1,
-    border: '1px solid #e2e8f0',
+    border: '1.4px solid #e4ddd1',
     borderRadius: 10,
     padding: '8px 12px',
     fontSize: 13,
     outline: 'none',
-    background: '#fff',
-    color: '#0f172a',
+    background: '#FEFDFB',
+    color: '#23282A',
     resize: 'none',
     fontFamily: "'Inter', system-ui, sans-serif",
     lineHeight: 1.5,
@@ -228,14 +228,14 @@ const styles: Record<string, React.CSSProperties> = {
     height: 38,
     borderRadius: 10,
     border: 'none',
-    background: '#6366f1',
+    background: '#1f8577',
     color: '#fff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
     flexShrink: 0,
-    boxShadow: '0 2px 8px rgba(99,102,241,0.3)',
+    boxShadow: '0 2px 8px rgba(31,133,119,0.3)',
   },
   promptsContainer: {
     padding: '0 16px 10px',
@@ -247,10 +247,10 @@ const styles: Record<string, React.CSSProperties> = {
   promptChip: {
     padding: '5px 12px',
     borderRadius: 16,
-    border: '1px solid #e2e8f0',
-    background: '#fff',
+    border: '1.4px solid #e4ddd1',
+    background: '#FEFDFB',
     fontSize: 11,
-    color: '#475569',
+    color: '#5c6567',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
     fontWeight: 500,
@@ -267,7 +267,7 @@ const styles: Record<string, React.CSSProperties> = {
   skillsPanelTitle: {
     fontSize: 11,
     fontWeight: 700,
-    color: '#64748b',
+    color: '#5c6567',
     textTransform: 'uppercase',
     letterSpacing: '0.8px',
     paddingLeft: 2,
@@ -276,9 +276,9 @@ const styles: Record<string, React.CSSProperties> = {
   skillCard: {
     borderRadius: 10,
     padding: '12px 14px',
-    background: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderLeft: '4px solid #6366f1',
+    background: '#FEFDFB',
+    border: '1.4px solid #e4ddd1',
+    borderLeft: '4px solid #1f8577',
     display: 'flex',
     alignItems: 'center',
     gap: 12,
@@ -299,11 +299,11 @@ const styles: Record<string, React.CSSProperties> = {
   skillTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#0f172a',
+    color: '#23282A',
   },
   skillDesc: {
     fontSize: 10,
-    color: '#64748b',
+    color: '#5c6567',
     marginTop: 1,
     lineHeight: 1.3,
   },
@@ -311,10 +311,10 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: 'auto',
     padding: '4px 10px',
     borderRadius: 6,
-    background: '#f1f5f9',
+    background: '#eef7f6',
     fontSize: 10,
     fontWeight: 600,
-    color: '#6366f1',
+    color: '#1f8577',
     display: 'flex',
     alignItems: 'center',
     gap: 3,
@@ -533,7 +533,7 @@ const AIWorkspaceChat: React.FC = () => {
     return text.split('\n').map((line, i) => (
       <span key={i}>
         {line.startsWith('**') && line.endsWith('**') ? (
-          <span style={{ fontWeight: 700, color: '#0f172a' }}>{line.slice(2, -2)}</span>
+          <span style={{ fontWeight: 700, color: '#23282A' }}>{line.slice(2, -2)}</span>
         ) : line.startsWith('*') && line.endsWith('*') ? (
           <span style={{ fontStyle: 'italic', opacity: 0.8 }}>{line.slice(1, -1)}</span>
         ) : (
@@ -559,7 +559,7 @@ const AIWorkspaceChat: React.FC = () => {
       <div style={styles.mainContent}>
         <div style={styles.chatSection}>
           <div style={styles.chatHeader}>
-            <Sparkles size={16} color="#6366f1" />
+            <Sparkles size={16} color="#1f8577" />
             <span style={styles.chatHeaderTitle}>AI Assistant</span>
             <span style={styles.chatHeaderStatus}>Online</span>
           </div>
@@ -577,7 +577,7 @@ const AIWorkspaceChat: React.FC = () => {
                   <div
                     style={{
                       ...styles.avatarBox,
-                      background: msg.role === 'user' ? '#3b82f6' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      background: msg.role === 'user' ? '#1f8577' : '#1f8577',
                     }}
                   >
                     {msg.role === 'user' ? <User size={14} color="#fff" /> : <Sparkles size={14} color="#fff" />}
@@ -586,11 +586,11 @@ const AIWorkspaceChat: React.FC = () => {
                     style={{
                       ...styles.messageBubble,
                       background: msg.role === 'user'
-                        ? '#eff6ff'
-                        : 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.06))',
+                        ? '#eef7f6'
+                        : 'rgba(31,133,119,0.06)',
                       border: msg.role === 'user'
-                        ? '1px solid #bfdbfe'
-                        : '1px solid rgba(99,102,241,0.15)',
+                        ? '1.4px solid #1f8577'
+                        : '1.4px solid #e4ddd1',
                       borderBottomRightRadius: msg.role === 'user' ? 4 : 14,
                       borderBottomLeftRadius: msg.role === 'ai' ? 4 : 14,
                     }}
@@ -598,12 +598,12 @@ const AIWorkspaceChat: React.FC = () => {
                     <div
                       style={{
                         ...styles.messageName,
-                        color: msg.role === 'user' ? '#3b82f6' : '#8b5cf6',
+                        color: '#1f8577',
                       }}
                     >
                       {msg.role === 'user' ? 'You' : 'AI Assistant'}
                     </div>
-                    <div style={{ color: '#1e293b', whiteSpace: 'pre-wrap' }}>
+                    <div style={{ color: '#23282A', whiteSpace: 'pre-wrap' }}>
                       {formatMessageText(msg.text)}
                     </div>
                     <div style={styles.messageTime}>{formatTime(msg.timestamp)}</div>
@@ -619,7 +619,7 @@ const AIWorkspaceChat: React.FC = () => {
                   <div
                     style={{
                       ...styles.avatarBox,
-                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      background: '#1f8577',
                     }}
                   >
                     <Sparkles size={14} color="#fff" />
@@ -627,16 +627,16 @@ const AIWorkspaceChat: React.FC = () => {
                   <div
                     style={{
                       ...styles.messageBubble,
-                      background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.06))',
-                      border: '1px solid rgba(99,102,241,0.15)',
+                      background: 'rgba(31,133,119,0.06)',
+                      border: '1.4px solid #e4ddd1',
                       borderBottomLeftRadius: 4,
                     }}
                   >
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', color: '#8b5cf6' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', color: '#1f8577' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#8b5cf6', animation: 'pulse 1s infinite' }} />
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#8b5cf6', animation: 'pulse 1s infinite 0.2s' }} />
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#8b5cf6', animation: 'pulse 1s infinite 0.4s' }} />
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1f8577', animation: 'pulse 1s infinite' }} />
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1f8577', animation: 'pulse 1s infinite 0.2s' }} />
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1f8577', animation: 'pulse 1s infinite 0.4s' }} />
                       </div>
                       <span style={{ fontSize: 12 }}>Thinking...</span>
                     </div>
@@ -654,12 +654,12 @@ const AIWorkspaceChat: React.FC = () => {
                 style={styles.promptChip}
                 onClick={() => handlePrompt(prompt.label)}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f1f5f9';
-                  e.currentTarget.style.borderColor = '#c7d2fe';
+                  e.currentTarget.style.background = '#eef7f6';
+                  e.currentTarget.style.borderColor = '#1f8577';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#fff';
-                  e.currentTarget.style.borderColor = '#e2e8f0';
+                  e.currentTarget.style.background = '#FEFDFB';
+                  e.currentTarget.style.borderColor = '#e4ddd1';
                 }}
               >
                 {prompt.label}

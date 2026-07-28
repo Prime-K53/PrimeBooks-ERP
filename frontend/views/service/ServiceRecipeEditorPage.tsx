@@ -352,21 +352,21 @@ const ServiceRecipeEditorPage: React.FC = () => {
                                     </button>
                                 </div>
 
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                                <div className="prime-card overflow-hidden">
                                     <table className="w-full text-left text-sm">
-                                        <thead className="bg-slate-50 border-b border-slate-100">
+                                        <thead>
                                             <tr>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Resource Type</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Resource</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Quantity</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Unit</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Cost/Unit</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Total</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Formula</th>
-                                                <th className="px-4 py-3 w-20"></th>
+                                                <th className="prime-table-header">Resource Type</th>
+                                                <th className="prime-table-header">Resource</th>
+                                                <th className="prime-table-header">Quantity</th>
+                                                <th className="prime-table-header">Unit</th>
+                                                <th className="prime-table-header">Cost/Unit</th>
+                                                <th className="prime-table-header">Total</th>
+                                                <th className="prime-table-header">Formula</th>
+                                                <th className="prime-table-header w-20"></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody>
                                             {editingRecipe.lines?.map((line, idx) => {
                                                 const options = getResourceOptions(line.resourceType);
                                                 const unitCost = getResourceCost(line.resourceType, line.resourceId);
@@ -445,11 +445,11 @@ const ServiceRecipeEditorPage: React.FC = () => {
                                     </table>
                                 </div>
 
-                                <div className="bg-white rounded-xl border border-slate-200 p-4">
+                                <div className="prime-card p-4">
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                                         <div>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Materials</span>
-                                            <p className="text-lg font-bold text-slate-800">{currency}{costSummary.totalMaterialCost.toFixed(2)}</p>
+                                            <span className="prime-section-title">Materials</span>
+                                            <p className="text-lg font-bold" style={{ color: '#23282A' }}>{currency}{costSummary.totalMaterialCost.toFixed(2)}</p>
                                         </div>
                                         <div>
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Labor</span>

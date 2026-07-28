@@ -9,6 +9,10 @@ import { useNavigate } from 'react-router-dom';
 import { OfflineImage } from '../../components/OfflineImage';
 import { generateNextId } from '../../utils/helpers';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 const MRP: React.FC = () => {
   const { 
     workOrders = [], 
@@ -158,137 +162,137 @@ const MRP: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col font-sans text-[13px] leading-relaxed text-slate-700 bg-slate-50/30">
-        <div className="mb-4 md:mb-6 flex justify-between items-center shrink-0 px-2 md:px-4 py-2.5 md:py-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-200/60 shadow-sm">
+    <div style={{ padding: '16px', marginLeft: 'auto', display: 'flex', flexDirection: 'column', fontFamily: 'Inter,"DM Sans",sans-serif', lineHeight: 1.625, color: '#23282A', background: '#eef7f6' }}>
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, paddingLeft: '8px', paddingTop: '10px', background: 'rgba(254,253,251,.5)', backdropFilter: 'blur(4px)', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '8px', paddingBottom: '10px' }}>
            <div>
-                <h1 className="text-[20px] md:text-[24px] font-bold flex items-center gap-3 tracking-tight text-slate-800">
-                    <Layers className="text-blue-600" size={24}/> MRP Intelligence
+                <h1 style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '12px', letterSpacing: '-.025em', color: '#23282A' }}>
+                    <Layers style={{ color: '#1f8577' }} size={24}/> MRP Intelligence
                 </h1>
-                <p className="text-[12.5px] text-slate-500 mt-0.5 font-medium">Multi-level BOM explosion for {activeWOs.length} active work orders.</p>
+                <p style={{ color: '#5c6567', marginTop: '2px', fontWeight: 500 }}>Multi-level BOM explosion for {activeWOs.length} active work orders.</p>
            </div>
             {selectedItemIds.length > 0 && (
-                <button onClick={handleGeneratePOs} className="bg-blue-600 text-white px-3.5 py-2 md:px-4 md:py-2 rounded-xl font-semibold text-[13px] hover:bg-blue-700 flex items-center gap-2 shadow-lg shadow-blue-900/10 animate-in zoom-in-95 transition-all active:scale-95 border border-blue-500/20">
+                <button onClick={handleGeneratePOs} style={{ background: '#1f8577', color: '#fff', paddingLeft: '14px', paddingTop: '8px', borderRadius: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(8,46,42,.1)', transition: 'all .15s ease', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', paddingRight: '14px', paddingBottom: '8px' }}>
                     <PackagePlus size={16}/> Generate {selectedItemIds.length} Lines
                 </button>
             )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 shrink-0">
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-rose-500 hover:bg-slate-50 transition-all">
-            <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '16px', marginBottom: '24px', flexShrink: 0 }}>
+          <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#b5493f', transition: 'all .15s ease' }}>
+            <div style={{ padding: '10px', background: '#fef2f2', color: '#b5493f', borderRadius: '10px' }}>
               <TrendingDown size={20} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Shortages</p>
-              <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{mrpReport.filter(i => i.status === 'Critical').length}</p>
+              <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Shortages</p>
+              <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{mrpReport.filter(i => i.status === 'Critical').length}</p>
             </div>
           </div>
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all">
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+          <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease' }}>
+            <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px' }}>
               <Truck size={20} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Inbound</p>
-              <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{mrpReport.reduce((s, i) => s + (i.inboundQty > 0 ? 1 : 0), 0)} <span className="text-xs font-semibold text-slate-400">Items</span></p>
+              <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Inbound</p>
+              <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{mrpReport.reduce((s, i) => s + (i.inboundQty > 0 ? 1 : 0), 0)} <span style={{ fontSize: '11px', fontWeight: 600, color: '#5c6567' }}>Items</span></p>
             </div>
           </div>
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all">
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+          <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#d99a3f', transition: 'all .15s ease' }}>
+            <div style={{ padding: '10px', background: '#fbead0', color: '#d99a3f', borderRadius: '10px' }}>
               <AlertTriangle size={20} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Warnings</p>
-              <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{mrpReport.filter(i => i.status === 'Buffer Warning').length}</p>
+              <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Warnings</p>
+              <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{mrpReport.filter(i => i.status === 'Buffer Warning').length}</p>
             </div>
           </div>
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all">
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+          <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease' }}>
+            <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px' }}>
               <CheckSquare size={20} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Yield</p>
-              <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{mrpReport.filter(i => i.status === 'Healthy').length} <span className="text-xs font-semibold text-slate-400">Active</span></p>
+              <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Yield</p>
+              <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{mrpReport.filter(i => i.status === 'Healthy').length} <span style={{ fontSize: '11px', fontWeight: 600, color: '#5c6567' }}>Active</span></p>
             </div>
           </div>
         </div>
 
-        <div className="bg-slate-50/30 rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
-            <div className="px-4 py-2.5 bg-slate-100/50 border-b border-slate-200 flex items-center gap-3">
-                <Info size={14} className="text-blue-500 shrink-0"/>
-                <p className="text-[12.5px] font-semibold text-slate-600">Logic: Net Position = (On-Hand + Inbound) - Gross Demand. Replenish suggestions auto-deduct items already in transit.</p>
+        <div style={{ background: '#eef7f6', borderRadius: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ paddingLeft: '16px', paddingTop: '10px', background: '#eef7f6', borderStyle: 'solid', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '12px', paddingRight: '16px', paddingBottom: '10px' }}>
+                <Info size={14} style={{ color: '#1f8577', flexShrink: 0 }}/>
+                <p style={{ fontWeight: 600, color: '#5c6567' }}>Logic: Net Position = (On-Hand + Inbound) - Gross Demand. Replenish suggestions auto-deduct items already in transit.</p>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <table className="w-full text-left text-[12.5px] leading-relaxed border-separate border-spacing-0">
-                    <thead className="bg-slate-50/90 backdrop-blur-sm text-slate-600 font-bold border-b border-slate-200 sticky top-0 z-10 text-[13.5px]">
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+                <table style={{ width: '100%', textAlign: 'left', lineHeight: 1.625, borderCollapse: 'separate', borderSpacing: 0 }}>
+                    <thead style={{ background: '#eef7f6', backdropFilter: 'blur(4px)', color: '#5c6567', fontWeight: 700, borderStyle: 'solid', borderColor: '#e4ddd1', position: 'sticky', top: 0, zIndex: 10 }}>
                         <tr>
-                            <th className="w-14 px-4 py-2 text-center border-b border-slate-200">
-                                <button onClick={() => setSelectedItemIds(selectedItemIds.length === mrpReport.length ? [] : mrpReport.map(i => i.id))} className="text-slate-400 hover:text-blue-600 transition-colors">
+                            <th style={{ width: '56px', paddingLeft: '16px', paddingTop: '8px', textAlign: 'center', borderStyle: 'solid', borderColor: '#e4ddd1', paddingRight: '16px', paddingBottom: '8px' }}>
+                                <button onClick={() => setSelectedItemIds(selectedItemIds.length === mrpReport.length ? [] : mrpReport.map(i => i.id))} style={{ color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
                                     {selectedItemIds.length > 0 && selectedItemIds.length === mrpReport.length ? <CheckSquare size={18}/> : <Square size={18}/>}
                                 </button>
                             </th>
-                            <th className="px-4 py-2 border-b border-slate-200 font-bold">Component Material</th>
-                            <th className="px-4 py-2 text-right border-b border-slate-200 font-bold">On-Hand</th>
-                            <th className="px-4 py-2 text-right border-b border-slate-200 font-bold">Inbound</th>
-                            <th className="px-4 py-2 text-right border-b border-slate-200 font-bold">Net Position</th>
-                            <th className="px-4 py-2 text-center border-b border-slate-200 font-bold">Procurement Advice</th>
-                            <th className="px-4 py-2 text-right border-b border-slate-200 font-bold">Preferred Vendor</th>
+                            <th style={{ paddingLeft: '16px', paddingTop: '8px', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 700, paddingRight: '16px', paddingBottom: '8px' }}>Component Material</th>
+                            <th style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 700, paddingRight: '16px', paddingBottom: '8px' }}>On-Hand</th>
+                            <th style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 700, paddingRight: '16px', paddingBottom: '8px' }}>Inbound</th>
+                            <th style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 700, paddingRight: '16px', paddingBottom: '8px' }}>Net Position</th>
+                            <th style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'center', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 700, paddingRight: '16px', paddingBottom: '8px' }}>Procurement Advice</th>
+                            <th style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', borderStyle: 'solid', borderColor: '#e4ddd1', fontWeight: 700, paddingRight: '16px', paddingBottom: '8px' }}>Preferred Vendor</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody style={{ borderColor: '#e4ddd1' }}>
                         {mrpReport.map(row => (
                             <tr key={row.id} className={`hover:bg-blue-50/40 transition-colors cursor-pointer group ${row.status === 'Critical' ? 'bg-rose-50/20' : ''}`} onClick={() => handleToggleSelect(row.id)}>
-                                <td className="px-4 py-2 text-center" onClick={e => e.stopPropagation()}>
+                                <td style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'center', paddingRight: '16px', paddingBottom: '8px' }} onClick={e => e.stopPropagation()}>
                                     <button onClick={() => handleToggleSelect(row.id)} className={`transition-colors ${selectedItemIds.includes(row.id) ? 'text-blue-600' : 'text-slate-300 hover:text-slate-400'}`}>
                                         {selectedItemIds.includes(row.id) ? <CheckSquare size={18}/> : <Square size={18}/>}
                                     </button>
                                 </td>
-                                <td className="px-4 py-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-slate-100 rounded-xl shadow-inner overflow-hidden shrink-0 border border-slate-200/60 group-hover:border-blue-200 transition-colors">
-                                            <OfflineImage src={row.image} alt={row.name} className="w-full h-full object-cover"/>
+                                <td style={{ paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '40px', height: '40px', background: '#eef7f6', borderRadius: '12px', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)', overflow: 'hidden', flexShrink: 0, border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
+                                            <OfflineImage src={row.image} alt={row.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
                                         </div>
-                                        <div className="min-w-0">
-                                            <div className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors truncate text-[13px]">{row.name}</div>
-                                            <div className="text-[12.5px] text-slate-500 font-mono tracking-tight mt-0.5">{row.sku}</div>
+                                        <div style={{ minWidth: 0 }}>
+                                            <div style={{ fontWeight: 700, color: '#23282A', transition: 'color .15s ease,background .15s ease,border-color .15s ease', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</div>
+                                            <div style={{ color: '#5c6567', fontFamily: '"JetBrains Mono",monospace', letterSpacing: '-.025em', marginTop: '2px' }}>{row.sku}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-4 py-2 text-right font-bold text-slate-700 tabular-nums">{row.currentStock}</td>
-                                <td className="px-4 py-2 text-right font-bold text-blue-700 tabular-nums">+{row.inboundQty}</td>
-                                <td className="px-4 py-2 text-right">
-                                    <div className="flex flex-col items-end">
+                                <td style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', fontWeight: 700, color: '#23282A', fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '8px' }}>{row.currentStock}</td>
+                                <td style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', fontWeight: 700, color: '#0f544c', fontVariantNumeric: 'tabular-nums', paddingRight: '16px', paddingBottom: '8px' }}>+{row.inboundQty}</td>
+                                <td style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', paddingRight: '16px', paddingBottom: '8px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
                                         <span className={`text-[13px] font-bold tabular-nums ${row.netStock < 0 ? 'text-rose-600' : 'text-slate-800'}`}>
-                                            {row.netStock.toFixed(1)} <span className="text-[12px] font-medium text-slate-400 ml-0.5">{row.unit}</span>
+                                            {row.netStock.toFixed(1)} <span style={{ fontWeight: 500, color: '#5c6567', marginLeft: '2px' }}>{row.unit}</span>
                                         </span>
-                                        <span className="text-[12px] font-semibold text-slate-500">Req: {row.requiredQty}</span>
+                                        <span style={{ fontWeight: 600, color: '#5c6567' }}>Req: {row.requiredQty}</span>
                                     </div>
                                 </td>
-                                <td className="px-4 py-2 text-center">
+                                <td style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'center', paddingRight: '16px', paddingBottom: '8px' }}>
                                     {row.suggestedOrder > 0 ? (
-                                        <div className="inline-flex flex-col items-center">
-                                            <span className="bg-blue-600 text-slate-50 px-2.5 py-0.5 rounded-lg font-bold text-[12px] shadow-md shadow-blue-900/10 border border-blue-500/20">
+                                        <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
+                                            <span style={{ background: '#1f8577', paddingLeft: '10px', paddingTop: '2px', borderRadius: '10px', fontWeight: 700, boxShadow: '0 4px 14px 0 rgba(8,46,42,.1)', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', paddingRight: '10px', paddingBottom: '2px' }}>
                                                 +{row.suggestedOrder.toFixed(1)}
                                             </span>
                                             <span className={`text-[12px] font-bold mt-0.5 ${row.status === 'Critical' ? 'text-rose-500' : 'text-amber-500'}`}>{row.status}</span>
                                         </div>
                                     ) : (
-                                        <span className="text-emerald-700 font-bold text-[12px] flex items-center justify-center gap-1.5"><ShieldCheck size={14}/> Covered</span>
+                                        <span style={{ color: '#0f544c', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><ShieldCheck size={14}/> Covered</span>
                                     )}
                                 </td>
-                                <td className="px-4 py-2 text-right">
+                                <td style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', paddingRight: '16px', paddingBottom: '8px' }}>
                                     {row.preferredSupplierId ? (
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[12.5px] font-bold text-slate-700">{getSupplierName(row.preferredSupplierId)}</span>
-                                            <span className="text-[12px] font-bold text-emerald-700 flex items-center gap-1">Source Linked</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
+                                            <span style={{ fontWeight: 700, color: '#23282A' }}>{getSupplierName(row.preferredSupplierId)}</span>
+                                            <span style={{ fontWeight: 700, color: '#0f544c', display: 'flex', alignItems: 'center', gap: '4px' }}>Source Linked</span>
                                         </div>
                                     ) : (
-                                        <span className="text-[12px] font-semibold text-slate-400 italic">Unassigned</span>
+                                        <span style={{ fontWeight: 600, color: '#5c6567', fontStyle: 'italic' }}>Unassigned</span>
                                     )}
                                 </td>
                             </tr>
                         ))}
                         {mrpReport.length === 0 && (
-                            <tr><td colSpan={7} className="p-20 text-center text-slate-400 font-medium italic">All production requirements are currently covered by available inventory and inbound shipments.</td></tr>
+                            <tr><td colSpan={7} style={{ padding: '80px', textAlign: 'center', color: '#5c6567', fontWeight: 500, fontStyle: 'italic' }}>All production requirements are currently covered by available inventory and inbound shipments.</td></tr>
                         )}
                     </tbody>
                 </table>

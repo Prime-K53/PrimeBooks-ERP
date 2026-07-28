@@ -249,10 +249,10 @@ const AnomalyDetection: React.FC = () => {
   if (error) {
     return (
       <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 max-w-md text-center">
-          <AlertCircle className="mx-auto text-red-500 mb-3" size={32} />
-          <h3 className="font-bold text-slate-900 text-sm mb-2">Detection Failed</h3>
-          <p className="text-xs text-slate-500 mb-4">{error}</p>
+        <div className="prime-card p-8 max-w-md text-center">
+          <AlertCircle className="mx-auto mb-3" size={32} style={{ color: '#b5493f' }} />
+          <h3 className="font-bold text-sm mb-2" style={{ color: '#23282A' }}>Detection Failed</h3>
+          <p className="text-xs mb-4" style={{ color: '#5c6567' }}>{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700"
@@ -369,19 +369,19 @@ const AnomalyDetection: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-              <ArrowUpDown size={14} className="text-slate-400" />
+        <div className="prime-card overflow-hidden">
+          <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1.4px solid #e4ddd1', background: '#eef7f6' }}>
+            <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: '#23282A' }}>
+              <ArrowUpDown size={14} style={{ color: '#5c6567' }} />
               All Detected Anomalies
             </h3>
-            <span className="text-[10px] font-bold text-slate-400">{filteredAnomalies.length} of {allAnomalies.length}</span>
+            <span className="text-[10px] font-bold" style={{ color: '#5c6567' }}>{filteredAnomalies.length} of {allAnomalies.length}</span>
           </div>
           {filteredAnomalies.length === 0 ? (
             <div className="p-12 text-center">
-              <AlertCircle className="mx-auto text-slate-300 mb-3" size={32} />
-              <p className="text-sm font-semibold text-slate-500">No Anomalies Found</p>
-              <p className="text-xs text-slate-400 mt-1">All business data appears normal for the selected filters</p>
+              <AlertCircle className="mx-auto mb-3" size={32} style={{ color: '#e4ddd1' }} />
+              <p className="text-sm font-semibold" style={{ color: '#5c6567' }}>No Anomalies Found</p>
+              <p className="text-xs mt-1" style={{ color: '#5c6567' }}>All business data appears normal for the selected filters</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -424,12 +424,12 @@ const AnomalyDetection: React.FC = () => {
         </div>
 
         {fraudIndicators.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-rose-200 overflow-hidden">
-            <div className="p-4 border-b border-rose-200 bg-rose-50">
-              <h3 className="font-bold text-rose-800 text-sm flex items-center gap-2">
+          <div className="prime-card overflow-hidden" style={{ borderColor: '#fecaca' }}>
+            <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1.4px solid #fecaca', background: '#fef2f2' }}>
+              <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: '#991b1b' }}>
                 <ShieldAlert size={14} />
                 Fraud Indicators
-                <span className="text-[10px] font-bold text-rose-500 ml-2">({fraudIndicators.length} detected)</span>
+                <span className="text-[10px] font-bold ml-2" style={{ color: '#b5493f' }}>({fraudIndicators.length} detected)</span>
               </h3>
             </div>
             <div className="overflow-x-auto">

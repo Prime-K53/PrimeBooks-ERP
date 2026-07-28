@@ -64,59 +64,68 @@ const AnomalyDetector: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-6 bg-slate-50/50 overflow-y-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/ai-analytics')} className="p-2 rounded-lg hover:bg-white transition-colors"><ArrowLeft size={20} /></button>
-        <AlertTriangle className="text-red-500" size={28} />
-        <div><h1 className="text-xl font-bold text-slate-800">Anomaly Detector</h1><p className="text-xs text-slate-500">Unusual transactions, stock, and audit events</p></div>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 24, background: '#FEFDFB', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button onClick={() => navigate('/ai-analytics')} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#FEFDFB' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        ><ArrowLeft size={20} /></button>
+        <AlertTriangle color="#b5493f" size={28} />
+        <div><h1 style={{ fontSize: 20, fontWeight: 700, color: '#23282A', margin: 0 }}>Anomaly Detector</h1><p style={{ fontSize: 11, color: '#5c6567', margin: 0 }}>Unusual transactions, stock, and audit events</p></div>
       </div>
 
       {!result && !loading && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <Shield size={48} className="mx-auto text-red-300 mb-4" />
-            <h2 className="text-lg font-semibold text-slate-700 mb-2">Detect Anomalies</h2>
-            <p className="text-sm text-slate-500 mb-2">{(ledger || []).length} ledger entries, {(inventory || []).length} inventory items loaded</p>
-            <button onClick={runDetection} className="mt-4 px-6 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors">Run Detection</button>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: 448 }}>
+            <Shield size={48} color="#b5493f" style={{ margin: '0 auto 16px', opacity: 0.6 }} />
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: '#23282A', marginBottom: 8 }}>Detect Anomalies</h2>
+            <p style={{ fontSize: 13, color: '#5c6567', marginBottom: 8 }}>{(ledger || []).length} ledger entries, {(inventory || []).length} inventory items loaded</p>
+            <button onClick={runDetection} style={{ marginTop: 16, padding: '10px 24px', background: '#b5493f', color: '#fff', borderRadius: 12, fontWeight: 500, border: 'none', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#943d34' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#b5493f' }}
+            >Run Detection</button>
           </div>
         </div>
       )}
 
-      {loading && <div className="flex-1 flex items-center justify-center"><Loader2 size={40} className="animate-spin text-red-500 mx-auto" /></div>}
+      {loading && <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={40} className="animate-spin" color="#b5493f" style={{ margin: '0 auto' }} /></div>}
 
       {result && !loading && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg shrink-0"><Shield size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.totalCount}</p></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #5c6567' }}>
+              <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><Shield size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Total</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.totalCount}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-red-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-red-50 text-red-600 rounded-lg shrink-0"><AlertTriangle size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">High</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.highRiskCount}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #b5493f' }}>
+              <div style={{ padding: 10, background: '#fef2f2', color: '#b5493f', borderRadius: 8, flexShrink: 0 }}><AlertTriangle size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>High</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.highRiskCount}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0"><AlertCircle size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Medium</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.mediumRiskCount}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #d99a3f' }}>
+              <div style={{ padding: 10, background: '#fbead0', color: '#d99a3f', borderRadius: 8, flexShrink: 0 }}><AlertCircle size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Medium</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.mediumRiskCount}</p></div>
             </div>
-            <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-50 transition-all duration-200">
-              <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg shrink-0"><CheckCircle2 size={20} /></div>
-              <div className="min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Low</p><p className="text-lg md:text-xl font-semibold text-slate-900">{result.lowRiskCount}</p></div>
+            <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #5c6567' }}>
+              <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><CheckCircle2 size={20} /></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Low</p><p style={{ fontSize: 18, fontWeight: 600, color: '#23282A', margin: 0 }}>{result.lowRiskCount}</p></div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200">
-            <div className="p-3 border-b border-slate-100 font-semibold text-sm text-slate-700">Details</div>
-            <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+          <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <div style={{ padding: 12, borderBottom: '1px solid #e4ddd1', fontWeight: 600, fontSize: 13, color: '#23282A' }}>Details</div>
+            <div style={{ maxHeight: 384, overflowY: 'auto' }}>
               {result.anomalies.map((a: any, i: number) => (
-                <div key={i} className="p-3 flex items-start gap-3">
-                  <div className={`mt-0.5 p-1 rounded-full ${a.severity === 'critical' ? 'bg-red-100 text-red-500' : a.severity === 'high' ? 'bg-orange-100 text-orange-500' : 'bg-amber-100 text-amber-500'}`}><AlertCircle size={14} /></div>
-                  <div className="flex-1"><div className="text-sm font-medium text-slate-700">{a.description}</div><div className="text-xs text-slate-400 mt-0.5">{a.category} · {(a.risk_score * 100).toFixed(0)}% risk</div></div>
-                  <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${a.severity === 'critical' ? 'bg-red-50 text-red-600' : a.severity === 'high' ? 'bg-orange-50 text-orange-600' : 'bg-amber-50 text-amber-600'}`}>{a.severity}</div>
+                <div key={i} style={{ padding: 12, display: 'flex', alignItems: 'flex-start', gap: 12, borderBottom: i < result.anomalies.length - 1 ? '1px solid #e4ddd1' : 'none' }}>
+                  <div style={{ marginTop: 2, padding: 4, borderRadius: '50%', background: a.severity === 'critical' ? '#fef2f2' : a.severity === 'high' ? '#fbead0' : '#fbead0', color: a.severity === 'critical' ? '#b5493f' : a.severity === 'high' ? '#d99a3f' : '#d99a3f' }}><AlertCircle size={14} /></div>
+                  <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 500, color: '#23282A' }}>{a.description}</div><div style={{ fontSize: 11, color: '#5c6567', marginTop: 2 }}>{a.category} · {(a.risk_score * 100).toFixed(0)}% risk</div></div>
+                  <div style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 9999, background: a.severity === 'critical' ? '#fef2f2' : a.severity === 'high' ? '#fbead0' : '#fbead0', color: a.severity === 'critical' ? '#b5493f' : a.severity === 'high' ? '#d99a3f' : '#d99a3f' }}>{a.severity}</div>
                 </div>
               ))}
             </div>
           </div>
-          <button onClick={runDetection} className="text-sm text-red-500 hover:text-red-700 font-medium">Re-run</button>
+          <button onClick={runDetection} style={{ fontSize: 13, color: '#b5493f', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#943d34' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#b5493f' }}
+          >Re-run</button>
         </div>
       )}
     </div>

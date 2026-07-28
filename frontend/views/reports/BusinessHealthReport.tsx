@@ -8,6 +8,17 @@ import { useInventory } from '../../context/InventoryContext';
 import { generateBusinessHealthReport } from '../../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 
+const teal = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const btn: React.CSSProperties = { fontFamily: "'Inter',sans-serif", fontSize: 13, fontWeight: 600, borderRadius: 9, cursor: 'pointer', border: `1.4px solid transparent`, padding: '9px 18px', display: 'inline-flex', alignItems: 'center', gap: 7, transition: 'all .15s ease' };
+const card: React.CSSProperties = { background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,.04)' };
+
 const BusinessHealthReport: React.FC = () => {
     const { notify, companyConfig } = useAuth();
     const { sales, customers } = useSales();
@@ -39,121 +50,97 @@ const BusinessHealthReport: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-center justify-between">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, animation: 'fadeIn .3s ease', padding: 24, fontFamily: "'Inter',sans-serif", fontSize: 13, color: ink }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Business Health Intelligence</h2>
-                    <p className="text-sm text-slate-500 font-medium">AI-powered strategic analysis and financial diagnostic report</p>
+                    <h2 style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0, letterSpacing: -0.02 }}>Business Health Intelligence</h2>
+                    <p style={{ fontSize: 13, color: inkSoft, fontWeight: 500, margin: '4px 0 0' }}>AI-powered strategic analysis and financial diagnostic report</p>
                 </div>
-                
                 <button
                     onClick={handleGenerateReport}
                     disabled={isLoading}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
-                        isLoading 
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
+                    style={{
+                        ...btn,
+                        background: isLoading ? hairline : `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                        color: isLoading ? inkSoft : '#fff',
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        boxShadow: isLoading ? 'none' : `0 6px 16px -6px rgba(15,84,76,.55)`
+                    }}
+                    onMouseEnter={e => { if (!isLoading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}}
+                    onMouseLeave={e => { if (!isLoading) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}}
                 >
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="animate-spin" size={16} />
-                            Analyzing...
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles size={16} />
-                            {report ? 'Regenerate' : 'Generate Report'}
-                        </>
-                    )}
+                    {isLoading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Analyzing...</> : <><Sparkles size={16} /> {report ? 'Regenerate' : 'Generate Report'}</>}
                 </button>
             </div>
 
             {!report && !isLoading && (
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
-                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                        <Activity className="text-blue-500" size={32} />
+                <div style={{ ...card, padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                    <div style={{ width: 64, height: 64, background: teal[50], borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                        <Activity style={{ color: teal[500] }} size={32} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2">Ready for Strategic Analysis</h3>
-                    <p className="text-slate-500 max-w-md mb-6">
-                        Our AI will analyze your financial statements, sales velocity, and inventory levels to provide a comprehensive health diagnostic.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                        <div className="bg-slate-50 p-4 rounded-xl text-left border border-slate-100">
-                            <TrendingUp className="text-emerald-500 mb-2" size={20} />
-                            <h4 className="font-bold text-sm text-slate-800">Growth Trends</h4>
-                            <p className="text-xs text-slate-500">Revenue and expense velocity analysis.</p>
-                        </div>
-                        <div className="bg-slate-50 p-4 rounded-xl text-left border border-slate-100">
-                            <AlertTriangle className="text-amber-500 mb-2" size={20} />
-                            <h4 className="font-bold text-sm text-slate-800">Risk Mitigation</h4>
-                            <p className="text-xs text-slate-500">Identify stockouts and cash flow gaps.</p>
-                        </div>
-                        <div className="bg-slate-50 p-4 rounded-xl text-left border border-slate-100">
-                            <FileText className="text-blue-500 mb-2" size={20} />
-                            <h4 className="font-bold text-sm text-slate-800">Action Plan</h4>
-                            <p className="text-xs text-slate-500">3-5 strategic steps for improvement.</p>
-                        </div>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, color: ink, margin: '0 0 8px' }}>Ready for Strategic Analysis</h3>
+                    <p style={{ color: inkSoft, maxWidth: 448, marginBottom: 24 }}>Our AI will analyze your financial statements, sales velocity, and inventory levels to provide a comprehensive health diagnostic.</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, width: '100%' }}>
+                        {[
+                            { icon: TrendingUp, color: teal[500], title: 'Growth Trends', desc: 'Revenue and expense velocity analysis.' },
+                            { icon: AlertTriangle, color: amber[500], title: 'Risk Mitigation', desc: 'Identify stockouts and cash flow gaps.' },
+                            { icon: FileText, color: teal[500], title: 'Action Plan', desc: '3-5 strategic steps for improvement.' },
+                        ].map(item => (
+                            <div key={item.title} style={{ background: teal[50], padding: 16, borderRadius: 12, textAlign: 'left', border: `1.4px solid ${teal[100]}` }}>
+                                <item.icon style={{ color: item.color, marginBottom: 8 }} size={20} />
+                                <h4 style={{ fontWeight: 700, fontSize: 13, color: ink, margin: 0 }}>{item.title}</h4>
+                                <p style={{ fontSize: 12, color: inkSoft, margin: '4px 0 0' }}>{item.desc}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
 
             {isLoading && (
-                <div className="space-y-6">
-                    <div className="h-10 bg-slate-100 rounded-xl animate-pulse w-3/4"></div>
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="h-24 bg-slate-50 rounded-xl animate-pulse"></div>
-                        <div className="h-24 bg-slate-50 rounded-xl animate-pulse"></div>
-                        <div className="h-24 bg-slate-50 rounded-xl animate-pulse"></div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    <div style={{ height: 40, background: hairline, borderRadius: 12, width: '75%', animation: 'pulse 1.5s ease infinite' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                        {[1, 2, 3].map(i => <div key={i} style={{ height: 96, background: teal[50], borderRadius: 12, animation: 'pulse 1.5s ease infinite' }} />)}
                     </div>
-                    <div className="h-48 bg-slate-50 rounded-xl animate-pulse"></div>
+                    <div style={{ height: 192, background: teal[50], borderRadius: 12, animation: 'pulse 1.5s ease infinite' }} />
                 </div>
             )}
 
             {report && !isLoading && (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="bg-slate-900 p-4 flex justify-between items-center text-white">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-blue-500/20 p-2 rounded-lg">
-                                <Sparkles className="text-blue-300" size={18} />
+                <div style={{ ...card, overflow: 'hidden' }}>
+                    <div style={{ background: teal[800], padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ background: 'rgba(31,133,119,.2)', padding: 8, borderRadius: 9 }}>
+                                <Sparkles style={{ color: teal[200] }} size={18} />
                             </div>
                             <div>
-                                <h3 className="font-bold text-sm uppercase tracking-widest">AI Strategic Diagnostic</h3>
-                                <p className="text-[10px] text-slate-400 mt-0.5">Report Generated on {new Date().toLocaleDateString()}</p>
+                                <h3 style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.1, margin: 0 }}>AI Strategic Diagnostic</h3>
+                                <p style={{ fontSize: 10, color: teal[100], margin: '2px 0 0' }}>Report Generated on {new Date().toLocaleDateString()}</p>
                             </div>
                         </div>
-                        <button 
-                            onClick={handlePrint}
-                            className="px-3 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors flex items-center gap-2"
-                        >
+                        <button onClick={handlePrint} style={{ ...btn, background: teal[500], color: '#fff', padding: '8px 12px', fontSize: 12 }}
+                            onMouseEnter={e => { e.currentTarget.style.background = teal[600]; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = teal[500]; }}>
                             <Printer size={16} />
-                            <span className="text-xs font-semibold">Print</span>
+                            <span style={{ fontSize: 12, fontWeight: 600 }}>Print</span>
                         </button>
                     </div>
-                    
-                    <div className="p-6 prose prose-slate max-w-none">
-                        <ReactMarkdown 
+                    <div style={{ padding: 24, fontSize: 13, color: ink, lineHeight: 1.6 }}>
+                        <ReactMarkdown
                             components={{
-                                h1: ({node, ...props}: any) => <h1 className="text-2xl font-black text-slate-800 mb-4" {...props} />,
-                                h2: ({node, ...props}: any) => <h2 className="text-lg font-bold text-slate-700 border-b border-slate-100 pb-2 mt-6 mb-3" {...props} />,
-                                h3: ({node, ...props}: any) => <h3 className="text-base font-bold text-slate-600 mt-4 mb-2" {...props} />,
-                                p: ({node, ...props}: any) => <p className="text-slate-600 leading-relaxed mb-3" {...props} />,
-                                ul: ({node, ...props}: any) => <ul className="space-y-1 mb-4" {...props} />,
-                                li: ({node, ...props}: any) => (
-                                    <li className="flex items-start gap-2 text-slate-600">
-                                        <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                                        <span>{props.children}</span>
-                                    </li>
-                                ),
-                                strong: ({node, ...props}: any) => <strong className="font-bold text-slate-800" {...props} />,
-                            }}
-                        >
+                                h1: ({ node, ...props }: any) => <h1 style={{ fontSize: 22, fontWeight: 900, color: ink, marginBottom: 16 }} {...props} />,
+                                h2: ({ node, ...props }: any) => <h2 style={{ fontSize: 18, fontWeight: 700, color: teal[800], borderBottom: `1.4px solid ${teal[100]}`, paddingBottom: 8, marginTop: 24, marginBottom: 12 }} {...props} />,
+                                h3: ({ node, ...props }: any) => <h3 style={{ fontSize: 15, fontWeight: 700, color: teal[700], marginTop: 16, marginBottom: 8 }} {...props} />,
+                                p: ({ node, ...props }: any) => <p style={{ color: inkSoft, lineHeight: 1.7, marginBottom: 12 }} {...props} />,
+                                ul: ({ node, ...props }: any) => <ul style={{ marginBottom: 16 }} {...props} />,
+                                li: ({ node, ...props }: any) => <li style={{ display: 'flex', alignItems: 'flex-start', gap: 8, color: inkSoft }}><div style={{ marginTop: 6, width: 6, height: 6, borderRadius: '50%', background: teal[500], flexShrink: 0 }} /><span>{props.children}</span></li>,
+                                strong: ({ node, ...props }: any) => <strong style={{ fontWeight: 700, color: ink }} {...props} />,
+                            }}>
                             {report}
                         </ReactMarkdown>
                     </div>
-
-                    <div className="bg-slate-50 p-4 border-t border-slate-100 flex justify-center">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <div style={{ background: teal[50], padding: 16, borderTop: `1.4px solid ${teal[100]}`, display: 'flex', justifyContent: 'center' }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
                             <ShieldCheck size={12} /> Prime ERP AI Intelligence
                         </p>
                     </div>

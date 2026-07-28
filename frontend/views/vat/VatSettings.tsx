@@ -4,161 +4,110 @@ import { useFinanceStore } from '../../stores/financeStore';
 import { VATConfig } from '../../types';
 import { Save } from 'lucide-react';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1';
+
 export const VatSettings: React.FC = () => {
     const { config, updateConfig, isLoading } = useVatStore();
     const { accounts, fetchFinanceData } = useFinanceStore();
     const [localConfig, setLocalConfig] = useState<VATConfig>(config);
     const [isDirty, setIsDirty] = useState(false);
 
-    useEffect(() => {
-        fetchFinanceData();
-    }, []);
+    useEffect(() => { fetchFinanceData(); }, []);
+    useEffect(() => { setLocalConfig(config); }, [config]);
 
-    useEffect(() => {
-        setLocalConfig(config);
-    }, [config]);
+    const handleChange = (field: keyof VATConfig, value: any) => { setLocalConfig(prev => ({ ...prev, [field]: value })); setIsDirty(true); };
 
-    const handleChange = (field: keyof VATConfig, value: any) => {
-        setLocalConfig(prev => ({ ...prev, [field]: value }));
-        setIsDirty(true);
+    const handleSave = async () => { await updateConfig(localConfig); setIsDirty(false); };
+
+    const liabAccts = accounts.filter(a => a.type === 'Liability');
+    const assetAccts = accounts.filter(a => a.type === 'Asset');
+
+    const inputStyle: React.CSSProperties = {
+        width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+        color: ink, background: paper,
+        border: `1.4px solid ${hairline}`, borderRadius: 9,
+        padding: '9px 12px', outline: 'none', transition: 'border-color .15s ease'
     };
-
-    const handleSave = async () => {
-        await updateConfig(localConfig);
-        setIsDirty(false);
+    const selectStyle: React.CSSProperties = {
+        ...inputStyle, appearance: 'none',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center',
+        paddingRight: 30, cursor: 'pointer'
     };
-
-    // Filter for liability/asset accounts
-    const liabilityAccounts = accounts.filter(a => a.type === 'Liability');
-    const assetAccounts = accounts.filter(a => a.type === 'Asset');
+    const labelStyle: React.CSSProperties = {
+        display: 'block', fontSize: 12, fontWeight: 700, color: inkSoft,
+        textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6
+    };
 
     return (
-        <div className="bg-white p-[24px] rounded-[1.5rem] border border-slate-200 shadow-sm">
-            <h2 className="font-semibold text-slate-800 tracking-tighter text-[16px] mb-6">VAT settings</h2>
-
-            <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="prime-card" style={{ background: paper, padding: 24, borderRadius: 14, border: `1.4px solid ${hairline}` }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: ink, margin: '0 0 24px' }}>VAT settings</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div className="prime-label" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                     <div>
-                        <label className="block text-[12px] font-bold text-slate-500 tracking-wide mb-1">Standard rate (%)</label>
-                        <input
-                            id="standard-rate"
-                            name="standard_rate"
-                            type="number"
-                            value={localConfig.rate}
-                            onChange={(e) => handleChange('rate', parseFloat(e.target.value))}
-                            className="w-full border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <p className="text-[11px] text-slate-400 mt-1">Malawi standard rate: 17.5%</p>
+                        <label style={labelStyle}>Standard rate (%)</label>
+                        <input className="prime-input" type="number" value={localConfig.rate} onChange={(e) => handleChange('rate', parseFloat(e.target.value))} style={inputStyle} />
+                        <p style={{ fontSize: 11, color: inkSoft, marginTop: 4 }}>Malawi standard rate: 17.5%</p>
                     </div>
-
                     <div>
-                        <label className="block text-[12px] font-bold text-slate-500 tracking-wide mb-1">Registration number (TPIN)</label>
-                        <input
-                            id="registration-number"
-                            name="registration_number"
-                            type="text"
-                            value={localConfig.registrationNumber || ''}
-                            onChange={(e) => handleChange('registrationNumber', e.target.value)}
-                            className="w-full border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="e.g. 100012345"
-                        />
+                        <label style={labelStyle}>Registration number (TPIN)</label>
+                        <input className="prime-input" type="text" value={localConfig.registrationNumber || ''} onChange={(e) => handleChange('registrationNumber', e.target.value)} style={inputStyle} placeholder="e.g. 100012345" />
                     </div>
-
                     <div>
-                        <label className="block text-[12px] font-bold text-slate-500 tracking-wide mb-1">Filing frequency</label>
-                        <select
-                            id="filing-frequency"
-                            name="filing_frequency"
-                            value={localConfig.filingFrequency}
-                            onChange={(e) => handleChange('filingFrequency', e.target.value)}
-                            className="w-full border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <label style={labelStyle}>Filing frequency</label>
+                        <select className="prime-select" value={localConfig.filingFrequency} onChange={(e) => handleChange('filingFrequency', e.target.value)} style={selectStyle}>
                             <option value="Monthly">Monthly</option>
                             <option value="Quarterly">Quarterly</option>
                             <option value="Annually">Annually</option>
                         </select>
                     </div>
-
                     <div>
-                        <label className="block text-[12px] font-bold text-slate-500 tracking-wide mb-1">Default tax category</label>
-                        <select
-                            id="default-tax-category"
-                            name="default_tax_category"
-                            value={localConfig.defaultTaxCategory || 'Standard'}
-                            onChange={(e) => handleChange('defaultTaxCategory', e.target.value)}
-                            className="w-full border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <label style={labelStyle}>Default tax category</label>
+                        <select className="prime-select" value={localConfig.defaultTaxCategory || 'Standard'} onChange={(e) => handleChange('defaultTaxCategory', e.target.value)} style={selectStyle}>
                             <option value="Standard">Standard rate</option>
                             <option value="Zero">Zero rated</option>
                             <option value="Exempt">Exempt</option>
                         </select>
                     </div>
                 </div>
-
-                <h3 className="font-semibold text-slate-800 tracking-tighter text-[16px] mt-6 mb-2 pb-2 border-b border-slate-100">GL account mapping</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: ink, margin: '20px 0 8px', paddingBottom: 8, borderBottom: `1px solid ${hairline}` }}>GL account mapping</h3>
+                <div className="prime-label" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                     <div>
-                        <label className="block text-[12px] font-bold text-slate-500 tracking-wide mb-1">Output tax account (collected)</label>
-                        <select
-                            id="output-tax-account"
-                            name="output_tax_account"
-                            value={localConfig.outputTaxAccount || ''}
-                            onChange={(e) => handleChange('outputTaxAccount', e.target.value)}
-                            className="w-full border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <label style={labelStyle}>Output tax account (collected)</label>
+                        <select className="prime-select" value={localConfig.outputTaxAccount || ''} onChange={(e) => handleChange('outputTaxAccount', e.target.value)} style={selectStyle}>
                             <option value="">Select liability account</option>
-                            {liabilityAccounts.map(a => (
-                                <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
-                            ))}
+                            {liabAccts.map(a => (<option key={a.id} value={a.id}>{a.code} - {a.name}</option>))}
                         </select>
-                        <p className="text-[11px] text-slate-400 mt-1">Account for VAT collected on sales</p>
+                        <p style={{ fontSize: 11, color: inkSoft, marginTop: 4 }}>Account for VAT collected on sales</p>
                     </div>
-
                     <div>
-                        <label className="block text-[12px] font-bold text-slate-500 tracking-wide mb-1">Input tax account (paid)</label>
-                        <select
-                            id="input-tax-account"
-                            name="input_tax_account"
-                            value={localConfig.inputTaxAccount || ''}
-                            onChange={(e) => handleChange('inputTaxAccount', e.target.value)}
-                            className="w-full border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <label style={labelStyle}>Input tax account (paid)</label>
+                        <select className="prime-select" value={localConfig.inputTaxAccount || ''} onChange={(e) => handleChange('inputTaxAccount', e.target.value)} style={selectStyle}>
                             <option value="">Select asset account</option>
-                            {assetAccounts.map(a => (
-                                <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
-                            ))}
+                            {assetAccts.map(a => (<option key={a.id} value={a.id}>{a.code} - {a.name}</option>))}
                         </select>
-                        <p className="text-[11px] text-slate-400 mt-1">Account for VAT paid on purchases</p>
+                        <p style={{ fontSize: 11, color: inkSoft, marginTop: 4 }}>Account for VAT paid on purchases</p>
                     </div>
-
                     <div>
-                        <label className="block text-[12px] font-bold text-slate-500 tracking-wide mb-1">Market adjustment account</label>
-                        <select
-                            id="market-adjustment-account"
-                            name="market_adjustment_account"
-                            value={localConfig.marketAdjustmentAccount || ''}
-                            onChange={(e) => handleChange('marketAdjustmentAccount', e.target.value)}
-                            className="w-full border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <label style={labelStyle}>Market adjustment account</label>
+                        <select className="prime-select" value={localConfig.marketAdjustmentAccount || ''} onChange={(e) => handleChange('marketAdjustmentAccount', e.target.value)} style={selectStyle}>
                             <option value="">Select revenue/other account</option>
-                            {accounts.filter(a => a.type === 'Revenue').map(a => (
-                                <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
-                            ))}
+                            {accounts.filter(a => a.type === 'Revenue').map(a => (<option key={a.id} value={a.id}>{a.code} - {a.name}</option>))}
                         </select>
-                        <p className="text-[11px] text-slate-400 mt-1">Account for tracking market adjustments</p>
+                        <p style={{ fontSize: 11, color: inkSoft, marginTop: 4 }}>Account for tracking market adjustments</p>
                     </div>
                 </div>
-
-                <div className="mt-8 flex justify-end">
-                    <button
-                        onClick={handleSave}
-                        disabled={!isDirty || isLoading}
-                        className={`px-6 py-2 rounded-xl font-bold text-white transition-colors flex items-center gap-2
-                            ${isDirty ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-400 cursor-not-allowed'}`}
-                    >
-                        <Save size={16} />
-                        {isLoading ? 'Saving...' : 'Save configuration'}
-                    </button>
+                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+                    <button className="prime-btn" onClick={handleSave} disabled={!isDirty || isLoading}
+                        style={{
+                            padding: '8px 20px', borderRadius: 9, fontWeight: 700, color: '#fff', border: 'none', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 8, transition: 'all .15s ease',
+                            background: isDirty ? t[500] : inkSoft
+                        }}
+                        onMouseEnter={e => { if (isDirty) e.currentTarget.style.background = t[700]; }}
+                        onMouseLeave={e => { if (isDirty) e.currentTarget.style.background = t[500]; }}
+                    ><Save size={16} /> {isLoading ? 'Saving...' : 'Save configuration'}</button>
                 </div>
             </div>
         </div>

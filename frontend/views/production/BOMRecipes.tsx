@@ -10,6 +10,10 @@ import { dbService } from '../../services/db';
 import { repriceMasterInventoryFromAdjustments } from '../../services/masterInventoryPricingService';
 import { useConfirmDialog } from '../../components/ConfirmDialog';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 const BOMRecipes: React.FC = () => {
     const { inventory } = useInventory();
     const { notify, companyConfig, updateCompanyConfig, addAuditLog } = useAuth();
@@ -135,50 +139,50 @@ const BOMRecipes: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-rose-50 text-rose-600 rounded-lg">
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#FEFDFB', borderRadius: '16px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ padding: '8px', background: '#fef2f2', color: '#b5493f', borderRadius: '10px' }}>
                         <FileText size={24} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900">BOM Recipes</h2>
-                        <p className="text-sm text-slate-500">Manage production Bill of Materials and cost structures</p>
+                        <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#23282A' }}>BOM Recipes</h2>
+                        <p style={{ fontSize: '13px', color: '#5c6567' }}>Manage production Bill of Materials and cost structures</p>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                <div className="space-y-6">
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+                <div style={{ marginTop: '24px' }}>
                     {editingTemplate ? (
-                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 animate-in fade-in slide-in-from-top-4">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-slate-900">{editingTemplate.id ? 'Edit BOM Recipe' : 'New BOM Recipe'}</h3>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setEditingTemplate(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-all">Cancel</button>
-                                    <button onClick={handleSaveTemplate} className="flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all">
+                        <div style={{ background: '#eef7f6', borderRadius: '16px', padding: '24px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                <h3 style={{ fontWeight: 700, fontSize: '16px', color: '#23282A' }}>{editingTemplate.id ? 'Edit BOM Recipe' : 'New BOM Recipe'}</h3>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button onClick={() => setEditingTemplate(null)} style={{ paddingLeft: '16px', paddingTop: '8px', fontSize: '13px', fontWeight: 500, color: '#5c6567', borderRadius: '12px', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>Cancel</button>
+                                    <button onClick={handleSaveTemplate} style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '24px', paddingTop: '8px', background: '#b5493f', color: '#fff', borderRadius: '12px', fontSize: '13px', fontWeight: 700, boxShadow: '0 4px 14px 0 rgba(181,73,63,.08)', transition: 'all .15s ease', paddingRight: '24px', paddingBottom: '8px' }}>
                                         <Save size={18} /> Save BOM Recipe
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px', marginBottom: '32px' }}>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Recipe Name</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#23282A', marginBottom: '8px' }}>Recipe Name</label>
                                     <input
                                         type="text"
                                         value={editingTemplate.name || ''}
                                         onChange={e => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
                                         placeholder="e.g. Standard 80-page Book"
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all"
+                                        style={{ width: '100%', paddingLeft: '16px', paddingTop: '8px', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', outline: 'none', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Production Type</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#23282A', marginBottom: '8px' }}>Production Type</label>
                                     <select
                                         value={editingTemplate.type || ''}
                                         onChange={e => setEditingTemplate({ ...editingTemplate, type: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all"
+                                        style={{ width: '100%', paddingLeft: '16px', paddingTop: '8px', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', outline: 'none', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}
                                     >
                                         <option value="">Select Type</option>
                                         <option value="Book">Book</option>
@@ -190,36 +194,36 @@ const BOMRecipes: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                                        <Layers size={18} className="text-rose-600" /> Components & Materials
+                            <div style={{ marginTop: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h4 style={{ fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Layers size={18} style={{ color: '#b5493f' }} /> Components & Materials
                                     </h4>
-                                    <button onClick={addComponent} className="flex items-center gap-1.5 text-rose-600 hover:text-rose-700 font-bold text-sm">
+                                    <button onClick={addComponent} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#b5493f', fontWeight: 700, fontSize: '13px' }}>
                                         <Plus size={18} /> Add Component
                                     </button>
                                 </div>
 
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                                    <table className="w-full text-left text-sm">
-                                        <thead className="bg-slate-50 border-b border-slate-100">
+                                <div style={{ background: '#FEFDFB', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', overflow: 'hidden' }}>
+                                    <table style={{ width: '100%', textAlign: 'left', fontSize: '13px' }}>
+                                        <thead style={{ background: '#eef7f6', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
                                             <tr>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Material / Item</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Formula</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Unit</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Cost/Unit</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700">Mode</th>
-                                                <th className="px-4 py-3 font-bold text-slate-700 w-20"></th>
+                                                <th style={{ paddingLeft: '16px', paddingTop: '12px', fontWeight: 700, color: '#23282A', paddingRight: '16px', paddingBottom: '12px' }}>Material / Item</th>
+                                                <th style={{ paddingLeft: '16px', paddingTop: '12px', fontWeight: 700, color: '#23282A', paddingRight: '16px', paddingBottom: '12px' }}>Formula</th>
+                                                <th style={{ paddingLeft: '16px', paddingTop: '12px', fontWeight: 700, color: '#23282A', paddingRight: '16px', paddingBottom: '12px' }}>Unit</th>
+                                                <th style={{ paddingLeft: '16px', paddingTop: '12px', fontWeight: 700, color: '#23282A', paddingRight: '16px', paddingBottom: '12px' }}>Cost/Unit</th>
+                                                <th style={{ paddingLeft: '16px', paddingTop: '12px', fontWeight: 700, color: '#23282A', paddingRight: '16px', paddingBottom: '12px' }}>Mode</th>
+                                                <th style={{ paddingLeft: '16px', paddingTop: '12px', fontWeight: 700, color: '#23282A', width: '80px', paddingRight: '16px', paddingBottom: '12px' }}></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody style={{ borderColor: '#e4ddd1' }}>
                                             {editingTemplate.components?.map((comp, idx) => (
                                                 <tr key={idx}>
-                                                    <td className="px-4 py-2">
+                                                    <td style={{ paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
                                                         <select
                                                             value={comp.itemId}
                                                             onChange={e => updateComponent(idx, 'itemId', e.target.value)}
-                                                            className="w-full bg-transparent outline-none focus:text-rose-600"
+                                                            style={{ width: '100%', background: 'transparent', outline: 'none' }}
                                                         >
                                                             <option value="">Select Material</option>
                                                             {inventory
@@ -230,25 +234,25 @@ const BOMRecipes: React.FC = () => {
                                                                 ))}
                                                         </select>
                                                     </td>
-                                                    <td className="px-4 py-2">
+                                                    <td style={{ paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
                                                         <input
                                                             type="text"
                                                             value={comp.formula ?? comp.quantityFormula ?? ''}
                                                             onChange={e => updateComponent(idx, 'formula', e.target.value)}
                                                             placeholder="e.g. quantity * pages / 2"
-                                                            className="w-full bg-transparent outline-none focus:text-rose-600 font-mono text-xs"
+                                                            style={{ width: '100%', background: 'transparent', outline: 'none', fontFamily: '"JetBrains Mono",monospace', fontSize: '11px' }}
                                                         />
                                                     </td>
-                                                    <td className="px-4 py-2">
+                                                    <td style={{ paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
                                                         <input
                                                             type="text"
                                                             value={comp.unit || ''}
                                                             onChange={e => updateComponent(idx, 'unit', e.target.value)}
                                                             placeholder="Unit"
-                                                            className="w-full bg-transparent outline-none focus:text-rose-600 text-xs"
+                                                            style={{ width: '100%', background: 'transparent', outline: 'none', fontSize: '11px' }}
                                                         />
                                                     </td>
-                                                    <td className="px-4 py-2">
+                                                    <td style={{ paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
                                                         <input
                                                             type="number"
                                                             min={0}
@@ -256,21 +260,21 @@ const BOMRecipes: React.FC = () => {
                                                             value={comp.costPerUnit ?? 0}
                                                             onChange={e => updateComponent(idx, 'costPerUnit', Number(e.target.value))}
                                                             placeholder="0.00"
-                                                            className="w-20 bg-transparent outline-none focus:text-rose-600 font-mono text-xs text-right"
+                                                            style={{ width: '80px', background: 'transparent', outline: 'none', fontFamily: '"JetBrains Mono",monospace', fontSize: '11px', textAlign: 'right' }}
                                                         />
                                                     </td>
-                                                    <td className="px-4 py-2">
+                                                    <td style={{ paddingLeft: '16px', paddingTop: '8px', paddingRight: '16px', paddingBottom: '8px' }}>
                                                         <select
                                                             value={comp.consumptionMode || 'UNIT_BASED'}
                                                             onChange={e => updateComponent(idx, 'consumptionMode', e.target.value)}
-                                                            className="bg-transparent outline-none focus:text-rose-600 text-xs"
+                                                            style={{ background: 'transparent', outline: 'none', fontSize: '11px' }}
                                                         >
                                                             <option value="PAGE_BASED">Page</option>
                                                             <option value="UNIT_BASED">Unit</option>
                                                         </select>
                                                     </td>
-                                                    <td className="px-4 py-2 text-right">
-                                                        <button onClick={() => removeComponent(idx)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                                    <td style={{ paddingLeft: '16px', paddingTop: '8px', textAlign: 'right', paddingRight: '16px', paddingBottom: '8px' }}>
+                                                        <button onClick={() => removeComponent(idx)} style={{ color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
                                                             <Trash2 size={16} />
                                                         </button>
                                                     </td>
@@ -278,7 +282,7 @@ const BOMRecipes: React.FC = () => {
                                             ))}
                                             {(!editingTemplate.components || editingTemplate.components.length === 0) && (
                                                 <tr>
-                                                    <td colSpan={6} className="px-4 py-8 text-center text-slate-400 italic">
+                                                    <td colSpan={6} style={{ paddingLeft: '16px', paddingTop: '32px', textAlign: 'center', color: '#5c6567', fontStyle: 'italic', paddingRight: '16px', paddingBottom: '32px' }}>
                                                         No components added. Click "Add Component" to start.
                                                     </td>
                                                 </tr>
@@ -289,30 +293,30 @@ const BOMRecipes: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <div className="relative w-72">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <div style={{ marginTop: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ position: 'relative', width: '288px' }}>
+                                    <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567' }} size={16} />
                                     <input
                                         type="text"
                                         placeholder="Search recipes..."
                                         value={searchTerm}
                                         onChange={e => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all text-sm"
+                                        style={{ width: '100%', paddingLeft: '40px', paddingRight: '16px', paddingTop: '8px', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', outline: 'none', transition: 'all .15s ease', fontSize: '13px', paddingBottom: '8px' }}
                                     />
                                 </div>
                                 <button
                                     onClick={() => setEditingTemplate({ name: '', type: 'Book', components: [], isDefault: false })}
-                                    className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '16px', paddingTop: '8px', background: '#b5493f', color: '#fff', borderRadius: '12px', fontSize: '13px', fontWeight: 700, boxShadow: '0 4px 14px 0 rgba(181,73,63,.08)', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}
                                 >
                                     <Plus size={18} /> Create BOM Recipe
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '16px' }}>
                                 {templates.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase())).map(template => (
-                                    <div key={template.id} className="group bg-white border border-slate-200 p-5 rounded-2xl hover:border-rose-500 hover:shadow-md transition-all">
-                                        <div className="flex justify-between items-start mb-3">
+                                    <div key={template.id} style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', padding: '20px', borderRadius: '16px', transition: 'all .15s ease' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                                             <div>
                                                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${template.type === 'Book' ? 'bg-blue-50 text-blue-600' :
                                                     template.type === 'Exam Sheet' ? 'bg-purple-50 text-purple-600' :
@@ -320,32 +324,32 @@ const BOMRecipes: React.FC = () => {
                                                     }`}>
                                                     {template.type}
                                                 </span>
-                                                <h4 className="font-bold text-slate-900 mt-1">{template.name}</h4>
+                                                <h4 style={{ fontWeight: 700, color: '#23282A', marginTop: '4px' }}>{template.name}</h4>
                                             </div>
-                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => setEditingTemplate(template)} className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors">
+                                            <div style={{ display: 'flex', gap: '4px', opacity: 0.0, transition: 'opacity .15s ease' }}>
+                                                <button onClick={() => setEditingTemplate(template)} style={{ padding: '6px', color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => handleDeleteTemplate(template.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors">
+                                                <button onClick={() => handleDeleteTemplate(template.id)} style={{ padding: '6px', color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-xs text-slate-500">
-                                            <span className="flex items-center gap-1"><Layers size={14} /> {template.components?.length || 0} Items</span>
-                                            <span className="flex items-center gap-1"><Clock size={14} /> Updated {new Date(template.lastUpdated).toLocaleDateString()}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '11px', color: '#5c6567' }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Layers size={14} /> {template.components?.length || 0} Items</span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> Updated {new Date(template.lastUpdated).toLocaleDateString()}</span>
                                         </div>
                                     </div>
                                 ))}
                                 {templates.length === 0 && (
-                                    <div className="col-span-full py-12 flex flex-col items-center justify-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                                        <div className="p-4 bg-white rounded-2xl shadow-sm mb-4">
-                                            <Layers className="text-slate-300" size={32} />
+                                    <div style={{ gridColumn: '1 / -1', paddingTop: '48px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#eef7f6', borderRadius: '24px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', paddingBottom: '48px' }}>
+                                        <div style={{ padding: '16px', background: '#FEFDFB', borderRadius: '16px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', marginBottom: '16px' }}>
+                                            <Layers style={{ color: '#5c6567' }} size={32} />
                                         </div>
-                                        <p className="text-slate-500 font-medium">No BOM recipes found</p>
+                                        <p style={{ color: '#5c6567', fontWeight: 500 }}>No BOM recipes found</p>
                                         <button
                                             onClick={() => setEditingTemplate({ name: '', type: 'Book', components: [], isDefault: false })}
-                                            className="mt-4 text-rose-600 font-bold hover:underline"
+                                            style={{ marginTop: '16px', color: '#b5493f', fontWeight: 700 }}
                                         >
                                             Create your first recipe
                                         </button>

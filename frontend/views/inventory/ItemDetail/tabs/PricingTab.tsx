@@ -3,6 +3,10 @@ import { DollarSign, TrendingUp, TrendingDown, Percent, Shield, Settings } from 
 import type { Item } from '../../../../types';
 import { validateMinimumMarkup, resolveMinimumMarkup } from '../../../../services/pricingValidationService';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: Item;
 }
@@ -19,20 +23,20 @@ export const PricingTab: React.FC<Props> = ({ item }) => {
   const kpis = [
     { label: 'Cost Price', value: costPrice.toFixed(2), icon: <DollarSign size={16} />, accent: false },
     ...(!isRawMaterial ? [{ label: 'Selling Price', value: sellingPrice.toFixed(2), icon: <TrendingUp size={16} />, accent: true }] : []),
-    !isRawMaterial ? { label: 'Profit', value: profit.toFixed(2), color: profit >= 0 ? 'text-emerald-600' : 'text-red-600', icon: <TrendingDown size={16} /> } : null,
-    !isRawMaterial ? { label: 'Markup', value: `${markup.toFixed(1)}%`, color: markup >= minMarkup ? 'text-emerald-600' : 'text-red-600', icon: <Percent size={16} /> } : null,
+    !isRawMaterial ? { label: 'Profit', value: profit.toFixed(2), color: profit >= 0 ? t[500] : danger, icon: <TrendingDown size={16} /> } : null,
+    !isRawMaterial ? { label: 'Markup', value: `${markup.toFixed(1)}%`, color: markup >= minMarkup ? t[500] : danger, icon: <Percent size={16} /> } : null,
   ].filter(Boolean);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {kpis.map(k => (
-          <div key={k.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{k.label}</span>
-              <span className={k.accent ? 'text-blue-400' : 'text-slate-400'}>{k.icon}</span>
+          <div key={k.label} className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
+              <span style={{ color: k.accent ? t[500] : inkSoft }}>{k.icon}</span>
             </div>
-            <p className={`text-2xl font-bold font-mono ${k.color || (k.accent ? 'text-blue-600' : 'text-slate-900')}`}>
+            <p style={{ fontSize: 24, fontWeight: 700, fontFamily: 'monospace', color: k.color || (k.accent ? t[500] : ink) }}>
               {k.value}
             </p>
           </div>
@@ -40,44 +44,48 @@ export const PricingTab: React.FC<Props> = ({ item }) => {
       </div>
 
       {validation && (
-        <div className={`rounded-xl border p-5 shadow-sm ${
-          validation.valid ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
-        }`}>
-          <div className="flex items-center gap-3 mb-3">
-            <Shield size={20} className={validation.valid ? 'text-emerald-600' : 'text-red-600'} />
+        <div className="prime-card" style={{
+          borderRadius: 12,
+          border: `1.4px solid ${validation.valid ? t[100] : '#fecaca'}`,
+          padding: 20,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+          background: validation.valid ? t[50] : '#fef2f2'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <Shield size={20} style={{ color: validation.valid ? t[500] : danger }} />
             <div>
-              <span className={`text-sm font-semibold ${validation.valid ? 'text-emerald-700' : 'text-red-700'}`}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: validation.valid ? t[600] : danger }}>
                 {validation.valid ? 'Minimum Markup Passed' : 'Below Minimum Markup'}
               </span>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p style={{ fontSize: 12, color: inkSoft, marginTop: 2 }}>
                 Required: {validation.minimumMarkup}% &middot; Actual: {validation.profitMarkup.toFixed(1)}% &middot; Profit: {validation.profit.toFixed(2)}
               </p>
             </div>
           </div>
           {!validation.valid && validation.message && (
-            <p className="text-xs text-red-600 ml-9">{validation.message}</p>
+            <p style={{ fontSize: 12, color: danger, marginLeft: 36 }}>{validation.message}</p>
           )}
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-          <Settings size={14} className="text-slate-400" />
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pricing Configuration</span>
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <div style={{ padding: '14px 20px', background: t[50], borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Settings size={14} style={{ color: inkSoft }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Pricing Configuration</span>
         </div>
-        <div className="p-5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm">
+        <div style={{ padding: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, fontSize: 14 }}>
             <div>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Min Markup</span>
-              <p className="font-semibold text-slate-800">{minMarkup}%</p>
+              <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Min Markup</span>
+              <p style={{ fontWeight: 600, color: ink }}>{minMarkup}%</p>
             </div>
             <div>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Currency</span>
-              <p className="font-semibold text-slate-800">{(item as Item & { currency?: string }).currency || 'KWD'}</p>
+              <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Currency</span>
+              <p style={{ fontWeight: 600, color: ink }}>{(item as Item & { currency?: string }).currency || 'KWD'}</p>
             </div>
             <div>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1">Markup %</span>
-              <p className="font-semibold text-slate-800">{(item as Item & { marginPercent?: number }).marginPercent || 0}%</p>
+              <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Markup %</span>
+              <p style={{ fontWeight: 600, color: ink }}>{(item as Item & { marginPercent?: number }).marginPercent || 0}%</p>
             </div>
           </div>
         </div>

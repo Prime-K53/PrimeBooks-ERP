@@ -14,6 +14,8 @@ import { resolveTransactionPricingSummary } from '../../../utils/pricingBreakdow
 import { Edit2, Trash2, Star, List, LayoutGrid, CheckCircle, Check, Clock, User, Calendar, Box, Eye, Send, Copy, Plus, Phone, ChevronRight, FileText, FileCheck, Briefcase, Mail, MessageCircle, Repeat, XCircle, Archive, History as HistoryIcon, Users, RefreshCw, ArrowUp, ArrowDown, Link as LinkIcon, Paperclip, CalendarClock, AlertTriangle, Download, Truck, MoreVertical, Play, Pause, Package, Globe, DollarSign, TrendingUp, Zap, Target, Share2, ExternalLink, PlayCircle, Coins, Wallet, ShoppingBag, Printer, Search, X } from 'lucide-react';
 import { TableEmptyState } from '../../../components/EmptyState';
 
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1';
+
 export interface ListProps<T> {
     data: T[];
     onView: (item: T) => void;
@@ -399,7 +401,7 @@ export const OrdersList: React.FC<ListProps<Order>> = (props) => {
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1">
                         {(currentItems || []).map((item: Order) => (
-                            <div key={item.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                            <div key={item.id} className="prime-card hover:shadow-md transition-shadow" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, padding: 16 }}>
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
                                         <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{item.orderNumber}</p>
@@ -588,8 +590,8 @@ const GenericCard: React.FC<{ item: any, type: string, onView: any, onEdit: any,
         const cost = item.totalJobCost || item.costEstimate || 0;
         financials = (
             <div className="flex justify-between items-center text-[13px] mt-1">
-                <span className="text-slate-500 font-normal">Value:</span>
-                <span className="font-bold text-slate-800 finance-nums">{currencySymbol} {(cost || 0).toLocaleString()}</span>
+                <span className="font-normal" style={{ color: inkSoft }}>Value:</span>
+                <span className="font-bold finance-nums" style={{ color: ink }}>{currencySymbol} {(cost || 0).toLocaleString()}</span>
             </div>
         );
     }
@@ -607,7 +609,7 @@ const GenericCard: React.FC<{ item: any, type: string, onView: any, onEdit: any,
 
     return (
         <div
-            className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer p-4 flex flex-col h-44 relative overflow-hidden group"
+            className="prime-card hover:shadow-md transition-all cursor-pointer p-4 flex flex-col" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, height: 176, position: 'relative', overflow: 'hidden' }}
             onClick={() => onView(item)}
             onContextMenu={(e) => onContextMenu(e, item.id)}
         >
@@ -616,23 +618,23 @@ const GenericCard: React.FC<{ item: any, type: string, onView: any, onEdit: any,
                     <div className={`p-1.5 rounded-lg ${type === 'Invoice' ? 'bg-blue-100 text-blue-600' : type === 'JobOrder' ? 'bg-purple-100 text-purple-600' : 'bg-amber-100 text-amber-600'}`}>
                         {type === 'Invoice' ? <DollarSign size={14} /> : type === 'JobOrder' ? <Briefcase size={14} /> : <FileText size={14} />}
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500 tracking-tight">{item.id}</span>
+                    <span className="text-[10px] font-bold tracking-tight" style={{ color: inkSoft }}>{item.id}</span>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); onContextMenu(e, item.id); }} className="text-slate-300 hover:text-slate-600 p-1 rounded hover:bg-slate-100">
                     <MoreVertical size={14} />
                 </button>
             </div>
 
-            <h3 className="font-bold text-slate-800 text-[13px] truncate mb-1" title={title}>{title}</h3>
-            <p className="text-[13px] text-slate-500 line-clamp-2 mb-auto leading-relaxed font-normal">{description || 'No description'}</p>
+            <h3 className="font-bold text-[13px] truncate mb-1" title={title} style={{ color: ink }}>{title}</h3>
+            <p className="text-[13px] line-clamp-2 mb-auto leading-relaxed font-normal" style={{ color: inkSoft }}>{description || 'No description'}</p>
 
             {financials}
 
-            <div className="pt-3 border-t border-slate-100 flex justify-between items-center mt-2">
+            <div className="pt-3 flex justify-between items-center mt-2" style={{ borderTop: `1.4px solid ${hairline}` }}>
                 <div className={`text-[13px] flex items-center gap-1 ${timerColor}`}>
                     <Clock size={12} /> {timerText}
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border bg-slate-50 text-slate-600 border-slate-200 tracking-tight`}>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-tight`} style={{ border: `1.4px solid ${hairline}`, background: '#eef7f6', color: inkSoft }}>
                     {item.status}
                 </span>
             </div>
@@ -866,7 +868,7 @@ export const SalesSkeletonLoader: React.FC<{ type: 'table' | 'grid' }> = ({ type
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1 animate-pulse">
             {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 h-44 flex flex-col">
+                <div key={i} className="prime-card p-4 flex flex-col" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, height: 176 }}>
                     <div className="flex justify-between mb-4">
                         <div className="h-6 w-20 bg-slate-100 rounded"></div>
                         <div className="h-4 w-4 bg-slate-100 rounded"></div>

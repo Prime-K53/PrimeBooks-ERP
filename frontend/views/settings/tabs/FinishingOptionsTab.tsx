@@ -95,21 +95,21 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
-      <div className="bg-white rounded-lg border border-[#D4D7DC] p-6 shadow-sm">
+      <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Scissors size={18} className="text-indigo-600" />
-            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Finishing Options Pricing</h3>
+            <Scissors size={18} style={{ color: '#1f8577' }} />
+            <h3 className="text-[11px] font-black text-[#5c6567] uppercase tracking-[0.2em]">Finishing Options Pricing</h3>
           </div>
           <button
             onClick={resetDefaults}
-            className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+            className="px-4 py-2 text-xs font-bold text-[#5c6567] border border-[#e4ddd1] rounded-lg hover:bg-[#eef7f6] transition-all"
           >
             Reset to Defaults
           </button>
         </div>
 
-        <p className="text-sm text-slate-500 mb-6">
+        <p className="text-sm text-[#5c6567] mb-6">
           Set the default price and quantity for each finishing option. Binding, Cover Pages, and Stapling prices
           are auto-calculated from inventory raw material costs. Cutting, Hole Punching, and Folding use manual
           prices with a batch size (per how many sheets).
@@ -123,16 +123,16 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
             return (
               <div
                 key={option.id}
-                className="flex flex-col p-4 bg-[#F4F5F8] rounded-lg border border-[#D4D7DC] group hover:border-indigo-300 transition-all"
+                className="flex flex-col p-4 bg-[#eef7f6] rounded-lg border border-[#e4ddd1] group hover:border-[#a6d9d3] transition-all"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-4">
-                    <div className="p-2.5 bg-white rounded-lg shadow-sm text-indigo-600 border border-slate-100">
+                    <div className="p-2.5 bg-white rounded-lg shadow-sm text-[#1f8577] border border-[#e4ddd1]">
                       {meta?.icon}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800 text-sm">{option.name}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{meta?.desc || option.description}</p>
+                      <p className="font-bold text-[#23282A] text-sm">{option.name}</p>
+                      <p className="text-[10px] text-[#5c6567] mt-0.5">{meta?.desc || option.description}</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer ml-2">
@@ -142,38 +142,38 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
                       checked={option.enabled}
                       onChange={e => updateOption(option.id, 'enabled', e.target.checked)}
                     />
-                    <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-10 h-5 bg-[#e4ddd1] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1f8577]"></div>
                   </label>
                 </div>
                 <div className="flex items-center gap-4">
                   {isBom ? (
                     <>
                       <div className="flex-1">
-                        <p className="text-[10px] text-slate-400 font-medium mb-1">Unit Price (from inventory)</p>
+                        <p className="text-[10px] text-[#5c6567] font-medium mb-1">Unit Price (from inventory)</p>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-slate-400 font-medium">{currency}</span>
+                          <span className="text-xs text-[#5c6567] font-medium">{currency}</span>
                           <input
                             type="number"
                             value={resolveBomPrice(meta?.bomSource)}
                             readOnly
-                            className="w-20 px-2.5 py-1.5 border border-slate-200 rounded-lg text-right text-sm font-bold text-slate-500 bg-slate-100"
+                            className="w-20 px-2.5 py-1.5 border border-[#e4ddd1] rounded-lg text-right text-sm font-bold text-[#5c6567] bg-[#e4ddd1]"
                           />
                         </div>
                       </div>
                       <div className="flex-1">
-                        <p className="text-[10px] text-slate-400 font-medium mb-1">Qty per Copy</p>
+                        <p className="text-[10px] text-[#5c6567] font-medium mb-1">Qty per Copy</p>
                         <input
                           type="number"
                           value={option.quantity ?? 1}
                           onChange={e => updateOption(option.id, 'quantity', Math.max(1, Number(e.target.value) || 1))}
-                          className="w-16 px-2.5 py-1.5 border border-slate-200 rounded-lg text-center text-sm font-bold text-slate-700 bg-white"
+                          className="w-16 px-2.5 py-1.5 border border-[#e4ddd1] rounded-lg text-center text-sm font-bold text-[#23282A] bg-white"
                           min={1}
                           step={1}
                         />
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] text-slate-400 font-medium mb-1">Cost per Copy</p>
-                        <p className="text-sm font-bold text-indigo-600">
+                        <p className="text-[10px] text-[#5c6567] font-medium mb-1">Cost per Copy</p>
+                        <p className="text-sm font-bold text-[#1f8577]">
                           {currency}{(resolveBomPrice(meta?.bomSource) * (option.quantity ?? 1)).toFixed(2)}
                         </p>
                       </div>
@@ -181,26 +181,26 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
                   ) : (
                     <>
                       <div className="flex-1">
-                        <p className="text-[10px] text-slate-400 font-medium mb-1">Price</p>
+                        <p className="text-[10px] text-[#5c6567] font-medium mb-1">Price</p>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-slate-400 font-medium">{currency}</span>
+                          <span className="text-xs text-[#5c6567] font-medium">{currency}</span>
                           <input
                             type="number"
                             value={option.price}
                             onChange={e => updateOption(option.id, 'price', parseFloat(e.target.value) || 0)}
-                            className="w-20 px-2.5 py-1.5 border border-slate-200 rounded-lg text-right text-sm font-bold text-slate-700 bg-white"
+                            className="w-20 px-2.5 py-1.5 border border-[#e4ddd1] rounded-lg text-right text-sm font-bold text-[#23282A] bg-white"
                             min={0}
                             step={0.5}
                           />
                         </div>
                       </div>
                       <div className="flex-1">
-                        <p className="text-[10px] text-slate-400 font-medium mb-1">Per How Many Sheets</p>
+                        <p className="text-[10px] text-[#5c6567] font-medium mb-1">Per How Many Sheets</p>
                         <input
                           type="number"
                           value={option.batchSize ?? 10}
                           onChange={e => updateOption(option.id, 'batchSize', Math.max(1, Number(e.target.value) || 1))}
-                          className="w-16 px-2.5 py-1.5 border border-slate-200 rounded-lg text-center text-sm font-bold text-slate-700 bg-white"
+                          className="w-16 px-2.5 py-1.5 border border-[#e4ddd1] rounded-lg text-center text-sm font-bold text-[#23282A] bg-white"
                           min={1}
                           step={1}
                         />

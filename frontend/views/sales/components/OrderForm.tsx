@@ -1916,6 +1916,11 @@ const handleVariantSelect = async (variant: ProductVariant) => {
         notify(`Other charges calculated: ${currency}${totalAdjAmount.toLocaleString()}`, 'success');
     };
 
+    const scrollStyle = `.order-form-scroll::-webkit-scrollbar { width: 8px; }
+.order-form-scroll::-webkit-scrollbar-track { background: #ede7db; border-radius: 10px; }
+.order-form-scroll::-webkit-scrollbar-thumb { background: #72c0b7; border-radius: 10px; border: 2px solid #ede7db; background-clip: padding-box; }
+.order-form-scroll::-webkit-scrollbar-thumb:hover { background: #3fa294; }`;
+
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 9999,
@@ -1923,12 +1928,14 @@ const handleVariantSelect = async (variant: ProductVariant) => {
             background: 'rgba(15, 23, 42, 0.6)',
             padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: '#23282A',
         }}>
+            <style>{scrollStyle}</style>
             <div style={{
                 width: '100%', maxWidth: 1040,
+                height: 'calc(100vh - 80px)',
                 background: '#FEFDFB', borderRadius: 14,
                 boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
                 display: 'grid', gridTemplateColumns: '266px 1fr',
-                maxHeight: '88vh', overflow: 'hidden', position: 'relative'
+                overflow: 'hidden', position: 'relative'
             }}>
                 <div style={{
                     position: 'absolute', top: 0, left: 0, right: 0, height: 4, zIndex: 10,
@@ -2099,7 +2106,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         </div>
                     )}
 
-                    <div className="flex-1 min-h-0 overflow-y-auto px-[26px] pt-[6px] [scrollbar-width:thin] [scrollbar-color:#72c0b7_#FBF8F2]">
+                    <div className="flex-1 min-h-0 overflow-y-scroll px-[26px] pt-[6px] order-form-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#72c0b7 #ede7db' }}>
 
                         {formData.customerName && customerPanelOpen && (() => {
                             const cust = selectedCustomerObj;

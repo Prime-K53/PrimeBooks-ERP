@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search, Plus, Filter, Download, Phone,
   MapPin, ChevronRight, User, School, Building2, Landmark,
-  Trash2, Edit, ExternalLink,
+  Trash2, Edit, ExternalLink, MoreVertical,
   DollarSign, Clock, CheckCircle, AlertCircle, TrendingUp, AlertTriangle, FileText, Target
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -259,125 +259,91 @@ export const Clients: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6 bg-slate-50/50 min-h-screen font-sans text-[13px] leading-[1.45]">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 min-h-screen font-sans text-[13px] leading-[1.45]" style={{ background: '#FEFDFB' }}>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Clients</h1>
-          <p className="text-slate-500 text-[13px] font-medium">Manage your client relationships and balances</p>
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight" style={{ color: '#0b3e39' }}>Clients</h1>
+          <p className="text-[13px] font-medium" style={{ color: '#5c6567' }}>Manage your client relationships and balances</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/sales-flow/leads')}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-cyan-200 rounded-lg text-cyan-700 font-semibold hover:bg-cyan-50 transition-all shadow-sm text-[13px]"
-          >
-            <Target size={16} />
-            Lead Board
+          <button onClick={() => navigate('/sales-flow/leads')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold transition-all text-[13px]"
+            style={{ background: '#FEFDFB', border: '1.4px solid #a6d9d3', color: '#0f544c' }}>
+            <Target size={16} /> Lead Board
           </button>
-          <button
-            onClick={() => exportToCSV(
-              customers.map(c => ({
-                'Customer ID': c.id,
-                'Full name': c.name,
-                'Billing Address': c.billingAddress || c.address || '',
-                'Phone number': c.phone,
-                'Segment': c.segment,
-                'Shipping Address': c.shippingAddress || '',
-                'Opening Balance': c.balance || 0,
-                'Wallet Balance': c.walletBalance || 0,
-                'Branch Account': c.accountNumber || ''
-              })),
-              'Clients'
-            )}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 font-semibold hover:bg-slate-50 transition-all shadow-sm text-[13px]"
-          >
-            <Download size={16} />
-            Export
+          <button onClick={() => exportToCSV(customers.map(c => ({ 'Customer ID': c.id, 'Full name': c.name, 'Billing Address': c.billingAddress || c.address || '', 'Phone number': c.phone, 'Segment': c.segment, 'Shipping Address': c.shippingAddress || '', 'Opening Balance': c.balance || 0, 'Wallet Balance': c.walletBalance || 0, 'Branch Account': c.accountNumber || '' })), 'Clients')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold transition-all text-[13px] prime-btn-secondary">
+            <Download size={16} /> Export
           </button>
-          <button
-            onClick={handleAddNew}
-            className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 text-[13px]"
-          >
-            <Plus size={18} />
-            New Client
+          <button onClick={handleAddNew} className="prime-btn">
+            <Plus size={18} /> New Client
           </button>
         </div>
       </div>
 
-      {/* Money Bar (QBO Style) */}
+      {/* Money Bar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div
-          onClick={() => setSelectedMetric(selectedMetric === 'Overdue' ? 'All' : 'Overdue')}
-          className={`cursor-pointer transition-all duration-200 bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-rose-500 ${selectedMetric === 'Overdue' ? 'ring-2 ring-rose-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-        >
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg">
-            <AlertTriangle size={20} />
-          </div>
+        <div onClick={() => setSelectedMetric(selectedMetric === 'Overdue' ? 'All' : 'Overdue')}
+          className={`cursor-pointer transition-all duration-200 p-3 md:p-4 rounded-xl flex items-start gap-4 border-l-4 ${selectedMetric === 'Overdue' ? 'ring-2 ring-rose-500 shadow-md scale-[1.01]' : 'hover:opacity-80'}`}
+          style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #b5493f', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+          <div className="p-2.5 rounded-lg" style={{ background: '#fef2f2', color: '#b5493f' }}><AlertTriangle size={20} /></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Overdue</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{(stats.overdueBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: '#5c6567' }}>Overdue</p>
+            <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#23282A' }}>{currency}{(stats.overdueBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
-        <div
-          onClick={() => setSelectedMetric(selectedMetric === 'Open' ? 'All' : 'Open')}
-          className={`cursor-pointer transition-all duration-200 bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-amber-500 ${selectedMetric === 'Open' ? 'ring-2 ring-amber-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-        >
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
-            <Clock size={20} />
-          </div>
+        <div onClick={() => setSelectedMetric(selectedMetric === 'Open' ? 'All' : 'Open')}
+          className={`cursor-pointer transition-all duration-200 p-3 md:p-4 rounded-xl flex items-start gap-4 border-l-4 ${selectedMetric === 'Open' ? 'ring-2 ring-amber-500 shadow-md scale-[1.01]' : 'hover:opacity-80'}`}
+          style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #d99a3f', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+          <div className="p-2.5 rounded-lg" style={{ background: '#fbead0', color: '#d99a3f' }}><Clock size={20} /></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Open Invoices</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{(stats.openInvoicesTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: '#5c6567' }}>Open Invoices</p>
+            <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#23282A' }}>{currency}{(stats.openInvoicesTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
-        <div
-          onClick={() => setSelectedMetric(selectedMetric === 'Paid' ? 'All' : 'Paid')}
-          className={`cursor-pointer transition-all duration-200 bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-emerald-500 ${selectedMetric === 'Paid' ? 'ring-2 ring-emerald-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-        >
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
-            <CheckCircle size={20} />
-          </div>
+        <div onClick={() => setSelectedMetric(selectedMetric === 'Paid' ? 'All' : 'Paid')}
+          className={`cursor-pointer transition-all duration-200 p-3 md:p-4 rounded-xl flex items-start gap-4 border-l-4 ${selectedMetric === 'Paid' ? 'ring-2 ring-emerald-500 shadow-md scale-[1.01]' : 'hover:opacity-80'}`}
+          style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #1f8577', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+          <div className="p-2.5 rounded-lg" style={{ background: '#d3ece9', color: '#1f8577' }}><CheckCircle size={20} /></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Paid (30d)</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{(stats.paidLast30Days || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: '#5c6567' }}>Paid (30d)</p>
+            <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#23282A' }}>{currency}{(stats.paidLast30Days || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
-        <div
-          onClick={() => setSelectedMetric('All')}
-          className={`cursor-pointer transition-all duration-200 bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-blue-500 ${selectedMetric === 'All' ? 'ring-2 ring-blue-500 shadow-md scale-[1.01]' : 'hover:bg-slate-50'}`}
-        >
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-            <User size={20} />
-          </div>
+        <div onClick={() => setSelectedMetric('All')}
+          className={`cursor-pointer transition-all duration-200 p-3 md:p-4 rounded-xl flex items-start gap-4 border-l-4 ${selectedMetric === 'All' ? 'ring-2 ring-teal-500 shadow-md scale-[1.01]' : 'hover:opacity-80'}`}
+          style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #1f8577', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+          <div className="p-2.5 rounded-lg" style={{ background: '#eef7f6', color: '#1f8577' }}><User size={20} /></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total Balance</p>
-            <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{(stats.totalBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: '#5c6567' }}>Total Balance</p>
+            <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#23282A' }}>{currency}{(stats.totalBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden flex-1 flex flex-col">
         {/* Filters & Search */}
-        <div className="p-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/30">
-          <div className="flex flex-1 items-center gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+        <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-50/30 shrink-0 flex-wrap gap-2">
+          <div className="flex flex-1 items-center gap-4 min-w-0">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
               <input
                 type="text"
                 placeholder="Search by name, email or phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-[13px] placeholder:text-slate-400"
+                className="w-full pl-9 pr-3 py-1.5 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 font-normal"
               />
             </div>
 
             {selectedIds.length > 0 && (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
-                <span className="text-[13px] font-semibold text-blue-600 px-2.5 py-1 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 shrink-0">
+                <span className="text-[13px] font-semibold px-2.5 py-1 rounded-lg border" style={{ color: '#0b3e39', background: '#eef7f6', borderColor: '#a6d9d3' }}>
                   {selectedIds.length} Selected
                 </span>
-                <div className="h-5 w-px bg-slate-200 mx-1" />
+                <div className="h-5 w-px mx-1" style={{ background: '#e4ddd1' }} />
                 <select
                   onChange={(e) => {
                     if (e.target.value === 'delete') handleBatchDelete();
@@ -385,7 +351,7 @@ export const Clients: React.FC = () => {
                     else if (e.target.value === 'inactive') handleBatchStatusUpdate('Inactive');
                     e.target.value = '';
                   }}
-                  className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.5px] font-semibold text-slate-700 outline-none hover:border-blue-400 transition-all cursor-pointer"
+                  className="w-auto pl-2 pr-6 py-1 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Batch Actions</option>
                   <option value="active">Make Active</option>
@@ -396,11 +362,11 @@ export const Clients: React.FC = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as 'All' | 'Active' | 'Inactive' | 'Lead')}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-auto pl-2 pr-6 py-1 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="All">All Statuses</option>
               <option value="Active">Active</option>
@@ -414,7 +380,7 @@ export const Clients: React.FC = () => {
             <select
               value={pipelineStageFilter}
               onChange={(e) => setPipelineStageFilter(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-auto pl-2 pr-6 py-1 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="All Stages">All Stages</option>
               <option value="New">New</option>
@@ -425,18 +391,18 @@ export const Clients: React.FC = () => {
               <option value="Lost">Lost</option>
             </select>
             <div className="relative group">
-              <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+              <button className="p-2 rounded-lg transition-all text-slate-400 hover:text-slate-600">
                 <Filter size={18} />
               </button>
-              <div className="absolute right-0 top-full mt-1 w-64 bg-white rounded-xl shadow-xl border border-slate-100 py-3 px-4 z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right">
-                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Advanced Filters</h4>
+              <div className="absolute right-0 top-full mt-1 w-64 rounded-xl shadow-xl py-3 px-4 z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right bg-white border border-slate-200/80">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider mb-3 text-slate-500">Advanced Filters</h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Balance Range</label>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">Balance Range</label>
                     <select
                       value={balanceRange}
                       onChange={(e) => setBalanceRange(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-[12px] outline-none"
+                      className="w-full pl-2 pr-6 py-1.5 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="Any Balance">Any Balance</option>
                       <option value="Over $1,000">Over $1,000</option>
@@ -446,11 +412,11 @@ export const Clients: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Customer Segment</label>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">Customer Segment</label>
                     <select
                       value={customerSegment}
                       onChange={(e) => setCustomerSegment(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-[12px] outline-none"
+                      className="w-full pl-2 pr-6 py-1.5 border border-slate-200/80 rounded-xl text-xs bg-white/50 font-normal focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="All Segments">All Segments</option>
                       <option value="Individual">Individual</option>
@@ -460,12 +426,8 @@ export const Clients: React.FC = () => {
                     </select>
                   </div>
                   <button
-                    onClick={() => {
-                      setBalanceRange('Any Balance');
-                      setCustomerSegment('All Segments');
-
-                    }}
-                    className="w-full py-2 bg-slate-100 text-slate-600 rounded-lg font-bold text-[11px] mt-2 hover:bg-slate-200 transition-colors"
+                    onClick={() => { setBalanceRange('Any Balance'); setCustomerSegment('All Segments'); }}
+                    className="w-full py-2 rounded-lg font-bold text-[11px] mt-2 transition-colors bg-slate-100 text-slate-600 hover:bg-slate-200"
                   >
                     Reset Filters
                   </button>
@@ -476,249 +438,195 @@ export const Clients: React.FC = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left text-[13px]">
-              <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
-                <tr>
-                  <th className="table-header w-10">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0}
-                      onChange={toggleSelectAll}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </th>
-                  <th className="table-header">Client / Company</th>
-                  <th className="table-header">Contact Info</th>
-                  <th className="table-header">Last Transaction</th>
-                  <th className="table-header text-right">Wallet</th>
-                  <th className="table-header text-right">Open Balance</th>
-                  <th className="table-header text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100/50">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-slate-400 italic text-[13px]">Loading clients...</td>
-                  </tr>
-                ) : filteredCustomers.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-slate-400 italic text-[13px]">No clients found matching your criteria.</td>
-                  </tr>
-                ) : (
-                  currentItems.map((customer) => (
+        <div className="flex-1 overflow-auto custom-scrollbar">
+          <table className="w-full min-w-[800px] text-left text-[13px] table-fixed">
+            <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+              <tr>
+                <th className="table-header text-center w-10">
+                  <input type="checkbox"
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    checked={selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0}
+                    onChange={toggleSelectAll} />
+                </th>
+                <th className="table-header text-left w-[10%]">ID</th>
+                <th className="table-header text-left w-[25%]">Name</th>
+                <th className="table-header text-left w-[15%]">Contact Info</th>
+                <th className="table-header text-left w-[12%]">Last Transaction</th>
+                <th className="table-header text-right w-[10%]">Wallet</th>
+                <th className="table-header text-right w-[10%]">Open Balance</th>
+                <th className="table-header text-center w-[18%]">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100/50">
+              {isLoading ? (
+                <tr><td colSpan={8} className="table-body-cell text-center italic py-10">Loading clients...</td></tr>
+              ) : filteredCustomers.length === 0 ? (
+                <tr><td colSpan={8} className="table-body-cell text-center italic py-10">No clients found matching your criteria.</td></tr>
+              ) : (
+                currentItems.map((customer) => {
+                  const isChecked = selectedIds.includes(customer.id);
+                  return (
                     <React.Fragment key={customer.id}>
-                      <tr
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCardCustomer(customer);
-                        }}
-                        className={`hover:bg-blue-50/50 transition-colors group cursor-pointer ${selectedIds.includes(customer.id) ? 'bg-blue-50/30' : ''} ${expandedClientId === customer.id ? 'bg-slate-50' : ''}`}
-                      >
-                      <td className="table-body-cell">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(customer.id)}
-                          onChange={() => toggleSelect(customer.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="table-body-cell">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedClientId(expandedClientId === customer.id ? null : customer.id);
-                            }}
-                            className={`p-1 rounded-md transition-colors ${expandedClientId === customer.id ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:bg-slate-100'}`}
-                          >
-                            <ChevronRight size={14} className={`transition-transform duration-200 ${expandedClientId === customer.id ? 'rotate-90' : ''}`} />
-                          </button>
-                          <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
-                            {customer.segment === 'School Account' ? <School size={14} /> :
-                             customer.segment === 'Institution' ? <Building2 size={14} /> :
-                             customer.segment === 'Government' ? <Landmark size={14} /> :
-                             <User size={14} />}
-                          </div>
-                          <div
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedWorkspaceCustomer(customer);
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold text-slate-900 text-[13px]">{customer.name}</p>
-                              <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold border ${customer.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                  customer.status === 'Lead' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                    customer.status === 'Suspended' ? 'bg-rose-50 text-rose-700 border-rose-100' :
-                                      customer.status === 'VIP' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                                        customer.status === 'Prospect' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                          customer.status === 'Credit Hold' ? 'bg-rose-50 text-rose-700 border-rose-100' :
-                                            'bg-slate-100 text-slate-600 border-slate-200'
+                      <tr onClick={(e) => { e.stopPropagation(); setSelectedCardCustomer(customer); }}
+                        className={`transition-colors cursor-pointer group ${isChecked ? 'bg-blue-50/80' : 'hover:bg-blue-50/50 border-l-4 border-l-transparent'}`}>
+                        <td className="table-body-cell text-center" onClick={(e) => e.stopPropagation()}>
+                          <input type="checkbox"
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            checked={isChecked}
+                            onChange={() => toggleSelect(customer.id)} />
+                        </td>
+                        <td className="table-body-cell font-mono text-slate-500 font-bold truncate">
+                          #{customer.id}
+                        </td>
+                        <td className="table-body-cell">
+                          <div className="flex items-center gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); setExpandedClientId(expandedClientId === customer.id ? null : customer.id); }}
+                              className="p-1 text-slate-400 hover:text-blue-600 rounded transition-all shrink-0">
+                              <ChevronRight size={14} className={`transition-transform duration-200 ${expandedClientId === customer.id ? 'rotate-90' : ''}`} />
+                            </button>
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-slate-100 text-slate-500 border border-slate-200">
+                              {customer.segment === 'School Account' ? <School size={14} /> :
+                               customer.segment === 'Institution' ? <Building2 size={14} /> :
+                               customer.segment === 'Government' ? <Landmark size={14} /> :
+                               <User size={14} />}
+                            </div>
+                            <div className="cursor-pointer hover:opacity-80 transition-opacity min-w-0"
+                              onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }}>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="font-medium text-slate-900 truncate max-w-[140px]">{customer.name}</p>
+                                <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${
+                                  customer.status === 'Active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                                  customer.status === 'Lead' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                                  customer.status === 'Suspended' ? 'bg-rose-100 text-rose-700 border-rose-200' :
+                                  customer.status === 'VIP' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                  customer.status === 'Prospect' ? 'bg-teal-100 text-teal-700 border-teal-200' :
+                                  customer.status === 'Credit Hold' ? 'bg-rose-100 text-rose-700 border-rose-200 line-through' :
+                                  'bg-slate-100 text-slate-600 border-slate-200'
                                 }`}>
-                                {customer.status}
-                              </span>
-                              {customer.creditHold && (
-                                <AlertTriangle size={14} className="text-rose-500 animate-pulse" />
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-[10px] text-slate-500 font-bold tracking-tight uppercase hover:text-blue-600 transition-colors">ID: {customer.id}</p>
-                              {(customer as Customer & Record<string, unknown>).pipelineStage && (
-                                <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-tight border border-blue-100">
-                                  {(customer as Customer & Record<string, unknown>).pipelineStage}
+                                  {customer.status}
                                 </span>
-                              )}
-                              {(customer as Customer & Record<string, unknown>).leadSource && (
-                                <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-bold tracking-tight border border-amber-100">
-                                  {(customer as Customer & Record<string, unknown>).leadSource}
-                                </span>
-                              )}
-                              {customer.subAccounts && customer.subAccounts.length > 0 && (
-                                <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-tight">
-                                  {customer.subAccounts.length} Sub-accounts
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="table-body-cell">
-                        <div className="flex items-center gap-2 text-slate-700 text-[13px] font-medium">
-                          <Phone size={13} className="text-slate-400" />
-                          {customer.phone || 'No phone'}
-                        </div>
-                      </td>
-                      <td className="table-body-cell">
-                        <p className="text-[13px] text-slate-700 font-medium finance-nums">{getLastTransaction(customer.id)}</p>
-                      </td>
-                      <td className="table-body-cell text-right whitespace-nowrap">
-                        <p className={`font-semibold text-[13px] text-emerald-700 finance-nums`}>
-                          {currency}{(customer.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </p>
-                      </td>
-                      <td className="table-body-cell text-right whitespace-nowrap">
-                        <p className={`font-semibold text-[13px] finance-nums ${(customer.balance || 0) > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
-                          {currency}{(customer.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </p>
-                      </td>
-                      <td className="table-body-cell">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(customer);
-                            }}
-                            className="px-2.5 py-1 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded font-bold text-[10px] uppercase tracking-tight transition-all"
-                          >
-                            Edit
-                          </button>
-                          <div className="relative">
-                            {activeMenuId === customer.id && (
-                              <div
-                                onClick={(e) => e.stopPropagation()}
-                                className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-xl border border-slate-100 py-1.5 z-10 animate-in fade-in zoom-in-95 origin-top-right"
-                              >
-                                <button
-                                  onClick={() => {
-                                    setActiveMenuId(null);
-                                    navigate('/sales-flow/invoices', { state: { action: 'create', customer: customer.name } });
-                                  }}
-                                  className="w-full text-left px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                >
-                                  <ExternalLink size={14} className="text-slate-400" />
-                                  Create Invoice
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setActiveMenuId(null);
-                                    navigate('/sales-flow/payments', { state: { action: 'create', customer: customer.name, isTopUp: true } });
-                                  }}
-                                  className="w-full text-left px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                >
-                                  <DollarSign size={14} className="text-slate-400" />
-                                  Add Prepayment
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    // Generate account statement report
-                                    setActiveMenuId(null);
-                                    navigate('/revenue/contacts', { state: { customerId: customer.id } });
-                                  }}
-                                  className="w-full text-left px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                >
-                                  <FileText size={14} className="text-slate-400" />
-                                  Account Statement
-                                </button>
-                                <div className="h-px bg-slate-100 my-1" />
-                                <button
-                                  onClick={() => {
-                                    setActiveMenuId(null);
-                                    handleDelete(customer.id);
-                                  }}
-                                  className="w-full text-left px-3 py-1.5 text-[12.5px] font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
-                                >
-                                  <Trash2 size={14} />
-                                  Delete Client
-                                </button>
                               </div>
-                            )}
+                              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                {(customer as Customer & Record<string, unknown>).pipelineStage && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap bg-blue-100 text-blue-700 border-blue-200">
+                                    {(customer as Customer & Record<string, unknown>).pipelineStage}
+                                  </span>
+                                )}
+                                {(customer as Customer & Record<string, unknown>).leadSource && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap bg-amber-100 text-amber-700 border-amber-200">
+                                    {(customer as Customer & Record<string, unknown>).leadSource}
+                                  </span>
+                                )}
+                                {customer.subAccounts && customer.subAccounts.length > 0 && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap bg-sky-100 text-sky-700 border-sky-200">
+                                    {customer.subAccounts.length} Sub
+                                  </span>
+                                )}
+                                {customer.creditHold && <AlertTriangle size={12} className="text-rose-500 animate-pulse" />}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
+                        <td className="table-body-cell text-slate-500 truncate">
+                          <Phone size={13} className="inline mr-1 text-slate-400" />{customer.phone || 'No phone'}
+                        </td>
+                        <td className="table-body-cell font-medium finance-nums truncate text-slate-700">
+                          {getLastTransaction(customer.id)}
+                        </td>
+                        <td className="table-body-cell text-right font-medium finance-nums truncate text-teal-600">
+                          {currency}{(customer.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className={`table-body-cell text-right font-medium finance-nums truncate ${(customer.balance || 0) > 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                          {currency}{(customer.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="table-body-cell text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex justify-center gap-1 items-center shrink-0">
+                            <button onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }}
+                              className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View Profile">
+                              <ChevronRight size={14} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleEdit(customer); }}
+                              className="p-1.5 text-slate-400 hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit">
+                              <Edit size={14} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); navigate('/sales-flow/invoices', { state: { action: 'create', customer: customer.name } }); }}
+                              className="p-1.5 text-blue-600 hover:text-blue-700 transition-all flex items-center justify-center" title="Create Invoice">
+                              <DollarSign size={16} />
+                            </button>
+                            <button onClick={(e) => handleRowMenuClick(e, customer.id)}
+                              className="p-1.5 text-slate-400 hover:text-slate-600 rounded transition-all" title="More">
+                              <MoreVertical size={14} />
+                            </button>
+                          </div>
+                          {activeMenuId === customer.id && (
+                            <div onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 mt-1 w-44 rounded-lg shadow-xl py-1.5 z-10 animate-in fade-in zoom-in-95 origin-top-right bg-white border border-slate-200/80"
+                              style={{ position: 'absolute' }}>
+                              <button onClick={() => { setActiveMenuId(null); navigate('/sales-flow/payments', { state: { action: 'create', customer: customer.name, isTopUp: true } }); }}
+                                className="w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center gap-2 text-slate-700 hover:bg-slate-50">
+                                <DollarSign size={14} className="text-slate-400" /> Add Prepayment
+                              </button>
+                              <button onClick={() => { setActiveMenuId(null); navigate('/revenue/contacts', { state: { customerId: customer.id } }); }}
+                                className="w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center gap-2 text-slate-700 hover:bg-slate-50">
+                                <FileText size={14} className="text-slate-400" /> Account Statement
+                              </button>
+                              <div className="h-px my-1 bg-slate-100" />
+                              <button onClick={() => { setActiveMenuId(null); handleDelete(customer.id); }}
+                                className="w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center gap-2 text-red-600 hover:bg-slate-50">
+                                <Trash2 size={14} /> Delete Client
+                              </button>
+                            </div>
+                          )}
+                        </td>
                       </tr>
                       {expandedClientId === customer.id && customer.subAccounts && customer.subAccounts.length > 0 && (
-                        <tr className="bg-slate-50/50 border-b border-slate-100 animate-in slide-in-from-top-2 duration-200">
-                          <td className="px-6 py-2"></td>
-                          <td colSpan={6} className="px-6 py-4">
-                          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Sub Accounts</h4>
-                            </div>
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50/30">
-                                  <th className="table-header">Name</th>
-                                  <th className="table-header text-right">Wallet</th>
-                                  <th className="table-header text-right">Balance</th>
-                                  <th className="table-header text-center">Status</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-50">
-                                {customer.subAccounts.map((sub) => (
-                                  <tr key={sub.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="table-body-cell font-semibold text-slate-900">{sub.name}</td>
-                                    <td className="table-body-cell text-right text-emerald-700 font-semibold finance-nums">
-                                      {currency}{(sub.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="table-body-cell text-right text-rose-600 font-semibold finance-nums">
-                                      {currency}{(sub.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="table-body-cell text-center">
-                                      <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold border ${sub.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-600 border-slate-200'
-                                        }`}>
-                                        {sub.status}
-                                      </span>
-                                    </td>
+                        <tr className="animate-in slide-in-from-top-2 duration-200 bg-slate-50/50">
+                          <td></td>
+                          <td colSpan={7} className="px-4 py-3">
+                            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                              <div className="px-3 py-2 flex items-center justify-between bg-slate-50/80 border-b border-slate-200/60">
+                                <h4 className="text-[10px] font-bold uppercase tracking-tight text-slate-500">Sub Accounts</h4>
+                              </div>
+                              <table className="w-full text-left text-[13px]">
+                                <thead>
+                                  <tr>
+                                    <th className="table-header">Name</th>
+                                    <th className="table-header text-right">Wallet</th>
+                                    <th className="table-header text-right">Balance</th>
+                                    <th className="table-header text-center">Status</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100/50">
+                                  {customer.subAccounts.map((sub) => (
+                                    <tr key={sub.id} className="hover:bg-blue-50/50 transition-colors">
+                                      <td className="table-body-cell font-medium text-slate-900">{sub.name}</td>
+                                      <td className="table-body-cell text-right font-medium finance-nums text-teal-600">
+                                        {currency}{(sub.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                      </td>
+                                      <td className="table-body-cell text-right font-medium finance-nums text-red-600">
+                                        {currency}{(sub.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                      </td>
+                                      <td className="table-body-cell text-center">
+                                        <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${sub.status === 'Active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                          {sub.status}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </td>
                         </tr>
                       )}
                     </React.Fragment>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          <Pagination currentPage={currentPage} maxPage={maxPage} totalItems={totalItems} itemsPerPage={itemsPerPage} onNext={next} onPrev={prev} onFirst={first} onLast={last} onItemsPerPageChange={setItemsPerPage} />
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
+        <Pagination currentPage={currentPage} maxPage={maxPage} totalItems={totalItems} itemsPerPage={itemsPerPage} onNext={next} onPrev={prev} onFirst={first} onLast={last} onItemsPerPageChange={setItemsPerPage} />
       </div>
 
       {selectedCardCustomer && (

@@ -2,6 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, Filter, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
 import type { InventoryTransaction } from '../../../../types';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   transactions: InventoryTransaction[];
 }
@@ -34,89 +38,112 @@ export const TransactionsTab: React.FC<Props> = ({ transactions }) => {
 
   if (transactions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <ArrowDown size={48} className="mb-4 opacity-50" />
-        <p className="text-sm font-semibold">No Transactions</p>
-        <p className="text-xs mt-1">No inventory movements recorded for this item.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', color: inkSoft }}>
+        <ArrowDown size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+        <p style={{ fontSize: 14, fontWeight: 600 }}>No Transactions</p>
+        <p style={{ fontSize: 12, marginTop: 4 }}>No inventory movements recorded for this item.</p>
       </div>
     );
   }
 
+  const segStyle = (active: boolean): React.CSSProperties => ({
+    padding: '6px 12px',
+    fontSize: active ? 12 : 12,
+    fontWeight: 600,
+    borderRadius: 6,
+    transition: 'all .15s',
+    border: 'none',
+    cursor: 'pointer',
+    background: active ? paper : 'transparent',
+    color: active ? t[500] : inkSoft,
+    boxShadow: active ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+  });
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="flex bg-slate-100 rounded-lg p-0.5">
-          {(['all', 'in', 'out'] as TxType[]).map(t => (
-            <button key={t} onClick={() => setFilter(t)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${filter === t ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-              {t === 'all' ? 'All' : t === 'in' ? 'Inbound' : 'Outbound'}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', background: t[100], borderRadius: 9, padding: 2 }}>
+          {(['all', 'in', 'out'] as TxType[]).map(t2 => (
+            <button key={t2} onClick={() => setFilter(t2)} className="prime-btn-secondary" style={segStyle(filter === t2)}>
+              {t2 === 'all' ? 'All' : t2 === 'in' ? 'Inbound' : 'Outbound'}
             </button>
           ))}
         </div>
-        <div className="flex bg-slate-100 rounded-lg p-0.5">
+        <div style={{ display: 'flex', background: t[100], borderRadius: 9, padding: 2 }}>
           {(['all', '30d', '90d', '1y'] as const).map(d => (
-            <button key={d} onClick={() => setDateRange(d)}
-              className={`px-2 py-1.5 text-[10px] font-semibold rounded-md transition-all ${dateRange === d ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>
-              {d === 'all' ? 'All' : d === '30d' ? '30d' : d === '90d' ? '90d' : '1y'}
+            <button key={d} onClick={() => setDateRange(d)} className="prime-btn-secondary" style={segStyle(dateRange === d)}>
+              {d === 'all' ? 'All' : d}
             </button>
           ))}
         </div>
-        <span className="text-xs text-slate-400 ml-auto">
+        <span style={{ fontSize: 12, color: inkSoft, marginLeft: 'auto' }}>
           {filtered.length} of {transactions.length} transactions
         </span>
       </div>
 
       {filter !== 'all' && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-3">
-            <TrendingDown size={20} className="text-emerald-500" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ background: t[50], border: `1.4px solid ${t[100]}`, borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <TrendingDown size={20} style={{ color: t[500] }} />
             <div>
-              <span className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">Inbound</span>
-              <p className="text-lg font-bold text-emerald-700">{inboundCount}</p>
+              <span style={{ fontSize: 10, fontWeight: 600, color: t[500], textTransform: 'uppercase', letterSpacing: 0.5 }}>Inbound</span>
+              <p style={{ fontSize: 18, fontWeight: 700, color: t[600] }}>{inboundCount}</p>
             </div>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-3">
-            <TrendingUp size={20} className="text-red-500" />
+          <div style={{ background: '#fef2f2', border: '1.4px solid #fecaca', borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <TrendingUp size={20} style={{ color: danger }} />
             <div>
-              <span className="text-[10px] font-semibold text-red-600 uppercase tracking-wider">Outbound</span>
-              <p className="text-lg font-bold text-red-700">{outboundCount}</p>
+              <span style={{ fontSize: 10, fontWeight: 600, color: danger, textTransform: 'uppercase', letterSpacing: 0.5 }}>Outbound</span>
+              <p style={{ fontSize: 18, fontWeight: 700, color: danger }}>{outboundCount}</p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 14 }}>
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
+              <tr style={{ background: t[50], borderBottom: `1.4px solid ${hairline}` }}>
                 {['Date', 'Type', 'Reference', 'Warehouse', 'Qty In', 'Qty Out', 'Balance', 'Cost'].map(h => (
-                  <th key={h} className={`px-4 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider ${h === 'Qty In' || h === 'Qty Out' || h === 'Balance' || h === 'Cost' ? 'text-right' : 'text-left'}`}>
+                  <th key={h} className="prime-table-header" style={{
+                    padding: '12px 16px',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: inkSoft,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                    textAlign: h === 'Qty In' || h === 'Qty Out' || h === 'Balance' || h === 'Cost' ? 'right' : 'left'
+                  }}>
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((t: any, i: number) => {
-                const qty = t.quantityChange || t.quantity || 0;
+            <tbody style={{}}>
+              {filtered.map((t2: any, i: number) => {
+                const qty = t2.quantityChange || t2.quantity || 0;
                 const isIn = qty > 0;
-                const balance = t.balanceAfter || t.runningBalance || 0;
+                const balance = t2.balanceAfter || t2.runningBalance || 0;
                 return (
-                  <tr key={t.id || i} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 text-xs text-slate-500">{new Date(t.date || t.createdAt || '').toLocaleDateString()}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 text-xs font-semibold ${isIn ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <tr key={t2.id || i} className="prime-table-cell"
+                    style={{ borderTop: `1.4px solid ${hairline}`, transition: 'all .15s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft }}>{new Date(t2.date || t2.createdAt || '').toLocaleDateString()}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: isIn ? t[500] : danger }}>
                         {isIn ? <ArrowDown size={12} /> : <ArrowUp size={12} />}
-                        {t.type || (isIn ? 'Receipt' : 'Issue')}
+                        {t2.type || (isIn ? 'Receipt' : 'Issue')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs font-mono text-slate-500">{t.reference || t.id?.slice(0, 8) || '—'}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{t.warehouseId || '—'}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-emerald-600 font-medium">{isIn ? Math.abs(qty) : '—'}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-red-600 font-medium">{!isIn ? Math.abs(qty) : '—'}</td>
-                    <td className="px-4 py-3 text-right font-mono font-bold tabular-nums">{balance}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-500">{t.unitCost || t.cost || '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, fontFamily: 'monospace', color: inkSoft }}>{t2.reference || t2.id?.slice(0, 8) || '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft }}>{t2.warehouseId || '—'}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: t[500], fontWeight: 500 }}>{isIn ? Math.abs(qty) : '—'}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: danger, fontWeight: 500 }}>{!isIn ? Math.abs(qty) : '—'}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{balance}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: inkSoft }}>{t2.unitCost || t2.cost || '—'}</td>
                   </tr>
                 );
               })}

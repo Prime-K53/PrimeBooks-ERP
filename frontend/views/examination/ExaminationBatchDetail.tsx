@@ -14,6 +14,50 @@ import { ManageSubjectsDialog } from './components/ManageSubjectsDialog';
 import { buildRecurringDraftFromExaminationBatch } from '../../utils/recurringConversion';
 import { currencyService } from '../../services/currencyService';
 
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
+const labelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+};
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  padding: '9px 12px', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  paddingRight: 30,
+  cursor: 'pointer'
+};
+const btnPrimaryStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600,
+  padding: '9px 16px', borderRadius: 9, cursor: 'pointer',
+  border: 'none', color: '#fff',
+  display: 'inline-flex', alignItems: 'center', gap: 6,
+  transition: 'all .15s ease'
+};
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600,
+  padding: '9px 16px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+  display: 'inline-flex', alignItems: 'center', gap: 6,
+  transition: 'all .15s ease'
+};
+
 const ExaminationBatchDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -25,7 +69,6 @@ const ExaminationBatchDetail: React.FC = () => {
   const [isApproving, setIsApproving] = useState(false);
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
 
-  // Dialog States
   const [isAddClassOpen, setIsAddClassOpen] = useState(false);
   const [isManageSubjectsOpen, setIsManageSubjectsOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ExaminationClass | null>(null);
@@ -42,7 +85,6 @@ const ExaminationBatchDetail: React.FC = () => {
   });
   const canOverrideExamCost = checkPermission('examination.cost.override');
 
-  // Confirmation Dialog States
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     title: string;
@@ -57,13 +99,11 @@ const ExaminationBatchDetail: React.FC = () => {
     onConfirm: () => {}
   });
 
-  // Separate state for class removal confirmation
   const [classRemoveConfirm, setClassRemoveConfirm] = useState<{
     open: boolean;
     classId: string | null;
   }>({ open: false, classId: null });
 
-  // Separate state for job ticket conversion
   const [jobTicketConfirm, setJobTicketConfirm] = useState<{
     open: boolean;
   }>({ open: false });
@@ -73,7 +113,6 @@ const ExaminationBatchDetail: React.FC = () => {
     try {
       const data = await examinationBatchService.getBatch(id);
       setBatch(data);
-      // If we have a selected class, update it with fresh data
       if (selectedClass) {
         const updatedClass = data.classes?.find(c => c.id === selectedClass.id);
         if (updatedClass) {
@@ -89,7 +128,6 @@ const ExaminationBatchDetail: React.FC = () => {
 
   useEffect(() => {
     fetchBatch();
-    // Ensure schools are loaded (needed for school name lookup on direct deep-link)
     if (schools.length === 0) {
       loadAllData();
     }
@@ -252,7 +290,6 @@ const ExaminationBatchDetail: React.FC = () => {
       await convertBatchToJobTicket(batch.id);
       navigate('/sales-flow/job-tickets');
     } catch (err) {
-      // Error handled in context
     }
     setJobTicketConfirm({ open: false });
   };
@@ -309,7 +346,6 @@ const ExaminationBatchDetail: React.FC = () => {
       if (error instanceof Error) {
         errorMessage = error.message || 'Failed to add class';
         
-        // Add detailed debug information for batch not found errors
         if (errorMessage.includes('not found') || errorMessage.includes('create the batch first')) {
           debugInfo = `
             
@@ -347,7 +383,6 @@ const ExaminationBatchDetail: React.FC = () => {
     if (!selectedClass || !batch) return;
     try {
       await examinationBatchService.addSubject(selectedClass.id, data);
-      // Auto-recalculate to keep values synchronized, but do not fail the mutation if recalc fails.
       try {
         const updatedBatch = await calculateBatch(batch.id);
         setBatch(updatedBatch);
@@ -362,7 +397,7 @@ const ExaminationBatchDetail: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error adding subject:', error);
-      throw error; // Re-throw to be handled by the dialog
+      throw error;
     }
   };
 
@@ -370,7 +405,6 @@ const ExaminationBatchDetail: React.FC = () => {
     if (!selectedClass || !batch) return;
     try {
       await examinationBatchService.updateSubject(subjectId, data);
-      // Auto-recalculate to keep values synchronized, but do not fail the mutation if recalc fails.
       try {
         const updatedBatch = await calculateBatch(batch.id);
         setBatch(updatedBatch);
@@ -393,7 +427,6 @@ const ExaminationBatchDetail: React.FC = () => {
     if (!selectedClass || !batch) return;
     try {
       await examinationBatchService.deleteSubject(subjectId);
-      // Auto-recalculate to keep values synchronized, but do not fail the mutation if recalc fails.
       try {
         const updatedBatch = await calculateBatch(batch.id);
         setBatch(updatedBatch);
@@ -412,7 +445,6 @@ const ExaminationBatchDetail: React.FC = () => {
     }
   };
 
-  // Helper to ensure numeric values are valid finite numbers (not NaN or Infinity)
   const sanitizeNumeric = (value: number | undefined | null): number => {
     if (value === undefined || value === null) return 0;
     if (!Number.isFinite(value)) return 0;
@@ -435,7 +467,6 @@ const ExaminationBatchDetail: React.FC = () => {
       const classRef = batch.classes?.find(cls => cls.id === classId);
       const learnerCount = Math.max(0, Math.floor(Number(classRef?.number_of_learners) || 0));
 
-      // Sanitize all numeric values to prevent NaN/Infinity from causing 500 errors
       const sanitizedMaterialTotalCost = sanitizeNumeric(totals.material_total_cost);
       const sanitizedAdjustmentTotalCost = sanitizeNumeric(totals.adjustment_total_cost);
       const sanitizedMarketAdjustmentTotal = sanitizeNumeric(totals.market_adjustment_total ?? totals.adjustment_total_cost);
@@ -547,7 +578,6 @@ const ExaminationBatchDetail: React.FC = () => {
       await examinationBatchService.updateClass(classId, data);
       await fetchBatch();
       
-      // Update selectedClass to keep dialog in sync
       if (selectedClass && selectedClass.id === classId) {
          setSelectedClass(prev => prev ? { ...prev, ...data } : null);
       }
@@ -563,14 +593,13 @@ const ExaminationBatchDetail: React.FC = () => {
     || customers.find(c => String(c.id) === String(batch?.school_id))?.name 
     || 'Unknown School';
   const totalSubjects = batch?.classes?.reduce((count, cls) => count + (cls.subjects?.length || 0), 0) || 0;
-  const statusBadgeClass =
-    batch?.status === 'Invoiced'
-      ? 'bg-green-50 text-green-700 border border-green-100'
-      : batch?.status === 'Approved'
-        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-        : batch?.status === 'Calculated'
-          ? 'bg-blue-50 text-blue-700 border border-blue-100'
-          : 'bg-slate-100 text-slate-700 border border-slate-200';
+  const statusBadgeStyle = batch?.status === 'Invoiced'
+    ? { background: teal[500], color: '#fff', border: `1px solid ${teal[500]}` }
+    : batch?.status === 'Approved'
+      ? { background: amber[100], color: '#92400e', border: `1px solid ${amber[300]}` }
+      : batch?.status === 'Calculated'
+        ? { background: teal[50], color: teal[700], border: `1px solid ${teal[200]}` }
+        : { background: teal[50], color: teal[800], border: `1px solid ${teal[200]}` };
   const isCalculationStale = useMemo(() => {
     if (!batch?.classes || batch.classes.length === 0) return false;
     const batchCalculatedAtMs = batch.last_calculated_at
@@ -692,7 +721,6 @@ const ExaminationBatchDetail: React.FC = () => {
         adjustmentCount: snapshots.length
       };
     }
-    // Fallback to batch-level totals if snapshots not available
     const totalAdjustment = Number(batch?.calculated_adjustment_total ?? batchTotals.adjustment ?? 0) || 0;
     const roundingUplift = Number(batch?.rounding_adjustment_total ?? 0) || 0;
     return {
@@ -736,16 +764,16 @@ const ExaminationBatchDetail: React.FC = () => {
     };
   }, [batch, batchAdjustmentTracking, batchTotals.production, batchTotals.total, totalSubjects]);
 
-
-  const softButtonClass =
-    'inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed';
-  const primaryButtonClass =
-    'inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-white shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed';
-
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center p-6">
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-sm px-8 py-6 text-sm text-slate-600">
+      <div style={{
+        height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+        fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink
+      }}>
+        <div style={{
+          background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`,
+          padding: '24px 32px', fontSize: 13, color: inkSoft
+        }}>
           Loading batch details...
         </div>
       </div>
@@ -754,230 +782,199 @@ const ExaminationBatchDetail: React.FC = () => {
 
   if (!batch) {
     return (
-      <div className="h-full flex items-center justify-center p-6">
-        <div className="bg-red-50 rounded-2xl border border-red-100 px-8 py-6 text-sm text-red-700">Batch not found</div>
+      <div style={{
+        height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+        fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5
+      }}>
+        <div style={{
+          background: `${danger}10`, borderRadius: 12, border: `1px solid ${danger}20`,
+          padding: '24px 32px', fontSize: 13, color: danger
+        }}>
+          Batch not found
+        </div>
       </div>
     );
   }
 
   const batchReference = String(batch.batch_number || batch.batchNumber || batch.id || '').trim();
 
+  const currency = batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK';
+
   return (
-    <div className="h-full flex flex-col p-4 md:p-6 max-w-[1600px] mx-auto w-full font-normal overflow-y-auto custom-scrollbar">
-      <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 mb-4">
-        <div className="min-w-0">
-          <button
-            type="button"
-            onClick={() => navigate('/examination/batches')}
-            className={`${softButtonClass} mb-3 bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100`}
-          >
+    <div style={{
+      height: '100%', display: 'flex', flexDirection: 'column',
+      padding: '16px 24px', maxWidth: 1600, margin: '0 auto',
+      width: '100%', fontFamily: "'Inter','DM Sans',sans-serif",
+      fontWeight: 400, overflowY: 'auto', color: ink, fontSize: 13.5
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
+        <div>
+          <button type="button" onClick={() => navigate('/examination/batches')}
+            style={btnGhostStyle}>
             <ArrowLeft size={14} />
             Back to Batches
           </button>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-[22px] font-semibold text-slate-900 tracking-tight">{batch.name}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 600, color: teal[800], letterSpacing: 0.2, margin: 0 }}>
+              {batch.name}
+            </h1>
             {batchReference && (
-              <span className="inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', borderRadius: 8,
+                padding: '3px 10px', fontSize: 11,
+                fontFamily: "'JetBrains Mono', monospace",
+                background: teal[50], color: teal[800], border: `1px solid ${teal[200]}`
+              }}>
                 {batchReference}
               </span>
             )}
             {batch.type === 'Patch' && (
-              <span className="inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold bg-orange-50 text-orange-700 border border-orange-100">
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', borderRadius: 8,
+                padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                background: amber[100], color: '#92400e', border: `1px solid ${amber[300]}`
+              }}>
                 Patch
               </span>
             )}
-            <span
-              className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass}`}
-            >
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', borderRadius: 8,
+              padding: '3px 10px', fontSize: 11, fontWeight: 600,
+              ...statusBadgeStyle
+            }}>
               {batch.status}
             </span>
             {isCalculationStale && !isLocked && (
-              <span className="inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold bg-yellow-50 text-yellow-700 border border-yellow-100">
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', borderRadius: 8,
+                padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                background: amber[100], color: '#92400e', border: `1px solid ${amber[300]}`
+              }}>
                 Calculation Stale - Recalculate Needed
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p style={{ fontSize: 12, color: inkSoft, marginTop: 4 }}>
             {schoolName}
-            {batch.sub_account_name && <span className="text-slate-400 ml-1">({batch.sub_account_name})</span>} |{' '}
+            {batch.sub_account_name && <span style={{ color: inkSoft, marginLeft: 4 }}>({batch.sub_account_name})</span>} |{' '}
             {batch.academic_year} Term {batch.term}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {!isLocked && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className={`${softButtonClass} bg-red-50 text-red-700 border-red-100 hover:bg-red-100`}
-            >
+            <button type="button" onClick={handleDelete}
+              style={{ ...btnGhostStyle, color: danger, borderColor: `${danger}30` }}>
               <Trash2 size={14} />
               Delete
             </button>
           )}
 
           {!isLocked && isCalculationStale && (
-            <button
-              type="button"
-              onClick={handleRecalculate}
-              className={`${softButtonClass} bg-yellow-50 text-yellow-700 border-yellow-100 hover:bg-yellow-100`}
-            >
+            <button type="button" onClick={handleRecalculate}
+              style={{ ...btnGhostStyle, color: '#92400e', borderColor: amber[300], background: amber[100] }}>
               <RefreshCw size={14} />
               Recalculate
             </button>
           )}
 
           {(batch.status === 'Approved' || batch.status === 'Invoiced') && (
-            <button
-              type="button"
-              onClick={handleCreatePatch}
-              className={`${softButtonClass} bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100`}
-            >
+            <button type="button" onClick={handleCreatePatch}
+              style={{ ...btnGhostStyle, color: '#92400e', borderColor: amber[300], background: amber[100] }}>
               <Plus size={14} />
               Create Patch
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={handleConvertToRecurring}
-            className={`${softButtonClass} bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100`}
-          >
+          <button type="button" onClick={handleConvertToRecurring}
+            style={{ ...btnGhostStyle, color: teal[800], borderColor: teal[200], background: teal[50] }}>
             <Repeat size={14} />
             Convert to Recurring
           </button>
 
           {!isLocked && batch.status !== 'Approved' && (
-            <button
-              type="button"
-              onClick={handleApprove}
-              disabled={isApproving}
-              className={`${primaryButtonClass} bg-emerald-600 hover:bg-emerald-700`}
-            >
+            <button type="button" onClick={handleApprove} disabled={isApproving}
+              style={{ ...btnPrimaryStyle, background: teal[500], opacity: isApproving ? 0.6 : 1 }}>
               <CheckCircle size={14} />
               {isApproving ? 'Approving...' : 'Approve'}
             </button>
           )}
 
           {batch.status === 'Approved' && (
-            <button
-              type="button"
-              onClick={handleGenerateInvoice}
-              disabled={isGeneratingInvoice}
-              className={`${primaryButtonClass} bg-purple-600 hover:bg-purple-700`}
-            >
+            <button type="button" onClick={handleGenerateInvoice} disabled={isGeneratingInvoice}
+              style={{ ...btnPrimaryStyle, background: teal[600], opacity: isGeneratingInvoice ? 0.6 : 1 }}>
               <CheckCircle size={14} />
               {isGeneratingInvoice ? 'Generating...' : 'Generate Invoice'}
             </button>
           )}
 
           {(batch.status === 'Approved' || batch.status === 'Invoiced') && (
-            <button
-              type="button"
-              onClick={() => setJobTicketConfirm({ open: true })}
-              className={`${primaryButtonClass} bg-rose-600 hover:bg-rose-700`}
-            >
+            <button type="button" onClick={() => setJobTicketConfirm({ open: true })}
+              style={{ ...btnPrimaryStyle, background: danger }}>
               <Printer size={14} />
               Convert to Job Ticket
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => setIsAddClassOpen(true)}
-            disabled={isLocked}
-            className={`${primaryButtonClass} bg-blue-600 hover:bg-blue-700`}
-          >
+          <button type="button" onClick={() => setIsAddClassOpen(true)} disabled={isLocked}
+            style={{ ...btnPrimaryStyle, background: teal[500], opacity: isLocked ? 0.6 : 1 }}>
             <Plus size={14} />
             Add Class
           </button>
         </div>
       </div>
 
-      <div className="kpi-grid-dash mb-6">
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #2563EB' }}>
-          <div className="kpi-card-icon" style={{ color: '#2563EB', background: '#2563EB12' }}>
-            <DollarSign size={18} />
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: 12, marginBottom: 24
+      }}>
+        {[
+          { label: 'Total Amount', value: `${currency} ${batchTotals.total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, sub: `Rounding: ${currency} ${batchTotals.roundingAdjustment.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, borderColor: teal[500] },
+          { label: 'Academic Info', value: batch.exam_type, sub: `${batch.academic_year} | Term ${batch.term}`, borderColor: teal[300] },
+          { label: 'Structure', value: `${batch.classes?.length || 0} Classes`, sub: `Total Subjects: ${totalSubjects}`, borderColor: amber[500] },
+          { label: 'Total Learners', value: batchTotals.totalLearners.toLocaleString(), sub: `Across ${batch.classes?.length || 0} classes`, borderColor: teal[200] },
+          { label: 'Production', value: `${currency} ${batchTotals.production.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, sub: `Adjustments: ${currency} ${batchTotals.marketAdjustment.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, borderColor: ink }
+        ].map((kpi, i) => (
+          <div key={i} style={{
+            background: paper, borderRadius: 12, padding: '14px 16px',
+            border: `1.4px solid ${hairline}`, borderLeft: `3px solid ${kpi.borderColor}`,
+            boxShadow: '0 1px 3px rgba(0,0,0,.04)'
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.02 }}>{kpi.label}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: ink, marginTop: 2 }}>{kpi.value}</div>
+            <div style={{ fontSize: 9.5, color: inkSoft, marginTop: 1 }}>{kpi.sub}</div>
           </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Total Amount</div>
-            <div className="kpi-card-value">{batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {batchTotals.total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-            <div className="kpi-card-sub">Rounding: {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {batchTotals.roundingAdjustment.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-            {batchTotals.manualOverride !== 0 && (
-              <div className="flex justify-between text-[9px] mt-1">
-                <span className="text-slate-400">Manual Override:</span>
-                <span className="text-purple-600 font-medium">{batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {batchTotals.manualOverride.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #7C3AED' }}>
-          <div className="kpi-card-icon" style={{ color: '#7C3AED', background: '#7C3AED12' }}>
-            <BookOpen size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Academic Info</div>
-            <div className="kpi-card-value">{batch.exam_type}</div>
-            <div className="kpi-card-sub">{batch.academic_year} | Term {batch.term}</div>
-          </div>
-        </div>
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #F59E0B' }}>
-          <div className="kpi-card-icon" style={{ color: '#F59E0B', background: '#F59E0B12' }}>
-            <BookText size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Structure</div>
-            <div className="kpi-card-value">{batch.classes?.length || 0} Classes</div>
-            <div className="kpi-card-sub">Total Subjects: {totalSubjects}</div>
-          </div>
-        </div>
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #0891B2' }}>
-          <div className="kpi-card-icon" style={{ color: '#0891B2', background: '#0891B212' }}>
-            <Users size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Total Learners</div>
-            <div className="kpi-card-value">{batchTotals.totalLearners.toLocaleString()}</div>
-            <div className="kpi-card-sub">Across {batch.classes?.length || 0} classes</div>
-          </div>
-        </div>
-        <div className="kpi-card-dash" style={{ borderLeft: '3px solid #10B981' }}>
-          <div className="kpi-card-icon" style={{ color: '#10B981', background: '#10B98112' }}>
-            <Printer size={18} />
-          </div>
-          <div className="kpi-card-body">
-            <div className="kpi-card-label">Production</div>
-            <div className="kpi-card-value">{batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {batchTotals.production.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-            <div className="kpi-card-sub">Adjustments: {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {batchTotals.marketAdjustment.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-sm p-4 md:p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-            <BookOpen size={16} className="text-blue-600" />
+      <div style={{
+        background: paper, borderRadius: 12,
+        border: `1.4px solid ${hairline}`, padding: '16px 20px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+            <BookOpen size={16} color={teal[500]} />
             Classes and Subjects
           </h2>
         </div>
 
         {!batch.classes || batch.classes.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50/80 rounded-2xl border-2 border-dashed border-slate-200">
-            <BookOpen className="h-10 w-10 mx-auto text-slate-300 mb-3" />
-            <h3 className="text-base font-semibold text-slate-800">No classes added yet</h3>
-            <p className="text-sm text-slate-500 mb-4">Add a class to start adding subjects and calculating costs.</p>
-            <button
-              type="button"
-              onClick={() => setIsAddClassOpen(true)}
-              disabled={isLocked}
-              className={`${primaryButtonClass} bg-blue-600 hover:bg-blue-700`}
-            >
+          <div style={{
+            textAlign: 'center', padding: 48,
+            background: teal[50], borderRadius: 12,
+            border: `2px dashed ${teal[200]}`
+          }}>
+            <BookOpen size={40} style={{ margin: '0 auto 12', color: teal[200] }} />
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: teal[800], margin: 0 }}>No classes added yet</h3>
+            <p style={{ fontSize: 12, color: inkSoft, marginBottom: 16 }}>Add a class to start adding subjects and calculating costs.</p>
+            <button type="button" onClick={() => setIsAddClassOpen(true)} disabled={isLocked}
+              style={{ ...btnPrimaryStyle, background: teal[500], opacity: isLocked ? 0.6 : 1 }}>
               <Plus size={14} />
               Add First Class
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {batch.classes.map((cls) => {
               const subjectCount = cls.subjects?.length || 0;
               const learners = Math.max(0, Math.floor(Number(cls.number_of_learners) || 0));
@@ -989,52 +986,72 @@ const ExaminationBatchDetail: React.FC = () => {
               const isHidden = hiddenClasses.has(cls.id);
 
               return (
-                <div key={cls.id} className="bg-white/90 rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm flex flex-col">
-                  {/* Class Header */}
-                  <div className="bg-slate-50/80 border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => toggleClassVisibility(cls.id)}
-                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-blue-600 transition-colors"
-                      >
+                <div key={cls.id} style={{
+                  background: paper, borderRadius: 12, overflow: 'hidden',
+                  border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column'
+                }}>
+                  <div style={{
+                    background: teal[50], borderBottom: `1px solid ${hairline}`,
+                    padding: '14px 20px', display: 'flex',
+                    alignItems: 'center', justifyContent: 'space-between', gap: 16
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <button onClick={() => toggleClassVisibility(cls.id)}
+                        style={{
+                          width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          borderRadius: 8, background: paper, border: `1px solid ${hairline}`,
+                          color: inkSoft, cursor: 'pointer'
+                        }}>
                         {isHidden ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                       </button>
                       <div>
-                        <div className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                        <div style={{ fontWeight: 700, color: ink, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                           {cls.class_name}
-                          {isHidden ? <EyeOff size={14} className="text-slate-400" /> : <Eye size={14} className="text-slate-600" />}
-                          {isHidden && <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase tracking-tighter">Hidden</span>}
+                          {isHidden ? <EyeOff size={14} color={inkSoft} /> : <Eye size={14} color={inkSoft} />}
+                          {isHidden && <span style={{
+                            fontSize: 10, background: teal[200], color: teal[800],
+                            padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase'
+                          }}>Hidden</span>}
                         </div>
-                        <div className="text-[11px] text-slate-500 uppercase font-bold flex items-center gap-4 mt-1.5 tracking-wider">
-                          <span className="flex items-center gap-1.5"><Users size={14} className="text-slate-400" /> {cls.number_of_learners} Learners</span>
-                          <span className="flex items-center gap-1.5"><BookOpen size={14} className="text-slate-400" /> {subjectCount} Subjects</span>
+                        <div style={{
+                          fontSize: 11, color: inkSoft, fontWeight: 700,
+                          display: 'flex', alignItems: 'center', gap: 16, marginTop: 4,
+                          textTransform: 'uppercase', letterSpacing: 0.04
+                        }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Users size={14} color={inkSoft} /> {cls.number_of_learners} Learners
+                          </span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <BookOpen size={14} color={inkSoft} /> {subjectCount} Subjects
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="text-blue-600 font-black text-xl leading-none mb-1 finance-nums">
-                          {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {displayedFeePerLearner.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ color: teal[500], fontWeight: 900, fontSize: 18, lineHeight: 1, marginBottom: 2 }}>
+                          {currency} {displayedFeePerLearner.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                        <div style={{ fontSize: 10, color: inkSoft, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.08 }}>
                           {hasManualOverride ? 'Final Fee / Learner (Override)' : 'Expected Fee / Learner'}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 border-l border-slate-200 pl-6">
-                        <button
-                          onClick={() => handleManageSubjects(cls)}
-                          disabled={isLocked}
-                          className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:shadow-sm transition-all"
-                          title="Manage Subjects"
-                        >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderLeft: `1px solid ${hairline}`, paddingLeft: 24 }}>
+                        <button onClick={() => handleManageSubjects(cls)} disabled={isLocked}
+                          style={{
+                            width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            borderRadius: 9, background: paper, border: `1px solid ${hairline}`,
+                            color: inkSoft, cursor: 'pointer', opacity: isLocked ? 0.6 : 1
+                          }}>
                           <BookText size={18} />
                         </button>
                         {!isLocked && (
-                          <button
-                            onClick={() => handleRemoveClass(cls.id)}
-                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-red-100 text-red-400 hover:text-red-600 hover:border-red-200 hover:shadow-sm transition-all"
-                            title="Remove Class"
-                          >
+                          <button onClick={() => handleRemoveClass(cls.id)}
+                            style={{
+                              width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              borderRadius: 9, background: paper, border: `1px solid ${danger}30`,
+                              color: danger, cursor: 'pointer'
+                            }}>
                             <Trash2 size={18} />
                           </button>
                         )}
@@ -1042,24 +1059,23 @@ const ExaminationBatchDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Subjects Table */}
                   {!isHidden && (
                     <>
                       {cls.subjects && cls.subjects.length > 0 ? (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-[13px]">
-                            <thead className="bg-white border-b border-slate-100">
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', textAlign: 'left', fontSize: 13, borderCollapse: 'collapse' }}>
+                            <thead style={{ background: paper, borderBottom: `1px solid ${hairline}` }}>
                               <tr>
-                                <th className="px-6 py-3 text-left font-bold text-slate-400 text-[11px] uppercase tracking-wider">Subject Name</th>
-                                <th className="px-6 py-3 text-center font-bold text-slate-400 text-[11px] uppercase tracking-wider w-24">Pages</th>
-                                <th className="px-6 py-3 text-center font-bold text-slate-400 text-[11px] uppercase tracking-wider w-24">Extra Copies</th>
-                                <th className="px-6 py-3 text-center font-bold text-slate-400 text-[11px] uppercase tracking-wider w-28">Total Copies</th>
-                                <th className="px-6 py-3 text-center font-bold text-slate-400 text-[11px] uppercase tracking-wider w-28">Total Pages</th>
-                                <th className="px-6 py-3 text-center font-bold text-slate-400 text-[11px] uppercase tracking-wider w-28">Total Sheets</th>
-                                <th className="px-6 py-3 text-right font-bold text-slate-400 text-[11px] uppercase tracking-wider w-40">Paper</th>
+                                <th style={{ padding: '12px 20px', color: inkSoft, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08 }}>Subject Name</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'center', color: inkSoft, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, width: 96 }}>Pages</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'center', color: inkSoft, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, width: 96 }}>Extra Copies</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'center', color: inkSoft, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, width: 112 }}>Total Copies</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'center', color: inkSoft, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, width: 112 }}>Total Pages</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'center', color: inkSoft, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, width: 112 }}>Total Sheets</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'right', color: inkSoft, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.08, width: 160 }}>Paper</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50 border-b border-slate-100">
+                            <tbody style={{ borderCollapse: 'collapse' }}>
                               {cls.subjects.map((subject: any) => {
                                 const pagesPerPaper = Math.max(0, Math.floor(Number(subject.pages) || 0));
                                 const extraCopies = Math.max(0, Math.floor(Number(subject.extra_copies) || 0));
@@ -1067,63 +1083,68 @@ const ExaminationBatchDetail: React.FC = () => {
                                 const totalPages = Number(subject.total_pages ?? (pagesPerPaper * totalCopies)) || 0;
                                 const totalSheets = Number(subject.total_sheets ?? Math.ceil(totalPages / 2)) || 0;
                                 return (
-                                  <tr key={subject.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-3.5 flex items-center gap-3">
-                                      <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
+                                  <tr key={subject.id}
+                                    style={{ borderBottom: `1px solid ${hairline}` }}
+                                    onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <td style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                                      <div style={{ background: teal[50], padding: 6, borderRadius: 8, color: teal[600] }}>
                                         <FileText size={16} />
                                       </div>
-                                      <span className="font-semibold text-slate-700">{subject.subject_name}</span>
+                                      <span style={{ fontWeight: 600, color: ink }}>{subject.subject_name}</span>
                                     </td>
-                                    <td className="px-6 py-3.5 text-center font-medium text-slate-600">{pagesPerPaper}</td>
-                                    <td className="px-6 py-3.5 text-center font-medium text-slate-600">{extraCopies}</td>
-                                    <td className="px-6 py-3.5 text-center font-medium text-slate-600">{totalCopies}</td>
-                                    <td className="px-6 py-3.5 text-center font-medium text-slate-600">{totalPages.toLocaleString()}</td>
-                                    <td className="px-6 py-3.5 text-center font-medium text-slate-600">{totalSheets.toLocaleString()}</td>
-                                    <td className="px-6 py-3.5 text-right font-medium text-slate-500">{subject.paper_size} <span className="text-slate-400 text-xs ml-1">({subject.orientation})</span></td>
+                                    <td style={{ padding: '12px 20px', textAlign: 'center', color: ink }}>{pagesPerPaper}</td>
+                                    <td style={{ padding: '12px 20px', textAlign: 'center', color: ink }}>{extraCopies}</td>
+                                    <td style={{ padding: '12px 20px', textAlign: 'center', color: ink }}>{totalCopies}</td>
+                                    <td style={{ padding: '12px 20px', textAlign: 'center', color: ink }}>{totalPages.toLocaleString()}</td>
+                                    <td style={{ padding: '12px 20px', textAlign: 'center', color: ink }}>{totalSheets.toLocaleString()}</td>
+                                    <td style={{ padding: '12px 20px', textAlign: 'right', color: inkSoft }}>
+                                      {subject.paper_size} <span style={{ color: inkSoft, fontSize: 12, marginLeft: 4 }}>({subject.orientation})</span>
+                                    </td>
                                   </tr>
                                 );
                               })}
                             </tbody>
-                            <tfoot className="bg-slate-50/50 border-t border-slate-100">
+                            <tfoot style={{ background: teal[50], borderTop: `1px solid ${hairline}` }}>
                               <tr>
-                                <td colSpan={7} className="px-6 py-4">
-                                  <div className="flex items-center justify-end gap-8">
-                                    <div className="flex flex-col text-right">
-                                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Production</span>
-                                      <span className="font-bold text-slate-600 finance-nums leading-none mt-1 text-sm">
-                                        {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {(Number(cls.material_total_cost) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                <td colSpan={7} style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 32 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                                      <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: inkSoft, letterSpacing: 0.06 }}>Production</span>
+                                      <span style={{ fontWeight: 700, color: ink, marginTop: 4, fontSize: 13 }}>
+                                        {currency} {(Number(cls.material_total_cost) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                       </span>
                                     </div>
-                                    <div className="flex flex-col text-right">
-                                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Margin</span>
-                                      <span className="font-bold text-orange-600 finance-nums leading-none mt-1 text-sm">
-                                        {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {(Number(cls.margin_amount) || Math.max(0, (Number(cls.calculated_total_cost) || 0) - (Number(cls.material_total_cost) || 0) - (Number(cls.adjustment_total_cost) || 0))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                                      <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: inkSoft, letterSpacing: 0.06 }}>Margin</span>
+                                      <span style={{ fontWeight: 700, color: amber[500], marginTop: 4, fontSize: 13 }}>
+                                        {currency} {(Number(cls.margin_amount) || Math.max(0, (Number(cls.calculated_total_cost) || 0) - (Number(cls.material_total_cost) || 0) - (Number(cls.adjustment_total_cost) || 0))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                       </span>
                                     </div>
-                                    <div className="flex flex-col text-right">
-                                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Adjustments</span>
-                                      <span className="font-bold text-emerald-600 finance-nums leading-none mt-1 text-sm">
-                                        {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {(Number(cls.market_adjustment_total ?? cls.adjustment_total_cost) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                                      <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: inkSoft, letterSpacing: 0.06 }}>Adjustments</span>
+                                      <span style={{ fontWeight: 700, color: teal[600], marginTop: 4, fontSize: 13 }}>
+                                        {currency} {(Number(cls.market_adjustment_total ?? cls.adjustment_total_cost) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                       </span>
                                     </div>
-                                    <div className="flex flex-col text-right">
-                                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Rounding</span>
-                                      <span className="font-bold text-blue-600 finance-nums leading-none mt-1 text-sm">
-                                        {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {(Number(cls.rounding_adjustment) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                                      <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: inkSoft, letterSpacing: 0.06 }}>Rounding</span>
+                                      <span style={{ fontWeight: 700, color: teal[500], marginTop: 4, fontSize: 13 }}>
+                                        {currency} {(Number(cls.rounding_adjustment) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                       </span>
                                     </div>
                                     {Number(cls.manual_override_amount) !== 0 && (
-                                      <div className="flex flex-col text-right">
-                                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Manual Override</span>
-                                        <span className="font-bold text-purple-600 finance-nums leading-none mt-1 text-sm">
-                                          {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {(Number(cls.manual_override_amount) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                                        <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: inkSoft, letterSpacing: 0.06 }}>Manual Override</span>
+                                        <span style={{ fontWeight: 700, color: '#7c3aed', marginTop: 4, fontSize: 13 }}>
+                                          {currency} {(Number(cls.manual_override_amount) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                         </span>
                                       </div>
                                     )}
-                                    <div className="flex flex-col text-right">
-                                      <span className="text-xs uppercase font-bold text-slate-600 tracking-widest">Class Total</span>
-                                      <span className="font-bold text-indigo-700 finance-nums leading-none mt-1.5 text-base">
-                                        {batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'} {resolveClassTotalAmount(cls).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                                      <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: inkSoft, letterSpacing: 0.08 }}>Class Total</span>
+                                      <span style={{ fontWeight: 900, color: teal[800], marginTop: 6, fontSize: 15 }}>
+                                        {currency} {resolveClassTotalAmount(cls).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                       </span>
                                     </div>
                                   </div>
@@ -1133,13 +1154,15 @@ const ExaminationBatchDetail: React.FC = () => {
                           </table>
                         </div>
                       ) : (
-                        <div className="px-6 py-8 text-center bg-white flex flex-col items-center justify-center">
-                          <BookOpen className="h-8 w-8 text-slate-200 mb-2" />
-                          <p className="text-[13px] text-slate-500">No subjects added to this class.</p>
-                          <button
-                            onClick={() => handleManageSubjects(cls)}
-                            className="mt-3 text-xs font-bold text-blue-600 uppercase tracking-widest hover:text-blue-700"
-                          >
+                        <div style={{ padding: '24px 20px', textAlign: 'center', background: paper }}>
+                          <BookOpen size={32} style={{ margin: '0 auto 8', color: teal[200] }} />
+                          <p style={{ fontSize: 13, color: inkSoft, margin: 0 }}>No subjects added to this class.</p>
+                          <button onClick={() => handleManageSubjects(cls)}
+                            style={{
+                              marginTop: 12, fontSize: 11, fontWeight: 700, color: teal[500],
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              textTransform: 'uppercase', letterSpacing: 0.08
+                            }}>
                             Add Subjects
                           </button>
                         </div>
@@ -1151,7 +1174,6 @@ const ExaminationBatchDetail: React.FC = () => {
             })}
           </div>
         )}
-
       </div>
 
       <AddClassDialog
@@ -1170,7 +1192,7 @@ const ExaminationBatchDetail: React.FC = () => {
         onUpdateClass={handleUpdateClass}
         onSaveClassPricing={handleSaveClassPricing}
         onApplyOverridePricing={canOverrideExamCost ? handleApplyClassOverridePricing : undefined}
-        currencySymbol={batch.currency || currencyService.getCurrency(currencyService.getBaseCurrency())?.symbol || companyConfig?.currencySymbol || 'MWK'}
+        currencySymbol={currency}
         isLocked={isLocked}
       />
 

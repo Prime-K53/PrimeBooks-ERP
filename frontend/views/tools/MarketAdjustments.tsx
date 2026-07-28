@@ -10,6 +10,10 @@ import { repriceMasterInventoryFromAdjustments } from '../../services/masterInve
 import { syncMarketAdjustmentsToBackend } from '../../services/examinationSyncService';
 import { currencyService } from '../../services/currencyService';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 const MARKET_ADJUSTMENTS_CHANGED_EVENT = 'market-adjustments:changed';
 
 const MarketAdjustments: React.FC = () => {
@@ -25,40 +29,16 @@ const MarketAdjustments: React.FC = () => {
     const [selectedAdjustment, setSelectedAdjustment] = useState<MarketAdjustment | null>(null);
     const [transactionHistory, setTransactionHistory] = useState<MarketAdjustmentTransaction[]>([]);
     const [showHistory, setShowHistory] = useState(false);
-    const [formData, setFormData] = useState<Partial<MarketAdjustment>>({
-        name: '',
-        type: 'PERCENTAGE',
-        value: 0,
-        description: '',
-        category: 'general',
-        adjustmentCategory: 'Custom',
-        displayName: '',
-        sortOrder: 0,
-        active: true
-    });
+    const [formData, setFormData] = useState<Partial<MarketAdjustment>>({ name: '', type: 'PERCENTAGE', value: 0, description: '', category: 'general', adjustmentCategory: 'Custom', displayName: '', sortOrder: 0, active: true });
 
     const broadcastAdjustmentsChanged = (changeType: 'created' | 'updated' | 'deleted' | 'toggled', adjustmentId?: string) => {
         if (typeof window === 'undefined') return;
-        window.dispatchEvent(new CustomEvent(MARKET_ADJUSTMENTS_CHANGED_EVENT, {
-            detail: {
-                changeType,
-                adjustmentId: adjustmentId || null,
-                timestamp: new Date().toISOString()
-            }
-        }));
+        window.dispatchEvent(new CustomEvent(MARKET_ADJUSTMENTS_CHANGED_EVENT, { detail: { changeType, adjustmentId: adjustmentId || null, timestamp: new Date().toISOString() } }));
     };
 
     useEffect(() => {
         loadAdjustments();
-
-        // Re-load when cloud sync pushes data (cross-device sync)
-        const onDataChanged = (e: Event) => {
-            const detail = (e as CustomEvent).detail;
-            if (!detail || !detail.stores) return;
-            if (detail.stores.includes('marketAdjustments') || detail.stores.includes('*')) {
-                loadAdjustments();
-            }
-        };
+        const onDataChanged = (e: Event) => { const detail = (e as CustomEvent).detail; if (!detail || !detail.stores) return; if (detail.stores.includes('marketAdjustments') || detail.stores.includes('*')) loadAdjustments(); };
         window.addEventListener('primeerp:data-changed', onDataChanged);
         return () => window.removeEventListener('primeerp:data-changed', onDataChanged);
     }, []);
@@ -67,499 +47,208 @@ const MarketAdjustments: React.FC = () => {
         try {
             const data = await dbService.getAll<MarketAdjustment>('marketAdjustments');
             setAdjustments(data);
-
-            // Load adjustment statistics from transactions
             const transactions = await dbService.getAll<MarketAdjustmentTransaction>('marketAdjustmentTransactions');
             const statsMap = new Map<string, { totalApplied: number; applicationCount: number }>();
-
-            transactions.forEach(tx => {
-                const existing = statsMap.get(tx.adjustmentId) || { totalApplied: 0, applicationCount: 0 };
-                statsMap.set(tx.adjustmentId, {
-                    totalApplied: existing.totalApplied + tx.calculatedAmount,
-                    applicationCount: existing.applicationCount + 1
-                });
-            });
-
+            transactions.forEach(tx => { const e = statsMap.get(tx.adjustmentId) || { totalApplied: 0, applicationCount: 0 }; statsMap.set(tx.adjustmentId, { totalApplied: e.totalApplied + tx.calculatedAmount, applicationCount: e.applicationCount + 1 }); });
             setAdjustmentStats(statsMap);
-        } catch (error) {
-            logger.error('Error loading market adjustments:', error);
-        } finally {
-            setLoading(false);
-        }
+        } catch (error) { logger.error('Error loading market adjustments:', error); }
+        finally { setLoading(false); }
     };
 
     const loadTransactionHistory = async (adjustmentId: string) => {
         try {
             const transactions = await dbService.getAll<MarketAdjustmentTransaction>('marketAdjustmentTransactions');
-            const filtered = transactions.filter(tx => tx.adjustmentId === adjustmentId);
-            setTransactionHistory(filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
-        } catch (error) {
-            logger.error('Error loading transaction history:', error);
-            setTransactionHistory([]);
-        }
+            setTransactionHistory(transactions.filter(tx => tx.adjustmentId === adjustmentId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+        } catch (error) { logger.error('Error loading transaction history:', error); setTransactionHistory([]); }
     };
 
-    const generateId = () => {
-        return 'adj_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-    };
+    const generateId = () => 'adj_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
     const repriceMasterInventory = async () => {
         try {
             const result = await repriceMasterInventoryFromAdjustments();
             await refreshInventory();
-
-            if (result.updatedItems > 0 || result.updatedVariants > 0) {
-                const parts: string[] = [];
-                if (result.updatedItems > 0) parts.push(`${result.updatedItems} items`);
-                if (result.updatedVariants > 0) parts.push(`${result.updatedVariants} variants`);
-                notify(`Master inventory repriced: ${parts.join(', ')}`, 'success');
-            } else {
-                notify('Master inventory pricing is already up to date', 'info');
-            }
-        } catch (error) {
-            logger.error('Failed to reprice master inventory after adjustment change:', error);
-            notify('Adjustment saved but master inventory repricing failed', 'error');
-        }
+            if (result.updatedItems > 0 || result.updatedVariants > 0) { const parts: string[] = []; if (result.updatedItems > 0) parts.push(`${result.updatedItems} items`); if (result.updatedVariants > 0) parts.push(`${result.updatedVariants} variants`); notify(`Master inventory repriced: ${parts.join(', ')}`, 'success'); }
+            else notify('Master inventory pricing is already up to date', 'info');
+        } catch (error) { logger.error('Failed to reprice master inventory after adjustment change:', error); notify('Adjustment saved but master inventory repricing failed', 'error'); }
     };
 
     const syncBackendAdjustments = async () => {
-        try {
-            const syncResult = await syncMarketAdjustmentsToBackend({ triggerRecalculate: true });
-            if (syncResult?.recalculation?.failed > 0) {
-                notify(`Adjustments synced but ${syncResult.recalculation.failed} batch recalculation(s) failed`, 'error');
-            }
-        } catch (error) {
-            logger.error('Failed to sync market adjustments to backend examination DB:', error);
-            notify('Adjustment change saved locally, but backend sync failed', 'error');
-        }
+        try { const syncResult = await syncMarketAdjustmentsToBackend({ triggerRecalculate: true }); if (syncResult?.recalculation?.failed > 0) notify(`Adjustments synced but ${syncResult.recalculation.failed} batch recalculation(s) failed`, 'error'); }
+        catch (error) { logger.error('Failed to sync market adjustments to backend examination DB:', error); notify('Adjustment change saved locally, but backend sync failed', 'error'); }
     };
 
     const handleSave = async () => {
-        if (!formData.name || formData.value === undefined) {
-            notify('Please fill in all required fields', 'error');
-            return;
-        }
-
+        if (!formData.name || formData.value === undefined) { notify('Please fill in all required fields', 'error'); return; }
         try {
             const isEditing = Boolean(editingId);
-            const adjustment: MarketAdjustment = {
-                id: editingId || generateId(),
-                name: formData.name,
-                type: formData.type as 'PERCENTAGE' | 'FIXED' | 'PERCENT',
-                value: Number(formData.value),
-                percentage: formData.type === 'PERCENTAGE' || formData.type === 'PERCENT' || formData.type === 'percentage' ? Number(formData.value) : undefined,
-                appliesTo: 'COST',
-                active: formData.active ?? true,
-                isActive: formData.active ?? true,
-                description: formData.description,
-                category: formData.category,
-                displayName: formData.displayName || formData.name,
-                adjustmentCategory: formData.adjustmentCategory,
-                sortOrder: formData.sortOrder || 0,
-                createdAt: editingId ? adjustments.find(a => a.id === editingId)?.createdAt : new Date().toISOString()
-            };
-
+            const adjustment: MarketAdjustment = { id: editingId || generateId(), name: formData.name, type: formData.type as 'PERCENTAGE' | 'FIXED' | 'PERCENT', value: Number(formData.value), percentage: formData.type === 'PERCENTAGE' || formData.type === 'PERCENT' || formData.type === 'percentage' ? Number(formData.value) : undefined, appliesTo: 'COST', active: formData.active ?? true, isActive: formData.active ?? true, description: formData.description, category: formData.category, displayName: formData.displayName || formData.name, adjustmentCategory: formData.adjustmentCategory, sortOrder: formData.sortOrder || 0, createdAt: editingId ? adjustments.find(a => a.id === editingId)?.createdAt : new Date().toISOString() };
             await dbService.put('marketAdjustments', adjustment);
             await repriceMasterInventory();
             await syncBackendAdjustments();
             notify(isEditing ? 'Market adjustment updated' : 'Market adjustment created', 'success');
-
-            setEditingId(null);
-            setShowForm(false);
-            setFormData({
-                name: '',
-                type: 'PERCENTAGE',
-                value: 0,
-                description: '',
-                category: 'general',
-                adjustmentCategory: 'Custom',
-                displayName: '',
-                sortOrder: 0,
-                active: true
-            });
+            setEditingId(null); setShowForm(false); setFormData({ name: '', type: 'PERCENTAGE', value: 0, description: '', category: 'general', adjustmentCategory: 'Custom', displayName: '', sortOrder: 0, active: true });
             loadAdjustments();
-            refreshMarketAdjustments?.(); // Refresh DataContext for ItemModal
+            refreshMarketAdjustments?.();
             broadcastAdjustmentsChanged(isEditing ? 'updated' : 'created', adjustment.id);
-        } catch (error) {
-            logger.error('Error saving adjustment:', error);
-            notify('Failed to save adjustment', 'error');
-        }
+        } catch (error) { logger.error('Error saving adjustment:', error); notify('Failed to save adjustment', 'error'); }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this adjustment?')) return;
-
-        try {
-            await dbService.delete('marketAdjustments', id);
-            await repriceMasterInventory();
-            await syncBackendAdjustments();
-            notify('Adjustment deleted', 'success');
-            loadAdjustments();
-            refreshMarketAdjustments?.(); // Refresh DataContext for ItemModal
-            broadcastAdjustmentsChanged('deleted', id);
-        } catch (error) {
-            logger.error('Error deleting adjustment:', error);
-            notify('Failed to delete adjustment', 'error');
-        }
+        try { await dbService.delete('marketAdjustments', id); await repriceMasterInventory(); await syncBackendAdjustments(); notify('Adjustment deleted', 'success'); loadAdjustments(); refreshMarketAdjustments?.(); broadcastAdjustmentsChanged('deleted', id); }
+        catch (error) { logger.error('Error deleting adjustment:', error); notify('Failed to delete adjustment', 'error'); }
     };
 
-    const handleEdit = (adjustment: MarketAdjustment) => {
-        setEditingId(adjustment.id);
-        setFormData({
-            name: adjustment.name,
-            type: adjustment.type as 'PERCENTAGE' | 'FIXED' | 'PERCENT',
-            value: adjustment.value,
-            description: adjustment.description,
-            category: adjustment.category,
-            displayName: adjustment.displayName || adjustment.name,
-            adjustmentCategory: adjustment.adjustmentCategory || 'Custom',
-            sortOrder: adjustment.sortOrder || 0,
-            active: adjustment.active ?? adjustment.isActive
-        });
-        setShowForm(true);
-    };
+    const handleEdit = (adjustment: MarketAdjustment) => { setEditingId(adjustment.id); setFormData({ name: adjustment.name, type: adjustment.type as 'PERCENTAGE' | 'FIXED' | 'PERCENT', value: adjustment.value, description: adjustment.description, category: adjustment.category, displayName: adjustment.displayName || adjustment.name, adjustmentCategory: adjustment.adjustmentCategory || 'Custom', sortOrder: adjustment.sortOrder || 0, active: adjustment.active ?? adjustment.isActive }); setShowForm(true); };
 
-    const handleViewHistory = async (adjustment: MarketAdjustment) => {
-        setSelectedAdjustment(adjustment);
-        await loadTransactionHistory(adjustment.id);
-        setShowHistory(true);
-    };
+    const handleViewHistory = async (adjustment: MarketAdjustment) => { setSelectedAdjustment(adjustment); await loadTransactionHistory(adjustment.id); setShowHistory(true); };
 
     const formatCurrency = (amount: number) => {
-        // Map common currency symbols used in companyConfig to ISO currency codes
-        const symbolToCode: Record<string, string> = {
-            '$': 'USD',
-            'KES': 'KES',
-            'ZAR': 'ZAR',
-            'GBP': 'GBP',
-            'EUR': 'EUR',
-            'UGX': 'UGX',
-            'K': 'MWK' // Common single-letter symbol used in some views -> Malawi Kwacha
-        };
-
+        const symbolToCode: Record<string, string> = { '$': 'USD', 'KES': 'KES', 'ZAR': 'ZAR', 'GBP': 'GBP', 'EUR': 'EUR', 'UGX': 'UGX', 'K': 'MWK' };
         const currencyCode = symbolToCode[currency] || currency || 'USD';
-
-        try {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: currencyCode
-            }).format(amount || 0);
-        } catch (err) {
-            // Fallback: when Intl fails (invalid currency code), return a simple formatted string
-            return `${currency} ${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
+        try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(amount || 0); }
+        catch { return `${currency} ${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
     };
 
     const toggleActive = async (adjustment: MarketAdjustment) => {
-        try {
-            const currentActive = adjustment.active ?? adjustment.isActive ?? false;
-            const updated = {
-                ...adjustment,
-                active: !currentActive,
-                isActive: !currentActive
-            };
-            await dbService.put('marketAdjustments', updated);
-            await repriceMasterInventory();
-            await syncBackendAdjustments();
-            notify(`Adjustment ${updated.active ? 'activated' : 'deactivated'}`, 'success');
-            loadAdjustments();
-            refreshMarketAdjustments?.(); // Refresh DataContext for ItemModal
-            broadcastAdjustmentsChanged('toggled', adjustment.id);
-        } catch (error) {
-            logger.error('Error toggling adjustment:', error);
-            notify('Failed to update adjustment', 'error');
-        }
+        try { const currentActive = adjustment.active ?? adjustment.isActive ?? false; const updated = { ...adjustment, active: !currentActive, isActive: !currentActive }; await dbService.put('marketAdjustments', updated); await repriceMasterInventory(); await syncBackendAdjustments(); notify(`Adjustment ${updated.active ? 'activated' : 'deactivated'}`, 'success'); loadAdjustments(); refreshMarketAdjustments?.(); broadcastAdjustmentsChanged('toggled', adjustment.id); }
+        catch (error) { logger.error('Error toggling adjustment:', error); notify('Failed to update adjustment', 'error'); }
     };
 
-    if (loading) {
-        return (
-            <div className="h-full flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-amber-100 border-t-amber-600 rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+    const inputStyle: React.CSSProperties = { width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5, color: ink, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '9px 12px', outline: 'none' };
+    const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 30, cursor: 'pointer' };
+
+    if (loading) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 32, height: 32, borderRadius: '50%', border: `4px solid ${amber[100]}`, borderTopColor: amber[500] }} className="animate-spin" /></div>;
 
     return (
-        <div className="h-full overflow-auto bg-gradient-to-br from-slate-50 to-amber-50/30 p-6">
-            <div className="max-w-4xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-amber-100 rounded-xl">
-                            <TrendingUp className="w-6 h-6 text-amber-600" />
-                        </div>
+        <div style={{ height: '100%', overflow: 'auto', padding: 24, background: t[50] }}>
+            <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ padding: 12, background: amber[100], borderRadius: 12 }}><TrendingUp size={24} color={amber[500]} /></div>
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-800">Market Adjustments</h1>
-                            <p className="text-slate-500">Manage cost adjustments, inflation factors, and surcharges</p>
+                            <h1 style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0 }}>Market Adjustments</h1>
+                            <p style={{ fontSize: 13, color: inkSoft, margin: '2px 0 0' }}>Manage cost adjustments, inflation factors, and surcharges</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => {
-                            setEditingId(null);
-                            setFormData({
-                                name: '',
-                                type: 'PERCENTAGE',
-                                value: 0,
-                                description: '',
-                                category: 'general',
-                                active: true
-                            });
-                            setShowForm(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Adjustment
-                    </button>
+                    <button className="prime-btn" onClick={() => { setEditingId(null); setFormData({ name: '', type: 'PERCENTAGE', value: 0, description: '', category: 'general', active: true }); setShowForm(true); }} style={{ padding: '8px 16px', background: amber[500], color: '#fff', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'all .15s ease' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#c0842b'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = amber[500]; }}
+                    ><Plus size={16} /> Add Adjustment</button>
                 </div>
 
-                {/* Form Modal */}
                 {showForm && (
-                    <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-lg">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-slate-700">
-                                {editingId ? 'Edit Adjustment' : 'New Adjustment'}
-                            </h2>
-                            <button
-                                onClick={() => setShowForm(false)}
-                                className="p-2 hover:bg-slate-100 rounded-lg"
-                            >
-                                <X className="w-5 h-5 text-slate-500" />
-                            </button>
+                    <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, padding: 20 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <h2 style={{ fontSize: 16, fontWeight: 700, color: ink, margin: 0 }}>{editingId ? 'Edit Adjustment' : 'New Adjustment'}</h2>
+                            <button className="prime-btn-secondary" onClick={() => setShowForm(false)} style={{ padding: 8, background: 'none', border: 'none', color: inkSoft, cursor: 'pointer' }}><X size={20} /></button>
                         </div>
-
-                        <div className="space-y-4">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             <div>
-                                <label className="block text-sm font-medium text-slate-600 mb-1">Name *</label>
-                                <input
-                                    type="text"
-                                    value={formData.name || ''}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                    placeholder="e.g., Inflation Adjustment 2024"
-                                />
+                                <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: inkSoft, marginBottom: 4 }}>Name *</label>
+                                <input className="prime-input" type="text" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} style={inputStyle} placeholder="e.g., Inflation Adjustment 2024" />
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 mb-1">Type *</label>
-                                    <select
-                                        value={formData.type || 'PERCENTAGE'}
-                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                        className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                    >
+                                    <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: inkSoft, marginBottom: 4 }}>Type *</label>
+                                    <select className="prime-select" value={formData.type || 'PERCENTAGE'} onChange={e => setFormData({ ...formData, type: e.target.value })} style={selectStyle}>
                                         <option value="PERCENTAGE">Percentage (%)</option>
                                         <option value="FIXED">Fixed Amount ($)</option>
                                     </select>
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 mb-1">Value *</label>
-                                    <div className="relative">
-                                        {formData.type === 'PERCENTAGE' || formData.type === 'PERCENT' || formData.type === 'percentage' ? (
-                                            <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                        ) : (
-                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                        )}
-                                        <input
-                                            type="number"
-                                            value={formData.value || ''}
-                                            onChange={(e) => setFormData({ ...formData, value: Number(e.target.value) })}
-                                            className="w-full p-3 pl-10 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                            placeholder="Enter value"
-                                        />
+                                    <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: inkSoft, marginBottom: 4 }}>Value *</label>
+                                    <div style={{ position: 'relative' }}>
+                                        {(formData.type === 'PERCENTAGE' || formData.type === 'PERCENT' || formData.type === 'percentage') ? <Percent size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} /> : <DollarSign size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />}
+                                        <input className="prime-input" type="number" value={formData.value || ''} onChange={e => setFormData({ ...formData, value: Number(e.target.value) })} style={{ ...inputStyle, paddingLeft: 32 }} placeholder="Enter value" />
                                     </div>
                                 </div>
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-slate-600 mb-1">Category</label>
-                                <select
-                                    value={formData.category || 'general'}
-                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                >
-                                    <option value="general">General</option>
-                                    <option value="inflation">Inflation</option>
-                                    <option value="logistics">Logistics</option>
-                                    <option value="materials">Materials</option>
-                                    <option value="labor">Labor</option>
-                                    <option value="energy">Energy</option>
+                                <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: inkSoft, marginBottom: 4 }}>Category</label>
+                                <select className="prime-select" value={formData.category || 'general'} onChange={e => setFormData({ ...formData, category: e.target.value })} style={selectStyle}>
+                                    {['general', 'inflation', 'logistics', 'materials', 'labor', 'energy'].map(c => (<option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>))}
                                 </select>
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-slate-600 mb-1">Adjustment Category</label>
-                                <select
-                                    value={formData.adjustmentCategory || 'Custom'}
-                                    onChange={(e) => setFormData({ ...formData, adjustmentCategory: e.target.value })}
-                                    className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                >
-                                    <option value="Profit Margin">Profit Margin</option>
-                                    <option value="Transport/Logistics">Transport/Logistics</option>
-                                    <option value="Wastage Factor">Wastage Factor</option>
-                                    <option value="Overhead">Overhead</option>
-                                    <option value="Custom">Custom</option>
+                                <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: inkSoft, marginBottom: 4 }}>Adjustment Category</label>
+                                <select className="prime-select" value={formData.adjustmentCategory || 'Custom'} onChange={e => setFormData({ ...formData, adjustmentCategory: e.target.value })} style={selectStyle}>
+                                    {['Profit Margin', 'Transport/Logistics', 'Wastage Factor', 'Overhead', 'Custom'].map(c => (<option key={c} value={c}>{c}</option>))}
                                 </select>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 mb-1">Display Name</label>
-                                    <input
-                                        type="text"
-                                        value={formData.displayName || ''}
-                                        onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                                        className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                        placeholder="Name for reports"
-                                    />
+                                    <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: inkSoft, marginBottom: 4 }}>Display Name</label>
+                                    <input className="prime-input" type="text" value={formData.displayName || ''} onChange={e => setFormData({ ...formData, displayName: e.target.value })} style={inputStyle} placeholder="Name for reports" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 mb-1">Sort Order</label>
-                                    <input
-                                        type="number"
-                                        value={formData.sortOrder || 0}
-                                        onChange={(e) => setFormData({ ...formData, sortOrder: Number(e.target.value) })}
-                                        className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                        placeholder="0"
-                                    />
+                                    <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: inkSoft, marginBottom: 4 }}>Sort Order</label>
+                                    <input className="prime-input" type="number" value={formData.sortOrder || 0} onChange={e => setFormData({ ...formData, sortOrder: Number(e.target.value) })} style={inputStyle} placeholder="0" />
                                 </div>
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-slate-600 mb-1">Description</label>
-                                <textarea
-                                    value={formData.description || ''}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                    rows={3}
-                                    placeholder="Optional description..."
-                                />
+                                <label className="prime-label" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: inkSoft, marginBottom: 4 }}>Description</label>
+                                <textarea className="prime-input" value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ ...inputStyle, resize: 'none', minHeight: 70 }} rows={3} placeholder="Optional description..." />
                             </div>
-
-                            <label className="flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.active ?? true}
-                                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                                    className="w-5 h-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
-                                />
-                                <span className="text-slate-700">Active</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                                <input type="checkbox" checked={formData.active ?? true} onChange={e => setFormData({ ...formData, active: e.target.checked })} style={{ width: 18, height: 18, accentColor: t[500], cursor: 'pointer' }} />
+                                <span style={{ fontSize: 13, color: ink }}>Active</span>
                             </label>
-
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={handleSave}
-                                    className="flex-1 py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    {editingId ? 'Update' : 'Create'} Adjustment
-                                </button>
-                                <button
-                                    onClick={() => setShowForm(false)}
-                                    className="px-6 py-3 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
-                                >
-                                    Cancel
-                                </button>
+                            <div style={{ display: 'flex', gap: 12 }}>
+                                <button className="prime-btn" onClick={handleSave} style={{ flex: 1, padding: '9px 16px', background: amber[500], color: '#fff', borderRadius: 9, border: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}><Save size={16} /> {editingId ? 'Update' : 'Create'} Adjustment</button>
+                                <button className="prime-btn-secondary" onClick={() => setShowForm(false)} style={{ padding: '9px 20px', borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Adjustments List */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'hidden' }}>
                     {adjustments.length === 0 ? (
-                        <div className="text-center py-12 text-slate-500">
-                            <TrendingUp className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                            <p className="text-lg font-medium">No market adjustments yet</p>
-                            <p className="text-sm">Create your first adjustment to get started</p>
+                        <div style={{ textAlign: 'center', padding: 40, color: inkSoft }}>
+                            <TrendingUp size={64} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
+                            <p style={{ fontSize: 16, fontWeight: 600, color: ink, margin: 0 }}>No market adjustments yet</p>
+                            <p style={{ fontSize: 13, marginTop: 4 }}>Create your first adjustment to get started</p>
                         </div>
                     ) : (
-                        <table className="w-full">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="text-left p-4 text-sm font-semibold text-slate-600">Name</th>
-                                    <th className="text-left p-4 text-sm font-semibold text-slate-600">Type</th>
-                                    <th className="text-left p-4 text-sm font-semibold text-slate-600">Value</th>
-                                    <th className="text-left p-4 text-sm font-semibold text-slate-600">Category</th>
-                                    <th className="text-left p-4 text-sm font-semibold text-slate-600">Statistics</th>
-                                    <th className="text-left p-4 text-sm font-semibold text-slate-600">Status</th>
-                                    <th className="text-right p-4 text-sm font-semibold text-slate-600">Actions</th>
-                                </tr>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead style={{ background: t[50], borderBottom: `1.4px solid ${hairline}` }}>
+                                <tr>{['Name', 'Type', 'Value', 'Category', 'Statistics', 'Status', ''].map(h => (<th key={h} className="prime-table-header" style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</th>))}</tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {adjustments.map(adjustment => {
-                                    const stats = adjustmentStats.get(adjustment.id) || { totalApplied: 0, applicationCount: 0 };
+                            <tbody style={{ borderTop: `1px solid ${hairline}` }}>
+                                {adjustments.map(adj => {
+                                    const stats = adjustmentStats.get(adj.id) || { totalApplied: 0, applicationCount: 0 };
                                     return (
-                                        <tr key={adjustment.id} className="hover:bg-slate-50">
-                                            <td className="p-4">
-                                                <div>
-                                                    <div className="font-medium text-slate-800">{adjustment.displayName || adjustment.name}</div>
-                                                    {adjustment.description && (
-                                                        <div className="text-sm text-slate-500">{adjustment.description}</div>
-                                                    )}
-                                                    {adjustment.adjustmentCategory && (
-                                                        <div className="text-xs text-amber-600 font-medium mt-1">{adjustment.adjustmentCategory}</div>
-                                                    )}
-                                                </div>
+                                        <tr key={adj.id} className="prime-table-cell" style={{ borderBottom: `1px solid ${hairline}`, transition: 'all .15s ease' }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = t[50]; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                                        >
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <div style={{ fontWeight: 600, color: ink }}>{adj.displayName || adj.name}</div>
+                                                {adj.description && <div style={{ fontSize: 12, color: inkSoft }}>{adj.description}</div>}
+                                                {adj.adjustmentCategory && <div style={{ fontSize: 11, color: amber[500], fontWeight: 600, marginTop: 2 }}>{adj.adjustmentCategory}</div>}
                                             </td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-1 rounded text-xs font-medium ${adjustment.type === 'PERCENTAGE' || adjustment.type === 'PERCENT' || adjustment.type === 'percentage'
-                                                    ? 'bg-blue-100 text-blue-700'
-                                                    : 'bg-green-100 text-green-700'
-                                                    }`}>
-                                                    {adjustment.type === 'PERCENTAGE' || adjustment.type === 'PERCENT' || adjustment.type === 'percentage' ? 'Percentage' : 'Fixed'}
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <span style={{ padding: '3px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: (adj.type === 'PERCENTAGE' || adj.type === 'PERCENT' || adj.type === 'percentage') ? t[100] : '#dbeafe', color: (adj.type === 'PERCENTAGE' || adj.type === 'PERCENT' || adj.type === 'percentage') ? t[700] : '#1e40af' }}>
+                                                    {(adj.type === 'PERCENTAGE' || adj.type === 'PERCENT' || adj.type === 'percentage') ? 'Percentage' : 'Fixed'}
                                                 </span>
                                             </td>
-                                            <td className="p-4 font-medium text-slate-700">
-                                                {adjustment.type === 'PERCENTAGE' || adjustment.type === 'PERCENT' || adjustment.type === 'percentage'
-                                                    ? `${adjustment.value || adjustment.percentage}%`
-                                                    : `$${adjustment.value}`}
+                                            <td style={{ padding: '12px 16px', fontWeight: 600, color: ink }}>{(adj.type === 'PERCENTAGE' || adj.type === 'PERCENT' || adj.type === 'percentage') ? `${adj.value || adj.percentage}%` : formatCurrency(adj.value)}</td>
+                                            <td style={{ padding: '12px 16px', color: inkSoft, textTransform: 'capitalize' }}>{adj.category || 'general'}</td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: inkSoft, fontSize: 12 }}><BarChart3 size={12} /> {stats.applicationCount} applications</div>
+                                                <div style={{ fontSize: 11, color: t[500], fontWeight: 600 }}>{formatCurrency(stats.totalApplied)} total</div>
                                             </td>
-                                            <td className="p-4 text-slate-600 capitalize">{adjustment.category || 'general'}</td>
-                                            <td className="p-4">
-                                                <div className="text-sm">
-                                                    <div className="flex items-center gap-1 text-slate-600">
-                                                        <BarChart3 className="w-3 h-3" />
-                                                        <span>{stats.applicationCount} applications</span>
-                                                    </div>
-                                                    <div className="text-xs text-emerald-600 font-medium">
-                                                        {formatCurrency(stats.totalApplied)} total
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <button
-                                                    onClick={() => toggleActive(adjustment)}
-                                                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${adjustment.active ?? adjustment.isActive
-                                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                                        }`}
-                                                >
-                                                    {(adjustment.active ?? adjustment.isActive) ? 'Active' : 'Inactive'}
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <button onClick={() => toggleActive(adj)} style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer', background: (adj.active ?? adj.isActive) ? t[100] : hairline, color: (adj.active ?? adj.isActive) ? t[700] : inkSoft, transition: 'all .15s ease' }}>
+                                                    {(adj.active ?? adj.isActive) ? 'Active' : 'Inactive'}
                                                 </button>
                                             </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => handleViewHistory(adjustment)}
-                                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700"
-                                                        title="View History"
-                                                    >
-                                                        <Clock className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleEdit(adjustment)}
-                                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(adjustment.id)}
-                                                        className="p-2 hover:bg-red-50 rounded-lg text-slate-500 hover:text-red-600"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <div style={{ display: 'flex', gap: 4 }}>
+                                                    <button className="prime-btn-secondary" onClick={() => handleViewHistory(adj)} style={{ padding: 6, border: 'none', background: 'none', color: inkSoft, cursor: 'pointer' }}><Clock size={16} /></button>
+                                                    <button className="prime-btn-secondary" onClick={() => handleEdit(adj)} style={{ padding: 6, border: 'none', background: 'none', color: inkSoft, cursor: 'pointer' }}><Edit2 size={16} /></button>
+                                                    <button className="prime-btn-secondary" onClick={() => handleDelete(adj.id)} style={{ padding: 6, border: 'none', background: 'none', color: danger, cursor: 'pointer' }}><Trash2 size={16} /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -570,75 +259,43 @@ const MarketAdjustments: React.FC = () => {
                     )}
                 </div>
 
-                {/* Transaction History Modal */}
                 {showHistory && selectedAdjustment && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-                            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+                        <div className="prime-card" style={{ background: paper, borderRadius: 14, maxWidth: 800, width: '100%', maxHeight: '80vh', overflow: 'hidden' }}>
+                            <div style={{ padding: '16px 20px', borderBottom: `1.4px solid ${hairline}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
-                                    <h2 className="text-lg font-semibold text-slate-800">Transaction History</h2>
-                                    <p className="text-sm text-slate-500">{selectedAdjustment.displayName || selectedAdjustment.name}</p>
+                                    <h2 style={{ fontSize: 16, fontWeight: 700, color: ink, margin: 0 }}>Transaction History</h2>
+                                    <p style={{ fontSize: 13, color: inkSoft, margin: '2px 0 0' }}>{selectedAdjustment.displayName || selectedAdjustment.name}</p>
                                 </div>
-                                <button
-                                    onClick={() => setShowHistory(false)}
-                                    className="p-2 hover:bg-slate-100 rounded-lg"
-                                >
-                                    <X className="w-5 h-5 text-slate-500" />
-                                </button>
+                                <button className="prime-btn-secondary" onClick={() => setShowHistory(false)} style={{ padding: 8, border: 'none', background: 'none', color: inkSoft, cursor: 'pointer' }}><X size={20} /></button>
                             </div>
-                            <div className="p-6 overflow-auto max-h-[60vh]">
+                            <div style={{ padding: 20, overflow: 'auto', maxHeight: '60vh' }}>
                                 {transactionHistory.length === 0 ? (
-                                    <div className="text-center py-8 text-slate-500">
-                                        <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                        <p>No transactions yet</p>
-                                    </div>
+                                    <div style={{ textAlign: 'center', padding: 32, color: inkSoft }}><Clock size={48} style={{ margin: '0 auto 12px', opacity: 0.3 }} /><p>No transactions yet</p></div>
                                 ) : (
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-slate-50">
-                                            <tr>
-                                                <th className="text-left p-3 font-semibold text-slate-600">Date</th>
-                                                <th className="text-left p-3 font-semibold text-slate-600">Sale ID</th>
-                                                <th className="text-left p-3 font-semibold text-slate-600">Item</th>
-                                                <th className="text-right p-3 font-semibold text-slate-600">Qty</th>
-                                                <th className="text-right p-3 font-semibold text-slate-600">Unit Amt</th>
-                                                <th className="text-right p-3 font-semibold text-slate-600">Total</th>
-                                                <th className="text-left p-3 font-semibold text-slate-600">Status</th>
-                                            </tr>
+                                    <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                                        <thead style={{ background: t[50] }}>
+                                            <tr>{['Date', 'Sale ID', 'Item', 'Qty', 'Unit Amt', 'Total', 'Status'].map(h => (<th key={h} className="prime-table-header" style={{ textAlign: h === 'Qty' || h === 'Unit Amt' || h === 'Total' ? 'right' : 'left', padding: '8px 12px', fontSize: 11, fontWeight: 700, color: inkSoft }}>{h}</th>))}</tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody style={{ borderTop: `1px solid ${hairline}` }}>
                                             {transactionHistory.map(tx => (
-                                                <tr key={tx.id} className="hover:bg-slate-50">
-                                                    <td className="p-3 text-slate-600">
-                                                        {new Date(tx.timestamp).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="p-3 font-mono text-xs text-slate-500">{tx.saleId}</td>
-                                                    <td className="p-3 text-slate-800">{tx.itemId}</td>
-                                                    <td className="p-3 text-right text-slate-600">{tx.quantity}</td>
-                                                    <td className="p-3 text-right text-slate-600">{formatCurrency(tx.unitAmount)}</td>
-                                                    <td className="p-3 text-right font-medium text-emerald-600">{formatCurrency(tx.calculatedAmount)}</td>
-                                                    <td className="p-3">
-                                                        <span className={`px-2 py-1 rounded text-xs font-medium ${tx.status === 'Active' ? 'bg-green-100 text-green-700' :
-                                                                tx.status === 'Reversed' ? 'bg-red-100 text-red-700' :
-                                                                    'bg-yellow-100 text-yellow-700'
-                                                            }`}>
-                                                            {tx.status}
-                                                        </span>
-                                                    </td>
+                                                <tr key={tx.id} className="prime-table-cell" style={{ borderBottom: `1px solid ${hairline}` }}>
+                                                    <td style={{ padding: '8px 12px', color: inkSoft }}>{new Date(tx.timestamp).toLocaleDateString()}</td>
+                                                    <td style={{ padding: '8px 12px', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: inkSoft }}>{tx.saleId}</td>
+                                                    <td style={{ padding: '8px 12px', color: ink }}>{tx.itemId}</td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'right', color: inkSoft }}>{tx.quantity}</td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'right', color: inkSoft }}>{formatCurrency(tx.unitAmount)}</td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: t[500] }}>{formatCurrency(tx.calculatedAmount)}</td>
+                                                    <td style={{ padding: '8px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: tx.status === 'Active' ? t[100] : tx.status === 'Reversed' ? '#fef0ee' : amber[100], color: tx.status === 'Active' ? t[700] : tx.status === 'Reversed' ? danger : '#92400e' }}>{tx.status}</span></td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 )}
                             </div>
-                            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
-                                <div className="text-sm text-slate-600">
-                                    Total: <span className="font-bold text-slate-800">{transactionHistory.length}</span> transactions
-                                </div>
-                                <div className="text-sm text-slate-600">
-                                    Total Applied: <span className="font-bold text-emerald-600">
-                                        {formatCurrency(transactionHistory.reduce((sum, tx) => sum + tx.calculatedAmount, 0))}
-                                    </span>
-                                </div>
+                            <div style={{ padding: '12px 20px', borderTop: `1.4px solid ${hairline}`, background: t[50], display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: 13, color: inkSoft }}>Total: <b style={{ color: ink }}>{transactionHistory.length}</b> transactions</span>
+                                <span style={{ fontSize: 13, color: inkSoft }}>Total Applied: <b style={{ color: t[500] }}>{formatCurrency(transactionHistory.reduce((sum, tx) => sum + tx.calculatedAmount, 0))}</b></span>
                             </div>
                         </div>
                     </div>

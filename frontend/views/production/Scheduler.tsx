@@ -3,6 +3,10 @@ import { CalendarClock, AlertCircle, ChevronLeft, ChevronRight, Clock, GripVerti
 import { useProduction } from '../../context/ProductionContext';
 import { WorkOrder, ResourceAllocation } from '../../types';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 const Scheduler: React.FC = () => {
   const { 
     workOrders = [], 
@@ -105,31 +109,31 @@ const Scheduler: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 h-[calc(100vh-4rem)] flex flex-col">
+    <div style={{ padding: '24px', marginLeft: 'auto', marginTop: '24px', display: 'flex', flexDirection: 'column' }}>
         
-        <div className="flex justify-between items-center shrink-0 mb-4">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, marginBottom: '16px' }}>
             <div>
-               <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2"><CalendarClock size={18} className="text-blue-600"/> Production Schedule</h1>
-               <p className="text-xs text-slate-500 mt-0.5">Drag work orders to assign resources</p>
+               <h1 style={{ fontSize: '16px', fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '8px' }}><CalendarClock size={18} style={{ color: '#1f8577' }}/> Production Schedule</h1>
+               <p style={{ fontSize: '11px', color: '#5c6567', marginTop: '2px' }}>Drag work orders to assign resources</p>
             </div>
             
-            <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-                <button onClick={() => handleDateChange(-1)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"><ChevronLeft size={16}/></button>
-                <div className="text-center min-w-[120px]">
-                    <div className="font-bold text-slate-800 text-sm">{currentDate.toLocaleDateString(undefined, { weekday: 'long' })}</div>
-                    <div className="text-[10px] text-slate-500">{currentDate.toLocaleDateString()}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#FEFDFB', padding: '4px', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                <button onClick={() => handleDateChange(-1)} style={{ padding: '6px', borderRadius: '10px', color: '#5c6567' }}><ChevronLeft size={16}/></button>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>{currentDate.toLocaleDateString(undefined, { weekday: 'long' })}</div>
+                    <div style={{ color: '#5c6567' }}>{currentDate.toLocaleDateString()}</div>
                 </div>
-                <button onClick={() => handleDateChange(1)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"><ChevronRight size={16}/></button>
+                <button onClick={() => handleDateChange(1)} style={{ padding: '6px', borderRadius: '10px', color: '#5c6567' }}><ChevronRight size={16}/></button>
             </div>
         </div>
 
-        <div className="flex-1 flex gap-6 overflow-hidden">
+        <div style={{ flex: 1, display: 'flex', gap: '24px', overflow: 'hidden' }}>
             {/* Unscheduled Queue */}
-            <div className="w-64 bg-white border border-slate-200 rounded-xl flex flex-col shrink-0">
-                <div className="p-3 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-                    <h3 className="font-bold text-slate-700 flex items-center gap-2 text-xs uppercase tracking-wider"><AlertCircle size={14}/> Queue ({unallocatedOrders.length})</h3>
+            <div style={{ width: '256px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                <div style={{ padding: '12px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', borderRadius: '6px' }}>
+                    <h3 style={{ fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.05em' }}><AlertCircle size={14}/> Queue ({unallocatedOrders.length})</h3>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                <div style={{ flex: 1, overflowY: 'auto', padding: '12px', marginTop: '12px' }}>
                     {unallocatedOrders.map(wo => (
                         <div 
                             key={wo.id}
@@ -139,38 +143,38 @@ const Scheduler: React.FC = () => {
                                 ${wo.isConfidential ? 'border-red-200 bg-red-50/50' : 'border-slate-200'}
                             `}
                         >
-                            <div className="flex justify-between items-start mb-1">
-                                <div className="flex items-center gap-1">
-                                    <span className="text-[10px] font-mono text-slate-500">{wo.id}</span>
-                                    {wo.isConfidential && <Lock size={10} className="text-red-500"/>}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontFamily: '"JetBrains Mono",monospace', color: '#5c6567' }}>{wo.id}</span>
+                                    {wo.isConfidential && <Lock size={10} style={{ color: '#b5493f' }}/>}
                                 </div>
-                                <GripVertical size={12} className="text-slate-300"/>
+                                <GripVertical size={12} style={{ color: '#5c6567' }}/>
                             </div>
-                            <div className="font-bold text-xs text-slate-800 mb-1 flex items-center gap-1">
+                            <div style={{ fontWeight: 700, fontSize: '11px', color: '#23282A', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 {wo.productName}
                             </div>
-                            <div className="text-[10px] text-slate-500 flex justify-between">
+                            <div style={{ color: '#5c6567', display: 'flex', justifyContent: 'space-between' }}>
                                 <span>{wo.quantityPlanned} units</span>
                                 <span>Due: {new Date(wo.dueDate).toLocaleDateString(undefined, {month:'short', day:'numeric'})}</span>
                             </div>
                         </div>
                     ))}
                     {unallocatedOrders.length === 0 && (
-                        <div className="text-center text-slate-400 text-xs py-10">All orders assigned.</div>
+                        <div style={{ textAlign: 'center', color: '#5c6567', fontSize: '11px', paddingTop: '40px', paddingBottom: '40px' }}>All orders assigned.</div>
                     )}
                 </div>
             </div>
 
             {/* Timeline */}
-            <div className="flex-1 bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden">
+            <div style={{ flex: 1, background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 {/* Time Header */}
-                <div className="flex border-b border-slate-200 bg-slate-50 h-10 shrink-0">
-                    <div className="w-48 border-r border-slate-200 p-2 font-bold text-slate-700 text-xs flex items-center pl-4">Resource</div>
-                    <div className="flex-1 relative overflow-hidden">
+                <div style={{ display: 'flex', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', height: '40px', flexShrink: 0 }}>
+                    <div style={{ width: '192px', borderStyle: 'solid', borderColor: '#e4ddd1', padding: '8px', fontWeight: 700, color: '#23282A', fontSize: '11px', display: 'flex', alignItems: 'center', paddingLeft: '16px' }}>Resource</div>
+                    <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                         {Array.from({ length: totalHours }).map((_, i) => (
                             <div 
                                 key={i} 
-                                className="absolute border-l border-slate-200 h-full flex items-center pl-1 text-[10px] font-medium text-slate-500"
+                                style={{ position: 'absolute', borderStyle: 'solid', borderColor: '#e4ddd1', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '4px', fontWeight: 500, color: '#5c6567' }}
                                 style={{ left: i * pixelsPerHour, width: pixelsPerHour }}
                             >
                                 {startHour + i}:00
@@ -180,7 +184,7 @@ const Scheduler: React.FC = () => {
                 </div>
 
                 {/* Resource Rows */}
-                <div className="flex-1 overflow-y-auto">
+                <div style={{ flex: 1, overflowY: 'auto' }}>
                     {resources.map(res => {
                         // Get allocations for this resource on current date
                         const resAllocations = allocations.filter(a => 
@@ -189,16 +193,16 @@ const Scheduler: React.FC = () => {
                         );
 
                         return (
-                            <div key={res.id} className="flex border-b border-slate-100 h-20">
+                            <div key={res.id} style={{ display: 'flex', borderStyle: 'solid', borderColor: '#e4ddd1', height: '80px' }}>
                                 {/* Resource Label */}
-                                <div className="w-48 border-r border-slate-200 p-3 bg-slate-50 flex flex-col justify-center shrink-0">
-                                    <div className="font-bold text-xs text-slate-800">{res.name}</div>
-                                    <div className="text-[10px] text-slate-500">{workCenters.find(wc => wc.id === res.workCenterId)?.name}</div>
+                                <div style={{ width: '192px', borderStyle: 'solid', borderColor: '#e4ddd1', padding: '12px', background: '#eef7f6', display: 'flex', flexDirection: 'column', justifyContent: 'center', flexShrink: 0 }}>
+                                    <div style={{ fontWeight: 700, fontSize: '11px', color: '#23282A' }}>{res.name}</div>
+                                    <div style={{ color: '#5c6567' }}>{workCenters.find(wc => wc.id === res.workCenterId)?.name}</div>
                                 </div>
 
                                 {/* Timeline Track */}
                                 <div 
-                                    className="flex-1 relative bg-slate-50 min-w-[1000px]"
+                                    style={{ flex: 1, position: 'relative', background: '#eef7f6' }}
                                     onDragOver={handleDragOver}
                                     onDrop={(e) => handleDrop(e, res.id)}
                                 >
@@ -206,7 +210,7 @@ const Scheduler: React.FC = () => {
                                     {Array.from({ length: totalHours }).map((_, i) => (
                                         <div 
                                             key={i} 
-                                            className="absolute border-l border-slate-100 h-full pointer-events-none"
+                                            style={{ position: 'absolute', borderStyle: 'solid', borderColor: '#e4ddd1', height: '100%', pointerEvents: 'none' }}
                                             style={{ left: i * pixelsPerHour }}
                                         ></div>
                                     ))}
@@ -237,16 +241,16 @@ const Scheduler: React.FC = () => {
                                                     color: 'white'
                                                 }}
                                             >
-                                                <div className="flex items-center gap-1 font-bold text-[10px] truncate">
-                                                    {wo.isConfidential && <Lock size={10} className="shrink-0 text-red-200"/>}
-                                                    <span className="truncate">{wo.productName}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {wo.isConfidential && <Lock size={10} style={{ flexShrink: 0 }}/>}
+                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wo.productName}</span>
                                                 </div>
-                                                <div className="text-[9px] opacity-90 flex items-center gap-1">
+                                                <div style={{ opacity: 0.9, display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                     <Clock size={8}/> {new Date(alloc.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                                                 </div>
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); removeAllocation(alloc.id); }}
-                                                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 hover:bg-black/20 rounded"
+                                                    style={{ position: 'absolute', top: '4px', right: '4px', opacity: 0.0, padding: '2px', borderRadius: '6px' }}
                                                 >
                                                     <Trash2 size={10} color="white"/>
                                                 </button>

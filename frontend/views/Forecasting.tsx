@@ -19,6 +19,10 @@ import { analyzeForecastingData } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { generateNextId } from '../utils/helpers';
 
+const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
+const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+
 const Forecasting: React.FC = () => {
   const { companyConfig, notify } = useAuth();
   const { sales } = useSales();
@@ -213,38 +217,38 @@ const Forecasting: React.FC = () => {
 
   // --- Render List View ---
   return (
-    <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-      <div className="mb-6 flex justify-between items-end shrink-0">
+    <div style={{ padding: '24px', marginLeft: 'auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'end', flexShrink: 0 }}>
         <div>
-          <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <TrendingUp className="text-purple-600" size={20} />
+          <h1 style={{ fontSize: '16px', fontWeight: 700, color: '#23282A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <TrendingUp style={{ color: '#1f8577' }} size={20} />
             Forecasting & Analytics Hub
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">Predictive engines for stock replenishment and financial liquidity</p>
+          <p style={{ fontSize: '11px', color: '#5c6567', marginTop: '2px' }}>Predictive engines for stock replenishment and financial liquidity</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button 
                 onClick={handleAiAnalysis}
                 disabled={isAiLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-purple-300 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '16px', paddingTop: '8px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontSize: '11px', fontWeight: 700, color: '#23282A', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '16px', paddingBottom: '8px' }}
             >
-                {isAiLoading ? <TrendingUp className="animate-spin text-purple-600" size={14} /> : <BarChart3 className="text-purple-600" size={14} />}
+                {isAiLoading ? <TrendingUp style={{ animation: 'spin 1s linear infinite', color: '#1f8577' }} size={14} /> : <BarChart3 style={{ color: '#1f8577' }} size={14} />}
                 {aiAnalysis ? 'Update AI Insight' : 'Get AI Forecast'}
             </button>
-            <div className="border-b border-slate-200 bg-white rounded-t-xl">
-              <div className="flex items-center gap-8 px-6">
+            <div style={{ borderStyle: 'solid', borderColor: '#e4ddd1', background: '#FEFDFB', borderRadius: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '32px', paddingLeft: '24px', paddingRight: '24px' }}>
                 <button 
                     onClick={() => setActiveTab('Inventory')}
                     className={`py-3 text-[13px] font-bold transition-all border-b-2 relative ${activeTab === 'Inventory' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
-                    <Package size={14} className="inline mr-1.5"/> Inventory
+                    <Package size={14} style={{ display: 'inline', marginRight: '6px' }}/> Inventory
                 </button>
                 <button 
                     onClick={() => setActiveTab('CashFlow')}
                     className={`py-3 text-[13px] font-bold transition-all border-b-2 relative ${activeTab === 'CashFlow' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
-                    <Wallet size={14} className="inline mr-1.5"/> Cash Flow
+                    <Wallet size={14} style={{ display: 'inline', marginRight: '6px' }}/> Cash Flow
                 </button>
               </div>
             </div>
@@ -252,19 +256,19 @@ const Forecasting: React.FC = () => {
       </div>
 
       {aiAnalysis && (
-        <div className="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-2xl p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden group shrink-0">
-            <div className="flex items-start gap-3 relative">
-                <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0 border border-purple-100">
-                    <TrendingUp className="text-purple-600" size={16} />
+        <div style={{ marginBottom: '24px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', borderRadius: '16px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transitionDuration: '500ms', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '12px', position: 'relative' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#FEFDFB', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1.4px solid #e4ddd1', borderColor: '#d3ece9' }}>
+                    <TrendingUp style={{ color: '#1f8577' }} size={16} />
                 </div>
-                <div className="flex-1">
-                    <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-[10px] font-black text-purple-900 uppercase tracking-widest">AI Strategic Forecast Insight</h3>
-                        <button onClick={() => setAiAnalysis(null)} className="text-purple-400 hover:text-purple-600 transition-colors">
+                <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <h3 style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em' }}>AI Strategic Forecast Insight</h3>
+                        <button onClick={() => setAiAnalysis(null)} style={{ color: '#3fa294', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
                             <AlertTriangle size={14} />
                         </button>
                     </div>
-                    <div className="prose prose-xs prose-purple max-w-none text-purple-900/80 font-medium">
+                    <div style={{ maxWidth: 'none', fontWeight: 500 }}>
                         <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
                     </div>
                 </div>
@@ -272,104 +276,104 @@ const Forecasting: React.FC = () => {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {activeTab === 'Inventory' ? (
           <div className="animate-fadeIn">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-red-500 hover:bg-slate-50 transition-all">
-                <div className="p-2.5 bg-red-50 text-red-600 rounded-lg">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#b5493f', transition: 'all .15s ease' }}>
+                <div style={{ padding: '10px', background: '#fef2f2', color: '#b5493f', borderRadius: '10px' }}>
                   <AlertTriangle size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Critical Stock Alerts</p>
-                  <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{inventoryForecast.filter(i => i.daysUntilStockout < 7).length} <span className="text-xs font-semibold text-slate-400">Items</span></p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Will run out within 7 days</p>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Critical Stock Alerts</p>
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{inventoryForecast.filter(i => i.daysUntilStockout < 7).length} <span style={{ fontSize: '11px', fontWeight: 600, color: '#5c6567' }}>Items</span></p>
+                  <p style={{ color: '#5c6567', marginTop: '2px' }}>Will run out within 7 days</p>
                 </div>
               </div>
-              <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-purple-500 hover:bg-slate-50 transition-all">
-                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
+              <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease' }}>
+                <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px' }}>
                   <Package size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Avg. Daily Consumption</p>
-                  <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{(inventoryForecast.reduce((sum, i) => sum + (i.dailyUsage || 0), 0) || 0).toFixed(1)} <span className="text-xs font-semibold text-slate-400">units/day</span></p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Across all product lines</p>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Avg. Daily Consumption</p>
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{(inventoryForecast.reduce((sum, i) => sum + (i.dailyUsage || 0), 0) || 0).toFixed(1)} <span style={{ fontSize: '11px', fontWeight: 600, color: '#5c6567' }}>units/day</span></p>
+                  <p style={{ color: '#5c6567', marginTop: '2px' }}>Across all product lines</p>
                 </div>
               </div>
-              <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all">
-                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+              <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease' }}>
+                <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px' }}>
                   <BarChart3 size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Est. Reorder Value</p>
-                  <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{(inventoryForecast.reduce((sum, i) => sum + ((i.suggestedReorder || 0) * (i.price || 0)), 0) || 0).toFixed(0)}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">To maintain 14-day buffer</p>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Est. Reorder Value</p>
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{currency}{(inventoryForecast.reduce((sum, i) => sum + ((i.suggestedReorder || 0) * (i.price || 0)), 0) || 0).toFixed(0)}</p>
+                  <p style={{ color: '#5c6567', marginTop: '2px' }}>To maintain 14-day buffer</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-4 border-b border-slate-200 bg-slate-50">
-                <h3 className="font-bold text-slate-900 text-sm">Replenishment Recommendations</h3>
+            <div style={{ background: '#FEFDFB', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', overflow: 'hidden' }}>
+              <div style={{ padding: '16px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6' }}>
+                <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Replenishment Recommendations</h3>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', textAlign: 'left', fontSize: '13px' }}>
+                  <thead style={{ background: '#eef7f6', color: '#5c6567', fontWeight: 500, borderStyle: 'solid', borderColor: '#e4ddd1', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.05em' }}>
                     <tr>
-                      <th className="px-6 py-4">Item</th>
-                      <th className="px-6 py-4 text-center">Current Stock</th>
-                      <th className="px-6 py-4 text-center">Avg. Daily Usage</th>
-                      <th className="px-6 py-4 text-center">Days Remaining</th>
-                      <th className="px-6 py-4 text-center">Suggested Order</th>
-                      <th className="px-6 py-4 text-right">Status</th>
-                      <th className="px-6 py-4"></th>
+                      <th style={{ paddingLeft: '24px', paddingTop: '16px', paddingRight: '24px', paddingBottom: '16px' }}>Item</th>
+                      <th style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'center', paddingRight: '24px', paddingBottom: '16px' }}>Current Stock</th>
+                      <th style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'center', paddingRight: '24px', paddingBottom: '16px' }}>Avg. Daily Usage</th>
+                      <th style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'center', paddingRight: '24px', paddingBottom: '16px' }}>Days Remaining</th>
+                      <th style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'center', paddingRight: '24px', paddingBottom: '16px' }}>Suggested Order</th>
+                      <th style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'right', paddingRight: '24px', paddingBottom: '16px' }}>Status</th>
+                      <th style={{ paddingLeft: '24px', paddingTop: '16px', paddingRight: '24px', paddingBottom: '16px' }}></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody style={{ borderColor: '#e4ddd1' }}>
                     {inventoryForecast.map((item) => (
                       <tr 
                           key={item.id} 
-                          className="hover:bg-slate-50 cursor-pointer group transition-colors"
+                          style={{ cursor: 'pointer', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}
                           onClick={() => setSelectedForecastItem(item)}
                       >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-purple-100 group-hover:text-purple-600 transition-colors">
+                        <td style={{ paddingLeft: '24px', paddingTop: '16px', paddingRight: '24px', paddingBottom: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>
                               <Package size={16} />
                             </div>
                             <div>
-                              <div className="font-bold text-slate-900 group-hover:text-purple-700 text-sm">{item.name}</div>
-                              <div className="text-[10px] text-slate-500">{item.sku}</div>
+                              <div style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>{item.name}</div>
+                              <div style={{ color: '#5c6567' }}>{item.sku}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center font-medium">{item.stock}</td>
-                        <td className="px-6 py-4 text-center text-slate-600">{(item.dailyUsage || 0).toFixed(2)} / day</td>
-                        <td className="px-6 py-4 text-center">
+                        <td style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'center', fontWeight: 500, paddingRight: '24px', paddingBottom: '16px' }}>{item.stock}</td>
+                        <td style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'center', color: '#5c6567', paddingRight: '24px', paddingBottom: '16px' }}>{(item.dailyUsage || 0).toFixed(2)} / day</td>
+                        <td style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'center', paddingRight: '24px', paddingBottom: '16px' }}>
                           <span className={`font-bold text-xs ${item.daysUntilStockout < 7 ? 'text-red-600' : item.daysUntilStockout < 14 ? 'text-amber-600' : 'text-emerald-600'}`}>
                             {item.daysUntilStockout > 365 ? '> 1 Year' : `${(item.daysUntilStockout || 0).toFixed(0)} Days`}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center font-bold text-blue-600">
+                        <td style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'center', fontWeight: 700, color: '#1f8577', paddingRight: '24px', paddingBottom: '16px' }}>
                           +{(item.suggestedReorder || 0).toFixed(0)}
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'right', paddingRight: '24px', paddingBottom: '16px' }}>
                           {item.daysUntilStockout < 7 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 text-red-700 text-[10px] font-bold">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', paddingLeft: '8px', paddingTop: '4px', borderRadius: '9999px', background: '#fee2e2', color: '#b5493f', fontWeight: 700, paddingRight: '8px', paddingBottom: '4px' }}>
                               <AlertTriangle size={10} /> Critical
                             </span>
                           ) : item.daysUntilStockout < 14 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', paddingLeft: '8px', paddingTop: '4px', borderRadius: '9999px', background: '#fbead0', color: '#b97e2b', fontWeight: 700, paddingRight: '8px', paddingBottom: '4px' }}>
                               Low Stock
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', paddingLeft: '8px', paddingTop: '4px', borderRadius: '9999px', background: '#d3ece9', color: '#0f544c', fontWeight: 700, paddingRight: '8px', paddingBottom: '4px' }}>
                               Healthy
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right">
-                            <div className="text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-1 font-bold text-xs">
+                        <td style={{ paddingLeft: '24px', paddingTop: '16px', textAlign: 'right', paddingRight: '24px', paddingBottom: '16px' }}>
+                            <div style={{ color: '#1f8577', opacity: 0.0, transition: 'opacity .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px', fontWeight: 700, fontSize: '11px' }}>
                                 Forecast <BarChart3 size={14}/>
                             </div>
                         </td>
@@ -381,36 +385,36 @@ const Forecasting: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="animate-fadeIn space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all">
-                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+          <div style={{ marginTop: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '16px' }}>
+              <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease' }}>
+                <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px' }}>
                   <Coins size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Available Cash</p>
-                  <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{cashFlowForecast.currentCash.toLocaleString()}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Ledger balance today</p>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Available Cash</p>
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>{currency}{cashFlowForecast.currentCash.toLocaleString()}</p>
+                  <p style={{ color: '#5c6567', marginTop: '2px' }}>Ledger balance today</p>
                 </div>
               </div>
-              <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all">
-                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+              <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease' }}>
+                <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px' }}>
                   <ArrowUpCircle size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Est. Inflows (90d)</p>
-                  <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">+{currency}{cashFlowForecast.totalInflow.toLocaleString()}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Pending Invoices</p>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Est. Inflows (90d)</p>
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>+{currency}{cashFlowForecast.totalInflow.toLocaleString()}</p>
+                  <p style={{ color: '#5c6567', marginTop: '2px' }}>Pending Invoices</p>
                 </div>
               </div>
-              <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-rose-500 hover:bg-slate-50 transition-all">
-                <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg">
+              <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#b5493f', transition: 'all .15s ease' }}>
+                <div style={{ padding: '10px', background: '#fef2f2', color: '#b5493f', borderRadius: '10px' }}>
                   <ArrowDownCircle size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Est. Outflows (90d)</p>
-                  <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">-{currency}{cashFlowForecast.totalOutflow.toLocaleString()}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">AP & Fixed Costs</p>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Est. Outflows (90d)</p>
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#23282A' }}>-{currency}{cashFlowForecast.totalOutflow.toLocaleString()}</p>
+                  <p style={{ color: '#5c6567', marginTop: '2px' }}>AP & Fixed Costs</p>
                 </div>
               </div>
               <div className={`bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 hover:bg-slate-50 transition-all ${cashFlowForecast.minBalance < 0 ? 'border-l-red-500' : 'border-l-emerald-500'}`}>
@@ -418,23 +422,23 @@ const Forecasting: React.FC = () => {
                   <BarChart3 size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Projected Liquidity</p>
+                  <p style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-.025em', lineHeight: 1, marginBottom: '6px' }}>Projected Liquidity</p>
                   <p className={`text-lg md:text-xl font-semibold finance-nums ${cashFlowForecast.minBalance < 0 ? 'text-red-700' : 'text-emerald-700'}`}>{currency}{cashFlowForecast.minBalance.toLocaleString()}</p>
                   <p className={`text-[10px] mt-0.5 ${cashFlowForecast.minBalance < 0 ? 'text-red-400' : 'text-emerald-400'}`}>{cashFlowForecast.minBalance < 0 ? `Risk: Deficit on ${cashFlowForecast.riskDay?.label}` : 'Safe operating margin'}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+            <div style={{ background: '#FEFDFB', padding: '32px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                     <div>
-                        <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg">90-Day Cash Runway</h3>
-                        <p className="text-xs text-slate-500">Includes current cash, AR, AP, and historical burn rate</p>
+                        <h3 style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', letterSpacing: '-.05em', fontSize: '16px' }}>90-Day Cash Runway</h3>
+                        <p style={{ fontSize: '11px', color: '#5c6567' }}>Includes current cash, AR, AP, and historical burn rate</p>
                     </div>
-                    <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider">
-                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-blue-500"></div> Balance</div>
-                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-emerald-500/20 border border-emerald-500/30"></div> Daily Inflow</div>
-                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-rose-500/20 border border-rose-500/30"></div> Daily Outflow</div>
+                    <div style={{ display: 'flex', gap: '16px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#eef7f6' }}></div> Balance</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3' }}></div> Daily Inflow</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#fef2f2', border: '1.4px solid #e4ddd1', borderStyle: 'solid' }}></div> Daily Outflow</div>
                     </div>
                 </div>
                 <div style={{ width: '100%', height: 400, minHeight: 150 }}>
@@ -479,31 +483,31 @@ const Forecasting: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Inflow Drivers</h4>
-                    <div className="space-y-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px' }}>
+                <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                    <h4 style={{ fontSize: '11px', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '16px' }}>Inflow Drivers</h4>
+                    <div style={{ marginTop: '16px' }}>
                         {(invoices || []).filter(i => i.status !== 'Paid').slice(0, 5).map(inv => (
-                            <div key={inv.id} className="flex justify-between items-center text-sm">
-                                <div className="flex flex-col">
-                                    <span className="font-bold text-slate-700">{inv.customerName}</span>
-                                    <span className="text-[10px] text-slate-400">Due {format(new Date(inv.dueDate), 'MMM dd')}</span>
+                            <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontWeight: 700, color: '#23282A' }}>{inv.customerName}</span>
+                                    <span style={{ color: '#5c6567' }}>Due {format(new Date(inv.dueDate), 'MMM dd')}</span>
                                 </div>
-                                <span className="font-mono font-bold text-emerald-600">+{currency}{(inv.totalAmount - (inv.paidAmount || 0)).toLocaleString()}</span>
+                                <span style={{ fontFamily: '"JetBrains Mono",monospace', fontWeight: 700, color: '#1f8577' }}>+{currency}{(inv.totalAmount - (inv.paidAmount || 0)).toLocaleString()}</span>
                             </div>
                         ))}
                     </div>
                 </div>
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Outflow Drivers</h4>
-                    <div className="space-y-4">
+                <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                    <h4 style={{ fontSize: '11px', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '16px' }}>Outflow Drivers</h4>
+                    <div style={{ marginTop: '16px' }}>
                         {(purchases || []).filter(p => p.status !== 'Paid').slice(0, 5).map(p => (
-                            <div key={p.id} className="flex justify-between items-center text-sm">
-                                <div className="flex flex-col">
-                                    <span className="font-bold text-slate-700">Supplier: {p.supplierId}</span>
-                                    <span className="text-[10px] text-slate-400">Ref: {p.id}</span>
+                            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontWeight: 700, color: '#23282A' }}>Supplier: {p.supplierId}</span>
+                                    <span style={{ color: '#5c6567' }}>Ref: {p.id}</span>
                                 </div>
-                                <span className="font-mono font-bold text-rose-600">-{currency}{(p.total - (p.paidAmount || 0)).toLocaleString()}</span>
+                                <span style={{ fontFamily: '"JetBrains Mono",monospace', fontWeight: 700, color: '#b5493f' }}>-{currency}{(p.total - (p.paidAmount || 0)).toLocaleString()}</span>
                             </div>
                         ))}
                     </div>

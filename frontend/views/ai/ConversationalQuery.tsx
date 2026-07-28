@@ -66,37 +66,46 @@ const ConversationalQuery: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-50/50">
-      <div className="flex items-center gap-3 p-4 border-b border-slate-200 bg-white">
-        <button onClick={() => navigate('/ai-analytics')} className="p-2 rounded-lg hover:bg-slate-100"><ArrowLeft size={20} /></button>
-        <MessageSquare className="text-purple-500" size={24} />
-        <div><h1 className="text-lg font-bold text-slate-800">Conversational Query</h1><p className="text-xs text-slate-500">Ask business questions in plain English</p></div>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#FEFDFB' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, borderBottom: '1.4px solid #e4ddd1', background: '#FEFDFB' }}>
+        <button onClick={() => navigate('/ai-analytics')} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        ><ArrowLeft size={20} /></button>
+        <MessageSquare color="#1f8577" size={24} />
+        <div><h1 style={{ fontSize: 18, fontWeight: 700, color: '#23282A', margin: 0 }}>Conversational Query</h1><p style={{ fontSize: 11, color: '#5c6567', margin: 0 }}>Ask business questions in plain English</p></div>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-2xl p-3 ${msg.role === 'user' ? 'bg-purple-500 text-white' : 'bg-white border border-slate-200 text-slate-700'}`}>
-              <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+          <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div style={{ maxWidth: '80%', borderRadius: 16, padding: 12, background: msg.role === 'user' ? '#1f8577' : '#FEFDFB', border: msg.role === 'user' ? 'none' : '1.4px solid #e4ddd1', color: msg.role === 'user' ? '#fff' : '#23282A' }}>
+              <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{msg.content}</div>
             </div>
           </div>
         ))}
-        {loading && <div className="flex justify-start"><div className="bg-white border border-slate-200 rounded-2xl p-3"><Loader2 size={18} className="animate-spin text-purple-500" /></div></div>}
+        {loading && <div style={{ display: 'flex', justifyContent: 'flex-start' }}><div style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderRadius: 16, padding: 12 }}><Loader2 size={18} className="animate-spin" color="#1f8577" /></div></div>}
         <div ref={bottomRef} />
       </div>
       {messages.length === 1 && (
-        <div className="px-4 pb-2">
-          <div className="text-xs text-slate-400 mb-2 text-center">Try asking:</div>
-          <div className="flex flex-wrap gap-2 justify-center">
+        <div style={{ padding: '0 16px 8px' }}>
+          <div style={{ fontSize: 11, color: '#5c6567', marginBottom: 8, textAlign: 'center' }}>Try asking:</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
             {EXAMPLE_QUESTIONS.map((q, i) => (
-              <button key={i} onClick={() => sendQuery(q)} className="text-xs bg-white border border-slate-200 rounded-full px-3 py-1.5 text-slate-600 hover:border-purple-300 hover:text-purple-600">{q}</button>
+              <button key={i} onClick={() => sendQuery(q)} style={{ fontSize: 11, background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderRadius: 9999, padding: '6px 12px', color: '#5c6567', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#1f8577'; e.currentTarget.style.color = '#1f8577' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.color = '#5c6567' }}
+              >{q}</button>
             ))}
           </div>
         </div>
       )}
-      <div className="p-4 border-t border-slate-200 bg-white">
-        <div className="flex gap-2">
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendQuery()} placeholder="Ask a business question..." className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-          <button onClick={() => sendQuery()} disabled={loading || !input.trim()} className="px-4 py-2.5 bg-purple-500 text-white rounded-xl hover:bg-purple-600 disabled:opacity-50"><Send size={18} /></button>
+      <div style={{ padding: 16, borderTop: '1.4px solid #e4ddd1', background: '#FEFDFB' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendQuery()} placeholder="Ask a business question..." style={{ flex: 1, padding: '10px 16px', borderRadius: 12, border: '1.4px solid #e4ddd1', fontSize: 13, outline: 'none', background: '#FEFDFB', color: '#23282A' }} />
+          <button onClick={() => sendQuery()} disabled={loading || !input.trim()} style={{ padding: '10px 16px', background: '#1f8577', color: '#fff', borderRadius: 12, border: 'none', cursor: 'pointer', opacity: loading || !input.trim() ? 0.5 : 1 }}
+            onMouseEnter={e => { if (!loading && input.trim()) e.currentTarget.style.background = '#166b60' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#1f8577' }}
+          ><Send size={18} /></button>
         </div>
       </div>
     </div>

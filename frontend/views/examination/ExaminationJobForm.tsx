@@ -46,6 +46,14 @@ export const calculateExaminationPricing = (
   };
 };
 
+const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
 interface ExaminationJobFormProps {
   isModal?: boolean;
   onClose?: () => void;
@@ -72,7 +80,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
   const defaultEngineCustomStep = Number(companyConfig?.pricingSettings?.customStep || 50);
   const defaultRoundingFromEngine = getExamRoundingFromEngineMethod(defaultEngineMethod, defaultEngineCustomStep);
 
-  // Form state
   const [formData, setFormData] = useState({
     exam_name: '',
     school_id: '',
@@ -101,7 +108,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   
-  // Settings panel state
   const [showSettings, setShowSettings] = useState(false);
   const [pricingConfig, setPricingConfig] = useState({
     paperId: '',
@@ -179,7 +185,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     });
   }, [inventory, autoPaper, autoToner]);
 
-  // Automatic calculations for sheets and pages
   const { totalSheets, totalPages } = useMemo(() => {
     if (!formData.subjects || formData.subjects.length === 0 || formData.number_of_learners <= 0) {
       return { totalSheets: 0, totalPages: 0 };
@@ -193,7 +198,7 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
       const totalCopies = Math.max(0, Math.floor(Number(formData.number_of_learners) || 0))
         + Math.max(0, Math.floor(Number(subject.extra_copies) || 0));
       const subjectPages = subject.pages_per_paper * totalCopies;
-      const subjectSheets = Math.ceil(subjectPages / 2); // duplex printing
+      const subjectSheets = Math.ceil(subjectPages / 2);
 
       pages += subjectPages;
       sheets += subjectSheets;
@@ -202,16 +207,13 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     return { totalSheets: sheets, totalPages: pages };
   }, [formData.subjects, formData.number_of_learners]);
 
-  // Calculate BOM cost based on selected materials
   const { totalBOMCost, selectedPaper, selectedToner } = useMemo(() => {
     const paper = (inventory || []).find(i => i.id === pricingConfig.paperId);
     const toner = (inventory || []).find(i => i.id === pricingConfig.tonerId);
     
-    // Paper: sheets needed (considering 500 sheets per ream)
     const paperCost = paper ? (totalSheets / 500) * paper.cost : 0;
     
-    // Toner: 20 pages per gram
-    const tonerKg = totalPages / 20000; // 20 pages per gram, 1000 grams per kg
+    const tonerKg = totalPages / 20000;
     const tonerCost = toner ? tonerKg * toner.cost : 0;
     
     return {
@@ -221,19 +223,16 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     };
   }, [pricingConfig.paperId, pricingConfig.tonerId, totalSheets, totalPages, inventory]);
 
-  // Calculate total adjustments (legacy, kept for reference if needed elsewhere)
   const totalAdjustments = useMemo(() => {
     if (!pricingConfig.marketAdjustmentId || !pricingConfig.marketAdjustment) return 0;
     return pricingConfig.marketAdjustment;
   }, [pricingConfig.marketAdjustmentId, pricingConfig.marketAdjustment]);
 
-  // Manual fee override state
   const [feeOverrideEnabled, setFeeOverrideEnabled] = useState(false);
   const [manualFeePerLearner, setManualFeePerLearner] = useState(0);
   
 
 
-  // adjustmentOptions must be defined BEFORE adjustmentInfo
   const adjustmentOptions = useMemo(() => {
     return marketAdjustments
       .filter(isMarketAdjustmentActive)
@@ -245,11 +244,9 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     });
   }, [marketAdjustments]);
 
-  // Combined customer/school options for dropdown
   const customerOptions = useMemo(() => {
     const unique = new Map<string, { id: string; name: string; isCustomer: boolean }>();
 
-    // First add customers
     customers.forEach(customer => {
       if (!customer?.id) return;
       unique.set(customer.id, {
@@ -259,7 +256,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
       });
     });
 
-    // Then add schools that aren't already added as customers
     schools.forEach((school) => {
       if (!school?.id) return;
       if (!unique.has(school.id)) {
@@ -274,7 +270,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     return Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [customers, schools]);
 
-  // Get the current rounding method display info
   const currentRoundingMethodInfo = useMemo(() => {
     const method = formData.rounding_method || defaultEngineMethod;
     const option = ROUNDING_METHOD_OPTIONS.find(o => o.value === method);
@@ -285,7 +280,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     };
   }, [formData.rounding_method, formData.rounding_value, defaultEngineMethod, defaultRoundingFromEngine]);
 
-  // Calculate combined adjustment info for all active adjustments (uses adjustmentOptions defined above)
   const adjustmentInfo = useMemo(() => {
     if (adjustmentOptions.length === 0) {
       return { hasAdjustments: false, display: 'No active adjustments', total: 0 };
@@ -311,7 +305,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     };
   }, [adjustmentOptions]);
 
-  // Calculate total cost and fee per learner using the new formula
   const { totalCost, feePerLearner } = useMemo(() => {
     const bom = totalBOMCost;
     const adjustmentRate = (adjustmentInfo.totalPercentage || 0) / 100;
@@ -326,7 +319,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     };
   }, [totalBOMCost, adjustmentInfo.totalPercentage, globalMargin, formData.number_of_learners]);
 
-  // Final fee per learner (auto or manual)
   const finalFeePerLearner = feeOverrideEnabled ? manualFeePerLearner : feePerLearner;
   const finalTotalAmount = finalFeePerLearner * formData.number_of_learners;
 
@@ -338,7 +330,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     return selectedCustomer?.subAccounts || [];
   }, [selectedCustomer]);
 
-  // Load existing job if editing
   useEffect(() => {
     if (id) {
       setIsEditing(true);
@@ -455,13 +446,11 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     if (!formData.rounding_method) newErrors.rounding_method = 'Rounding rule is required';
     if (formData.subjects.length === 0) newErrors.subjects = 'At least one subject is required';
 
-    // Validate subjects
     formData.subjects.forEach((subject, index) => {
       if (!subject.subject_name.trim()) newErrors[`subject_${index}_name`] = 'Subject name is required';
       if (subject.pages_per_paper <= 0) newErrors[`subject_${index}_pages`] = 'Pages must be greater than 0';
     });
 
-    // Validate rounding
     if (formData.rounding_rule_type === 'custom' && formData.rounding_value <= 0) {
       newErrors.rounding_value = 'Custom rounding value must be greater than 0';
     }
@@ -503,7 +492,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
       return next;
     });
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -517,7 +505,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
       )
     }));
     
-    // Clear error when user starts typing
     const errorKey = `subject_${index}_${field}`;
     if (errors[errorKey]) {
       setErrors(prev => ({ ...prev, [errorKey]: '' }));
@@ -595,7 +582,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     try {
       await approveJob(id);
       toast.success('Job approved successfully');
-      // Reload the job to get updated status
       await loadJob(id);
     } catch (error) {
       logger.error('Error approving job:', error);
@@ -635,7 +621,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
       });
       setShowOverrideDialog(false);
       toast.success('Manual price override applied');
-      // Reload to get updated pricing
       await loadJob(id);
     } catch (error) {
       logger.error('Error applying override:', error);
@@ -643,31 +628,29 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
     }
   };
 
-  // Get current job for display
   const currentJob = jobs.find(j => j.id === id);
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/examination')}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
+    <div style={{
+      height: '100%', overflowY: 'auto',
+      fontFamily: "'Inter','DM Sans',sans-serif", color: ink, fontSize: 13.5
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Button variant="ghost" onClick={() => navigate('/examination')}
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ArrowLeft size={16} />
             <span>Back to Jobs</span>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>
               {isEditing ? 'Edit Examination Job' : 'Create Examination Job'}
             </h1>
             {isEditing && currentJob && (
-              <div className="flex items-center space-x-2 mt-1">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                 <StatusBadge status={currentJob.status} />
-                <span className="text-sm text-gray-600">
+                <span style={{ fontSize: 13, color: inkSoft }}>
                   {currentJob.exam_name} - {currentJob.class_name}
                 </span>
               </div>
@@ -675,60 +658,46 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
           </div>
         </div>
         
-        {/* Header Right Side - Actions */}
-        <div className="flex items-center space-x-2">
-          {/* Settings Button - always visible */}
-          <Button
-            variant="outline"
-            onClick={() => setShowSettings(true)}
-            className="flex items-center space-x-2"
-          >
-            <Settings className="h-4 w-4" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Button variant="outline" onClick={() => setShowSettings(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Settings size={16} />
             <span>Settings</span>
           </Button>
           
           {isEditing && currentJob && (
             <>
-              <Button
-                variant="outline"
-                onClick={handleRecalculate}
-                disabled={jobLoading}
-                className="flex items-center space-x-2"
-              >
-                <Calculator className="h-4 w-4" />
+              <Button variant="outline" onClick={handleRecalculate} disabled={jobLoading}
+                style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Calculator size={16} />
                 <span>Recalculate</span>
               </Button>
               
               {!currentJob.override_enabled && (
-                <Button
-                  variant="outline"
-                  onClick={handleOverridePrice}
-                  className="flex items-center space-x-2"
-                >
-                  <DollarSign className="h-4 w-4" />
+                <Button variant="outline" onClick={handleOverridePrice}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <DollarSign size={16} />
                   <span>Override Price</span>
                 </Button>
               )}
 
               {currentJob.status === 'Draft' && (
-                <Button
-                  onClick={handleApprove}
-                  disabled={jobLoading}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4" />
+                <Button onClick={handleApprove} disabled={jobLoading}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: teal[500], color: '#fff',
+                    border: 'none', borderRadius: 9, padding: '8px 16px',
+                    fontWeight: 600, cursor: 'pointer'
+                  }}>
+                  <CheckCircle size={16} />
                   <span>Approve</span>
                 </Button>
               )}
 
               {currentJob.status !== 'Invoiced' && (
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={jobLoading}
-                  className="flex items-center space-x-2"
-                >
-                  <AlertTriangle className="h-4 w-4" />
+                <Button variant="destructive" onClick={handleDelete} disabled={jobLoading}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, color: danger }}>
+                  <AlertTriangle size={16} />
                   <span>Delete</span>
                 </Button>
               )}
@@ -737,19 +706,17 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Form */}
-        <div className="lg:col-span-2 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto examination-scrollbar">
-          {/* Basic Information */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24 }}>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
+              <CardTitle style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FileText size={20} color={teal[500]} />
                 <span>Basic Information</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <Input
                     label="Exam Name"
@@ -777,7 +744,7 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                     ))}
                   </Select>
                   {customerOptions.length === 0 && !loading && (
-                    <p className="text-xs text-amber-600 mt-1">
+                    <p style={{ fontSize: 12, color: amber[500], marginTop: 4 }}>
                       No customers found. Add customers in the Customers module.
                     </p>
                   )}
@@ -785,7 +752,7 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
               </div>
 
               {formData.school_id && selectedCustomerSubAccounts.length > 0 && (
-                <div>
+                <div style={{ marginTop: 16 }}>
                   <Select
                     label="Sub Account"
                     value={formData.sub_account_name}
@@ -802,7 +769,7 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                 </div>
               )}
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
                 <div>
                   <Input
                     label="Class Name"
@@ -824,68 +791,80 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                 </div>
               </div>
 
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                <p className="text-sm font-medium text-blue-900">Pricing Materials</p>
-                <p className="text-xs text-blue-700 mt-1">
+              <div style={{
+                marginTop: 16, padding: 12, borderRadius: 9,
+                background: teal[50], border: `1px solid ${teal[100]}`,
+              }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: teal[800], margin: 0 }}>Pricing Materials</p>
+                <p style={{ fontSize: 12, color: teal[600], marginTop: 4 }}>
                   Paper and toner defaults are configured globally in batch-level Pricing Settings.
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Pricing Configuration */}
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="flex items-center space-x-2">
-                <Calculator className="h-5 w-5" />
+            <CardHeader style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <CardTitle style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Calculator size={20} color={teal[500]} />
                 <span>Pricing Configuration</span>
               </CardTitle>
               {isEditing && (
-                <div className="flex items-center space-x-2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Button
                     variant={formData.pricing_locked ? "outline" : "default"}
                     onClick={() => setFormData(prev => ({ ...prev, pricing_locked: !prev.pricing_locked }))}
-                    className="flex items-center space-x-2"
+                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
                   >
                     {formData.pricing_locked ? (
                       <>
-                        <Unlock className="h-4 w-4" />
+                        <Unlock size={16} />
                         <span>Unlock Pricing</span>
                       </>
                     ) : (
                       <>
-                        <Lock className="h-4 w-4" />
+                        <Lock size={16} />
                         <span>Lock Pricing</span>
                       </>
                     )}
                   </Button>
                   {formData.pricing_locked && (
-                    <div className="flex items-center space-x-2 text-xs text-green-600 bg-green-50 border border-green-200 px-2 py-1 rounded">
-                      <ShieldCheck className="h-3 w-3" />
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      fontSize: 12, color: teal[600],
+                      background: teal[50], border: `1px solid ${teal[100]}`,
+                      padding: '4px 8px', borderRadius: 8
+                    }}>
+                      <ShieldCheck size={12} />
                       <span>Pricing locked</span>
                     </div>
                   )}
                 </div>
               )}
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Active Market Adjustments - Read Only */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-amber-800 flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
+            <CardContent style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{
+                background: amber[100], border: `1px solid ${amber[300]}`,
+                borderRadius: 9, padding: 16
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#92400e', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Lock size={16} />
                     Market Adjustments (System Applied)
                   </label>
-                  <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded">
+                  <span style={{
+                    fontSize: 12, background: amber[300], color: '#92400e',
+                    padding: '2px 8px', borderRadius: 8
+                  }}>
                     {adjustmentInfo.count || 0} active
                   </span>
                 </div>
                 {adjustmentInfo.hasAdjustments ? (
-                  <div className="space-y-2">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {adjustmentInfo.adjustments?.map((adj) => (
-                      <div key={adj.id} className="flex items-center justify-between text-sm">
-                        <span className="text-slate-700">{adj.displayName || adj.name}</span>
-                        <span className="font-medium text-slate-900">
+                      <div key={adj.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
+                        <span style={{ color: ink }}>{adj.displayName || adj.name}</span>
+                        <span style={{ fontWeight: 600, color: ink }}>
                           {adj.type === 'PERCENTAGE' || adj.type === 'PERCENT' || adj.type === 'percentage'
                             ? `${adj.percentage ?? adj.value}%`
                             : `$${adj.value}`}
@@ -894,45 +873,46 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                     ))}
                   </div>
                 ) : (
-                  <div className="text-sm text-red-600 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
+                  <div style={{ fontSize: 13, color: danger, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <AlertTriangle size={16} />
                     No active market adjustments found. Please configure in Market Adjustments module.
                   </div>
                 )}
-                <p className="text-xs text-amber-600 mt-2">
+                <p style={{ fontSize: 12, color: '#92400e', marginTop: 8 }}>
                   All active adjustments from Market Adjustments module are automatically applied
                 </p>
               </div>
 
-              {/* Rounding Rule - Read Only from Engine Config */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-blue-800 flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
+              <div style={{
+                background: teal[50], border: `1px solid ${teal[100]}`,
+                borderRadius: 9, padding: 16
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: teal[800], display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Lock size={16} />
                     Rounding Rule (Engine Config)
                   </label>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div>
-                    <label className="text-xs text-blue-600">Method</label>
-                    <div className="text-sm font-medium text-slate-900">
+                    <label style={{ fontSize: 12, color: teal[600] }}>Method</label>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: ink }}>
                       {currentRoundingMethodInfo.label}
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-blue-600">Step Value</label>
-                    <div className="text-sm font-medium text-slate-900">
+                    <label style={{ fontSize: 12, color: teal[600] }}>Step Value</label>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: ink }}>
                       {currentRoundingMethodInfo.step}
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-blue-600 mt-2">
+                <p style={{ fontSize: 12, color: teal[600], marginTop: 8 }}>
                   Rounding is sourced from Engine Configuration and cannot be modified
                 </p>
               </div>
 
-              {/* Show applied values */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <Input
                     label="Total Adjustment Applied"
@@ -943,7 +923,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                       : 'N/A'}
                     readOnly
                     disabled
-                    className="bg-slate-100"
                   />
                 </div>
                 <div>
@@ -952,16 +931,14 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                     value={currentRoundingMethodInfo.label}
                     readOnly
                     disabled
-                    className="bg-slate-100"
                   />
                 </div>
               </div>
               
-              {/* Error display for adjustments */}
               {errors.adjustment_id && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-red-600 text-sm flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
+                <div style={{ padding: 12, background: `${danger}10`, border: `1px solid ${danger}20`, borderRadius: 8 }}>
+                  <p style={{ color: danger, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                    <AlertTriangle size={16} />
                     {errors.adjustment_id}
                   </p>
                 </div>
@@ -969,25 +946,27 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
             </CardContent>
           </Card>
 
-          {/* Subjects Table */}
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5" />
+            <CardHeader style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <CardTitle style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Users size={20} color={teal[500]} />
                 <span>Subjects</span>
               </CardTitle>
-              <Button
-                onClick={addSubject}
-                className="flex items-center space-x-2"
-              >
-                <Plus className="h-4 w-4" />
+              <Button onClick={addSubject}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: teal[500], color: '#fff',
+                  border: 'none', borderRadius: 9, padding: '8px 16px',
+                  fontWeight: 600, cursor: 'pointer'
+                }}>
+                <Plus size={16} />
                 <span>Add Subject</span>
               </Button>
             </CardHeader>
             <CardContent>
               {errors.subjects && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-red-600 text-sm">{errors.subjects}</p>
+                <div style={{ marginBottom: 16, padding: 12, background: `${danger}10`, border: `1px solid ${danger}20`, borderRadius: 8 }}>
+                  <p style={{ color: danger, fontSize: 13, margin: 0 }}>{errors.subjects}</p>
                 </div>
               )}
               
@@ -1002,8 +981,7 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
           </Card>
         </div>
 
-        {/* Summary Panel */}
-        <div className="lg:col-span-1 max-h-[calc(100vh-200px)] overflow-y-auto examination-scrollbar">
+        <div style={{ gridColumn: 'span 1' }}>
           <PricingSummaryPanel
             job={currentJob}
             subjects={formData.subjects}
@@ -1013,36 +991,29 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {isEditing && currentJob && (
-            <span className="text-sm text-gray-600">
+            <span style={{ fontSize: 13, color: inkSoft }}>
               Last updated: {new Date(currentJob.updated_at || currentJob.created_at).toLocaleString()}
             </span>
           )}
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/examination')}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Button variant="outline" onClick={() => navigate('/examination')}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || loading}
-            className="flex items-center space-x-2"
-          >
+          <Button onClick={handleSave} disabled={isSaving || loading}
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {isSaving ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
                 <span>Saving...</span>
               </>
             ) : (
               <>
-                <Save className="h-4 w-4" />
+                <Save size={16} />
                 <span>{isEditing ? 'Update Job' : 'Create Job'}</span>
               </>
             )}
@@ -1050,29 +1021,33 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
         </div>
       </div>
 
-      {/* Settings Dialog - Advanced Pricing Configuration */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
+            <DialogTitle style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Settings size={20} />
               Pricing Settings
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
-            {/* Hidden BOM Section - Automatic Cost Calculation */}
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <h4 className="text-sm font-medium text-slate-700 mb-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '16px 0' }}>
+            <div style={{ background: teal[50], padding: 16, borderRadius: 9, border: `1px solid ${teal[100]}` }}>
+              <h4 style={{ fontSize: 13, fontWeight: 600, color: teal[800], marginBottom: 12 }}>
                 Hidden BOM (Automatic Cost Calculation)
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                  <label style={{
+                    fontSize: 12, fontWeight: 600, color: inkSoft,
+                    marginBottom: 6, display: 'block'
+                  }}>
                     Paper Material
                   </label>
                   <select
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    style={{
+                      width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`,
+                      borderRadius: 9, fontSize: 13, color: ink, background: paper
+                    }}
                     value={pricingConfig.paperId}
                     onChange={(e) => setPricingConfig(prev => ({ ...prev, paperId: e.target.value }))}
                   >
@@ -1085,11 +1060,17 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                  <label style={{
+                    fontSize: 12, fontWeight: 600, color: inkSoft,
+                    marginBottom: 6, display: 'block'
+                  }}>
                     Toner Material
                   </label>
                   <select
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    style={{
+                      width: '100%', padding: '8px 12px', border: `1.4px solid ${hairline}`,
+                      borderRadius: 9, fontSize: 13, color: ink, background: paper
+                    }}
                     value={pricingConfig.tonerId}
                     onChange={(e) => setPricingConfig(prev => ({ ...prev, tonerId: e.target.value }))}
                   >
@@ -1104,34 +1085,33 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
               </div>
             </div>
 
-            {/* Active Market Adjustments Section */}
-            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-              <h4 className="text-sm font-bold text-indigo-900 mb-2">
+            <div style={{ background: teal[50], padding: 16, borderRadius: 9, border: `1px solid ${teal[100]}` }}>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: teal[800], marginBottom: 8 }}>
                 Active Market Adjustments
               </h4>
-              <p className="text-xs text-indigo-600 mb-3">
+              <p style={{ fontSize: 12, color: teal[600], marginBottom: 12 }}>
                 Automated system-wide pricing adjustments
               </p>
               
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 {marketAdjustments.filter(isMarketAdjustmentActive).map(rule => (
-                  <div 
-                    key={rule.id} 
-                    className={`px-3 py-1.5 border rounded-lg text-xs font-medium flex items-center gap-2 cursor-pointer ${
-                      pricingConfig.marketAdjustmentId === rule.id 
-                        ? 'bg-indigo-200 border-indigo-400 text-indigo-900' 
-                        : 'bg-indigo-100 border-indigo-200 text-indigo-900'
-                    }`}
+                  <div key={rule.id}
+                    style={{
+                      padding: '6px 12px', border: `1px solid ${pricingConfig.marketAdjustmentId === rule.id ? teal[200] : teal[100]}`,
+                      borderRadius: 9, fontSize: 12, fontWeight: 600,
+                      display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                      background: pricingConfig.marketAdjustmentId === rule.id ? teal[100] : 'transparent',
+                      color: teal[800]
+                    }}
                     onClick={() => setPricingConfig(prev => ({ 
                       ...prev, 
                       marketAdjustmentId: rule.id,
                       marketAdjustment: rule.type === 'PERCENTAGE' || rule.type === 'PERCENT' 
                         ? Number(rule.percentage ?? rule.value) 
                         : Number(rule.value)
-                    }))}
-                  >
+                    }))}>
                     {rule.name}
-                    <span className="bg-white px-1.5 py-0.5 rounded text-[10px]">
+                    <span style={{ background: paper, padding: '2px 6px', borderRadius: 6, fontSize: 10 }}>
                       {rule.type === 'PERCENTAGE' || rule.type === 'PERCENT' || rule.type === 'percentage'
                         ? `+${rule.value}%`
                         : `+${rule.value}`}
@@ -1139,61 +1119,75 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                   </div>
                 ))}
                 {marketAdjustments.filter(isMarketAdjustmentActive).length === 0 && (
-                  <span className="text-slate-500 italic text-sm">No active market adjustments found</span>
+                  <span style={{ color: inkSoft, fontStyle: 'italic', fontSize: 13 }}>No active market adjustments found</span>
                 )}
               </div>
               
-              <div className="flex items-center justify-between border-t border-indigo-100 pt-4">
-                <span className="text-sm font-medium text-indigo-900">Total Adjustment Value</span>
-                <div className="relative w-32">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500">$</span>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                borderTop: `1px solid ${teal[100]}`, paddingTop: 16
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: teal[800] }}>Total Adjustment Value</span>
+                <div style={{ position: 'relative', width: 128 }}>
+                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: teal[500] }}>$</span>
                   <input
                     type="number"
                     step="0.01"
                     value={pricingConfig.marketAdjustment?.toFixed(2) || 0}
                     readOnly
-                    className="w-full pl-8 pr-4 py-2 border border-indigo-200 rounded-lg text-indigo-900 bg-indigo-50 font-bold"
+                    style={{
+                      width: '100%', padding: '8px 12px 8px 28px',
+                      border: `1px solid ${teal[100]}`,
+                      borderRadius: 9, fontSize: 13,
+                      background: teal[50], color: teal[800],
+                      fontWeight: 700
+                    }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Cost Summary */}
-            <div className="mt-4 p-4 bg-slate-800 rounded-lg text-white">
-              <h4 className="text-sm font-semibold mb-3">Cost Summary</h4>
-              <div className="grid grid-cols-3 gap-4 text-center">
+            <div style={{ padding: 16, background: teal[800], borderRadius: 9, color: '#fff' }}>
+              <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Cost Summary</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, textAlign: 'center' }}>
                 <div>
-                  <div className="text-xs text-slate-400">Total Sheets</div>
-                  <div className="text-lg font-bold">{totalSheets.toLocaleString()}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Total Sheets</div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>{totalSheets.toLocaleString()}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-slate-400">Total Pages</div>
-                  <div className="text-lg font-bold">{totalPages.toLocaleString()}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Total Pages</div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>{totalPages.toLocaleString()}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-slate-400">Total BOM Cost</div>
-                  <div className="text-lg font-bold">${totalBOMCost.toFixed(2)}</div>
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-slate-600 grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-xs text-slate-400">Adjustments</div>
-                  <div className="text-lg font-bold">${totalAdjustments.toFixed(2)}</div>
-                </div>
-                <div className="flex items-center justify-center text-slate-500">+</div>
-                <div>
-                  <div className="text-xs text-slate-400">Total Cost</div>
-                  <div className="text-lg font-bold text-green-400">${totalCost.toFixed(2)}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Total BOM Cost</div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>${totalBOMCost.toFixed(2)}</div>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-slate-600 grid grid-cols-2 gap-4 text-center">
+              <div style={{
+                marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.2)',
+                display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, textAlign: 'center'
+              }}>
                 <div>
-                  <div className="text-xs text-slate-400">Fee Per Learner</div>
-                  <div className="text-xl font-bold text-blue-400">${feePerLearner.toFixed(2)}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Adjustments</div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>${totalAdjustments.toFixed(2)}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,.4)' }}>+</div>
+                <div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Total Cost</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: amber[300] }}>${totalCost.toFixed(2)}</div>
+                </div>
+              </div>
+              <div style={{
+                marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.2)',
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, textAlign: 'center'
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Fee Per Learner</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: amber[300] }}>${feePerLearner.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-slate-400">Total Amount</div>
-                  <div className="text-xl font-bold text-green-400">${(feePerLearner * formData.number_of_learners).toFixed(2)}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Total Amount</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: teal[200] }}>${(feePerLearner * formData.number_of_learners).toFixed(2)}</div>
                 </div>
               </div>
               {(() => {
@@ -1201,9 +1195,12 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
                 const profit = revenue - totalCost;
                 if (profit > 0) {
                   return (
-                    <div className="mt-3 pt-3 border-t border-slate-600 flex justify-between items-center">
-                      <div className="text-xs text-emerald-400 font-semibold">Profit Margin</div>
-                      <div className="text-lg font-bold text-emerald-400">${profit.toFixed(2)}</div>
+                    <div style={{
+                      marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.2)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}>
+                      <div style={{ fontSize: 12, color: amber[300], fontWeight: 600 }}>Profit Margin</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: amber[300] }}>${profit.toFixed(2)}</div>
                     </div>
                   );
                 }
@@ -1220,7 +1217,6 @@ const ExaminationJobForm: React.FC<ExaminationJobFormProps> = ({ isModal: propIs
         </DialogContent>
       </Dialog>
 
-      {/* Override Dialog */}
       <OverrideDialog
         isOpen={showOverrideDialog}
         onClose={() => setShowOverrideDialog(false)}

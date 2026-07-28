@@ -2,6 +2,10 @@ import React from 'react';
 import { Package, Ban, Layers, Clock, CheckCircle, Target } from 'lucide-react';
 import type { Item, ProductionBatch, WorkOrder } from '../../../../types';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
 interface Props {
   item: Item;
   productionData: (ProductionBatch | WorkOrder)[];
@@ -13,20 +17,20 @@ export const ProductionTab: React.FC<Props> = ({ item, productionData }) => {
 
   if (!isManufactured && !isPrintingService) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <Ban size={48} className="mb-4 opacity-50" />
-        <p className="text-sm font-semibold">Production Not Applicable</p>
-        <p className="text-xs mt-1">This item is not manufactured or produced in-house.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', color: inkSoft }}>
+        <Ban size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+        <p style={{ fontSize: 14, fontWeight: 600 }}>Production Not Applicable</p>
+        <p style={{ fontSize: 12, marginTop: 4 }}>This item is not manufactured or produced in-house.</p>
       </div>
     );
   }
 
   if (productionData.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <Package size={48} className="mb-4 opacity-50" />
-        <p className="text-sm font-semibold">No Production Records</p>
-        <p className="text-xs mt-1">No work orders or batches exist for this item.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', color: inkSoft }}>
+        <Package size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+        <p style={{ fontSize: 14, fontWeight: 600 }}>No Production Records</p>
+        <p style={{ fontSize: 12, marginTop: 4 }}>No work orders or batches exist for this item.</p>
       </div>
     );
   }
@@ -35,64 +39,71 @@ export const ProductionTab: React.FC<Props> = ({ item, productionData }) => {
   const completed = productionData.filter(d => d.status === 'Completed' || d.status === 'completed').length;
 
   const kpis = [
-    { label: 'Total Orders', value: productionData.length, icon: <Layers size={16} />, color: 'text-slate-900' },
-    { label: 'In Progress', value: inProgress, icon: <Clock size={16} />, color: 'text-amber-500' },
-    { label: 'Completed', value: completed, icon: <CheckCircle size={16} />, color: 'text-emerald-500' },
-    { label: 'Yield', value: `${Math.round(85 + Math.random() * 15)}%`, icon: <Target size={16} />, color: 'text-blue-600' },
+    { label: 'Total Orders', value: productionData.length, icon: <Layers size={16} />, color: ink },
+    { label: 'In Progress', value: inProgress, icon: <Clock size={16} />, color: amber[500] },
+    { label: 'Completed', value: completed, icon: <CheckCircle size={16} />, color: t[500] },
+    { label: 'Yield', value: `${Math.round(85 + Math.random() * 15)}%`, icon: <Target size={16} />, color: t[500] },
   ];
 
   const WO_HEADERS = ['ID', 'Work Order', 'Planned', 'Completed', 'Start Date', 'Due Date', 'Status'];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {kpis.map(k => (
-          <div key={k.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{k.label}</span>
-              <span className="text-slate-400">{k.icon}</span>
+          <div key={k.label} className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
+              <span style={{ color: inkSoft }}>{k.icon}</span>
             </div>
-            <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, color: k.color }}>{k.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
+      <div className="prime-card" style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <table style={{ width: '100%', fontSize: 14 }}>
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
+            <tr style={{ background: t[50], borderBottom: `1.4px solid ${hairline}` }}>
               {WO_HEADERS.map(h => (
-                <th key={h} className={`px-4 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider ${h === 'Planned' || h === 'Completed' ? 'text-right' : 'text-left'}`}>
+                <th key={h} className="prime-table-header" style={{
+                  padding: '12px 16px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: inkSoft,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  textAlign: h === 'Planned' || h === 'Completed' ? 'right' as const : 'left' as const
+                }}>
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {productionData.map((d) => {
               const wo = d as WorkOrder;
               const batch = d as ProductionBatch;
               return (
-                <tr key={d.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{d.id?.slice(0, 8)}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-700">{wo.orderNumber || batch.batchNumber || batch.workOrderId || '—'}</td>
-                  <td className="px-4 py-3 text-right font-mono font-bold tabular-nums">{wo.quantity || batch.plannedQuantity || batch.quantity || 0}</td>
-                  <td className="px-4 py-3 text-right font-mono text-emerald-600 tabular-nums">{wo.completedQuantity || batch.completedQuantity || 0}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{d.startDate ? new Date(d.startDate).toLocaleDateString() : '—'}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{d.dueDate ? new Date(d.dueDate).toLocaleDateString() : '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full ${
-                      d.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' :
-                      d.status === 'In Progress' ? 'bg-blue-50 text-blue-700' :
-                      d.status === 'Planned' || d.status === 'Draft' ? 'bg-slate-100 text-slate-500' :
-                      'bg-amber-50 text-amber-700'
-                    }`}>
-                      <span className={`w-1 h-1 rounded-full ${
-                        d.status === 'Completed' ? 'bg-emerald-500' :
-                        d.status === 'In Progress' ? 'bg-blue-500' :
-                        d.status === 'Planned' || d.status === 'Draft' ? 'bg-slate-400' :
-                        'bg-amber-500'
-                      }`} />
+                <tr key={d.id} className="prime-table-cell"
+                  style={{ borderTop: `1.4px solid ${hairline}`, transition: 'all .15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: inkSoft }}>{d.id?.slice(0, 8)}</td>
+                  <td style={{ padding: '12px 16px', fontWeight: 600, color: ink }}>{wo.orderNumber || batch.batchNumber || batch.workOrderId || '—'}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{wo.quantity || batch.plannedQuantity || batch.quantity || 0}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', color: t[500], fontVariantNumeric: 'tabular-nums' }}>{wo.completedQuantity || batch.completedQuantity || 0}</td>
+                  <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft }}>{d.startDate ? new Date(d.startDate).toLocaleDateString() : '—'}</td>
+                  <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft }}>{d.dueDate ? new Date(d.dueDate).toLocaleDateString() : '—'}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600,
+                      padding: '4px 10px', borderRadius: 9999,
+                      background: d.status === 'Completed' ? t[50] : d.status === 'In Progress' ? t[50] : d.status === 'Planned' || d.status === 'Draft' ? t[100] : amber[100],
+                      color: d.status === 'Completed' ? t[600] : d.status === 'In Progress' ? t[600] : d.status === 'Planned' || d.status === 'Draft' ? inkSoft : amber[500]
+                    }}>
+                      <span style={{ width: 4, height: 4, borderRadius: '50%', background: d.status === 'Completed' ? t[500] : d.status === 'In Progress' ? t[500] : d.status === 'Planned' || d.status === 'Draft' ? inkSoft : amber[500] }} />
                       {d.status || 'Draft'}
                     </span>
                   </td>

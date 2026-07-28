@@ -12,6 +12,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useHighlight } from '../../../hooks/useHighlight';
 import { formatParentProductPrice, formatMaterialItemCost } from '../../../utils/pricing';
 
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+const amber = { 100: '#fbead0', 500: '#d99a3f' };
+const paper = '#FEFDFB', ink = '#23282A', inkSoft = '#5c6567', hairline = '#e4ddd1', danger = '#b5493f';
+
+const btnSec: React.CSSProperties = { padding: '6px 12px', borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, transition: 'all .15s' };
+
 const getServiceMaterials = (item: Item, allItems: Item[]): string => {
     const smartPricing = item.smartPricing || item.smartPricingSnapshot;
     if (!smartPricing) return '-';
@@ -20,9 +26,9 @@ const getServiceMaterials = (item: Item, allItems: Item[]): string => {
     
     // Resolve Paper
     if (smartPricing.paperItemId) {
-        const paper = allItems.find(i => i.id === smartPricing.paperItemId);
-        if (paper) {
-            materials.push(paper.name.replace(/\s*\d+gsm.*/i, '')); // Clean up paper name
+        const paper2 = allItems.find(i => i.id === smartPricing.paperItemId);
+        if (paper2) {
+            materials.push(paper2.name.replace(/\s*\d+gsm.*/i, ''));
         } else if (Number(smartPricing.paperCost) > 0) {
             materials.push('Paper');
         }
@@ -98,11 +104,8 @@ const useContextMenu = () => {
         if (openMenuId === id) {
             setOpenMenuId(null);
         } else {
-            // Detect CSS zoom on the document root (common in scaled ERP layouts).
-            // window.devicePixelRatio alone isn't enough — CSS zoom shifts clientX/Y.
             const root = document.documentElement;
             const rootRect = root.getBoundingClientRect();
-            // zoom = rendered width / actual offsetWidth
             const zoom = rootRect.width / root.offsetWidth || 1;
 
             const x = e.clientX / zoom;
@@ -130,22 +133,22 @@ const useContextMenu = () => {
 export const SkeletonLoader: React.FC<{ type: 'table' | 'grid' }> = ({ type }) => {
     if (type === 'table') {
         return (
-            <div className="flex flex-col bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 animate-pulse">
-                <div className="p-3 border-b border-slate-200/60 flex gap-3 bg-slate-50/30">
-                    <div className="h-10 w-full md:w-[400px] bg-slate-200 rounded-xl"></div>
-                    <div className="ml-auto flex gap-1">
-                        {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-8 w-16 bg-slate-200 rounded-lg"></div>)}
+            <div className="prime-card" style={{ display: 'flex', flexDirection: 'column', background: paper, borderRadius: 16, border: `1.4px solid ${hairline}`, animation: 'pulse 2s infinite' }}>
+                <div style={{ padding: 12, borderBottom: `1.4px solid ${hairline}`, display: 'flex', gap: 12, background: t[50] }}>
+                    <div style={{ height: 40, width: '100%', maxWidth: 400, background: t[100], borderRadius: 12 }}></div>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                        {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ height: 32, width: 64, background: t[100], borderRadius: 9 }}></div>)}
                     </div>
                 </div>
-                <div className="flex-1">
-                    <div className="h-10 bg-slate-100/80 border-b border-slate-200/60"></div>
+                <div style={{ flex: 1 }}>
+                    <div style={{ height: 40, background: t[100], borderBottom: `1.4px solid ${hairline}` }}></div>
                     {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                        <div key={i} className="h-12 border-b border-slate-100/50 flex items-center px-4 gap-4">
-                            <div className="h-4 w-4 bg-slate-200 rounded"></div>
-                            <div className="h-4 flex-1 bg-slate-200 rounded"></div>
-                            <div className="h-4 w-[15%] bg-slate-200 rounded"></div>
-                            <div className="h-4 w-[10%] bg-slate-200 rounded"></div>
-                            <div className="h-4 w-[15%] bg-slate-200 rounded"></div>
+                        <div key={i} style={{ height: 48, borderBottom: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16 }}>
+                            <div style={{ height: 16, width: 16, background: t[100], borderRadius: 4 }}></div>
+                            <div style={{ height: 16, flex: 1, background: t[100], borderRadius: 4 }}></div>
+                            <div style={{ height: 16, width: '15%', background: t[100], borderRadius: 4 }}></div>
+                            <div style={{ height: 16, width: '10%', background: t[100], borderRadius: 4 }}></div>
+                            <div style={{ height: 16, width: '15%', background: t[100], borderRadius: 4 }}></div>
                         </div>
                     ))}
                 </div>
@@ -153,21 +156,21 @@ export const SkeletonLoader: React.FC<{ type: 'table' | 'grid' }> = ({ type }) =
         );
     }
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-1 p-1">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, flex: 1, padding: 4 }}>
             {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="glass-card p-6 rounded-2xl border border-white/60 animate-pulse">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-xl bg-slate-200"></div>
-                        <div className="flex-1">
-                            <div className="h-4 w-24 bg-slate-200 rounded mb-2"></div>
-                            <div className="h-3 w-16 bg-slate-100 rounded"></div>
+                <div key={i} className="prime-card" style={{ padding: 24, borderRadius: 16, border: `1.4px solid ${hairline}`, animation: 'pulse 2s infinite' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 12, background: t[100] }}></div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ height: 16, width: 96, background: t[100], borderRadius: 4, marginBottom: 8 }}></div>
+                            <div style={{ height: 12, width: 64, background: t[50], borderRadius: 4 }}></div>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="h-12 bg-slate-50 rounded-xl"></div>
-                        <div className="h-12 bg-slate-50 rounded-xl"></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                        <div style={{ height: 48, background: t[50], borderRadius: 12 }}></div>
+                        <div style={{ height: 48, background: t[50], borderRadius: 12 }}></div>
                     </div>
-                    <div className="h-4 w-full bg-slate-100 rounded"></div>
+                    <div style={{ height: 16, width: '100%', background: t[100], borderRadius: 4 }}></div>
                 </div>
             ))}
         </div>
@@ -231,42 +234,33 @@ const showStockColumn = filterType === 'Material' || filterType === 'Stationery'
         return ReactDOM.createPortal(
             <div
                 ref={menuRef}
-                className="w-64 bg-white rounded-xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1 text-left"
-                style={{ position: 'fixed', top: y, left: x, zIndex: 99999 }}
+                className="prime-card"
+                style={{ width: 256, background: paper, borderRadius: 12, boxShadow: '0 20px 25px rgba(0,0,0,0.15)', border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column', padding: '4px 0', textAlign: 'left', position: 'fixed', top: y, left: x, zIndex: 99999, animation: 'fadeIn 0.1s ease' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="px-4 py-2 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-tight bg-slate-50/50 rounded-t-xl">ITEM ACTIONS</div>
-                <button onClick={() => { setOpenMenuId(null); onView(item); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"><Eye size={14} /> View Details</button>
-                <button onClick={() => { setOpenMenuId(null); onEdit(item); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-amber-50 flex items-center gap-3 transition-colors"><Edit2 size={14} /> Edit Item</button>
+                <div style={{ padding: '8px 16px', borderBottom: `1.4px solid ${hairline}`, fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, background: t[50], borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>ITEM ACTIONS</div>
+                <button onClick={() => { setOpenMenuId(null); onView(item); }} className="prime-btn-secondary" style={{ width: '100%', textAlign: 'left', padding: '8px 16px', fontSize: 12, fontWeight: 500, color: ink, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all .15s' }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Eye size={14} /> View Details</button>
+                <button onClick={() => { setOpenMenuId(null); onEdit(item); }} className="prime-btn-secondary" style={{ width: '100%', textAlign: 'left', padding: '8px 16px', fontSize: 12, fontWeight: 500, color: ink, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all .15s' }} onMouseEnter={e => e.currentTarget.style.background = amber[100]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Edit2 size={14} /> Edit Item</button>
                 {isProductOrService && onLoadToSPE && (
-                    <button onClick={() => { setOpenMenuId(null); onLoadToSPE(item); }} className="w-full text-left px-4 py-2 text-xs font-medium text-violet-700 hover:bg-violet-50 flex items-center gap-3 transition-colors"><DollarSign size={14} /> Load to SPE</button>
+                    <button onClick={() => { setOpenMenuId(null); onLoadToSPE(item); }} className="prime-btn-secondary" style={{ width: '100%', textAlign: 'left', padding: '8px 16px', fontSize: 12, fontWeight: 500, color: t[600], background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all .15s' }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><DollarSign size={14} /> Load to SPE</button>
                 )}
                 {isMaterial && onAdjust && (
-                    <button onClick={() => { setOpenMenuId(null); onAdjust(item); }} className="w-full text-left px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"><SlidersHorizontal size={14} /> Adjust Stock</button>
+                    <button onClick={() => { setOpenMenuId(null); onAdjust(item); }} className="prime-btn-secondary" style={{ width: '100%', textAlign: 'left', padding: '8px 16px', fontSize: 12, fontWeight: 500, color: t[500], background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all .15s' }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><SlidersHorizontal size={14} /> Adjust Stock</button>
                 )}
-                <div className="relative group">
-                    <button className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between gap-3 transition-colors">
-                        <span className="flex items-center gap-3"><ArrowRight size={14} /> Change Type</span>
+                <div style={{ position: 'relative' }}>
+                    <button className="prime-btn-secondary" style={{ width: '100%', textAlign: 'left', padding: '8px 16px', fontSize: 12, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, transition: 'all .15s', color: ink }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><ArrowRight size={14} /> Change Type</span>
                         <ChevronRight size={12} />
                     </button>
-                    <div className={`absolute ${submenuDirectionClass} top-0 hidden group-hover:block w-40 bg-white rounded-xl shadow-xl border border-slate-200 py-1 text-left z-[80]`}>
-                        <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-tight bg-slate-50/50">CHANGE TYPE</div>
-                        {['Product', 'Service', 'Material', 'Stationery'].map(t => (
-                            <button key={t} onClick={() => { setOpenMenuId(null); onChangeType && onChangeType(item); }} className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-slate-50 flex items-center gap-2 transition-colors ${currentType === t ? 'text-blue-600 bg-blue-50' : 'text-slate-700'}`}>
-                                {currentType === t && <CheckSquare size={12} />}
-                                {t}
-                            </button>
-                        ))}
-                    </div>
                 </div>
 
-                <div className="my-1 border-t border-slate-200"></div>
-                <button onClick={() => { setOpenMenuId(null); onDuplicate(item); }} className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"><Copy size={14} /> Duplicate Item</button>
+                <div style={{ margin: '4px 0', borderTop: `1.4px solid ${hairline}` }}></div>
+                <button onClick={() => { setOpenMenuId(null); onDuplicate(item); }} className="prime-btn-secondary" style={{ width: '100%', textAlign: 'left', padding: '8px 16px', fontSize: 12, fontWeight: 500, color: ink, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all .15s' }} onMouseEnter={e => e.currentTarget.style.background = t[50]} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Copy size={14} /> Duplicate Item</button>
 
                 {!item.isProtected && (
                     <>
-                        <div className="my-1 border-t border-slate-200"></div>
-                        <button onClick={() => { setOpenMenuId(null); onDelete(item.id); }} className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"><Trash2 size={14} /> Delete</button>
+                        <div style={{ margin: '4px 0', borderTop: `1.4px solid ${hairline}` }}></div>
+                        <button onClick={() => { setOpenMenuId(null); onDelete(item.id); }} className="prime-btn-secondary" style={{ width: '100%', textAlign: 'left', padding: '8px 16px', fontSize: 12, color: danger, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all .15s' }} onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Trash2 size={14} /> Delete</button>
                     </>
                 )}
             </div>,
@@ -323,111 +317,138 @@ const showStockColumn = filterType === 'Material' || filterType === 'Stationery'
 
     const renderSortIcon = (field: keyof Item | 'category') => {
         if (sortField !== field) return null;
-        return sortDirection === 'asc' ? <ArrowUp size={10} className="inline ml-1" /> : <ArrowDown size={10} className="inline ml-1" />;
+        return sortDirection === 'asc' ? <ArrowUp size={10} style={{ display: 'inline', marginLeft: 4 }} /> : <ArrowDown size={10} style={{ display: 'inline', marginLeft: 4 }} />;
+    };
+
+    const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 40px 8px 36px', border: `1.4px solid ${hairline}`, borderRadius: 12, outline: 'none', fontSize: 13, background: paper, height: 40, fontFamily: "'Inter','DM Sans',sans-serif", lineHeight: 1.4, boxSizing: 'border-box' };
+    const thStyle: React.CSSProperties = { padding: '10px 16px', fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 };
+    const tdStyle: React.CSSProperties = { padding: '10px 16px', fontSize: 13, borderTop: `1.4px solid ${hairline}` };
+
+    const StatusBadge = ({ status }: { status?: string }) => {
+        const bg = status === 'Active' ? t[50] : status === 'Inactive' ? '#fef2f2' : amber[100];
+        const color = status === 'Active' ? t[600] : status === 'Inactive' ? danger : amber[500];
+        return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: bg, color: color, border: `1.4px solid ${bg}` }}>
+                {status || 'Active'}
+            </span>
+        );
     };
 
     return (
-        <div className="flex flex-col bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60">
-            {/* Context menu rendered outside table DOM to avoid tbody nesting issues */}
+        <div className="prime-card" style={{ display: 'flex', flexDirection: 'column', background: paper, borderRadius: 16, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
             {openMenuId && menuPos && currentItem && renderMenu(currentItem)}
-            <div className="p-3 border-b border-slate-200/60 flex gap-3 flex-wrap items-center bg-slate-50/30">
-                <div className="relative flex-1 md:w-[400px] min-w-[250px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <div style={{ padding: 12, borderBottom: `1.4px solid ${hairline}`, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', background: t[50] }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 250 }}>
+                    <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft, pointerEvents: 'none' }} size={16} />
                     <input
                         type="text"
                         name="inventorySearch"
                         placeholder="Search items..."
-                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none text-[13px] bg-white/80 backdrop-blur h-10 font-normal"
+                        className="prime-input"
+                        style={inputStyle}
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
 
                 {selectedIds.length > 0 && (
-                    <button
-                        onClick={() => { onBatchDelete(selectedIds); setSelectedIds([]); }}
-                        className="flex items-center gap-1 px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg text-[13px] font-medium hover:bg-red-100 transition-colors"
-                    >
+                    <button onClick={() => { onBatchDelete(selectedIds); setSelectedIds([]); }} className="prime-btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 16px', background: '#fef2f2', color: danger, border: `1.4px solid #fecaca`, borderRadius: 9, fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .15s' }}>
                         <Trash2 size={14} /> Delete ({selectedIds.length})
                     </button>
                 )}
 
-                <div className="flex items-center gap-1 overflow-x-auto ml-auto bg-white/50 p-1 rounded-xl border border-white/60">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', marginLeft: 'auto', background: paper, padding: 4, borderRadius: 12, border: `1.4px solid ${hairline}` }}>
                     {['Product', 'Material', 'Stationery', 'Service'].map(type => (
-                        <button key={type} onClick={() => setFilterType(type as 'Product' | 'Material' | 'Stationery' | 'Service')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap uppercase tracking-tight ${filterType === type ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:bg-white/80'}`}>{type}</button>
+                        <button key={type} onClick={() => setFilterType(type as 'Product' | 'Material' | 'Stationery' | 'Service')} className="prime-btn-secondary"
+                            style={{
+                                padding: '6px 12px',
+                                borderRadius: 9,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                transition: 'all .15s',
+                                whiteSpace: 'nowrap',
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5,
+                                background: filterType === type ? '#23282A' : 'transparent',
+                                color: filterType === type ? '#fff' : inkSoft,
+                                boxShadow: filterType === type ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}>{type}</button>
                     ))}
                 </div>
             </div>
             <div>
-                <table className="w-full text-left table-fixed">
-                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200/60 sticky top-0 z-10 shadow-sm">
+                <table style={{ width: '100%', textAlign: 'left', tableLayout: 'fixed' }}>
+                    <thead style={{ background: t[50], color: inkSoft, fontWeight: 700, borderBottom: `1.4px solid ${hairline}`, position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
                         <tr>
-                            <th className="table-header px-4 py-2 w-12 text-center">
-                                <button onClick={handleSelectAll} className="text-slate-400 hover:text-slate-600">
-                                    {selectedIds.length > 0 && selectedIds.length === currentItems.length ? <CheckSquare size={16} className="text-blue-600" /> : <Square size={16} />}
+                            <th className="prime-table-header" style={{ ...thStyle, width: 48, textAlign: 'center' }}>
+                                <button onClick={handleSelectAll} className="prime-btn-secondary" style={{ background: 'none', border: 'none', cursor: 'pointer', color: inkSoft, padding: 0 }}>
+                                    {selectedIds.length > 0 && selectedIds.length === currentItems.length ? <CheckSquare size={16} style={{ color: t[500] }} /> : <Square size={16} />}
                                 </button>
                             </th>
                             {showServiceColumns ? (
                                 <>
-                                    <th className="table-header px-4 py-2 w-[14%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
-                                    <th className="table-header px-4 py-2 w-[24%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('name')}>Service Name {renderSortIcon('name')}</th>
-                                    <th className="table-header px-4 py-2 w-[14%] cursor-pointer hover:text-blue-600">Materials Used</th>
-                                    <th className="table-header px-4 py-2 w-[16%] text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('price')}>Base Price {renderSortIcon('price')}</th>
-                                    <th className="table-header px-4 py-2 w-[12%] text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('salesCount')}>Units {renderSortIcon('salesCount')}</th>
-                                    <th className="table-header px-4 py-2 w-[12%]">Status</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '14%', cursor: 'pointer' }} onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '24%', cursor: 'pointer' }} onClick={() => handleSort('name')}>Service Name {renderSortIcon('name')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '14%' }}>Materials Used</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '16%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('price')}>Base Price {renderSortIcon('price')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '12%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('salesCount')}>Units {renderSortIcon('salesCount')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '12%' }}>Status</th>
                                 </>
                             ) : showMaterialColumns ? (
                                 <>
-                                    <th className="table-header px-4 py-2 w-[14%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
-                                    <th className="table-header px-4 py-2 w-[22%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('name')}>Material Name {renderSortIcon('name')}</th>
-                                    <th className="table-header px-4 py-2 w-[16%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('category')}>Category {renderSortIcon('category')}</th>
-                                    <th className="table-header px-4 py-2 w-[10%] text-center">Unit</th>
-                                    <th className="table-header px-4 py-2 w-[12%] cursor-pointer hover:text-blue-600 text-center" onClick={() => handleSort('stock')}>Stock {renderSortIcon('stock')}</th>
-                                    <th className="table-header px-4 py-2 w-[14%] text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('cost')}>Cost Price {renderSortIcon('cost')}</th>
-                                    <th className="table-header px-4 py-2 w-[12%]">Status</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '14%', cursor: 'pointer' }} onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '22%', cursor: 'pointer' }} onClick={() => handleSort('name')}>Material Name {renderSortIcon('name')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '16%', cursor: 'pointer' }} onClick={() => handleSort('category')}>Category {renderSortIcon('category')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '10%', textAlign: 'center' }}>Unit</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '12%', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('stock')}>Stock {renderSortIcon('stock')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '14%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('cost')}>Cost Price {renderSortIcon('cost')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '12%' }}>Status</th>
                                 </>
                             ) : showProductColumns ? (
                                 <>
-                                    <th className="table-header px-4 py-2 w-[14%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
-                                    <th className="table-header px-4 py-2 w-[24%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('name')}>Product Name {renderSortIcon('name')}</th>
-                                    <th className="table-header px-4 py-2 w-[16%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('category')}>Category {renderSortIcon('category')}</th>
-                                    <th className="table-header px-4 py-2 w-[14%] text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('price')}>Selling Price {renderSortIcon('price')}</th>
-                                    <th className="table-header px-4 py-2 w-[10%] text-center">Unit</th>
-                                    <th className="table-header px-4 py-2 w-[12%]">Status</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '14%', cursor: 'pointer' }} onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '24%', cursor: 'pointer' }} onClick={() => handleSort('name')}>Product Name {renderSortIcon('name')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '16%', cursor: 'pointer' }} onClick={() => handleSort('category')}>Category {renderSortIcon('category')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '14%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('price')}>Selling Price {renderSortIcon('price')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '10%', textAlign: 'center' }}>Unit</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '12%' }}>Status</th>
                                 </>
                             ) : showStationeryColumns ? (
                                 <>
-                                    <th className="table-header px-4 py-2 w-[14%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
-                                    <th className="table-header px-4 py-2 w-[22%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('name')}>Item Name {renderSortIcon('name')}</th>
-                                    <th className="table-header px-4 py-2 w-[14%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('category')}>Category {renderSortIcon('category')}</th>
-                                    <th className="table-header px-4 py-2 w-[8%] text-center">Unit</th>
-                                    <th className="table-header px-4 py-2 w-[10%] cursor-pointer hover:text-blue-600 text-center" onClick={() => handleSort('stock')}>Stock {renderSortIcon('stock')}</th>
-                                    <th className="table-header px-4 py-2 w-[12%] text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('cost')}>Cost Price {renderSortIcon('cost')}</th>
-                                    <th className="table-header px-4 py-2 w-[12%] text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('price')}>Selling Price {renderSortIcon('price')}</th>
-                                    <th className="table-header px-4 py-2 w-[8%]">Status</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '14%', cursor: 'pointer' }} onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '22%', cursor: 'pointer' }} onClick={() => handleSort('name')}>Item Name {renderSortIcon('name')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '14%', cursor: 'pointer' }} onClick={() => handleSort('category')}>Category {renderSortIcon('category')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '8%', textAlign: 'center' }}>Unit</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '10%', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('stock')}>Stock {renderSortIcon('stock')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '12%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('cost')}>Cost Price {renderSortIcon('cost')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '12%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('price')}>Selling Price {renderSortIcon('price')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '8%' }}>Status</th>
                                 </>
                             ) : (
                                 <>
-                                    <th className="table-header px-4 py-2 w-1/3 cursor-pointer hover:text-blue-600" onClick={() => handleSort('name')}>Name {renderSortIcon('name')}</th>
-                                    <th className="table-header px-4 py-2 w-[15%] cursor-pointer hover:text-blue-600" onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
-                                    {showStockColumn && <th className="table-header px-4 py-2 w-[10%] cursor-pointer hover:text-blue-600 text-center" onClick={() => handleSort('stock')}>Stock {renderSortIcon('stock')}</th>}
-                                    <th className="table-header px-4 py-2 w-[15%] text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('price')}>Price {renderSortIcon('price')}</th>
-                                    <th className="table-header px-4 py-2 w-[10%] text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('salesCount')}>Units {renderSortIcon('salesCount')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '33%', cursor: 'pointer' }} onClick={() => handleSort('name')}>Name {renderSortIcon('name')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '15%', cursor: 'pointer' }} onClick={() => handleSort('sku')}>SKU {renderSortIcon('sku')}</th>
+                                    {showStockColumn && <th className="prime-table-header" style={{ ...thStyle, width: '10%', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('stock')}>Stock {renderSortIcon('stock')}</th>}
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '15%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('price')}>Price {renderSortIcon('price')}</th>
+                                    <th className="prime-table-header" style={{ ...thStyle, width: '10%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('salesCount')}>Units {renderSortIcon('salesCount')}</th>
                                 </>
                             )}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100/50">
+                    <tbody>
                         {currentItems.length === 0 ? (
                             <tr>
-                                <td colSpan={showMaterialColumns || showProductColumns || showServiceColumns || showStationeryColumns ? 8 : (showStockColumn ? 6 : 5)} className="px-4 py-20 text-center">
-                                    <div className="flex flex-col items-center justify-center text-slate-400 gap-3">
-                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center border border-slate-100 shadow-inner">
+                                <td colSpan={showMaterialColumns || showProductColumns || showServiceColumns || showStationeryColumns ? 8 : (showStockColumn ? 6 : 5)} style={{ padding: '80px 16px', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: inkSoft, gap: 12 }}>
+                                        <div style={{ width: 64, height: 64, background: t[50], borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.4px solid ${hairline}`, boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
                                             <Package size={32} strokeWidth={1.5} />
                                         </div>
                                         <div>
-                                            <p className="text-slate-900 font-bold text-[13px]">No items found</p>
-                                            <p className="text-[10px] font-bold uppercase tracking-tight">Try adjusting your search or filter</p>
+                                            <p style={{ color: ink, fontWeight: 700, fontSize: 13 }}>No items found</p>
+                                            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Try adjusting your search or filter</p>
                                         </div>
                                     </div>
                                 </td>
@@ -441,254 +462,238 @@ const showStockColumn = filterType === 'Material' || filterType === 'Stationery'
                             return (
                                 <React.Fragment key={`${item.id}-${item.sku}`}>
                                     {showServiceColumns ? (
-                                        <tr  
+                                        <tr
                                             id={`item-${item.id}`}
-                                            className={`transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/40' : 'hover:bg-amber-50/30'} ${item.isProtected ? 'opacity-95' : ''}`}
+                                            className="prime-table-cell"
+                                            style={{ transition: 'all .15s', cursor: 'pointer', background: isSelected ? t[50] : 'transparent', opacity: item.isProtected ? 0.95 : 1 }}
                                             onClick={(e) => handleRowClick(e, item.id)}
                                             onContextMenu={(e) => handleRowClick(e, item.id)}
+                                            onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = amber[100]; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = isSelected ? t[50] : 'transparent'; }}
                                         >
-                                            <td className="table-body-cell text-center" onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
                                                 {item.isProtected ? (
-                                                    <ShieldCheck size={16} className="text-slate-400 mx-auto" />
+                                                    <ShieldCheck size={16} style={{ color: inkSoft, margin: '0 auto' }} />
                                                 ) : (
-                                                    isSelected ? <CheckSquare size={16} className="text-blue-600 mx-auto" /> : <Square size={16} className="text-slate-300 mx-auto hover:text-slate-500" />
+                                                    isSelected ? <CheckSquare size={16} style={{ color: t[500], margin: '0 auto' }} /> : <Square size={16} style={{ color: inkSoft, margin: '0 auto' }} />
                                                 )}
                                             </td>
-                                            <td className="table-body-cell text-slate-500 font-mono truncate">{item.serviceSku || item.sku}</td>
-                                            <td className="table-body-cell font-medium text-slate-800 group-hover:text-blue-600 transition-colors truncate">
-                                                <div className="flex items-center gap-2">
-                                                    {item.isProtected && <ShieldCheck size={12} className="text-blue-500 shrink-0" />}
-                                                    <div className="truncate">{item.name}</div>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.serviceSku || item.sku}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, fontWeight: 500, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    {item.isProtected && <ShieldCheck size={12} style={{ color: t[500], flexShrink: 0 }} />}
+                                                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                                                 </div>
                                             </td>
-                                            <td className="table-body-cell text-slate-600 truncate">{getServiceMaterials(item, items)}</td>
-                                            <td className={`table-body-cell text-right finance-nums font-bold text-green-600`}>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getServiceMaterials(item, items)}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: t[500] }}>
                                                 {formatParentProductPrice(item, currency)}
                                             </td>
-                                            <td className="table-body-cell text-right finance-nums font-bold text-slate-600">
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: inkSoft }}>
                                                 {(item.salesCount || 0).toLocaleString()}
                                             </td>
-                                            <td className="table-body-cell">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-semibold ${
-                                                    item.status === 'Active' ? 'bg-green-100 text-green-700 border border-green-200' :
-                                                    item.status === 'Inactive' ? 'bg-red-100 text-red-700 border border-red-200' :
-                                                    'bg-amber-100 text-amber-700 border border-amber-200'
-                                                }`}>
-                                                    {item.status || 'Active'}
-                                                </span>
-                                            </td>
+                                            <td className="prime-table-cell" style={tdStyle}><StatusBadge status={item.status} /></td>
                                         </tr>
                                     ) : showMaterialColumns ? (
                                         <tr
                                             id={`item-${item.id}`}
-                                            className={`transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/40' : 'hover:bg-amber-50/30'} ${item.isProtected ? 'opacity-95' : ''}`}
+                                            className="prime-table-cell"
+                                            style={{ transition: 'all .15s', cursor: 'pointer', background: isSelected ? t[50] : 'transparent', opacity: item.isProtected ? 0.95 : 1 }}
                                             onClick={(e) => handleRowClick(e, item.id)}
                                             onContextMenu={(e) => handleRowClick(e, item.id)}
+                                            onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = amber[100]; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = isSelected ? t[50] : 'transparent'; }}
                                         >
-                                            <td className="table-body-cell text-center" onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
                                                 {item.isProtected ? (
-                                                    <ShieldCheck size={16} className="text-slate-400 mx-auto" />
+                                                    <ShieldCheck size={16} style={{ color: inkSoft, margin: '0 auto' }} />
                                                 ) : (
-                                                    isSelected ? <CheckSquare size={16} className="text-blue-600 mx-auto" /> : <Square size={16} className="text-slate-300 mx-auto hover:text-slate-500" />
+                                                    isSelected ? <CheckSquare size={16} style={{ color: t[500], margin: '0 auto' }} /> : <Square size={16} style={{ color: inkSoft, margin: '0 auto' }} />
                                                 )}
                                             </td>
-                                            <td className="table-body-cell text-slate-500 font-mono truncate">{item.sku}</td>
-                                            <td className="table-body-cell font-medium text-slate-800 group-hover:text-blue-600 transition-colors truncate">
-                                                <div className="flex items-center gap-2">
-                                                    {item.isProtected && <ShieldCheck size={12} className="text-blue-500 shrink-0" />}
-                                                    <div className="truncate">{item.name}</div>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.sku}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, fontWeight: 500, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    {item.isProtected && <ShieldCheck size={12} style={{ color: t[500], flexShrink: 0 }} />}
+                                                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                                                 </div>
                                             </td>
-                                            <td className="table-body-cell text-slate-500 truncate">{item.category || '-'}</td>
-                                            <td className="table-body-cell text-center text-slate-600">
-                                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded border border-slate-200 uppercase">{item.unit}</span>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.category || '-'}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center', color: inkSoft }}>
+                                                <span style={{ padding: '2px 6px', background: t[100], color: inkSoft, fontSize: 10, fontWeight: 700, borderRadius: 4, border: `1.4px solid ${hairline}`, textTransform: 'uppercase' }}>{item.unit}</span>
                                             </td>
-                                            <td className="table-body-cell text-center finance-nums font-bold text-slate-600">
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: inkSoft }}>
                                                 {item.stock.toLocaleString()}
-                                                {isLowStock && <AlertCircle size={12} className="inline ml-1 text-red-500" />}
+                                                {isLowStock && <AlertCircle size={12} style={{ display: 'inline', marginLeft: 4, color: danger }} />}
                                             </td>
-                                            <td className="table-body-cell text-right finance-nums font-bold text-red-600">
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: danger }}>
                                                 {formatMaterialItemCost(item, currency)}
                                             </td>
-                                            <td className="table-body-cell">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-semibold ${
-                                                    item.status === 'Active' ? 'bg-green-100 text-green-700 border border-green-200' :
-                                                    item.status === 'Inactive' ? 'bg-red-100 text-red-700 border border-red-200' :
-                                                    'bg-amber-100 text-amber-700 border border-amber-200'
-                                                }`}>
-                                                    {item.status || 'Active'}
-                                                </span>
-                                            </td>
+                                            <td className="prime-table-cell" style={tdStyle}><StatusBadge status={item.status} /></td>
                                         </tr>
                                     ) : showProductColumns ? (
                                         <tr
                                             id={`item-${item.id}`}
-                                            className={`transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/40' : 'hover:bg-amber-50/30'} ${item.isProtected ? 'opacity-95' : ''}`}
+                                            className="prime-table-cell"
+                                            style={{ transition: 'all .15s', cursor: 'pointer', background: isSelected ? t[50] : 'transparent', opacity: item.isProtected ? 0.95 : 1 }}
                                             onClick={(e) => handleRowClick(e, item.id)}
                                             onContextMenu={(e) => handleRowClick(e, item.id)}
+                                            onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = amber[100]; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = isSelected ? t[50] : 'transparent'; }}
                                         >
-                                            <td className="table-body-cell text-center" onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
                                                 {item.isProtected ? (
-                                                    <ShieldCheck size={16} className="text-slate-400 mx-auto" />
+                                                    <ShieldCheck size={16} style={{ color: inkSoft, margin: '0 auto' }} />
                                                 ) : (
-                                                    isSelected ? <CheckSquare size={16} className="text-blue-600 mx-auto" /> : <Square size={16} className="text-slate-300 mx-auto hover:text-slate-500" />
+                                                    isSelected ? <CheckSquare size={16} style={{ color: t[500], margin: '0 auto' }} /> : <Square size={16} style={{ color: inkSoft, margin: '0 auto' }} />
                                                 )}
                                             </td>
-                                            <td className="table-body-cell text-slate-500 font-mono truncate">{item.sku}</td>
-                                            <td className="table-body-cell font-medium text-slate-800 group-hover:text-blue-600 transition-colors truncate">
-                                                <div className="flex items-center gap-2">
-                                                    {item.isProtected && <ShieldCheck size={12} className="text-blue-500 shrink-0" />}
-                                                    <div className="truncate">{item.name}</div>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.sku}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, fontWeight: 500, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    {item.isProtected && <ShieldCheck size={12} style={{ color: t[500], flexShrink: 0 }} />}
+                                                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                                                 </div>
                                             </td>
-                                            <td className="table-body-cell text-slate-500 truncate">{item.category || '-'}</td>
-                                            <td className={`table-body-cell text-right finance-nums font-bold text-green-600`}>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.category || '-'}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: t[500] }}>
                                                 {formatParentProductPrice(item, currency)}
                                             </td>
-                                            <td className="table-body-cell text-center text-slate-600">
-                                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded border border-slate-200 uppercase">{item.unit}</span>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center', color: inkSoft }}>
+                                                <span style={{ padding: '2px 6px', background: t[100], color: inkSoft, fontSize: 10, fontWeight: 700, borderRadius: 4, border: `1.4px solid ${hairline}`, textTransform: 'uppercase' }}>{item.unit}</span>
                                             </td>
-                                            <td className="table-body-cell">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-semibold ${
-                                                    item.status === "Active" ? "bg-green-100 text-green-700 border border-green-200" :
-                                                    item.status === "Inactive" ? "bg-red-100 text-red-700 border border-red-200" :
-                                                    "bg-amber-100 text-amber-700 border border-amber-200"
-                                                }`}>
-                                                    {item.status || "Active"}
-                                                </span>
-                                            </td>
+                                            <td className="prime-table-cell" style={tdStyle}><StatusBadge status={item.status} /></td>
                                         </tr>
                                     ) : showStationeryColumns ? (
                                         <tr
                                             id={`item-${item.id}`}
-                                            className={`transition-colors cursor-pointer group ${isSelected ? "bg-blue-50/40" : "hover:bg-amber-50/30"} ${item.isProtected ? "opacity-95" : ""}`}
+                                            className="prime-table-cell"
+                                            style={{ transition: 'all .15s', cursor: 'pointer', background: isSelected ? t[50] : 'transparent', opacity: item.isProtected ? 0.95 : 1 }}
                                             onClick={(e) => handleRowClick(e, item.id)}
                                             onContextMenu={(e) => handleRowClick(e, item.id)}
+                                            onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = amber[100]; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = isSelected ? t[50] : 'transparent'; }}
                                         >
-                                            <td className="table-body-cell text-center" onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
                                                 {item.isProtected ? (
-                                                    <ShieldCheck size={16} className="text-slate-400 mx-auto" />
+                                                    <ShieldCheck size={16} style={{ color: inkSoft, margin: '0 auto' }} />
                                                 ) : (
-                                                    isSelected ? <CheckSquare size={16} className="text-blue-600 mx-auto" /> : <Square size={16} className="text-slate-300 mx-auto hover:text-slate-500" />
+                                                    isSelected ? <CheckSquare size={16} style={{ color: t[500], margin: '0 auto' }} /> : <Square size={16} style={{ color: inkSoft, margin: '0 auto' }} />
                                                 )}
                                             </td>
-                                            <td className="table-body-cell text-slate-500 font-mono truncate">{item.sku}</td>
-                                            <td className="table-body-cell font-medium text-slate-800 group-hover:text-blue-600 transition-colors truncate">
-                                                <div className="flex items-center gap-2">
-                                                    {item.isProtected && <ShieldCheck size={12} className="text-blue-500 shrink-0" />}
-                                                    <div className="truncate">{item.name}</div>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.sku}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, fontWeight: 500, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    {item.isProtected && <ShieldCheck size={12} style={{ color: t[500], flexShrink: 0 }} />}
+                                                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                                                 </div>
                                             </td>
-                                            <td className="table-body-cell text-slate-500 truncate">{item.category || "-"}</td>
-                                            <td className="table-body-cell text-center text-slate-600">
-                                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded border border-slate-200 uppercase">{item.unit}</span>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.category || "-"}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center', color: inkSoft }}>
+                                                <span style={{ padding: '2px 6px', background: t[100], color: inkSoft, fontSize: 10, fontWeight: 700, borderRadius: 4, border: `1.4px solid ${hairline}`, textTransform: 'uppercase' }}>{item.unit}</span>
                                             </td>
-                                            <td className="table-body-cell text-center finance-nums font-bold text-slate-600">
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: inkSoft }}>
                                                 {item.stock.toLocaleString()}
-                                                {isLowStock && <AlertCircle size={12} className="inline ml-1 text-red-500" />}
+                                                {isLowStock && <AlertCircle size={12} style={{ display: 'inline', marginLeft: 4, color: danger }} />}
                                             </td>
-                                            <td className="table-body-cell text-right finance-nums font-bold text-red-600">
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: danger }}>
                                                 {formatMaterialItemCost(item, currency)}
                                             </td>
-                                            <td className="table-body-cell text-right finance-nums font-bold text-green-600">
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: t[500] }}>
                                                 {formatParentProductPrice(item, currency)}
                                             </td>
-                                            <td className="table-body-cell">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-semibold ${
-                                                    item.status === "Active" ? "bg-green-100 text-green-700 border border-green-200" :
-                                                    item.status === "Inactive" ? "bg-red-100 text-red-700 border border-red-200" :
-                                                    "bg-amber-100 text-amber-700 border border-amber-200"
-                                                }`}>
-                                                    {item.status || "Active"}
-                                                </span>
+                                            <td className="prime-table-cell" style={tdStyle}><StatusBadge status={item.status} /></td>
+                                        </tr>
+                                    ) : (
+                                        <tr className="prime-table-cell"
+                                            style={{ transition: 'all .15s', cursor: 'pointer', background: isSelected ? t[50] : isExpanded ? t[50] : 'transparent', opacity: item.isProtected ? 0.95 : 1 }}
+                                            onClick={(e) => handleRowClick(e, item.id)}
+                                            onContextMenu={(e) => handleRowClick(e, item.id)}
+                                            onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = amber[100]; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = isSelected || isExpanded ? t[50] : 'transparent'; }}
+                                        >
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
+                                                {item.isProtected ? (
+                                                    <ShieldCheck size={16} style={{ color: inkSoft, margin: '0 auto' }} />
+                                                ) : (
+                                                    isSelected ? <CheckSquare size={16} style={{ color: t[500], margin: '0 auto' }} /> : <Square size={16} style={{ color: inkSoft, margin: '0 auto' }} />
+                                                )}
+                                            </td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, fontWeight: 500, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    {item.isProtected && <ShieldCheck size={12} style={{ color: t[500], flexShrink: 0 }} />}
+                                                    {hasVariants && (
+                                                        <button onClick={(e) => handleToggleExpand(e, item.id)} className="prime-btn-secondary"
+                                                            style={{ padding: 4, background: 'transparent', borderRadius: 4, border: 'none', cursor: 'pointer', color: inkSoft, transition: 'all .15s' }}
+                                                            onMouseEnter={e => e.currentTarget.style.background = t[100]}
+                                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                            {isExpanded ? <ArrowDown size={12} /> : <ArrowRight size={12} />}
+                                                        </button>
+                                                    )}
+                                                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {item.name}
+                                                        {(item.type === 'Raw Material' || item.type === 'Material') && (item as any).rawMaterialCategory === 'non_consumable' && (
+                                                            <span style={{ marginLeft: 8, padding: '2px 6px', background: amber[100], color: amber[500], fontSize: 10, fontWeight: 700, borderRadius: 6, border: `1.4px solid ${amber[100]}`, textTransform: 'uppercase', letterSpacing: 0.5 }}>Non-Consumable</span>
+                                                        )}
+                                                        {(item.type === 'Raw Material' || item.type === 'Material') && (!(item as any).rawMaterialCategory || (item as any).rawMaterialCategory === 'consumable') && (
+                                                            <span style={{ marginLeft: 8, padding: '2px 6px', background: t[50], color: t[500], fontSize: 10, fontWeight: 700, borderRadius: 6, border: `1.4px solid ${t[100]}`, textTransform: 'uppercase', letterSpacing: 0.5 }}>Consumable</span>
+                                                        )}
+                                                        {hasVariants && <span style={{ marginLeft: 8, padding: '2px 6px', background: t[50], color: t[600], fontSize: 10, fontWeight: 700, borderRadius: 6, border: `1.4px solid ${t[100]}`, textTransform: 'uppercase', letterSpacing: 0.5 }}>Variants: {item.variants?.length}</span>}
+                                                        {item.isLargeFormat && <div style={{ fontSize: 10, color: t[500], display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}><Ruler size={10} /> Roll: {item.rollWidth}cm</div>}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, color: inkSoft, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.sku}</td>
+                                            {showStockColumn && (
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: inkSoft }}>
+                                                <>
+                                                    {item.stock.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{item.unit}</span>
+                                                    {isLowStock && <AlertCircle size={12} style={{ display: 'inline', marginLeft: 4, color: danger }} />}
+                                                </>
+                                            </td>
+                                            )}
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: (item.type === 'Raw Material' || item.type === 'Material') ? danger : t[500] }}>
+                                                {(item.type === 'Raw Material' || item.type === 'Material') ? formatMaterialItemCost(item, currency) : formatParentProductPrice(item, currency)}
+                                                {item.pricingConfig?.manualOverride && (
+                                                    <span style={{ marginLeft: 4, fontSize: 9, color: t[500], fontWeight: 700 }} title="Manual Override">*</span>
+                                                )}
+                                            </td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: inkSoft }}>
+                                                {(item.type === 'Raw Material' || item.type === 'Material')
+                                                    ? Math.max(0, (item.stock || 0) - (item.reserved || 0)).toLocaleString()
+                                                    : (item.salesCount || 0).toLocaleString()
+                                                }
                                             </td>
                                         </tr>
-                                    ) : ( 
-                                        <tr
-                                        className={`transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/40' : 'hover:bg-amber-50/30'} ${isExpanded ? 'bg-amber-50/20' : ''} ${item.isProtected ? 'opacity-95' : ''}`}
-                                        onClick={(e) => handleRowClick(e, item.id)}
-                                        onContextMenu={(e) => handleRowClick(e, item.id)}
-                                    >
-                                        <td className="table-body-cell text-center" onClick={(e) => { e.stopPropagation(); handleToggleSelect(item.id); }}>
-                                            {item.isProtected ? (
-                                                <ShieldCheck size={16} className="text-slate-400 mx-auto" />
-                                            ) : (
-                                                isSelected ? <CheckSquare size={16} className="text-blue-600 mx-auto" /> : <Square size={16} className="text-slate-300 mx-auto hover:text-slate-500" />
-                                            )}
-                                        </td>
-                                        <td className="table-body-cell font-medium text-slate-800 group-hover:text-blue-600 transition-colors truncate">
-                                            <div className="flex items-center gap-2">
-                                                {item.isProtected && <ShieldCheck size={12} className="text-blue-500 shrink-0" />}
-                                                {hasVariants && (
-                                                    <button
-                                                        onClick={(e) => handleToggleExpand(e, item.id)}
-                                                        className="p-1 hover:bg-slate-200 rounded transition-colors text-slate-400"
-                                                    >
-                                                        {isExpanded ? <ArrowDown size={12} /> : <ArrowRight size={12} />}
-                                                    </button>
-                                                )}
-                                                <div className="truncate">
-                                                    {item.name}
-                                                    {(item.type === 'Raw Material' || item.type === 'Material') && (item as any).rawMaterialCategory === 'non_consumable' && (
-                                                        <span className="ml-2 px-1.5 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-md border border-orange-200 uppercase tracking-tight">Non-Consumable</span>
-                                                    )}
-                                                    {(item.type === 'Raw Material' || item.type === 'Material') && (!(item as any).rawMaterialCategory || (item as any).rawMaterialCategory === 'consumable') && (
-                                                        <span className="ml-2 px-1.5 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-md border border-emerald-200 uppercase tracking-tight">Consumable</span>
-                                                    )}
-                                                    {hasVariants && <span className="ml-2 px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-md border border-blue-100 uppercase tracking-tight">Variants: {item.variants?.length}</span>}
-                                                    {item.isLargeFormat && <div className="text-[10px] text-indigo-500 flex items-center gap-1 mt-0.5 font-bold uppercase tracking-tight"><Ruler size={10} /> Roll: {item.rollWidth}cm</div>}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="table-body-cell text-slate-500 font-mono truncate">{item.sku}</td>
-                                        {showStockColumn && (
-                                        <td className="table-body-cell text-center finance-nums font-bold text-slate-600">
-                                            <>
-                                                {item.stock.toLocaleString()} <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.unit}</span>
-                                                {isLowStock && <AlertCircle size={12} className="inline ml-1 text-red-500" />}
-                                            </>
-                                        </td>
-                                        )}
-                                        <td className={`table-body-cell text-right finance-nums font-bold ${(item.type === 'Raw Material' || item.type === 'Material') ? 'text-red-600' : 'text-green-600'}`}>
-                                            {(item.type === 'Raw Material' || item.type === 'Material') ? formatMaterialItemCost(item, currency) : formatParentProductPrice(item, currency)}
-                                            {item.pricingConfig?.manualOverride && (
-                                                <span className="ml-1 text-[9px] text-blue-600 font-bold" title="Manual Override">*</span>
-                                            )}
-                                        </td>
-                                        {/* Units Remaining / Sales column */}
-                                        <td className="table-body-cell text-right finance-nums font-bold text-slate-600">
-                                            {(item.type === 'Raw Material' || item.type === 'Material') 
-                                                ? Math.max(0, (item.stock || 0) - (item.reserved || 0)).toLocaleString()
-                                                : (item.salesCount || 0).toLocaleString()
-                                            }
-                                        </td>
-                                    </tr>
-                                )}
+                                    )}
 
-                                {isExpanded && hasVariants && !showServiceColumns && item.variants?.map((variant: any) => (
-                                        <tr key={variant.id} id={`variant-${variant.id}`} className="bg-slate-50/50 hover:bg-blue-50/30 transition-colors border-l-4 border-blue-400 group/variant">
-                                            <td className="table-body-cell"></td>
-                                            <td className="table-body-cell pl-12">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                                                    <span className="font-bold text-slate-600">{variant.name}</span>
-                                                    <div className="flex gap-1">
+                                    {isExpanded && hasVariants && !showServiceColumns && item.variants?.map((variant: any) => (
+                                        <tr key={variant.id} id={`variant-${variant.id}`} className="prime-table-cell"
+                                            style={{ background: t[50], transition: 'all .15s', borderLeft: `4px solid ${t[500]}` }}
+                                            onMouseEnter={e => e.currentTarget.style.background = t[50]}
+                                            onMouseLeave={e => e.currentTarget.style.background = t[50]}>
+                                            <td className="prime-table-cell" style={tdStyle}></td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, paddingLeft: 48 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: t[500] }}></div>
+                                                    <span style={{ fontWeight: 700, color: inkSoft }}>{variant.name}</span>
+                                                    <div style={{ display: 'flex', gap: 4 }}>
                                                         {Object.entries(variant.attributes || {}).map(([k, v]) => (
-                                                            <span key={k} className="text-[10px] bg-slate-200 text-slate-500 px-1 py-0.5 rounded uppercase font-bold tracking-tight">{k}: {String(v)}</span>
+                                                            <span key={k} style={{ fontSize: 10, background: t[100], color: inkSoft, padding: '2px 4px', borderRadius: 4, textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>{k}: {String(v)}</span>
                                                         ))}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="table-body-cell font-mono text-slate-400">{variant.sku}</td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, fontFamily: 'monospace', color: inkSoft }}>{variant.sku}</td>
                                             {showStockColumn && (
-                                            <td className="table-body-cell text-center finance-nums font-bold text-slate-600">
-                                                <>{variant.stock.toLocaleString()} <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.unit}</span></>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: inkSoft }}>
+                                                <>{variant.stock.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{item.unit}</span></>
                                             </td>
                                             )}
-                                             <td className={`table-body-cell text-right finance-nums font-bold ${(item.type === 'Raw Material' || item.type === 'Material') ? 'text-red-600' : 'text-green-600'}`}>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: (item.type === 'Raw Material' || item.type === 'Material') ? danger : t[500] }}>
                                                 {currency}{((item.type === 'Raw Material' || item.type === 'Material') ? variant.cost : variant.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                             </td>
-                                            <td className="table-body-cell text-right finance-nums text-slate-500 font-medium">
+                                            </td>
+                                            <td className="prime-table-cell" style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: inkSoft, fontWeight: 500 }}>
                                                 {(item.type === 'Raw Material' || item.type === 'Material')
                                                     ? Math.max(0, (variant.stock || 0) - (variant.reserved || 0)).toLocaleString()
                                                     : (variant.salesCount || 0).toLocaleString()
@@ -711,46 +716,46 @@ const showStockColumn = filterType === 'Material' || filterType === 'Stationery'
 export const WarehouseGrid: React.FC<{ warehouses: Warehouse[]; inventory: Item[]; }> = ({ warehouses, inventory }) => {
     if (warehouses.length === 0) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-20 text-slate-400 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center border border-slate-100 mb-4">
+            <div className="prime-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 80, color: inkSoft, background: paper, borderRadius: 16, border: `1.4px solid ${hairline}` }}>
+                <div style={{ width: 80, height: 80, background: t[50], borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.4px solid ${hairline}`, marginBottom: 16 }}>
                     <WarehouseIcon size={40} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-slate-900 font-semibold text-lg">No Warehouses Defined</h3>
-                <p className="text-sm max-w-xs text-center mt-1">Add a warehouse to start tracking stock across multiple locations.</p>
+                <h3 style={{ color: ink, fontWeight: 600, fontSize: 18 }}>No Warehouses Defined</h3>
+                <p style={{ fontSize: 14, maxWidth: 320, textAlign: 'center', marginTop: 4 }}>Add a warehouse to start tracking stock across multiple locations.</p>
             </div>
         );
     }
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-1 p-1">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, flex: 1, padding: 4 }}>
             {warehouses.map(wh => {
                 const stockCount = inventory.reduce((sum, item) => { const loc = item.locationStock?.find(l => l.warehouseId === wh.id); return sum + (loc ? loc.quantity : 0); }, 0);
                 const distinctItems = inventory.filter(i => i.locationStock?.some(l => l.warehouseId === wh.id && l.quantity > 0)).length;
                 return (
-                    <div key={wh.id} className="glass-card p-6 rounded-2xl hover:shadow-float transition-all duration-300 group border border-white/60">
-                        <div className="flex justify-between items-start mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shadow-sm">
+                    <div key={wh.id} className="prime-card" style={{ padding: 24, borderRadius: 16, border: `1.4px solid ${hairline}`, background: paper, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'all .3s' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: t[50], color: t[500], display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.4px solid ${t[100]}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                     <WarehouseIcon size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-[14px] font-semibold text-slate-800">{wh.name}</h3>
-                                    <p className="text-[10px] text-slate-400 font-mono uppercase font-normal">{wh.id}</p>
+                                    <h3 style={{ fontSize: 14, fontWeight: 600, color: ink }}>{wh.name}</h3>
+                                    <p style={{ fontSize: 10, color: inkSoft, fontFamily: 'monospace', textTransform: 'uppercase', fontWeight: 400 }}>{wh.id}</p>
                                 </div>
                             </div>
-                            <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold border border-slate-200 uppercase tracking-widest">{wh.type}</span>
+                            <span style={{ padding: '4px 12px', background: t[100], color: inkSoft, borderRadius: 9, fontSize: 10, fontWeight: 700, border: `1.4px solid ${hairline}`, textTransform: 'uppercase', letterSpacing: 0.5 }}>{wh.type}</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-3 bg-slate-50/50 rounded-xl text-center border border-slate-100">
-                                <div className="text-[13px] font-bold text-slate-800 finance-nums">{stockCount.toLocaleString()}</div>
-                                <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Units</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                            <div style={{ padding: 12, background: t[50], borderRadius: 12, textAlign: 'center', border: `1.4px solid ${hairline}` }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: ink, fontVariantNumeric: 'tabular-nums' }}>{stockCount.toLocaleString()}</div>
+                                <div style={{ fontSize: 10, color: inkSoft, textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>Units</div>
                             </div>
-                            <div className="p-3 bg-slate-50/50 rounded-xl text-center border border-slate-100">
-                                <div className="text-[13px] font-bold text-slate-800 finance-nums">{distinctItems.toLocaleString()}</div>
-                                <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">SKUs</div>
+                            <div style={{ padding: 12, background: t[50], borderRadius: 12, textAlign: 'center', border: `1.4px solid ${hairline}` }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: ink, fontVariantNumeric: 'tabular-nums' }}>{distinctItems.toLocaleString()}</div>
+                                <div style={{ fontSize: 10, color: inkSoft, textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>SKUs</div>
                             </div>
                         </div>
-                        <div className="text-[12.5px] text-slate-400 border-t border-slate-100 pt-4 flex items-center gap-2 font-normal">
-                            <MapPin size={14} /> <span className="font-medium text-slate-600">{wh.location}</span>
+                        <div style={{ fontSize: 12.5, color: inkSoft, borderTop: `1.4px solid ${hairline}`, paddingTop: 16, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400 }}>
+                            <MapPin size={14} /> <span style={{ fontWeight: 500, color: inkSoft }}>{wh.location}</span>
                         </div>
                     </div>
                 )
