@@ -2018,6 +2018,19 @@ const initDb = () => {
       db.run(`CREATE INDEX IF NOT EXISTS idx_financial_years_dates ON financial_years(company_id, start_date, end_date)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_financial_years_default ON financial_years(company_id, is_default)`);
 
+      // User Preferences Table — cross-device preference sync
+      db.run(`CREATE TABLE IF NOT EXISTS user_preferences (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        company_id TEXT NOT NULL,
+        pref_key TEXT NOT NULL,
+        pref_value TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+      db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_preferences_unique ON user_preferences(user_id, company_id, pref_key)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_user_preferences_lookup ON user_preferences(user_id, company_id)`);
+
       // Payment Allocation Tables
       db.run(`CREATE TABLE IF NOT EXISTS payment_allocations (
         id TEXT PRIMARY KEY,

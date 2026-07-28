@@ -93,7 +93,6 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
     const selectAndPersist = (fy: FinancialYear) => {
       setSelected(fy);
       persistFyToLocalStorage(fy);
-      // Fire-and-forget cloud persistence
       persistFyToCloud(fy.id);
     };
 
@@ -108,8 +107,7 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
 
-    // Priority 2: Cloud preference (cross-device sync — this makes the FY
-    // selection follow the user from one device to another)
+    // Priority 2: Cloud preference (cross-device sync)
     const cloudFyId = await loadFyIdFromCloud();
     if (cloudFyId) {
       const cloudMatch = years.find((fy: FinancialYear) => fy.id === cloudFyId);
@@ -134,6 +132,13 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
     // Priority 4: Default FY from backend
     if (defaultFy) {
       selectAndPersist(defaultFy);
+      // Re-fetch the years list if it didn't include the auto-created FY
+      if (years.length === 0) {
+        try {
+          const freshYears = await api.system.getFinancialYears();
+          if (freshYears?.length) setFinancialYears(freshYears);
+        } catch { /* best-effort */ }
+      }
     } else if (years.length > 0) {
       selectAndPersist(years[0]);
     }
