@@ -1106,24 +1106,22 @@ export const dbService = {
 
         const itemId = String(raw.id ?? '');
 
-        // Cloud-authoritative: write to Supabase first
+        // Always write to local cache first
+        const localResultId = await putToLegacyStore(storeName, item);
+
+        // Then try cloud write (fire-and-forget for non-local-only stores)
         const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
         if (!isLocalOnly) {
-            try {
-                const cloudResult = await cloudDb.put(String(storeName), item);
+            cloudDb.put(String(storeName), item).then(cloudResult => {
                 if (cloudResult?.id) {
-                    // Cloud write succeeded — hydrate local cache for offline availability
-                    try { await putToLegacyStore(storeName, item); } catch { /* cache best-effort */ }
                     this.triggerSync();
                     emitDataChange([String(storeName)]);
-                    return cloudResult.id;
                 }
-            } catch (err) {
+            }).catch(err => {
                 console.warn(`[DB] Cloud put failed for ${String(storeName)}:`, err);
-                // Queue for background sync retry
                 try {
                     const table = getCloudTable(String(storeName));
-                    await durableSyncQueue.enqueue({
+                    durableSyncQueue.enqueue({
                         table,
                         recordId: itemId || null,
                         operation: 'upsert',
@@ -1134,12 +1132,9 @@ export const dbService = {
                 } catch (qErr) {
                     console.warn('[DB] Failed to queue offline write:', qErr);
                 }
-                return (item as Record<string, unknown>).id as string;
-            }
+            });
         }
 
-        // Local-only stores: write to local cache
-        const localResultId = await putToLegacyStore(storeName, item);
         this.triggerSync();
         emitDataChange([String(storeName)]);
         return localResultId;
