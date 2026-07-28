@@ -715,9 +715,20 @@ const DashboardContent: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const fyDisplayName = (fy?: { start_date?: string; end_date?: string; name?: string }) => {
+    const s = fy?.start_date || selectedFinancialYear?.start_date;
+    const e = fy?.end_date || selectedFinancialYear?.end_date;
+    const n = fy?.name || selectedFinancialYear?.name;
+    const sy = s?.slice(0, 4);
+    const ey = e?.slice(0, 4);
+    if (sy && ey && sy !== ey) return `FY ${sy}/${ey.slice(2)}`;
+    return n || 'Financial Year';
+  };
+
   const currentFyDisplay = React.useMemo(() => {
-    return selectedFinancialYear ? 'Financial Year' : 'Financial Year';
-  }, [selectedFinancialYear]);
+    if (!selectedFinancialYear) return 'Financial Year';
+    return fyDisplayName();
+  }, [selectedFinancialYear, fyDisplayName]);
 
   useEffect(() => {
     if (selectedFinancialYear) {
@@ -1157,9 +1168,7 @@ const DashboardContent: React.FC = () => {
                     ) : (
                       availableFinancialYears.map(fy => {
                         const isActive = selectedFinancialYear?.id === fy.id;
-                        const sy = fy.start_date?.slice(0, 4);
-                        const ey = fy.end_date?.slice(0, 4);
-                        const fyLabelStr = sy && ey && sy !== ey ? 'Financial Year' : (fy.name || 'Financial Year');
+                        const fyLabelStr = fyDisplayName(fy);
                         return (
                           <button key={fy.id} onClick={() => { setFinancialYear(fy); setShowFyDropdown(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, border: 'none', backgroundColor: isActive ? '#eef2ff' : 'transparent', color: isActive ? '#4338ca' : '#1e293b', cursor: 'pointer', fontSize: 12, fontWeight: isActive ? 700 : 500, textAlign: 'left', transition: 'background-color 0.15s ease', gap: 8 }} onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = '#f8fafc'; }} onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CalendarDays size={14} color={isActive ? '#6366f1' : '#64748b'} /><span>{fyLabelStr}</span></div>
