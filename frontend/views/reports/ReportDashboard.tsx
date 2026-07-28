@@ -9,7 +9,11 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
-import Dialog from '../../components/Dialog';
+import { Trash2, Play, Save, X } from 'lucide-react';
+import {
+  modalOverlay, modalCard, accentBar, modalHeader, iconBox, modalTitle, modalSubtitle, closeBtn,
+  labelStyle, inputStyle, selectStyle, btnGhostStyle, tealBtn, modalBody, modalFooter, sectionTitle, sectionSubtitle, formGrid
+} from './reportModalStyles';
 
 interface ReportDashboardProps {
   initialCategory?: ReportCategory;
@@ -481,143 +485,159 @@ const ReportDashboard: React.FC<ReportDashboardProps> = ({ initialCategory }) =>
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
-        <Dialog
-          open
-          onClose={() => setShowDeleteConfirm(null)}
-          title="Delete Report"
-        >
-          <div className="p-4">
-            <p className="mb-4">Are you sure you want to delete this report? This action cannot be undone.</p>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowDeleteConfirm(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => handleDeleteReport(showDeleteConfirm)}
-              >
+        <div style={modalOverlay} onClick={() => setShowDeleteConfirm(null)}>
+          <div style={{ ...modalCard, width: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div style={accentBar} />
+            <div style={modalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ ...iconBox, background: `linear-gradient(155deg, ${danger}, #8b2c22)` }}><Trash2 size={19} color="#fff" /></div>
+                <div>
+                  <h1 style={modalTitle}>Delete Report</h1>
+                  <p style={modalSubtitle}>This action cannot be undone</p>
+                </div>
+              </div>
+              <button onClick={() => setShowDeleteConfirm(null)} aria-label="Close" style={closeBtn}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+              ><X size={15} /></button>
+            </div>
+            <div style={{ ...modalBody, padding: '24px 28px' }}>
+              <p style={{ fontSize: 14, color: ink, lineHeight: 1.6, margin: 0 }}>
+                Are you sure you want to delete <strong>{showDeleteConfirm}</strong>? This action cannot be undone.
+              </p>
+            </div>
+            <div style={modalFooter}>
+              <button type="button" onClick={() => setShowDeleteConfirm(null)} style={btnGhostStyle}>Cancel</button>
+              <button type="button" onClick={() => handleDeleteReport(showDeleteConfirm)} style={{ ...tealBtn, background: `linear-gradient(155deg, ${danger}, #8b2c22)`, boxShadow: `0 6px 16px -6px rgba(180,57,49,.55)` }}>
+                <Trash2 size={14} />
                 Delete
-              </Button>
+              </button>
             </div>
           </div>
-        </Dialog>
+        </div>
       )}
 
       {/* Parameter Dialog */}
       {showParameterDialog && selectedReport && (
-        <Dialog
-          open
-          onClose={() => setShowParameterDialog(false)}
-          title="Report Parameters"
-        >
-          <div className="p-4 space-y-4">
-            <p className="text-sm text-gray-600">
-              Please enter the required parameters for this report.
-            </p>
-            
-            {selectedReport.parameters?.map(param => (
-              <div key={param.id}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {param.label}
-                  {param.required && <span className="text-red-500 ml-1">*</span>}
-                </label>
-                
-                {param.type === 'date' && (
-                  <Input
-                    type="date"
-                    value={reportParameters[param.name] || ''}
-                    onChange={(e) => setReportParameters(prev => ({
-                      ...prev,
-                      [param.name]: e.target.value,
-                    }))}
-                  />
-                )}
-                
-                {(param.type as string) === 'dateRange' && (
-                  <div className="flex space-x-2">
-                    <Input
-                      type="date"
-                      placeholder="Start date"
-                      value={reportParameters[`${param.name}_start`] || ''}
-                      onChange={(e) => setReportParameters(prev => ({
-                        ...prev,
-                        [`${param.name}_start`]: e.target.value,
-                      }))}
-                    />
-                    <Input
-                      type="date"
-                      placeholder="End date"
-                      value={reportParameters[`${param.name}_end`] || ''}
-                      onChange={(e) => setReportParameters(prev => ({
-                        ...prev,
-                        [`${param.name}_end`]: e.target.value,
-                      }))}
-                    />
-                  </div>
-                )}
-                
-                {param.type === 'number' && (
-                  <Input
-                    type="number"
-                    value={reportParameters[param.name] || ''}
-                    onChange={(e) => setReportParameters(prev => ({
-                      ...prev,
-                      [param.name]: parseFloat(e.target.value),
-                    }))}
-                  />
-                )}
-                
-                {param.type === 'boolean' && (
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={reportParameters[param.name] || false}
-                      onChange={(e) => setReportParameters(prev => ({
-                        ...prev,
-                        [param.name]: e.target.checked,
-                      }))}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Yes</span>
-                  </label>
-                )}
-                
-                {param.type === 'select' && param.options && (
-                  <Select
-                    value={reportParameters[param.name] || ''}
-                    onChange={(value) => setReportParameters(prev => ({
-                      ...prev,
-                      [param.name]: value,
-                    }))}
-                    options={param.options.map(opt => ({
-                      value: opt.value,
-                      label: opt.label,
-                    }))}
-                  />
-                )}
-                
-                {param.type === 'string' && (
-                  <Input
-                    value={reportParameters[param.name] || ''}
-                    onChange={(e) => setReportParameters(prev => ({
-                      ...prev,
-                      [param.name]: e.target.value,
-                    }))}
-                  />
-                )}
+        <div style={modalOverlay} onClick={() => setShowParameterDialog(false)}>
+          <div style={{ ...modalCard, width: 520 }} onClick={(e) => e.stopPropagation()}>
+            <div style={accentBar} />
+            <div style={modalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={iconBox}><Play size={19} color="#fff" /></div>
+                <div>
+                  <h1 style={modalTitle}>Report Parameters</h1>
+                  <p style={modalSubtitle}>Configure filters before running the report</p>
+                </div>
               </div>
-            ))}
-            
-            <div className="flex justify-end space-x-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => setShowParameterDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleParameterSubmit}>
+              <button onClick={() => setShowParameterDialog(false)} aria-label="Close" style={closeBtn}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+              ><X size={15} /></button>
+            </div>
+            <div style={modalBody}>
+              {selectedReport.parameters?.map(param => (
+                <div key={param.id} style={{ marginBottom: 18 }}>
+                  <label style={labelStyle}>
+                    {param.label}
+                    {param.required && <span style={{ color: danger }}>*</span>}
+                  </label>
+
+                  {param.type === 'date' && (
+                    <Input
+                      type="date"
+                      value={reportParameters[param.name] || ''}
+                      onChange={(e) => setReportParameters(prev => ({
+                        ...prev,
+                        [param.name]: e.target.value,
+                      }))}
+                    />
+                  )}
+
+                  {(param.type as string) === 'dateRange' && (
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <Input
+                        type="date"
+                        placeholder="Start date"
+                        value={reportParameters[`${param.name}_start`] || ''}
+                        onChange={(e) => setReportParameters(prev => ({
+                          ...prev,
+                          [`${param.name}_start`]: e.target.value,
+                        }))}
+                      />
+                      <Input
+                        type="date"
+                        placeholder="End date"
+                        value={reportParameters[`${param.name}_end`] || ''}
+                        onChange={(e) => setReportParameters(prev => ({
+                          ...prev,
+                          [`${param.name}_end`]: e.target.value,
+                        }))}
+                      />
+                    </div>
+                  )}
+
+                  {param.type === 'number' && (
+                    <Input
+                      type="number"
+                      value={reportParameters[param.name] || ''}
+                      onChange={(e) => setReportParameters(prev => ({
+                        ...prev,
+                        [param.name]: parseFloat(e.target.value),
+                      }))}
+                    />
+                  )}
+
+                  {param.type === 'boolean' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={reportParameters[param.name] || false}
+                        onChange={(e) => setReportParameters(prev => ({
+                          ...prev,
+                          [param.name]: e.target.checked,
+                        }))}
+                        style={{ width: 16, height: 16, accentColor: teal[600], cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: 13, color: ink }}>Yes</span>
+                    </label>
+                  )}
+
+                  {param.type === 'select' && param.options && (
+                    <Select
+                      value={reportParameters[param.name] || ''}
+                      onChange={(value) => setReportParameters(prev => ({
+                        ...prev,
+                        [param.name]: value,
+                      }))}
+                      options={param.options.map(opt => ({
+                        value: opt.value,
+                        label: opt.label,
+                      }))}
+                    />
+                  )}
+
+                  {param.type === 'string' && (
+                    <Input
+                      value={reportParameters[param.name] || ''}
+                      onChange={(e) => setReportParameters(prev => ({
+                        ...prev,
+                        [param.name]: e.target.value,
+                      }))}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={modalFooter}>
+              <button type="button" onClick={() => setShowParameterDialog(false)} style={btnGhostStyle}>Cancel</button>
+              <button type="button" onClick={handleParameterSubmit} style={tealBtn}>
+                <Play size={14} />
                 Run Report
-              </Button>
+              </button>
             </div>
           </div>
-        </Dialog>
+        </div>
       )}
     </div>
   );

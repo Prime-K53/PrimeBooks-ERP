@@ -6,6 +6,7 @@ import { api } from '../services/api';
 import { dbService } from '../services/db';
 import { SEED_ITEM_IDS, SEED_ITEMS, MOCK_WAREHOUSES } from '../constants';
 import { generateNextId } from '../utils/helpers';
+import { generateLocalId } from '../utils/idGeneration';
 import { validateMinimumMarkup } from '../services/pricingValidationService';
 
 import { transactionService } from '../services/transactionService';
@@ -93,7 +94,6 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     const costPriceVal = Number(item.costPrice || item.cost_price || item.cost || 0);
     const newItem = {
       ...item,
-      id: item.id || generateNextId('ITM', get().inventory),
       price: sellingPriceVal,
       selling_price: sellingPriceVal,
       cost: costPriceVal,

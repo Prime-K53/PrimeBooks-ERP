@@ -6,7 +6,11 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Card from '../../components/Card';
-import Dialog from '../../components/Dialog';
+import { Settings2, SlidersHorizontal, X } from 'lucide-react';
+import {
+  modalOverlay, modalCard, accentBar, modalHeader, iconBox, modalTitle, modalSubtitle, closeBtn,
+  labelStyle, inputStyle, selectStyle, btnGhostStyle, tealBtn, modalBody, modalFooter, sectionTitle, sectionSubtitle, formGrid, emptyStateIcon
+} from './reportModalStyles';
 import Badge from '../../components/Badge';
 
 interface ReportBuilderProps {
@@ -900,119 +904,133 @@ const ColumnDialog: React.FC<ColumnDialogProps> = ({ column, fields, onSave, onC
   };
 
   return (
-    <Dialog open onClose={onClose} title={column ? 'Edit Column' : 'Add Column'}>
-      <div className="space-y-4 p-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Field *</label>
-          <Select
-            value={formData.field}
-            onChange={(value) => {
-              const field = fields.find(f => f.field === value);
-              setFormData(prev => ({
-                ...prev,
-                field: value,
-                label: field?.label || value,
-                type: (field?.type as ReportColumn['type']) || 'string',
-              }));
-            }}
-            options={fields.map(f => ({ value: f.field, label: `${f.label} (${f.field})` }))}
-          />
+    <div style={modalOverlay} onClick={onClose}>
+      <div style={{ ...modalCard, width: 520 }} onClick={(e) => e.stopPropagation()}>
+        <div style={accentBar} />
+        <div style={modalHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={iconBox}><Settings2 size={19} color="#fff" /></div>
+            <div>
+              <h1 style={modalTitle}>{column ? 'Edit Column' : 'Add Column'}</h1>
+              <p style={modalSubtitle}>Configure column display and aggregation</p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={closeBtn}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+          ><X size={15} /></button>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Label *</label>
-          <Input
-            value={formData.label}
-            onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
-            placeholder="Column display label"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+        <div style={modalBody}>
+          <div style={{ marginBottom: 18 }}>
+            <label style={labelStyle}>Field <span style={{ color: danger }}>*</span></label>
             <Select
-              value={formData.type}
-              onChange={(value) => setFormData(prev => ({ ...prev, type: value as ReportColumn['type'] }))}
-              options={[
-                { value: 'string', label: 'Text' },
-                { value: 'number', label: 'Number' },
-                { value: 'currency', label: 'Currency' },
-                { value: 'percentage', label: 'Percentage' },
-                { value: 'date', label: 'Date' },
-                { value: 'boolean', label: 'Yes/No' },
-              ]}
+              value={formData.field}
+              onChange={(value) => {
+                const field = fields.find(f => f.field === value);
+                setFormData(prev => ({
+                  ...prev,
+                  field: value,
+                  label: field?.label || value,
+                  type: (field?.type as ReportColumn['type']) || 'string',
+                }));
+              }}
+              options={fields.map(f => ({ value: f.field, label: `${f.label} (${f.field})` }))}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Aggregation</label>
-            <Select
-              value={formData.aggregation || ''}
-              onChange={(value) => setFormData(prev => ({ ...prev, aggregation: (value as AggregationType) || undefined }))}
-              options={[
-                { value: '', label: 'None' },
-                { value: 'sum', label: 'Sum' },
-                { value: 'avg', label: 'Average' },
-                { value: 'count', label: 'Count' },
-                { value: 'min', label: 'Minimum' },
-                { value: 'max', label: 'Maximum' },
-              ]}
+          <div style={{ marginBottom: 18 }}>
+            <label style={labelStyle}>Label <span style={{ color: danger }}>*</span></label>
+            <Input
+              value={formData.label}
+              onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
+              placeholder="Column display label"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Width (px)</label>
-          <Input
-            type="number"
-            value={formData.width || 150}
-            onChange={(e) => setFormData(prev => ({ ...prev, width: parseInt(e.target.value) || 150 }))}
-            min={50}
-            max={500}
-          />
-        </div>
+          <div style={formGrid}>
+            <div>
+              <label style={labelStyle}>Type</label>
+              <Select
+                value={formData.type}
+                onChange={(value) => setFormData(prev => ({ ...prev, type: value as ReportColumn['type'] }))}
+                options={[
+                  { value: 'string', label: 'Text' },
+                  { value: 'number', label: 'Number' },
+                  { value: 'currency', label: 'Currency' },
+                  { value: 'percentage', label: 'Percentage' },
+                  { value: 'date', label: 'Date' },
+                  { value: 'boolean', label: 'Yes/No' },
+                ]}
+              />
+            </div>
 
-        <div className="flex space-x-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={formData.sortable}
-              onChange={(e) => setFormData(prev => ({ ...prev, sortable: e.target.checked }))}
-              className="mr-1"
-            />
-            <span className="text-sm">Sortable</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={formData.filterable}
-              onChange={(e) => setFormData(prev => ({ ...prev, filterable: e.target.checked }))}
-              className="mr-1"
-            />
-            <span className="text-sm">Filterable</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={formData.hidden}
-              onChange={(e) => setFormData(prev => ({ ...prev, hidden: e.target.checked }))}
-              className="mr-1"
-            />
-            <span className="text-sm">Hidden</span>
-          </label>
-        </div>
+            <div>
+              <label style={labelStyle}>Aggregation</label>
+              <Select
+                value={formData.aggregation || ''}
+                onChange={(value) => setFormData(prev => ({ ...prev, aggregation: (value as AggregationType) || undefined }))}
+                options={[
+                  { value: '', label: 'None' },
+                  { value: 'sum', label: 'Sum' },
+                  { value: 'avg', label: 'Average' },
+                  { value: 'count', label: 'Count' },
+                  { value: 'min', label: 'Minimum' },
+                  { value: 'max', label: 'Maximum' },
+                ]}
+              />
+            </div>
+          </div>
 
-        <div className="flex justify-end space-x-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>
+          <div style={{ marginBottom: 18 }}>
+            <label style={labelStyle}>Width (px)</label>
+            <Input
+              type="number"
+              value={formData.width || 150}
+              onChange={(e) => setFormData(prev => ({ ...prev, width: parseInt(e.target.value) || 150 }))}
+              min={50}
+              max={500}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 16, marginBottom: 18 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={formData.sortable}
+                onChange={(e) => setFormData(prev => ({ ...prev, sortable: e.target.checked }))}
+                style={{ width: 16, height: 16, accentColor: teal[600], cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, color: ink }}>Sortable</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={formData.filterable}
+                onChange={(e) => setFormData(prev => ({ ...prev, filterable: e.target.checked }))}
+                style={{ width: 16, height: 16, accentColor: teal[600], cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, color: ink }}>Filterable</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={formData.hidden}
+                onChange={(e) => setFormData(prev => ({ ...prev, hidden: e.target.checked }))}
+                style={{ width: 16, height: 16, accentColor: teal[600], cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, color: ink }}>Hidden</span>
+            </label>
+          </div>
+        </div>
+        <div style={modalFooter}>
+          <button type="button" onClick={onClose} style={btnGhostStyle}>Cancel</button>
+          <button type="button" onClick={handleSave} style={tealBtn}>
+            <Save size={14} />
             {column ? 'Update' : 'Add'} Column
-          </Button>
+          </button>
         </div>
       </div>
-    </Dialog>
+    </div>
   );
 };
 
@@ -1063,57 +1081,71 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ filter, fields, onSave, onC
   ];
 
   return (
-    <Dialog open onClose={onClose} title={filter ? 'Edit Filter' : 'Add Filter'}>
-      <div className="space-y-4 p-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Field *</label>
-          <Select
-            value={formData.field}
-            onChange={(value) => setFormData(prev => ({ ...prev, field: value }))}
-            options={fields.map(f => ({ value: f.field, label: `${f.label} (${f.field})` }))}
-          />
+    <div style={modalOverlay} onClick={onClose}>
+      <div style={{ ...modalCard, width: 520 }} onClick={(e) => e.stopPropagation()}>
+        <div style={accentBar} />
+        <div style={modalHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={iconBox}><SlidersHorizontal size={19} color="#fff" /></div>
+            <div>
+              <h1 style={modalTitle}>{filter ? 'Edit Filter' : 'Add Filter'}</h1>
+              <p style={modalSubtitle}>Define filtering rules for this report</p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={closeBtn}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+          ><X size={15} /></button>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Operator</label>
-          <Select
-            value={formData.operator}
-            onChange={(value) => setFormData(prev => ({ ...prev, operator: value as FilterOperator }))}
-            options={operators.map(o => ({ value: o.value, label: o.label }))}
-          />
-        </div>
-
-        {!['is_null', 'is_not_null', 'today', 'this_month', 'this_year'].includes(formData.operator) && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Value</label>
-            <Input
-              value={formData.value?.toString() || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-              placeholder="Filter value"
+        <div style={modalBody}>
+          <div style={{ marginBottom: 18 }}>
+            <label style={labelStyle}>Field <span style={{ color: danger }}>*</span></label>
+            <Select
+              value={formData.field}
+              onChange={(value) => setFormData(prev => ({ ...prev, field: value }))}
+              options={fields.map(f => ({ value: f.field, label: `${f.label} (${f.field})` }))}
             />
           </div>
-        )}
 
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={formData.isParameter}
-            onChange={(e) => setFormData(prev => ({ ...prev, isParameter: e.target.checked }))}
-            className="mr-1"
-          />
-          <span className="text-sm">Use as parameter (user provides value at runtime)</span>
-        </label>
+          <div style={{ marginBottom: 18 }}>
+            <label style={labelStyle}>Operator</label>
+            <Select
+              value={formData.operator}
+              onChange={(value) => setFormData(prev => ({ ...prev, operator: value as FilterOperator }))}
+              options={operators.map(o => ({ value: o.value, label: o.label }))}
+            />
+          </div>
 
-        <div className="flex justify-end space-x-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>
+          {!['is_null', 'is_not_null', 'today', 'this_month', 'this_year'].includes(formData.operator) && (
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Value</label>
+              <Input
+                value={formData.value?.toString() || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
+                placeholder="Filter value"
+              />
+            </div>
+          )}
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={formData.isParameter}
+              onChange={(e) => setFormData(prev => ({ ...prev, isParameter: e.target.checked }))}
+              style={{ width: 16, height: 16, accentColor: teal[600], cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 13, color: ink }}>Use as parameter (user provides value at runtime)</span>
+          </label>
+        </div>
+        <div style={modalFooter}>
+          <button type="button" onClick={onClose} style={btnGhostStyle}>Cancel</button>
+          <button type="button" onClick={handleSave} style={tealBtn}>
+            <Save size={14} />
             {filter ? 'Update' : 'Add'} Filter
-          </Button>
+          </button>
         </div>
       </div>
-    </Dialog>
+    </div>
   );
 };
 

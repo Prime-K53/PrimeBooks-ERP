@@ -6,6 +6,7 @@ import { useInventoryStore } from '../stores/inventoryStore';
 import { useProcurementStore } from '../stores/procurementStore';
 import { transactionService } from '../services/transactionService';
 import { generateNextId, roundFinancial } from '../utils/helpers';
+import { generateLocalId } from '../utils/idGeneration';
 import { dbService } from '../services/db';
 import { useProductionStore } from '../stores/productionStore';
 import { isItemBomRelevant, syncBomRelevantInventoryToBackend } from '../services/examinationSyncService';
@@ -143,18 +144,17 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         items.map(i => ({ id: i.id, name: i.name, sku: i.sku, stock: i.stock, reorderPoint: i.reorderPoint ?? 0 }));
 
     const addItem = async (item: Item): Promise<void> => {
-        const itemToSave = { ...item, id: item.id || generateNextId('ITM', inventory, companyConfig) };
         try {
-            await storeAddItem(itemToSave);
+            await storeAddItem(item);
             addAuditLog({
                 action: 'CREATE',
                 entityType: 'Item',
-                entityId: itemToSave.id,
-                details: `Created new ${itemToSave.type}: ${itemToSave.name}`,
-                newValue: itemToSave
+                entityId: item.name,
+                details: `Created new ${item.type || 'item'}: ${item.name}`,
+                newValue: item
             });
             // Fire-and-forget sync to backend - don't block the save operation
-            syncBomRelevantInventory('item creation', [itemToSave]).catch((error) => {
+            syncBomRelevantInventory('item creation').catch((error) => {
                 console.warn('Background inventory sync failed:', error);
             });
             checkAndSendLowStockAlerts(toLowStockItems(inventory)).catch(() => {});

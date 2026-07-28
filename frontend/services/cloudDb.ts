@@ -428,17 +428,53 @@ export const cloudDb = {
         updated_at: new Date().toISOString(),
       };
 
+      // First attempt: upsert (handles both new and existing profile rows).
       const { data, error } = await supabase
         .from('profiles')
         .upsert(payload, { onConflict: 'user_id' })
         .select('id')
         .single();
 
-      if (error) throw error;
-      setActiveCompanyId(companyId);
-      return data.id;
+      if (!error) {
+        setActiveCompanyId(companyId);
+        return data.id;
+      }
+
+      // If the FK violation occurs (company_id not in companies yet), the most
+      // likely cause is a timing issue: the trigger already wrote a profile row
+      // with company_id = NULL before the company was created. Attempt a targeted
+      // UPDATE to set the company_id now that the company row exists.
+      const isFkViolation = error.code === '23503' ||
+        (error.message || '').includes('violates foreign key constraint');
+
+      if (isFkViolation) {
+        logger.warn('[CloudDB] upsertProfile: FK violation — retrying as UPDATE to set company_id on existing profile');
+        const { data: updData, error: updError } = await supabase
+          .from('profiles')
+          .update({
+            company_id: companyId,
+            full_name: payload.full_name,
+            role: payload.role,
+            status: payload.status,
+            data: payload.data,
+            updated_at: payload.updated_at,
+          })
+          .eq('user_id', userId)
+          .select('id')
+          .single();
+
+        if (!updError) {
+          setActiveCompanyId(companyId);
+          return updData.id;
+        }
+        logger.error('[CloudDB] upsertProfile: UPDATE retry also failed:', updError);
+        throw updError;
+      }
+
+      throw error;
     });
   },
+
 
   async getAll<T>(storeName: string): Promise<T[] | null> {
     return withSession(async () => {

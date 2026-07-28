@@ -201,6 +201,12 @@ const SetupWizard: React.FC = () => {
         },
       });
 
+      // Pre-generate a stable company UUID BEFORE signup so the DB trigger
+      // can immediately link the profile to this company. The same ID is
+      // passed into completeSetup → upsertCompany, avoiding the FK violation
+      // that occurs when the trigger creates a profile with company_id = NULL.
+      const preGeneratedCompanyId = crypto.randomUUID();
+
       if (SUPABASE_ENABLED && admin.email) {
         const supabasePassword = admin.password || `${admin.username}_${Date.now()}`;
         const signUpResult = await signUpSupabase(admin.email.trim(), supabasePassword, {
@@ -210,17 +216,21 @@ const SetupWizard: React.FC = () => {
           is_super_admin: true,
           group_ids: ['GRP-ADMIN'],
           company_name: admin.fullName.trim(),
+          // Provide the company_id upfront so the on_auth_user_created trigger
+          // can write the profile row with the correct tenant ID.
+          company_id: preGeneratedCompanyId,
         });
 
         if (!signUpResult.success) {
           logger.error('[Setup] Supabase signup failed:', signUpResult.error);
           throw new Error(`Cloud account creation failed: ${signUpResult.error}`);
         }
-        
       }
 
       await completeSetup(
-        finalConfig,
+        // Inject the pre-generated companyId so completeSetup skips re-generating
+        // a new UUID — this ensures upsertCompany uses the exact ID passed to signup.
+        { ...finalConfig, companyId: preGeneratedCompanyId },
         {
           id: '',
           username: admin.username.trim(),

@@ -9,6 +9,7 @@ import { VariantSelectorModal, PrintingVariantModal } from './PosModals';
 import { ItemModal } from '../../../components/items/ItemModal';
 
 import { formatNumber } from '../../../utils/helpers';
+import { generateLocalId } from '../../../utils/idGeneration';
 import { useInventory } from '../../../context/InventoryContext';
 import { generateNextId } from '../../../utils/helpers';
 import { resolveStoredCalculatedPrice, resolveStoredCost, resolveStoredSellingPrice } from '../../../utils/pricing';
@@ -530,9 +531,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ inventory, addToCart, 
                     open={showCreateItemModal}
                     onClose={() => setShowCreateItemModal(false)}
                     onSave={async (item) => {
-                        const savedItem = { ...item, id: item.id || generateNextId('ITM', inventory, companyConfig) };
-                        await inventoryAddItem(savedItem);
-                        addToCart(savedItem);
+                        await inventoryAddItem(item);
+                        addToCart(item);
                         setShowCreateItemModal(false);
                     }}
                     allItems={inventory}

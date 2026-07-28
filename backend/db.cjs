@@ -96,11 +96,13 @@ const initDb = () => {
       db.run(`CREATE TABLE IF NOT EXISTS inventory (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
+        sku TEXT,
         material TEXT,
         type TEXT CHECK(type IN ('stationery', 'material', 'product', 'service')) DEFAULT 'material',
         is_stock_tracked INTEGER GENERATED ALWAYS AS (CASE WHEN type IN ('stationery', 'material') THEN 1 ELSE 0 END) VIRTUAL,
         quantity INTEGER NOT NULL DEFAULT 0,
-        cost_per_unit REAL NOT NULL,
+        cost_per_unit REAL NOT NULL DEFAULT 0,
+        selling_price REAL DEFAULT 0,
         conversion_rate REAL DEFAULT 500,
         unit TEXT DEFAULT 'units',
         category_id TEXT,
@@ -109,10 +111,39 @@ const initDb = () => {
         reorder_point INTEGER DEFAULT 0,
         warehouse_id TEXT,
         reserved INTEGER NOT NULL DEFAULT 0,
+        is_protected INTEGER DEFAULT 0,
+        company_id TEXT NOT NULL DEFAULT '',
+        created_by TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_synced_at DATETIME,
         sync_checksum TEXT
-      )`);
+      )`, (err) => {
+        if (!err) {
+          db.all("PRAGMA table_info(inventory)", (err, rows) => {
+            if (!err && rows) {
+              const existingColumns = new Set(rows.map(r => r.name));
+              const columnsToAdd = [
+                { name: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },
+                { name: 'sku', type: 'TEXT' },
+                { name: 'selling_price', type: 'REAL DEFAULT 0' },
+                { name: 'created_by', type: 'TEXT' },
+                { name: 'created_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+                { name: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' }
+              ];
+              columnsToAdd.forEach(col => {
+                if (!existingColumns.has(col.name)) {
+                  db.run(`ALTER TABLE inventory ADD COLUMN ${col.name} ${col.type}`, (err) => {
+                    if (err) console.error(`Error adding ${col.name} column to inventory:`, err);
+                  });
+                }
+              });
+              db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_company_sku ON inventory (company_id, sku) WHERE sku IS NOT NULL AND sku != ''`);
+            }
+          });
+        }
+      });
 
       // Examinations Table
       db.run(`CREATE TABLE IF NOT EXISTS examinations (

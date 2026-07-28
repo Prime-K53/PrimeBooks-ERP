@@ -462,6 +462,7 @@ const mergeSalePayload = (baseSale: any, remoteSale: any) => {
 const normalizeBackendInventoryItem = (item: any): Item => ({
   id: item.id,
   name: item.name,
+  sku: item.sku || '',
   material: item.material || '',
   type: item.type || 'material',
   category: item.category || item.category_id || '',
@@ -490,6 +491,7 @@ const normalizeBackendInventoryItem = (item: any): Item => ({
 const mapInventoryItemToBackend = (item: Item): any => ({
   id: item.id,
   name: item.name,
+  sku: item.sku || null,
   material: item.material || item.category || '',
   type: (item.type || 'material').toLowerCase(),
   category_id: item.category_id || null,
@@ -550,20 +552,73 @@ export const api = {
 
   inventory: {
     getAllItems: () => handle(async () => {
+      try {
+        const response = await apiClient.get('/inventory');
+        const remoteItems = Array.isArray(response.data) ? response.data : [];
+        if (remoteItems.length > 0) {
+          const normalized = remoteItems.map(normalizeBackendInventoryItem);
+          for (const item of normalized) {
+            await dbService.put('inventory', item);
+          }
+          return normalized;
+        }
+      } catch (err) {
+        // Fall back to local Dexie IndexedDB
+      }
       return dbService.getAll<Item>('inventory');
     }, 'Inventory.GetAll'),
+
     createItem: (item: Item) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Inventory.Create');
-      return dbService.put('inventory', item);
+      const payload = mapInventoryItemToBackend(item);
+      // Strip client-generated ID for creation - backend/database must generate primary key
+      delete payload.id;
+
+      try {
+        const response = await apiClient.post('/inventory', payload);
+        const createdRecord = response.data;
+        const normalized = normalizeBackendInventoryItem(createdRecord);
+        await dbService.put('inventory', normalized);
+        return normalized;
+      } catch (err: any) {
+        if (err?.response?.status === 409) {
+          throw new Error(err.response.data?.error || 'Inventory SKU already exists in this company.');
+        }
+        if (err?.response?.data?.error) {
+          throw new Error(err.response.data.error);
+        }
+        if (err?.__localOnly || err?.code === 'ERR_NETWORK') {
+          const fallbackItem = { ...item, id: item.id || `temp-itm-${Date.now()}` };
+          await dbService.put('inventory', fallbackItem);
+          return fallbackItem;
+        }
+        throw err;
+      }
     }, 'Inventory.Create'),
+
     updateItem: (item: Item) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Inventory.Update');
+      const payload = mapInventoryItemToBackend(item);
+      try {
+        await apiClient.put(`/inventory/${encodeURIComponent(item.id)}`, payload);
+      } catch (err: any) {
+        if (err?.response?.status === 409) {
+          throw new Error(err.response.data?.error || 'Inventory SKU already exists in this company.');
+        }
+      }
       return dbService.put('inventory', item);
     }, 'Inventory.Update'),
+
     deleteItem: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Inventory.Delete');
+      try {
+        await apiClient.delete(`/inventory/${encodeURIComponent(id)}`);
+      } catch (err) {
+        // Log or handle remote error
+      }
       return dbService.delete('inventory', id);
     }, 'Inventory.Delete'),
+
     getAllWarehouses: () => handle(() => dbService.getAll<Warehouse>('warehouses'), 'Inventory.GetWarehouses'),
     saveWarehouse: (wh: Warehouse) => handle(() => {
       checkAuth(['Admin'], 'Inventory.SaveWarehouse');

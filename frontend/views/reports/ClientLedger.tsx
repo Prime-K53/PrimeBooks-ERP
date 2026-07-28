@@ -138,21 +138,25 @@ const ClientLedger: React.FC = () => {
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,.6)', backdropFilter: 'blur(4px)', padding: 16, fontFamily: "'Inter',sans-serif", fontSize: 13, color: ink }} onClick={() => setShowPreview(false)}>
         <div style={{ width: '100%', maxWidth: 1024, background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', border: `1.4px solid ${hairline}`, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: `1.4px solid ${hairline}`, background: paper }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 12, background: `linear-gradient(135deg, ${teal[500]}, ${teal[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 10px -4px rgba(15,84,76,.5)` }}>
-                <FileText size={18} style={{ color: '#fff' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px ${hairline}`, background: paper }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0 }}>
+                <FileText size={19} color="#fff" />
               </div>
               <div>
-                <h2 style={{ fontSize: 13, fontWeight: 700, color: ink, margin: 0 }}>Account Statement</h2>
-                <p style={{ fontSize: 10, color: inkSoft, fontWeight: 500, margin: 0 }}>{d.customerName}</p>
+                <h1 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2 }}>Account Statement</h1>
+                <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>{d.customerName}</p>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 9, background: teal[50], border: 'none', color: inkSoft, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
                 onMouseEnter={e => e.currentTarget.style.background = teal[100]}> <Printer size={14} /> Print</button>
-              <button onClick={() => setShowPreview(false)} style={{ padding: 8, borderRadius: 9, background: 'transparent', border: 'none', color: inkSoft, cursor: 'pointer' }}
-                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = ink; }}> <X size={18} /></button>
+              <button onClick={() => setShowPreview(false)} aria-label="Close" style={{ width: 32, height: 32, borderRadius: 8, border: `1px ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease', fontSize: 16 }}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
+                <X size={15} />
+              </button>
             </div>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 32, background: paper }}>

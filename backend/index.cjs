@@ -65,6 +65,21 @@ const closeDbAndExit = (code = 1) => {
   }
 };
 
+const SQLITE_CONSTRAINT_CODES = new Set([
+  'SQLITE_CONSTRAINT',
+  'SQLITE_UNIQUE',
+  'SQLITE_PRIMARYKEY',
+]);
+
+function handleInsertConstraintError(res, err, context = 'Create') {
+  if (SQLITE_CONSTRAINT_CODES.has(err?.code)) {
+    return res.status(409).json({
+      error: `${context} failed: ID or unique constraint collision. Please try saving again.`
+    });
+  }
+  return res.status(500).json({ error: err?.message || `Failed to ${context.toLowerCase()}` });
+}
+
 // Security Middleware
 try {
   const helmet = require('helmet');
@@ -543,11 +558,13 @@ async function startServer() {
   console.log('--- STARTING SERVER ---');
   validateEnv();
 
-  try {
-    await ensurePortAvailable(PORT);
-  } catch (err) {
-    console.error(`Startup aborted: ${err.message}`);
-    process.exit(1);
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      await ensurePortAvailable(PORT);
+    } catch (err) {
+      console.error(`Startup aborted: ${err.message}`);
+      process.exit(1);
+    }
   }
 
   try {
@@ -1824,7 +1841,7 @@ async function startServer() {
          body.other_charges || 0, JSON.stringify(body.line_items || []), body.notes || null, body.document_title || null,
          req.companyId || '', req.user?.id || null],
         function (err) {
-          if (err) { console.error('[Invoices] POST error:', err); return res.status(500).json({ error: 'Failed to create invoice' }); }
+          if (err) { return handleInsertConstraintError(res, err, 'Create invoice'); }
           res.status(201).json({ id, ...body });
         }
       );
@@ -1913,7 +1930,7 @@ async function startServer() {
          body.payment_method || body.paymentMethod || 'Cash', body.account_id || body.accountId || null,
          body.reference || null, body.notes || null, body.status || 'Cleared', companyId, req.user?.id || null],
         function (err) {
-          if (err) { console.error('[CustomerPayments] POST error:', err); return res.status(500).json({ error: 'Failed to create payment' }); }
+          if (err) { return handleInsertConstraintError(res, err, 'Create customer payment'); }
           res.status(201).json({ id, ...body });
         }
       );
@@ -3184,12 +3201,25 @@ async function startServer() {
   app.post('/api/inventory', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
       const { body } = req;
-      const id = body.id || randomUUID();
-      const name = body.name || 'Unnamed';
+      
+      // Validation: Name is required
+      if (!body.name || !String(body.name).trim()) {
+        return res.status(400).json({ error: 'Item name is required' });
+      }
+
+      // Enterprise SaaS Best Practice: Backend generates primary key and controls tenant metadata
+      // Ignore any client-supplied id, company_id, created_by, created_at, updated_at
+      const id = randomUUID();
+      const companyId = req.companyId || '';
+      const createdBy = req.user?.id || req.user?.username || 'system';
+
+      const name = String(body.name).trim();
+      const sku = body.sku ? String(body.sku).trim() : (body.code ? String(body.code).trim() : null);
       const material = body.material || body.category || null;
       const type = (body.type || 'material').toLowerCase();
       const quantity = Number(body.quantity) || 0;
       const costPerUnit = Number(body.cost_per_unit ?? body.cost ?? body.costPrice ?? body.cost_price ?? 0);
+      const sellingPrice = Number(body.selling_price ?? body.sellingPrice ?? body.price ?? 0);
       const unit = body.unit || 'units';
       const category_id = body.category_id || null;
       const minStockLevel = Number(body.min_stock_level ?? body.minStockLevel ?? 0);
@@ -3197,14 +3227,73 @@ async function startServer() {
       const reorderPoint = Number(body.reorder_point ?? body.reorderPoint ?? 0);
       const warehouseId = body.warehouse_id || null;
       const reserved = Number(body.reserved) || 0;
-      const companyId = req.companyId || '';
+      const isProtected = body.is_protected ? 1 : 0;
+      const now = new Date().toISOString();
+
+      // Business Uniqueness Check: SKU must be unique per company
+      if (sku) {
+        const existing = await new Promise((resolve, reject) => {
+          db.get(
+            'SELECT id FROM inventory WHERE company_id = ? AND sku = ? LIMIT 1',
+            [companyId, sku],
+            (err, row) => (err ? reject(err) : resolve(row))
+          );
+        });
+        if (existing) {
+          return res.status(409).json({ 
+            error: `Inventory item with SKU '${sku}' already exists in this company.`,
+            code: 'SKU_ALREADY_EXISTS',
+            sku 
+          });
+        }
+      }
+
+      // Perform clean INSERT
       db.run(
-        `INSERT OR REPLACE INTO inventory (id, name, material, type, quantity, cost_per_unit, unit, category_id, min_stock_level, max_stock_level, reorder_point, warehouse_id, reserved, company_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, name, material, type, quantity, costPerUnit, unit, category_id, minStockLevel, maxStockLevel, reorderPoint, warehouseId, reserved, companyId],
+        `INSERT INTO inventory (
+          id, company_id, name, sku, material, type, quantity, cost_per_unit, selling_price, 
+          unit, category_id, min_stock_level, max_stock_level, reorder_point, warehouse_id, 
+          reserved, is_protected, created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id, companyId, name, sku, material, type, quantity, costPerUnit, sellingPrice,
+          unit, category_id, minStockLevel, maxStockLevel, reorderPoint, warehouseId,
+          reserved, isProtected, createdBy, now, now
+        ],
         function (err) {
-          if (err) { console.error('[Inventory] POST error:', err); return res.status(500).json({ error: 'Failed to create inventory item' }); }
-          res.status(201).json({ id, name, material, type, quantity, cost_per_unit: costPerUnit, unit, category_id, min_stock_level: minStockLevel, max_stock_level: maxStockLevel, reorder_point: reorderPoint, warehouse_id: warehouseId, reserved, company_id: companyId });
+          if (err) {
+            if (err.message && (err.message.includes('UNIQUE constraint failed') || err.message.includes('idx_inventory_company_sku'))) {
+              return res.status(409).json({ 
+                error: `Inventory item with SKU '${sku}' already exists in this company.`,
+                code: 'SKU_ALREADY_EXISTS',
+                sku 
+              });
+            }
+            return handleInsertConstraintError(res, err, 'Create inventory item');
+          }
+          // Return complete created record
+          res.status(201).json({
+            id,
+            company_id: companyId,
+            name,
+            sku,
+            material,
+            type,
+            quantity,
+            cost_per_unit: costPerUnit,
+            selling_price: sellingPrice,
+            unit,
+            category_id,
+            min_stock_level: minStockLevel,
+            max_stock_level: maxStockLevel,
+            reorder_point: reorderPoint,
+            warehouse_id: warehouseId,
+            reserved,
+            is_protected: Boolean(isProtected),
+            created_by: createdBy,
+            created_at: now,
+            updated_at: now
+          });
         }
       );
     } catch (err) {
@@ -3218,9 +3307,11 @@ async function startServer() {
     try {
       const { id } = req.params;
       const { body } = req;
+      const companyId = req.companyId || '';
       const fields = [];
       const params = [];
-      const allowed = ['name', 'material', 'type', 'quantity', 'cost_per_unit', 'unit', 'category_id', 'min_stock_level', 'max_stock_level', 'reorder_point', 'warehouse_id', 'reserved'];
+      const allowed = ['name', 'sku', 'material', 'type', 'quantity', 'cost_per_unit', 'selling_price', 'unit', 'category_id', 'min_stock_level', 'max_stock_level', 'reorder_point', 'warehouse_id', 'reserved', 'is_protected'];
+      
       for (const field of allowed) {
         if (body[field] !== undefined) {
           fields.push(`${field} = ?`);
@@ -3228,9 +3319,37 @@ async function startServer() {
         }
       }
       if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
-      params.push(id, req.companyId || '');
-      db.run(`UPDATE inventory SET ${fields.join(', ')}, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`, params, function (err) {
-        if (err) { console.error('[Inventory] PUT error:', err); return res.status(500).json({ error: 'Failed to update inventory item' }); }
+      
+      // SKU conflict check on update if sku is supplied
+      if (body.sku) {
+        const skuTrimmed = String(body.sku).trim();
+        const existing = await new Promise((resolve, reject) => {
+          db.get(
+            'SELECT id FROM inventory WHERE company_id = ? AND sku = ? AND id != ? LIMIT 1',
+            [companyId, skuTrimmed, id],
+            (err, row) => (err ? reject(err) : resolve(row))
+          );
+        });
+        if (existing) {
+          return res.status(409).json({
+            error: `Inventory item with SKU '${skuTrimmed}' already exists in this company.`,
+            code: 'SKU_ALREADY_EXISTS',
+            sku: skuTrimmed
+          });
+        }
+      }
+
+      fields.push('updated_at = CURRENT_TIMESTAMP');
+      params.push(id, companyId);
+
+      db.run(`UPDATE inventory SET ${fields.join(', ')} WHERE id = ? AND company_id = ?`, params, function (err) {
+        if (err) { 
+          if (err.message && (err.message.includes('UNIQUE constraint failed') || err.message.includes('idx_inventory_company_sku'))) {
+            return res.status(409).json({ error: `Inventory item with SKU '${body.sku}' already exists in this company.`, code: 'SKU_ALREADY_EXISTS' });
+          }
+          console.error('[Inventory] PUT error:', err); 
+          return res.status(500).json({ error: 'Failed to update inventory item' }); 
+        }
         if (this.changes === 0) return res.status(404).json({ error: 'Inventory item not found' });
         res.json({ success: true, id });
       });
@@ -3532,11 +3651,11 @@ app.get('/api/invoices/:id/details', (req, res) => {
       const { id, snapshot_data, snapshot_type, notes, created_by } = req.body;
       const snapshotId = id || `SNAP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const companyId = req.companyId || '';
-      db.run(`INSERT OR REPLACE INTO warehouse_snapshots (id, snapshot_data, snapshot_type, notes, created_by, company_id, created_at)
+      db.run(`INSERT INTO warehouse_snapshots (id, snapshot_data, snapshot_type, notes, created_by, company_id, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [snapshotId, JSON.stringify(snapshot_data), snapshot_type || 'manual', notes || '', created_by || req.user?.id || '', companyId, new Date().toISOString()],
         (err) => {
-          if (err) { console.error('[Warehouses] snapshot post error:', err); return res.status(500).json({ error: 'Failed to save snapshot' }); }
+          if (err) { return handleInsertConstraintError(res, err, 'Save warehouse snapshot'); }
           res.status(201).json({ success: true, id: snapshotId });
         });
     } catch (err) {
@@ -3817,6 +3936,11 @@ app.use((err, req, res, next) => {
   let attempts = 0;
   const maxAttempts = 10;
 
+  if (process.env.NODE_ENV === 'test') {
+    console.log('[BACKEND] Running in test mode - skipping network socket binding.');
+    return app;
+  }
+
   while (attempts < maxAttempts) {
     try {
       console.log(`[BACKEND] Attempting to start server on port ${PORT} (Attempt ${attempts + 1}/${maxAttempts})...`);
@@ -3900,8 +4024,16 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-startServer().catch(err => {
-  console.error('Failed to start server:', err);
-  if (err.stack) console.error(err.stack);
-  process.exit(1);
-});
+if (require.main === module) {
+  startServer().catch(err => {
+    console.error('Failed to start server:', err);
+    if (err.stack) console.error(err.stack);
+    process.exit(1);
+  });
+} else {
+  startServer().catch(err => {
+    console.error('Failed to initialize routes in test mode:', err);
+  });
+}
+
+module.exports = app;
