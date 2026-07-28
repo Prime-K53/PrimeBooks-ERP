@@ -18,3 +18,5 @@ coverage
 Thumbs.db
 *_REPORT.md
 .kilocode
+
+__pycache__/
