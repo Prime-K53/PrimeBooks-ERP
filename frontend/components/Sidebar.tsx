@@ -14,7 +14,7 @@ import {
   CheckCircle, MonitorPlay, Maximize, Share2, Sparkles,
   Smartphone, FileSpreadsheet, BookOpen, FileCheck, History,
   Calculator, Search, GitFork,
-  Gift, Calendar, FileSearch
+  Gift, Calendar, FileSearch, Receipt
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -355,57 +355,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, toggle, toggleCo
                  position: 'absolute', left: '100%', top: 0, marginLeft: 12,
                  background: '#FEFDFB', borderRadius: 14,
                  boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
-                 overflow: 'hidden', zIndex: 50, width: 600, padding: 20
+                 overflow: 'hidden', zIndex: 50, width: 210, padding: 0
                }}>
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
-                   {/* Column 1 - Sales & CRM */}
-                   <div>
-                     <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 12, paddingLeft: 8 }}>Sales & CRM</div>
-                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                       <button onClick={() => { setIsPosModalOpen(true); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
-                         onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                         <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><Coins size={14} color="#3b82f6" /></div>
-                         Point of Sale
+                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #146b60, #3fa294 40%, #d99a3f 100%)' }} />
+                 <div style={{ padding: '16px 14px 12px', marginTop: 3 }}>
+                   <div style={{ fontSize: 9, fontWeight: 800, color: '#146b60', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: 10 }}>Quick Actions</div>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                     {[
+                       { icon: Coins, color: '#3b82f6', label: 'Point of Sale', onClick: () => { setIsPosModalOpen(true); setIsNewMenuOpen(false); } },
+                       { icon: UserPlus, color: '#146b60', label: 'New Client', onClick: () => { navigate('/sales-flow/clients', { state: { action: 'create' } }); setIsNewMenuOpen(false); } },
+                       { icon: FileSpreadsheet, color: '#d99a3f', label: 'Create Invoice', onClick: () => { navigate('/sales-flow/invoices', { state: { action: 'create' } }); setIsNewMenuOpen(false); } },
+                       { icon: Receipt, color: '#059669', label: 'New Receipt', onClick: () => { navigate('/sales-flow/payments', { state: { action: 'create' } }); setIsNewMenuOpen(false); } },
+                       { icon: FileText, color: '#8b5cf6', label: 'New Quotation', onClick: () => { navigate('/sales-flow/quotations', { state: { action: 'create', type: 'Quotation' } }); setIsNewMenuOpen(false); } },
+                       { icon: CheckSquare, color: '#f59e0b', label: 'New Task', onClick: () => { navigate('/sales-flow/tasks', { state: { action: 'create' } }); setIsNewMenuOpen(false); } },
+                       { icon: BookOpen, color: '#ec4899', label: 'New Exam Batch', onClick: () => { navigate('/examination/batches/new'); setIsNewMenuOpen(false); } },
+                     ].map((item) => (
+                       <button key={item.label} onClick={item.onClick} style={{
+                         display: 'flex', alignItems: 'center', gap: 10,
+                         padding: '7px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                         background: 'transparent', transition: 'all .2s ease', textAlign: 'left', width: '100%', position: 'relative',
+                       }}
+                         onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.paddingLeft = '14px'; }}
+                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.paddingLeft = '10px'; }}>
+                         <item.icon size={15} color={item.color} style={{ flexShrink: 0 }} />
+                         <span style={{ fontSize: 12.5, fontWeight: 500, color: '#23282A', letterSpacing: '0.01em' }}>{item.label}</span>
                        </button>
-                       <button onClick={() => { navigate('/sales-flow/clients', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
-                         onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                         <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><UserPlus size={14} color="#3b82f6" /></div>
-                         New Client
-                       </button>
-                       <button onClick={() => { navigate('/sales-flow/invoices', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
-                         onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                         <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><FileSpreadsheet size={14} color="#3b82f6" /></div>
-                         Create Invoice
-                       </button>
-                       <button onClick={() => { navigate('/sales-flow/quotations', { state: { action: 'create', type: 'Quotation' } }); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
-                         onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                         <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fbead0' }}><FileText size={14} color="#d99a3f" /></div>
-                         New Quotation
-                       </button>
-                     </div>
+                     ))}
                    </div>
-                   {/* Column 2 - Operations */}
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 12, paddingLeft: 8 }}>Operations</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <button onClick={() => { navigate('/sales-flow/tasks', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                          <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><CheckSquare size={14} color="#f59e0b" /></div>
-                          New Task
-                        </button>
-                      </div>
-                    </div>
-                   {/* Column 3 - Production */}
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 12, paddingLeft: 8 }}>Production</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <button onClick={() => { navigate('/examination/batches/new'); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                          <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><BookOpen size={14} color="#ec4899" /></div>
-                          New Examination Batch
-                        </button>
-                      </div>
-                    </div>
                  </div>
                </div>
             )}
@@ -448,6 +424,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, toggle, toggleCo
                           ? 'text-white'
                           : 'text-white/62 hover:text-white hover:bg-white/5'}
                       `}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.paddingLeft = '16px'; }}
+                      onMouseLeave={e => { if (!active) e.currentTarget.style.paddingLeft = '12px'; }}
                       style={active && !hasSub ? {
                         background: 'linear-gradient(90deg, rgba(217,154,63,.2), rgba(217,154,63,.04))',
                         boxShadow: 'inset 3px 0 0 #d99a3f'
@@ -478,10 +456,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, toggle, toggleCo
                               key={sub.path}
                               data-tour={sub.label === 'Master Inventory' ? 'inventory' : undefined}
                               onClick={() => navigate(sub.path)}
+                               onMouseEnter={e => { if (!subActive) { e.currentTarget.style.paddingLeft = '16px'; } }}
+                               onMouseLeave={e => { if (!subActive) { e.currentTarget.style.paddingLeft = '12px'; } }}
                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all
-                                            ${subActive
-                                    ? 'text-white bg-white/10 font-bold'
-                                    : 'text-white/50 hover:text-white hover:bg-white/5'}`}
+                                             ${subActive
+                                     ? 'text-white bg-white/10 font-bold'
+                                     : 'text-white/50 hover:text-white hover:bg-white/5'}`}
                             >
                               <div className={`${subActive ? 'text-white' : 'text-white/20'}`}>
                                 {sub.icon}
