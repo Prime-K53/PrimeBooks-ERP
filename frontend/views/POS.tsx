@@ -299,7 +299,7 @@ const POS: React.FC = () => {
 
   const commitAddToCart = async (item: any, batchSelections?: { batchId: string; batchNumber: string; quantity: number }[], absoluteQty?: boolean) => {
     if (item.type !== 'Service') {
-      updateReservedStock(item.parentId || item.id, item.quantity || 1, 'POS Cart Addition', item.parentId ? item.id : undefined);
+      updateReservedStock(item.parentId || item.id, 1, 'POS Cart Addition', item.parentId ? item.id : undefined);
     }
 
     // Resolve customer pricing tier if customer is selected
@@ -320,7 +320,7 @@ const POS: React.FC = () => {
     const variantId = item.parentId ? item.id : undefined;
 
     const existing = cart.find(i => i.id === item.id);
-    const newQty = absoluteQty ? (item.quantity || 1) : (existing ? (existing.quantity + (item.quantity || 1)) : (item.quantity || 1));
+    const newQty = absoluteQty ? (item.quantity || 1) : (existing ? (existing.quantity + 1) : 1);
     const basePrice = resolveStoredSellingPrice(baseItem);
 
     const activeAdjs: any[] = [];
@@ -447,9 +447,8 @@ const POS: React.FC = () => {
     const isBatchControlled = baseItem.batchControlled || item.batchControlled;
 
     if (isBatchControlled && item.type !== 'Service') {
-      const targetQty = item.quantity || 1;
       const existing = cart.find(i => i.id === item.id);
-      const newQty = existing ? (existing.quantity + targetQty) : targetQty;
+      const newQty = existing ? (existing.quantity + 1) : 1;
 
       const batchPromise = new Promise<any[]>((resolve) => {
         setBatchPickerState({ item: { ...item, quantity: newQty }, resolve });

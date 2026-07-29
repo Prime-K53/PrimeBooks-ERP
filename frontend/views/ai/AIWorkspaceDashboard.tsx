@@ -266,8 +266,6 @@ const AIWorkspaceDashboard: React.FC = () => {
     return (customers || []).filter((c) => c.status !== 'Inactive').length;
   }, [customers]);
 
-  const aiInsightsCount = 5;
-
   const revenueTrend = useMemo(() => {
     const all = [...(sales || []), ...(paidInvoices || [])];
     if (all.length < 2) return null;
@@ -286,6 +284,15 @@ const AIWorkspaceDashboard: React.FC = () => {
     if (first === 0) return null;
     return ((second - first) / first) * 100;
   }, [expenses]);
+
+  const aiInsightsCount = useMemo(() => {
+    let count = 0;
+    if (revenueTrend != null && revenueTrend < 0) count++;
+    if (unpaidInvoices.length > 0) count++;
+    if (expenseTrend != null && revenueTrend != null && expenseTrend > revenueTrend) count++;
+    if (profitMargin < 10) count++;
+    return Math.max(count, 1);
+  }, [expenseTrend, revenueTrend, profitMargin, unpaidInvoices]);
 
   return (
     <div style={styles.container}>
@@ -373,13 +380,41 @@ const AIWorkspaceDashboard: React.FC = () => {
               <span>AI Insights</span>
             </div>
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[
-                { icon: <TrendingUp size={14} />, text: 'Revenue trending upward', severity: 'positive' },
-                { icon: <Users size={14} />, text: `${unpaidInvoices.length} unpaid invoices need attention`, severity: 'warning' },
-                { icon: <BarChart3 size={14} />, text: 'Customer acquisition cost decreased 12%', severity: 'positive' },
-                { icon: <AlertTriangle size={14} />, text: 'Expense growth outpacing revenue growth', severity: 'critical' },
-                { icon: <DollarSign size={14} />, text: 'Top 3 customers represent 58% of revenue', severity: 'info' },
-              ].map((insight, i) => (
+              {(() => {
+                const insights: Array<{ icon: React.ReactNode; text: string; severity: string }> = [];
+                if (revenueTrend != null) {
+                  insights.push({
+                    icon: <TrendingUp size={14} />,
+                    text: revenueTrend >= 0 ? `Revenue trending upward (${revenueTrend.toFixed(1)}% increase)` : `Revenue declining (${Math.abs(revenueTrend).toFixed(1)}% decrease)`,
+                    severity: revenueTrend >= 0 ? 'positive' : 'critical',
+                  });
+                }
+                insights.push({
+                  icon: <Users size={14} />,
+                  text: `${unpaidInvoices.length} unpaid invoice${unpaidInvoices.length !== 1 ? 's' : ''} need${unpaidInvoices.length === 1 ? 's' : ''} attention`,
+                  severity: unpaidInvoices.length > 5 ? 'critical' : unpaidInvoices.length > 0 ? 'warning' : 'positive',
+                });
+                if (expenseTrend != null && revenueTrend != null) {
+                  insights.push({
+                    icon: <BarChart3 size={14} />,
+                    text: expenseTrend > revenueTrend ? 'Expense growth outpacing revenue growth' : 'Expenses under control relative to revenue',
+                    severity: expenseTrend > revenueTrend ? 'critical' : 'positive',
+                  });
+                }
+                if (topCustomer !== 'N/A') {
+                  insights.push({
+                    icon: <DollarSign size={14} />,
+                    text: `Top customer: ${topCustomer}`,
+                    severity: 'info',
+                  });
+                }
+                insights.push({
+                  icon: <AlertTriangle size={14} />,
+                  text: profitMargin < 0 ? `Negative profit margin (${profitMargin.toFixed(1)}%)` : `Profit margin at ${profitMargin.toFixed(1)}%`,
+                  severity: profitMargin < 10 ? 'warning' : profitMargin < 0 ? 'critical' : 'positive',
+                });
+                return insights;
+              })().map((insight, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: -10 }}
@@ -431,19 +466,29 @@ const AIWorkspaceDashboard: React.FC = () => {
                   </linearGradient>
                 </defs>
                 {(() => {
-                  const points = 8;
-                  const revData = Array.from({ length: points }, (_, i) => ({
-                    x: (i / (points - 1)) * 300,
-                    y: 30 + Math.random() * 80,
-                  }));
-                  const expData = Array.from({ length: points }, (_, i) => ({
-                    x: (i / (points - 1)) * 300,
-                    y: 50 + Math.random() * 70,
-                  }));
+                  const periods = 8;
+                  const now = new Date();
+                  const monthlyRevenue: number[] = Array(periods).fill(0);
+                  const monthlyExpenses: number[] = Array(periods).fill(0);
+                  [...(sales || []), ...(paidInvoices || [])].forEach(t => {
+                    const d = new Date(t.date || t.createdAt || t.invoiceDate);
+                    const monthsAgo = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+                    if (monthsAgo >= 0 && monthsAgo < periods) monthlyRevenue[periods - 1 - monthsAgo] += (t.totalAmount || 0);
+                  });
+                  (expenses || []).forEach(e => {
+                    const d = new Date(e.date || e.createdAt);
+                    const monthsAgo = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+                    if (monthsAgo >= 0 && monthsAgo < periods) monthlyExpenses[periods - 1 - monthsAgo] += (e.amount || 0);
+                  });
+                  const maxVal = Math.max(...monthlyRevenue, ...monthlyExpenses, 1);
+                  const chartH = 130;
+                  const chartY = (v: number) => chartH - (v / maxVal) * chartH + 10;
+                  const revData = monthlyRevenue.map((v, i) => ({ x: (i / (periods - 1)) * 300, y: chartY(v) }));
+                  const expData = monthlyExpenses.map((v, i) => ({ x: (i / (periods - 1)) * 300, y: chartY(v) }));
                   const revPath = revData.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(0)},${p.y.toFixed(0)}`).join(' ');
                   const expPath = expData.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(0)},${p.y.toFixed(0)}`).join(' ');
-                  const revArea = revPath + ` L300,150 L0,150 Z`;
-                  const expArea = expPath + ` L300,150 L0,150 Z`;
+                  const revArea = revPath + ' L300,150 L0,150 Z';
+                  const expArea = expPath + ' L300,150 L0,150 Z';
                   return (
                     <>
                       <path d={revArea} fill="url(#revGrad)" />

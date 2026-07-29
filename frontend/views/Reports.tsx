@@ -157,7 +157,7 @@ const Reports: React.FC = () => {
 
     return (
       <div style={{ marginTop: '24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
           <div style={{ background: '#FEFDFB', padding: '12px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '16px', borderLeftWidth: '4px', borderLeftColor: '#1f8577', transition: 'all .15s ease', transitionDuration: '200ms' }}>
             <div style={{ padding: '10px', background: '#eef7f6', color: '#1f8577', borderRadius: '10px', flexShrink: 0 }}><TrendingUp size={20} /></div>
             <div style={{ minWidth: 0 }}>
@@ -199,7 +199,7 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px', marginTop: '24px' }}>
           <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
             <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', letterSpacing: '-.025em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <TrendingUp size={18} style={{ color: '#1f8577' }} />
@@ -270,7 +270,7 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', overflow: 'hidden' }}>
+        <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', overflow: 'hidden', marginTop: '24px' }}>
           <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', letterSpacing: '-.025em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Activity size={18} style={{ color: '#1f8577' }} />
             Revenue Source Matrix
@@ -308,7 +308,7 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '24px', marginTop: '24px' }}>
           <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', overflow: 'hidden' }}>
             <h3 style={{ fontWeight: 700, color: '#23282A', fontSize: '13px', letterSpacing: '-.025em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <BarChart3 size={18} style={{ color: '#1f8577' }} />
