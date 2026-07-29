@@ -1,4 +1,4 @@
-import { dbService } from '../../../../services/db';
+import { api } from '../../../../services/api';
 import { exportToCSV } from '../../../../utils/helpers';
 import { normalizeInventoryItemPricing } from '../../../../utils/pricing';
 import type { Item } from '../../../../types';
@@ -19,7 +19,7 @@ export interface InventoryStats {
 
 export async function fetchAllItems(): Promise<Item[]> {
   try {
-    const items = await dbService.getAll<Item>('inventory');
+    const items = await api.inventory.getAllItems();
     return items.map(normalizeInventoryItemPricing);
   } catch {
     return [];

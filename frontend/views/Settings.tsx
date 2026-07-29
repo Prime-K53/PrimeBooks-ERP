@@ -61,6 +61,7 @@ import { FinishingOptionsTab } from './settings/tabs/FinishingOptionsTab';
 import ComplianceSettings, { ComplianceConfig } from '../components/ComplianceSettings';
 import { ReferralSettingsTab } from './settings/tabs/ReferralSettingsTab';
 import { EngagementSettingsTab } from './settings/tabs/EngagementSettingsTab';
+import { AISettingsTab } from './settings/tabs/AISettingsTab';
 import CustomizeDashboard from '../components/dashboard/CustomizeDashboard';
 import { useDashboardStore } from '../stores/dashboardStore';
 import { ConfirmDialog, ConfirmDialogType } from '../components/ConfirmDialog';
@@ -109,6 +110,133 @@ const qboStyles = `
         padding: 20px 32px;
         border-bottom: 1px solid #D4D7DC;
         background: #F9FAFB;
+    }
+    .toggle-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+    }
+    .toggle-track {
+        width: 44px;
+        height: 24px;
+        background: #d3ece9;
+        border-radius: 9999px;
+        position: relative;
+        transition: background 0.2s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background: #ffffff;
+        border-radius: 50%;
+        border: 1px solid #e4ddd1;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .toggle-input:checked + .toggle-track {
+        background: #1f8577;
+    }
+    .toggle-input:checked + .toggle-track::after {
+        transform: translateX(20px);
+    }
+    .toggle-track-sm {
+        width: 40px;
+        height: 20px;
+        background: #d3ece9;
+        border-radius: 9999px;
+        position: relative;
+        transition: background 0.2s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .toggle-track-sm::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        background: #ffffff;
+        border-radius: 50%;
+        border: 1px solid #e4ddd1;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .toggle-input:checked + .toggle-track-sm {
+        background: #1f8577;
+    }
+    .toggle-input:checked + .toggle-track-sm::after {
+        transform: translateX(16px);
+    }
+    .toggle-track-lg {
+        width: 48px;
+        height: 24px;
+        background: #d3ece9;
+        border-radius: 9999px;
+        position: relative;
+        transition: background 0.2s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .toggle-track-lg::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background: #ffffff;
+        border-radius: 50%;
+        border: 1px solid #e4ddd1;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .toggle-input:checked + .toggle-track-lg {
+        background: #1f8577;
+    }
+    .toggle-input:checked + .toggle-track-lg::after {
+        transform: translateX(24px);
+    }
+    .toggle-track-xl {
+        width: 56px;
+        height: 28px;
+        background: #d3ece9;
+        border-radius: 9999px;
+        position: relative;
+        transition: background 0.2s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .toggle-track-xl::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 24px;
+        height: 24px;
+        background: #ffffff;
+        border-radius: 50%;
+        border: 1px solid #e4ddd1;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .toggle-input:checked + .toggle-track-xl {
+        background: #1f8577;
+    }
+    .toggle-input:checked + .toggle-track-xl::after {
+        transform: translateX(24px);
     }
 `;
 
@@ -676,6 +804,7 @@ const Settings: React.FC = () => {
             title: 'System & Advanced',
             items: [
                 { id: 'Integrations', icon: Globe, label: 'Integrations', desc: 'API and external services' },
+                { id: 'AISettings', icon: Sparkles, label: 'AI Settings', desc: 'AI provider, models, and API keys' },
                 { id: 'Security', icon: ShieldCheck, label: 'Backup & Security', desc: 'Data protection and recovery' },
                 { id: 'Privacy', icon: Lock, label: 'Privacy & Compliance', desc: 'GDPR, data retention, and privacy settings' },
                 { id: 'System', icon: Cpu, label: 'System Info', desc: 'Hardware and licensing' }
@@ -861,7 +990,7 @@ const Settings: React.FC = () => {
                                                 onChange={e => setConfig({ ...config, country: e.target.value })}
                                             />
                                         </div>
-                                        <div style={{ gridColumn: 'span 2 / span 2', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px', paddingTop: '16px', borderStyle: 'solid', borderColor: '#e4ddd1', marginTop: '8px' }}>
+                                        <div style={{ gridColumn: 'span 2 / span 2', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px', padding: '16px', border: '1.4px solid #e4ddd1', borderRadius: '12px', background: '#FEFDFB', marginTop: '8px' }}>
                                             <div>
                                                 <label className="settings-label">Business Currency</label>
                                                 <div style={{ position: 'relative' }}>
@@ -891,8 +1020,8 @@ const Settings: React.FC = () => {
                                     </div>
                                  </section>
 
-                                <section style={{ overflow: 'hidden', borderColor: '#b5493f' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fef2f2', borderStyle: 'solid' }}>
+<section style={{ overflow: 'hidden', border: '1.4px solid #b5493f' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fef2f2', borderBottom: '1.4px solid #b5493f' }}>
                                         <div>
                                             <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#b5493f' }}>Danger Zone</h3>
                                             <p style={{ color: '#b5493f', marginTop: '2px' }}>Irreversible actions that affect your entire company.</p>
@@ -980,11 +1109,11 @@ const Settings: React.FC = () => {
                                             <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input 
                                                     type="checkbox" 
-                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }} 
+                                                    className="toggle-input" 
                                                     checked={config.appearance?.glassmorphism || false}
                                                     onChange={e => setConfig({ ...config, appearance: { ...config.appearance, glassmorphism: e.target.checked } })}
                                                 />
-                                                <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                <div className="toggle-track"></div>
                                             </label>
                                         </div>
 
@@ -1010,12 +1139,6 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <style dangerouslySetInnerHTML={{
-                                    __html: `
-                                    .settings-label { @apply block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5 px-0.5; }
-                                    .settings-input { @apply w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 font-bold text-slate-800 outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm text-[13px]; }
-                                    .white-card { @apply bg-white rounded-xl border border-slate-200 shadow-sm; }
-                                `}} />
                             </div>
                         )}
 
@@ -1223,7 +1346,7 @@ const Settings: React.FC = () => {
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Smart Pricing Rounding Engine</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>Round only final selling prices after BOM and margin calculations to protect profit.</p>
                                     </div>
-                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                    <div style={{ padding: '32px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
                                                 <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Enable Rounding Engine</p>
@@ -1232,11 +1355,11 @@ const Settings: React.FC = () => {
                                             <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input
                                                     type="checkbox"
-                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                    className="toggle-input"
                                                     checked={activePricingSettings.enableRounding}
                                                     onChange={e => updatePricingSettings({ enableRounding: e.target.checked })}
                                                 />
-                                                <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                <div className="toggle-track"></div>
                                             </label>
                                         </div>
 
@@ -1454,7 +1577,7 @@ const Settings: React.FC = () => {
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>POS Interface & Terminal</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>Configure how the point of sale behaves on this terminal.</p>
                                     </div>
-                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                    <div style={{ padding: '32px' }}>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
                                             <div style={{ marginTop: '24px' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1465,11 +1588,11 @@ const Settings: React.FC = () => {
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.transactionSettings?.pos?.showItemImages}
                                                             onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showItemImages: e.target.checked } } })}
                                                         />
-                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track"></div>
                                                     </label>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1480,11 +1603,11 @@ const Settings: React.FC = () => {
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.transactionSettings?.pos?.enableShortcuts}
                                                             onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, enableShortcuts: e.target.checked } } })}
                                                         />
-                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track"></div>
                                                     </label>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1495,11 +1618,11 @@ const Settings: React.FC = () => {
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                     checked={config.transactionSettings?.pos?.allowReturns}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, allowReturns: e.target.checked } } })}
                                                         />
-                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track"></div>
                                                     </label>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1510,11 +1633,11 @@ const Settings: React.FC = () => {
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.transactionSettings?.pos?.showShortcutHints !== false}
                                                             onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showShortcutHints: e.target.checked } } })}
                                                         />
-                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track"></div>
                                                     </label>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1525,11 +1648,11 @@ const Settings: React.FC = () => {
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.transactionSettings?.pos?.allowDiscounts}
                                                             onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, allowDiscounts: e.target.checked } } })}
                                                         />
-                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track"></div>
                                                     </label>
                                                 </div>
                                             </div>
@@ -1556,11 +1679,11 @@ const Settings: React.FC = () => {
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                     checked={config.transactionSettings?.pos?.showCategoryFilters}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showCategoryFilters: e.target.checked } } })}
                                                         />
-                                                        <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track"></div>
                                                     </label>
                                                 </div>
                                             </div>
@@ -1571,7 +1694,7 @@ const Settings: React.FC = () => {
                                 <section style={{ padding: 0, overflow: 'hidden' }}>
                                     <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>POS Service Pricing</h3>
-                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Set default prices and material costs for common retail services. Profit margin = selling price âˆ’ cost.</p>
+                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Set default prices and material costs for common retail services. Profit margin = selling price − cost.</p>
                                     </div>
                                     <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
                                         <div>
@@ -1611,7 +1734,7 @@ const Settings: React.FC = () => {
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Receipt & Printing</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>Customize transaction receipts and printing behavior.</p>
                                     </div>
-                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                    <div style={{ padding: '32px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
                                                 <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Auto-Print Receipt</p>
@@ -1620,11 +1743,11 @@ const Settings: React.FC = () => {
                                             <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input
                                                     type="checkbox"
-                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                    className="toggle-input"
                                                     checked={config.transactionSettings?.autoPrintReceipt}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, autoPrintReceipt: e.target.checked } })}
                                                 />
-                                                <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                <div className="toggle-track"></div>
                                             </label>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1635,11 +1758,11 @@ const Settings: React.FC = () => {
                                             <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input
                                                     type="checkbox"
-                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                    className="toggle-input"
                                                     checked={config.transactionSettings?.showReceiptPreview !== false}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, showReceiptPreview: e.target.checked } })}
                                                 />
-                                                <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                <div className="toggle-track"></div>
                                             </label>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
@@ -1738,11 +1861,11 @@ const Settings: React.FC = () => {
                                                 <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
-                                                        style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                        className="toggle-input"
                                                         checked={config.transactionSettings?.quickItemEntry}
                                                         onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, quickItemEntry: e.target.checked } })}
                                                     />
-                                                    <div style={{ width: '44px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                    <div className="toggle-track"></div>
                                                 </label>
                                             </div>
                                             <div>
@@ -1782,7 +1905,7 @@ const Settings: React.FC = () => {
                                     <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
                                         Invoice Layout & Engine
                                     </div>
-                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                    <div style={{ padding: '32px' }}>
                                         <div>
                                             <label className="settings-label">Template Engine</label>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
@@ -1814,11 +1937,11 @@ const Settings: React.FC = () => {
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.invoiceTemplates[item.key as keyof InvoiceTemplatesConfig]}
                                                             onChange={e => setConfig({ ...config, invoiceTemplates: { ...config.invoiceTemplates, [item.key]: e.target.checked } })}
                                                         />
-                                                        <div style={{ width: '40px', height: '20px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track-sm"></div>
                                                     </label>
                                                 </div>
                                             ))}
@@ -1830,7 +1953,7 @@ const Settings: React.FC = () => {
                                     <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
                                         Typography & Page Metrics
                                     </div>
-                                    <div style={{ padding: '32px', marginTop: '32px' }}>
+                                    <div style={{ padding: '32px' }}>
                                         <div style={{ marginTop: '24px' }}>
                                             <div>
                                                 <label className="settings-label">Main Accent Color</label>
@@ -2326,7 +2449,7 @@ const Settings: React.FC = () => {
                                                             <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                                 <input
                                                                     type="checkbox"
-                                                                    style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                                    className="toggle-input"
                                                                     checked={config.transactionSettings?.approvalThresholds?.[item.key] !== undefined}
                                                                     onChange={e => {
                                                                         const thresholds: Record<string, number> = { ...(config.transactionSettings?.approvalThresholds || {}) };
@@ -2338,7 +2461,7 @@ const Settings: React.FC = () => {
                                                                         setConfig({ ...config, transactionSettings: { ...config.transactionSettings, approvalThresholds: thresholds } });
                                                                     }}
                                                                 />
-                                                                <div style={{ width: '40px', height: '20px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                                <div className="toggle-track-sm"></div>
                                                             </label>
                                                         </div>
 
@@ -2439,7 +2562,7 @@ const Settings: React.FC = () => {
                                                         <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                             <input
                                                                 type="checkbox"
-                                                                style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                                className="toggle-input"
                                                                 checked={hook.enabled}
                                                                 onChange={e => {
                                                                     const updatedHooks = [...(config.integrationSettings?.webhooks || [])];
@@ -2447,7 +2570,7 @@ const Settings: React.FC = () => {
                                                                     setConfig({ ...config, integrationSettings: { ...config.integrationSettings, webhooks: updatedHooks } });
                                                                 }}
                                                             />
-                                                            <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                            <div className="toggle-track-lg"></div>
                                                         </label>
                                                     </div>
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
@@ -2514,11 +2637,11 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.enabledModules[mod.key]}
                                                             onChange={e => setConfig({ ...config, enabledModules: { ...config.enabledModules, [mod.key]: e.target.checked } })}
                                                         />
-                                                        <div style={{ width: '56px', height: '28px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track-xl"></div>
                                                     </label>
 </div>
                                             ))}
@@ -2561,11 +2684,11 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.inventorySettings?.allowNegativeStock}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, allowNegativeStock: e.target.checked } })}
                                                         />
-                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track-lg"></div>
                                                     </label>
                                                 </div>
                                                 <div style={{ height: '1px', background: '#d3ece9' }}></div>
@@ -2577,11 +2700,11 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.inventorySettings?.autoBarcode}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, autoBarcode: e.target.checked } })}
                                                         />
-                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track-lg"></div>
                                                     </label>
                                                 </div>
                                                 <div style={{ height: '1px', background: '#d3ece9' }}></div>
@@ -2593,11 +2716,11 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.inventorySettings?.trackBatches}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, trackBatches: e.target.checked } })}
                                                         />
-                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track-lg"></div>
                                                     </label>
                                                 </div>
                                             </div>
@@ -2625,11 +2748,11 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.inventorySettings?.trackSerialNumbers}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, trackSerialNumbers: e.target.checked } })}
                                                         />
-                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track-lg"></div>
                                                     </label>
                                                 </div>
                                                 <div style={{ height: '1px', background: '#d3ece9' }}></div>
@@ -2641,11 +2764,11 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                         <input
                                                             type="checkbox"
-                                                            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                            className="toggle-input"
                                                             checked={config.inventorySettings?.lowStockAlerts}
                                                             onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, lowStockAlerts: e.target.checked } })}
                                                         />
-                                                        <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                        <div className="toggle-track-lg"></div>
                                                     </label>
                                                 </div>
                                             </div>
@@ -2664,6 +2787,12 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                         {
                             activeTab === 'Integrations' && (
                                 <IntegrationsTab config={config} setConfig={setConfig} />
+                            )
+                        }
+
+                        {
+                            activeTab === 'AISettings' && (
+                                <AISettingsTab />
                             )
                         }
 
@@ -2692,7 +2821,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                             <input
                                                                 type="checkbox"
-                                                                style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                                className="toggle-input"
                                                                 checked={normalizedSecuritySettings.passwordProtectionEnabled}
                                                                 onChange={e => setConfig({
                                                                     ...config,
@@ -2702,7 +2831,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                                     }
                                                                 })}
                                                             />
-                                                            <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                            <div className="toggle-track-lg"></div>
                                                         </label>
                                                     </div>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2713,7 +2842,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                             <input
                                                                 type="checkbox"
-                                                                style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                                className="toggle-input"
                                                                 checked={normalizedSecuritySettings.enforcePasswordComplexity}
                                                                 onChange={e => setConfig({
                                                                     ...config,
@@ -2723,7 +2852,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                                     }
                                                                 })}
                                                             />
-                                                            <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                            <div className="toggle-track-lg"></div>
                                                         </label>
                                                     </div>
                                                     <div style={{ borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', background: '#eef7f6', padding: '16px', marginTop: '12px' }}>
@@ -2930,7 +3059,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                 <h4 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Restore Database</h4>
                                                 <p style={{ fontSize: '13px', lineHeight: 1.625, marginBottom: '16px', maxWidth: '320px', marginLeft: 'auto' }}>Restore a previously downloaded Prime ERP backup file and reload the full local database state.</p>
                                                 <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#5c6567', marginBottom: '24px' }}>
-                                                    Last restore: {backupStatus.lastRestoreAt ? `${new Date(backupStatus.lastRestoreAt).toLocaleString()}${backupStatus.lastRestoreFile ? ` â€¢ ${backupStatus.lastRestoreFile}` : ''}` : 'No restore executed'}
+                                                    Last restore: {backupStatus.lastRestoreAt ? `${new Date(backupStatus.lastRestoreAt).toLocaleString()}${backupStatus.lastRestoreFile ? ` • ${backupStatus.lastRestoreFile}` : ''}` : 'No restore executed'}
                                                 </div>
                                                 <button
                                                     onClick={handleRestoreBackupRequest}
@@ -2957,7 +3086,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                 <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
-                                                        style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                                                        className="toggle-input"
                                                         checked={config.backupSettings?.autoBackupEnabled}
                                                         onChange={e => setConfig({
                                                             ...config,
@@ -2967,7 +3096,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                             }
                                                         })}
                                                     />
-                                                    <div style={{ width: '48px', height: '24px', background: '#d3ece9', borderRadius: '9999px' }}></div>
+                                                    <div className="toggle-track-lg"></div>
                                                 </label>
                                             </div>
                                             <div style={{ height: '1px', background: '#eef7f6' }}></div>

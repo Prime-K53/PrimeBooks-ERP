@@ -22,6 +22,7 @@ export interface AIConfig {
   systemInstruction?: string;
   apiKey?: string;
   baseUrl?: string;
+  provider?: ProviderName;
 }
 
 export interface AIProvider {
@@ -29,4 +30,4 @@ export interface AIProvider {
   generateChatStream(messages: ChatMessage[], config?: AIConfig): AsyncGenerator<string>;
 }
 
-export type ProviderName = 'ollama' | 'local' | 'openai' | 'custom';
+export type ProviderName = 'ollama' | 'local' | 'openai' | 'openrouter' | 'custom';

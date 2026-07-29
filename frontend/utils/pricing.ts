@@ -1,5 +1,5 @@
 import { logger } from '@/services/logger';
-import type { Item, ProductVariant } from '../types';
+import type { Item, ItemType, ProductVariant } from '../types';
 
 type VolumePricingTierLike = {
   minQty: number;
@@ -9,6 +9,7 @@ type VolumePricingTierLike = {
 type PricingCarrier = {
   price?: number | null;
   selling_price?: number | null;
+  sellingPrice?: number | null;
   calculated_price?: number | null;
   cost?: number | null;
   cost_price?: number | null;
@@ -22,6 +23,53 @@ type PricingCarrier = {
     roundingDifference?: number | null;
   } | null;
 };
+
+const normalizeTypeToken = (value: unknown): string => (
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+);
+
+const ITEM_TYPE_ALIASES: Record<string, ItemType> = {
+  raw: 'Raw Material',
+  material: 'Raw Material',
+  materials: 'Raw Material',
+  consumable: 'Raw Material',
+  consumables: 'Raw Material',
+  'raw material': 'Raw Material',
+  'raw materials': 'Raw Material',
+  product: 'Product',
+  products: 'Product',
+  'finished good': 'Product',
+  'finished goods': 'Product',
+  'finished product': 'Product',
+  'printing product': 'Product',
+  stationery: 'Stationery',
+  stationary: 'Stationery',
+  service: 'Service',
+  services: 'Service',
+  'printing service': 'Service',
+};
+
+export function normalizeInventoryItemType(type?: unknown, classification?: unknown): ItemType {
+  const candidates = [type, classification].map(normalizeTypeToken).filter(Boolean);
+
+  for (const candidate of candidates) {
+    const canonical = ITEM_TYPE_ALIASES[candidate];
+    if (canonical) return canonical;
+  }
+
+  for (const candidate of candidates) {
+    if (candidate.includes('service')) return 'Service';
+    if (candidate.includes('stationer')) return 'Stationery';
+    if (candidate.includes('product') || candidate.includes('finished')) return 'Product';
+    if (candidate.includes('raw') || candidate.includes('material') || candidate.includes('consumable')) return 'Raw Material';
+  }
+
+  return 'Raw Material';
+}
 
 const hasFiniteNumber = (value: unknown): boolean => Number.isFinite(Number(value));
 
@@ -110,11 +158,12 @@ export function normalizeStoredPricing<T extends PricingCarrier>(source: T): T {
   const normalized = { ...source } as T;
   const hasAnyPrice = hasFiniteNumber(source.price) || hasFiniteNumber(source.selling_price) || hasFiniteNumber(source.smartPricingSnapshot?.roundedPrice);
   const hasAnyCalculated = hasFiniteNumber(source.calculated_price) || hasFiniteNumber(source.smartPricingSnapshot?.originalPrice);
-  const hasAnyCost = hasFiniteNumber(source.cost) || hasFiniteNumber(source.cost_price) || hasFiniteNumber(source.smartPricingSnapshot?.baseCost) || hasFiniteNumber(source.costPrice);
+  const hasAnyCost = hasFiniteNumber(source.cost) || hasFiniteNumber(source.cost_price) || hasFiniteNumber(source.cost_per_unit) || hasFiniteNumber(source.smartPricingSnapshot?.baseCost) || hasFiniteNumber(source.costPrice);
 
   if (hasAnyPrice) {
     normalized.price = sellingPrice as T['price'];
     normalized.selling_price = sellingPrice as T['selling_price'];
+    normalized.sellingPrice = sellingPrice as T['sellingPrice'];
   }
 
   if (hasAnyCalculated || hasAnyPrice) {
@@ -124,6 +173,7 @@ export function normalizeStoredPricing<T extends PricingCarrier>(source: T): T {
   if (hasAnyCost) {
     normalized.cost = cost as T['cost'];
     normalized.cost_price = cost as T['cost_price'];
+    normalized.costPrice = cost as T['costPrice'];
   }
 
   return normalized;
@@ -131,14 +181,21 @@ export function normalizeStoredPricing<T extends PricingCarrier>(source: T): T {
 
 export function normalizeInventoryItemPricing(item: Item): Item {
   const normalizedItem = normalizeStoredPricing(item);
+  const stock = toFiniteNumber(normalizedItem.stock) ?? toFiniteNumber(normalizedItem.quantity) ?? 0;
+  const normalizedWithType = {
+    ...normalizedItem,
+    type: normalizeInventoryItemType(normalizedItem.type, normalizedItem.classification),
+    stock,
+    quantity: stock,
+  };
   const hasVariants = item.variants && item.variants.length > 0;
   
   if (!hasVariants) {
-    return normalizedItem;
+    return normalizedWithType;
   }
 
   return {
-    ...normalizedItem,
+    ...normalizedWithType,
     isVariantParent: true,
     variants: item.variants.map((variant) => normalizeStoredPricing(variant as ProductVariant))
   };

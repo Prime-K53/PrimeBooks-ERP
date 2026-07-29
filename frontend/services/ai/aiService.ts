@@ -1,13 +1,30 @@
 import { AIProvider, ChatMessage, ProviderName, AIConfig } from './types';
 import { logger } from '@/services/logger';
 import { localProvider, parseJSON } from './providers/local';
+import { openrouterProvider } from './providers/openrouter';
 import * as P from './prompts';
 
 function getProvider(name: ProviderName): AIProvider {
-  return localProvider;
+  switch (name) {
+    case 'openrouter':
+      return openrouterProvider;
+    case 'local':
+    case 'ollama':
+    case 'openai':
+    case 'custom':
+    default:
+      return localProvider;
+  }
 }
 
 function selectProvider(): AIProvider {
+  try {
+    const raw = localStorage.getItem('nexus_company_config');
+    if (raw) {
+      const cfg = JSON.parse(raw)?.aiConfig;
+      if (cfg?.provider) return getProvider(cfg.provider);
+    }
+  } catch { /* ignore */ }
   return localProvider;
 }
 
@@ -23,8 +40,10 @@ function buildMultiImageMessages(images: string[], prompt: string): ChatMessage[
 
 class AIService {
   private provider: AIProvider;
+  private providerName: ProviderName = 'local';
   private currentModel = '';
   private currentBaseUrl = '';
+  private currentApiKey = '';
 
   constructor() {
     this.provider = selectProvider();
@@ -37,18 +56,59 @@ class AIService {
       if (!raw) return;
       const cfg = JSON.parse(raw)?.aiConfig;
       if (!cfg) return;
+      if (cfg.provider) {
+        this.providerName = cfg.provider;
+        this.provider = getProvider(cfg.provider);
+      }
       if (cfg.model) this.currentModel = cfg.model;
       if (cfg.baseUrl) this.currentBaseUrl = cfg.baseUrl;
+      if (cfg.apiKey) this.currentApiKey = cfg.apiKey;
     } catch { /* ignore */ }
   }
 
-  configure(opts: { model?: string; baseUrl?: string }) {
-    if (opts.model !== undefined) this.currentModel = opts.model;
-    if (opts.baseUrl !== undefined) this.currentBaseUrl = opts.baseUrl;
+  getProviderName(): ProviderName {
+    return this.providerName;
   }
 
-  setProvider(_name: ProviderName) {
-    this.provider = localProvider;
+  getConfig(): { provider: ProviderName; model: string; baseUrl: string; apiKey: string } {
+    return {
+      provider: this.providerName,
+      model: this.currentModel,
+      baseUrl: this.currentBaseUrl,
+      apiKey: this.currentApiKey,
+    };
+  }
+
+  saveConfig(config: { provider: ProviderName; model?: string; baseUrl?: string; apiKey?: string }) {
+    try {
+      const raw = localStorage.getItem('nexus_company_config');
+      const existing = raw ? JSON.parse(raw) : {};
+      existing.aiConfig = {
+        ...(existing.aiConfig || {}),
+        provider: config.provider,
+        model: config.model ?? existing.aiConfig?.model ?? '',
+        baseUrl: config.baseUrl ?? existing.aiConfig?.baseUrl ?? '',
+        apiKey: config.apiKey ?? existing.aiConfig?.apiKey ?? '',
+        enabled: true,
+      };
+      localStorage.setItem('nexus_company_config', JSON.stringify(existing));
+      this.providerName = config.provider;
+      this.provider = getProvider(config.provider);
+      if (config.model) this.currentModel = config.model;
+      if (config.baseUrl) this.currentBaseUrl = config.baseUrl;
+      if (config.apiKey) this.currentApiKey = config.apiKey;
+    } catch (e) { logger.error('Failed to save AI config', e as Error); }
+  }
+
+  configure(opts: { model?: string; baseUrl?: string; apiKey?: string }) {
+    if (opts.model !== undefined) this.currentModel = opts.model;
+    if (opts.baseUrl !== undefined) this.currentBaseUrl = opts.baseUrl;
+    if (opts.apiKey !== undefined) this.currentApiKey = opts.apiKey;
+  }
+
+  setProvider(name: ProviderName) {
+    this.providerName = name;
+    this.provider = getProvider(name);
   }
 
   private cfg(overrides?: Partial<AIConfig>): AIConfig {
@@ -56,6 +116,7 @@ class AIService {
     return {
       model: this.currentModel || overrideModel || 'llama3',
       baseUrl: this.currentBaseUrl || undefined,
+      apiKey: this.currentApiKey || undefined,
       ...rest,
     };
   }

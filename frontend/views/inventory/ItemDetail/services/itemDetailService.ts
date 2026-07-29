@@ -1,3 +1,4 @@
+import { api } from '../../../../services/api';
 import { dbService } from '../../../../services/db';
 import { normalizeInventoryItemPricing } from '../../../../utils/pricing';
 import { resolveMinimumMarkup } from '../../../../services/pricingValidationService';
@@ -5,7 +6,8 @@ import type { Item, Purchase, Sale, InventoryTransaction, AuditLogEntry, Product
 
 export async function fetchItem(id: string): Promise<Item | null> {
   try {
-    const item = await dbService.get<Item>('inventory', id);
+    const items = await api.inventory.getAllItems();
+    const item = items.find(entry => entry.id === id) || null;
     return item ? normalizeInventoryItemPricing(item) : null;
   } catch {
     return null;
@@ -14,7 +16,7 @@ export async function fetchItem(id: string): Promise<Item | null> {
 
 export async function fetchAllItems(): Promise<Item[]> {
   try {
-    const items = await dbService.getAll<Item>('inventory');
+    const items = await api.inventory.getAllItems();
     return items.map(normalizeInventoryItemPricing);
   } catch {
     return [];
@@ -89,7 +91,12 @@ export async function fetchSuppliers(): Promise<Supplier[]> {
 }
 
 export async function saveItem(item: Item): Promise<void> {
-  await dbService.put('inventory', item);
+  if (item.id) {
+    await api.inventory.updateItem(item);
+    return;
+  }
+
+  await api.inventory.createItem(item);
 }
 
 export async function duplicateItem(item: Item): Promise<Item> {
@@ -100,8 +107,7 @@ export async function duplicateItem(item: Item): Promise<Item> {
     sku: item.sku ? `${item.sku}-COPY` : undefined,
     stock: 0,
   };
-  await dbService.put('inventory', dup);
-  return dup;
+  return normalizeInventoryItemPricing(await api.inventory.createItem(dup));
 }
 
 export function getItemStockCalculations(item: Item): {

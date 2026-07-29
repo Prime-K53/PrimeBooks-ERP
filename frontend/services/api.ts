@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { logger } from '@/services/logger';
 import { dbService } from './db.ts';
 import { productionDb } from './productionDb.ts';
 import { getUrl, API_BASE_URL, HAS_REMOTE_BACKEND, SUPABASE_CONFIGURED } from '@/config/api.js';
@@ -29,6 +28,7 @@ import {
   repriceMasterInventoryFromAdjustments
 } from './masterInventoryPricingService';
 import { validateMinimumMarkup } from './pricingValidationService';
+import { normalizeInventoryItemPricing, normalizeInventoryItemType } from '../utils/pricing';
 import {
   examinationJobService,
   ExaminationGroupPayload,
@@ -462,41 +462,59 @@ const mergeSalePayload = (baseSale: any, remoteSale: any) => {
   return merged;
 };
 
-const normalizeBackendInventoryItem = (item: any): Item => ({
-  id: item.id,
-  name: item.name,
-  sku: item.sku || '',
-  material: item.material || '',
-  type: item.type || 'material',
-  category: item.category || item.category_id || '',
-  quantity: Number(item.quantity || item.stock || 0),
-  unit: item.unit || 'units',
-  costPrice: Number(item.cost_per_unit ?? item.cost ?? item.costPrice ?? 0),
-  sellingPrice: Number(item.selling_price ?? item.sellingPrice ?? item.price ?? 0),
-  minStockLevel: Number(item.min_stock_level ?? item.minStockLevel ?? 0),
-  maxStockLevel: Number(item.max_stock_level ?? item.maxStockLevel ?? 0),
-  reorderPoint: Number(item.reorder_point ?? item.reorderPoint ?? 0),
-  warehouseId: item.warehouse_id || item.warehouseId || '',
-  reserved: Number(item.reserved || 0),
-  isProtected: Boolean(item.is_protected || item.isProtected),
-  category_id: item.category_id || null,
-  min_stock_level: Number(item.min_stock_level ?? item.minStockLevel ?? 0),
-  max_stock_level: Number(item.max_stock_level ?? item.maxStockLevel ?? 0),
-  reorder_point: Number(item.reorder_point ?? item.reorderPoint ?? 0),
-  cost_per_unit: Number(item.cost_per_unit ?? item.cost ?? item.costPrice ?? 0),
-  selling_price: Number(item.selling_price ?? item.sellingPrice ?? item.price ?? 0),
-  warehouse_id: item.warehouse_id || item.warehouseId || '',
-  company_id: item.company_id || '',
-  created_at: item.created_at || item.last_updated || '',
-  updated_at: item.updated_at || item.last_updated || '',
-});
+const normalizeBackendInventoryItem = (item: any): Item => {
+  const stock = Number(item.stock ?? item.quantity ?? 0);
+  const cost = Number(item.cost_per_unit ?? item.cost_price ?? item.cost ?? item.costPrice ?? 0);
+  const sellingPrice = Number(item.selling_price ?? item.sellingPrice ?? item.price ?? 0);
+  const normalizedType = normalizeInventoryItemType(item.type, item.classification);
+
+  return normalizeInventoryItemPricing({
+    ...item,
+    id: item.id,
+    name: item.name,
+    sku: item.sku || '',
+    material: item.material || '',
+    type: normalizedType,
+    category: item.category || item.category_id || '',
+    quantity: stock,
+    stock,
+    unit: item.unit || 'units',
+    cost,
+    costPrice: cost,
+    cost_price: cost,
+    cost_per_unit: cost,
+    price: sellingPrice,
+    sellingPrice,
+    selling_price: sellingPrice,
+    minStockLevel: Number(item.min_stock_level ?? item.minStockLevel ?? 0),
+    maxStockLevel: Number(item.max_stock_level ?? item.maxStockLevel ?? 0),
+    reorderPoint: Number(item.reorder_point ?? item.reorderPoint ?? 0),
+    warehouseId: item.warehouse_id || item.warehouseId || '',
+    reserved: Number(item.reserved || 0),
+    isProtected: Boolean(item.is_protected || item.isProtected),
+    category_id: item.category_id || null,
+    min_stock_level: Number(item.min_stock_level ?? item.minStockLevel ?? 0),
+    max_stock_level: Number(item.max_stock_level ?? item.maxStockLevel ?? 0),
+    reorder_point: Number(item.reorder_point ?? item.reorderPoint ?? 0),
+    warehouse_id: item.warehouse_id || item.warehouseId || '',
+    company_id: item.company_id || '',
+    created_at: item.created_at || item.last_updated || '',
+    updated_at: item.updated_at || item.last_updated || '',
+  } as Item);
+};
 
 const mapInventoryItemToBackend = (item: Item): any => ({
   id: item.id,
   name: item.name,
   sku: item.sku || null,
   material: item.material || item.category || '',
-  type: (item.type || 'material').toLowerCase(),
+  type: (() => {
+    const canonicalType = normalizeInventoryItemType(item.type, item.classification);
+    if (canonicalType === 'Product') return 'product';
+    if (canonicalType === 'Stationery') return 'stationery';
+    if (canonicalType === 'Service') return 'service';
+    return 'material';
+  })(),
   category_id: item.category_id || null,
   quantity: Number(item.quantity || item.stock || 0),
   unit: item.unit || 'units',
