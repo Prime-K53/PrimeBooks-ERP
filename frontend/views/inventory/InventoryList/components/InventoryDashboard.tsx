@@ -87,7 +87,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ allItems
       <div className="charts-grid-dash">
         {/* Items by Category */}
         <ChartCard title="Items by Category" icon={<Package size={14} />}>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={220} minHeight={220} minWidth={0}>
             <PieChart>
               <Pie data={data.categoryBreakdown.filter(c => c.items > 0)} dataKey="items" nameKey="label" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}>
                 {data.categoryBreakdown.filter(c => c.items > 0).map((entry, i) => (
@@ -102,7 +102,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ allItems
 
         {/* Value by Category */}
         <ChartCard title="Inventory Value by Category" icon={<DollarSign size={14} />}>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={220} minHeight={220} minWidth={0}>
             <BarChart data={data.valueBreakdown.filter(c => c.value > 0)} barCategoryGap="20%">
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
@@ -122,7 +122,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ allItems
           {data.monthlyMovement.length === 0 ? (
             <div className="chart-placeholder-dash">Stock transaction data will appear here as inventory is adjusted.</div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={220} minHeight={220} minWidth={0}>
               <LineChart data={data.monthlyMovement}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                 <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
@@ -143,7 +143,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ allItems
           {data.warehouseStock.length === 0 ? (
             <div className="chart-placeholder-dash">No warehouse data</div>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={200} minHeight={200} minWidth={0}>
               <BarChart data={data.warehouseStock} layout="vertical" barCategoryGap="25%">
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />

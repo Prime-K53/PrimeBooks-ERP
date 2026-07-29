@@ -137,7 +137,7 @@ export const AISettingsTab: React.FC = () => {
         <h3 className="text-[11px] font-black text-[#5c6567] uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
           <Sparkles size={18} className="text-[#d99a3f]" /> AI Provider
         </h3>
-        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} className="space-y-8">
+        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} className="space-y-8">
           <div>
             <p className="font-black text-[#23282A] uppercase text-base mb-1">Select AI Provider</p>
             <p className="text-[10px] text-[#5c6567] italic font-medium mb-4">Choose which AI backend to use for all AI-powered features.</p>
@@ -148,7 +148,7 @@ export const AISettingsTab: React.FC = () => {
                   className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     provider === opt.value
                       ? 'border-[#1f8577] bg-[#eef7f6]'
-                      : 'border-[#e4ddd1] bg-white hover:border-[#3fa294]'
+                      : 'border-[#D4D7DC] bg-white hover:border-[#3fa294]'
                   }`}
                 >
                   <input
@@ -173,7 +173,7 @@ export const AISettingsTab: React.FC = () => {
             </div>
           </div>
 
-          <div className="h-px bg-[#e4ddd1]" />
+          <div className="h-px bg-[#D4D7DC]" />
 
           <div className="grid grid-cols-2 gap-10">
             {showApiKey && (
@@ -185,7 +185,7 @@ export const AISettingsTab: React.FC = () => {
                   type="password"
                   value={apiKey}
                   onChange={e => { setApiKey(e.target.value); setTestStatus('idle'); }}
-                  className="w-full px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all"
+                  className="w-full px-3 py-2.5 bg-[#eef7f6] border border-[#D4D7DC] rounded-lg font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all"
                   placeholder={provider === 'openrouter' ? 'sk-or-...' : 'sk-...'}
                 />
                 <p className="text-[10px] text-[#5c6567] mt-2 italic font-medium px-1">
@@ -204,7 +204,7 @@ export const AISettingsTab: React.FC = () => {
                 type="text"
                 value={baseUrl}
                 onChange={e => setBaseUrl(e.target.value)}
-                className="w-full px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all"
+                className="w-full px-3 py-2.5 bg-[#eef7f6] border border-[#D4D7DC] rounded-lg font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all"
                 placeholder="https://..."
               />
             </div>
@@ -218,14 +218,14 @@ export const AISettingsTab: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => { setShowDropdown(!showDropdown); if (!showDropdown && freeModels.length === 0 && !modelsLoading) fetchFreeModels(); }}
-                    className="w-full flex items-center justify-between px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none transition-all hover:border-[#1f8577] cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-2.5 bg-[#eef7f6] border border-[#D4D7DC] rounded-lg font-bold text-sm outline-none transition-all hover:border-[#1f8577] cursor-pointer"
                   >
                     <span className={model ? 'text-[#23282A]' : 'text-[#5c6567]'}>{model || 'Select a free model...'}</span>
                     <ChevronDown size={16} className={`transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showDropdown && (
-                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-[#e4ddd1] rounded-xl shadow-xl shadow-black/5 overflow-hidden">
-                      <div className="p-2 border-b border-[#e4ddd1]">
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-[#D4D7DC] rounded-xl shadow-xl shadow-black/5 overflow-hidden">
+                      <div className="p-2 border-b border-[#D4D7DC]">
                         <div className="relative">
                           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c6567]" />
                           <input
@@ -233,7 +233,7 @@ export const AISettingsTab: React.FC = () => {
                             value={modelSearch}
                             onChange={e => setModelSearch(e.target.value)}
                             placeholder="Search models..."
-                            className="w-full pl-9 pr-3 py-2 bg-[#eef7f6] border border-[#e4ddd1] rounded-lg text-xs font-medium outline-none"
+                            className="w-full pl-9 pr-3 py-2 bg-[#eef7f6] border border-[#D4D7DC] rounded-lg text-xs font-medium outline-none"
                           />
                         </div>
                       </div>
@@ -275,7 +275,7 @@ export const AISettingsTab: React.FC = () => {
                   type="text"
                   value={model}
                   onChange={e => setModel(e.target.value)}
-                  className="w-full px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all"
+                  className="w-full px-3 py-2.5 bg-[#eef7f6] border border-[#D4D7DC] rounded-lg font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all"
                   placeholder={provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'}
                 />
               )}
@@ -287,12 +287,12 @@ export const AISettingsTab: React.FC = () => {
             </div>
           </div>
 
-          <div className="h-px bg-[#e4ddd1]" />
+          <div className="h-px bg-[#D4D7DC]" />
 
           <div className="flex items-center gap-4">
             <button
               onClick={handleSave}
-              className="px-8 py-3.5 rounded-2xl font-bold text-sm border-none cursor-pointer transition-all"
+              className="px-8 py-3.5 rounded-lg font-bold text-sm border-none cursor-pointer transition-all"
               style={{
                 background: 'linear-gradient(135deg, #1f8577, #146b60)',
                 color: '#fff',
@@ -305,7 +305,7 @@ export const AISettingsTab: React.FC = () => {
               <button
                 onClick={handleTestConnection}
                 disabled={testStatus === 'testing' || !apiKey}
-                className="px-8 py-3.5 rounded-2xl font-bold text-sm border cursor-pointer transition-all disabled:opacity-50"
+                className="px-8 py-3.5 rounded-lg font-bold text-sm border cursor-pointer transition-all disabled:opacity-50"
                 style={{
                   background: '#fff',
                   color: '#1f8577',
@@ -338,7 +338,7 @@ export const AISettingsTab: React.FC = () => {
         <h3 className="text-[11px] font-black text-[#5c6567] uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
           <Cpu size={18} className="text-[#1f8577]" /> About AI Features
         </h3>
-        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <p className="text-sm text-[#5c6567] leading-relaxed">
             AI features include copilot assistance, intelligent document extraction (OCR),
             business health reports, predictive maintenance, inventory forecasting, pricing

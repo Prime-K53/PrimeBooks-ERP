@@ -19,11 +19,11 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ config, setC
         <h3 className="text-[11px] font-black text-[#5c6567] uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
           <Bell size={18} className="text-[#1f8577]" /> Channel Configuration
         </h3>
-        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} className="space-y-8">
+        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} className="space-y-8">
           <div className="grid grid-cols-2 gap-10">
-            <div className="flex justify-between items-center p-6 bg-[#eef7f6] rounded-lg border border-[#e4ddd1] hover:border-[#1f8577] transition-all">
+            <div className="flex justify-between items-center p-6 bg-[#eef7f6] rounded-lg border border-[#D4D7DC] hover:border-[#1f8577] transition-all">
               <div className="flex items-center gap-5">
-                <div className="p-4 bg-white rounded-2xl shadow-sm text-[#1f8577] border border-[#e4ddd1]"><Mail size={24} /></div>
+                <div className="p-4 bg-white rounded-xl shadow-sm text-[#1f8577] border border-[#D4D7DC]"><Mail size={24} /></div>
                 <div>
                   <p className="font-black text-[#23282A] uppercase text-sm tracking-tight">Email Notifications</p>
                   <p className="text-[10px] text-[#5c6567] mt-1 font-medium italic">Invoices, reports, and alerts.</p>
@@ -45,9 +45,9 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ config, setC
                 <div className="w-12 h-6 bg-[#e4ddd1] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1f8577]"></div>
               </label>
             </div>
-            <div className="flex justify-between items-center p-6 bg-[#eef7f6] rounded-lg border border-[#e4ddd1] hover:border-[#1f8577] transition-all">
+            <div className="flex justify-between items-center p-6 bg-[#eef7f6] rounded-lg border border-[#D4D7DC] hover:border-[#1f8577] transition-all">
               <div className="flex items-center gap-5">
-                <div className="p-4 bg-white rounded-2xl shadow-sm text-[#1f8577] border border-[#e4ddd1]"><MessageSquare size={24} /></div>
+                <div className="p-4 bg-white rounded-xl shadow-sm text-[#1f8577] border border-[#D4D7DC]"><MessageSquare size={24} /></div>
                 <div>
                   <p className="font-black text-[#23282A] uppercase text-sm tracking-tight">SMS Notifications</p>
                   <p className="text-[10px] text-[#5c6567] mt-1 font-medium italic">Critical alerts and OTPs.</p>
@@ -77,14 +77,14 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ config, setC
         <h3 className="text-[11px] font-black text-[#5c6567] uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
           <ShieldAlert size={18} className="text-[#b5493f]" /> Alert Policy
         </h3>
-        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} className="space-y-8">
+        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} className="space-y-8">
           <div className="grid grid-cols-2 gap-10">
             <div>
               <label className="block text-[10px] font-black text-[#5c6567] uppercase tracking-widest mb-3 px-1">Low Stock Threshold</label>
               <div className="flex items-center gap-4">
                 <input
                   type="number"
-                  className="w-full px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all "
+                  className="w-full px-3 py-2.5 bg-[#eef7f6] border border-[#D4D7DC] rounded-lg font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all "
                   placeholder="e.g. 10"
                   value={config.notificationSettings?.lowStockThreshold || 10}
                   onChange={e => setConfig({
@@ -104,7 +104,7 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ config, setC
                 <span className="text-xs font-black text-[#5c6567]">{config.currencySymbol}</span>
                 <input
                   type="number"
-                  className="w-full px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all "
+                  className="w-full px-3 py-2.5 bg-[#eef7f6] border border-[#D4D7DC] rounded-lg font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all "
                   placeholder="e.g. 5000"
                   value={config.notificationSettings?.largeTransactionThreshold || 5000}
                   onChange={e => setConfig({
@@ -147,7 +147,7 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ config, setC
                 <label className="text-xs font-semibold text-[#23282A] mb-1 block">Summary Time</label>
                 <input
                   type="time"
-                  className="w-full px-3 py-2 bg-white border border-[#e4ddd1] rounded-lg text-sm"
+                  className="w-full px-3 py-2 bg-white border border-[#D4D7DC] rounded-lg text-sm"
                   value={config.notificationSettings?.dailySummaryTime || "20:00"}
                   onChange={e => setConfig({
                     ...config,
@@ -162,7 +162,7 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ config, setC
                 <label className="text-xs font-semibold text-[#23282A] mb-1 block">Email Address</label>
                 <input
                   type="email"
-                  className="w-full px-3 py-2 bg-white border border-[#e4ddd1] rounded-lg text-sm"
+                  className="w-full px-3 py-2 bg-white border border-[#D4D7DC] rounded-lg text-sm"
                   placeholder="e.g. report@company.com"
                   value={config.notificationSettings?.dailySummaryEmail || ''}
                   onChange={e => setConfig({
@@ -183,7 +183,7 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ config, setC
         <h3 className="text-[11px] font-black text-[#5c6567] uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
           <MessageSquare size={18} className="text-[#1f8577]" /> Customer Communication
         </h3>
-        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div className="flex justify-between items-center hover:bg-[#eef7f6] -mx-8 px-8 py-4">
             <div>
               <p className="font-bold text-[#23282A] text-sm">Customer Activity Notifications</p>

@@ -19,7 +19,7 @@ export const CloudTab: React.FC<CloudTabProps> = ({ config, setConfig, notify, i
         <h3 className="text-[11px] font-black text-[#5c6567] uppercase tracking-[0.2em]">Cloud Sync (Stage 1)</h3>
       </div>
       <div className="grid grid-cols-2 gap-10">
-        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} className="space-y-10">
+        <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} className="space-y-10">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-black text-[#23282A] uppercase text-lg">Sync Connectivity</p>
@@ -40,7 +40,7 @@ export const CloudTab: React.FC<CloudTabProps> = ({ config, setConfig, notify, i
               <label className="block text-[10px] font-black text-[#5c6567] uppercase tracking-widest mb-3 px-1">Cloud API Endpoint</label>
               <input
                 type="text"
-                className="w-full bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl px-5 py-4 font-bold text-[#23282A] outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all text-sm"
+                className="w-full bg-[#eef7f6] border border-[#D4D7DC] rounded-lg px-3 py-2.5 font-bold text-[#23282A] outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all text-sm"
                 placeholder="https://api.prime-erp.cloud/v1"
                 value={config.cloudSync?.apiUrl || ''}
                 onChange={e => setConfig({ ...config, cloudSync: { ...config.cloudSync, apiUrl: e.target.value } as any })}
@@ -51,7 +51,7 @@ export const CloudTab: React.FC<CloudTabProps> = ({ config, setConfig, notify, i
               <div className="relative">
                 <input
                   type="password"
-                  className="w-full bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl px-5 py-4 font-bold text-[#23282A] outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all text-sm pr-12 "
+                  className="w-full bg-[#eef7f6] border border-[#D4D7DC] rounded-lg px-3 py-2.5 font-bold text-[#23282A] outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all text-sm pr-12 "
                   placeholder="e.g. 43c...8f1"
                   value={config.cloudSync?.apiKey || ''}
                   onChange={e => setConfig({ ...config, cloudSync: { ...config.cloudSync, apiKey: e.target.value } as any })}

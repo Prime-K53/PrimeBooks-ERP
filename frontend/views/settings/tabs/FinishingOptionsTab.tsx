@@ -95,7 +95,7 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
-      <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Scissors size={18} style={{ color: '#1f8577' }} />
@@ -103,7 +103,7 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
           </div>
           <button
             onClick={resetDefaults}
-            className="px-4 py-2 text-xs font-bold text-[#5c6567] border border-[#e4ddd1] rounded-lg hover:bg-[#eef7f6] transition-all"
+            className="px-4 py-2 text-xs font-bold text-[#5c6567] border border-[#D4D7DC] rounded-lg hover:bg-[#eef7f6] transition-all"
           >
             Reset to Defaults
           </button>
@@ -123,11 +123,11 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
             return (
               <div
                 key={option.id}
-                className="flex flex-col p-4 bg-[#eef7f6] rounded-lg border border-[#e4ddd1] group hover:border-[#a6d9d3] transition-all"
+                className="flex flex-col p-4 bg-[#eef7f6] rounded-lg border border-[#D4D7DC] group hover:border-[#a6d9d3] transition-all"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-4">
-                    <div className="p-2.5 bg-white rounded-lg shadow-sm text-[#1f8577] border border-[#e4ddd1]">
+                    <div className="p-2.5 bg-white rounded-lg shadow-sm text-[#1f8577] border border-[#D4D7DC]">
                       {meta?.icon}
                     </div>
                     <div>
@@ -156,7 +156,7 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
                             type="number"
                             value={resolveBomPrice(meta?.bomSource)}
                             readOnly
-                            className="w-20 px-2.5 py-1.5 border border-[#e4ddd1] rounded-lg text-right text-sm font-bold text-[#5c6567] bg-[#e4ddd1]"
+                            className="w-20 px-2.5 py-1.5 border border-[#D4D7DC] rounded-lg text-right text-sm font-bold text-[#5c6567] bg-[#e4ddd1]"
                           />
                         </div>
                       </div>
@@ -166,7 +166,7 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
                           type="number"
                           value={option.quantity ?? 1}
                           onChange={e => updateOption(option.id, 'quantity', Math.max(1, Number(e.target.value) || 1))}
-                          className="w-16 px-2.5 py-1.5 border border-[#e4ddd1] rounded-lg text-center text-sm font-bold text-[#23282A] bg-white"
+                          className="w-16 px-2.5 py-1.5 border border-[#D4D7DC] rounded-lg text-center text-sm font-bold text-[#23282A] bg-white"
                           min={1}
                           step={1}
                         />
@@ -188,7 +188,7 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
                             type="number"
                             value={option.price}
                             onChange={e => updateOption(option.id, 'price', parseFloat(e.target.value) || 0)}
-                            className="w-20 px-2.5 py-1.5 border border-[#e4ddd1] rounded-lg text-right text-sm font-bold text-[#23282A] bg-white"
+                            className="w-20 px-2.5 py-1.5 border border-[#D4D7DC] rounded-lg text-right text-sm font-bold text-[#23282A] bg-white"
                             min={0}
                             step={0.5}
                           />
@@ -200,7 +200,7 @@ export const FinishingOptionsTab: React.FC<FinishingOptionsTabProps> = ({ config
                           type="number"
                           value={option.batchSize ?? 10}
                           onChange={e => updateOption(option.id, 'batchSize', Math.max(1, Number(e.target.value) || 1))}
-                          className="w-16 px-2.5 py-1.5 border border-[#e4ddd1] rounded-lg text-center text-sm font-bold text-[#23282A] bg-white"
+                          className="w-16 px-2.5 py-1.5 border border-[#D4D7DC] rounded-lg text-center text-sm font-bold text-[#23282A] bg-white"
                           min={1}
                           step={1}
                         />

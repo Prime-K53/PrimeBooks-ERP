@@ -111,7 +111,7 @@ export const AttributesTab: React.FC = () => {
       )}
 
       {showNewForm && (
-        <div className="bg-[#eef7f6] border border-[#e4ddd1] rounded-xl p-4 space-y-3">
+        <div className="bg-[#eef7f6] border border-[#D4D7DC] rounded-xl p-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-[#23282A] mb-1">Attribute Name</label>
@@ -120,7 +120,7 @@ export const AttributesTab: React.FC = () => {
                 value={newAttrName}
                 onChange={(e) => setNewAttrName(e.target.value)}
                 placeholder="e.g. Size, Color, Material"
-                className="w-full px-3 py-2 border border-[#e4ddd1] rounded-lg text-sm outline-none focus:border-[#1f8577]"
+                className="w-full px-3 py-2 border border-[#D4D7DC] rounded-lg text-sm outline-none focus:border-[#1f8577]"
                 autoFocus
               />
             </div>
@@ -129,7 +129,7 @@ export const AttributesTab: React.FC = () => {
               <select
                 value={newAttrDisplay}
                 onChange={(e) => setNewAttrDisplay(e.target.value as AttributeDisplayType)}
-                className="w-full px-3 py-2 border border-[#e4ddd1] rounded-lg text-sm outline-none focus:border-[#1f8577]"
+                className="w-full px-3 py-2 border border-[#D4D7DC] rounded-lg text-sm outline-none focus:border-[#1f8577]"
               >
                 {DISPLAY_TYPES.map((dt) => (
                   <option key={dt.value} value={dt.value}>{dt.label}</option>
@@ -146,7 +146,7 @@ export const AttributesTab: React.FC = () => {
               </button>
               <button
                 onClick={() => setShowNewForm(false)}
-                className="px-4 py-2 border border-[#e4ddd1] text-sm font-semibold rounded-lg hover:bg-[#eef7f6] transition-all"
+                className="px-4 py-2 border border-[#D4D7DC] text-sm font-semibold rounded-lg hover:bg-[#eef7f6] transition-all"
               >
                 Cancel
               </button>
@@ -156,7 +156,7 @@ export const AttributesTab: React.FC = () => {
       )}
 
       {attributes.length === 0 && (
-        <div className="text-center py-16" style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1' }}>
+        <div className="text-center py-16" style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC' }}>
           <Layers size={40} className="mx-auto text-[#e4ddd1] mb-3" />
           <p className="text-[#5c6567] text-sm">No attributes defined yet</p>
           <p className="text-[#5c6567] text-xs mt-1">Create attributes like Size or Color to generate product variants automatically</p>
@@ -167,8 +167,8 @@ export const AttributesTab: React.FC = () => {
         {attributes.map((attr) => {
           const isEditing = editingAttr === attr.id;
           return (
-            <div key={attr.id} style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1' }}>
-              <div className="flex items-center justify-between px-4 py-3 bg-[#eef7f6] border-b border-[#e4ddd1]">
+            <div key={attr.id} style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC' }}>
+              <div className="flex items-center justify-between px-4 py-3 bg-[#eef7f6] border-b border-[#D4D7DC]">
                 <div className="flex items-center gap-3">
                   <GripVertical size={16} className="text-[#5c6567] cursor-move" />
                   <span className="font-bold text-[#23282A]">{attr.name}</span>
@@ -196,13 +196,13 @@ export const AttributesTab: React.FC = () => {
                   <p className="text-xs text-[#5c6567] italic">No values yet. Add values below.</p>
                 )}
                 {attr.values.map((val) => (
-                  <div key={val.id} className="flex items-center gap-3 py-1.5 border-b border-[#e4ddd1] last:border-0">
+                  <div key={val.id} className="flex items-center gap-3 py-1.5 border-b border-[#D4D7DC] last:border-0">
                     {attr.displayType === 'color' && (
                       <input
                         type="color"
                         value={val.colorCode || '#000000'}
                         onChange={(e) => handleUpdateValueColor(attr.id, val.id, e.target.value)}
-                        className="w-8 h-8 rounded border border-[#e4ddd1] cursor-pointer"
+                        className="w-8 h-8 rounded border border-[#D4D7DC] cursor-pointer"
                       />
                     )}
                     {isEditing ? (
@@ -210,7 +210,7 @@ export const AttributesTab: React.FC = () => {
                         type="text"
                         value={val.label}
                         onChange={(e) => handleUpdateValueLabel(attr.id, val.id, e.target.value)}
-                        className="flex-1 px-2 py-1 border border-[#e4ddd1] rounded text-sm outline-none focus:border-[#1f8577]"
+                        className="flex-1 px-2 py-1 border border-[#D4D7DC] rounded text-sm outline-none focus:border-[#1f8577]"
                       />
                     ) : (
                       <span className="flex-1 text-sm text-[#23282A]">{val.label}</span>
@@ -221,7 +221,7 @@ export const AttributesTab: React.FC = () => {
                         type="number"
                         value={val.extraPrice}
                         onChange={(e) => handleUpdateValueExtraPrice(attr.id, val.id, Number(e.target.value))}
-                        className="w-20 px-2 py-1 border border-[#e4ddd1] rounded text-xs outline-none focus:border-[#1f8577]"
+                        className="w-20 px-2 py-1 border border-[#D4D7DC] rounded text-xs outline-none focus:border-[#1f8577]"
                         step="any"
                       />
                     </div>
@@ -239,7 +239,7 @@ export const AttributesTab: React.FC = () => {
                     value={newValueText[attr.id] || ''}
                     onChange={(e) => setNewValueText((p) => ({ ...p, [attr.id]: e.target.value }))}
                     placeholder="Add value..."
-                    className="flex-1 px-2 py-1.5 border border-[#e4ddd1] rounded text-sm outline-none focus:border-[#1f8577]"
+                    className="flex-1 px-2 py-1.5 border border-[#D4D7DC] rounded text-sm outline-none focus:border-[#1f8577]"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();

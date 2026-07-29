@@ -55,10 +55,10 @@ export const PricingAdminTab: React.FC<PricingAdminTabProps> = ({ config, setCon
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      <div className="flex gap-2 border-b border-[#e4ddd1] pb-2">
+      <div className="flex gap-2 border-b border-[#D4D7DC] pb-2">
         {(['discounts', 'tiers', 'taxes'] as const).map(s => (
           <button key={s} onClick={() => setActiveSection(s)}
-            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all ${activeSection === s ? 'bg-white text-[#1f8577] border border-[#e4ddd1] border-b-white -mb-[2px]' : 'text-[#5c6567] hover:text-[#23282A]'}`}>
+            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all ${activeSection === s ? 'bg-white text-[#1f8577] border border-[#D4D7DC] border-b-white -mb-[2px]' : 'text-[#5c6567] hover:text-[#23282A]'}`}>
             {s === 'discounts' ? 'Discount Rules' : s === 'tiers' ? 'Customer Pricing Tiers' : 'Tax Rates'}
           </button>
         ))}
@@ -101,8 +101,8 @@ function DiscountRulesSection({ rules, onUpdate, notify }: { rules: DiscountRule
   };
 
   return (
-    <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-      <div className="px-6 py-4 border-b border-[#e4ddd1] flex justify-between items-center bg-[#eef7f6]">
+    <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="px-6 py-4 border-b border-[#D4D7DC] flex justify-between items-center bg-[#eef7f6]">
         <h3 className="text-xs font-black text-[#23282A] uppercase tracking-wider flex items-center gap-2">
           <Percent size={14} style={{ color: '#1f8577' }} /> Discount Rules
         </h3>
@@ -127,34 +127,34 @@ function DiscountRulesSection({ rules, onUpdate, notify }: { rules: DiscountRule
                 <th className="text-center px-3 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e4ddd1]">
+            <tbody className="divide-y divide-[#D4D7DC]">
               {rules.map((rule, idx) => (
                 <tr key={rule.id} className="hover:bg-[#eef7f6]">
                   <td className="px-4 py-2.5">
-                    <input className="w-full p-1.5 border border-[#e4ddd1] rounded text-xs font-medium" value={rule.name} onChange={e => updateRule(idx, 'name', e.target.value)} placeholder="Rule name" />
+                    <input className="w-full p-1.5 border border-[#D4D7DC] rounded text-xs font-medium" value={rule.name} onChange={e => updateRule(idx, 'name', e.target.value)} placeholder="Rule name" />
                   </td>
                   <td className="px-3 py-2.5">
-                    <select className="p-1.5 border border-[#e4ddd1] rounded text-xs" value={rule.type} onChange={e => updateRule(idx, 'type', e.target.value)}>
+                    <select className="p-1.5 border border-[#D4D7DC] rounded text-xs" value={rule.type} onChange={e => updateRule(idx, 'type', e.target.value)}>
                       <option value="percentage">%</option>
                       <option value="fixed_amount">Fixed</option>
                     </select>
                   </td>
                   <td className="px-3 py-2.5">
-                    <input className="w-20 p-1.5 border border-[#e4ddd1] rounded text-xs font-mono text-right" type="number" min="0" step="0.01" value={rule.value} onChange={e => updateRule(idx, 'value', parseFloat(e.target.value) || 0)} />
+                    <input className="w-20 p-1.5 border border-[#D4D7DC] rounded text-xs font-mono text-right" type="number" min="0" step="0.01" value={rule.value} onChange={e => updateRule(idx, 'value', parseFloat(e.target.value) || 0)} />
                   </td>
                   <td className="px-3 py-2.5">
-                    <select className="p-1.5 border border-[#e4ddd1] rounded text-xs" value={rule.scope} onChange={e => updateRule(idx, 'scope', e.target.value)}>
+                    <select className="p-1.5 border border-[#D4D7DC] rounded text-xs" value={rule.scope} onChange={e => updateRule(idx, 'scope', e.target.value)}>
                       {SCOPE_OPTIONS.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
                     </select>
                   </td>
                   <td className="px-3 py-2.5">
-                    <input className="w-full p-1.5 border border-[#e4ddd1] rounded text-xs" value={rule.scopeValue || ''} onChange={e => updateRule(idx, 'scopeValue', e.target.value)} placeholder="e.g. segment name" />
+                    <input className="w-full p-1.5 border border-[#D4D7DC] rounded text-xs" value={rule.scopeValue || ''} onChange={e => updateRule(idx, 'scopeValue', e.target.value)} placeholder="e.g. segment name" />
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     <input type="checkbox" checked={rule.active} onChange={e => updateRule(idx, 'active', e.target.checked)} className="w-4 h-4 accent-[#1f8577]" />
                   </td>
                   <td className="px-3 py-2.5 text-right">
-                    <input className="w-14 p-1.5 border border-[#e4ddd1] rounded text-xs font-mono text-center" type="number" min="0" value={rule.priority} onChange={e => updateRule(idx, 'priority', parseInt(e.target.value) || 0)} />
+                    <input className="w-14 p-1.5 border border-[#D4D7DC] rounded text-xs font-mono text-center" type="number" min="0" value={rule.priority} onChange={e => updateRule(idx, 'priority', parseInt(e.target.value) || 0)} />
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     <button onClick={() => removeRule(idx)} className="text-[#b5493f] hover:text-[#b5493f] transition-colors"><Trash2 size={14} /></button>
@@ -185,8 +185,8 @@ function PricingTiersSection({ tiers, onUpdate, notify }: { tiers: any[]; onUpda
   };
 
   return (
-    <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-      <div className="px-6 py-4 border-b border-[#e4ddd1] flex justify-between items-center bg-[#eef7f6]">
+    <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="px-6 py-4 border-b border-[#D4D7DC] flex justify-between items-center bg-[#eef7f6]">
         <h3 className="text-xs font-black text-[#23282A] uppercase tracking-wider flex items-center gap-2">
           <Tags size={14} style={{ color: '#1f8577' }} /> Customer Pricing Tiers
         </h3>
@@ -208,22 +208,22 @@ function PricingTiersSection({ tiers, onUpdate, notify }: { tiers: any[]; onUpda
                 <th className="text-center px-3 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e4ddd1]">
+            <tbody className="divide-y divide-[#D4D7DC]">
               {tiers.map((tier, idx) => (
                 <tr key={idx} className="hover:bg-[#eef7f6]">
                   <td className="px-4 py-2.5">
-                    <input className="w-full p-1.5 border border-[#e4ddd1] rounded text-xs font-mono" value={tier.customerId} onChange={e => updateTier(idx, 'customerId', e.target.value)} placeholder="Customer ID" />
+                    <input className="w-full p-1.5 border border-[#D4D7DC] rounded text-xs font-mono" value={tier.customerId} onChange={e => updateTier(idx, 'customerId', e.target.value)} placeholder="Customer ID" />
                   </td>
                   <td className="px-3 py-2.5">
-                    <select className="p-1.5 border border-[#e4ddd1] rounded text-xs" value={tier.tier} onChange={e => updateTier(idx, 'tier', e.target.value)}>
+                    <select className="p-1.5 border border-[#D4D7DC] rounded text-xs" value={tier.tier} onChange={e => updateTier(idx, 'tier', e.target.value)}>
                       {TIER_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </td>
                   <td className="px-3 py-2.5">
-                    <input className="w-24 p-1.5 border border-[#e4ddd1] rounded text-xs font-mono text-right" type="number" min="0" step="0.01" value={tier.markupMultiplier || 1} onChange={e => updateTier(idx, 'markupMultiplier', parseFloat(e.target.value) || 1)} />
+                    <input className="w-24 p-1.5 border border-[#D4D7DC] rounded text-xs font-mono text-right" type="number" min="0" step="0.01" value={tier.markupMultiplier || 1} onChange={e => updateTier(idx, 'markupMultiplier', parseFloat(e.target.value) || 1)} />
                   </td>
                   <td className="px-3 py-2.5">
-                    <input className="w-20 p-1.5 border border-[#e4ddd1] rounded text-xs font-mono text-right" type="number" min="0" max="100" step="0.1" value={tier.discountPercent || 0} onChange={e => updateTier(idx, 'discountPercent', parseFloat(e.target.value) || 0)} />
+                    <input className="w-20 p-1.5 border border-[#D4D7DC] rounded text-xs font-mono text-right" type="number" min="0" max="100" step="0.1" value={tier.discountPercent || 0} onChange={e => updateTier(idx, 'discountPercent', parseFloat(e.target.value) || 0)} />
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     <button onClick={() => removeTier(idx)} className="text-[#b5493f] hover:text-[#b5493f] transition-colors"><Trash2 size={14} /></button>
@@ -262,8 +262,8 @@ function TaxRatesSection({ rates, onUpdate, notify }: { rates: TaxRate[]; onUpda
   };
 
   return (
-    <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-      <div className="px-6 py-4 border-b border-[#e4ddd1] flex justify-between items-center bg-[#eef7f6]">
+    <div style={{ background: '#FEFDFB', borderRadius: 12, border: '1px solid #D4D7DC', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="px-6 py-4 border-b border-[#D4D7DC] flex justify-between items-center bg-[#eef7f6]">
         <h3 className="text-xs font-black text-[#23282A] uppercase tracking-wider flex items-center gap-2">
           <Save size={14} style={{ color: '#1f8577' }} /> Tax Rates
         </h3>
@@ -286,17 +286,17 @@ function TaxRatesSection({ rates, onUpdate, notify }: { rates: TaxRate[]; onUpda
                 <th className="text-center px-3 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e4ddd1]">
+            <tbody className="divide-y divide-[#D4D7DC]">
               {rates.map((rate, idx) => (
                 <tr key={rate.id} className="hover:bg-[#eef7f6]">
                   <td className="px-4 py-2.5">
-                    <input className="w-full p-1.5 border border-[#e4ddd1] rounded text-xs font-medium" value={rate.name} onChange={e => updateRate(idx, 'name', e.target.value)} placeholder="e.g. VAT 16%" />
+                    <input className="w-full p-1.5 border border-[#D4D7DC] rounded text-xs font-medium" value={rate.name} onChange={e => updateRate(idx, 'name', e.target.value)} placeholder="e.g. VAT 16%" />
                   </td>
                   <td className="px-3 py-2.5">
-                    <input className="w-20 p-1.5 border border-[#e4ddd1] rounded text-xs font-mono text-right" type="number" min="0" max="100" step="0.01" value={rate.rate} onChange={e => updateRate(idx, 'rate', parseFloat(e.target.value) || 0)} />
+                    <input className="w-20 p-1.5 border border-[#D4D7DC] rounded text-xs font-mono text-right" type="number" min="0" max="100" step="0.01" value={rate.rate} onChange={e => updateRate(idx, 'rate', parseFloat(e.target.value) || 0)} />
                   </td>
                   <td className="px-3 py-2.5">
-                    <select className="p-1.5 border border-[#e4ddd1] rounded text-xs" value={rate.type} onChange={e => updateRate(idx, 'type', e.target.value)}>
+                    <select className="p-1.5 border border-[#D4D7DC] rounded text-xs" value={rate.type} onChange={e => updateRate(idx, 'type', e.target.value)}>
                       <option value="sales">Sales</option>
                       <option value="purchase">Purchase</option>
                       <option value="both">Both</option>
