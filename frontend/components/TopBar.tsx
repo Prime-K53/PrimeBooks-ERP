@@ -591,15 +591,14 @@ background: teal[100],
                   right: 0,
                   marginTop: 12,
                   backgroundColor: paper,
-                  borderRadius: 16,
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
-                  border: `1px solid rgba(0,0,0,0.05)`,
+                  borderRadius: 14,
+                  boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
                   overflow: 'hidden',
                   zIndex: 60,
                   minWidth: 220
                 }}>
-                    <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${hairline}` }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: ink }}>{user?.fullName || user?.username || 'User'}</div>
+                    <div style={{ padding: '14px 16px 12px', borderBottom: `1px solid ${hairline}` }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: ink }}>{user?.fullName || user?.username || 'User'}</div>
                         <div style={{ fontSize: 11, fontWeight: 500, color: inkSoft, marginTop: 2 }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
                     </div>
                     <div style={{ padding: 6 }}>

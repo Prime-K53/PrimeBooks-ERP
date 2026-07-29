@@ -352,6 +352,7 @@ const AppLayout: React.FC = () => {
   const notificationBellRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fyDropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const { selectedFinancialYear, availableFinancialYears, setFinancialYear, isLoading: isFyLoading } = useFinancialYear();
 
@@ -362,6 +363,17 @@ const AppLayout: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserMenu]);
 
   const currentFyDisplay = selectedFinancialYear
     ? `${selectedFinancialYear.start_date.slice(0, 4)}–${selectedFinancialYear.end_date.slice(0, 4)}`
@@ -448,9 +460,24 @@ const AppLayout: React.FC = () => {
     },
   ], [location.pathname, setSearchOpen]);
 
+  const teal = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
+  const amber = { 100: '#fbead0', 500: '#d99a3f' };
+  const paper = '#FEFDFB';
+  const ink = '#23282A';
+  const inkSoft = '#5c6567';
+  const hairline = '#e4ddd1';
+  const danger = '#b5493f';
+
   const UserMenuItem = ({ icon: Icon, color, bg, label, onClick, danger }: { icon: React.ElementType; color: string; bg: string; label: string; onClick: () => void; danger?: boolean }) => (
-    <button onClick={onClick} className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg transition-colors ${danger ? 'text-red-600 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-50'}`}>
-      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${bg}`}>
+    <button onClick={onClick} style={{
+      width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+      padding: '8px 12px', fontSize: 12.5, fontWeight: 500,
+      color: danger ? danger : ink, cursor: 'pointer', borderRadius: 9,
+      transition: 'background .15s', border: 'none', textAlign: 'left'
+    }}
+      onMouseEnter={e => { e.currentTarget.style.backgroundColor = danger ? `${danger}15` : teal[50]; }}
+      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}>
+      <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: bg }}>
         <Icon size={14} color={color} />
       </div>
       {label}
@@ -575,7 +602,7 @@ const AppLayout: React.FC = () => {
                 anchorEl={notificationBellRef.current}
               />
             </div>
-            <div className="relative flex items-center gap-2 pl-2" style={{ borderLeft: '1.4px solid #e4ddd1' }}>
+            <div ref={userMenuRef} className="relative flex items-center gap-2 pl-2" style={{ borderLeft: '1.4px solid #e4ddd1' }}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center py-1 rounded-full hover:bg-[#f3ede3] transition-colors"
@@ -587,20 +614,26 @@ const AppLayout: React.FC = () => {
                 </div>
               </button>
               {showUserMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-right">
-                  <div className="px-4 py-3 border-b border-slate-100">
-                    <div className="text-sm font-semibold text-slate-900">{user?.fullName || user?.username || 'User'}</div>
-                    <div className="text-[11px] font-medium text-slate-500 mt-0.5">{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
+                <div style={{
+                  position: 'absolute', right: 0, top: '100%', marginTop: 8,
+                  width: 224, background: paper,
+                  borderRadius: 14,
+                  boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+                  overflow: 'hidden', zIndex: 50
+                }}>
+                  <div style={{ padding: '14px 16px 12px', borderBottom: `1px solid ${hairline}` }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: ink }}>{user?.fullName || user?.username || 'User'}</div>
+                    <div style={{ fontSize: 11, fontWeight: 500, color: inkSoft, marginTop: 2 }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
                   </div>
-                  <div className="p-1.5">
-                    <UserMenuItem icon={Wrench} color="#3b82f6" bg="bg-blue-50" label="Internal Tools" onClick={() => { navigate('/internal-tools'); setShowUserMenu(false); }} />
-                    <UserMenuItem icon={UserIcon} color="#6366f1" bg="bg-indigo-50" label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
-                    <UserMenuItem icon={ShieldCheck} color="#10b981" bg="bg-emerald-50" label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
-                    <UserMenuItem icon={Database} color="#06b6d4" bg="bg-cyan-50" label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
-                    <UserMenuItem icon={SettingsIcon} color="#f59e0b" bg="bg-amber-50" label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
+                  <div style={{ padding: 6 }}>
+                    <UserMenuItem icon={Wrench} color="#3b82f6" bg={teal[50]} label="Internal Tools" onClick={() => { navigate('/internal-tools'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={UserIcon} color="#6366f1" bg={teal[50]} label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={ShieldCheck} color="#10b981" bg={teal[50]} label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={Database} color="#06b6d4" bg={teal[50]} label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={SettingsIcon} color="#f59e0b" bg={amber[100]} label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
                   </div>
-                  <div className="border-t border-slate-100 p-1.5">
-                    <UserMenuItem icon={LogOut} color="#ef4444" bg="bg-red-50" label="Log out" onClick={() => { logout(); navigate('/login'); }} danger />
+                  <div style={{ borderTop: `1px solid ${hairline}`, padding: 6 }}>
+                    <UserMenuItem icon={LogOut} color="#ef4444" bg={`${danger}15`} label="Log out" onClick={() => { logout(); navigate('/login'); }} danger />
                   </div>
                 </div>
               )}

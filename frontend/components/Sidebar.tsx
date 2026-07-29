@@ -351,64 +351,63 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, toggle, toggleCo
               {!isCompressed && <span className="font-semibold text-[13px]" style={{ color: '#fef3c7' }}>Quick Action</span>}
            </button>
 {isNewMenuOpen && (
-              <div className="absolute left-full top-0 ml-4 bg-[#1b254b] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-left-5 duration-200 z-50 w-[600px] p-6">
-                <div className="grid grid-cols-3 gap-8">
-                  {/* Column 1 - Sales & CRM */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest px-2">Sales & CRM</h3>
-                    <div className="space-y-1">
-                      <button onClick={() => { setIsPosModalOpen(true); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-blue-400 bg-blue-500/10 rounded-md group-hover:bg-blue-500/20 transition-colors"><Coins size={16} /></div>
-                        Point of Sale
-                      </button>
-                      <button onClick={() => { navigate('/sales-flow/clients', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-blue-400 bg-blue-500/10 rounded-md group-hover:bg-blue-500/20 transition-colors"><UserPlus size={16} /></div>
-                        New Client
-                      </button>
-                      <button onClick={() => { navigate('/sales-flow/invoices', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-blue-400 bg-blue-500/10 rounded-md group-hover:bg-blue-500/20 transition-colors"><FileSpreadsheet size={16} /></div>
-                        Create Invoice
-                      </button>
-                      <button onClick={() => { navigate('/sales-flow/quotations', { state: { action: 'create', type: 'Quotation' } }); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-amber-400 bg-amber-500/10 rounded-md group-hover:bg-amber-500/20 transition-colors"><FileText size={16} /></div>
-                        New Quotation
-                      </button>
+               <div style={{
+                 position: 'absolute', left: '100%', top: 0, marginLeft: 12,
+                 background: '#FEFDFB', borderRadius: 14,
+                 boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+                 overflow: 'hidden', zIndex: 50, width: 600, padding: 20
+               }}>
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+                   {/* Column 1 - Sales & CRM */}
+                   <div>
+                     <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 12, paddingLeft: 8 }}>Sales & CRM</div>
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                       <button onClick={() => { setIsPosModalOpen(true); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
+                         onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                         <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><Coins size={14} color="#3b82f6" /></div>
+                         Point of Sale
+                       </button>
+                       <button onClick={() => { navigate('/sales-flow/clients', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
+                         onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                         <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><UserPlus size={14} color="#3b82f6" /></div>
+                         New Client
+                       </button>
+                       <button onClick={() => { navigate('/sales-flow/invoices', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
+                         onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                         <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><FileSpreadsheet size={14} color="#3b82f6" /></div>
+                         Create Invoice
+                       </button>
+                       <button onClick={() => { navigate('/sales-flow/quotations', { state: { action: 'create', type: 'Quotation' } }); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
+                         onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                         <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fbead0' }}><FileText size={14} color="#d99a3f" /></div>
+                         New Quotation
+                       </button>
+                     </div>
+                   </div>
+                   {/* Column 2 - Operations */}
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 12, paddingLeft: 8 }}>Operations</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <button onClick={() => { navigate('/sales-flow/tasks', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><CheckSquare size={14} color="#f59e0b" /></div>
+                          New Task
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  {/* Column 2 - Operations */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest px-2">Operations</h3>
-                    <div className="space-y-1">
-                      <button onClick={() => { navigate('/procurement/suppliers', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-indigo-400 bg-indigo-500/10 rounded-md group-hover:bg-indigo-500/20 transition-colors"><Users size={16} /></div>
-                        New Supplier
-                      </button>
-                      <button onClick={() => { navigate('/supply-chain/inventory'); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-emerald-400 bg-emerald-500/10 rounded-md group-hover:bg-emerald-500/20 transition-colors"><Box size={16} /></div>
-                        Add Stock Item
-                      </button>
-                      <button onClick={() => { navigate('/sales-flow/tasks', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-amber-400 bg-amber-500/10 rounded-md group-hover:bg-amber-500/20 transition-colors"><CheckSquare size={16} /></div>
-                        New Task
-                      </button>
+                   {/* Column 3 - Production */}
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 12, paddingLeft: 8 }}>Production</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <button onClick={() => { navigate('/examination/batches/new'); setIsNewMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', fontSize: 12.5, fontWeight: 500, color: '#23282A', cursor: 'pointer', borderRadius: 9, transition: 'background .15s', border: 'none', textAlign: 'left', background: 'transparent' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef7f6' }}><BookOpen size={14} color="#ec4899" /></div>
+                          New Examination Batch
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  {/* Column 3 - Production */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest px-2">Production</h3>
-                    <div className="space-y-1">
-                      <button onClick={() => { navigate('/industrial/work-orders', { state: { action: 'create' } }); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-purple-400 bg-purple-500/10 rounded-md group-hover:bg-purple-500/20 transition-colors"><Briefcase size={16} /></div>
-                        New Work Order
-                      </button>
-                      <button onClick={() => { navigate('/examination/batches/new'); setIsNewMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/5 rounded-lg text-sm font-medium text-white/80 transition-colors group">
-                        <div className="p-1.5 text-pink-400 bg-pink-500/10 rounded-md group-hover:bg-pink-500/20 transition-colors"><BookOpen size={16} /></div>
-                        New Examination Batch
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                 </div>
+               </div>
             )}
          </div>
        </div>
