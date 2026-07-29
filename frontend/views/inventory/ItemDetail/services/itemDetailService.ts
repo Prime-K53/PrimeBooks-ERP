@@ -1,5 +1,6 @@
 import { api } from '../../../../services/api';
 import { dbService } from '../../../../services/db';
+import { transactionService } from '../../../../services/transactionService';
 import { normalizeInventoryItemPricing } from '../../../../utils/pricing';
 import { resolveMinimumMarkup } from '../../../../services/pricingValidationService';
 import type { Item, Purchase, Sale, InventoryTransaction, AuditLogEntry, ProductionBatch, WorkOrder, Supplier } from '../../../../types';
@@ -91,12 +92,7 @@ export async function fetchSuppliers(): Promise<Supplier[]> {
 }
 
 export async function saveItem(item: Item): Promise<void> {
-  if (item.id) {
-    await api.inventory.updateItem(item);
-    return;
-  }
-
-  await api.inventory.createItem(item);
+  await transactionService.saveItem(item);
 }
 
 export async function duplicateItem(item: Item): Promise<Item> {
@@ -107,7 +103,8 @@ export async function duplicateItem(item: Item): Promise<Item> {
     sku: item.sku ? `${item.sku}-COPY` : undefined,
     stock: 0,
   };
-  return normalizeInventoryItemPricing(await api.inventory.createItem(dup));
+  await transactionService.saveItem(dup);
+  return normalizeInventoryItemPricing(dup);
 }
 
 export function getItemStockCalculations(item: Item): {

@@ -106,7 +106,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       pricingValidated: !isSellable || validation.valid,
       validationTimestamp: new Date().toISOString(),
     };
-    await api.inventory.createItem(newItem);
+    const id = newItem.id || generateNextId('ITM', get().inventory);
+    await transactionService.saveItem({ ...newItem, id });
     await get().fetchInventory();
   },
 
@@ -142,7 +143,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       pricingValidated: !isSellable || validation.valid,
       validationTimestamp: new Date().toISOString(),
     };
-    await api.inventory.updateItem(updatedItem);
+    await transactionService.saveItem(updatedItem, previous);
     await get().fetchInventory();
 
     const previousCost = Number(previous?.cost_price ?? previous?.cost ?? 0);
@@ -171,7 +172,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       set({ error: 'Cannot delete protected item' });
       throw new Error('Cannot delete protected item');
     }
-    await api.inventory.deleteItem(id);
+    await transactionService.deleteItem(id);
     set(state => ({
       inventory: state.inventory.filter(i => i.id !== id)
     }));

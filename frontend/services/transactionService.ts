@@ -2972,6 +2972,27 @@ export const transactionService = {
         );
     },
 
+    async saveItem(item: Item, oldItem?: Item) {
+        return dbService.executeAtomicOperation(
+            ['inventory'],
+            async (tx) => {
+                const store = tx.objectStore('inventory');
+                await store.put(item);
+                return { success: true };
+            }
+        );
+    },
+
+    async deleteItem(id: string) {
+        const item = await dbService.get<Item>('inventory', id);
+        if (item) {
+            (item as any).status = 'Deleted';
+            (item as any).deleted_at = new Date().toISOString();
+            await dbService.put('inventory', item);
+        }
+        return { success: true };
+    },
+
     async updateInvoice(invoice: Invoice) {
         return dbService.executeAtomicOperation(
             ['invoices'],
