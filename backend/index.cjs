@@ -3948,6 +3948,11 @@ app.use((err, req, res, next) => {
     method: req.method,
     url: req.originalUrl
   });
+  const origin = req.headers && req.headers['origin'];
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
   res.status(500).json({ error: 'Internal Server Error', message: 'An unexpected error occurred. Please try again later.' });
 });
 
