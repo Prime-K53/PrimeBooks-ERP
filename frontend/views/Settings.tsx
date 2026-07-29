@@ -240,6 +240,56 @@ const qboStyles = `
     }
 `;
 
+// ClientModal-aligned style constants
+const labelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  padding: '9px 12px', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+
+const textareaStyle: React.CSSProperties = {
+  ...inputStyle, resize: 'none', minHeight: 66, lineHeight: 1.5
+};
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  paddingRight: 30,
+  cursor: 'pointer'
+};
+
+const sectionLabelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 10,
+  margin: '26px 0 14px'
+};
+
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
+
+const btnPrimaryStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+  color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+  boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+  transition: 'all .15s ease'
+};
+
 const Settings: React.FC = () => {
     useEffect(() => {
         const style = document.createElement('style');
@@ -830,174 +880,203 @@ const Settings: React.FC = () => {
     const deferredTemplatePreviewConfig = useDeferredValue(config);
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'Inter,"DM Sans",sans-serif' }}>
-            {/* QBO Header Strategy */}
-            <div style={{ background: '#FEFDFB', borderStyle: 'solid', border: '1.4px solid #e4ddd1', paddingLeft: '32px', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, zIndex: 10, paddingRight: '32px', paddingBottom: '16px' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter','DM Sans',sans-serif" }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '16px 28px',
+              borderBottom: `1px solid ${hairline}`,
+              background: paper
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+                }}>
+                  <Settings2 size={19} color="#fff" />
+                </div>
                 <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '4px' }}>
-                        <span>Settings</span>
-                        <span className="text-[#D4D7DC]">/</span>
-                        <span style={{ color: '#1f8577' }}>{activeGroupTitle}</span>
-                    </div>
-                    <h1 style={{ fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {activeItemLabel}
-                    </h1>
+                  <h1 style={{
+                    fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                    fontSize: 20, margin: 0, color: teal[800], letterSpacing: 0.2
+                  }}>
+                    {activeItemLabel}
+                  </h1>
+                  <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+                    {activeGroupTitle} &mdash; Configure your workspace
+                  </p>
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={handleSave} style={{ background: '#1f8577', color: '#fff', paddingLeft: '24px', paddingTop: '8px', borderRadius: '9999px', fontWeight: 700, fontSize: '13px', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(31,133,119,.1)', paddingRight: '24px', paddingBottom: '8px' }}>
-                        <CheckCircle2 size={18} /> Save Settings
-                    </button>
-                </div>
+              </div>
+              <button onClick={handleSave} style={btnPrimaryStyle}>
+                <CheckCircle2 size={16} /> Save Settings
+              </button>
             </div>
 
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                {/* QBO Sidebar Style */}
-                <div style={{ width: '320px', background: '#FEFDFB', borderStyle: 'solid', border: '1.4px solid #e4ddd1', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto' }}>
-                    <div style={{ padding: '24px', paddingBottom: '8px' }}>
-                        <div style={{ position: 'relative' }}>
-                            <Gauge style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} size={16} />
-                            <input
-                                type="text"
-                                placeholder="Search settings..."
-                                style={{ width: '100%', paddingLeft: '40px', paddingRight: '16px', paddingTop: '8px', border: '1.4px solid #e4ddd1', borderRadius: '8px', fontSize: '13px', outline: 'none', transition: 'all .15s ease', fontWeight: 500, paddingBottom: '8px' }}
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                            />
-                        </div>
+                {/* Modal-style Sidebar */}
+                <div style={{
+                  width: 280, flexShrink: 0,
+                  background: `linear-gradient(180deg, ${teal[800]}, ${teal[900]})`,
+                  display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto'
+                }}>
+                    <div style={{
+                      position: 'absolute', top: 0, right: 0, bottom: 0, width: 10,
+                      backgroundImage: 'radial-gradient(circle, rgba(254,253,251,.9) 2.2px, transparent 2.3px)',
+                      backgroundSize: '10px 16px', backgroundPosition: '4px 8px', opacity: 0.12
+                    }} />
+                    <div style={{
+                      color: 'rgba(255,255,255,.4)', fontSize: 10, letterSpacing: 0.16,
+                      textTransform: 'uppercase', fontWeight: 600, padding: '18px 16px 10px'
+                    }}>
+                        Settings
                     </div>
-
-                    <div style={{ padding: '16px', marginTop: '24px' }}>
+                    <div style={{ padding: '0 12px', flex: 1 }}>
                         {filteredGroups.map(group => (
-                            <div key={group.title}>
-                                <h3 style={{ paddingLeft: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingRight: '16px' }}>{group.title}</h3>
-                                <div style={{ marginTop: '2px' }}>
-                                    {group.items.map(item => (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => {
-                                              if (item.id === 'MembershipTiers') return navigate('/admin/membership-tiers')
-                                              if (item.id === 'Promotions') return navigate('/admin/promotions')
-                                              if (item.id === 'GiftCards') return navigate('/admin/gift-cards')
-                                              setActiveTab(item.id)
-                                            }}
-                                            className={`w-full flex items-center justify-between px-4 py-3 border-l-4 transition-all text-left ${activeTab === item.id
-                                                ? 'bg-blue-50 border-blue-600 text-blue-600'
-                                                : 'border-transparent text-[#6B6C6F] hover:bg-[#F4F5F8]'
-                                                }`}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <item.icon size={18} className={activeTab === item.id ? 'text-blue-600' : 'text-[#6B6C6F]'} />
-                                                <span className={`text-[13px] font-bold ${activeTab === item.id ? 'text-blue-600' : 'text-[#393A3D]'}`}>{item.label}</span>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
+                            <div key={group.title} style={{ marginBottom: 16 }}>
+                                <div style={{
+                                  color: 'rgba(255,255,255,.4)', fontSize: 10, letterSpacing: 0.16,
+                                  textTransform: 'uppercase', fontWeight: 600, padding: '4px 12px 8px'
+                                }}>{group.title}</div>
+                                {group.items.map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                          if (item.id === 'MembershipTiers') return navigate('/admin/membership-tiers')
+                                          if (item.id === 'Promotions') return navigate('/admin/promotions')
+                                          if (item.id === 'GiftCards') return navigate('/admin/gift-cards')
+                                          setActiveTab(item.id)
+                                        }}
+                                        style={{
+                                          display: 'flex', alignItems: 'center', gap: 10,
+                                          padding: '10px 12px', borderRadius: 8, width: '100%',
+                                          color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,.62)',
+                                          fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 2,
+                                          transition: 'all .15s ease', position: 'relative',
+                                          border: 'none', background: 'transparent', textAlign: 'left',
+                                          ...(activeTab === item.id ? {
+                                            background: `linear-gradient(90deg, rgba(217,154,63,.18), rgba(217,154,63,.05))`,
+                                            boxShadow: `inset 3px 0 0 ${amber[500]}`
+                                          } : {})
+                                        }}
+                                        onMouseEnter={e => { if (activeTab !== item.id) { e.currentTarget.style.background = 'rgba(255,255,255,.06)'; } e.currentTarget.style.color = '#fff'; }}
+                                        onMouseLeave={e => { if (activeTab !== item.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,.62)'; } }}
+                                    >
+                                        <item.icon size={16} style={{ flexShrink: 0, opacity: 0.85 }} />
+                                        <span>{item.label}</span>
+                                    </button>
+                                ))}
                             </div>
                         ))}
+                    </div>
+                    <div style={{
+                      position: 'absolute', bottom: 18, left: 16, right: 22,
+                      padding: 12, borderRadius: 8,
+                      background: 'rgba(255,255,255,.045)',
+                      border: '1px dashed rgba(255,255,255,.14)'
+                    }}>
+                      <p style={{ margin: 0, fontSize: 10.5, color: 'rgba(255,255,255,.42)', lineHeight: 1.5 }}>
+                        Configure your workspace preferences and system behavior.
+                      </p>
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
-                    <div style={{ maxWidth: '896px', marginLeft: 'auto', transitionDuration: '400ms' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '24px 30px', background: paper }}>
+                    <div style={{ maxWidth: '896px' }}>
 
                         {activeTab === 'General' && (
-                            <div style={{ marginTop: '32px' }}>
-                                <section style={{ overflow: 'hidden' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <h3 style={{ fontSize: '13px', fontWeight: 700 }}>Organization Profile</h3>
-                                            <p style={{ marginTop: '2px' }}>Basic information about your business.</p>
-                                        </div>
-                                    </div>
-                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: '48px', rowGap: '24px' }}>
+                            <div>
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Organization Profile</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: 16, rowGap: 16 }}>
                                         <div style={{ gridColumn: 'span 2 / span 2' }}>
-                                            <label className="settings-label">Legal Company Name</label>
+                                            <label style={labelStyle}>Legal Company Name</label>
                                             <input
                                                 type="text"
-                                                className="settings-input"
+                                                style={inputStyle}
                                                 placeholder="e.g. Acme Printing Ltd"
                                                 value={config.companyName}
                                                 onChange={e => setConfig({ ...config, companyName: e.target.value })}
                                             />
                                         </div>
                                         <div style={{ gridColumn: 'span 2 / span 2' }}>
-                                            <label className="settings-label">Tagline / Business Motto</label>
+                                            <label style={labelStyle}>Tagline / Business Motto</label>
                                             <input
                                                 type="text"
                                                 placeholder="e.g. Quality you can trust"
-                                                className="settings-input"
+                                                style={inputStyle}
                                                 value={config.tagline || ''}
                                                 onChange={e => setConfig({ ...config, tagline: e.target.value })}
                                             />
-                                            <p style={{ color: '#5c6567', marginTop: '6px', fontWeight: 500, fontStyle: 'italic' }}>This will appear on your invoices and documents.</p>
+                                            <p style={{ color: inkSoft, marginTop: 6, fontWeight: 500, fontStyle: 'italic', fontSize: 11 }}>This will appear on your invoices and documents.</p>
                                         </div>
                                         <div>
-                                            <label className="settings-label">Business Email</label>
+                                            <label style={labelStyle}>Business Email</label>
                                             <input
                                                 type="email"
-                                                className="settings-input"
+                                                style={inputStyle}
                                                 placeholder="e.g. support@acme.com"
                                                 value={config.email}
                                                 onChange={e => setConfig({ ...config, email: e.target.value })}
                                             />
                                         </div>
                                         <div>
-                                            <label className="settings-label">Contact Phone</label>
+                                            <label style={labelStyle}>Contact Phone</label>
                                             <input
                                                 type="text"
-                                                className="settings-input"
+                                                style={inputStyle}
                                                 placeholder={getPlaceholder.phone()}
                                                 value={config.phone}
                                                 onChange={e => setConfig({ ...config, phone: e.target.value })}
                                             />
                                         </div>
                                     </div>
-                                </section>
+                                </div>
 
-                                <section style={{ overflow: 'hidden' }}>
-                                    <div className="settings-section-header">
-                                        <h3 style={{ fontSize: '13px', fontWeight: 700 }}>Address & Regional Settings</h3>
-                                        <p style={{ marginTop: '2px' }}>Physical location and formatting preferences.</p>
-                                    </div>
-                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: '48px', rowGap: '24px' }}>
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Address & Regional Settings</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: 16, rowGap: 16 }}>
                                         <div style={{ gridColumn: 'span 2 / span 2' }}>
-                                            <label className="settings-label">Primary Office Address</label>
+                                            <label style={labelStyle}>Primary Office Address</label>
                                             <textarea
-                                                style={{ height: '80px', paddingTop: '12px', paddingBottom: '12px' }}
+                                                style={{ ...textareaStyle, height: 80 }}
                                                 placeholder={getPlaceholder.address()}
                                                 value={config.addressLine1}
                                                 onChange={e => setConfig({ ...config, addressLine1: e.target.value })}
                                             />
                                         </div>
                                         <div>
-                                            <label className="settings-label">City / Town</label>
+                                            <label style={labelStyle}>City / Town</label>
                                             <input
                                                 type="text"
-                                                className="settings-input"
+                                                style={inputStyle}
                                                 placeholder={getPlaceholder.city()}
                                                 value={config.city || ''}
                                                 onChange={e => setConfig({ ...config, city: e.target.value })}
                                             />
                                         </div>
                                         <div>
-                                            <label className="settings-label">Country</label>
+                                            <label style={labelStyle}>Country</label>
                                             <input
                                                 type="text"
-                                                className="settings-input"
+                                                style={inputStyle}
                                                 placeholder="e.g. Malawi"
                                                 value={config.country || ''}
                                                 onChange={e => setConfig({ ...config, country: e.target.value })}
                                             />
                                         </div>
-                                        <div style={{ gridColumn: 'span 2 / span 2', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px', padding: '16px', border: '1.4px solid #e4ddd1', borderRadius: '12px', background: '#FEFDFB', marginTop: '8px' }}>
+                                    </div>
+                                    <div style={{ marginTop: 16, padding: 16, border: `1px solid ${hairline}`, borderRadius: 12, background: paper }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: 16, rowGap: 16 }}>
                                             <div>
-                                                <label className="settings-label">Business Currency</label>
+                                                <label style={labelStyle}>Business Currency</label>
                                                 <div style={{ position: 'relative' }}>
-                                                    <Wallet style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567' }} size={14} />
+                                                    <Wallet style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} size={14} />
                                                     <input
                                                         type="text"
-                                                        className="settings-input"
+                                                        style={{ ...inputStyle, paddingRight: 36 }}
                                                         placeholder="e.g. MWK, USD"
                                                         value={config.currencySymbol || ''}
                                                         onChange={e => setConfig({ ...config, currencySymbol: e.target.value })}
@@ -1005,9 +1084,9 @@ const Settings: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="settings-label">System Date Format</label>
+                                                <label style={labelStyle}>System Date Format</label>
                                                 <select
-                                                    style={{ appearance: 'none' }}
+                                                    style={selectStyle}
                                                     value={config.dateFormat}
                                                     onChange={e => setConfig({ ...config, dateFormat: e.target.value })}
                                                 >
@@ -1018,127 +1097,100 @@ const Settings: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                 </section>
+                                </div>
 
-<section style={{ overflow: 'hidden', border: '1.4px solid #b5493f' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fef2f2', borderBottom: '1.4px solid #b5493f' }}>
+                                <div style={{ marginTop: 18, padding: 16, background: `${danger}08`, borderRadius: 9, border: `1px solid ${danger}20`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                                    <div>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: danger }}>Danger Zone</div>
+                                        <div style={{ fontSize: 11, color: inkSoft, fontWeight: 500 }}>Irreversible actions that affect your entire company.</div>
+                                    </div>
+                                    <button
+                                        onClick={handleDeleteCompany}
+                                        style={{ ...btnPrimaryStyle, background: danger, boxShadow: `0 4px 14px 0 rgba(181,73,63,.1)` }}
+                                    >
+                                        <Trash2 size={16} /> Delete Company
+                                    </button>
+                                </div>
+
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Dashboard</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <button
+                                        onClick={() => setCustomizeOpen(true)}
+                                        style={btnPrimaryStyle}
+                                    >
+                                        Open Dashboard Customizer
+                                    </button>
+                                </div>
+                            </div>
+                        )
+
+                        {activeTab === 'Appearance' && (
+                            <div>
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Theme Preferences</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                                         <div>
-                                            <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#b5493f' }}>Danger Zone</h3>
-                                            <p style={{ color: '#b5493f', marginTop: '2px' }}>Irreversible actions that affect your entire company.</p>
+                                            <label style={labelStyle}>Application Theme</label>
+                                            <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Switch between light, dark, or system preferences.</p>
+                                        </div>
+                                        <div style={{ display: 'flex', padding: '4px', background: teal[50], borderRadius: 10 }}>
+                                             {['Light', 'Dark', 'System'].map(mode => (
+                                                <button
+                                                    key={mode}
+                                                    onClick={() => setConfig({ 
+                                                        ...config, 
+                                                        appearance: { 
+                                                            ...config.appearance, 
+                                                            theme: mode as 'Light' | 'Dark' | 'System' 
+                                                        } 
+                                                    })}
+                                                    style={{
+                                                        px: 16, py: 6, borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .15s ease',
+                                                        ...(config.appearance?.theme === mode || (mode === 'Light' && !config.appearance?.theme)
+                                                            ? { background: paper, color: teal[700], boxShadow: '0 1px 2px rgba(0,0,0,.05)' }
+                                                            : { background: 'transparent', color: inkSoft })
+                                                    }}
+                                                >
+                                                    {mode}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
-                                    <div style={{ padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: `1px solid ${hairline}` }}>
                                         <div>
-                                            <p style={{ fontSize: '13px', fontWeight: 700 }}>Delete this company</p>
-                                            <p style={{ marginTop: '2px' }}>Permanently remove {config.companyName || 'your company'} from Supabase and reset all local data.</p>
+                                            <label style={labelStyle}>Experimental Glassmorphism</label>
+                                            <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Enable frosted glass effects on high-performance cards.</p>
                                         </div>
-                                        <button
-                                            onClick={handleDeleteCompany}
-                                            style={{ background: '#b5493f', color: '#fff', paddingLeft: '24px', paddingTop: '10px', borderRadius: '9999px', fontWeight: 700, fontSize: '13px', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(181,73,63,.1)', paddingRight: '24px', paddingBottom: '10px' }}
+                                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                            <input 
+                                                type="checkbox" 
+                                                className="toggle-input" 
+                                                checked={config.appearance?.glassmorphism || false}
+                                                onChange={e => setConfig({ ...config, appearance: { ...config.appearance, glassmorphism: e.target.checked } })}
+                                            />
+                                            <div className="toggle-track"></div>
+                                        </label>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: `1px solid ${hairline}` }}>
+                                        <div>
+                                            <label style={labelStyle}>Rows Per Page</label>
+                                            <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Default number of items shown on list views.</p>
+                                        </div>
+                                        <select
+                                            value={rowsPerPage}
+                                            onChange={e => { const v = Number(e.target.value); setRowsPerPage(v); try { localStorage.setItem('prime:pagination:default', String(v)); } catch (e) { logger.error("Operation failed", e as Error); } }}
+                                            style={selectStyle}
                                         >
-                                            <Trash2 size={16} /> Delete Company
-                                        </button>
+                                            <option value={10}>10</option>
+                                            <option value={15}>15</option>
+                                            <option value={25}>25</option>
+                                            <option value={50}>50</option>
+                                            <option value={100}>100</option>
+                                        </select>
                                     </div>
-                                </section>
-
-                                <section style={{ overflow: 'hidden' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <h3 style={{ fontSize: '13px', fontWeight: 700 }}>Dashboard</h3>
-                                            <p style={{ marginTop: '2px' }}>Customize your dashboard layout and visible widgets.</p>
-                                        </div>
-                                    </div>
-                                    <div style={{ padding: '32px' }}>
-                                        <button
-                                            onClick={() => setCustomizeOpen(true)}
-                                            style={{ paddingLeft: '20px', paddingTop: '10px', background: '#1f8577', color: '#fff', borderRadius: '12px', fontSize: '13px', fontWeight: 600, boxShadow: '0 1px 3px rgba(0,0,0,.1)', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '20px', paddingBottom: '10px' }}
-                                        >
-                                            Open Dashboard Customizer
-                                        </button>
-                                    </div>
-                                </section>
-
-                             </div>
-                         )
-                     }
-
-                    {activeTab === 'Appearance' && (
-                            <div style={{ marginTop: '32px' }}>
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
-                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Theme Preferences</h3>
-                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Control the visual style of your workspace.</p>
-                                    </div>
-                                    <div style={{ padding: '32px', marginTop: '24px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all .15s ease', paddingLeft: '32px', paddingTop: '16px', paddingRight: '32px', paddingBottom: '16px' }}>
-                                            <div>
-                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Application Theme</p>
-                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Switch between light, dark, or system preferences.</p>
-                                            </div>
-                                            <div style={{ display: 'flex', padding: '4px', background: '#eef7f6', borderRadius: '10px' }}>
-                                                 {['Light', 'Dark', 'System'].map(mode => (
-                                                    <button
-                                                        key={mode}
-                                                        onClick={() => setConfig({ 
-                                                            ...config, 
-                                                            appearance: { 
-                                                                ...config.appearance, 
-                                                                theme: mode as 'Light' | 'Dark' | 'System' 
-                                                            } 
-                                                        })}
-                                                        className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${
-                                                            config.appearance?.theme === mode || 
-                                                            (mode === 'Light' && !config.appearance?.theme)
-                                                                ? 'bg-white text-blue-600 shadow-sm' 
-                                                                : 'text-slate-500 hover:text-slate-700'
-                                                        }`}
-                                                    >
-                                                        {mode}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div style={{ height: '1px', background: '#eef7f6' }} />
-
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all .15s ease', paddingLeft: '32px', paddingTop: '16px', paddingRight: '32px', paddingBottom: '16px' }}>
-                                            <div>
-                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Experimental Glassmorphism</p>
-                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Enable frosted glass effects on high-performance cards.</p>
-                                            </div>
-                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                <input 
-                                                    type="checkbox" 
-                                                    className="toggle-input" 
-                                                    checked={config.appearance?.glassmorphism || false}
-                                                    onChange={e => setConfig({ ...config, appearance: { ...config.appearance, glassmorphism: e.target.checked } })}
-                                                />
-                                                <div className="toggle-track"></div>
-                                            </label>
-                                        </div>
-
-                                        <div style={{ height: '1px', background: '#eef7f6' }} />
-
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all .15s ease', paddingLeft: '32px', paddingTop: '16px', paddingRight: '32px', paddingBottom: '16px' }}>
-                                            <div>
-                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Rows Per Page</p>
-                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Default number of items shown on list views.</p>
-                                            </div>
-                                            <select
-                                                value={rowsPerPage}
-                                                onChange={e => { const v = Number(e.target.value); setRowsPerPage(v); try { localStorage.setItem('prime:pagination:default', String(v)); } catch (e) { logger.error("Operation failed", e as Error); } }}
-                                                style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', paddingLeft: '12px', paddingTop: '8px', fontSize: '13px', fontWeight: 700, color: '#23282A', outline: 'none', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '12px', paddingBottom: '8px' }}
-                                            >
-                                                <option value={10}>10</option>
-                                                <option value={15}>15</option>
-                                                <option value={25}>25</option>
-                                                <option value={50}>50</option>
-                                                <option value={100}>100</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </section>
-
+                                </div>
                             </div>
                         )}
 
@@ -1151,7 +1203,7 @@ const Settings: React.FC = () => {
                                     </div>
                                     <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
                                         <div>
-                                            <label className="settings-label">Company Logo</label>
+                                            <label style={labelStyle}>Company Logo</label>
                                             <div
                                                 onClick={() => logoRef.current?.click()}
                                                 style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '12px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', background: '#eef7f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', transition: 'all .15s ease', overflow: 'hidden', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}
@@ -1187,7 +1239,7 @@ const Settings: React.FC = () => {
                                         </div>
 
                                         <div>
-                                            <label className="settings-label">Digital Signature</label>
+                                            <label style={labelStyle}>Digital Signature</label>
                                             <div
                                                 onClick={() => sigRef.current?.click()}
                                                 style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '12px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', background: '#eef7f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', transition: 'all .15s ease', overflow: 'hidden', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}
@@ -1238,7 +1290,7 @@ const Settings: React.FC = () => {
                                     </div>
                                     <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
                                         <div>
-                                            <label className="settings-label">Currency Symbol</label>
+                                            <label style={labelStyle}>Currency Symbol</label>
                                             <div style={{ display: 'flex', gap: '12px' }}>
                                                 <input
                                                     type="text"
@@ -1254,9 +1306,9 @@ const Settings: React.FC = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="settings-label">Decimal Precision</label>
+                                            <label style={labelStyle}>Decimal Precision</label>
                                             <select
-                                                className="settings-input"
+                                                style={inputStyle}
                                                 value={config.roundingRules?.precision || 2}
                                                 onChange={e => setConfig({ ...config, roundingRules: { method: config.roundingRules?.method || 'Nearest', precision: parseInt(e.target.value) } })}
                                             >
@@ -1267,7 +1319,7 @@ const Settings: React.FC = () => {
                                             </select>
                                         </div>
                                         <div style={{ gridColumn: 'span 2 / span 2', paddingTop: '16px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
-                                            <label className="settings-label">Rounding Rule</label>
+                                            <label style={labelStyle}>Rounding Rule</label>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
                                                 {(['Nearest', 'Up', 'Down'] as const).map(method => (
                                                     <button
@@ -1365,9 +1417,9 @@ const Settings: React.FC = () => {
 
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '24px' }}>
                                             <div>
-                                                <label className="settings-label">Default Rounding Method</label>
+                                                <label style={labelStyle}>Default Rounding Method</label>
                                                 <select
-                                                    className="settings-input"
+                                                    style={inputStyle}
                                                     value={activePricingSettings.defaultMethod}
                                                     onChange={e => updatePricingSettings({ defaultMethod: e.target.value as PricingRoundingMethod })}
                                                 >
@@ -1377,11 +1429,11 @@ const Settings: React.FC = () => {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="settings-label">Custom Step</label>
+                                                <label style={labelStyle}>Custom Step</label>
                                                 <input
                                                     type="number"
                                                     min={1}
-                                                    className={`settings-input ${getFieldError('customStep') ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+                                                    style={{...inputStyle, ...(getFieldError('customStep') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
                                                     placeholder="e.g. 50"
                                                     value={activePricingSettings.customStep || 50}
                                                     onChange={e => updatePricingSettings({ customStep: Math.max(1, parseInt(e.target.value) || 1) })}
@@ -1482,7 +1534,7 @@ const Settings: React.FC = () => {
                                                         <label style={{ fontWeight: 600, color: '#5c6567' }}>Min Price</label>
                                                         <input
                                                             type="number"
-                                                            className={`settings-input ${getArrayFieldError('thresholdRules', idx, 'minPrice') ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+                                                            style={{...inputStyle, ...(getArrayFieldError('thresholdRules', idx, 'minPrice') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
                                                             placeholder="e.g. 0"
                                                             value={rule.minPrice ?? 0}
                                                             onChange={e => {
@@ -1502,7 +1554,7 @@ const Settings: React.FC = () => {
                                                         <label style={{ fontWeight: 600, color: '#5c6567' }}>Max Price</label>
                                                         <input
                                                             type="number"
-                                                            className="settings-input"
+                                                            style={inputStyle}
                                                             value={rule.maxPrice ?? ''}
                                                             placeholder="No limit"
                                                             onChange={e => {
@@ -1520,7 +1572,7 @@ const Settings: React.FC = () => {
                                                         <input
                                                             type="number"
                                                             min={1}
-                                                            className={`settings-input ${getArrayFieldError('thresholdRules', idx, 'step') ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+                                                            style={{...inputStyle, ...(getArrayFieldError('thresholdRules', idx, 'step') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
                                                             placeholder="e.g. 50"
                                                             value={rule.step ?? 50}
                                                             onChange={e => {
@@ -1540,7 +1592,7 @@ const Settings: React.FC = () => {
                                                     <div>
                                                         <label style={{ fontWeight: 600, color: '#5c6567' }}>Method</label>
                                                         <select
-                                                            className="settings-input"
+                                                            style={inputStyle}
                                                             value={rule.method || 'ALWAYS_UP_CUSTOM'}
                                                             onChange={e => {
                                                                 const nextRules = [...(activePricingSettings.thresholdRules || [])];
@@ -1658,7 +1710,7 @@ const Settings: React.FC = () => {
                                             </div>
                                             <div style={{ marginTop: '24px' }}>
                                                 <div>
-                                                    <label className="settings-label">POS Grid columns</label>
+                                                    <label style={labelStyle}>POS Grid columns</label>
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
                                                         {[3, 4, 5, 6].map(cols => (
                                                             <button
@@ -1698,7 +1750,7 @@ const Settings: React.FC = () => {
                                     </div>
                                     <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
                                         <div>
-                                            <label className="settings-label">Photocopy Price ({currency})</label>
+                                            <label style={labelStyle}>Photocopy Price ({currency})</label>
                                             <div style={{ position: 'relative' }}>
                                                 <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
                                                 <input
@@ -1712,7 +1764,7 @@ const Settings: React.FC = () => {
                                         </div>
 
                                         <div>
-                                            <label className="settings-label">Type & Printing Price ({currency})</label>
+                                            <label style={labelStyle}>Type & Printing Price ({currency})</label>
                                             <div style={{ position: 'relative' }}>
                                                 <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
                                                 <input
@@ -1835,7 +1887,7 @@ const Settings: React.FC = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="settings-label">Receipt Footer Message</label>
+                                            <label style={labelStyle}>Receipt Footer Message</label>
                                             <textarea
                                                 style={{ height: '96px' }}
                                                 value={config.transactionSettings?.pos?.receiptFooter || ''}
@@ -1869,9 +1921,9 @@ const Settings: React.FC = () => {
                                                 </label>
                                             </div>
                                             <div>
-                                                <label className="settings-label">Default POS Terminal/Warehouse</label>
+                                                <label style={labelStyle}>Default POS Terminal/Warehouse</label>
                                                 <select
-                                                    className="settings-input"
+                                                    style={inputStyle}
                                                     value={config.transactionSettings?.defaultPOSWarehouse || ''}
                                                     onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, defaultPOSWarehouse: e.target.value } })}
                                                 >
@@ -1882,10 +1934,10 @@ const Settings: React.FC = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="settings-label">Default POS Customer</label>
+                                            <label style={labelStyle}>Default POS Customer</label>
                                             <input
                                                 type="text"
-                                                className="settings-input"
+                                                style={inputStyle}
                                                 placeholder="e.g. Cash Customer"
                                                 value={config.transactionSettings?.posDefaultCustomer || ''}
                                                 onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, posDefaultCustomer: e.target.value } })}
@@ -1907,7 +1959,7 @@ const Settings: React.FC = () => {
                                     </div>
                                     <div style={{ padding: '32px' }}>
                                         <div>
-                                            <label className="settings-label">Template Engine</label>
+                                            <label style={labelStyle}>Template Engine</label>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
                                                 {(['Classic', 'Modern', 'Professional', 'Clean'] as const).map(engine => (
                                                     <button
@@ -1956,7 +2008,7 @@ const Settings: React.FC = () => {
                                     <div style={{ padding: '32px' }}>
                                         <div style={{ marginTop: '24px' }}>
                                             <div>
-                                                <label className="settings-label">Main Accent Color</label>
+                                                <label style={labelStyle}>Main Accent Color</label>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                                     <input
                                                         type="color"
@@ -1975,9 +2027,9 @@ const Settings: React.FC = () => {
                                             </div>
 
                                             <div>
-                                                <label className="settings-label">Document Font Style</label>
+                                                <label style={labelStyle}>Document Font Style</label>
                                                 <select
-                                                    className="settings-input"
+                                                    style={inputStyle}
                                                     value={normalizedTemplateSettings.fontFamily}
                                                         onChange={e => setConfig({ ...config, invoiceTemplates: { ...config.invoiceTemplates, fontFamily: e.target.value } })}
                                                 >
@@ -1990,7 +2042,7 @@ const Settings: React.FC = () => {
                                             </div>
 
                                             <div>
-                                                <label className="settings-label">Document Font Size ({normalizedTemplateSettings.bodyFontSize}px)</label>
+                                                <label style={labelStyle}>Document Font Size ({normalizedTemplateSettings.bodyFontSize}px)</label>
                                                 <input
                                                     type="range"
                                                     min="10"
@@ -2003,7 +2055,7 @@ const Settings: React.FC = () => {
                                             </div>
 
                                             <div>
-                                                <label className="settings-label">Company Name Font Size ({normalizedTemplateSettings.companyNameFontSize}px)</label>
+                                                <label style={labelStyle}>Company Name Font Size ({normalizedTemplateSettings.companyNameFontSize}px)</label>
                                                 <input
                                                     type="range"
                                                     min="12"
@@ -2015,7 +2067,7 @@ const Settings: React.FC = () => {
                                             </div>
 
                                             <div>
-                                                <label className="settings-label">Company Logo Size ({normalizedTemplateSettings.logoWidth}px)</label>
+                                                <label style={labelStyle}>Company Logo Size ({normalizedTemplateSettings.logoWidth}px)</label>
                                                 <input
                                                     type="range"
                                                     min="80"
@@ -2144,7 +2196,7 @@ const Settings: React.FC = () => {
                                                             type="text"
                                                             placeholder="e.g. Standard Bank"
                                                             aria-label="Bank Name"
-                                                            className="settings-input"
+                                                            style={inputStyle}
                                                             value={bank.bankName}
                                                             onChange={e => {
                                                                 const updated = [...(config.transactionSettings?.paymentDetails?.bankAccounts || [])];
@@ -2156,7 +2208,7 @@ const Settings: React.FC = () => {
                                                             type="text"
                                                             placeholder="e.g. Operating Account"
                                                             aria-label="Account Name"
-                                                            className="settings-input"
+                                                            style={inputStyle}
                                                             value={bank.accountName}
                                                             onChange={e => {
                                                                 const updated = [...(config.transactionSettings?.paymentDetails?.bankAccounts || [])];
@@ -2168,7 +2220,7 @@ const Settings: React.FC = () => {
                                                             type="text"
                                                             placeholder="e.g. 10100223344"
                                                             aria-label="Account Number"
-                                                            className="settings-input"
+                                                            style={inputStyle}
                                                             value={bank.accountNumber}
                                                             onChange={e => {
                                                                 const updated = [...(config.transactionSettings?.paymentDetails?.bankAccounts || [])];
@@ -2181,7 +2233,7 @@ const Settings: React.FC = () => {
                                                                 type="text"
                                                                 placeholder="e.g. 012345"
                                                                 aria-label="Branch Code"
-                                                                className="settings-input"
+                                                                style={inputStyle}
                                                                 value={bank.branchCode || ''}
                                                                 onChange={e => {
                                                                     const updated = [...(config.transactionSettings?.paymentDetails?.bankAccounts || [])];
@@ -2244,7 +2296,7 @@ const Settings: React.FC = () => {
                                                 <div key={mm.id} style={{ padding: '16px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
                                                         <select
-                                                            className="settings-input"
+                                                            style={inputStyle}
                                                             value={mm.network}
                                                             onChange={e => {
                                                                 const updated = [...(config.transactionSettings?.paymentDetails?.mobileMoneyAccounts || [])];
@@ -2260,7 +2312,7 @@ const Settings: React.FC = () => {
                                                             type="text"
                                                             placeholder="e.g. Business Wallet"
                                                             aria-label="Account Name"
-                                                            className="settings-input"
+                                                            style={inputStyle}
                                                             value={mm.accountName}
                                                             onChange={e => {
                                                                 const updated = [...(config.transactionSettings?.paymentDetails?.mobileMoneyAccounts || [])];
@@ -2273,7 +2325,7 @@ const Settings: React.FC = () => {
                                                                 type="text"
                                                                 placeholder="e.g. 0888123456"
                                                                 aria-label="Phone Number"
-                                                                className="settings-input"
+                                                                style={inputStyle}
                                                                 value={mm.phoneNumber}
                                                                 onChange={e => {
                                                                     const updated = [...(config.transactionSettings?.paymentDetails?.mobileMoneyAccounts || [])];
@@ -3481,10 +3533,10 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                     <div style={{ padding: '24px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6' }}>
                         <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                             <div>
-                                <label className="settings-label">Year Name</label>
+                                <label style={labelStyle}>Year Name</label>
                                 <input
                                     type="text"
-                                    className="settings-input"
+                                    style={inputStyle}
                                     placeholder="e.g. 2025/2026"
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
@@ -3492,20 +3544,20 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                                 />
                             </div>
                             <div>
-                                <label className="settings-label">Start Date</label>
+                                <label style={labelStyle}>Start Date</label>
                                 <input
                                     type="date"
-                                    className="settings-input"
+                                    style={inputStyle}
                                     value={newStart}
                                     onChange={e => setNewStart(e.target.value)}
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="settings-label">End Date</label>
+                                <label style={labelStyle}>End Date</label>
                                 <input
                                     type="date"
-                                    className="settings-input"
+                                    style={inputStyle}
                                     value={newEnd}
                                     onChange={e => setNewEnd(e.target.value)}
                                     required
