@@ -200,19 +200,18 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, toggleCollapse }) => {
 
   const MenuItem = ({ icon: Icon, color, bg, label, onClick, danger }: { icon: React.ElementType; color: string; bg: string; label: string; onClick: () => void; danger?: boolean }) => (
     <div onClick={onClick} style={{
+      width: '100%', display: 'flex', alignItems: 'center', gap: 10,
       padding: '8px 12px',
-      fontSize: 13,
+      fontSize: 12.5,
       fontWeight: 500,
-      color: danger ? danger : ink,
+      color: danger ? danger : '#23282A',
       cursor: 'pointer',
-      borderRadius: 9,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      transition: 'background .15s'
+      borderRadius: 8,
+      transition: 'all .2s ease',
+      position: 'relative'
     }}
-      onMouseEnter={e => { e.currentTarget.style.backgroundColor = danger ? `${danger}15` : teal[50]; }}
-      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}>
+      onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.paddingLeft = '16px'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.paddingLeft = '12px'; }}>
       <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: bg }}>
         <Icon size={14} color={color} />
       </div>
@@ -590,26 +589,28 @@ background: teal[100],
                   top: '100%',
                   right: 0,
                   marginTop: 12,
-                  backgroundColor: paper,
+                  backgroundColor: '#FEFDFB',
                   borderRadius: 14,
                   boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
                   overflow: 'hidden',
                   zIndex: 60,
                   minWidth: 220
                 }}>
-                    <div style={{ padding: '14px 16px 12px', borderBottom: `1px solid ${hairline}` }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 600, color: ink }}>{user?.fullName || user?.username || 'User'}</div>
-                        <div style={{ fontSize: 11, fontWeight: 500, color: inkSoft, marginTop: 2 }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #146b60, #3fa294 40%, #d99a3f 100%)' }} />
+                    <div style={{ padding: '16px 16px 10px', marginTop: 3 }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: '#146b60', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: 1 }}>Account</div>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: '#23282A', marginTop: 8 }}>{user?.fullName || user?.username || 'User'}</div>
+                        <div style={{ fontSize: 11, fontWeight: 500, color: '#5c6567', marginTop: 2 }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
                     </div>
-                    <div style={{ padding: 6 }}>
-                        <MenuItem icon={Wrench} color="#3b82f6" bg={teal[50]} label="Internal Tools" onClick={() => { navigate('/internal-tools'); setShowUserMenu(false); }} />
-                        <MenuItem icon={User} color="#6366f1" bg={teal[50]} label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
-                        <MenuItem icon={ShieldCheck} color="#10b981" bg={teal[50]} label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
-                        <MenuItem icon={Database} color="#06b6d4" bg={teal[50]} label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
-                        <MenuItem icon={Settings} color="#f59e0b" bg={amber[100]} label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
+                    <div style={{ padding: 4 }}>
+                        <MenuItem icon={Wrench} color="#3b82f6" bg="#eef7f6" label="Internal Tools" onClick={() => { navigate('/internal-tools'); setShowUserMenu(false); }} />
+                        <MenuItem icon={User} color="#6366f1" bg="#eef7f6" label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
+                        <MenuItem icon={ShieldCheck} color="#10b981" bg="#eef7f6" label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
+                        <MenuItem icon={Database} color="#06b6d4" bg="#eef7f6" label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
+                        <MenuItem icon={Settings} color="#f59e0b" bg="#fbead0" label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
                     </div>
-                    <div style={{ borderTop: `1px solid ${hairline}`, padding: 6 }}>
-                        <MenuItem icon={LogOut} color={danger} bg={`${danger}15`} label="Log out" onClick={() => { logout(); navigate('/login'); }} danger />
+                    <div style={{ borderTop: '1px solid #e4ddd1', padding: 4 }}>
+                        <MenuItem icon={LogOut} color="#ef4444" bg="#fef2f2" label="Log out" onClick={() => { logout(); navigate('/login'); }} danger />
                     </div>
                 </div>
             )}

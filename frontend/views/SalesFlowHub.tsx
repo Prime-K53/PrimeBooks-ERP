@@ -1,14 +1,8 @@
 import React from 'react';
-import { Coins, FileText, FileCheck, Banknote as PaymentIcon, RefreshCw, Printer, Target, CheckSquare } from 'lucide-react';
+import { FileText, FileCheck, Banknote as PaymentIcon, RefreshCw, Printer, Target, CheckSquare } from 'lucide-react';
 import GenericHub from './GenericHub';
 
 const options = [
-  {
-    label: 'Point of Sale',
-    description: 'Quick terminal for retail transactions, barcoding, and instant payment processing.',
-    path: '/sales-flow/pos',
-    icon: Coins,
-  },
   {
     label: 'Quotations',
     description: 'Generate professional estimates and track customer approval status.',

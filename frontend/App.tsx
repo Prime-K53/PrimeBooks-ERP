@@ -472,11 +472,11 @@ const AppLayout: React.FC = () => {
     <button onClick={onClick} style={{
       width: '100%', display: 'flex', alignItems: 'center', gap: 10,
       padding: '8px 12px', fontSize: 12.5, fontWeight: 500,
-      color: danger ? danger : ink, cursor: 'pointer', borderRadius: 9,
-      transition: 'background .15s', border: 'none', textAlign: 'left'
+      color: danger ? danger : '#23282A', cursor: 'pointer', borderRadius: 8,
+      transition: 'all .2s ease', border: 'none', textAlign: 'left', position: 'relative'
     }}
-      onMouseEnter={e => { e.currentTarget.style.backgroundColor = danger ? `${danger}15` : teal[50]; }}
-      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}>
+      onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.paddingLeft = '16px'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.paddingLeft = '12px'; }}>
       <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: bg }}>
         <Icon size={14} color={color} />
       </div>
@@ -616,24 +616,26 @@ const AppLayout: React.FC = () => {
               {showUserMenu && (
                 <div style={{
                   position: 'absolute', right: 0, top: '100%', marginTop: 8,
-                  width: 224, background: paper,
+                  width: 224, background: '#FEFDFB',
                   borderRadius: 14,
                   boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
                   overflow: 'hidden', zIndex: 50
                 }}>
-                  <div style={{ padding: '14px 16px 12px', borderBottom: `1px solid ${hairline}` }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: ink }}>{user?.fullName || user?.username || 'User'}</div>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: inkSoft, marginTop: 2 }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #146b60, #3fa294 40%, #d99a3f 100%)' }} />
+                  <div style={{ padding: '16px 16px 10px', marginTop: 3 }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: '#146b60', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: 1 }}>Account</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#23282A', marginTop: 8 }}>{user?.fullName || user?.username || 'User'}</div>
+                    <div style={{ fontSize: 11, fontWeight: 500, color: '#5c6567', marginTop: 2 }}>{(user?.role === 'Company Admin' ? 'Admin' : user?.role) || 'User'}</div>
                   </div>
-                  <div style={{ padding: 6 }}>
-                    <UserMenuItem icon={Wrench} color="#3b82f6" bg={teal[50]} label="Internal Tools" onClick={() => { navigate('/internal-tools'); setShowUserMenu(false); }} />
-                    <UserMenuItem icon={UserIcon} color="#6366f1" bg={teal[50]} label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
-                    <UserMenuItem icon={ShieldCheck} color="#10b981" bg={teal[50]} label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
-                    <UserMenuItem icon={Database} color="#06b6d4" bg={teal[50]} label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
-                    <UserMenuItem icon={SettingsIcon} color="#f59e0b" bg={amber[100]} label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
+                  <div style={{ padding: 4 }}>
+                    <UserMenuItem icon={Wrench} color="#3b82f6" bg="#eef7f6" label="Internal Tools" onClick={() => { navigate('/internal-tools'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={UserIcon} color="#6366f1" bg="#eef7f6" label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={ShieldCheck} color="#10b981" bg="#eef7f6" label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={Database} color="#06b6d4" bg="#eef7f6" label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={SettingsIcon} color="#f59e0b" bg="#fbead0" label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
                   </div>
-                  <div style={{ borderTop: `1px solid ${hairline}`, padding: 6 }}>
-                    <UserMenuItem icon={LogOut} color="#ef4444" bg={`${danger}15`} label="Log out" onClick={() => { logout(); navigate('/login'); }} danger />
+                  <div style={{ borderTop: `1px solid #e4ddd1`, padding: 4 }}>
+                    <UserMenuItem icon={LogOut} color="#ef4444" bg="#fef2f2" label="Log out" onClick={() => { logout(); navigate('/login'); }} danger />
                   </div>
                 </div>
               )}
@@ -661,37 +663,26 @@ const AppLayout: React.FC = () => {
           {/* Global POS Modal Layer */}
           {isPosModalOpen && (
             <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
-              <div className="bg-[#FEFDFB] w-full max-w-6xl h-full rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
-                <div className="px-6 py-2 border-b border-[#e4ddd1] flex items-center justify-between bg-[#eef7f6] shrink-0">
+              <div className="bg-[#FEFDFB] w-full max-w-6xl h-full rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300" style={{ fontFamily: "'Inter', 'DM Sans', sans-serif" }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #146b60, #3fa294 40%, #d99a3f 100%)', zIndex: 1 }} />
+                <div className="px-6 py-3 border-b border-[#e4ddd1] flex items-center justify-between shrink-0" style={{ marginTop: 3 }}>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-[#146b60] flex items-center justify-center text-white">
-                        <UserIcon size={12} />
-                      </div>
-                      <div className="leading-tight">
-                        <p className="text-[9px] font-semibold text-[#5c6567] uppercase tracking-widest">Cashier</p>
-                        <p className="text-xs font-bold text-[#0b3e39]">{user?.name || 'Cashier'}</p>
-                      </div>
+                    <div className="w-8 h-8 rounded-xl bg-[#146b60] flex items-center justify-center text-white shadow-lg">
+                      <Coins size={16} />
                     </div>
-                    <div className="h-6 w-px bg-[#d9ceb8]"></div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-xl bg-[#146b60] flex items-center justify-center text-white shadow-lg">
-                        <Coins size={14} />
-                      </div>
-                      <div>
-                        <h2 className="text-sm font-black text-[#0b3e39] tracking-tight">Terminal POS</h2>
-                        <span className="text-[9px] font-bold text-[#5c6567] uppercase tracking-widest">Live Transaction Interface</span>
-                      </div>
+                    <div>
+                      <h2 className="text-sm font-black text-[#0b3e39] tracking-tight">Terminal POS</h2>
+                      <span className="text-[9px] font-bold text-[#5c6567] uppercase tracking-widest">Live Transaction Interface</span>
                     </div>
                   </div>
                   <button
                     onClick={() => setIsPosModalOpen(false)}
-                    className="p-3 hover:bg-[#d9ceb8]/30 rounded-2xl text-[#5c6567] hover:text-[#0b3e39] transition-all active:scale-90"
+                    className="p-2 hover:bg-[#eef7f6] rounded-lg text-[#5c6567] hover:text-[#0b3e39] transition-all"
                   >
-                    <X size={24} />
+                    <X size={20} />
                   </button>
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-hidden" style={{ fontFamily: "'Inter', 'DM Sans', sans-serif" }}>
                   <ProtectedRoute permission="sales.pos">
                     <Suspense fallback={<PageLoader />}>
                       <POS />
