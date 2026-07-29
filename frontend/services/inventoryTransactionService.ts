@@ -74,6 +74,8 @@ class InventoryTransactionService {
         return { success: false, error: `Insufficient stock. Available: ${currentQuantity}, Requested: ${quantity}` };
       }
 
+      const transactionDate = new Date().toISOString();
+
       if (batchId) {
         const batches = await dbService.getAll<MaterialBatch>('materialBatches');
         const batch = batches.find(b => b.id === batchId && b.itemId === itemId);
@@ -96,7 +98,7 @@ class InventoryTransactionService {
         await fetchApiClient.requestJson({
           endpoint: '/inventory/transactions',
           method: 'POST',
-          body: JSON.stringify({ itemId, warehouseId, quantity, reason, reference, referenceId, performedBy, type: 'OUT' })
+          body: JSON.stringify({ itemId, warehouseId, quantity, reason, reference, referenceId, performedBy, type: 'OUT', transaction_date: transactionDate })
         });
       } catch (apiErr: any) {
         if (apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError') {
@@ -121,7 +123,7 @@ class InventoryTransactionService {
         referenceId,
         reason,
         performedBy,
-        timestamp: new Date().toISOString()
+        timestamp: transactionDate
       };
 
       await dbService.put('inventoryTransactions', transaction);
@@ -209,12 +211,13 @@ class InventoryTransactionService {
 
       let currentQuantity = item.stock || 0;
       let newQuantity = currentQuantity + quantity;
+      const transactionDate = new Date().toISOString();
 
       try {
         await fetchApiClient.requestJson({
           endpoint: '/inventory/transactions',
           method: 'POST',
-          body: JSON.stringify({ itemId, warehouseId, quantity, reason, reference, referenceId, performedBy, type: 'IN' })
+          body: JSON.stringify({ itemId, warehouseId, quantity, reason, reference, referenceId, performedBy, type: 'IN', transaction_date: transactionDate })
         });
 
         const currentCost = item.normalizedCP ?? item.cost ?? 0;
@@ -273,7 +276,7 @@ class InventoryTransactionService {
         referenceId,
         reason,
         performedBy,
-        timestamp: new Date().toISOString()
+        timestamp: transactionDate
       };
 
       await dbService.put('inventoryTransactions', transaction);

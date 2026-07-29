@@ -3188,14 +3188,20 @@ async function startServer() {
 });
 
   // 2. GET Inventory
-  app.get('/api/inventory', checkPermission('view_inventory'), injectFinancialYear, async (req, res) => {
+  app.get('/api/inventory', checkPermission('view_inventory'), async (req, res) => {
     try {
       const companyId = req.companyId || '';
-      let sql = 'SELECT * FROM inventory WHERE company_id = ? AND (status IS NULL OR status != ?)';
-      let params = [companyId, 'Deleted'];
-      const filtered = addFyDateFilter(sql, params, req, 'created_at');
-      sql = filtered.sql + ' ORDER BY name ASC';
-      db.all(sql, filtered.params, (err, rows) => {
+      const includeDeleted = ['1', 'true', 'yes'].includes(
+        String(req.query?.include_deleted ?? req.query?.includeDeleted ?? '').trim().toLowerCase()
+      );
+      let sql = 'SELECT * FROM inventory WHERE company_id = ?';
+      const params = [companyId];
+      if (!includeDeleted) {
+        sql += ' AND (status IS NULL OR status != ?)';
+        params.push('Deleted');
+      }
+      sql += ' ORDER BY name ASC';
+      db.all(sql, params, (err, rows) => {
         if (err) { console.error('[Inventory] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve inventory' }); }
         res.json(rows);
       });
@@ -3311,7 +3317,7 @@ async function startServer() {
   });
 
   // 2c. PUT Inventory (Update)
-  app.put('/api/inventory/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
+  app.put('/api/inventory/:id', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
       const { id } = req.params;
       const { body } = req;
@@ -3348,6 +3354,7 @@ async function startServer() {
       }
 
       fields.push('updated_at = CURRENT_TIMESTAMP');
+      fields.push('last_updated = CURRENT_TIMESTAMP');
       params.push(id, companyId);
 
       db.run(`UPDATE inventory SET ${fields.join(', ')} WHERE id = ? AND company_id = ?`, params, function (err) {
@@ -3368,7 +3375,7 @@ async function startServer() {
   });
 
   // 2d. DELETE Inventory (Soft Delete)
-  app.delete('/api/inventory/:id', requireRole('Admin'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
+  app.delete('/api/inventory/:id', requireRole('Admin'), async (req, res) => {
     try {
       const { id } = req.params;
       const companyId = req.companyId || '';
@@ -3377,7 +3384,7 @@ async function startServer() {
         if (!row) return res.status(404).json({ error: 'Inventory item not found' });
         if (row.is_protected) return res.status(403).json({ error: 'Cannot delete protected item' });
         const voidedBy = req.user?.id || req.user?.username || 'system';
-        db.run("UPDATE inventory SET status = 'Deleted', deleted_at = CURRENT_TIMESTAMP, void_reason = 'Manually deleted', voided_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?", [voidedBy, id, companyId], (err) => {
+        db.run("UPDATE inventory SET status = 'Deleted', deleted_at = CURRENT_TIMESTAMP, void_reason = 'Manually deleted', voided_by = ?, updated_at = CURRENT_TIMESTAMP, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?", [voidedBy, id, companyId], (err) => {
           if (err) { console.error('[Inventory] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete inventory item' }); }
           res.json({ success: true, id, status: 'Deleted' });
         });
@@ -3513,10 +3520,11 @@ app.get('/api/invoices/:id/details', (req, res) => {
   // === Inventory Transaction API Endpoints ===
   
   // Create inventory transaction (deduction)
-  app.post('/api/inventory/transactions', checkPermission('create_transaction'), validateBody(inventorySchemas.stockAdjustment), async (req, res) => {
+  app.post('/api/inventory/transactions', checkPermission('create_transaction'), validateBody(inventorySchemas.stockAdjustment), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       await validateFyDate('transaction_date', req.body, req.companyId || '');
       const { itemId, warehouseId, quantity, batchId, reason, reference, referenceId, performedBy, type } = req.body;
+      const transactionDate = req.body.transaction_date;
 
       // Resolve performer: prefer body value, fall back to authenticated user
       const resolvedPerformer = performedBy || req.user?.id || req.user?.username || '';
@@ -3564,7 +3572,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
             [transactionId, itemId, warehouseId || null, batchId || null, transactionType,
               quantity, currentQuantity, newQuantity, unitCost, totalCost,
-              reason, reference || null, referenceId || null, resolvedPerformer, ipAddress, userAgent, new Date().toISOString(), req.companyId || ''],
+              reason, reference || null, referenceId || null, resolvedPerformer, ipAddress, userAgent, transactionDate, req.companyId || ''],
             (err) => {
             if (err) {
               db.run("ROLLBACK");
@@ -3572,7 +3580,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
             }
 
             // Update inventory
-            db.run("UPDATE inventory SET quantity = ? WHERE id = ? AND company_id = ?", [newQuantity, itemId, req.companyId || ''], (err) => {
+            db.run("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?", [newQuantity, itemId, req.companyId || ''], (err) => {
               if (err) {
                 db.run("ROLLBACK");
                 return reject(err);
@@ -3596,7 +3604,9 @@ app.get('/api/invoices/:id/details', (req, res) => {
       });
     } catch (err) {
       console.error('Error creating inventory transaction:', err);
-      res.status(500).json({ error: 'Failed to create transaction' });
+      const message = err?.message || 'Failed to create transaction';
+      const status = message.includes('closed') ? 403 : (message.includes('Financial Year') || message.includes('Selected date') ? 400 : 500);
+      res.status(status).json({ error: status === 500 ? 'Failed to create transaction' : message });
     }
   });
   

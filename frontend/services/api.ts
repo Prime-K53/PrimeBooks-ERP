@@ -222,6 +222,17 @@ const hasBackendAuth = () => {
 };
 const shouldPreferLocalReadModels = () => !hasBackendAuth();
 
+const isOfflineInventoryFallbackError = (error: any) => {
+  if (error?.__localOnly || error?.isCorsOrNetworkError) return true;
+  const code = String(error?.code || '').toUpperCase();
+  const message = String(error?.message || '').toLowerCase();
+  return code.includes('ERR_NETWORK')
+    || code.includes('ECONNABORTED')
+    || message.includes('network error')
+    || message.includes('no response from backend')
+    || message.includes('timeout');
+};
+
 const getRequestUrl = (config: any) => {
   const rawUrl = String(config?.url || '').trim();
   if (!rawUrl) return 'Unknown URL';
@@ -492,6 +503,7 @@ const normalizeBackendInventoryItem = (item: any): Item => {
     warehouseId: item.warehouse_id || item.warehouseId || '',
     reserved: Number(item.reserved || 0),
     isProtected: Boolean(item.is_protected || item.isProtected),
+    status: item.status || 'Active',
     category_id: item.category_id || null,
     min_stock_level: Number(item.min_stock_level ?? item.minStockLevel ?? 0),
     max_stock_level: Number(item.max_stock_level ?? item.maxStockLevel ?? 0),
@@ -502,6 +514,9 @@ const normalizeBackendInventoryItem = (item: any): Item => {
     updated_at: item.updated_at || item.last_updated || '',
   } as Item);
 };
+
+const filterActiveInventoryItems = (items: Item[]): Item[] =>
+  (items || []).filter((item: any) => String(item?.status || '').toLowerCase() !== 'deleted');
 
 const mapInventoryItemToBackend = (item: Item): any => ({
   id: item.id,
@@ -574,23 +589,24 @@ export const api = {
   inventory: {
     getAllItems: () => handle(async () => {
       if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Item>('inventory');
+        const localItems = await dbService.getAll<Item>('inventory');
+        return filterActiveInventoryItems(localItems);
       }
       try {
-        const response = await apiClient.get('/inventory');
+        const response = await apiClient.get('/inventory', { params: { include_deleted: '1' } });
         const remoteItems = Array.isArray(response.data) ? response.data : [];
         const normalized = remoteItems.map(normalizeBackendInventoryItem);
         for (const item of normalized) {
-          if (item.status === 'Deleted') {
-            await dbService.delete('inventory', item.id);
-          } else {
-            await dbService.put('inventory', item);
-          }
+          await dbService.put('inventory', item);
         }
-        return normalized.filter((i: any) => i.status !== 'Deleted');
+        return filterActiveInventoryItems(normalized);
       } catch (err) {
+        if (!isOfflineInventoryFallbackError(err)) {
+          throw err;
+        }
         ensureBackendInProd('Inventory.GetAll', err);
-        return dbService.getAll<Item>('inventory');
+        const localItems = await dbService.getAll<Item>('inventory');
+        return filterActiveInventoryItems(localItems);
       }
     }, 'Inventory.GetAll'),
 
@@ -613,7 +629,7 @@ export const api = {
         if (err?.response?.data?.error) {
           throw new Error(err.response.data.error);
         }
-        if (err?.__localOnly || err?.code === 'ERR_NETWORK') {
+        if (isOfflineInventoryFallbackError(err)) {
           const fallbackItem = { ...item, id: item.id || `temp-itm-${Date.now()}` };
           await dbService.put('inventory', fallbackItem);
           return fallbackItem;
@@ -631,6 +647,9 @@ export const api = {
         if (err?.response?.status === 409) {
           throw new Error(err.response.data?.error || 'Inventory SKU already exists in this company.');
         }
+        if (!isOfflineInventoryFallbackError(err)) {
+          throw err;
+        }
       }
       return dbService.put('inventory', item);
     }, 'Inventory.Update'),
@@ -640,6 +659,9 @@ export const api = {
       try {
         await apiClient.delete(`/inventory/${encodeURIComponent(id)}`);
       } catch (err) {
+        if (!isOfflineInventoryFallbackError(err)) {
+          throw err;
+        }
         ensureBackendInProd('Inventory.Delete', err);
       }
       // Soft delete: mark as deleted in IndexedDB instead of removing

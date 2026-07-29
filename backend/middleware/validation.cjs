@@ -127,7 +127,13 @@ const inventorySchemas = {
     itemId: z.string(),
     quantity: z.number().int(),
     reason: z.string().min(1),
-    warehouseId: z.string().optional()
+    warehouseId: z.string().optional(),
+    batchId: z.string().optional(),
+    reference: z.string().optional(),
+    referenceId: z.string().optional(),
+    performedBy: z.string().optional(),
+    type: z.enum(['IN', 'OUT', 'ADJUSTMENT']).optional(),
+    transaction_date: z.string().datetime()
   })
 };
 

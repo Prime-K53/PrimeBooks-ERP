@@ -3887,6 +3887,7 @@ export const transactionService = {
             let adjustmentCost = item.cost || 0;
 
             try {
+                const transactionDate = new Date().toISOString();
                 await fetchApiClient.requestJson({
                     endpoint: '/inventory/transactions',
                     method: 'POST',
@@ -3895,7 +3896,8 @@ export const transactionService = {
                         warehouseId: params.warehouseId || 'WH-MAIN',
                         quantity: Math.abs(params.qtyChange),
                         reason: params.reason,
-                        type: params.qtyChange > 0 ? 'IN' : 'OUT'
+                        type: params.qtyChange > 0 ? 'IN' : 'OUT',
+                        transaction_date: transactionDate
                     })
                 });
             } catch (apiErr: any) {
@@ -4025,12 +4027,13 @@ export const transactionService = {
     async transferStock(itemId: string, fromWarehouseId: string, toWarehouseId: string, quantity: number) {
         try {
             try {
+                const transactionDate = new Date().toISOString();
                 await fetchApiClient.requestJson({
                     endpoint: '/inventory/transactions',
                     method: 'POST',
                     body: JSON.stringify({
                         itemId, warehouseId: fromWarehouseId, quantity, reason: 'Stock Transfer OUT',
-                        reference: 'TRANSFER', type: 'OUT'
+                        reference: 'TRANSFER', type: 'OUT', transaction_date: transactionDate
                     })
                 });
                 await fetchApiClient.requestJson({
@@ -4038,7 +4041,7 @@ export const transactionService = {
                     method: 'POST',
                     body: JSON.stringify({
                         itemId, warehouseId: toWarehouseId, quantity, reason: 'Stock Transfer IN',
-                        reference: 'TRANSFER', type: 'IN'
+                        reference: 'TRANSFER', type: 'IN', transaction_date: transactionDate
                     })
                 });
             } catch (apiErr: any) {
