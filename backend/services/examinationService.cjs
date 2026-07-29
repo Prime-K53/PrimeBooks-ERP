@@ -1626,11 +1626,11 @@ const ensureNotificationSchema = async () => {
     // Migrate: add company_id column if missing from existing tables
     try {
       const cols = await runQuery("PRAGMA table_info(examination_batch_notifications)");
-      if (!cols.some((c: any) => c.name === 'company_id')) {
+      if (!cols.some((c) => c.name === 'company_id')) {
         await runRun("ALTER TABLE examination_batch_notifications ADD COLUMN company_id TEXT NOT NULL DEFAULT ''");
       }
       const auditCols = await runQuery("PRAGMA table_info(notification_audit_logs)");
-      if (!auditCols.some((c: any) => c.name === 'company_id')) {
+      if (!auditCols.some((c) => c.name === 'company_id')) {
         await runRun("ALTER TABLE notification_audit_logs ADD COLUMN company_id TEXT NOT NULL DEFAULT ''");
       }
     } catch (migrateErr) {
