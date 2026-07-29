@@ -605,7 +605,7 @@ export const Clients: React.FC = () => {
                             onChange={() => toggleSelect(customer.id)} />
                         </td>
                         <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, fontFamily: "'JetBrains Mono', monospace", color: inkSoft, fontWeight: 700, letterSpacing: 0.2 }}>
-                          #{customer.id}
+                          {customer.id}
                         </td>
                         <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}` }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
