@@ -19,10 +19,16 @@ const DEFAULT_TONER_PAGES_PER_UNIT = TONER_PAGES_PER_KG;
 // Helper to run DB queries as promises
 const runQuery = (query, params = []) => {
   return new Promise((resolve, reject) => {
-    getDb().all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
+    try {
+      const db = getDb();
+      if (!db) return reject(new Error('Database not initialized'));
+      db.all(query, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    } catch (err) {
+      reject(err);
+    }
   });
 };
 
@@ -37,19 +43,31 @@ const runGet = (query, params = []) => {
 
 const runRun = (query, params = []) => {
   return new Promise((resolve, reject) => {
-    getDb().run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve(this);
-    });
+    try {
+      const db = getDb();
+      if (!db) return reject(new Error('Database not initialized'));
+      db.run(query, params, function (err) {
+        if (err) reject(err);
+        else resolve(this);
+      });
+    } catch (err) {
+      reject(err);
+    }
   });
 };
 
 const all = (query, params = []) => {
   return new Promise((resolve, reject) => {
-    getDb().all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows || []);
-    });
+    try {
+      const db = getDb();
+      if (!db) return reject(new Error('Database not initialized'));
+      db.all(query, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    } catch (err) {
+      reject(err);
+    }
   });
 };
 
@@ -1604,6 +1622,20 @@ const ensureNotificationSchema = async () => {
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_user ON notification_audit_logs(user_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_created ON notification_audit_logs(created_at)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_company_id ON notification_audit_logs(company_id)');
+
+    // Migrate: add company_id column if missing from existing tables
+    try {
+      const cols = await runQuery("PRAGMA table_info(examination_batch_notifications)");
+      if (!cols.some((c: any) => c.name === 'company_id')) {
+        await runRun("ALTER TABLE examination_batch_notifications ADD COLUMN company_id TEXT NOT NULL DEFAULT ''");
+      }
+      const auditCols = await runQuery("PRAGMA table_info(notification_audit_logs)");
+      if (!auditCols.some((c: any) => c.name === 'company_id')) {
+        await runRun("ALTER TABLE notification_audit_logs ADD COLUMN company_id TEXT NOT NULL DEFAULT ''");
+      }
+    } catch (migrateErr) {
+      console.warn('[NotificationSchema] Column migration warning:', migrateErr);
+    }
   })().then(null, (error) => {
     ensureNotificationSchemaPromise = null;
     console.error('[NotificationSchema] Error ensuring notification schema:', error);
