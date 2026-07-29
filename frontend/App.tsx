@@ -33,7 +33,7 @@ import { useKeyboard as useGlobalKeyboard } from './hooks';
 import { useDocumentStore } from './stores/documentStore.ts';
 import { PreviewModal } from './views/shared/components/PDF/PreviewModal.tsx';
 import { PdfWorker } from './views/shared/components/PDF/PdfWorker.tsx';
-import { Bell, Loader2, Coins, X, Menu, UserIcon, Search as SearchIcon, FileText, Users, LogOut, Box, Package, Settings as SettingsIcon, Wrench, ShieldCheck, Database, Calculator, MessageSquare, CalendarDays, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Bell, Loader2, Coins, X, Menu, UserIcon, Search as SearchIcon, FileText, Users, LogOut, Box, Package, Settings as SettingsIcon, Wrench, ShieldCheck, Database, Calculator, MessageSquare, CalendarDays, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { AICopilot } from './components/ai';
 import { NotificationCenter } from './components/ui';
 import Login from './views/auth/Login';
@@ -642,14 +642,6 @@ const AppLayout: React.FC = () => {
             </div>
           </div>
         </div>
-        {location.pathname !== '/' && (
-          <div className="px-3 sm:px-6 pt-2 pb-0 shrink-0">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-xs font-medium text-[#5c6567] hover:text-[#146b60] transition-colors">
-              <ArrowLeft size={14} />
-              Back
-            </button>
-          </div>
-        )}
         <main className="app-content-scroll flex-1 min-h-0 overflow-auto relative custom-scrollbar">
 
           <Toast />
