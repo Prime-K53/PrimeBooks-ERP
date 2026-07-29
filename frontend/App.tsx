@@ -642,6 +642,9 @@ const AppLayout: React.FC = () => {
             </div>
           </div>
         </div>
+        <div className="px-3 sm:px-6 pt-2 pb-0">
+          <Breadcrumbs />
+        </div>
         <main className="app-content-scroll flex-1 min-h-0 overflow-auto relative custom-scrollbar">
 
           <Toast />
