@@ -86,21 +86,21 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, onClose, title, chi
 };
 
 const DialogContent: React.FC<DivProps> = ({ className = '', children, ...props }) => (
-  <div className={`w-full max-w-5xl rounded-2xl border border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-2xl ring-1 ring-slate-200/60 ${className}`} {...props}>
+  <div className={`w-full max-w-5xl rounded-[14px] border border-[#e4ddd1] bg-[#FEFDFB] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] ${className}`} {...props}>
     {children}
   </div>
 );
 
 const DialogHeader: React.FC<DivProps> = ({ className = '', ...props }) => (
-  <div className={`relative px-4 py-2.5 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50 ${className}`} {...props} />
+  <div className={`relative px-4 py-2.5 border-b border-[#e4ddd1] bg-[#eef7f6] ${className}`} {...props} />
 );
 
 const DialogTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className = '', ...props }) => (
-  <h3 className={`text-xl font-semibold text-slate-800 ${className}`} {...props} />
+  <h3 className={`text-xl font-semibold text-[#0b3e39] ${className}`} {...props} />
 );
 
 const DialogFooter: React.FC<DivProps> = ({ className = '', ...props }) => (
-  <div className={`px-4 py-2.5 border-t border-slate-200/60 bg-gradient-to-r from-white/50 to-slate-50/50 flex justify-end gap-3 ${className}`} {...props} />
+  <div className={`px-4 py-2.5 border-t border-[#e4ddd1] bg-[#FEFDFB] flex justify-end gap-3 ${className}`} {...props} />
 );
 
 export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter };

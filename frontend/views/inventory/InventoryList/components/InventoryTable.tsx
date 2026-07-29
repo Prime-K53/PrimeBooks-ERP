@@ -118,10 +118,10 @@ const ActionRow: React.FC<ActionRowProps> = ({ item, ...p }) => {
             <MoreHorizontal size={16} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-44 bg-white backdrop-blur-xl rounded-xl border border-slate-200 z-50 py-1 shadow-sm">
+            <div className="absolute right-0 top-full mt-1 w-44 bg-[#FEFDFB] rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] border border-[#e4ddd1] z-50 py-1">
               {actions.map((a, i) => (
                 <button key={i} onClick={a.onClick}
-                  className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-sm transition-all ${a.danger ? 'text-red-500 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-50'}`}>
+                  className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-sm transition-all ${a.danger ? 'text-red-500 hover:bg-red-50' : 'text-[#23282A] hover:bg-[#eef7f6]'}`}>
                   {a.icon} {a.label}
                 </button>
               ))}

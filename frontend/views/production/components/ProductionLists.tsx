@@ -180,31 +180,31 @@ export const WorkOrderKanban: React.FC<WorkOrderKanbanProps> = ({ orders, onUpda
         return (
         <div 
             ref={menuRef}
-            className="fixed w-48 bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-slate-200 z-[70] flex flex-col py-1 text-left text-sm animate-in fade-in zoom-in-95 duration-100 overflow-y-auto custom-scrollbar"
+            className="fixed w-48 bg-[#FEFDFB] rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] border border-[#e4ddd1] z-[70] flex flex-col py-1 text-left text-sm animate-in fade-in zoom-in-95 duration-100 overflow-y-auto custom-scrollbar"
             style={{ top: y, left: x, maxHeight: '90vh' }}
             onClick={(e) => e.stopPropagation()}
         >
-            <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight border-b border-slate-100 bg-slate-50/50 rounded-t-xl">Actions</div>
-            <button onClick={() => { setOpenMenuId(null); if(onView) onView(wo); }} className="w-full px-3 py-2 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors font-bold text-slate-700 text-[13px]">
+            <div className="px-3 py-1.5 text-[10px] font-bold text-[#5c6567] uppercase tracking-[0.2em] border-b border-[#e4ddd1] bg-[#eef7f6] rounded-t-[14px]">Actions</div>
+            <button onClick={() => { setOpenMenuId(null); if(onView) onView(wo); }} className="w-full px-3 py-2 hover:bg-[#eef7f6] hover:text-[#146b60] flex items-center gap-2 transition-all font-bold text-[#23282A] text-[13px]">
                 <Edit2 size={14}/> Edit Order
             </button>
             {onPreview && (
-                <button onClick={() => { setOpenMenuId(null); onPreview(wo); }} className="w-full px-3 py-2 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2 transition-colors font-bold text-slate-700 text-[13px]">
+                <button onClick={() => { setOpenMenuId(null); onPreview(wo); }} className="w-full px-3 py-2 hover:bg-[#eef7f6] hover:text-[#146b60] flex items-center gap-2 transition-all font-bold text-[#23282A] text-[13px]">
                     <Eye size={14}/> Preview PDF
                 </button>
             )}
             {wo.status === 'Completed' && onConvertInvoice && (
-                <button onClick={() => { setOpenMenuId(null); onConvertInvoice(wo); }} className="w-full px-3 py-2 hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-2 transition-colors font-bold text-slate-700 text-[13px]">
+                <button onClick={() => { setOpenMenuId(null); onConvertInvoice(wo); }} className="w-full px-3 py-2 hover:bg-[#eef7f6] hover:text-[#146b60] flex items-center gap-2 transition-all font-bold text-[#23282A] text-[13px]">
                     <FileCheck size={14}/> Convert to Invoice
                 </button>
             )}
             {wo.status !== 'Cancelled' && wo.status !== 'Completed' && onCancel && (
-                <button onClick={() => { setOpenMenuId(null); onCancel(wo); }} className="w-full px-3 py-2 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-2 transition-colors font-bold text-slate-700 text-[13px]">
+                <button onClick={() => { setOpenMenuId(null); onCancel(wo); }} className="w-full px-3 py-2 hover:bg-[#eef7f6] hover:text-[#146b60] flex items-center gap-2 transition-all font-bold text-[#23282A] text-[13px]">
                     <XCircle size={14}/> Cancel Order
                 </button>
             )}
             {onDelete && (
-                <button onClick={() => { setOpenMenuId(null); onDelete(wo.id); }} className="w-full px-3 py-2 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100 font-bold text-[13px]">
+                <button onClick={() => { setOpenMenuId(null); onDelete(wo.id); }} className="w-full px-3 py-2 hover:bg-[#eef7f6] hover:text-[#146b60] flex items-center gap-2 transition-all border-t border-[#e4ddd1] font-bold text-[13px]">
                     <Trash2 size={14}/> Delete Order
                 </button>
             )}

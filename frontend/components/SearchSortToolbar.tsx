@@ -101,9 +101,9 @@ const SearchSortToolbar: React.FC<SearchSortToolbarProps> = ({
         </button>
 
         {sortDropdownOpen && (
-          <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 z-50 py-1 animate-in fade-in zoom-in-95 origin-top-right">
-            <div className="px-3 py-1.5 border-b border-slate-100">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Sort by</p>
+          <div className="absolute right-0 top-full mt-1 w-56 bg-[#FEFDFB] rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] border border-[#e4ddd1] z-50 py-1 animate-in fade-in zoom-in-95 origin-top-right">
+            <div className="px-3 py-1.5 border-b border-[#e4ddd1]">
+              <p className="text-[10px] font-bold text-[#5c6567] uppercase tracking-[0.2em]">Sort by</p>
             </div>
             <div className="max-h-60 overflow-y-auto custom-scrollbar">
               {sortOptions.map(option => (
@@ -113,29 +113,31 @@ const SearchSortToolbar: React.FC<SearchSortToolbarProps> = ({
                     onSortChange(option.field);
                     setSortDropdownOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${
-                    sortField === option.field ? 'text-blue-600 font-semibold bg-blue-50/50' : 'text-slate-700 font-medium'
+                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-all ${
+                    sortField === option.field ? 'text-[#146b60] font-semibold bg-[#eef7f6]' : 'text-[#23282A] font-medium'
                   }`}
+                  onMouseEnter={(e) => { if (sortField !== option.field) { e.currentTarget.style.backgroundColor = '#eef7f6'; e.currentTarget.style.paddingLeft = '16px'; } }}
+                  onMouseLeave={(e) => { if (sortField !== option.field) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.paddingLeft = '12px'; } }}
                 >
                   <span>{option.label}</span>
                   {sortField === option.field && (
-                    <span className="text-blue-500">
+                    <span className="text-[#146b60]">
                       <Check size={14} />
                     </span>
                   )}
                 </button>
               ))}
             </div>
-            <div className="border-t border-slate-100 px-3 py-1.5">
+            <div className="border-t border-[#e4ddd1] px-3 py-1.5">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onSortDirectionToggle();
                 }}
-                className="w-full text-left px-2 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between"
+                className="w-full text-left px-2 py-1.5 text-xs font-medium text-[#23282A] hover:bg-[#eef7f6] rounded-lg transition-all flex items-center justify-between"
               >
                 <span>Direction</span>
-                <span className="text-blue-600 font-semibold text-[11px] font-mono">
+                <span className="text-[#146b60] font-semibold text-[11px] font-mono">
                   {sortDirection === 'asc' ? '↑ Ascending' : '↓ Descending'}
                 </span>
               </button>

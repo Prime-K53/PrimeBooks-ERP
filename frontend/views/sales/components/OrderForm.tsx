@@ -2556,7 +2556,8 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                             <span style={{width:"16px",height:"16px",borderRadius:"50%",background:"#FEFDFB",flex:"none"}}></span>
                         </div>
 
-                        <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:"22px",paddingBottom:"24px"}}>
+                        <div className="bg-[#FEFDFB] border border-[#E4DFD1] rounded-[12px] overflow-hidden p-[22px]">
+                        <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:"22px"}}>
                             <div className="pr-[14px] border-r border-[#E4DFD1]">
                                 <div className="flex items-center gap-[6px] mb-[6px]">
                                     <input type="checkbox" className="rounded accent-[#146b60]"
@@ -2679,6 +2680,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
                         </div>
                     </div>
                     <div className="border-t border-[#E4DFD1] bg-[#FEFDFB] px-[26px] py-[16px] flex items-center justify-end gap-[10px] shrink-0">

@@ -547,8 +547,8 @@ const AppLayout: React.FC = () => {
                   </div>
                 </button>
                 {showFyDropdown && (
-                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 230, backgroundColor: '#ffffff', borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden', zIndex: 60, padding: '6px' }}>
-                    <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Financial Years</div>
+                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 230, backgroundColor: '#FEFDFB', borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)', border: '1px solid #e4ddd1', overflow: 'hidden', zIndex: 60, padding: '6px' }}>
+                    <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Financial Years</div>
                     {availableFinancialYears.length === 0 ? (
                       <div style={{ padding: '12px', fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>No financial years configured</div>
                     ) : (
@@ -556,11 +556,11 @@ const AppLayout: React.FC = () => {
                         const isActive = selectedFinancialYear?.id === fy.id;
                         const fyLabelStr = fyDisplayName(fy);
                         return (
-                          <button key={fy.id} onClick={() => { setFinancialYear(fy); setShowFyDropdown(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, border: 'none', backgroundColor: isActive ? '#eef2ff' : 'transparent', color: isActive ? '#4338ca' : '#1e293b', cursor: 'pointer', fontSize: 12, fontWeight: isActive ? 700 : 500, textAlign: 'left', transition: 'background-color 0.15s ease', gap: 8 }} onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = '#f8fafc'; }} onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CalendarDays size={14} color={isActive ? '#6366f1' : '#64748b'} /><span>{fyLabelStr}</span></div>
+                          <button key={fy.id} onClick={() => { setFinancialYear(fy); setShowFyDropdown(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, border: 'none', backgroundColor: isActive ? '#eef7f6' : 'transparent', color: isActive ? '#146b60' : '#23282A', cursor: 'pointer', fontSize: 12, fontWeight: isActive ? 600 : 500, textAlign: 'left', transition: 'all .2s ease', gap: 8 }} onMouseEnter={e => { if (!isActive) { e.currentTarget.style.backgroundColor = '#eef7f6'; e.currentTarget.style.paddingLeft = '14px'; } }} onMouseLeave={e => { if (!isActive) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.paddingLeft = '12px'; } }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CalendarDays size={14} color={isActive ? '#146b60' : '#64748b'} /><span>{fyLabelStr}</span></div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              {fy.is_closed ? <span style={{ fontSize: 9, fontWeight: 600, color: '#dc2626', backgroundColor: '#fef2f2', padding: '1px 6px', borderRadius: 4 }}>Closed</span> : fy.is_default ? <span style={{ fontSize: 9, fontWeight: 600, color: '#2563eb', backgroundColor: '#eff6ff', padding: '1px 6px', borderRadius: 4 }}>Default</span> : null}
-                              {isActive && <Check size={14} color="#6366f1" />}
+                              {fy.is_closed ? <span style={{ fontSize: 9, fontWeight: 600, color: '#dc2626', backgroundColor: '#fef2f2', padding: '1px 6px', borderRadius: 4 }}>Closed</span> : fy.is_default ? <span style={{ fontSize: 9, fontWeight: 600, color: '#146b60', backgroundColor: '#eef7f6', padding: '1px 6px', borderRadius: 4 }}>Default</span> : null}
+                              {isActive && <Check size={14} color="#146b60" />}
                             </div>
                           </button>
                         );
@@ -661,32 +661,32 @@ const AppLayout: React.FC = () => {
           {/* Global POS Modal Layer */}
           {isPosModalOpen && (
             <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
-              <div className="bg-white w-full max-w-6xl h-full rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
-                <div className="px-6 py-2 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              <div className="bg-[#FEFDFB] w-full max-w-6xl h-full rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+                <div className="px-6 py-2 border-b border-[#e4ddd1] flex items-center justify-between bg-[#eef7f6] shrink-0">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-white">
+                      <div className="w-7 h-7 rounded-full bg-[#146b60] flex items-center justify-center text-white">
                         <UserIcon size={12} />
                       </div>
                       <div className="leading-tight">
-                        <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">Cashier</p>
-                        <p className="text-xs font-bold text-slate-800">{user?.name || 'Cashier'}</p>
+                        <p className="text-[9px] font-semibold text-[#5c6567] uppercase tracking-widest">Cashier</p>
+                        <p className="text-xs font-bold text-[#0b3e39]">{user?.name || 'Cashier'}</p>
                       </div>
                     </div>
-                    <div className="h-6 w-px bg-slate-200"></div>
+                    <div className="h-6 w-px bg-[#d9ceb8]"></div>
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                      <div className="w-7 h-7 rounded-xl bg-[#146b60] flex items-center justify-center text-white shadow-lg">
                         <Coins size={14} />
                       </div>
                       <div>
-                        <h2 className="text-sm font-black text-slate-800 tracking-tight">Terminal POS</h2>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Live Transaction Interface</span>
+                        <h2 className="text-sm font-black text-[#0b3e39] tracking-tight">Terminal POS</h2>
+                        <span className="text-[9px] font-bold text-[#5c6567] uppercase tracking-widest">Live Transaction Interface</span>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => setIsPosModalOpen(false)}
-                    className="p-3 hover:bg-slate-100 rounded-2xl text-slate-400 hover:text-slate-600 transition-all active:scale-90"
+                    className="p-3 hover:bg-[#d9ceb8]/30 rounded-2xl text-[#5c6567] hover:text-[#0b3e39] transition-all active:scale-90"
                   >
                     <X size={24} />
                   </button>
@@ -939,26 +939,26 @@ const AppLayout: React.FC = () => {
           onClick={() => setSearchOpen(false)}
         >
           <div
-            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 slide-in-from-top-4 duration-200"
+            className="w-full max-w-lg bg-[#FEFDFB] rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] border border-[#e4ddd1] overflow-hidden animate-in zoom-in-95 slide-in-from-top-4 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
-              <SearchIcon size={16} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#e4ddd1]">
+              <SearchIcon size={16} className="text-[#5c6567] shrink-0" />
               <input
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search customers, invoices, jobs, inventory..."
-                className="flex-1 border-none outline-none text-sm font-medium text-slate-800 placeholder:text-slate-400 bg-transparent"
+                className="flex-1 border-none outline-none text-sm font-medium text-[#0b3e39] placeholder:text-[#94a3b8] bg-transparent"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
                 autoFocus
               />
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono font-bold text-slate-400">ESC</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-[#eef7f6] text-[10px] font-mono font-bold text-[#5c6567]">ESC</kbd>
             </div>
             <div className="max-h-[50vh] overflow-y-auto">
               {searchQuery.length < 2 ? (
-                <div className="p-8 text-center text-xs text-slate-400 font-medium">
+                <div className="p-8 text-center text-xs text-[#94a3b8] font-medium">
                   Type at least 2 characters to search
                 </div>
               ) : (() => {
@@ -989,23 +989,23 @@ const AppLayout: React.FC = () => {
                 });
 
                 if (results.length === 0) {
-                  return <div className="p-8 text-center text-xs text-slate-400 font-medium">No results found</div>;
+                  return <div className="p-8 text-center text-xs text-[#94a3b8] font-medium">No results found</div>;
                 }
 
                 return results.slice(0, 10).map((r, i) => (
                   <button
                     key={i}
                     onClick={() => { navigate(r.link); setSearchOpen(false); setSearchQuery(''); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0 text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#eef7f6] transition-all border-b border-[#eef2eb] last:border-b-0 text-left"
                   >
-                    <span className="p-1.5 rounded-lg bg-slate-100 text-slate-500 shrink-0">
+                    <span className="p-1.5 rounded-lg bg-[#eef7f6] text-[#146b60] shrink-0">
                       {r.icon}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-slate-800 truncate">{r.label}</div>
-                      <div className="text-[11px] text-slate-400 truncate">{r.sublabel}</div>
+                      <div className="text-sm font-semibold text-[#0b3e39] truncate">{r.label}</div>
+                      <div className="text-[11px] text-[#5c6567] truncate">{r.sublabel}</div>
                     </div>
-                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded shrink-0">{r.type}</span>
+                    <span className="text-[10px] font-bold text-[#146b60] bg-[#eef7f6] px-2 py-0.5 rounded shrink-0">{r.type}</span>
                   </button>
                 ));
               })()}
@@ -1016,11 +1016,11 @@ const AppLayout: React.FC = () => {
       {location.pathname === '/' && <AICopilot />}
       {isWhatsAppModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsWhatsAppModalOpen(false)}>
-          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 slide-in-from-top-4 duration-200" onClick={(e) => e.stopPropagation()} style={{ height: '80vh', maxHeight: 700 }}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-              <h2 className="text-sm font-bold text-slate-800">WhatsApp Messages</h2>
-              <button onClick={() => setIsWhatsAppModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 transition-colors" aria-label="Close messages">
-                <X size={16} className="text-slate-400" />
+          <div className="w-full max-w-4xl bg-[#FEFDFB] rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,.55),0_8px_24px_-8px_rgba(0,0,0,.35),0_0_0_1px_rgba(255,255,255,.04)] border border-[#e4ddd1] overflow-hidden animate-in zoom-in-95 slide-in-from-top-4 duration-200" onClick={(e) => e.stopPropagation()} style={{ height: '80vh', maxHeight: 700 }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#e4ddd1] bg-[#eef7f6]">
+              <h2 className="text-sm font-bold text-[#0b3e39]">WhatsApp Messages</h2>
+              <button onClick={() => setIsWhatsAppModalOpen(false)} className="p-1 rounded-lg hover:bg-[#d9ceb8]/30 transition-colors" aria-label="Close messages">
+                <X size={16} className="text-[#5c6567]" />
               </button>
             </div>
             <div className="overflow-y-auto" style={{ height: 'calc(80vh - 52px)', maxHeight: 'calc(700px - 52px)' }}>

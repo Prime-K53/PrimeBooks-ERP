@@ -76,16 +76,16 @@ const FinancialYearSwitcher: React.FC<{ compact?: boolean }> = ({ compact }) => 
           right: 0,
           marginTop: 4,
           minWidth: 220,
-          backgroundColor: '#fff',
-          borderRadius: 10,
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+          backgroundColor: '#FEFDFB',
+          borderRadius: 14,
+          border: '1px solid #e4ddd1',
+          boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
           zIndex: 9999,
           padding: '6px',
           maxHeight: 300,
           overflowY: 'auto',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '8px 10px 4px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.2em', padding: '8px 10px 4px' }}>
             Financial Years
           </div>
           {availableFinancialYears.length === 0 ? (
@@ -109,10 +109,10 @@ const FinancialYearSwitcher: React.FC<{ compact?: boolean }> = ({ compact }) => 
                     justifyContent: 'space-between',
                     width: '100%',
                     padding: '8px 10px',
-                    borderRadius: 6,
+                    borderRadius: 8,
                     border: 'none',
-                    backgroundColor: isActive ? '#eef2ff' : 'transparent',
-                    color: isActive ? '#4338ca' : (fy.status !== 'Active' ? '#94a3b8' : '#334155'),
+                    backgroundColor: isActive ? '#eef7f6' : 'transparent',
+                    color: isActive ? '#146b60' : (fy.status !== 'Active' ? '#94a3b8' : '#23282A'),
                     cursor: fy.status === 'Active' ? 'pointer' : 'not-allowed',
                     fontSize: 12,
                     fontWeight: isActive ? 600 : 500,
@@ -120,18 +120,19 @@ const FinancialYearSwitcher: React.FC<{ compact?: boolean }> = ({ compact }) => 
                     fontFamily: "'Inter', sans-serif",
                     gap: 8,
                     opacity: fy.status !== 'Active' ? 0.5 : 1,
+                    transition: 'all .15s',
                   }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = '#eef7f6'; e.currentTarget.style.paddingLeft = '14px'; }}
+                  onMouseLeave={e => { if (!isActive) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.paddingLeft = '10px'; } }}
                 >
                   <span>{fyLabel}</span>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                     {fy.is_closed ? (
                       <span style={{ fontSize: 9, color: '#dc2626', fontWeight: 600, backgroundColor: '#fef2f2', padding: '1px 6px', borderRadius: 4 }}>Closed</span>
                     ) : fy.is_default ? (
-                      <span style={{ fontSize: 9, color: '#6366f1', fontWeight: 600 }}>Default</span>
+                      <span style={{ fontSize: 9, color: '#146b60', fontWeight: 600, backgroundColor: '#eef7f6', padding: '1px 6px', borderRadius: 4 }}>Default</span>
                     ) : null}
-                    {isActive && <span style={{ fontSize: 9, color: '#6366f1', fontWeight: 600 }}>Active</span>}
+                    {isActive && <Check size={14} color="#146b60" />}
                   </div>
                 </button>
               );

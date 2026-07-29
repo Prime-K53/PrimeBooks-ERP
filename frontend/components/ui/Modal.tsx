@@ -101,32 +101,32 @@ const Modal: React.FC<ModalProps> = ({
               width: '100%',
               maxWidth: sizeMap[size],
               maxHeight: 'calc(100vh - 48px)',
-              backgroundColor: '#ffffff',
-              borderRadius: '16px',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.06)',
+              backgroundColor: '#FEFDFB',
+              borderRadius: '14px',
+              boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
               fontFamily: "'Inter', system-ui, sans-serif",
             }}
           >
-            {(title || subtitle) && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  padding: '24px 28px 0',
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  {title && (
-                    <h2
-                      style={{
-                        margin: 0,
-                        fontSize: '18px',
-                        fontWeight: 700,
+              {(title || subtitle) && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    padding: '20px 24px 0',
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    {title && (
+                      <h2
+                        style={{
+                          margin: 0,
+                          fontSize: '18px',
+                          fontWeight: 700,
                         color: '#0f172a',
                         lineHeight: 1.3,
                       }}

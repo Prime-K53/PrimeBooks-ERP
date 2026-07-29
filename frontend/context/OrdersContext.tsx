@@ -74,7 +74,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         notify('This quotation has already been converted to an order', 'warning');
         return existingOrder.id;
       }
-      const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      const orderNumber = generateNextId('ORD', orders, companyConfig);
       const conversionDate = new Date().toLocaleDateString();
       const acceptedBy = quotation.customerName || 'Customer';
       const conversionDetails = {
@@ -96,7 +96,6 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           unitPrice,
           subtotal: unitPrice * quantity,
           discount: item.discount || 0,
-          // ✅ Preserve variant adjustment data for margin tracking
           parentId: item.parentId,
           pagesOverride: item.pagesOverride,
           pricingSource: item.pricingSource,
@@ -120,7 +119,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const totalAmount = subtotal - discount;
 
         const newOrder: Order & Record<string, any> = {
-        id: generateNextId('ORD', orders),
+        id: orderNumber,
         idempotencyKey: crypto.randomUUID(),
         orderNumber,
         customerId: '', // Quotation might not have customerId directly, we might need to look it up by name
@@ -182,7 +181,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const handleCreateOrder = async (data: any) => {
     try {
-      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      const orderNumber = data.orderNumber || data.id || generateNextId('ORD', orders, companyConfig);
 
       const subtotal = toNum(data.subtotal) || data.items.reduce((sum: number, it: any) => sum + (toNum(it.subtotal || (toNum(it.quantity || it.qty) * toNum(it.unitPrice || it.price || it.cost)))), 0);
       const discount = toNum(data.discount);
@@ -198,7 +197,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const refCustomer = salesContext?.customers.find((c: any) => c.id === data.customerId || c.name === data.customerName);
 
       const newOrder: Order = {
-        id: generateNextId('ORD', orders),
+        id: orderNumber,
         idempotencyKey: crypto.randomUUID(),
         orderNumber,
         customerId: data.customerId || '',

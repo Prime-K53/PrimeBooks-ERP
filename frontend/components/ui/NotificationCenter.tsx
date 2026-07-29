@@ -144,10 +144,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     zIndex: 1200,
     width: '380px',
     maxHeight: '500px',
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    boxShadow: '0 25px 60px rgba(0,0,0,0.12), 0 8px 20px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0',
+    backgroundColor: '#FEFDFB',
+    borderRadius: '14px',
+    boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04)',
+    border: '1px solid #e4ddd1',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -174,7 +174,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     color: active ? '#0f172a' : '#94a3b8',
     backgroundColor: 'transparent',
     border: 'none',
-    borderBottom: active ? '2px solid #6366f1' : '2px solid transparent',
+    borderBottom: active ? '2px solid #146b60' : '2px solid transparent',
     cursor: 'pointer',
     transition: 'color 0.15s, border-color 0.15s',
     fontFamily: "'Inter', system-ui, sans-serif",
@@ -202,7 +202,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
+              <span style={{ fontSize: '15px', fontWeight: 700, color: '#0b3e39' }}>
                 Notifications
               </span>
               {unreadCount > 0 && (
@@ -215,7 +215,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                     height: '20px',
                     padding: '0 6px',
                     borderRadius: '10px',
-                    backgroundColor: '#6366f1',
+                    backgroundColor: '#146b60',
                     color: '#ffffff',
                     fontSize: '11px',
                     fontWeight: 700,
@@ -236,7 +236,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   padding: '4px 8px',
                   fontSize: '12px',
                   fontWeight: 600,
-                  color: '#6366f1',
+                  color: '#146b60',
                   backgroundColor: 'transparent',
                   border: 'none',
                   borderRadius: '6px',
@@ -245,7 +245,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   transition: 'background-color 0.15s',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(99,102,241,0.1)';
+                  e.currentTarget.style.backgroundColor = 'rgba(20,107,96,0.1)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
@@ -262,7 +262,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
               display: 'flex',
               gap: '16px',
               padding: '8px 20px 0',
-              borderBottom: '1px solid #e2e8f0',
+                  borderBottom: '1px solid #e4ddd1',
             }}
           >
             <button style={tabStyle(tab === 'all')} onClick={() => setTab('all')}>
@@ -307,19 +307,19 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   gap: '12px',
                   padding: '12px 16px',
                   borderRadius: '10px',
-                  backgroundColor: n.read ? 'transparent' : 'rgba(99,102,241,0.04)',
+                  backgroundColor: n.read ? 'transparent' : 'rgba(20,107,96,0.04)',
                   borderLeft: `3px solid ${n.severity ? severityBorderMap[n.severity] : typeColorMap[n.type]}`,
                   marginBottom: '4px',
                   position: 'relative',
                   transition: 'background-color 0.15s',
                 }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = n.read ? 'rgba(148,163,184,0.04)' : 'rgba(99,102,241,0.08)';
+                    e.currentTarget.style.backgroundColor = n.read ? 'rgba(148,163,184,0.04)' : 'rgba(20,107,96,0.08)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = n.read
                       ? 'transparent'
-                      : 'rgba(99,102,241,0.04)';
+                      : 'rgba(20,107,96,0.04)';
                   }}
                 onClick={() => {
                   if (!n.read) onMarkRead(n.id);
@@ -354,7 +354,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       style={{
                         fontSize: '13px',
                         fontWeight: 700,
-                        color: '#0f172a',
+                        color: '#0b3e39',
                         lineHeight: 1.3,
                         flex: 1,
                         overflow: 'hidden',
@@ -401,19 +401,19 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         padding: '4px 12px',
                         fontSize: '12px',
                         fontWeight: 600,
-                    color: '#6366f1',
+                    color: '#146b60',
                     backgroundColor: 'transparent',
-                    border: '1px solid rgba(99,102,241,0.2)',
+                    border: '1px solid rgba(20,107,96,0.2)',
                         borderRadius: '6px',
                         cursor: 'pointer',
                         fontFamily: "'Inter', system-ui, sans-serif",
                         transition: 'all 0.15s',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(99,102,241,0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.backgroundColor = 'rgba(20,107,96,0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
                       }}
                     >
                       {n.actionLabel}
