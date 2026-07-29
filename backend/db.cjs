@@ -130,7 +130,11 @@ const initDb = () => {
                 { name: 'selling_price', type: 'REAL DEFAULT 0' },
                 { name: 'created_by', type: 'TEXT' },
                 { name: 'created_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
-                { name: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' }
+                { name: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+                { name: 'status', type: "TEXT NOT NULL DEFAULT 'Active'" },
+                { name: 'deleted_at', type: 'DATETIME' },
+                { name: 'void_reason', type: 'TEXT' },
+                { name: 'voided_by', type: 'TEXT' }
               ];
               columnsToAdd.forEach(col => {
                 if (!existingColumns.has(col.name)) {

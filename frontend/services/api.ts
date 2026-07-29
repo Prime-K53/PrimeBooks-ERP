@@ -573,20 +573,25 @@ export const api = {
 
   inventory: {
     getAllItems: () => handle(async () => {
+      if (shouldPreferLocalReadModels()) {
+        return dbService.getAll<Item>('inventory');
+      }
       try {
         const response = await apiClient.get('/inventory');
         const remoteItems = Array.isArray(response.data) ? response.data : [];
-        if (remoteItems.length > 0) {
-          const normalized = remoteItems.map(normalizeBackendInventoryItem);
-          for (const item of normalized) {
+        const normalized = remoteItems.map(normalizeBackendInventoryItem);
+        for (const item of normalized) {
+          if (item.status === 'Deleted') {
+            await dbService.delete('inventory', item.id);
+          } else {
             await dbService.put('inventory', item);
           }
-          return normalized;
         }
+        return normalized.filter((i: any) => i.status !== 'Deleted');
       } catch (err) {
-        // Fall back to local Dexie IndexedDB
+        ensureBackendInProd('Inventory.GetAll', err);
+        return dbService.getAll<Item>('inventory');
       }
-      return dbService.getAll<Item>('inventory');
     }, 'Inventory.GetAll'),
 
     createItem: (item: Item) => handle(async () => {
@@ -635,9 +640,16 @@ export const api = {
       try {
         await apiClient.delete(`/inventory/${encodeURIComponent(id)}`);
       } catch (err) {
-        // Log or handle remote error
+        ensureBackendInProd('Inventory.Delete', err);
       }
-      return dbService.delete('inventory', id);
+      // Soft delete: mark as deleted in IndexedDB instead of removing
+      const existingItem: any = await dbService.get<Item>('inventory', id);
+      if (existingItem) {
+        existingItem.status = 'Deleted';
+        existingItem.deleted_at = new Date().toISOString();
+        await dbService.put('inventory', existingItem);
+      }
+      return existingItem || { id, status: 'Deleted' };
     }, 'Inventory.Delete'),
 
     getAllWarehouses: () => handle(() => dbService.getAll<Warehouse>('warehouses'), 'Inventory.GetWarehouses'),

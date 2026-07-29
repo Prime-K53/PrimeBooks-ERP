@@ -904,7 +904,7 @@ async function startServer() {
   });
 
   // --- Sales Update & Delete Routes ---
-  app.put('/api/sales/:id', async (req, res) => {
+  app.put('/api/sales/:id', requireRole('Admin', 'Manager', 'Cashier'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     const { id } = req.params;
     const payload = req.body || {};
     try {
@@ -3188,17 +3188,25 @@ async function startServer() {
 });
 
   // 2. GET Inventory
-  app.get('/api/inventory', checkPermission('view_inventory'), injectFinancialYear, (req, res) => {
-    const companyId = req.companyId || '';
-    let { sql, params } = addFyDateFilter('SELECT * FROM inventory WHERE company_id = ?', [companyId], req, 'created_at');
-    db.all(sql, params, (err, rows) => {
-    if (err) { console.error('[Inventory] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve inventory' }); }
-    res.json(rows);
+  app.get('/api/inventory', checkPermission('view_inventory'), injectFinancialYear, async (req, res) => {
+    try {
+      const companyId = req.companyId || '';
+      let sql = 'SELECT * FROM inventory WHERE company_id = ? AND (status IS NULL OR status != ?)';
+      let params = [companyId, 'Deleted'];
+      const filtered = addFyDateFilter(sql, params, req, 'created_at');
+      sql = filtered.sql + ' ORDER BY name ASC';
+      db.all(sql, filtered.params, (err, rows) => {
+        if (err) { console.error('[Inventory] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve inventory' }); }
+        res.json(rows);
+      });
+    } catch (err) {
+      console.error('[Inventory] GET error:', err?.message || err);
+      res.status(500).json({ error: 'Failed to retrieve inventory' });
+    }
   });
-});
 
   // 2b. POST Inventory (Create)
-  app.post('/api/inventory', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
+  app.post('/api/inventory', requireRole('Admin', 'Accountant', 'Manager', 'Clerk'), async (req, res) => {
     try {
       const { body } = req;
       
@@ -3303,7 +3311,7 @@ async function startServer() {
   });
 
   // 2c. PUT Inventory (Update)
-  app.put('/api/inventory/:id', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
+  app.put('/api/inventory/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       const { id } = req.params;
       const { body } = req;
@@ -3359,17 +3367,19 @@ async function startServer() {
     }
   });
 
-  // 2d. DELETE Inventory (Delete)
-  app.delete('/api/inventory/:id', requireRole('Admin'), async (req, res) => {
+  // 2d. DELETE Inventory (Soft Delete)
+  app.delete('/api/inventory/:id', requireRole('Admin'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       const { id } = req.params;
-      db.get('SELECT * FROM inventory WHERE id = ? AND company_id = ?', [id, req.companyId || ''], (err, row) => {
+      const companyId = req.companyId || '';
+      db.get('SELECT * FROM inventory WHERE id = ? AND company_id = ?', [id, companyId], (err, row) => {
         if (err) { console.error('[Inventory] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete inventory item' }); }
         if (!row) return res.status(404).json({ error: 'Inventory item not found' });
         if (row.is_protected) return res.status(403).json({ error: 'Cannot delete protected item' });
-        db.run('DELETE FROM inventory WHERE id = ? AND company_id = ?', [id, req.companyId || ''], (err) => {
+        const voidedBy = req.user?.id || req.user?.username || 'system';
+        db.run("UPDATE inventory SET status = 'Deleted', deleted_at = CURRENT_TIMESTAMP, void_reason = 'Manually deleted', voided_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?", [voidedBy, id, companyId], (err) => {
           if (err) { console.error('[Inventory] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete inventory item' }); }
-          res.json({ success: true });
+          res.json({ success: true, id, status: 'Deleted' });
         });
       });
     } catch (err) {
