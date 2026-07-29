@@ -489,14 +489,14 @@ class AIService {
   }
 
   async testConnection(
-    provider: AIProvider, _apiKey: string, model: string, baseUrl?: string,
+    provider: AIProvider, apiKey: string, model: string, baseUrl?: string,
   ): Promise<{ ok: boolean; message: string }> {
     try {
       const messages: ChatMessage[] = [
         { role: 'system', content: P.CONNECTION_TEST_SYSTEM_INSTRUCTION },
         { role: 'user', content: P.CONNECTION_TEST_USER_PROMPT },
       ];
-      const result = await provider.generateChat(messages, { model, baseUrl });
+      const result = await provider.generateChat(messages, { apiKey, model, baseUrl });
       const trimmed = result.trim().toUpperCase();
       if (trimmed === 'OK' || trimmed.startsWith('OK')) return { ok: true, message: `Connected using ${model}` };
       return { ok: true, message: `Response: "${result.slice(0, 60)}..."` };

@@ -48,7 +48,7 @@ export const MembershipTiersAdmin: React.FC = () => {
 
     const inputStyle: React.CSSProperties = {
         width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-        color: ink, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9,
+        color: ink, background: paper, border: `1px solid ${hairline}`, borderRadius: 9,
         padding: '7px 10px', outline: 'none'
     }
 
@@ -103,7 +103,7 @@ export const MembershipTiersAdmin: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button className="prime-btn" onClick={saveNew} style={{ padding: '6px 12px', background: t[500], color: '#fff', borderRadius: 9, border: 'none', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}><Save size={12} /> Create</button>
-                        <button className="prime-btn-secondary" onClick={() => setShowNew(false)} style={{ padding: '6px 12px', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, color: inkSoft, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}><X size={12} /> Cancel</button>
+                            <button className="prime-btn-secondary" onClick={() => setShowNew(false)} style={{ padding: '6px 12px', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, color: inkSoft, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}><X size={12} /> Cancel</button>
                     </div>
                 </div>
             )}

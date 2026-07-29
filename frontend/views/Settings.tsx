@@ -1186,8 +1186,8 @@ const Settings: React.FC = () => {
 
                         {activeTab === 'Branding' && (
                             <div style={{ marginTop: '32px', color: '#23282A' }}>
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                <section style={{ border: '1px solid #D4D7DC', borderRadius: '12px', background: paper, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderBottom: '1px solid #D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Visual Identity</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>These assets will be used on all automated documents.</p>
                                     </div>
@@ -1273,8 +1273,8 @@ const Settings: React.FC = () => {
 
                         {activeTab === 'Currencies' && (
                             <div style={{ marginTop: '32px' }}>
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                <section style={{ border: '1px solid #D4D7DC', borderRadius: '12px', background: paper, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderBottom: '1px solid #D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Currency Formatting</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>Control how monetary values are displayed across the system.</p>
                                     </div>
@@ -1308,7 +1308,7 @@ const Settings: React.FC = () => {
                                                 <option value={3}>3 (e.g. 10.500)</option>
                                             </select>
                                         </div>
-                                        <div style={{ gridColumn: 'span 2 / span 2', paddingTop: '16px', borderStyle: 'solid', borderColor: '#D4D7DC' }}>
+                                        <div style={{ gridColumn: 'span 2 / span 2', paddingTop: '16px', borderTop: '1px solid #D4D7DC' }}>
                                             <label style={labelStyle}>Rounding Rule</label>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
                                                 {(['Nearest', 'Up', 'Down'] as const).map(method => (
@@ -1325,8 +1325,8 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                <section style={{ border: '1px solid #D4D7DC', borderRadius: '12px', background: paper, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderBottom: '1px solid #D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Monthly Revenue Target</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>Set your monthly revenue goal for dashboard tracking.</p>
                                     </div>
@@ -1925,8 +1925,8 @@ const Settings: React.FC = () => {
 
                         {activeTab === 'Templates' && (
                             <div style={{ marginTop: '32px' }}>
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
+                                <section style={{ border: '1px solid #D4D7DC', borderRadius: '12px', background: paper, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderBottom: '1px solid #D4D7DC', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
                                         Invoice Layout & Engine
                                     </div>
                                     <div style={{ padding: '32px' }}>
@@ -1973,8 +1973,8 @@ const Settings: React.FC = () => {
                                     </div>
                                 </section>
 
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
+                                <section style={{ border: '1px solid #D4D7DC', borderRadius: '12px', background: paper, overflow: 'hidden' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderBottom: '1px solid #D4D7DC', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
                                         Typography & Page Metrics
                                     </div>
                                     <div style={{ padding: '32px' }}>
@@ -2437,7 +2437,7 @@ const Settings: React.FC = () => {
                                         </div>
                                     </section>
 
-                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#D4D7DC' }}>
+                                    <section style={{ paddingTop: '40px', borderTop: '1px solid #D4D7DC' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: '40px' }}>
                                             <div>
                                                 <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -2519,7 +2519,7 @@ const Settings: React.FC = () => {
 
 
 
-                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#D4D7DC' }}>
+                                    <section style={{ paddingTop: '40px', borderTop: '1px solid #D4D7DC' }}>
                                         <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <Cpu size={18} style={{ color: '#1f8577' }} /> External API Connections
                                         </h3>
@@ -2571,7 +2571,7 @@ const Settings: React.FC = () => {
                                         </div>
                                     </section>
 
-                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#D4D7DC' }}>
+                                    <section style={{ paddingTop: '40px', borderTop: '1px solid #D4D7DC' }}>
                                         <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <Webhook size={18} style={{ color: '#1f8577' }} /> Webhook Outlets
                                         </h3>
