@@ -68,7 +68,7 @@ import { ConfirmDialog, ConfirmDialogType } from '../components/ConfirmDialog';
 
 const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
 const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
-const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#e4ddd1',danger='#b5493f';
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#D4D7DC',danger='#b5493f';
 
 // Pricing settings validation using reusable utility
 
@@ -141,7 +141,7 @@ const qboStyles = `
         height: 20px;
         background: #ffffff;
         border-radius: 50%;
-        border: 1px solid #e4ddd1;
+        border: 1px solid #D4D7DC;
         transition: transform 0.2s ease;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
@@ -170,7 +170,7 @@ const qboStyles = `
         height: 16px;
         background: #ffffff;
         border-radius: 50%;
-        border: 1px solid #e4ddd1;
+        border: 1px solid #D4D7DC;
         transition: transform 0.2s ease;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
@@ -199,7 +199,7 @@ const qboStyles = `
         height: 20px;
         background: #ffffff;
         border-radius: 50%;
-        border: 1px solid #e4ddd1;
+        border: 1px solid #D4D7DC;
         transition: transform 0.2s ease;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
@@ -228,7 +228,7 @@ const qboStyles = `
         height: 24px;
         background: #ffffff;
         border-radius: 50%;
-        border: 1px solid #e4ddd1;
+        border: 1px solid #D4D7DC;
         transition: transform 0.2s ease;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
@@ -250,7 +250,7 @@ const labelStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
   color: ink, background: paper,
-  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  border: `1px solid ${hairline}`, borderRadius: 9,
   padding: '9px 12px', outline: 'none',
   transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
 };
@@ -277,13 +277,13 @@ const sectionLabelStyle: React.CSSProperties = {
 const btnGhostStyle: React.CSSProperties = {
   fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
   padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
-  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+  background: paper, border: `1px solid ${hairline}`, color: inkSoft,
   display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
 };
 
 const btnPrimaryStyle: React.CSSProperties = {
   fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1px solid transparent',
   background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
   color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
   boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
@@ -970,16 +970,6 @@ const Settings: React.FC = () => {
                             </div>
                         ))}
                     </div>
-                    <div style={{
-                      position: 'absolute', bottom: 18, left: 16, right: 22,
-                      padding: 12, borderRadius: 8,
-                      background: 'rgba(255,255,255,.045)',
-                      border: '1px dashed rgba(255,255,255,.14)'
-                    }}>
-                      <p style={{ margin: 0, fontSize: 10.5, color: 'rgba(255,255,255,.42)', lineHeight: 1.5 }}>
-                        Configure your workspace preferences and system behavior.
-                      </p>
-                    </div>
                 </div>
 
                 {/* Content Area */}
@@ -1122,7 +1112,7 @@ const Settings: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                        )
+                        )}
 
                         {activeTab === 'Appearance' && (
                             <div>
@@ -1197,7 +1187,7 @@ const Settings: React.FC = () => {
                         {activeTab === 'Branding' && (
                             <div style={{ marginTop: '32px', color: '#23282A' }}>
                                 <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Visual Identity</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>These assets will be used on all automated documents.</p>
                                     </div>
@@ -1206,7 +1196,7 @@ const Settings: React.FC = () => {
                                             <label style={labelStyle}>Company Logo</label>
                                             <div
                                                 onClick={() => logoRef.current?.click()}
-                                                style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '12px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', background: '#eef7f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', transition: 'all .15s ease', overflow: 'hidden', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}
+                                                style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '12px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#D4D7DC', background: '#eef7f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', transition: 'all .15s ease', overflow: 'hidden', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}
                                             >
                                                 {logoPreviewSource ? (
                                                     <>
@@ -1225,7 +1215,7 @@ const Settings: React.FC = () => {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEFDFB', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', transition: 'all .15s ease', transitionDuration: '500ms', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                                                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEFDFB', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', transition: 'all .15s ease', transitionDuration: '500ms', border: '1px solid #D4D7DC', borderColor: '#D4D7DC' }}>
                                                             <Camera size={24} />
                                                         </div>
                                                         <div style={{ textAlign: 'center' }}>
@@ -1242,7 +1232,7 @@ const Settings: React.FC = () => {
                                             <label style={labelStyle}>Digital Signature</label>
                                             <div
                                                 onClick={() => sigRef.current?.click()}
-                                                style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '12px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', background: '#eef7f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', transition: 'all .15s ease', overflow: 'hidden', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}
+                                                style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '12px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#D4D7DC', background: '#eef7f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', transition: 'all .15s ease', overflow: 'hidden', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}
                                             >
                                                 {signaturePreviewSource ? (
                                                     <>
@@ -1261,7 +1251,7 @@ const Settings: React.FC = () => {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEFDFB', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', transition: 'all .15s ease', transitionDuration: '500ms', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                                                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEFDFB', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', transition: 'all .15s ease', transitionDuration: '500ms', border: '1px solid #D4D7DC', borderColor: '#D4D7DC' }}>
                                                             <PenTool size={24} />
                                                         </div>
                                                         <div style={{ textAlign: 'center' }}>
@@ -1284,7 +1274,7 @@ const Settings: React.FC = () => {
                         {activeTab === 'Currencies' && (
                             <div style={{ marginTop: '32px' }}>
                                 <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Currency Formatting</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>Control how monetary values are displayed across the system.</p>
                                     </div>
@@ -1294,12 +1284,12 @@ const Settings: React.FC = () => {
                                             <div style={{ display: 'flex', gap: '12px' }}>
                                                 <input
                                                     type="text"
-                                                    style={{ width: '96px', textAlign: 'center' }}
+                                                    style={{ ...inputStyle, width: '96px', textAlign: 'center' }}
                                                     placeholder="e.g. K"
                                                     value={config.currencySymbol}
                                                     onChange={e => setConfig({ ...config, currencySymbol: e.target.value })}
                                                 />
-                                                <div style={{ flex: 1, padding: '12px', background: '#eef7f6', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#5c6567', gap: '8px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}>
+                                                <div style={{ flex: 1, padding: '12px', background: '#eef7f6', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#5c6567', gap: '8px', border: '1px solid #D4D7DC', borderColor: '#D4D7DC', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)' }}>
                                                     <span style={{ fontSize: '16px' }}>{config.currencySymbol}</span>
                                                     <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em' }}>Active Symbol</span>
                                                 </div>
@@ -1318,7 +1308,7 @@ const Settings: React.FC = () => {
                                                 <option value={3}>3 (e.g. 10.500)</option>
                                             </select>
                                         </div>
-                                        <div style={{ gridColumn: 'span 2 / span 2', paddingTop: '16px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                                        <div style={{ gridColumn: 'span 2 / span 2', paddingTop: '16px', borderStyle: 'solid', borderColor: '#D4D7DC' }}>
                                             <label style={labelStyle}>Rounding Rule</label>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
                                                 {(['Nearest', 'Up', 'Down'] as const).map(method => (
@@ -1336,7 +1326,7 @@ const Settings: React.FC = () => {
                                 </section>
 
                                 <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
                                         <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Monthly Revenue Target</h3>
                                         <p style={{ color: '#5c6567', marginTop: '2px' }}>Set your monthly revenue goal for dashboard tracking.</p>
                                     </div>
@@ -1345,7 +1335,7 @@ const Settings: React.FC = () => {
                                             <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#5c6567', fontSize: '11px', fontWeight: 700 }}>{config.currencySymbol}</div>
                                             <input
                                                 type="number"
-                                                style={{ paddingLeft: '40px' }}
+                                                style={{ ...inputStyle, paddingLeft: '40px' }}
                                                 placeholder="e.g. 500000"
                                                 value={config.monthlyRevenueTarget || ''}
                                                 onChange={e => setConfig({ ...config, monthlyRevenueTarget: Number(e.target.value) })}
@@ -1356,559 +1346,541 @@ const Settings: React.FC = () => {
                                 </section>
                             </div>
                         )}
-
                         {activeTab === 'SalesModule' && (
-                            <div style={{ marginTop: '32px' }}>
-                                <section style={{ overflow: 'hidden' }}>
-                                    <div className="settings-section-header">
-                                        <h3 style={{ fontSize: '13px', fontWeight: 700 }}>Global Pricing Mode</h3>
-                                        <p style={{ marginTop: '2px' }}>Select whether the system uses VAT or Market Adjustments for sales tracking.</p>
+                            <div>
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Global Pricing Mode</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <div style={{ display: 'flex', padding: '4px', borderRadius: 12, width: 'fit-content', border: `1px solid ${hairline}`, background: teal[50] }}>
+                                        <button 
+                                            onClick={() => setConfig({ 
+                                                ...config, 
+                                                vat: { ...(config.vat || { enabled: true, rate: 16.5, filingFrequency: 'Monthly' }), pricingMode: 'VAT' } 
+                                            })}
+                                            style={{
+                                                px: 24, py: 10, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: 8,
+                                                ...(config.vat?.pricingMode === 'VAT' ? { background: paper, color: teal[700], boxShadow: '0 1px 2px rgba(0,0,0,.05)' } : { background: 'transparent', color: inkSoft })
+                                            }}
+                                        >
+                                            {config.vat?.pricingMode === 'VAT' && <CheckCircle2 size={16} />}
+                                            VAT Mode
+                                        </button>
+                                        <button 
+                                            onClick={() => setConfig({ 
+                                                ...config, 
+                                                vat: { ...(config.vat || { enabled: true, rate: 16.5, filingFrequency: 'Monthly' }), pricingMode: 'MarketAdjustment' } 
+                                            })}
+                                            style={{
+                                                px: 24, py: 10, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: 8,
+                                                ...(config.vat?.pricingMode === 'MarketAdjustment' ? { background: paper, color: teal[700], boxShadow: '0 1px 2px rgba(0,0,0,.05)' } : { background: 'transparent', color: inkSoft })
+                                            }}
+                                        >
+                                            {config.vat?.pricingMode === 'MarketAdjustment' && <CheckCircle2 size={16} />}
+                                            Market Adjustment Mode
+                                        </button>
                                     </div>
-                                    <div style={{ padding: '32px' }}>
-                                        <div style={{ display: 'flex', padding: '4px', borderRadius: '12px', width: 'fit-content', border: '1.4px solid #e4ddd1' }}>
-                                            <button 
-                                                onClick={() => setConfig({ 
-                                                    ...config, 
-                                                    vat: { ...(config.vat || { enabled: true, rate: 16.5, filingFrequency: 'Monthly' }), pricingMode: 'VAT' } 
-                                                })}
-                                                className={`px-8 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${config.vat?.pricingMode === 'VAT' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#6B6C6F] hover:text-[#393A3D]'}`}
+                                    <p style={{ marginTop: 12, fontStyle: 'italic', fontWeight: 500, fontSize: 11, color: inkSoft }}>
+                                        * These features are mutually exclusive. Switching modes may affect how prices are calculated in the POS and Sales modules.
+                                    </p>
+                                </div>
+
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Smart Pricing Rounding Engine</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                                        <div>
+                                            <label style={labelStyle}>Enable Rounding Engine</label>
+                                            <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Apply rounding when product selling prices are calculated and saved. Cost price and BOM internals are untouched.</p>
+                                        </div>
+                                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                className="toggle-input"
+                                                checked={activePricingSettings.enableRounding}
+                                                onChange={e => updatePricingSettings({ enableRounding: e.target.checked })}
+                                            />
+                                            <div className="toggle-track"></div>
+                                        </label>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: 16, rowGap: 16, marginBottom: 16 }}>
+                                        <div>
+                                            <label style={labelStyle}>Default Rounding Method</label>
+                                            <select
+                                                style={inputStyle}
+                                                value={activePricingSettings.defaultMethod}
+                                                onChange={e => updatePricingSettings({ defaultMethod: e.target.value as PricingRoundingMethod })}
                                             >
-                                                {config.vat?.pricingMode === 'VAT' && <CheckCircle2 size={16} />}
-                                                VAT Mode
-                                            </button>
-                                            <button 
-                                                onClick={() => setConfig({ 
-                                                    ...config, 
-                                                    vat: { ...(config.vat || { enabled: true, rate: 16.5, filingFrequency: 'Monthly' }), pricingMode: 'MarketAdjustment' } 
-                                                })}
-                                                className={`px-8 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${config.vat?.pricingMode === 'MarketAdjustment' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#6B6C6F] hover:text-[#393A3D]'}`}
-                                            >
-                                                {config.vat?.pricingMode === 'MarketAdjustment' && <CheckCircle2 size={16} />}
-                                                Market Adjustment Mode
-                                            </button>
+                                                {ROUNDING_METHOD_OPTIONS.map(option => (
+                                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                                ))}
+                                            </select>
                                         </div>
-                                        <p style={{ marginTop: '16px', fontStyle: 'italic', fontWeight: 500 }}>
-                                            * These features are mutually exclusive. Switching modes may affect how prices are calculated in the POS and Sales modules.
-                                        </p>
+                                        <div>
+                                            <label style={labelStyle}>Custom Step</label>
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                style={{...inputStyle, ...(getFieldError('customStep') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
+                                                placeholder="e.g. 50"
+                                                value={activePricingSettings.customStep || 50}
+                                                onChange={e => updatePricingSettings({ customStep: Math.max(1, parseInt(e.target.value) || 1) })}
+                                            />
+                                            {getFieldError('customStep') && (
+                                              <p style={{ color: danger, fontSize: 11, marginTop: 4 }}>{getFieldError('customStep')}</p>
+                                            )}
+                                        </div>
                                     </div>
-                                </section>
 
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
-                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Smart Pricing Rounding Engine</h3>
-                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Round only final selling prices after BOM and margin calculations to protect profit.</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: inkSoft, fontWeight: 600, cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                style={{ borderRadius: 6, border: `1px solid ${hairline}`, color: teal[600], width: 16, height: 16 }}
+                                                checked={activePricingSettings.applyToPOS}
+                                                onChange={e => updatePricingSettings({ applyToPOS: e.target.checked })}
+                                                disabled
+                                            />
+                                            Legacy: Apply to POS
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: inkSoft, fontWeight: 600, cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                style={{ borderRadius: 6, border: `1px solid ${hairline}`, color: teal[600], width: 16, height: 16 }}
+                                                checked={activePricingSettings.applyToInvoices}
+                                                onChange={e => updatePricingSettings({ applyToInvoices: e.target.checked })}
+                                                disabled
+                                            />
+                                            Legacy: Apply to Invoices
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: inkSoft, fontWeight: 600, cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                style={{ borderRadius: 6, border: `1px solid ${hairline}`, color: teal[600], width: 16, height: 16 }}
+                                                checked={activePricingSettings.applyToQuotations}
+                                                onChange={e => updatePricingSettings({ applyToQuotations: e.target.checked })}
+                                                disabled
+                                            />
+                                            Legacy: Apply to Quotations
+                                        </label>
                                     </div>
-                                    <div style={{ padding: '32px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <p style={{ color: inkSoft, fontSize: 11, marginBottom: 16 }}>
+                                        Transaction-level rounding is disabled. POS, Invoice, and Quotation read stored selling prices only.
+                                    </p>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: inkSoft, fontWeight: 600, cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                style={{ borderRadius: 6, border: `1px solid ${hairline}`, color: teal[600], width: 16, height: 16 }}
+                                                checked={activePricingSettings.allowManualOverride}
+                                                onChange={e => updatePricingSettings({ allowManualOverride: e.target.checked })}
+                                                disabled
+                                            />
+                                            Legacy: Manual Override
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: inkSoft, fontWeight: 600, cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                style={{ borderRadius: 6, border: `1px solid ${hairline}`, color: teal[600], width: 16, height: 16 }}
+                                                checked={activePricingSettings.showOriginalPrice}
+                                                onChange={e => updatePricingSettings({ showOriginalPrice: e.target.checked })}
+                                                disabled
+                                            />
+                                            Legacy: Show Original Price
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: ink, fontWeight: 600, cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                style={{ borderRadius: 6, border: `1px solid ${hairline}`, color: teal[600], width: 16, height: 16 }}
+                                                checked={activePricingSettings.profitProtectionMode}
+                                                onChange={e => updatePricingSettings({ profitProtectionMode: e.target.checked })}
+                                            />
+                                            Always Round Up (Profit Mode)
+                                        </label>
+                                    </div>
+
+                                    <div style={{ padding: 16, background: teal[50], borderRadius: 10, border: `1px solid ${teal[100]}`, marginBottom: 16 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                                             <div>
-                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Enable Rounding Engine</p>
-                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Apply rounding when product selling prices are calculated and saved. Cost price and BOM internals are untouched.</p>
+                                                <label style={labelStyle}>Smart Threshold Rules</label>
+                                                <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Example: below 10,000 use 50; from 10,000 use 100.</p>
                                             </div>
-                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 11, color: inkSoft, fontWeight: 600, cursor: 'pointer' }}>
                                                 <input
                                                     type="checkbox"
-                                                    className="toggle-input"
-                                                    checked={activePricingSettings.enableRounding}
-                                                    onChange={e => updatePricingSettings({ enableRounding: e.target.checked })}
+                                                    style={{ borderRadius: 6, border: `1px solid ${hairline}`, color: teal[600], width: 16, height: 16 }}
+                                                    checked={Boolean(activePricingSettings.enableSmartThresholds)}
+                                                    onChange={e => updatePricingSettings({ enableSmartThresholds: e.target.checked })}
                                                 />
-                                                <div className="toggle-track"></div>
+                                                Enable Smart Rules
                                             </label>
                                         </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '24px' }}>
-                                            <div>
-                                                <label style={labelStyle}>Default Rounding Method</label>
-                                                <select
-                                                    style={inputStyle}
-                                                    value={activePricingSettings.defaultMethod}
-                                                    onChange={e => updatePricingSettings({ defaultMethod: e.target.value as PricingRoundingMethod })}
-                                                >
-                                                    {ROUNDING_METHOD_OPTIONS.map(option => (
-                                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label style={labelStyle}>Custom Step</label>
-                                                <input
-                                                    type="number"
-                                                    min={1}
-                                                    style={{...inputStyle, ...(getFieldError('customStep') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
-                                                    placeholder="e.g. 50"
-                                                    value={activePricingSettings.customStep || 50}
-                                                    onChange={e => updatePricingSettings({ customStep: Math.max(1, parseInt(e.target.value) || 1) })}
-                                                />
-                                                {getFieldError('customStep') && (
-                                                  <p style={{ color: '#b5493f', fontSize: '11px', marginTop: '4px' }}>{getFieldError('customStep')}</p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
-                                                <input
-                                                    type="checkbox"
-                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
-                                                    checked={activePricingSettings.applyToPOS}
-                                                    onChange={e => updatePricingSettings({ applyToPOS: e.target.checked })}
-                                                    disabled
-                                                />
-                                                Legacy: Apply to POS
-                                            </label>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
-                                                <input
-                                                    type="checkbox"
-                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
-                                                    checked={activePricingSettings.applyToInvoices}
-                                                    onChange={e => updatePricingSettings({ applyToInvoices: e.target.checked })}
-                                                    disabled
-                                                />
-                                                Legacy: Apply to Invoices
-                                            </label>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
-                                                <input
-                                                    type="checkbox"
-                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
-                                                    checked={activePricingSettings.applyToQuotations}
-                                                    onChange={e => updatePricingSettings({ applyToQuotations: e.target.checked })}
-                                                    disabled
-                                                />
-                                                Legacy: Apply to Quotations
-                                            </label>
-                                        </div>
-                                        <p style={{ color: '#5c6567' }}>
-                                            Transaction-level rounding is disabled. POS, Invoice, and Quotation read stored selling prices only.
-                                        </p>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
-                                                <input
-                                                    type="checkbox"
-                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
-                                                    checked={activePricingSettings.allowManualOverride}
-                                                    onChange={e => updatePricingSettings({ allowManualOverride: e.target.checked })}
-                                                    disabled
-                                                />
-                                                Legacy: Manual Override
-                                            </label>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
-                                                <input
-                                                    type="checkbox"
-                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
-                                                    checked={activePricingSettings.showOriginalPrice}
-                                                    onChange={e => updatePricingSettings({ showOriginalPrice: e.target.checked })}
-                                                    disabled
-                                                />
-                                                Legacy: Show Original Price
-                                            </label>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#23282A', fontWeight: 600 }}>
-                                                <input
-                                                    type="checkbox"
-                                                    style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
-                                                    checked={activePricingSettings.profitProtectionMode}
-                                                    onChange={e => updatePricingSettings({ profitProtectionMode: e.target.checked })}
-                                                />
-                                                Always Round Up (Profit Mode)
-                                            </label>
-                                        </div>
-
-                                        <div style={{ padding: '16px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', marginTop: '16px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        {(activePricingSettings.thresholdRules || DEFAULT_PRICING_SETTINGS.thresholdRules || []).slice(0, 2).map((rule, idx) => (
+                                            <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, alignItems: 'end', marginBottom: 12 }}>
                                                 <div>
-                                                    <p style={{ fontSize: '11px', fontWeight: 700, color: '#23282A' }}>Smart Threshold Rules</p>
-                                                    <p style={{ color: '#5c6567' }}>Example: below 10,000 use 50; from 10,000 use 100.</p>
+                                                    <label style={{ fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.03, marginBottom: 6, display: 'block' }}>Min Price</label>
+                                                    <input
+                                                        type="number"
+                                                        style={{...inputStyle, ...(getArrayFieldError('thresholdRules', idx, 'minPrice') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
+                                                        placeholder="e.g. 0"
+                                                        value={rule.minPrice ?? 0}
+                                                        onChange={e => {
+                                                            const nextRules = [...(activePricingSettings.thresholdRules || [])];
+                                                            nextRules[idx] = {
+                                                                ...(nextRules[idx] || rule),
+                                                                minPrice: parseFloat(e.target.value) || 0
+                                                            }
+                                                            updatePricingSettings({ thresholdRules: nextRules });
+                                                        }}
+                                                    />
+                                                    {getArrayFieldError('thresholdRules', idx, 'minPrice') && (
+                                                      <p style={{ color: danger, fontSize: 11, marginTop: 4 }}>{getArrayFieldError('thresholdRules', idx, 'minPrice')}</p>
+                                                    )}
                                                 </div>
-                                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#5c6567', fontWeight: 600 }}>
+                                                <div>
+                                                    <label style={{ fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.03, marginBottom: 6, display: 'block' }}>Max Price</label>
+                                                    <input
+                                                        type="number"
+                                                        style={inputStyle}
+                                                        value={rule.maxPrice ?? ''}
+                                                        placeholder="No limit"
+                                                        onChange={e => {
+                                                            const nextRules = [...(activePricingSettings.thresholdRules || [])];
+                                                            nextRules[idx] = {
+                                                                ...(nextRules[idx] || rule),
+                                                                maxPrice: e.target.value === '' ? undefined : (parseFloat(e.target.value) || undefined)
+                                                            };
+                                                            updatePricingSettings({ thresholdRules: nextRules });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label style={{ fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.03, marginBottom: 6, display: 'block' }}>Step</label>
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        style={{...inputStyle, ...(getArrayFieldError('thresholdRules', idx, 'step') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
+                                                        placeholder="e.g. 50"
+                                                        value={rule.step ?? 50}
+                                                        onChange={e => {
+                                                            const nextRules = [...(activePricingSettings.thresholdRules || [])];
+                                                            nextRules[idx] = {
+                                                                ...(nextRules[idx] || rule),
+                                                                step: Math.max(1, parseFloat(e.target.value) || 1),
+                                                                method: 'ALWAYS_UP_CUSTOM'
+                                                            };
+                                                            updatePricingSettings({ thresholdRules: nextRules });
+                                                        }}
+                                                    />
+                                                    {getArrayFieldError('thresholdRules', idx, 'step') && (
+                                                      <p style={{ color: danger, fontSize: 11, marginTop: 4 }}>{getArrayFieldError('thresholdRules', idx, 'step')}</p>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <label style={{ fontWeight: 600, color: inkSoft, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.03, marginBottom: 6, display: 'block' }}>Method</label>
+                                                    <select
+                                                        style={inputStyle}
+                                                        value={rule.method || 'ALWAYS_UP_CUSTOM'}
+                                                        onChange={e => {
+                                                            const nextRules = [...(activePricingSettings.thresholdRules || [])];
+                                                            nextRules[idx] = {
+                                                                ...(nextRules[idx] || rule),
+                                                                method: e.target.value as PricingRoundingMethod
+                                                            };
+                                                            updatePricingSettings({ thresholdRules: nextRules });
+                                                        }}
+                                                    >
+                                                        {ROUNDING_METHOD_OPTIONS.map(option => (
+                                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ padding: 16, background: teal[50], borderRadius: 10, border: `1px solid ${teal[100]}` }}>
+                                        <p style={{ fontSize: 11, fontWeight: 700, color: teal[800], marginBottom: 4 }}>Rounding Analytics</p>
+                                        <p style={{ color: teal[700], fontSize: 12, marginBottom: 4 }}>
+                                            Extra profit captured by rounding: {currency}{Number(roundingAnalytics.totalExtraProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                        </p>
+                                        <p style={{ color: teal[700], fontSize: 12 }}>
+                                            Rounded price recalculations: {Number(roundingAnalytics.roundedTransactions || 0)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>POS Interface & Terminal</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: 16, rowGap: 16 }}>
+                                        <div style={{ gridColumn: 'span 2 / span 2' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${hairline}` }}>
+                                                <div>
+                                                    <label style={labelStyle}>Show Item Images</label>
+                                                    <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Display thumbnails in the product grid.</p>
+                                                </div>
+                                                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
-                                                        style={{ borderRadius: '6px', borderColor: '#e4ddd1', color: '#1f8577' }}
-                                                        checked={Boolean(activePricingSettings.enableSmartThresholds)}
-                                                        onChange={e => updatePricingSettings({ enableSmartThresholds: e.target.checked })}
+                                                        className="toggle-input"
+                                                        checked={config.transactionSettings?.pos?.showItemImages}
+                                                        onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showItemImages: e.target.checked } } })}
                                                     />
-                                                    Enable Smart Rules
+                                                    <div className="toggle-track"></div>
                                                 </label>
                                             </div>
-                                            {(activePricingSettings.thresholdRules || DEFAULT_PRICING_SETTINGS.thresholdRules || []).slice(0, 2).map((rule, idx) => (
-                                                <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', alignItems: 'end' }}>
-                                                    <div>
-                                                        <label style={{ fontWeight: 600, color: '#5c6567' }}>Min Price</label>
-                                                        <input
-                                                            type="number"
-                                                            style={{...inputStyle, ...(getArrayFieldError('thresholdRules', idx, 'minPrice') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
-                                                            placeholder="e.g. 0"
-                                                            value={rule.minPrice ?? 0}
-                                                            onChange={e => {
-                                                                const nextRules = [...(activePricingSettings.thresholdRules || [])];
-                                                                nextRules[idx] = {
-                                                                    ...(nextRules[idx] || rule),
-                                                                    minPrice: parseFloat(e.target.value) || 0
-                                                                }
-                                                                updatePricingSettings({ thresholdRules: nextRules });
-                                                            }}
-                                                        />
-                                                        {getArrayFieldError('thresholdRules', idx, 'minPrice') && (
-                                                          <p style={{ color: '#b5493f', fontSize: '11px', marginTop: '4px' }}>{getArrayFieldError('thresholdRules', idx, 'minPrice')}</p>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <label style={{ fontWeight: 600, color: '#5c6567' }}>Max Price</label>
-                                                        <input
-                                                            type="number"
-                                                            style={inputStyle}
-                                                            value={rule.maxPrice ?? ''}
-                                                            placeholder="No limit"
-                                                            onChange={e => {
-                                                                const nextRules = [...(activePricingSettings.thresholdRules || [])];
-                                                                nextRules[idx] = {
-                                                                    ...(nextRules[idx] || rule),
-                                                                    maxPrice: e.target.value === '' ? undefined : (parseFloat(e.target.value) || undefined)
-                                                                };
-                                                                updatePricingSettings({ thresholdRules: nextRules });
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label style={{ fontWeight: 600, color: '#5c6567' }}>Step</label>
-                                                        <input
-                                                            type="number"
-                                                            min={1}
-                                                            style={{...inputStyle, ...(getArrayFieldError('thresholdRules', idx, 'step') ? {borderColor: danger, boxShadow: '0 0 0 2px rgba(181,73,63,.1)'} : {})}}
-                                                            placeholder="e.g. 50"
-                                                            value={rule.step ?? 50}
-                                                            onChange={e => {
-                                                                const nextRules = [...(activePricingSettings.thresholdRules || [])];
-                                                                nextRules[idx] = {
-                                                                    ...(nextRules[idx] || rule),
-                                                                    step: Math.max(1, parseFloat(e.target.value) || 1),
-                                                                    method: 'ALWAYS_UP_CUSTOM'
-                                                                };
-                                                                updatePricingSettings({ thresholdRules: nextRules });
-                                                            }}
-                                                        />
-                                                        {getArrayFieldError('thresholdRules', idx, 'step') && (
-                                                          <p style={{ color: '#b5493f', fontSize: '11px', marginTop: '4px' }}>{getArrayFieldError('thresholdRules', idx, 'step')}</p>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <label style={{ fontWeight: 600, color: '#5c6567' }}>Method</label>
-                                                        <select
-                                                            style={inputStyle}
-                                                            value={rule.method || 'ALWAYS_UP_CUSTOM'}
-                                                            onChange={e => {
-                                                                const nextRules = [...(activePricingSettings.thresholdRules || [])];
-                                                                nextRules[idx] = {
-                                                                    ...(nextRules[idx] || rule),
-                                                                    method: e.target.value as PricingRoundingMethod
-                                                                };
-                                                                updatePricingSettings({ thresholdRules: nextRules });
-                                                            }}
-                                                        >
-                                                            {ROUNDING_METHOD_OPTIONS.map(option => (
-                                                                <option key={option.value} value={option.value}>{option.label}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div style={{ padding: '16px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9' }}>
-                                            <p style={{ fontSize: '11px', fontWeight: 700, color: '#0f544c' }}>Rounding Analytics</p>
-                                            <p style={{ color: '#0f544c', marginTop: '4px' }}>
-                                                Extra profit captured by rounding: {currency}{Number(roundingAnalytics.totalExtraProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                            </p>
-                                            <p style={{ color: '#0f544c' }}>
-                                                Rounded price recalculations: {Number(roundingAnalytics.roundedTransactions || 0)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
-                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>POS Interface & Terminal</h3>
-                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Configure how the point of sale behaves on this terminal.</p>
-                                    </div>
-                                    <div style={{ padding: '32px' }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
-                                            <div style={{ marginTop: '24px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div>
-                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Show Item Images</p>
-                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Display thumbnails in the product grid.</p>
-                                                    </div>
-                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="toggle-input"
-                                                            checked={config.transactionSettings?.pos?.showItemImages}
-                                                            onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showItemImages: e.target.checked } } })}
-                                                        />
-                                                        <div className="toggle-track"></div>
-                                                    </label>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div>
-                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Enable Shortcuts</p>
-                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Use F-keys for quick POS actions.</p>
-                                                    </div>
-                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="toggle-input"
-                                                            checked={config.transactionSettings?.pos?.enableShortcuts}
-                                                            onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, enableShortcuts: e.target.checked } } })}
-                                                        />
-                                                        <div className="toggle-track"></div>
-                                                    </label>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div>
-                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Allow Returns/Refunds</p>
-                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Enable the refund button in the POS interface.</p>
-                                                    </div>
-                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="toggle-input"
-                                                    checked={config.transactionSettings?.pos?.allowReturns}
-                                                    onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, allowReturns: e.target.checked } } })}
-                                                        />
-                                                        <div className="toggle-track"></div>
-                                                    </label>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div>
-                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Show Shortcut Hints</p>
-                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Show F1, F2, F3, F10 shortcut hints on POS toolbar.</p>
-                                                    </div>
-                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="toggle-input"
-                                                            checked={config.transactionSettings?.pos?.showShortcutHints !== false}
-                                                            onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showShortcutHints: e.target.checked } } })}
-                                                        />
-                                                        <div className="toggle-track"></div>
-                                                    </label>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div>
-                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Enable Item Discounts</p>
-                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Allow manual discounts on individual items.</p>
-                                                    </div>
-                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="toggle-input"
-                                                            checked={config.transactionSettings?.pos?.allowDiscounts}
-                                                            onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, allowDiscounts: e.target.checked } } })}
-                                                        />
-                                                        <div className="toggle-track"></div>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div style={{ marginTop: '24px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${hairline}` }}>
                                                 <div>
-                                                    <label style={labelStyle}>POS Grid columns</label>
-                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
-                                                        {[3, 4, 5, 6].map(cols => (
-                                                            <button
-                                                                key={cols}
-                                                                onClick={() => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, gridColumns: cols } } })}
-                                                                className={`py-2 px-3 rounded-md text-[11px] font-bold border transition-all ${config.transactionSettings?.pos?.gridColumns === cols ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-[#D4D7DC] text-[#6B6C6F] hover:border-blue-600'}`}
-                                                            >
-                                                                {cols}
-                                                            </button>
-                                                        ))}
-                                                    </div>
+                                                    <label style={labelStyle}>Enable Shortcuts</label>
+                                                    <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Use F-keys for quick POS actions.</p>
                                                 </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div>
-                                                        <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Show Category Filters</p>
-                                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Display product categories for easy filtering.</p>
-                                                    </div>
-                                                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="toggle-input"
-                                                    checked={config.transactionSettings?.pos?.showCategoryFilters}
-                                                    onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showCategoryFilters: e.target.checked } } })}
-                                                        />
-                                                        <div className="toggle-track"></div>
-                                                    </label>
+                                                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="toggle-input"
+                                                        checked={config.transactionSettings?.pos?.enableShortcuts}
+                                                        onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, enableShortcuts: e.target.checked } } })}
+                                                    />
+                                                    <div className="toggle-track"></div>
+                                                </label>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${hairline}` }}>
+                                                <div>
+                                                    <label style={labelStyle}>Allow Returns/Refunds</label>
+                                                    <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Enable the refund button in the POS interface.</p>
                                                 </div>
+                                                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="toggle-input"
+                                                        checked={config.transactionSettings?.pos?.allowReturns}
+                                                        onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, allowReturns: e.target.checked } } })}
+                                                    />
+                                                    <div className="toggle-track"></div>
+                                                </label>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${hairline}` }}>
+                                                <div>
+                                                    <label style={labelStyle}>Show Shortcut Hints</label>
+                                                    <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Show F1, F2, F3, F10 shortcut hints on POS toolbar.</p>
+                                                </div>
+                                                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="toggle-input"
+                                                        checked={config.transactionSettings?.pos?.showShortcutHints !== false}
+                                                        onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showShortcutHints: e.target.checked } } })}
+                                                    />
+                                                    <div className="toggle-track"></div>
+                                                </label>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0' }}>
+                                                <div>
+                                                    <label style={labelStyle}>Enable Item Discounts</label>
+                                                    <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Allow manual discounts on individual items.</p>
+                                                </div>
+                                                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="toggle-input"
+                                                        checked={config.transactionSettings?.pos?.allowDiscounts}
+                                                        onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, allowDiscounts: e.target.checked } } })}
+                                                    />
+                                                    <div className="toggle-track"></div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style={labelStyle}>POS Grid Columns</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                                                {[3, 4, 5, 6].map(cols => (
+                                                    <button
+                                                        key={cols}
+                                                        onClick={() => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, gridColumns: cols } } })}
+                                                        style={{
+                                                            py: 8, px: 12, borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: `1px solid ${hairline}`, transition: 'all .15s ease',
+                                                            ...(config.transactionSettings?.pos?.gridColumns === cols ? { background: teal[700], color: '#fff', borderColor: teal[700] } : { background: paper, color: inkSoft })
+                                                        }}
+                                                    >
+                                                        {cols}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: `1px solid ${hairline}`, marginTop: 16 }}>
+                                                <div>
+                                                    <label style={labelStyle}>Show Category Filters</label>
+                                                    <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Display product categories for easy filtering.</p>
+                                                </div>
+                                                <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="toggle-input"
+                                                        checked={config.transactionSettings?.pos?.showCategoryFilters}
+                                                        onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, showCategoryFilters: e.target.checked } } })}
+                                                    />
+                                                    <div className="toggle-track"></div>
+                                                </label>
                                             </div>
                                         </div>
                                     </div>
-                                </section>
+                                </div>
 
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
-                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>POS Service Pricing</h3>
-                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Set default prices and material costs for common retail services. Profit margin = selling price − cost.</p>
-                                    </div>
-                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>POS Service Pricing</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <p style={{ color: inkSoft, fontSize: 11, marginBottom: 16 }}>Set default prices and material costs for common retail services. Profit margin = selling price − cost.</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: 16, rowGap: 16 }}>
                                         <div>
                                             <label style={labelStyle}>Photocopy Price ({currency})</label>
                                             <div style={{ position: 'relative' }}>
-                                                <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
+                                                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft, fontWeight: 700, fontSize: 12 }}>{currency}</span>
                                                 <input
                                                     type="number"
-                                                    style={{ paddingLeft: '40px' }}
+                                                    style={{ ...inputStyle, paddingLeft: 32 }}
                                                     placeholder="e.g. 50"
                                                     value={config.transactionSettings?.pos?.photocopyPrice || 0}
-                                                       onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, photocopyPrice: parseFloat(e.target.value) || 0 } } })}
+                                                    onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, photocopyPrice: parseFloat(e.target.value) || 0 } } })}
                                                 />
                                             </div>
                                         </div>
-
                                         <div>
                                             <label style={labelStyle}>Type & Printing Price ({currency})</label>
                                             <div style={{ position: 'relative' }}>
-                                                <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
+                                                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: inkSoft, fontWeight: 700, fontSize: 12 }}>{currency}</span>
                                                 <input
                                                     type="number"
-                                                    style={{ paddingLeft: '40px' }}
+                                                    style={{ ...inputStyle, paddingLeft: 32 }}
                                                     placeholder="e.g. 200"
                                                     value={config.transactionSettings?.pos?.typePrintingPrice || 0}
-                                                       onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, typePrintingPrice: parseFloat(e.target.value) || 0 } } })}
+                                                    onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, typePrintingPrice: parseFloat(e.target.value) || 0 } } })}
                                                 />
                                             </div>
                                         </div>
-
-
                                     </div>
-                                </section>
+                                </div>
 
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
-                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Receipt & Printing</h3>
-                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Customize transaction receipts and printing behavior.</p>
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Receipt & Printing</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${hairline}` }}>
+                                        <div>
+                                            <label style={labelStyle}>Auto-Print Receipt</label>
+                                            <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Trigger print dialog automatically after checkout.</p>
+                                        </div>
+                                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                className="toggle-input"
+                                                checked={config.transactionSettings?.autoPrintReceipt}
+                                                onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, autoPrintReceipt: e.target.checked } })}
+                                            />
+                                            <div className="toggle-track"></div>
+                                        </label>
                                     </div>
-                                    <div style={{ padding: '32px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div>
-                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Auto-Print Receipt</p>
-                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Trigger print dialog automatically after checkout.</p>
-                                            </div>
-                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="toggle-input"
-                                                    checked={config.transactionSettings?.autoPrintReceipt}
-                                                    onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, autoPrintReceipt: e.target.checked } })}
-                                                />
-                                                <div className="toggle-track"></div>
-                                            </label>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${hairline}` }}>
+                                        <div>
+                                            <label style={labelStyle}>Show Receipt Preview</label>
+                                            <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Display receipt preview after checkout.</p>
                                         </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                className="toggle-input"
+                                                checked={config.transactionSettings?.showReceiptPreview !== false}
+                                                onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, showReceiptPreview: e.target.checked } })}
+                                            />
+                                            <div className="toggle-track"></div>
+                                        </label>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, background: teal[50], borderRadius: 10, border: `1px solid ${teal[100]}`, marginBottom: 16 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <div style={{
+                                                padding: 8, borderRadius: 8,
+                                                background: printerConnected ? teal[100] : '#eef7f6',
+                                                color: printerConnected ? teal[700] : inkSoft
+                                            }}>
+                                                <Printer size={20} />
+                                            </div>
                                             <div>
-                                                <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Show Receipt Preview</p>
-                                                <p style={{ color: '#5c6567', marginTop: '2px' }}>Display receipt preview after checkout.</p>
+                                                <p style={{ fontSize: 13, fontWeight: 700, color: teal[800] }}>Thermal Printer</p>
+                                                <p style={{ fontSize: 11, color: printerConnected ? teal[700] : inkSoft, fontWeight: 500 }}>
+                                                    {printerConnected ? printerDeviceName : 'Not connected'}
+                                                </p>
                                             </div>
-                                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="toggle-input"
-                                                    checked={config.transactionSettings?.showReceiptPreview !== false}
-                                                    onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, showReceiptPreview: e.target.checked } })}
-                                                />
-                                                <div className="toggle-track"></div>
-                                            </label>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div className={`p-2 rounded-lg ${printerConnected ? 'bg-blue-100' : 'bg-slate-200'}`}>
-                                                    <Printer size={20} className={printerConnected ? 'text-blue-600' : 'text-slate-500'} />
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Thermal Printer</p>
-                                                    <p className={`text-[11px] ${printerConnected ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>
-                                                        {printerConnected ? printerDeviceName : 'Not connected'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <button
+                                                onClick={async () => {
+                                                    setIsConnectingPrinter(true);
+                                                    try {
+                                                        const connected = await hardwareService.connect();
+                                                        setPrinterConnected(connected);
+                                                        setPrinterDeviceName(hardwareService.getDeviceName());
+                                                        if (connected) {
+                                                            notify('Printer connected successfully', 'success');
+                                                        } else {
+                                                            notify('No printer selected or connection cancelled', 'warning');
+                                                        }
+                                                    } catch (err: any) {
+                                                        notify(err.message || 'Failed to connect printer', 'error');
+                                                    } finally {
+                                                        setIsConnectingPrinter(false);
+                                                    }
+                                                }}
+                                                disabled={isConnectingPrinter}
+                                                style={{ ...btnPrimaryStyle, background: teal[800], boxShadow: `0 4px 14px 0 rgba(11,62,57,.1)` }}
+                                            >
+                                                <Usb size={14} />
+                                                {isConnectingPrinter ? 'Connecting...' : printerConnected ? 'Reconnect' : 'Connect Printer'}
+                                            </button>
+                                            {printerConnected && (
                                                 <button
                                                     onClick={async () => {
-                                                        setIsConnectingPrinter(true);
                                                         try {
-                                                            const connected = await hardwareService.connect();
-                                                            setPrinterConnected(connected);
-                                                            setPrinterDeviceName(hardwareService.getDeviceName());
-                                                            if (connected) {
-                                                                notify('Printer connected successfully', 'success');
-                                                            } else {
-                                                                notify('No printer selected or connection cancelled', 'warning');
-                                                            }
+                                                            await hardwareService.printPosReceipt({
+                                                                receiptNumber: 'TEST',
+                                                                date: new Date().toISOString(),
+                                                                cashierName: 'Test',
+                                                                customerName: 'Test Customer',
+                                                                items: [{ desc: 'Test Item', qty: 1, price: 100, total: 100 }],
+                                                                subtotal: 100,
+                                                                discount: 0,
+                                                                tax: 0,
+                                                                totalAmount: 100,
+                                                                paymentMethod: 'Cash',
+                                                                amountTendered: 100,
+                                                                changeGiven: 0,
+                                                                footerMessage: 'Test print from Prime ERP'
+                                                            }, companyConfig);
+                                                            notify('Test print sent', 'success');
                                                         } catch (err: any) {
-                                                            notify(err.message || 'Failed to connect printer', 'error');
-                                                        } finally {
-                                                            setIsConnectingPrinter(false);
+                                                            notify('Test print failed', 'error');
                                                         }
                                                     }}
-                                                    disabled={isConnectingPrinter}
-                                                    style={{ paddingLeft: '16px', paddingTop: '8px', background: '#0b3e39', color: '#fff', fontSize: '13px', fontWeight: 600, borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '16px', paddingBottom: '8px' }}
+                                                    style={{ ...btnPrimaryStyle, background: teal[500] }}
                                                 >
-                                                    <Usb size={14} />
-                                                    {isConnectingPrinter ? 'Connecting...' : printerConnected ? 'Reconnect' : 'Connect Printer'}
+                                                    <Printer size={14} />
+                                                    Test Print
                                                 </button>
-                                                {printerConnected && (
-                                                    <button
-                                                        onClick={async () => {
-                                                            try {
-                                                                await hardwareService.printPosReceipt({
-                                                                    receiptNumber: 'TEST',
-                                                                    date: new Date().toISOString(),
-                                                                    cashierName: 'Test',
-                                                                    customerName: 'Test Customer',
-                                                                    items: [{ desc: 'Test Item', qty: 1, price: 100, total: 100 }],
-                                                                    subtotal: 100,
-                                                                    discount: 0,
-                                                                    tax: 0,
-                                                                    totalAmount: 100,
-                                                                    paymentMethod: 'Cash',
-                                                                    amountTendered: 100,
-                                                                    changeGiven: 0,
-                                                    footerMessage: 'Test print from Prime ERP'
-                                                                 }, companyConfig);
-                                                                notify('Test print sent', 'success');
-                                                            } catch (err: any) {
-                                                                notify('Test print failed', 'error');
-                                                            }
-                                                        }}
-                                                        style={{ paddingLeft: '16px', paddingTop: '8px', background: '#1f8577', color: '#fff', fontSize: '13px', fontWeight: 600, borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '16px', paddingBottom: '8px' }}
-                                                    >
-                                                        <Printer size={14} />
-                                                        Test Print
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Receipt Footer Message</label>
-                                            <textarea
-                                                style={{ height: '96px' }}
-                                                value={config.transactionSettings?.pos?.receiptFooter || ''}
-                                                onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, receiptFooter: e.target.value } } })}
-                                                placeholder="e.g. Thank you for your business!"
-                                            />
+                                            )}
                                         </div>
                                     </div>
-                                </section>
+                                    <div>
+                                        <label style={labelStyle}>Receipt Footer Message</label>
+                                        <textarea
+                                            style={{ ...textareaStyle, height: 96 }}
+                                            value={config.transactionSettings?.pos?.receiptFooter || ''}
+                                            onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, pos: { ...config.transactionSettings?.pos, receiptFooter: e.target.value } } })}
+                                            placeholder="e.g. Thank you for your business!"
+                                        />
+                                    </div>
+                                </div>
 
-                                <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', paddingRight: '32px', paddingBottom: '20px' }}>
-                                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#23282A' }}>Advanced POS Terminal Settings</h3>
-                                        <p style={{ color: '#5c6567', marginTop: '2px' }}>Control default behavior and terminal-specific settings.</p>
-                                    </div>
-                                    <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '48px' }}>
-                                        <div style={{ marginTop: '24px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Advanced POS Terminal Settings</span></div>
+                                <div style={{ padding: '24px', background: paper, border: `1px solid ${hairline}`, borderRadius: 12 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: 16, rowGap: 16 }}>
+                                        <div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${hairline}` }}>
                                                 <div>
-                                                    <p style={{ fontWeight: 700, color: '#23282A', fontSize: '13px' }}>Quick Item Entry</p>
-                                                    <p style={{ color: '#5c6567', marginTop: '2px' }}>Focus SKU input automatically after adding item.</p>
+                                                    <label style={labelStyle}>Quick Item Entry</label>
+                                                    <p style={{ color: inkSoft, fontSize: 11, marginTop: 2 }}>Focus SKU input automatically after adding item.</p>
                                                 </div>
                                                 <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                     <input
@@ -1920,7 +1892,7 @@ const Settings: React.FC = () => {
                                                     <div className="toggle-track"></div>
                                                 </label>
                                             </div>
-                                            <div>
+                                            <div style={{ paddingTop: 12 }}>
                                                 <label style={labelStyle}>Default POS Terminal/Warehouse</label>
                                                 <select
                                                     style={inputStyle}
@@ -1933,7 +1905,7 @@ const Settings: React.FC = () => {
                                                 </select>
                                             </div>
                                         </div>
-                                        <div>
+                                        <div style={{ paddingTop: 12 }}>
                                             <label style={labelStyle}>Default POS Customer</label>
                                             <input
                                                 type="text"
@@ -1942,10 +1914,10 @@ const Settings: React.FC = () => {
                                                 value={config.transactionSettings?.posDefaultCustomer || ''}
                                                 onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, posDefaultCustomer: e.target.value } })}
                                             />
-                                            <p style={{ color: '#5c6567', marginTop: '8px', fontStyle: 'italic' }}>The default customer profile used for anonymous POS sales.</p>
+                                            <p style={{ color: inkSoft, fontSize: 11, marginTop: 8, fontStyle: 'italic' }}>The default customer profile used for anonymous POS sales.</p>
                                         </div>
                                     </div>
-                                </section>
+                                </div>
                             </div>
                         )}
 
@@ -1954,7 +1926,7 @@ const Settings: React.FC = () => {
                         {activeTab === 'Templates' && (
                             <div style={{ marginTop: '32px' }}>
                                 <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
                                         Invoice Layout & Engine
                                     </div>
                                     <div style={{ padding: '32px' }}>
@@ -2002,7 +1974,7 @@ const Settings: React.FC = () => {
                                 </section>
 
                                 <section style={{ padding: 0, overflow: 'hidden' }}>
-                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
+                                    <div style={{ paddingLeft: '32px', paddingTop: '20px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6', fontWeight: 700, fontSize: '13px', color: '#23282A', paddingRight: '32px', paddingBottom: '20px' }}>
                                         Typography & Page Metrics
                                     </div>
                                     <div style={{ padding: '32px' }}>
@@ -2079,13 +2051,13 @@ const Settings: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div style={{ background: '#eef7f6', borderRadius: '16px', padding: '24px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                                        <div style={{ background: '#eef7f6', borderRadius: '16px', padding: '24px', border: '1px solid #D4D7DC', borderColor: '#D4D7DC' }}>
                                             <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
                                                 <div>
                                                     <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em' }}>Exact Prime Preview</p>
                                                     <p style={{ marginTop: '4px', fontSize: '11px', color: '#5c6567' }}>This is the actual PDF renderer used for the document export, refreshed live from the unsaved template settings.</p>
                                                 </div>
-                                                <div style={{ borderRadius: '9999px', background: '#FEFDFB', paddingLeft: '12px', paddingTop: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#5c6567', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', paddingRight: '12px', paddingBottom: '4px' }}>
+                                                <div style={{ borderRadius: '9999px', background: '#FEFDFB', paddingLeft: '12px', paddingTop: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#5c6567', border: '1px solid #D4D7DC', borderColor: '#D4D7DC', paddingRight: '12px', paddingBottom: '4px' }}>
                                                     Invoice
                                                 </div>
                                             </div>
@@ -2117,7 +2089,7 @@ const Settings: React.FC = () => {
                                             { key: 'accountsPayable', label: 'Accounts Payable', icon: Users, desc: 'Supplier debt' },
                                             { key: 'bankAccount', label: 'Primary Bank Account', icon: Landmark, desc: 'Default cash/bank' }
                                         ].map(item => (
-                                            <div key={item.key} style={{ padding: '24px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            <div key={item.key} style={{ padding: '24px', background: paper, borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                                     <div style={{ padding: '12px', borderRadius: '8px', transition: 'all .15s ease' }}>
                                                         <item.icon size={20} />
@@ -2128,10 +2100,10 @@ const Settings: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div style={{ position: 'relative' }}>
-                                                    <Hash style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} size={14} />
+                                                    <Hash style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} size={14} />
                                                     <input
                                                         type="text"
-                                                        style={{ width: '100%', paddingLeft: '40px', paddingRight: '20px', paddingTop: '12px', border: '1.4px solid #e4ddd1', borderRadius: '8px', fontFamily: '"JetBrains Mono",monospace', fontWeight: 700, color: '#1f8577', outline: 'none', transition: 'all .15s ease', fontSize: '11px', paddingBottom: '12px' }}
+                                                        style={{ ...inputStyle, fontFamily: '"JetBrains Mono",monospace', fontWeight: 700, color: '#1f8577', fontSize: '11px', paddingLeft: '36px' }}
                                                         value={config.glMapping[item.key] || ''}
                                                         onChange={e => setConfig({ ...config, glMapping: { ...(config.glMapping || {}), [item.key]: e.target.value } })}
                                                         placeholder="e.g. 1000-0001"
@@ -2190,7 +2162,7 @@ const Settings: React.FC = () => {
                                         </div>
                                         <div style={{ marginTop: '12px' }}>
                                             {(config.transactionSettings?.paymentDetails?.bankAccounts || []).map((bank, idx) => (
-                                                <div key={bank.id} style={{ padding: '16px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                                <div key={bank.id} style={{ padding: '16px', background: paper, borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
                                                         <input
                                                             type="text"
@@ -2293,7 +2265,7 @@ const Settings: React.FC = () => {
                                         </div>
                                         <div style={{ marginTop: '12px' }}>
                                             {(config.transactionSettings?.paymentDetails?.mobileMoneyAccounts || []).map((mm, idx) => (
-                                                <div key={mm.id} style={{ padding: '16px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                                <div key={mm.id} style={{ padding: '16px', background: paper, borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
                                                         <select
                                                             style={inputStyle}
@@ -2369,7 +2341,7 @@ const Settings: React.FC = () => {
                                         </div>
 
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
-                                            <div style={{ padding: '24px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                            <div style={{ padding: '24px', background: paper, borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'start', gap: '16px' }}>
                                                     <div style={{ padding: '16px', borderRadius: '8px', color: '#1f8577' }}>
                                                         <Hash size={24} />
@@ -2390,7 +2362,7 @@ const Settings: React.FC = () => {
                                                             type="number"
                                                             min={1}
                                                             placeholder="e.g. 4"
-                                                            style={{ width: '100%', padding: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', textAlign: 'center', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease' }}
+                                                            style={{ ...inputStyle, textAlign: 'center' }}
                                                             value={sharedNumberingRule.padding || 4}
                                                             onChange={e => updateSharedNumbering({ padding: parseInt(e.target.value, 10) || 1 })}
                                                         />
@@ -2401,7 +2373,7 @@ const Settings: React.FC = () => {
                                                             type="number"
                                                             min={1}
                                                             placeholder="e.g. 1"
-                                                            style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderRadius: '8px', textAlign: 'center', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease' }}
+                                                            style={{ ...inputStyle, textAlign: 'center' }}
                                                             value={sharedNumberingRule.startNumber || 1}
                                                             onChange={e => updateSharedNumbering({ startNumber: parseInt(e.target.value, 10) || 1 })}
                                                         />
@@ -2411,7 +2383,7 @@ const Settings: React.FC = () => {
                                                         <input
                                                             type="text"
                                                             placeholder="e.g. P7, HQ, BRANCH01"
-                                                            style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderRadius: '8px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease' }}
+                                                            style={inputStyle}
                                                             value={sharedNumberingRule.extension || ''}
                                                             onChange={e => updateSharedNumbering({ extension: e.target.value })}
                                                         />
@@ -2420,7 +2392,7 @@ const Settings: React.FC = () => {
                                                     <div style={{ gridColumn: 'span 2 / span 2' }}>
                                                         <label style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', display: 'block', marginBottom: '12px', paddingLeft: '4px', paddingRight: '4px' }}>Reset Sequence</label>
                                                         <select
-                                                            style={{ width: '100%', padding: '12px', border: '1.4px solid #e4ddd1', borderRadius: '8px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', cursor: 'pointer' }}
+                                                            style={selectStyle}
                                                             value={sharedNumberingRule.resetInterval || 'Never'}
                                                             onChange={e => updateSharedNumbering({ resetInterval: e.target.value as NumberingRule['resetInterval'] })}
                                                         >
@@ -2432,12 +2404,12 @@ const Settings: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                <div style={{ borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#d3ece9', background: '#eef7f6', paddingLeft: '16px', paddingTop: '12px', fontSize: '11px', color: '#0b3e39', paddingRight: '16px', paddingBottom: '12px' }}>
+                                                <div style={{ borderRadius: '12px', border: '1px solid #D4D7DC', borderColor: '#d3ece9', background: '#eef7f6', paddingLeft: '16px', paddingTop: '12px', fontSize: '11px', color: '#0b3e39', paddingRight: '16px', paddingBottom: '12px' }}>
                                                     One change here updates the numbering style used throughout sales, POS, procurement, inventory, and supporting transaction documents.
                                                 </div>
                                             </div>
 
-                                            <div style={{ padding: '24px', background: '#0b3e39', borderRadius: '10px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', color: '#fff', border: '1.4px solid #e4ddd1', borderColor: '#fff' }}>
+                                            <div style={{ padding: '24px', background: '#0b3e39', borderRadius: '10px', boxShadow: '0 20px 25px -5px rgba(0,0,0,.1)', color: '#fff', border: '1px solid #D4D7DC', borderColor: '#fff' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                                                     <FileCheck size={18} style={{ color: '#1f8577' }} />
                                                     <div>
@@ -2455,7 +2427,7 @@ const Settings: React.FC = () => {
                                                         { key: 'RCPT', label: 'Customer Receipt' },
                                                         { key: 'exambatch', label: 'Exam Batch' }
                                                     ].map(preview => (
-                                                        <div key={preview.key} style={{ borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.1)', background: 'rgba(254,253,251,.05)', paddingLeft: '16px', paddingTop: '12px', paddingRight: '16px', paddingBottom: '12px' }}>
+                                                        <div key={preview.key} style={{ borderRadius: '12px', border: '1px solid #D4D7DC', borderColor: 'rgba(255,255,255,.1)', background: 'rgba(254,253,251,.05)', paddingLeft: '16px', paddingTop: '12px', paddingRight: '16px', paddingBottom: '12px' }}>
                                                             <p style={{ textTransform: 'uppercase', letterSpacing: '.1em', color: '#5c6567', fontWeight: 900 }}>{preview.label}</p>
                                                             <p style={{ marginTop: '8px', fontFamily: '"JetBrains Mono",monospace', fontSize: '13px', color: '#fff' }}>{formatNumberingPreview(preview.key, sharedNumberingRule)}</p>
                                                         </div>
@@ -2465,7 +2437,7 @@ const Settings: React.FC = () => {
                                         </div>
                                     </section>
 
-                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#D4D7DC' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: '40px' }}>
                                             <div>
                                                 <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -2481,7 +2453,7 @@ const Settings: React.FC = () => {
                                                 { key: 'quotation', label: 'Sales Quotations', icon: PenTool, desc: 'Customer proposals' },
                                                 { key: 'expense', label: 'Operating Expenses', icon: ExternalLink, desc: 'Direct cost recording' }
                                             ].map(item => (
-                                                <div key={item.key} style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                                <div key={item.key} style={{ background: paper, padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', display: 'flex', flexDirection: 'column', height: '100%' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
                                                         <div style={{ padding: '12px', borderRadius: '8px', transition: 'all .15s ease' }}>
                                                             <item.icon size={20} />
@@ -2521,10 +2493,10 @@ const Settings: React.FC = () => {
                                                             <div style={{ transitionDuration: '300ms' }}>
                                                                 <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', paddingRight: '4px' }}>Threshold Amount ({currency})</label>
                                                                 <div style={{ position: 'relative' }}>
-                                                                    <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
+                                                                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#5c6567', fontSize: '11px' }}>{currency}</span>
                                                                     <input
                                                                         type="number"
-                                                                        style={{ width: '100%', border: '1.4px solid #e4ddd1', borderRadius: '8px', paddingLeft: '40px', paddingRight: '20px', paddingTop: '12px', fontWeight: 700, outline: 'none', transition: 'all .15s ease', fontSize: '13px', paddingBottom: '12px' }}
+                                                                        style={{ ...inputStyle, paddingLeft: '32px' }}
                                                                         value={config.transactionSettings?.approvalThresholds?.[item.key] || 0}
                                                                         onChange={e => setConfig({ ...config, transactionSettings: { ...config.transactionSettings, approvalThresholds: { ...config.transactionSettings?.approvalThresholds, [item.key]: parseFloat(e.target.value) || 0 } } })}
                                                                     />
@@ -2547,13 +2519,13 @@ const Settings: React.FC = () => {
 
 
 
-                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#D4D7DC' }}>
                                         <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <Cpu size={18} style={{ color: '#1f8577' }} /> External API Connections
                                         </h3>
-                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                        <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                             {(config.integrationSettings?.externalApis || []).map((api, idx) => (
-                                                <div key={api.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', transition: 'all .15s ease' }}>
+                                                <div key={api.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px', background: '#eef7f6', borderRadius: 12, border: `1px solid ${hairline}`, transition: 'all .15s ease' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                                                         <div style={{ padding: '20px', background: '#FEFDFB', borderRadius: '16px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', color: '#5c6567', transition: 'all .15s ease' }}>
                                                             <Globe size={24} />
@@ -2592,24 +2564,24 @@ const Settings: React.FC = () => {
                                                     });
                                                     notify('New API connection added. Configure details below.', 'info');
                                                 }}
-                                                style={{ width: '100%', paddingTop: '24px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', borderRadius: '10px', color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingBottom: '24px' }}
+                                                style={{ width: '100%', paddingTop: '24px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#D4D7DC', borderRadius: '10px', color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingBottom: '24px' }}
                                             >
                                                 <Plus size={18} /> Connect New Service
                                             </button>
                                         </div>
                                     </section>
 
-                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#e4ddd1' }}>
+                                    <section style={{ paddingTop: '40px', borderStyle: 'solid', borderColor: '#D4D7DC' }}>
                                         <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <Webhook size={18} style={{ color: '#1f8577' }} /> Webhook Outlets
                                         </h3>
-                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                        <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                             {(config.integrationSettings?.webhooks || []).map((hook, idx) => (
-                                                <div key={hook.id} style={{ padding: '24px', background: '#eef7f6', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', transition: 'all .15s ease' }}>
+                                                <div key={hook.id} style={{ padding: '24px', background: '#eef7f6', borderRadius: 12, border: `1px solid ${hairline}`, transition: 'all .15s ease' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '24px' }}>
                                                         <div>
                                                             <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '.1em', marginBottom: '4px' }}>Destination URL</p>
-                                                            <p style={{ color: '#5c6567', fontFamily: '"JetBrains Mono",monospace', marginTop: '4px', background: 'rgba(254,253,251,.5)', paddingLeft: '12px', paddingTop: '6px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', paddingRight: '12px', paddingBottom: '6px' }}>{hook.url}</p>
+                                                            <p style={{ color: '#5c6567', fontFamily: '"JetBrains Mono",monospace', marginTop: '4px', background: 'rgba(254,253,251,.5)', paddingLeft: '12px', paddingTop: '6px', borderRadius: '10px', border: '1px solid #D4D7DC', borderColor: '#D4D7DC', paddingRight: '12px', paddingBottom: '6px' }}>{hook.url}</p>
                                                         </div>
                                                         <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                                                             <input
@@ -2627,7 +2599,7 @@ const Settings: React.FC = () => {
                                                     </div>
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                                                         {(hook.events || []).map(event => (
-                                                            <span key={event} style={{ paddingLeft: '16px', paddingTop: '8px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>{event}</span>
+                                                            <span key={event} style={{ paddingLeft: '16px', paddingTop: '8px', background: '#FEFDFB', border: '1px solid #D4D7DC', borderColor: '#D4D7DC', borderRadius: '12px', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease', paddingRight: '16px', paddingBottom: '8px' }}>{event}</span>
                                                         ))}
                                                     </div>
                                                 </div>
@@ -2650,7 +2622,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     });
                                                     notify('New webhook endpoint added. Configure URL and events below.', 'info');
                                                 }}
-                                                style={{ width: '100%', paddingTop: '24px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#e4ddd1', borderRadius: '10px', color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingBottom: '24px' }}
+                                                style={{ width: '100%', paddingTop: '24px', borderWidth: '2px', borderStyle: 'dashed', borderColor: '#D4D7DC', borderRadius: '10px', color: '#5c6567', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingBottom: '24px' }}
                                             >
                                                 <Plus size={18} /> Register Webhook
                                             </button>
@@ -2663,7 +2635,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                         {
                             activeTab === 'Modules' && (
                                 <div style={{ marginTop: '48px' }}>
-                                    <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', marginTop: '40px' }}>
+                                    <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', marginTop: '40px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <ShoppingBag size={18} style={{ color: '#1f8577' }} />
                                             <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase' }}>Feature Management</h3>
@@ -2676,9 +2648,9 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                 { key: 'crm', label: 'CRM & Comms', icon: Smartphone, desc: 'Lead tracking and SMS/WhatsApp broadcast' },
                                                 { key: 'loyalty', label: 'Loyalty Rewards', icon: Zap, desc: 'Point accumulation and redemption logic' }
                                             ].map(mod => (
-                                                <div key={mod.key} style={{ padding: '24px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all .15s ease' }}>
+                                                <div key={mod.key} style={{ padding: '24px', background: paper, borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all .15s ease' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                                                        <div style={{ padding: '16px', borderRadius: '8px', border: '1.4px solid #e4ddd1', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                                        <div style={{ padding: '16px', borderRadius: 9, border: `1px solid ${hairline}`, transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                                             <mod.icon size={28} />
                                                         </div>
                                                         <div style={{ minWidth: 0 }}>
@@ -2706,13 +2678,13 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                             {
                                 activeTab === 'Inventory' && (
                                     <div style={{ marginTop: '48px' }}>
-                                    <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', marginTop: '40px' }}>
+                                    <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', marginTop: '40px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <Box size={18} style={{ color: '#1f8577' }} />
                                             <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase' }}>Stock & Inventory Policy</h3>
                                         </div>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
-                                            <div style={{ background: '#eef7f6', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', marginTop: '32px' }}>
+                                            <div style={{ background: '#eef7f6', padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, marginTop: '32px' }}>
                                                 <div>
                                                     <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '16px', paddingLeft: '4px', paddingRight: '4px' }}>Valuation Method</label>
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
@@ -2777,11 +2749,11 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                 </div>
                                             </div>
 
-                                            <div style={{ background: '#eef7f6', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', marginTop: '32px' }}>
+                                            <div style={{ background: '#eef7f6', padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, marginTop: '32px' }}>
                                                 <div>
                                                     <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '16px', paddingLeft: '4px', paddingRight: '4px' }}>Default Warehouse</label>
                                                     <select
-                                                        style={{ width: '100%', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '16px', paddingLeft: '20px', paddingTop: '16px', fontWeight: 700, color: '#23282A', outline: 'none', transition: 'all .15s ease', fontSize: '13px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '20px', paddingBottom: '16px' }}
+                                                        style={selectStyle}
                                                         value={config.inventorySettings?.defaultWarehouseId || ''}
                                                         onChange={e => setConfig({ ...config, inventorySettings: { ...config.inventorySettings, defaultWarehouseId: e.target.value } })}
                                                     >
@@ -2862,7 +2834,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                             <ShieldAlert size={18} style={{ color: '#b5493f' }} /> System Security Policy
                                         </h3>
 
-                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
+                                        <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '40px' }}>
                                                 <div style={{ marginTop: '32px' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2907,7 +2879,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                             <div className="toggle-track-lg"></div>
                                                         </label>
                                                     </div>
-                                                    <div style={{ borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', background: '#eef7f6', padding: '16px', marginTop: '12px' }}>
+                                                    <div style={{ borderRadius: 12, border: `1px solid ${hairline}`, background: '#eef7f6', padding: '16px', marginTop: '12px' }}>
                                                         <div>
                                                             <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '13px' }}>Access Password</p>
                                                             <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500, fontStyle: 'italic' }}>
@@ -2922,14 +2894,14 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                                 value={accessPassword}
                                                                 onChange={e => setAccessPassword(e.target.value)}
                                                                 placeholder={primaryAdminUser?.password ? 'Leave blank to keep' : 'e.g. Secret123!'}
-                                                                style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
+                                                                style={inputStyle}
                                                             />
                                                             <input
                                                                 type="password"
                                                                 value={confirmAccessPassword}
                                                                 onChange={e => setConfirmAccessPassword(e.target.value)}
                                                                 placeholder="Repeat password"
-                                                                style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
+                                                                style={inputStyle}
                                                             />
                                                         </div>
                                                         {accessPassword && normalizedSecuritySettings.enforcePasswordComplexity && !accessPasswordValidation.valid && (
@@ -2942,17 +2914,17 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         )}
                                                     </div>
                                                     <div style={{ height: '1px', background: '#eef7f6' }}></div>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', background: '#eef7f6', borderRadius: '16px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', background: '#eef7f6', borderRadius: 12, border: `1px solid ${hairline}` }}>
                                                         <div>
                                                             <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '14px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Multi-Factor Authentication</p>
                                                             <p style={{ color: '#5c6567', marginTop: '4px', fontWeight: 500, fontStyle: 'italic' }}>Require a 6-digit TOTP code for administrative access.</p>
                                                             <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                                                                 {normalizedSecuritySettings.requireTwoFactor ? (
-                                                                     <span style={{ paddingLeft: '12px', paddingTop: '4px', background: '#d3ece9', color: '#0f544c', borderRadius: '9999px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px 0 rgba(31,133,119,.1)', paddingRight: '12px', paddingBottom: '4px' }}>
+                                                                     <span style={{ paddingLeft: '12px', paddingTop: '4px', background: '#d3ece9', color: '#0f544c', borderRadius: '9999px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', border: '1px solid #D4D7DC', borderColor: '#a6d9d3', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px 0 rgba(31,133,119,.1)', paddingRight: '12px', paddingBottom: '4px' }}>
                                                                          <CheckCircle2 size={12} /> Active & Configured
                                                                      </span>
                                                                 ) : (
-                                                                     <span style={{ paddingLeft: '12px', paddingTop: '4px', background: '#eef7f6', color: '#5c6567', borderRadius: '9999px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', display: 'flex', alignItems: 'center', gap: '6px', paddingRight: '12px', paddingBottom: '4px' }}>
+                                                                     <span style={{ paddingLeft: '12px', paddingTop: '4px', background: '#eef7f6', color: '#5c6567', borderRadius: '9999px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.1em', border: '1px solid #D4D7DC', borderColor: '#D4D7DC', display: 'flex', alignItems: 'center', gap: '6px', paddingRight: '12px', paddingBottom: '4px' }}>
                                                                          <Smartphone size={12} /> Not Configured
                                                                      </span>
                                                                 )}
@@ -2962,7 +2934,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                             {normalizedSecuritySettings.requireTwoFactor ? (
                                                                 <button 
                                                                     onClick={() => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, requireTwoFactor: false } })}
-                                                                    style={{ paddingLeft: '24px', paddingTop: '12px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#b5493f', color: '#b5493f', borderRadius: '12px', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '24px', paddingBottom: '12px' }}
+                                                                    style={{ paddingLeft: '24px', paddingTop: '12px', background: '#FEFDFB', border: '1px solid #D4D7DC', borderColor: '#b5493f', color: '#b5493f', borderRadius: '12px', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)', paddingRight: '24px', paddingBottom: '12px' }}
                                                                 >
                                                                     Deactivate 2FA
                                                                 </button>
@@ -2980,7 +2952,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                     <div className="group/field">
                                                         <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Audit Log Level</label>
                                                         <select
-                                                            style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
+                                                            style={selectStyle}
                                                             value={normalizedSecuritySettings.auditLogLevel || 'Standard'}
                                                             onChange={e => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, auditLogLevel: e.target.value as SecuritySettingsConfig['auditLogLevel'] } })}
                                                         >
@@ -2996,7 +2968,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Session Idle Timeout (Min)</label>
                                                         <input
                                                             type="number"
-                                                            style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
+                                                            style={inputStyle}
                                                             placeholder="e.g. 30"
                                                             value={normalizedSecuritySettings.sessionTimeoutMinutes || 30}
                                                             onChange={e => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, sessionTimeoutMinutes: parseInt(e.target.value) || 0 } })}
@@ -3006,7 +2978,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Force Password Change (Days)</label>
                                                         <input
                                                             type="number"
-                                                            style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
+                                                            style={inputStyle}
                                                             placeholder="e.g. 90"
                                                             value={normalizedSecuritySettings.forcePasswordChangeDays || 90}
                                                             onChange={e => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, forcePasswordChangeDays: parseInt(e.target.value) || 0 } })}
@@ -3016,7 +2988,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Lockout Attempts</label>
                                                         <input
                                                             type="number"
-                                                            style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
+                                                            style={inputStyle}
                                                             placeholder="e.g. 5"
                                                             value={normalizedSecuritySettings.lockoutAttempts || 5}
                                                             onChange={e => setConfig({ ...config, securitySettings: { ...normalizedSecuritySettings, lockoutAttempts: parseInt(e.target.value) || 0 } })}
@@ -3038,7 +3010,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                             <button
                                                 onClick={runIntegritySuite}
                                                 disabled={isProcessing}
-                                                style={{ color: '#fff', paddingLeft: '32px', paddingTop: '16px', borderRadius: '9999px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', transition: 'all .15s ease', border: '1.4px solid #e4ddd1', borderColor: '#fff', paddingRight: '32px', paddingBottom: '16px' }}
+                                                style={{ color: '#fff', paddingLeft: '32px', paddingTop: '16px', borderRadius: '9999px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', transition: 'all .15s ease', border: '1px solid #D4D7DC', borderColor: '#fff', paddingRight: '32px', paddingBottom: '16px' }}
                                             >
                                                 {isProcessing ? <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite', color: '#1f8577' }} /> : <Zap size={20} style={{ color: '#1f8577' }} />}
                                                 {isProcessing ? 'Auditing...' : 'Run Logic Sweep'}
@@ -3046,18 +3018,18 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                         </div>
 
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '40px', marginBottom: '48px' }}>
-                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
+                                            <div style={{ background: paper, padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
                                                 <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Pass Status</p>
                                                 <div style={{ fontSize: '48px', fontWeight: 700, display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                     {testResults.length > 0 ? '100%' : '0%'}
                                                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#1f8577' }}>SEALED</span>
                                                 </div>
                                             </div>
-                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
+                                            <div style={{ background: paper, padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
                                                 <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Logical Drifts</p>
                                                 <div style={{ fontSize: '48px', fontWeight: 700, color: '#1f8577', transition: 'transform .15s ease' }}>0</div>
                                             </div>
-                                            <div style={{ padding: '24px', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', color: '#fff', border: '1.4px solid #e4ddd1', borderColor: '#fff', overflow: 'hidden', position: 'relative' }}>
+                                            <div style={{ padding: '24px', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', color: '#fff', border: `1px solid ${hairline}`, borderColor: '#fff', overflow: 'hidden', position: 'relative' }}>
                                                 <div style={{ position: 'absolute', opacity: 0.1, transition: 'transform .15s ease' }}><Database size={120} /></div>
                                                 <p style={{ fontWeight: 700, color: '#1f8577', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px', position: 'relative', zIndex: 10 }}>Ledger Sync</p>
                                                 <div style={{ fontSize: '30px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '-.05em', position: 'relative', zIndex: 10 }}>ACCURATE</div>
@@ -3066,9 +3038,9 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                                         <div style={{ marginTop: '16px', marginBottom: '64px' }}>
                                             {testResults.map((r, i) => (
-                                                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px', background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transitionDuration: '500ms', transition: 'all .15s ease' }} style={{ animationDelay: `${i * 150}ms` }}>
+                                                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px', background: paper, borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', transitionDuration: '500ms', transition: 'all .15s ease' }} style={{ animationDelay: `${i * 150}ms` }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                                                        <div style={{ padding: '16px', borderRadius: '8px', border: '1.4px solid #e4ddd1', transition: 'all .15s ease' }}>
+                                                        <div style={{ padding: '16px', borderRadius: 9, border: `1px solid ${hairline}`, transition: 'all .15s ease' }}>
                                                             <FileCheck size={28} />
                                                         </div>
                                                         <div>
@@ -3097,17 +3069,17 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                             onChange={handleRestoreBackupFile}
                                         />
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: '40px', marginBottom: '48px' }}>
-                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
-                                                <div style={{ width: '80px', height: '80px', borderRadius: '10px', background: '#eef7f6', color: '#1f8577', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease' }}><HardDriveDownload size={40} /></div>
+                                            <div style={{ background: paper, padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
+                                                <div style={{ width: '80px', height: '80px', borderRadius: 12, background: '#eef7f6', color: '#1f8577', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease' }}><HardDriveDownload size={40} /></div>
                                                 <h4 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Backup Database</h4>
                                                 <p style={{ fontSize: '13px', lineHeight: 1.625, marginBottom: '16px', maxWidth: '320px', marginLeft: 'auto' }}>Create a full offline snapshot of your live IndexedDB data and saved local system settings.</p>
                                                 <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#5c6567', marginBottom: '24px' }}>
                                                     Last backup: {backupStatus.lastBackupAt ? new Date(backupStatus.lastBackupAt).toLocaleString() : 'Not yet created'}
                                                 </div>
-                                                <button onClick={handleManualBackupDownload} style={{ width: '100%', paddingTop: '16px', color: '#fff', borderRadius: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', paddingBottom: '16px' }}>Download Vault Binary</button>
+                                                <button onClick={handleManualBackupDownload} style={{ width: '100%', paddingTop: '16px', color: '#fff', borderRadius: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', paddingBottom: '16px' }}>Download Vault Binary</button>
                                             </div>
-                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
-                                                <div style={{ width: '80px', height: '80px', borderRadius: '10px', background: '#eef7f6', color: '#1f8577', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease' }}><Database size={40} /></div>
+                                            <div style={{ background: paper, padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
+                                                <div style={{ width: '80px', height: '80px', borderRadius: 12, background: '#eef7f6', color: '#1f8577', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease' }}><Database size={40} /></div>
                                                 <h4 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Restore Database</h4>
                                                 <p style={{ fontSize: '13px', lineHeight: 1.625, marginBottom: '16px', maxWidth: '320px', marginLeft: 'auto' }}>Restore a previously downloaded Prime ERP backup file and reload the full local database state.</p>
                                                 <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#5c6567', marginBottom: '24px' }}>
@@ -3116,12 +3088,12 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                 <button
                                                     onClick={handleRestoreBackupRequest}
                                                     disabled={isRestoringBackup}
-                                                    style={{ width: '100%', paddingTop: '16px', background: '#1f8577', color: '#fff', borderRadius: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', paddingBottom: '16px' }}
+                                                    style={{ width: '100%', paddingTop: '16px', background: '#1f8577', color: '#fff', borderRadius: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', transition: 'all .15s ease', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)', paddingBottom: '16px' }}
                                                 >
                                                     {isRestoringBackup ? 'Restoring Database...' : 'Restore From Backup'}
                                                 </button>
                                             </div>
-                                            <div style={{ background: '#fef2f2', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', borderColor: '#b5493f', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
+                                            <div style={{ background: '#fef2f2', padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, borderColor: '#b5493f', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all .15s ease' }}>
                                                 <div style={{ width: '80px', height: '80px', borderRadius: '10px', background: '#fee2e2', color: '#b5493f', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'transform .15s ease' }}><RefreshCw size={40} /></div>
                                                 <h4 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Reset to Factory Samples</h4>
                                                 <p style={{ fontSize: '13px', opacity: 0.6, lineHeight: 1.625, marginBottom: '32px', maxWidth: '320px', marginLeft: 'auto' }}>Irreversibly purge all current data and reload the system with printing & production sample data.</p>
@@ -3129,7 +3101,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                             </div>
                                         </div>
 
-                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
+                                        <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '24px', marginTop: '32px', boxShadow: '0 1px 2px rgba(0,0,0,.05)', transition: 'all .15s ease' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
                                                     <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', fontSize: '14px', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}>Automated Cloud Backups</p>
@@ -3156,7 +3128,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                 <div className="group/field">
                                                     <label style={{ display: 'block', fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '12px', paddingLeft: '4px', transition: 'color .15s ease,background .15s ease,border-color .15s ease', paddingRight: '4px' }}>Backup Frequency</label>
                                                     <select
-                                                        style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
+                                                        style={selectStyle}
                                                         value={config.backupSettings?.backupFrequency || 'Daily'}
                                                         onChange={e => setConfig({
                                                             ...config,
@@ -3177,7 +3149,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                         <div style={{ position: 'relative', flex: 1 }}>
                                                             <input
                                                                 type="number"
-                                                                style={{ width: '100%', paddingLeft: '20px', paddingTop: '16px', background: '#eef7f6', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '12px', fontWeight: 700, fontSize: '13px', outline: 'none', transition: 'all .15s ease', paddingRight: '20px', paddingBottom: '16px' }}
+                                                                style={inputStyle}
                                                                 value={config.backupSettings?.retentionCount || 30}
                                                                 onChange={e => setConfig({
                                                                     ...config,
@@ -3201,7 +3173,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
                         {
                             activeTab === 'Privacy' && (
-                                <div style={{ padding: '24px', background: '#FEFDFB', borderRadius: '12px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                                <div style={{ padding: '24px', background: paper, borderRadius: 12, border: `1px solid ${hairline}` }}>
                                     <ComplianceSettings config={complianceConfig} onChange={setComplianceConfig} />
                                 </div>
                             )
@@ -3214,8 +3186,8 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                         <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <Cpu size={18} style={{ color: '#1f8577' }} /> Hardware Fingerprint
                                         </h3>
-                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '32px', background: '#eef7f6', borderRadius: '24px', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1' }}>
+                                        <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '32px', background: '#eef7f6', borderRadius: 12, border: `1px solid ${hairline}` }}>
                                                 <div>
                                                     <p style={{ fontWeight: 900, color: '#23282A', textTransform: 'uppercase', letterSpacing: '-.05em', fontSize: '16px' }}>Unique Device Identifier</p>
                                                     <p style={{ fontSize: '11px', color: '#5c6567', fontWeight: 700 }}>Provide this fingerprint to your administrator to generate a license key.</p>
@@ -3228,7 +3200,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                                                 navigator.clipboard.writeText(systemInfo?.fingerprint || '');
                                                                 notify('Fingerprint copied to clipboard', 'success');
                                                             }}
-                                                            style={{ padding: '8px', background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', borderRadius: '10px', color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}
+                                                            style={{ padding: '8px', background: '#FEFDFB', border: '1px solid #D4D7DC', borderColor: '#D4D7DC', borderRadius: '10px', color: '#5c6567', transition: 'color .15s ease,background .15s ease,border-color .15s ease' }}
                                                         >
                                                             <Save size={16} />
                                                         </button>
@@ -3245,7 +3217,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                         <h3 style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <ShieldCheck size={18} style={{ color: '#1f8577' }} /> License Status
                                         </h3>
-                                        <div style={{ background: '#FEFDFB', borderRadius: '10px', border: '1.4px solid #e4ddd1', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                        <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                             <div className={`flex items-center justify-between p-8 rounded-3xl border ${systemInfo?.license?.valid ? 'bg-blue-50 border-blue-100' : 'bg-rose-50 border-rose-100'}`}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                                                     <div className={`p-5 rounded-2xl ${systemInfo?.license?.valid ? 'bg-blue-100 text-blue-600' : 'bg-rose-100 text-rose-600'}`}>
@@ -3304,15 +3276,15 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                             <Info size={18} style={{ color: '#5c6567' }} /> System Information
                                         </h3>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '40px' }}>
-                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                            <div style={{ background: paper, padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                                 <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Platform</p>
                                                 <p style={{ fontSize: '16px', fontWeight: 900, color: '#23282A', textTransform: 'capitalize' }}>{window.navigator.platform}</p>
                                             </div>
-                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                            <div style={{ background: paper, padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                                 <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Environment</p>
                                                 <p style={{ fontSize: '16px', fontWeight: 900, color: '#23282A' }}>Standalone Offline</p>
                                             </div>
-                                            <div style={{ background: '#FEFDFB', padding: '24px', borderRadius: '10px', border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+                                            <div style={{ background: paper, padding: '24px', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
                                                 <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '8px' }}>Build Version</p>
                                                 <p style={{ fontSize: '16px', fontWeight: 900, color: '#23282A' }}>v2.4.0-standalone</p>
                                             </div>
@@ -3530,7 +3502,7 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                 </div>
 
                 {showCreateForm && (
-                    <div style={{ padding: '24px', borderStyle: 'solid', borderColor: '#e4ddd1', background: '#eef7f6' }}>
+                    <div style={{ padding: '24px', borderStyle: 'solid', borderColor: '#D4D7DC', background: '#eef7f6' }}>
                         <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                             <div>
                                 <label style={labelStyle}>Year Name</label>
@@ -3586,14 +3558,14 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', textAlign: 'left', fontSize: '13px' }}>
                         <thead>
-                            <tr style={{ borderStyle: 'solid', borderColor: '#e4ddd1', fontSize: '11px', color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                            <tr style={{ borderStyle: 'solid', borderColor: '#D4D7DC', fontSize: '11px', color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.05em' }}>
                                 <th style={{ paddingLeft: '24px', paddingTop: '12px', fontWeight: 600, paddingRight: '24px', paddingBottom: '12px' }}>Name</th>
                                 <th style={{ paddingLeft: '24px', paddingTop: '12px', fontWeight: 600, paddingRight: '24px', paddingBottom: '12px' }}>Period</th>
                                 <th style={{ paddingLeft: '24px', paddingTop: '12px', fontWeight: 600, paddingRight: '24px', paddingBottom: '12px' }}>Status</th>
                                 <th style={{ paddingLeft: '24px', paddingTop: '12px', fontWeight: 600, textAlign: 'right', paddingRight: '24px', paddingBottom: '12px' }}>Actions</th>
                             </tr>
                         </thead>
-                        <tbody style={{ borderColor: '#e4ddd1' }}>
+                        <tbody style={{ borderColor: '#D4D7DC' }}>
                             {availableFinancialYears.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} style={{ paddingLeft: '24px', paddingTop: '32px', textAlign: 'center', color: '#5c6567', fontSize: '13px', paddingRight: '24px', paddingBottom: '32px' }}>
