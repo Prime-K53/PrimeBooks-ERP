@@ -205,7 +205,7 @@ export const PrintingVariantModal: React.FC<{
                         <div style={iconBox}><Printer size={19} color="#fff" /></div>
                         <div>
                             <h1 style={{
-                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400,
                                 fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
                             }}>Configure {product.name}</h1>
                             <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>Printing Variant</p>
@@ -433,7 +433,7 @@ export const ServiceCalculatorModal: React.FC<{
                         <div>
                             <div style={{ fontSize: 9.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: amber[500], marginBottom: 5 }}>Printing Service</div>
                             <h1 style={{
-                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400,
                                 fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2, lineHeight: 1.1
                             }}>{service.name}</h1>
                         </div>
@@ -619,7 +619,7 @@ export const CustomerModal: React.FC<{
                         <div style={iconBox}><Users size={19} color="#fff" /></div>
                         <div>
                             <h1 style={{
-                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400,
                                 fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
                             }}>Select Customer</h1>
                             <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
@@ -783,7 +783,7 @@ export const HeldOrdersModal: React.FC<{
                     <div style={iconBox}><Clock size={19} color="#fff" /></div>
                     <div>
                         <h1 style={{
-                            fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                            fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400,
                             fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
                         }}>Parked Orders</h1>
                         <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>Retrieve a parked order</p>
@@ -872,7 +872,7 @@ export const ReturnsModal: React.FC<{
                         <div style={iconBox}><ArrowRight size={19} color="#fff" style={{ transform: 'rotate(180deg)' }} /></div>
                         <div>
                             <h1 style={{
-                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400,
                                 fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
                             }}>Process Return</h1>
                             <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>Refund items from a sale</p>
@@ -998,7 +998,7 @@ export const VariantSelectorModal: React.FC<{
                         <div style={iconBox}><Printer size={19} color="#fff" /></div>
                         <div>
                             <h1 style={{
-                                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                                fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400,
                                 fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
                             }}>Select Variant</h1>
                             <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>{product.name}</p>

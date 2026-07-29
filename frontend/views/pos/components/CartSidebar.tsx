@@ -107,14 +107,14 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
     }, [selectedCustomerName, invoices]);
 
     return (
-        <div className="flex flex-col h-full overflow-hidden" style={{ background: '#fff', fontFamily: "'DM Sans',sans-serif", fontSize: 13.5, lineHeight: 1.45, color: INK }}>
+        <div className="flex flex-col h-full overflow-hidden" style={{ background: '#fff', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, lineHeight: 1.45, color: INK }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: `1px solid ${LINE}`, background: B50 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 30, height: 30, borderRadius: 8, background: B7, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
                         <ShoppingCart size={14} />
                     </div>
                     <div>
-                        <h3 style={{ margin: 0, fontSize: 17, fontFamily: "'DM Serif Display',serif", fontWeight: 400, color: INK }}>Current Order</h3>
+                        <h3 style={{ margin: 0, fontSize: 17, fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400, color: INK }}>Current Order</h3>
                         <span style={{ fontSize: 12, color: SOFT }}>{cart.length} item{cart.length !== 1 ? 's' : ''} &middot; {totalQuantity} unit{totalQuantity !== 1 ? 's' : ''}</span>
                     </div>
                 </div>
@@ -218,7 +218,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                     <div style={{ height: 0, borderTop: '1.5px dashed #d7e2df', margin: '5px 0' }} />
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0 8px', lineHeight: 1.3 }}>
-                        <span style={{ fontFamily: "'DM Serif Display',serif", fontSize: 15, color: '#12201d', fontWeight: 400 }}>Total</span>
+                        <span style={{ fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 15, color: '#12201d', fontWeight: 400 }}>Total</span>
                         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontVariantNumeric: 'tabular-nums', fontSize: 19, fontWeight: 600, color: '#0f4f42' }}>
                             {currency}{formatNumber(displayPrice(roundedTotal, undefined, 'pos'))}
                         </span>
@@ -230,22 +230,22 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                         {showDiscountInput ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <input type="number" value={discountPercent} min={0} max={100} onChange={e => onManualDiscountChange?.(Math.min(100, Math.max(0, Number(e.target.value))))}
-                                    style={{ flex: 1, fontFamily: "'DM Sans',sans-serif", fontSize: 12.5, fontWeight: 600, padding: '7px 6px', borderRadius: 4, border: '1px solid #a03c3c', textAlign: 'center', background: '#fff', color: '#a03c3c', outline: 'none', width: 0 }} />
+                                    style={{ flex: 1, fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 12.5, fontWeight: 600, padding: '7px 6px', borderRadius: 4, border: '1px solid #a03c3c', textAlign: 'center', background: '#fff', color: '#a03c3c', outline: 'none', width: 0 }} />
                                 <span style={{ fontSize: 11, color: '#a03c3c', fontWeight: 600, whiteSpace: 'nowrap' }}>%</span>
                                 <button onClick={() => { setShowDiscountInput(false); }}
-                                    style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 600, padding: '7px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#a03c3c', color: '#fff' }}>
+                                    style={{ fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 11, fontWeight: 600, padding: '7px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#a03c3c', color: '#fff' }}>
                                     OK
                                 </button>
                             </div>
                         ) : (
                             <button onClick={() => setShowDiscountInput(true)}
-                                style={{ width: '100%', fontFamily: "'DM Sans',sans-serif", fontSize: 12.5, fontWeight: 600, padding: '7px 0', borderRadius: 4, border: '1px solid #a03c3c', cursor: 'pointer', textAlign: 'center', background: '#fff', color: '#a03c3c' }}>
+                                style={{ width: '100%', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 12.5, fontWeight: 600, padding: '7px 0', borderRadius: 4, border: '1px solid #a03c3c', cursor: 'pointer', textAlign: 'center', background: '#fff', color: '#a03c3c' }}>
                                 Discount
                             </button>
                         )}
                     </div>
                     <button onClick={onPay} disabled={cart.length === 0}
-                        style={{ flex: 1, fontFamily: "'DM Sans',sans-serif", fontSize: 12.5, fontWeight: 600, padding: '7px 0', borderRadius: 4, border: 'none', cursor: 'pointer', textAlign: 'center', background: '#2563EB', color: '#fff', opacity: cart.length === 0 ? 0.5 : 1 }}>
+                        style={{ flex: 1, fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 12.5, fontWeight: 600, padding: '7px 0', borderRadius: 4, border: 'none', cursor: 'pointer', textAlign: 'center', background: '#2563EB', color: '#fff', opacity: cart.length === 0 ? 0.5 : 1 }}>
                         Proceed
                     </button>
                 </div>

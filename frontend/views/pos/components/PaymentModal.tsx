@@ -290,7 +290,7 @@ const canCompleteSale = useMemo(() => {
                             <Wallet size={19} color="#fff" />
                         </div>
                         <div>
-                            <h1 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2 }}>Payment</h1>
+                            <h1 style={{ fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400, fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2 }}>Payment</h1>
                             <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>{orderNumber}</p>
                         </div>
                     </div>

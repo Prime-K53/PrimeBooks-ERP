@@ -238,7 +238,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ inventory, addToCart, 
                                 background: activeIndex === idx ? B100 : 'transparent',
                                 cursor: item.stock <= 0 && item.type === 'Stationery' && !item.isVariantParent ? 'not-allowed' : 'pointer',
                                 opacity: item.stock <= 0 && item.type === 'Stationery' && !item.isVariantParent ? 0.5 : 1,
-                                fontFamily: "'DM Sans',sans-serif",
+                                fontFamily: "'Inter','DM Sans',sans-serif",
                                 transition: '.1s'
                             }}
                             onMouseOver={e => { if (activeIndex !== idx) e.currentTarget.style.background = B50; }}
@@ -287,7 +287,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ inventory, addToCart, 
                     textAlign: 'left',
                     cursor: item.stock <= 0 && item.type === 'Stationery' && !item.isVariantParent ? 'not-allowed' : 'pointer',
                     opacity: item.stock <= 0 && item.type === 'Stationery' && !item.isVariantParent ? 0.6 : 1,
-                    fontFamily: "'DM Sans',sans-serif",
+                    fontFamily: "'Inter','DM Sans',sans-serif",
                     display: 'flex',
                     flexDirection: 'column',
                     height: '100%',
@@ -375,13 +375,13 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ inventory, addToCart, 
     };
 
     return (
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ background: PAPER, fontFamily: "'DM Sans',sans-serif" }}>
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ background: PAPER, fontFamily: "'Inter','DM Sans',sans-serif" }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: `1px solid ${LINE}`, background: B50 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 26, height: 26, borderRadius: 6, background: B7, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>
                         <Grid size={12} />
                     </div>
-                    <h3 style={{ margin: 0, fontSize: 14, fontFamily: "'DM Serif Display',serif", fontWeight: 400, color: INK }}>Items</h3>
+                    <h3 style={{ margin: 0, fontSize: 14, fontFamily: "'Inter','DM Sans',sans-serif", fontWeight: 400, color: INK }}>Items</h3>
                     <span style={{ fontSize: 12, color: SOFT }}>{filteredProducts.length} item{filteredProducts.length !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -402,7 +402,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ inventory, addToCart, 
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: 4,
-                                    fontFamily: "'DM Sans',sans-serif",
+                                    fontFamily: "'Inter','DM Sans',sans-serif",
                                     fontWeight: viewMode === mode ? 600 : 400
                                 }}
                             >
@@ -432,7 +432,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ inventory, addToCart, 
                             border: `1px solid ${LINE}`,
                             outline: 'none',
                             fontSize: 13,
-                            fontFamily: "'DM Sans',sans-serif",
+                            fontFamily: "'Inter','DM Sans',sans-serif",
                             color: INK,
                             background: PAPER,
                             boxSizing: 'border-box'
@@ -479,7 +479,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ inventory, addToCart, 
                                         fontSize: 12,
                                         fontWeight: 600,
                                         cursor: 'pointer',
-                                        fontFamily: "'DM Sans',sans-serif",
+                                        fontFamily: "'Inter','DM Sans',sans-serif",
                                         whiteSpace: 'nowrap',
                                         transition: '.12s'
                                     }}
