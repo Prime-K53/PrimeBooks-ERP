@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { aiService } from '../../../services/ai/aiService';
 import { ProviderName } from '../../../services/ai/types';
-import { Sparkles, Key, Globe, Cpu, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Sparkles, Key, Globe, Cpu, CheckCircle2, XCircle, Loader2, ChevronDown, Search } from 'lucide-react';
 
 const PROVIDER_OPTIONS: { value: ProviderName; label: string; desc: string }[] = [
   { value: 'local', label: 'Local (Ollama)', desc: 'Run models locally via Ollama' },
@@ -15,6 +15,14 @@ const PROVIDER_DEFAULTS: Record<string, { baseUrl: string; model: string }> = {
   openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
 };
 
+interface OpenRouterModel {
+  id: string;
+  name: string;
+  pricing: { prompt: string; completion: string };
+  context_length: number;
+  architecture: { modality: string };
+}
+
 export const AISettingsTab: React.FC = () => {
   const [provider, setProvider] = useState<ProviderName>('local');
   const [apiKey, setApiKey] = useState('');
@@ -23,6 +31,12 @@ export const AISettingsTab: React.FC = () => {
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testMessage, setTestMessage] = useState('');
   const [saved, setSaved] = useState(false);
+  const [freeModels, setFreeModels] = useState<OpenRouterModel[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [modelSearch, setModelSearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const cfg = aiService.getConfig();
@@ -31,6 +45,39 @@ export const AISettingsTab: React.FC = () => {
     setBaseUrl(cfg.baseUrl || '');
     setModel(cfg.model || '');
   }, []);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const fetchFreeModels = async () => {
+    setModelsLoading(true);
+    setModelsError('');
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/models', { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const all: OpenRouterModel[] = data.data || data.models || [];
+      const free = all.filter(m => {
+        const p = parseFloat(m.pricing?.prompt);
+        const c = parseFloat(m.pricing?.completion);
+        return p === 0 && c === 0;
+      });
+      setFreeModels(free);
+      if (free.length === 0) setModelsError('No free models found via API');
+    } catch (err: any) {
+      setModelsError(err?.message || 'Failed to fetch models');
+      setFreeModels([]);
+    } finally {
+      setModelsLoading(false);
+    }
+  };
 
   const handleProviderChange = (newProvider: ProviderName) => {
     setProvider(newProvider);
@@ -42,9 +89,18 @@ export const AISettingsTab: React.FC = () => {
     if (newProvider === 'local') {
       setApiKey('');
     }
+    if (newProvider === 'openrouter') {
+      fetchFreeModels();
+    } else {
+      setFreeModels([]);
+    }
     setTestStatus('idle');
     setTestMessage('');
   };
+
+  const filteredModels = modelSearch
+    ? freeModels.filter(m => m.id.toLowerCase().includes(modelSearch.toLowerCase()) || m.name?.toLowerCase().includes(modelSearch.toLowerCase()))
+    : freeModels;
 
   const handleSave = () => {
     aiService.saveConfig({
@@ -153,20 +209,79 @@ export const AISettingsTab: React.FC = () => {
               />
             </div>
 
-            <div>
+            <div className="relative" ref={provider === 'openrouter' ? dropdownRef : undefined}>
               <label className="block text-[10px] font-black text-[#5c6567] uppercase tracking-widest mb-3 px-1 flex items-center gap-2">
                 <Cpu size={14} /> Model
               </label>
-              <input
-                type="text"
-                value={model}
-                onChange={e => setModel(e.target.value)}
-                className="w-full px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all"
-                placeholder={provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'}
-              />
+              {provider === 'openrouter' ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => { setShowDropdown(!showDropdown); if (!showDropdown && freeModels.length === 0 && !modelsLoading) fetchFreeModels(); }}
+                    className="w-full flex items-center justify-between px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none transition-all hover:border-[#1f8577] cursor-pointer"
+                  >
+                    <span className={model ? 'text-[#23282A]' : 'text-[#5c6567]'}>{model || 'Select a free model...'}</span>
+                    <ChevronDown size={16} className={`transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showDropdown && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-[#e4ddd1] rounded-xl shadow-xl shadow-black/5 overflow-hidden">
+                      <div className="p-2 border-b border-[#e4ddd1]">
+                        <div className="relative">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c6567]" />
+                          <input
+                            type="text"
+                            value={modelSearch}
+                            onChange={e => setModelSearch(e.target.value)}
+                            placeholder="Search models..."
+                            className="w-full pl-9 pr-3 py-2 bg-[#eef7f6] border border-[#e4ddd1] rounded-lg text-xs font-medium outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {modelsLoading ? (
+                          <div className="flex items-center justify-center gap-2 py-8 text-[#5c6567] text-sm">
+                            <Loader2 size={16} className="animate-spin" /> Loading models...
+                          </div>
+                        ) : modelsError ? (
+                          <div className="py-4 px-4 text-center">
+                            <p className="text-xs text-red-600 mb-2">{modelsError}</p>
+                            <button onClick={fetchFreeModels} className="text-xs font-bold text-[#1f8577] hover:underline">Retry</button>
+                          </div>
+                        ) : filteredModels.length === 0 ? (
+                          <div className="py-6 text-center text-xs text-[#5c6567]">No free models match your search</div>
+                        ) : (
+                          filteredModels.map(m => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => { setModel(m.id); setShowDropdown(false); setModelSearch(''); }}
+                              className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-[#eef7f6] ${
+                                model === m.id ? 'bg-[#eef7f6] font-bold text-[#1f8577]' : 'text-[#23282A]'
+                              }`}
+                            >
+                              <div className="font-medium">{m.id}</div>
+                              {m.name && m.name !== m.id && (
+                                <div className="text-[10px] text-[#5c6567] mt-0.5">{m.name}</div>
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <input
+                  type="text"
+                  value={model}
+                  onChange={e => setModel(e.target.value)}
+                  className="w-full px-5 py-4 bg-[#eef7f6] border border-[#e4ddd1] rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-[#1f8577]/5 focus:border-[#1f8577] transition-all"
+                  placeholder={provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'}
+                />
+              )}
               <p className="text-[10px] text-[#5c6567] mt-2 italic font-medium px-1">
                 {provider === 'openrouter'
-                  ? 'Use OpenRouter model slug (e.g. openai/gpt-4o-mini, deepseek/deepseek-r1:free)'
+                  ? 'Live free models from OpenRouter API — type to filter'
                   : 'Model identifier'}
               </p>
             </div>
