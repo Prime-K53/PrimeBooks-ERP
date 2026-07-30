@@ -42,14 +42,36 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     if (user.isSuperAdmin) headers['x-user-is-super-admin'] = 'true';
   }
   const res = await fetch(`/api${path}`, { ...options, headers });
+
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text();
+
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    let body: any = {};
+    try {
+      if (contentType.includes('application/json') && text.trim()) {
+        body = JSON.parse(text);
+      }
+    } catch { /* ignore parse errors */ }
     const err: any = new Error(body.error || body.message || `Request failed (${res.status})`);
     err.status = res.status;
     err.body = body;
     throw err;
   }
-  return res.json();
+
+  if (!text.trim()) {
+    return {} as T;
+  }
+
+  if (contentType.includes('application/json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+    try {
+      return JSON.parse(text) as T;
+    } catch (parseError) {
+      throw new Error('Invalid JSON response from server');
+    }
+  }
+
+  throw new Error('Expected JSON response but received non-JSON content');
 }
 
 const PortalUserManagement: React.FC = () => {

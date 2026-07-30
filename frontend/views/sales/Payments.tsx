@@ -11,6 +11,7 @@ import { OFFLINE_MODE, DEFAULT_ACCOUNTS } from '../../constants';
 import { CustomerPayment, InvoiceAllocation, Sale, Invoice, SupplierPayment, PurchaseAllocation, LedgerEntry, WalletTransaction, Order, OrderPayment } from '../../types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHighlight } from '../../hooks/useHighlight';
+import { ClientModal } from './components/ClientModal';
 import { DocLink } from '../../components/DocLink';
 import { generateNextId, roundFinancial } from '../../utils/helpers';
 import { getDefaultDate, validateDateInFY } from '../../utils/financialYearUtils';
@@ -574,7 +575,7 @@ const CustomerPaymentDetailPanel: React.FC<{
 const Payments: React.FC = () => {
     const { refreshAllData } = useData();
     const { companyConfig, notify, user, allUsers } = useAuth();
-    const { customerPayments, addCustomerPayment, updateCustomerPayment, deleteCustomerPayment, customers, sales } = useSales();
+    const { customerPayments, addCustomerPayment, updateCustomerPayment, deleteCustomerPayment, customers, sales, addCustomer, updateCustomer } = useSales();
     const { invoices, updateInvoice } = useFinance();
     const { orders, recordPayment: recordOrderPayment, updateOrderStatus } = useOrders();
     const { suppliers } = useProcurement();
@@ -654,6 +655,9 @@ const Payments: React.FC = () => {
         reconciled: false,
         excessHandling: 'Change'
     });
+
+    const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+    const [isClientModalOpen, setIsClientModalOpen] = useState(false);
  
     const [allocations, setAllocations] = useState<Array<{ invoiceId: string; orderId?: string; amount: number; [key: string]: any }>>([]);
     const [previewState, setPreviewState] = useState<{ isOpen: boolean, data: any, type: 'RECEIPT' | 'ACCOUNT_STATEMENT' | 'POS_RECEIPT' | 'SUPPLIER_PAYMENT' }>({
@@ -1415,9 +1419,19 @@ const Payments: React.FC = () => {
 
                                         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                                             <div>
-                                                <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Customer</div>
-                                                <select
-                                                    style={{ width:'100%', height:36, padding:'0 10px', border:'1.4px solid #e4ddd1', borderRadius:8, fontSize:13, fontWeight:600, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
+                                                <div style={{ fontSize:10, fontWeight:700, color:'#5c6567', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                                    <span>Customer</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setIsClientModalOpen(true); }}
+                                                        style={{ fontSize:10, fontWeight:700, color:'#1f8577', background:'transparent', border:'none', cursor:'pointer', padding:0, textTransform:'none', letterSpacing:'normal' }}
+                                                    >
+                                                        + New Customer
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    list="customer-options"
+                                                    placeholder="-- Choose Client --"
                                                     value={formData.customerName}
                                                     disabled={editMode}
                                                     onChange={e => {
@@ -1430,11 +1444,14 @@ const Payments: React.FC = () => {
                                                             subAccountName: 'Main'
                                                         });
                                                         setAllocations([]);
+                                                        setCustomerSearchTerm('');
                                                     }}
-                                                >
-                                                    <option value="">-- Choose Client --</option>
-                                                    {customerNames.map(name => <option key={name} value={name}>{name}</option>)}
-                                                </select>
+                                                    style={{ width:'100%', height:36, padding:'0 10px', border:'1.4px solid #e4ddd1', borderRadius:8, fontSize:13, fontWeight:600, background:'#FEFDFB', color:'#23282A', fontFamily:'inherit', outline:'none' }}
+                                                />
+                                                <datalist id="customer-options">
+                                                    <option value="-- Choose Client --" />
+                                                    {customerNames.map(name => <option key={name} value={name} />)}
+                                                </datalist>
                                                 {formData.customerName && (() => {
                                                     const cust = customers.find((c: any) => c.name === formData.customerName);
                                                     const bal = cust?.walletBalance || 0;
@@ -2209,6 +2226,18 @@ const Payments: React.FC = () => {
                 onClose={() => setPreviewState(prev => ({ ...prev, isOpen: false }))}
                 type={previewState.type}
                 data={previewState.data}
+            />
+
+            <ClientModal
+                isOpen={isClientModalOpen}
+                onClose={() => setIsClientModalOpen(false)}
+                onSave={async (customer) => {
+                    await addCustomer(customer);
+                    setFormData(prev => ({ ...prev, customerName: customer.name, customerId: customer.id }));
+                    setIsClientModalOpen(false);
+                    setCustomerSearchTerm('');
+                    notify('Customer created successfully', 'success');
+                }}
             />
 
         </div>
