@@ -13,7 +13,7 @@ import {
     Cpu, Layers, Smartphone, Layout, Users, ShoppingBag, ShoppingCart, Palette, Monitor,
     Factory, Box, Cloud, Bell, Mail, MessageSquare, ShieldAlert, Webhook, Sun, Moon, Laptop, Info, Undo2,
     TrendingUp, Package, PlusCircle, Trash, Printer, Usb, Sparkles, Scissors, Award, Tag, CreditCard,
-    CalendarDays
+    CalendarDays, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
@@ -917,17 +917,13 @@ const Settings: React.FC = () => {
                 {/* Modal-style Sidebar */}
                 <div style={{
                   width: 280, flexShrink: 0,
-                  background: `linear-gradient(180deg, ${teal[800]}, ${teal[900]})`,
+                  background: '#FEFDFB',
+                  borderRight: '1.4px solid #e4ddd1',
                   display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto'
                 }}>
                     <div style={{
-                      position: 'absolute', top: 0, right: 0, bottom: 0, width: 10,
-                      backgroundImage: 'radial-gradient(circle, rgba(254,253,251,.9) 2.2px, transparent 2.3px)',
-                      backgroundSize: '10px 16px', backgroundPosition: '4px 8px', opacity: 0.12
-                    }} />
-                    <div style={{
-                      color: 'rgba(255,255,255,.4)', fontSize: 10, letterSpacing: 0.16,
-                      textTransform: 'uppercase', fontWeight: 600, padding: '18px 16px 10px'
+                      color: '#5c6567', fontSize: 11, letterSpacing: '0.8px',
+                      textTransform: 'uppercase', fontWeight: 700, padding: '18px 16px 10px'
                     }}>
                         Settings
                     </div>
@@ -935,8 +931,8 @@ const Settings: React.FC = () => {
                         {filteredGroups.map(group => (
                             <div key={group.title} style={{ marginBottom: 16 }}>
                                 <div style={{
-                                  color: 'rgba(255,255,255,.4)', fontSize: 10, letterSpacing: 0.16,
-                                  textTransform: 'uppercase', fontWeight: 600, padding: '4px 12px 8px'
+                                  color: '#5c6567', fontSize: 10, letterSpacing: '0.8px',
+                                  textTransform: 'uppercase', fontWeight: 700, padding: '4px 4px 8px'
                                 }}>{group.title}</div>
                                 {group.items.map(item => (
                                     <button
@@ -948,22 +944,47 @@ const Settings: React.FC = () => {
                                           setActiveTab(item.id)
                                         }}
                                         style={{
-                                          display: 'flex', alignItems: 'center', gap: 10,
-                                          padding: '10px 12px', borderRadius: 8, width: '100%',
-                                          color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,.62)',
-                                          fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 2,
+                                          display: 'flex', alignItems: 'center', gap: 12,
+                                          padding: '12px 14px', borderRadius: 10, width: '100%',
+                                          background: '#FEFDFB',
+                                          border: '1.4px solid #e4ddd1',
+                                          borderLeft: activeTab === item.id ? '4px solid #1f8577' : '1.4px solid #e4ddd1',
+                                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                                          cursor: 'pointer', marginBottom: 8,
                                           transition: 'all .15s ease', position: 'relative',
-                                          border: 'none', background: 'transparent', textAlign: 'left',
-                                          ...(activeTab === item.id ? {
-                                            background: `linear-gradient(90deg, rgba(217,154,63,.18), rgba(217,154,63,.05))`,
-                                            boxShadow: `inset 3px 0 0 ${amber[500]}`
-                                          } : {})
+                                          textAlign: 'left',
                                         }}
-                                        onMouseEnter={e => { if (activeTab !== item.id) { e.currentTarget.style.background = 'rgba(255,255,255,.06)'; } e.currentTarget.style.color = '#fff'; }}
-                                        onMouseLeave={e => { if (activeTab !== item.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,.62)'; } }}
+                                        onMouseEnter={e => {
+                                          e.currentTarget.style.transform = 'translateY(-1px)';
+                                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                                        }}
+                                        onMouseLeave={e => {
+                                          e.currentTarget.style.transform = 'translateY(0)';
+                                          e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+                                        }}
                                     >
-                                        <item.icon size={16} style={{ flexShrink: 0, opacity: 0.85 }} />
-                                        <span>{item.label}</span>
+                                        <div style={{
+                                          width: 34, height: 34, borderRadius: 8,
+                                          background: activeTab === item.id ? '#1f8577' : '#eef7f6',
+                                          color: activeTab === item.id ? '#fff' : '#1f8577',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                                        }}>
+                                          <item.icon size={16} />
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{item.label}</div>
+                                            <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>{item.desc}</div>
+                                        </div>
+                                        <div style={{
+                                          marginLeft: 'auto', padding: '4px 10px', borderRadius: 6,
+                                          background: activeTab === item.id ? '#1f8577' : '#eef7f6',
+                                          color: activeTab === item.id ? '#fff' : '#1f8577',
+                                          fontSize: 10, fontWeight: 600,
+                                          display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0
+                                        }}>
+                                          Open
+                                          <ChevronRight size={10} />
+                                        </div>
                                     </button>
                                 ))}
                             </div>
