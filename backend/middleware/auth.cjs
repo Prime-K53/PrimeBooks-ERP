@@ -10,7 +10,7 @@ if (!JWT_SECRET) {
 
 // Supabase config for verifying Supabase JWTs
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_URL.includes('placeholder'));
 
 // Token expiration time
@@ -243,5 +243,7 @@ module.exports = {
   requireRole, 
   requirePermission,
   refreshToken,
-  JWT_SECRET 
+  JWT_SECRET,
+  canUseHeaderAuth,
+  getHeaderAuthUser
 };

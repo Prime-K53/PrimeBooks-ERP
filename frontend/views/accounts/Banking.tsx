@@ -22,6 +22,14 @@ import { AccountDetailsDashboard } from './components/AccountDetailsDashboard';
 import { currencyService } from '../../services/currencyService';
 import { ConfirmDialog, ConfirmDialogType } from '../../components/ConfirmDialog';
 import { getDefaultDate, validateDateInFY } from '../../utils/financialYearUtils';
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const teal = { 50: '#eef7f6', 100: '#d4ebe3', 200: '#a6d9d3', 400: '#3fa294', 500: '#2d9a8a', 600: '#1f8577', 700: '#166b5e', 800: '#0f544c', 900: '#0a3d34' };
+const amber = { 50: '#fef9e7', 100: '#fef3c7', 200: '#fde68a', 400: '#d99a3f', 500: '#d99a3f', 600: '#b45309', 700: '#92400e', 800: '#78350f', 900: '#451a03' };
+const danger = { 50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 400: '#dc2626', 500: '#b5493f', 600: '#991b1b', 700: '#7f1d1d', 800: '#450a0a', 900: '#1a0505' };
+const emerald = { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 400: '#16a34a', 500: '#16a34a', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' };
 
 type ScheduledRow = {
   id: string;
@@ -979,9 +987,9 @@ const Banking: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-slate-500">Loading banking data...</p>
+      <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col items-center justify-center" style={{ background: paper }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: teal[600] }}></div>
+        <p className="mt-4 text-sm font-medium" style={{ color: inkSoft }}>Loading banking data...</p>
       </div>
     );
   }
@@ -992,30 +1000,35 @@ const Banking: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 shrink-0">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-            <Building2 className="text-blue-600" size={28} />
+          <h1 className="text-2xl font-black text-ink flex items-center gap-3" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontWeight: 400, fontSize: 28, color: ink, letterSpacing: 0.2 }}>
+            <Building2 className="text-teal-600" size={28} />
             Banking & Finance
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
+          <p className="text-sm text-inkSoft mt-1 font-medium">
             Comprehensive banking management with reconciliation, forecasting, and reporting
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={handleCreateAccount}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors flex items-center gap-2"
+            style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', background: paper, border: `1.4px solid ${hairline}`, color: inkSoft, display: 'flex', alignItems: 'center', gap: 6, transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = '#a6d9d3'; e.currentTarget.style.color = teal[700]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = inkSoft; }}
           >
             <Plus size={16} />
             New Account
           </button>
           <button
             onClick={handleSaveExchangeRate}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+            style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
+          >
             Update Exchange Rate
           </button>
           <button
             onClick={handleCreateTransaction}
-            style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+            style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
           >
@@ -1031,11 +1044,13 @@ const Banking: React.FC = () => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === tab
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
-            }`}
+            style={{
+              padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: `1.4px solid ${activeTab === tab ? teal[400] : hairline}`,
+              background: activeTab === tab ? teal[50] : paper, color: activeTab === tab ? teal[700] : inkSoft,
+              fontFamily: 'inherit', fontSize: 13, fontWeight: 600, transition: 'all .15s ease',
+            }}
+            onMouseEnter={e => { if (activeTab !== tab) { e.currentTarget.style.background = '#fafbfb'; } }}
+            onMouseLeave={e => { if (activeTab !== tab) { e.currentTarget.style.background = paper; } }}
           >
             {tab}
           </button>
@@ -1046,15 +1061,17 @@ const Banking: React.FC = () => {
       {activeTab === 'Accounts' && (
         <div className="mb-8">
           {activeAccounts.length === 0 ? (
-            <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm p-10 text-center">
-              <Building2 size={48} className="mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500 font-medium">No active banking accounts available.</p>
-              <p className="text-sm text-slate-400 mt-1">
+            <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm p-10 text-center" style={{ background: paper, borderColor: hairline }}>
+              <Building2 size={48} className="mx-auto mb-4" style={{ color: inkSoft }} />
+              <p className="font-medium" style={{ color: inkSoft }}>No active banking accounts available.</p>
+              <p className="text-sm mt-1" style={{ color: inkSoft }}>
                 Create a banking account to start tracking balances and transactions.
               </p>
               <button
                 onClick={handleCreateAccount}
-                className="mt-5 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, marginTop: 20 }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
               >
                 Create Account
               </button>
@@ -1064,15 +1081,16 @@ const Banking: React.FC = () => {
               {activeAccounts.map(acc => (
                 <div
                   key={acc.id}
-                  className="bg-white p-[24px] rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all group hover:border-blue-400 flex flex-col cursor-pointer"
+                  className="bg-white p-[24px] rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all group hover:border-teal-300 flex flex-col cursor-pointer"
+                  style={{ background: paper, borderColor: hairline }}
                   onClick={() => setSelectedAccountId(acc.id)}
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-slate-100 rounded-xl text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                    <div className="p-3 rounded-xl text-teal-600 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors" style={{ background: teal[50] }}>
                       <Building2 size={24} />
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <span className="text-[10px] font-black bg-slate-100 px-2 py-1 rounded-lg text-slate-500 tracking-wide mb-1">
+                      <span className="text-[10px] font-black px-2 py-1 rounded-lg tracking-wide mb-1" style={{ backgroundColor: teal[50], color: inkSoft }}>
                         {acc.accountNumber}
                       </span>
                       <div className="flex items-center gap-1">
@@ -1081,7 +1099,7 @@ const Banking: React.FC = () => {
                             e.stopPropagation();
                             handleEditAccount(acc);
                           }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
                           title="Edit account"
                         >
                           <Edit size={16} />
@@ -1101,7 +1119,7 @@ const Banking: React.FC = () => {
                             e.stopPropagation();
                             setAuditedAccount(acc);
                           }}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
                           title="View audit trail"
                         >
                           <Shield size={16} />
@@ -1110,14 +1128,14 @@ const Banking: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-black text-slate-800 text-lg mb-1 group-hover:text-blue-900 transition-colors leading-tight">
+                    <h3 className="font-black text-slate-800 text-lg mb-1 group-hover:text-teal-900 transition-colors leading-tight" style={{ color: ink }}>
                       {acc.name}
                     </h3>
-                    <p className="text-xs font-bold text-slate-400 tracking-wide mb-4">
+                    <p className="text-xs font-bold text-slate-400 tracking-wide mb-4" style={{ color: inkSoft }}>
                       {acc.bankName}
                     </p>
-                    <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-                      <span className="text-[10px] font-black text-slate-400 tracking-wide">Balance</span>
+                    <div className="pt-4 border-t border-slate-100 flex justify-between items-center" style={{ borderColor: hairline }}>
+                      <span className="text-[10px] font-black tracking-wide" style={{ color: inkSoft }}>Balance</span>
                       <span className={`text-xl font-black ${
                         acc.balance >= 0 ? 'text-emerald-600' : 'text-rose-600'
                       }`}>
@@ -1125,7 +1143,7 @@ const Banking: React.FC = () => {
                       </span>
                     </div>
                     <div className="pt-2 flex justify-between items-center">
-                      <span className="text-[10px] font-black text-slate-400 tracking-wide">Available</span>
+                      <span className="text-[10px] font-black tracking-wide" style={{ color: inkSoft }}>Available</span>
                       <span className={`text-sm font-black ${
                         acc.availableBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'
                       }`}>
@@ -1143,27 +1161,27 @@ const Banking: React.FC = () => {
       {activeTab === 'Transactions' && (
         <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
           {/* Header */}
-          <div className="p-[24px] border-b border-slate-200 bg-slate-50 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="p-[24px] border-b border-slate-200 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between" style={{ background: teal[50], borderColor: hairline }}>
             <div className="flex items-center gap-2">
-              <Search size={16} className="text-slate-500" />
-              <h3 className="font-semibold text-slate-800 tracking-tighter text-[16px]">Transactions</h3>
+              <Search size={16} style={{ color: inkSoft }} />
+              <h3 className="font-semibold tracking-tighter text-[16px]" style={{ color: ink }}>Transactions</h3>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm">
-              <span className="text-slate-500 font-semibold">Cash Flow</span>
+              <span style={{ color: inkSoft, fontWeight: 600 }}>Cash Flow</span>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500">Income</span>
+                <span style={{ color: inkSoft }}>Income</span>
                 <span className="font-semibold text-emerald-600">+{currency}{cashFlowSummary.income.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500">Expenses</span>
+                <span style={{ color: inkSoft }}>Expenses</span>
                 <span className="font-semibold text-rose-600">-{currency}{cashFlowSummary.expenses.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500">Transactions</span>
-                <span className="font-semibold text-blue-600">{cashFlowSummary.transactions}</span>
+                <span style={{ color: inkSoft }}>Transactions</span>
+                <span className="font-semibold text-teal-600">{cashFlowSummary.transactions}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500">Net</span>
+                <span style={{ color: inkSoft }}>Net</span>
                 <span className={`font-semibold ${cashFlowSummary.net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {cashFlowSummary.net >= 0 ? '+' : ''}{currency}{cashFlowSummary.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
@@ -1172,17 +1190,19 @@ const Banking: React.FC = () => {
           </div>
 
           {/* Filters */}
-          <div className="p-[24px] border-b border-slate-100 flex flex-col md:flex-row gap-4">
+          <div className="p-[24px] border-b border-slate-100 flex flex-col md:flex-row gap-4" style={{ borderColor: hairline }}>
             <div className="flex gap-2 flex-wrap">
               {['This Week', 'This Month', 'This Year', 'All Time'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => handleQuickFilter(filter)}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    quickFilter === filter
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
-                  }`}
+                  style={{
+                    padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: `1.4px solid ${quickFilter === filter ? teal[400] : hairline}`,
+                    background: quickFilter === filter ? teal[50] : paper, color: quickFilter === filter ? teal[700] : inkSoft,
+                    fontFamily: 'inherit', fontSize: 13, fontWeight: 600, transition: 'all .15s ease',
+                  }}
+                  onMouseEnter={e => { if (quickFilter !== filter) { e.currentTarget.style.background = '#fafbfb'; } }}
+                  onMouseLeave={e => { if (quickFilter !== filter) { e.currentTarget.style.background = paper; } }}
                 >
                   {filter}
                 </button>
@@ -1192,7 +1212,9 @@ const Banking: React.FC = () => {
               <select
                 value={selectedAccountId || ''}
                 onChange={(e) => setSelectedAccountId(e.target.value || null)}
-                className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, background: paper, color: ink, outline: 'none', fontFamily: 'inherit', fontSize: 13 }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
               >
                 <option value="">All Accounts</option>
                 {activeAccounts.map(acc => (
@@ -1204,7 +1226,9 @@ const Banking: React.FC = () => {
               <select
                 value={selectedCategoryId || ''}
                 onChange={(e) => setSelectedCategoryId(e.target.value || null)}
-                className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, background: paper, color: ink, outline: 'none', fontFamily: 'inherit', fontSize: 13 }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
               >
                 <option value="">All Categories</option>
                 {categories.map(cat => (
@@ -1218,11 +1242,16 @@ const Banking: React.FC = () => {
                 placeholder="Search transactions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
+                style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, background: paper, color: ink, outline: 'none', fontFamily: 'inherit', fontSize: 13, minWidth: 200 }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
               />
               <button
                 onClick={handleExportTransactions}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+                style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
+              >
                 Export
               </button>
             </div>
@@ -1237,7 +1266,7 @@ const Banking: React.FC = () => {
               </div>
             ) : (
               <table className="w-full text-left text-sm">
-                <thead className="bg-white text-slate-500 border-b border-slate-100 sticky top-0 text-xs font-bold tracking-wide">
+                <thead className="sticky top-0 text-xs font-bold tracking-wide" style={{ backgroundColor: teal[50], color: inkSoft, borderBottom: `1.4px solid ${hairline}` }}>
                   <tr>
                     <th className="p-3">Date</th>
                     <th className="p-3">Account</th>
@@ -1250,38 +1279,36 @@ const Banking: React.FC = () => {
                     <th className="p-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y" style={{ borderColor: hairline }}>
                   {accountTransactions.map(tx => (
-                    <tr key={tx.id} className="hover:bg-slate-50">
-                      <td className="p-3 text-slate-500 whitespace-nowrap">
+                    <tr key={tx.id} className="hover:bg-teal-50 transition-colors" style={{ borderColor: hairline }}>
+                      <td className="p-3 text-sm whitespace-nowrap" style={{ color: inkSoft }}>
                         {format(new Date(tx.date), 'MMM dd, yyyy')}
                       </td>
-                      <td className="p-3 font-medium text-slate-700">
+                      <td className="p-3 font-medium" style={{ color: ink }}>
                         {accounts.find(a => a.id === tx.bankAccountId)?.name || tx.bankAccountId}
                       </td>
                       <td className="p-3 font-medium">
-                        <span className={`px-2 py-1 rounded text-[10px] font-black tracking-wide ${
-                          tx.type === 'Deposit' ? 'bg-emerald-100 text-emerald-700' :
-                          tx.type === 'Withdrawal' ? 'bg-rose-100 text-rose-700' :
-                          tx.type === 'Fee' ? 'bg-slate-100 text-slate-700' :
-                          'bg-blue-100 text-blue-700'
-                        }`}>
+                        <span className="px-2 py-1 rounded text-[10px] font-black tracking-wide" style={{
+                          backgroundColor: tx.type === 'Deposit' ? emerald[50] : tx.type === 'Withdrawal' ? danger[50] : tx.type === 'Fee' ? '#f1f5f9' : '#eef2ff',
+                          color: tx.type === 'Deposit' ? emerald[600] : tx.type === 'Withdrawal' ? danger[500] : tx.type === 'Fee' ? inkSoft : '#4f46e5'
+                        }}>
                           {tx.type}
                         </span>
                       </td>
                       <td className="p-3">
-                        <div className="font-medium text-slate-700">{tx.description}</div>
+                        <div className="font-medium" style={{ color: ink }}>{tx.description}</div>
                         {tx.reference && (
-                          <div className="text-[10px] text-slate-400 font-mono mt-1">
+                          <div className="text-[10px] font-mono mt-1" style={{ color: inkSoft }}>
                             Ref: {tx.reference}
                           </div>
                         )}
                       </td>
-                      <td className="p-3 text-right font-bold">
+                      <td className="p-3 text-right font-bold" style={{ color: tx.type === 'Deposit' ? emerald[600] : danger[500] }}>
                         {tx.type === 'Deposit' ? '+' : '-'}
                         {currency}{Math.abs(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="p-3">
+                      <td className="p-3" style={{ color: inkSoft }}>
                         {tx.category || 'Uncategorized'}
                       </td>
                       <td className="p-3">
@@ -1326,17 +1353,19 @@ const Banking: React.FC = () => {
       {/* Other tabs would follow similar patterns */}
 
       {activeTab === 'Statements' && (
-        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
-          <div className="p-[24px] border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden" style={{ background: paper, borderColor: hairline }}>
+          <div className="p-[24px] border-b border-slate-200 flex items-center justify-between" style={{ borderColor: hairline, background: teal[50] }}>
             <div className="flex items-center gap-2">
-              <FileText size={16} className="text-slate-500" />
-              <h3 className="font-semibold text-slate-800 tracking-tighter text-[16px]">Bank Statements</h3>
+              <FileText size={16} style={{ color: inkSoft }} />
+              <h3 className="font-semibold tracking-tighter text-[16px]" style={{ color: ink }}>Bank Statements</h3>
             </div>
             <div className="flex gap-2">
               <select
                 value={selectedAccountId || ''}
                 onChange={(e) => setSelectedAccountId(e.target.value || null)}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, background: paper, color: ink, outline: 'none', fontFamily: 'inherit', fontSize: 13 }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
               >
                 <option value="">Select Account</option>
                 {activeAccounts.map(acc => (
@@ -1348,19 +1377,25 @@ const Banking: React.FC = () => {
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, background: paper, color: ink, outline: 'none', fontFamily: 'inherit', fontSize: 13 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
                 />
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, background: paper, color: ink, outline: 'none', fontFamily: 'inherit', fontSize: 13 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
                 />
               </div>
               <button
                 onClick={handleGenerateStatement}
                 disabled={!selectedAccountId}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', display: 'flex', alignItems: 'center', gap: 6 }}
+                onMouseEnter={e => { if (!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
               >
                 <FileText size={16} />
                 Generate Statement
@@ -1369,10 +1404,9 @@ const Banking: React.FC = () => {
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             {statements.length === 0 ? (
-              <div className="text-center text-slate-400 py-12">
-                <FileText size={48} className="mx-auto text-slate-200 mb-4" />
-                <p className="text-sm italic">No bank statements generated yet.</p>
-                <p className="text-xs text-slate-400 mt-2">Select an account and click "Generate Statement" to create a new statement.</p>
+<div className="text-center py-12" style={{ color: inkSoft }}>
+                <FileText size={48} className="mx-auto mb-4" style={{ color: hairline }} />
+                <p className="text-sm italic">No statements found for the selected criteria.</p>
               </div>
             ) : (
               <table className="w-full text-left text-sm">
@@ -1434,79 +1468,81 @@ const Banking: React.FC = () => {
       )}
 
       {activeTab === 'Scheduled' && (
-        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
-          <div className="p-[24px] border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden" style={{ background: paper, borderColor: hairline }}>
+          <div className="p-[24px] border-b border-slate-200 flex items-center justify-between" style={{ borderColor: hairline, background: teal[50] }}>
             <div className="flex items-center gap-2">
-              <Clock size={16} className="text-slate-500" />
-              <h3 className="font-semibold text-slate-800 tracking-tighter text-[16px]">Scheduled Payments</h3>
+              <Clock size={16} style={{ color: inkSoft }} />
+              <h3 className="font-semibold tracking-tighter text-[16px]" style={{ color: ink }}>Scheduled Payments</h3>
             </div>
             <button
               onClick={handleCreateScheduledPayment}
-              style={{ padding: '7px 14px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 12px rgba(31,133,119,.12)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 12, fontWeight: 600 }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(31,133,119,.2)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(31,133,119,.12)'; }}
+              style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
             >
-              <Plus size={16} className="inline mr-2" />
+              <Plus size={16} />
               Add Payment
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             {scheduledRows.length === 0 ? (
-              <div className="text-center text-slate-400 py-12">
-                <Clock size={48} className="mx-auto text-slate-200 mb-4" />
+              <div className="text-center py-12" style={{ color: inkSoft }}>
+                <Clock size={48} className="mx-auto mb-4" style={{ color: hairline }} />
                 <p className="text-sm italic">No scheduled payments configured.</p>
               </div>
             ) : (
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                <thead className="sticky top-0 text-xs font-bold tracking-wide" style={{ backgroundColor: teal[50], color: inkSoft, borderBottom: `1.4px solid ${hairline}` }}>
                   <tr>
                     <th className="p-4">Name</th>
                     <th className="p-4">Next Payment</th>
                     <th className="p-4">Frequency</th>
                     <th className="p-4">Amount</th>
                     <th className="p-4">Status</th>
+                    <th className="p-4">Source</th>
                     <th className="p-4">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y" style={{ borderColor: hairline }}>
                   {scheduledRows.map(row => (
-                    <tr key={row.id} className="hover:bg-slate-50">
+                    <tr key={row.id} className="hover:bg-teal-50 transition-colors" style={{ borderColor: hairline }}>
                       <td className="p-4">
-                        <div className="font-medium">{row.name}</div>
+                        <div className="font-medium" style={{ color: ink }}>{row.name}</div>
                         {row.source === 'RecurringInvoice' && (
-                          <div className="text-[11px] text-slate-500">Recurring invoice</div>
+                          <div className="text-[11px]" style={{ color: inkSoft }}>Recurring invoice</div>
                         )}
                       </td>
-                      <td className="p-4">{format(parseISO(row.nextPaymentDate), 'MMM dd, yyyy')}</td>
-                      <td className="p-4">{row.frequency}</td>
-                      <td className="p-4 font-mono font-bold">{currency}{row.amount.toLocaleString()}</td>
+                      <td className="p-4" style={{ color: ink }}>{format(parseISO(row.nextPaymentDate), 'MMM dd, yyyy')}</td>
+                      <td className="p-4" style={{ color: ink }}>{row.frequency}</td>
+                      <td className="p-4 font-mono font-bold" style={{ color: ink }}>{currency}{row.amount.toLocaleString()}</td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          row.status === 'Active' ? 'bg-emerald-100 text-emerald-700' :
-                          row.status === 'Paused' ? 'bg-amber-100 text-amber-700' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
+                        <span className="px-2 py-1 rounded text-xs font-medium" style={{
+                          backgroundColor: row.status === 'Active' ? emerald[50] : row.status === 'Paused' ? amber[50] : '#f1f5f9',
+                          color: row.status === 'Active' ? emerald[600] : row.status === 'Paused' ? amber[600] : inkSoft
+                        }}>
                           {row.status}
                         </span>
                       </td>
                       <td className="p-4">
                         {row.source === 'Manual' && row.original ? (
-                          <div className="flex gap-1">
+                          <div className="flex gap-2">
                             <button
                               onClick={() => handleEditScheduledPayment(row.original!)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                              className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                              title="Edit payment"
                             >
                               <Edit size={16} />
                             </button>
                             <button
                               onClick={() => handleDeleteScheduledPayment(row.original!.id)}
-                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg"
+                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="Delete payment"
                             >
                               <Trash2 size={16} />
                             </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">Managed in Sales</span>
+                          <span className="text-xs" style={{ color: inkSoft }}>Managed in Sales</span>
                         )}
                       </td>
                     </tr>
@@ -1519,31 +1555,31 @@ const Banking: React.FC = () => {
       )}
 
       {activeTab === 'Reconciliation' && (
-        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
-          <div className="p-[24px] border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden" style={{ background: paper, borderColor: hairline }}>
+          <div className="p-[24px] border-b border-slate-200 flex items-center justify-between" style={{ borderColor: hairline, background: teal[50] }}>
             <div className="flex items-center gap-2">
-              <Shield size={16} className="text-slate-500" />
-              <h3 className="font-semibold text-slate-800 tracking-tighter text-[16px]">Bank Reconciliation</h3>
+              <Shield size={16} style={{ color: inkSoft }} />
+              <h3 className="font-semibold tracking-tighter text-[16px]" style={{ color: ink }}>Bank Reconciliation</h3>
             </div>
             <button
               onClick={handleCreateReconciliation}
-              style={{ padding: '7px 14px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 12px rgba(31,133,119,.12)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 12, fontWeight: 600 }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(31,133,119,.2)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(31,133,119,.12)'; }}
+              style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
             >
-              <Plus size={16} className="inline mr-2" />
+              <Plus size={16} />
               New Reconciliation
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             {reconciliations.length === 0 ? (
-              <div className="text-center text-slate-400 py-12">
-                <Shield size={48} className="mx-auto text-slate-200 mb-4" />
+              <div className="text-center py-12" style={{ color: inkSoft }}>
+                <Shield size={48} className="mx-auto mb-4" style={{ color: hairline }} />
                 <p className="text-sm italic">No reconciliations started yet.</p>
               </div>
             ) : (
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                <thead className="sticky top-0 text-xs font-bold tracking-wide" style={{ backgroundColor: teal[50], color: inkSoft, borderBottom: `1.4px solid ${hairline}` }}>
                   <tr>
                     <th className="p-4">Period</th>
                     <th className="p-4">Bank Balance</th>
@@ -1553,38 +1589,38 @@ const Banking: React.FC = () => {
                     <th className="p-4">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y" style={{ borderColor: hairline }}>
                   {reconciliations.map(rec => (
-                    <tr key={rec.id} className="hover:bg-slate-50">
+                    <tr key={rec.id} className="hover:bg-teal-50 transition-colors" style={{ borderColor: hairline }}>
                       <td className="p-4">
                         {format(parseISO(rec.startDate), 'MMM dd')} - {format(parseISO(rec.endDate), 'MMM dd, yyyy')}
                       </td>
-                      <td className="p-4 font-mono">{currency}{rec.endingBalance.toLocaleString()}</td>
-                       <td className="p-4 font-mono">{currency}{rec.bookBalance.toLocaleString()}</td>
-                       <td className="p-4 font-mono">
-                         <span className={rec.difference === 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                           {currency}{Math.abs(rec.difference).toLocaleString()}
-                         </span>
-                       </td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          rec.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                          rec.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
-                          {rec.status}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        {rec.status !== 'Completed' && (
-                          <button
-                            onClick={() => handleCompleteReconciliation(rec.id)}
-                            className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700"
-                          >
-                            Complete
-                          </button>
-                        )}
-                      </td>
+<td className="p-4 font-mono" style={{ color: ink }}>
+                            {format(parseISO(rec.startDate), 'MMM dd, yyyy')} - {format(parseISO(rec.endDate), 'MMM dd, yyyy')}
+                          </td>
+                          <td className="p-4 font-mono" style={{ color: ink }}>{currency}{rec.startingBalance.toLocaleString()}</td>
+                          <td className="p-4 font-mono" style={{ color: ink }}>{currency}{rec.bookBalance.toLocaleString()}</td>
+                          <td className="p-4 font-mono font-bold" style={{ color: rec.difference === 0 ? emerald[600] : danger[500] }}>
+                            {currency}{Math.abs(rec.difference).toLocaleString()}
+                          </td>
+                          <td className="p-4">
+                            <span className="px-2 py-1 rounded text-xs font-medium" style={{
+                              backgroundColor: rec.status === 'Completed' ? emerald[50] : rec.status === 'In Progress' ? teal[50] : '#f1f5f9',
+                              color: rec.status === 'Completed' ? emerald[600] : rec.status === 'In Progress' ? teal[600] : inkSoft
+                            }}>
+                              {rec.status}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            {rec.status !== 'Completed' && (
+                              <button
+                                onClick={() => handleCompleteReconciliation(rec.id)}
+                                style={{ padding: '5px 12px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', fontFamily: 'inherit', fontSize: 11, fontWeight: 700, boxShadow: '0 4px 12px rgba(31,133,119,.12)', transition: 'all .15s ease' }}
+                              >
+                                Complete
+                              </button>
+                            )}
+                          </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1595,17 +1631,19 @@ const Banking: React.FC = () => {
       )}
 
       {activeTab === 'Forecasts' && (
-        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
-          <div className="p-[24px] border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+<div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden" style={{ background: paper, borderColor: hairline }}>
+          <div className="p-[24px] border-b border-slate-200 flex items-center justify-between" style={{ borderColor: hairline, background: teal[50] }}>
             <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-slate-500" />
-              <h3 className="font-semibold text-slate-800 tracking-tighter text-[16px]">Cash Flow Forecasts</h3>
+              <TrendingUp size={16} style={{ color: inkSoft }} />
+              <h3 className="font-semibold tracking-tighter text-[16px]" style={{ color: ink }}>Cash Flow Forecasts</h3>
             </div>
             <div className="flex items-center gap-2">
               <select
                 value={selectedAccountId || ''}
                 onChange={(e) => setSelectedAccountId(e.target.value || null)}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, background: paper, color: ink, outline: 'none', fontFamily: 'inherit', fontSize: 13 }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
               >
                 <option value="">All Accounts</option>
                 {activeAccounts.map(acc => (
@@ -1614,41 +1652,41 @@ const Banking: React.FC = () => {
               </select>
               <button
                 onClick={handleCreateForecast}
-                style={{ padding: '7px 14px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 12px rgba(31,133,119,.12)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 12, fontWeight: 600 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(31,133,119,.2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(31,133,119,.12)'; }}
+                style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
               >
-                <Plus size={16} className="inline mr-2" />
+                <Plus size={16} />
                 New Forecast
               </button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             {visibleForecasts.length === 0 ? (
-              <div className="text-center text-slate-400 py-12">
-                <TrendingUp size={48} className="mx-auto text-slate-200 mb-4" />
+              <div className="text-center py-12" style={{ color: inkSoft }}>
+                <TrendingUp size={48} className="mx-auto mb-4" style={{ color: hairline }} />
                 <p className="text-sm italic">No cash flow forecasts created yet.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {visibleForecasts.map(forecast => (
-                  <div key={forecast.id} className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <div className="text-sm text-slate-500 mb-2">
+                  <div key={forecast.id} style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', padding: 24 }}>
+                    <div className="text-sm mb-2" style={{ color: inkSoft }}>
                       {format(parseISO(forecast.date), 'MMMM dd, yyyy')}
                     </div>
-                    <div className="text-2xl font-bold text-slate-900 mb-4">
-                       {currency}{forecast.projectedBalance.toLocaleString()}
-                     </div>
-                     <div className="grid grid-cols-2 gap-4 text-sm">
-                       <div>
-                         <div className="text-slate-400">Income</div>
-                         <div className="font-medium text-emerald-600">+{currency}{forecast.income.toLocaleString()}</div>
-                       </div>
-                       <div>
-                         <div className="text-slate-400">Expenses</div>
-                         <div className="font-medium text-rose-600">-{currency}{forecast.expenses.toLocaleString()}</div>
-                       </div>
-                     </div>
+                    <div className="text-2xl font-bold mb-4" style={{ color: ink }}>
+                      {currency}{forecast.projectedBalance.toLocaleString()}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div style={{ color: inkSoft }}>Income</div>
+                        <div className="font-medium text-emerald-600">+{currency}{forecast.income.toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: inkSoft }}>Expenses</div>
+                        <div className="font-medium text-rose-600">-{currency}{forecast.expenses.toLocaleString()}</div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1658,7 +1696,7 @@ const Banking: React.FC = () => {
       )}
 
       {activeTab === 'Reports' && (
-        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
+        <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden" style={{ background: paper, borderColor: hairline }}>
           <div className="flex-1 overflow-y-auto">
             <BankingReports selectedAccountId={selectedAccountId || undefined} />
           </div>

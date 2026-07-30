@@ -148,6 +148,7 @@ const { validateBody, sanitizeInput, inventorySchemas, salesSchemas, userSchemas
 const CurrencyMiddleware = require('./middleware/currencyMiddleware.cjs');
 const { createLimiter, authLimiter, sensitiveLimiter } = require('./services/redisRateLimiter.cjs');
 const authRoutes = require('./routes/auth.cjs');
+const portalAdminRoutes = require('./routes/portalAdmin.cjs');
 app.use(auditContextMiddleware);
 
 // CORS configuration - accepts all local/LAN origins for browser-based access
@@ -219,6 +220,13 @@ app.use((req, res, next) => {
 app.use('/api', createLimiter({ windowMs: 60 * 1000, maxRequests: 600 }));
 
 app.use('/api/auth', auditAuthMiddleware, authLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 }), authRoutes);
+
+// Portal Auth Routes — no JWT needed for login/register
+const portalAuthRoutes = require('./routes/portalAuth.cjs');
+app.use('/api/portal/auth', portalAuthRoutes);
+
+// Portal admin routes — registered before global verifyToken to avoid Supabase JWT collisions
+app.use('/api/portal/admin', portalAdminRoutes);
 
 // Apply JWT verification to all /api routes (auth routes are skipped by verifyToken internally)
 app.use('/api', verifyToken);
@@ -1029,6 +1037,11 @@ async function startServer() {
   // --- Referral Management ---
   const referralRoutes = require('./routes/referralRoutes.cjs');
   app.use('/api/referrals', verifyToken, referralRoutes);
+
+  // --- Customer Portal Data Endpoints ---
+  const portalRoutes = require('./routes/portal.cjs');
+  const { verifyPortalToken } = require('./middleware/portalAuth.cjs');
+  app.use('/api/portal', verifyPortalToken, portalRoutes);
 
   // --- Finance / Accounting Endpoints ---
   const finance = new (require('./services/financeService.cjs'))();

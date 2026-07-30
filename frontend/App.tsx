@@ -40,6 +40,25 @@ import Login from './views/auth/Login';
 import SetupWizard from './views/auth/SetupWizard';
 import ForgotPassword from './views/auth/ForgotPassword';
 import ResetPassword from './views/auth/ResetPassword';
+import { CustomerAuthProvider } from './context/CustomerAuthContext';
+import CustomerLayout from './views/portal/CustomerLayout';
+import CustomerLogin from './views/portal/CustomerLogin';
+import CustomerForgotPassword from './views/portal/CustomerForgotPassword';
+import CustomerDashboard from './views/portal/CustomerDashboard';
+import CustomerOrders from './views/portal/CustomerOrders';
+import CustomerOrderDetail from './views/portal/CustomerOrderDetail';
+import CustomerQuotations from './views/portal/CustomerQuotations';
+import CustomerInvoices from './views/portal/CustomerInvoices';
+import CustomerInvoiceDetail from './views/portal/CustomerInvoiceDetail';
+import CustomerPayments from './views/portal/CustomerPayments';
+import CustomerStatements from './views/portal/CustomerStatements';
+import CustomerWallet from './views/portal/CustomerWallet';
+import CustomerLoyalty from './views/portal/CustomerLoyalty';
+import CustomerDocuments from './views/portal/CustomerDocuments';
+import CustomerNotifications from './views/portal/CustomerNotifications';
+import CustomerProfile from './views/portal/CustomerProfile';
+import CustomerSupport from './views/portal/CustomerSupport';
+import PortalUserManagement from './views/portal/PortalUserManagement';
 
 import { isResponsiveDebugEnabled } from './utils/debugFlags';
 
@@ -701,8 +720,28 @@ const AppLayout: React.FC = () => {
                 <Route path="/" element={<ErrorBoundary name="Dashboard"><Dashboard /></ErrorBoundary>} />
                 <Route path="/install" element={<PwaInstallPage />} />
                 <Route path="/search" element={<ErrorBoundary name="Search"><GlobalSearch /></ErrorBoundary>} />
-                <Route path="/portal" element={<CustomerPortal />} />
-                <Route path="/portal/:invoiceId" element={<CustomerPortal />} />
+                {/* Customer Portal Routes */}
+                <Route path="/portal/login" element={<CustomerLogin />} />
+                <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
+                <Route path="/portal/reset-password" element={<CustomerForgotPassword />} />
+                <Route path="/portal" element={<CustomerLayout />}>
+                  <Route index element={<Navigate to="/portal/dashboard" replace />} />
+                  <Route path="dashboard" element={<CustomerDashboard />} />
+                  <Route path="orders" element={<CustomerOrders />} />
+                  <Route path="orders/:id" element={<CustomerOrderDetail />} />
+                  <Route path="quotations" element={<CustomerQuotations />} />
+                  <Route path="invoices" element={<CustomerInvoices />} />
+                  <Route path="invoices/:id" element={<CustomerInvoiceDetail />} />
+                  <Route path="payments" element={<CustomerPayments />} />
+                  <Route path="payments/:id" element={<CustomerPayments />} />
+                  <Route path="statements" element={<CustomerStatements />} />
+                  <Route path="wallet" element={<CustomerWallet />} />
+                  <Route path="loyalty" element={<CustomerLoyalty />} />
+                  <Route path="documents" element={<CustomerDocuments />} />
+                  <Route path="notifications" element={<CustomerNotifications />} />
+                  <Route path="profile" element={<CustomerProfile />} />
+                  <Route path="support" element={<CustomerSupport />} />
+                </Route>
 
                 {/* Hierarchical Redirects - no error boundary needed */}
                 <Route path="/inventory" element={<Navigate to="/supply-chain/inventory" replace />} />
@@ -787,6 +826,7 @@ const AppLayout: React.FC = () => {
                 {/* Customers */}
                 <Route path="/customers" element={<ErrorBoundary name="Customers"><CustomersHub /></ErrorBoundary>} />
                 <Route path="/customers/new" element={<Navigate to="/customers" replace />} />
+                <Route path="/portal/users" element={<ErrorBoundary name="PortalUsers"><PortalUserManagement /></ErrorBoundary>} />
 
                 {/* Sales Flow */}
                 <Route element={<ErrorBoundary name="Sales"><Outlet /></ErrorBoundary>}>
@@ -1076,6 +1116,9 @@ const RootNavigator: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/portal/login" element={<CustomerLogin />} />
+          <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
+          <Route path="/portal/reset-password" element={<CustomerForgotPassword />} />
           <Route path="*" element={<Navigate to="/setup" replace />} />
         </Routes>
       </Suspense>
@@ -1092,6 +1135,9 @@ const RootNavigator: React.FC = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/install" element={<PwaInstallPage />} />
+          <Route path="/portal/login" element={<CustomerLogin />} />
+          <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
+          <Route path="/portal/reset-password" element={<CustomerForgotPassword />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Users, UserPlus, CheckSquare, MessageSquare } from 'lucide-react';
+import { Users, UserPlus, CheckSquare, MessageSquare, Shield } from 'lucide-react';
 import GenericHub from './GenericHub';
 import { useData, REFRESH_INTERVAL } from '../context/DataContext';
 import { useModuleRefresh } from '../hooks/useModuleRefresh';
@@ -25,6 +25,13 @@ const CustomersHub: React.FC = () => {
       path: '/procurement/suppliers',
       icon: <Users />,
       color: 'bg-indigo-50 text-indigo-600'
+    },
+    {
+      label: 'Portal Users',
+      description: 'Create and manage customer portal accounts for self-service access.',
+      path: '/portal/users',
+      icon: <Shield />,
+      color: 'bg-emerald-50 text-emerald-600'
     },
     {
       label: 'Task Manager',

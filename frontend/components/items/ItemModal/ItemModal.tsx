@@ -362,6 +362,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
   const [rawSupplier, setRawSupplier] = useState('');
   const [rawLocation, setRawLocation] = useState('');
   const [rawConsumableType, setRawConsumableType] = useState<'consumable' | 'non_consumable'>('consumable');
+  const [rawCategory, setRawCategory] = useState<string>('');
 
   // Product
   const [variants, setVariants] = useState<{ name: string; bomCost: number; cost: number; selling: number; bomPages?: number; bomCovers?: number; bomStaples?: number; bomTape?: number }[]>([]);
@@ -463,6 +464,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
         setRawUseUnit((item as any).usageUnit || 'Sheet');
         setRawConvRate((item as any).conversionRate || (item as any).conversionFactor || 500);
         setRawConsumableType((item as any).rawMaterialCategory || 'consumable');
+        setRawCategory((item as any).category || '');
       }
 
       if (item.type === 'Product') {
@@ -895,6 +897,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
     let rawExtras: any = {};
     if (category === 'raw') {
       rawExtras = {
+        category: rawCategory,
         purchaseUnit: rawBuyUnit,
         usageUnit: rawUseUnit,
         conversionRate: rawConvRate,
@@ -1075,6 +1078,16 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
             <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>Printer parts — wear out over time</div>
           </button>
         </div>
+      </div>
+      <div style={s.section}>
+        <p style={s.sectionTitle}>Category</p>
+        <select style={s.input} value={rawCategory} onChange={e => setRawCategory(e.target.value)}>
+          <option value="">Select category...</option>
+          <option value="Paper">Paper</option>
+          <option value="Toner">Toner</option>
+          <option value="Ink">Ink</option>
+          <option value="Binding">Binding</option>
+        </select>
       </div>
       {rawConsumableType === 'non_consumable' && (
         <div style={s.section}>

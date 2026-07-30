@@ -16,6 +16,14 @@ import { exportToCSV } from '../../services/excelService';
 import { generateNextId } from '../../utils/helpers';
 import { currencyService } from '../../services/currencyService';
 import { getDefaultDate, validateDateInFY } from '../../utils/financialYearUtils';
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const teal = { 50: '#eef7f6', 100: '#d4ebe3', 200: '#a6d9d3', 400: '#3fa294', 500: '#2d9a8a', 600: '#1f8577', 700: '#166b5e', 800: '#0f544c', 900: '#0a3d34' };
+const amber = { 50: '#fef9e7', 100: '#fef3c7', 200: '#fde68a', 400: '#d99a3f', 500: '#d99a3f', 600: '#b45309', 700: '#92400e', 800: '#78350f', 900: '#451a03' };
+const danger = { 50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 400: '#dc2626', 500: '#b5493f', 600: '#991b1b', 700: '#7f1d1d', 800: '#450a0a', 900: '#1a0505' };
+const emerald = { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 400: '#16a34a', 500: '#16a34a', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' };
 
 const Transfers: React.FC = () => {
   const { transfers, executeTransfer } = useFinance();
@@ -244,24 +252,24 @@ const Transfers: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col">
+    <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col" style={{ background: paper }}>
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-            <ArrowRightLeft className="text-blue-600" size={28} />
+          <h1 className="flex items-center gap-3" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontWeight: 400, fontSize: 28, color: ink, letterSpacing: 0.2 }}>
+            <ArrowRightLeft style={{ color: teal[600] }} size={28} />
             Account Transfers
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
+          <p className="text-sm mt-1 font-medium" style={{ color: inkSoft }}>
             Transfer funds between your accounts and track all movements
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={handleExport}
-            style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', background: '#FEFDFB', border: '1.4px solid #e4ddd1', color: '#5c6567', display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#eef7f6'; e.currentTarget.style.borderColor = '#a6d9d3'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#FEFDFB'; e.currentTarget.style.borderColor = '#e4ddd1'; }}
+            style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', background: paper, border: `1.4px solid ${hairline}`, color: inkSoft, display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = '#a6d9d3'; e.currentTarget.style.color = teal[700]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = inkSoft; }}
           >
             <Download size={16} />
             Export
@@ -269,7 +277,7 @@ const Transfers: React.FC = () => {
           <button
             onClick={() => setShowModal('create')}
             disabled={activeBankAccounts.length < 2}
-            style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
+            style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: `linear-gradient(155deg, ${teal[600]}, ${teal[800]})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}
             onMouseEnter={e => { if (!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; } }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
           >
@@ -279,86 +287,102 @@ const Transfers: React.FC = () => {
       </div>
 
       {activeBankAccounts.length < 2 && (
-        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+        <div className="mb-4 p-3 rounded-lg border" style={{ backgroundColor: amber[50], borderColor: amber[100], color: amber[700] }}>
           At least two active banking accounts are required to create transfers.
         </div>
       )}
 
-      {/* Summary Cards (QBO Style) */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-6 shrink-0">
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0"><TrendingUp size={20} /></div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total Transfers</p>
-            <p className="text-lg md:text-xl font-semibold text-emerald-600">{filteredTransfers.length}</p>
+        <div className="p-4 rounded-[14px] border border-l-4 border-l-emerald-500 hover:bg-teal-50 transition-all duration-200" style={{ background: paper, borderColor: hairline }}>
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-lg shrink-0" style={{ backgroundColor: emerald[50], color: emerald[600] }}><TrendingUp size={20} /></div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: inkSoft }}>Total Transfers</p>
+              <p className="text-lg md:text-xl font-semibold" style={{ color: emerald[600] }}>{filteredTransfers.length}</p>
+            </div>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg shrink-0"><DollarSign size={20} /></div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total Amount</p>
-            <p className="text-lg md:text-xl font-semibold text-blue-600">{currency}{filteredTransfers.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}</p>
+        <div className="p-4 rounded-[14px] border border-l-4 border-l-blue-500 hover:bg-teal-50 transition-all duration-200" style={{ background: paper, borderColor: hairline }}>
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-lg shrink-0" style={{ backgroundColor: '#eef2ff', color: '#4f46e5' }}><DollarSign size={20} /></div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: inkSoft }}>Total Amount</p>
+              <p className="text-lg md:text-xl font-semibold" style={{ color: '#4f46e5' }}>{currency}{filteredTransfers.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}</p>
+            </div>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-violet-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-violet-50 text-violet-600 rounded-lg shrink-0"><Building2 size={20} /></div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Active Accounts</p>
-            <p className="text-lg md:text-xl font-semibold text-violet-600">{activeBankAccounts.length}</p>
+        <div className="p-4 rounded-[14px] border border-l-4 border-l-violet-500 hover:bg-teal-50 transition-all duration-200" style={{ background: paper, borderColor: hairline }}>
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-lg shrink-0" style={{ backgroundColor: '#f5f3ff', color: '#7c3aed' }}><Building2 size={20} /></div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: inkSoft }}>Active Accounts</p>
+              <p className="text-lg md:text-xl font-semibold" style={{ color: '#7c3aed' }}>{activeBankAccounts.length}</p>
+            </div>
           </div>
         </div>
-        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all duration-200">
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0"><Clock size={20} /></div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">This Period</p>
-            <p className="text-sm font-semibold text-slate-900">{format(parseISO(dateRange.start), 'MMM dd')} - {format(parseISO(dateRange.end), 'MMM dd')}</p>
+        <div className="p-4 rounded-[14px] border border-l-4 border-l-amber-500 hover:bg-teal-50 transition-all duration-200" style={{ background: paper, borderColor: hairline }}>
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-lg shrink-0" style={{ backgroundColor: amber[50], color: amber[600] }}><Clock size={20} /></div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: inkSoft }}>This Period</p>
+              <p className="text-sm font-semibold" style={{ color: ink }}>{format(parseISO(dateRange.start), 'MMM dd')} - {format(parseISO(dateRange.end), 'MMM dd')}</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 shrink-0">
+      <div className="p-4 rounded-[14px] border mb-6 shrink-0" style={{ background: paper, borderColor: hairline }}>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Search</label>
+            <label className="block text-xs font-medium mb-1" style={{ color: inkSoft }}>Search</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: inkSoft }} size={16} />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search transfers..."
-                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
               />
             </div>
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Start Date</label>
+            <label className="block text-xs font-medium mb-1" style={{ color: inkSoft }}>Start Date</label>
             <input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
             />
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">End Date</label>
+            <label className="block text-xs font-medium mb-1" style={{ color: inkSoft }}>End Date</label>
             <input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
             />
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Status</label>
+            <label className="block text-xs font-medium mb-1" style={{ color: inkSoft }}>Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as 'all' | 'completed')}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
             >
               <option value="all">All Transfers</option>
               <option value="completed">Completed</option>
@@ -366,12 +390,14 @@ const Transfers: React.FC = () => {
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Sort By</label>
+            <label className="block text-xs font-medium mb-1" style={{ color: inkSoft }}>Sort By</label>
             <div className="flex gap-1">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'date' | 'amount' | 'from' | 'to')}
-                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, fontSize: 13, color: ink, background: paper, outline: 'none', fontFamily: 'inherit' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#3fa294'; e.currentTarget.style.background = teal[50]; }}
+                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.background = paper; }}
               >
                 <option value="date">Date</option>
                 <option value="amount">Amount</option>
@@ -380,11 +406,13 @@ const Transfers: React.FC = () => {
               </select>
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="px-2 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                style={{ padding: '8px 10px', border: `1.4px solid ${hairline}`, borderRadius: 9, cursor: 'pointer', background: paper, transition: 'all .15s ease' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fafbfb'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; }}
               >
                 <ChevronDown 
                   size={16} 
-                  className={`text-slate-500 ${sortOrder === 'desc' ? 'rotate-180' : ''} transition-transform`} 
+                  style={{ color: inkSoft, transform: sortOrder === 'desc' ? 'rotate(180deg)' : '', transition: 'transform .15s ease' }} 
                 />
               </button>
             </div>
@@ -393,22 +421,22 @@ const Transfers: React.FC = () => {
       </div>
 
       {/* Transfers Table */}
-      <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex-1 overflow-hidden">
-        <div className="p-[24px] border-b border-slate-200 bg-slate-50">
-          <h3 className="font-semibold text-slate-800 tracking-tighter text-[16px]">
+      <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm flex-1 overflow-hidden" style={{ background: paper, borderColor: hairline }}>
+        <div className="p-[24px] border-b border-slate-200" style={{ borderColor: hairline, background: teal[50] }}>
+          <h3 className="font-semibold tracking-tighter text-[16px]" style={{ color: ink }}>
             Transfer History ({filteredTransfers.length} records)
           </h3>
         </div>
         
         <div className="overflow-y-auto" style={{ height: 'calc(100% - 80px)' }}>
           {filteredTransfers.length === 0 ? (
-            <div className="text-center text-slate-400 py-12">
-              <ArrowRightLeft size={48} className="mx-auto text-slate-200 mb-4" />
+            <div className="text-center py-12" style={{ color: inkSoft }}>
+              <ArrowRightLeft size={48} className="mx-auto mb-4" style={{ color: hairline }} />
               <p className="text-sm italic">No transfers found for the selected period.</p>
             </div>
           ) : (
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 sticky top-0">
+              <thead className="sticky top-0 text-xs font-bold tracking-wide" style={{ backgroundColor: teal[50], color: inkSoft, borderBottom: `1.4px solid ${hairline}` }}>
                 <tr>
                   <th className="p-4">Date</th>
                   <th className="p-4">From Account</th>
@@ -419,74 +447,72 @@ const Transfers: React.FC = () => {
                   <th className="p-4">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y" style={{ borderColor: hairline }}>
                 {filteredTransfers.map((transfer) => (
-                  <tr key={transfer.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-slate-400" />
-                        {format(parseISO(transfer.date), 'MMM dd, yyyy')}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-red-100 rounded-lg">
-                          <TrendingDown size={14} className="text-red-600" />
+                  <tr key={transfer.id} className="hover:bg-teal-50 transition-colors" style={{ borderColor: hairline }}>
+<td className="p-4" style={{ color: ink }}>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} style={{ color: inkSoft }} />
+                          {format(parseISO(transfer.date), 'MMM dd, yyyy')}
                         </div>
-                        <div>
-                          <div className="font-medium text-slate-900">
-                            {getAccountName(transfer.fromAccountId)}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: danger[50] }}>
+                            <TrendingDown size={14} style={{ color: danger[500] }} />
                           </div>
-                          <div className="text-xs text-slate-500">
-                            Balance: {currency}{accountBalances[transfer.fromAccountId]?.toLocaleString() || '0.00'}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <TrendingUp size={14} className="text-green-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900">
-                            {getAccountName(transfer.toAccountId)}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            Balance: {currency}{accountBalances[transfer.toAccountId]?.toLocaleString() || '0.00'}
+                          <div>
+                            <div className="font-medium" style={{ color: ink }}>
+                              {getAccountName(transfer.fromAccountId)}
+                            </div>
+                            <div className="text-xs" style={{ color: inkSoft }}>
+                              Balance: {currency}{accountBalances[transfer.fromAccountId]?.toLocaleString() || '0.00'}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-4 text-right">
-                      <span className="font-bold text-lg text-slate-900">
-                        {currency}{transfer.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-slate-600">
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: emerald[50] }}>
+                            <TrendingUp size={14} style={{ color: emerald[500] }} />
+                          </div>
+                          <div>
+                            <div className="font-medium" style={{ color: ink }}>
+                              {getAccountName(transfer.toAccountId)}
+                            </div>
+                            <div className="text-xs" style={{ color: inkSoft }}>
+                              Balance: {currency}{accountBalances[transfer.toAccountId]?.toLocaleString() || '0.00'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className="font-bold text-lg" style={{ color: ink }}>
+                          {currency}{transfer.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td className="p-4" style={{ color: inkSoft }}>
                         {transfer.description || '-'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">
-                        {transfer.reference || '-'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedTransfer(transfer);
-                            setShowModal('view');
-                          }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View details"
-                        >
-                          <Eye size={16} />
-                        </button>
-                      </div>
-                    </td>
+                      </td>
+                      <td className="p-4">
+                        <span className="font-mono text-xs px-2 py-1 rounded" style={{ backgroundColor: '#f1f5f9', color: inkSoft }}>
+                          {transfer.reference || '-'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedTransfer(transfer);
+                              setShowModal('view');
+                            }}
+                            className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                            title="View details"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      </td>
                   </tr>
                 ))}
               </tbody>

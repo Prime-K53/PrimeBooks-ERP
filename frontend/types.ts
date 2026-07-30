@@ -668,7 +668,29 @@ export interface Customer {
   subAccounts?: string[];
   avgPaymentDays?: number;
   company_id?: string;
+  taxId?: string;
+  companyName?: string;
+  currency?: string;
   [key: string]: any;
+}
+
+export interface PortalUser {
+  id: string;
+  customer_id: string;
+  email: string;
+  full_name?: string;
+  phone?: string;
+  status?: 'active' | 'disabled' | 'invited';
+  company_id?: string;
+  last_login_at?: string;
+  created_at?: string;
+}
+
+export interface PortalSession {
+  access_token: string;
+  refresh_token: string;
+  expires_in: string;
+  user: PortalUser;
 }
 
 export interface School {

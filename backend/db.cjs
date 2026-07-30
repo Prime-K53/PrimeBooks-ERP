@@ -2181,6 +2181,104 @@ const initDb = () => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
+      // Portal Tables — Customer Portal users, sessions, login history
+      db.run(`CREATE TABLE IF NOT EXISTS portal_users (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        full_name TEXT,
+        phone TEXT,
+        status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'disabled', 'invited')),
+        company_id TEXT NOT NULL DEFAULT '',
+        last_login_at TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_users_customer ON portal_users(customer_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_users_company ON portal_users(company_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_users_email ON portal_users(email)`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS portal_sessions (
+        id TEXT PRIMARY KEY,
+        portal_user_id TEXT NOT NULL,
+        refresh_token_hash TEXT NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        expires_at TEXT NOT NULL,
+        revoked_at TEXT,
+        company_id TEXT NOT NULL DEFAULT '',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (portal_user_id) REFERENCES portal_users(id)
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_sessions_user ON portal_sessions(portal_user_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_sessions_token ON portal_sessions(refresh_token_hash)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_sessions_expires ON portal_sessions(expires_at)`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS portal_password_resets (
+        id TEXT PRIMARY KEY,
+        portal_user_id TEXT NOT NULL,
+        code TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        used_at TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (portal_user_id) REFERENCES portal_users(id)
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_password_resets_user ON portal_password_resets(portal_user_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_password_resets_code ON portal_password_resets(code)`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS portal_login_history (
+        id TEXT PRIMARY KEY,
+        portal_user_id TEXT NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        login_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (portal_user_id) REFERENCES portal_users(id)
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_login_history_user ON portal_login_history(portal_user_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_login_history_at ON portal_login_history(login_at)`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS portal_notifications (
+        id TEXT PRIMARY KEY,
+        portal_user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT,
+        link TEXT,
+        is_read INTEGER DEFAULT 0,
+        company_id TEXT NOT NULL DEFAULT '',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (portal_user_id) REFERENCES portal_users(id)
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_notifications_user ON portal_notifications(portal_user_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_notifications_read ON portal_notifications(portal_user_id, is_read)`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS portal_tickets (
+        id TEXT PRIMARY KEY,
+        portal_user_id TEXT NOT NULL,
+        customer_id TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        message TEXT NOT NULL,
+        priority TEXT DEFAULT 'normal' CHECK(priority IN ('low', 'normal', 'high', 'urgent')),
+        status TEXT DEFAULT 'open' CHECK(status IN ('open', 'in_progress', 'resolved', 'closed')),
+        company_id TEXT NOT NULL DEFAULT '',
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (portal_user_id) REFERENCES portal_users(id)
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_tickets_user ON portal_tickets(portal_user_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_tickets_status ON portal_tickets(status)`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS portal_ticket_messages (
+        id TEXT PRIMARY KEY,
+        ticket_id TEXT NOT NULL,
+        sender_type TEXT NOT NULL CHECK(sender_type IN ('customer', 'staff')),
+        message TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (ticket_id) REFERENCES portal_tickets(id)
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_ticket_messages_ticket ON portal_ticket_messages(ticket_id)`);
+
       // Add company_id to newly created tables if not already present
       const newTableColumns = [
         { table: 'bank_accounts', column: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },

@@ -132,6 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, toggle, toggleCo
             { label: 'Suppliers', path: '/procurement/suppliers', icon: <Users size={14} /> },
             { label: 'Task Manager', path: '/sales-flow/tasks', icon: <CheckSquare size={14} /> },
             { label: 'CRM Comms', path: '/internal-tools/chat', icon: <MessageSquare size={14} /> },
+            { label: 'Portal Users', path: '/portal/users', icon: <Shield size={14} /> },
           ]
         },
       ]

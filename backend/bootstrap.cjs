@@ -61,6 +61,12 @@ async function bootstrap() {
      await authService.ensureAuthSchema();
      console.log('Auth schema initialized.');
 
+     // Initialize portal auth schema (portal_users, sessions, etc.)
+     console.log('Initializing portal auth schema...');
+     const portalAuthService = require('./services/portalAuthService.cjs');
+     await portalAuthService.ensurePortalSchema();
+     console.log('Portal auth schema initialized.');
+
      // Initialize referral tables
      console.log('Initializing referral tables...');
      const migrate_add_referral_tables = require('./migrations/add_referral_tables.cjs');
