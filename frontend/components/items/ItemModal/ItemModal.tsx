@@ -1122,21 +1122,13 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
       )}
       {rawConsumableType === 'consumable' && (
         <div style={s.section}>
-          <p style={s.sectionTitle}>Cost Summary</p>
-          <div style={s.costStrip}>
-            <div style={s.costItem}><div style={s.costItemK}>Cost / {rawBuyUnit}</div><div style={s.costItemV}>{formatCurrency(rawBuyCost, currencySymbol)}</div></div>
-            <div style={s.costItem}><div style={s.costItemK}>Cost / {rawUseUnit}</div><div style={{ ...s.costItemV, color: VAR_STYLES.ink700 }}>{formatCurrency(rawUnitCost, currencySymbol)}</div></div>
-            <div style={s.costItem}><div style={s.costItemK}>Conversion</div><div style={s.costItemV}>1:{rawConvRate}</div></div>
-            <div style={s.costItem}><div style={s.costItemK}>Feeds Into</div><div style={{ ...s.costItemV, fontSize: 12, fontWeight: 600, color: teal[600] }}>BOM Costing</div></div>
-          </div>
-          <div style={{ marginTop: 14 }}>
-            <Field label={`Cost per ${rawBuyUnit}`} hint="What your supplier charges per buying unit">
-              <div style={s.prefixInput}>
-                <span style={s.prefixSpan}>{currencySymbol}</span>
-                <input type="number" style={{ ...s.input, ...s.mono, paddingLeft: 28 }} value={rawBuyCost} onChange={e => setRawBuyCost(Number(e.target.value) || 0)} />
-              </div>
-            </Field>
-          </div>
+          <p style={s.sectionTitle}>Cost Input</p>
+          <Field label={`Cost per ${rawBuyUnit}`} hint="What your supplier charges per buying unit">
+            <div style={s.prefixInput}>
+              <span style={s.prefixSpan}>{currencySymbol}</span>
+              <input type="number" style={{ ...s.input, ...s.mono, paddingLeft: 28 }} value={rawBuyCost} onChange={e => setRawBuyCost(Number(e.target.value) || 0)} />
+            </div>
+          </Field>
         </div>
       )}
       <div style={s.section}>
