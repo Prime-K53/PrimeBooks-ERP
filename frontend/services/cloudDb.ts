@@ -184,17 +184,6 @@ const getCompanyId = async (): Promise<string | null> => {
         activeCompanyId = profile.company_id;
         return activeCompanyId;
       }
-
-      const { data: legacyProfile } = await supabase
-        .from('users')
-        .select('company_id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (legacyProfile?.company_id) {
-        activeCompanyId = legacyProfile.company_id;
-        return activeCompanyId;
-      }
     }
 
     const sessionCompanyId = await extractCompanyIdFromSession();
@@ -276,15 +265,7 @@ export const cloudDb = {
         return profile;
       }
 
-      const { data: legacyProfile, error: legacyError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (legacyError) throw legacyError;
-      if (legacyProfile?.company_id) setActiveCompanyId(legacyProfile.company_id);
-      return legacyProfile;
+      return null;
     });
   },
 
@@ -299,16 +280,8 @@ export const cloudDb = {
         .eq('company_id', companyId)
         .order('created_at', { ascending: true });
 
-      if (!error) return data || [];
-
-      const { data: legacyRows, error: legacyError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: true });
-
-      if (legacyError) throw legacyError;
-      return legacyRows || [];
+      if (error) throw error;
+      return data || [];
     });
   },
 
@@ -664,7 +637,9 @@ export const cloudDb = {
         }
       }
 
-      let query = supabase
+      // Use `any` type for the query builder chain to avoid complex type inference issues
+      // with Supabase's PostgrestBuilder/PostgrestFilterBuilder type hierarchy
+      let query: any = supabase
         .from(table)
         .upsert(record, { onConflict: 'id', ignoreDuplicates: false })
         .select('*')
