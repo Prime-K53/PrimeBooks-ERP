@@ -104,6 +104,7 @@ interface NexusDB extends DBSchema {
     reprintJobs: { key: string; value: any; };
     salesExchangeApprovals: { key: string; value: any; };
     files: { key: string; value: { id: string; blob: Blob; name: string; type: string; created: string } };
+    financialYears: { key: string; value: any };
     tasks: { key: string; value: any };
     syncOutbox: { key: string; value: { id: string; entityId: string; type: string; payload: any; date: string } };
     vatTransactions: { key: string; value: VatTransaction; };
@@ -157,7 +158,7 @@ interface NexusDB extends DBSchema {
 }
 
 const DB_NAME = 'PrimeERP_Final_v3_Clean';
-const DB_VERSION = 49;
+const DB_VERSION = 50;
 
 let dbPromise: Promise<IDBPDatabase<NexusDB>> | null = null;
 
@@ -367,7 +368,7 @@ const emitDataChange = (stores: string[]) => {
 };
 
 const getAllFromLegacyStore = async <T>(storeName: keyof NexusDB): Promise<T[]> => withDbRecovery(async (db) => {
-    if (!db?.objectStoreNames?.contains?.(storeName)) {
+    if (!db?.objectStoreNames?.contains?.(storeName as any)) {
         console.warn(`Object store "${storeName}" not found in IndexedDB.`);
         return [];
     }
@@ -389,7 +390,7 @@ const getAllFromLegacyStore = async <T>(storeName: keyof NexusDB): Promise<T[]> 
 });
 
 const getFromLegacyStore = async <T>(storeName: keyof NexusDB, id: string): Promise<T | undefined> => withDbRecovery(async (db) => {
-    if (!db?.objectStoreNames?.contains?.(storeName)) {
+    if (!db?.objectStoreNames?.contains?.(storeName as any)) {
         console.warn(`Object store "${storeName}" not found in IndexedDB.`);
         return undefined;
     }
@@ -421,7 +422,7 @@ const putToLegacyStore = async <T>(storeName: keyof NexusDB, item: T): Promise<s
 
 const deleteFromLegacyStore = async (storeName: keyof NexusDB, id: string): Promise<void> => {
     await withDbRecovery(async (db) => {
-        if (!db?.objectStoreNames?.contains?.(storeName)) {
+        if (!db?.objectStoreNames?.contains?.(storeName as any)) {
             return;
         }
         await db.delete(storeName as any, id);
@@ -478,6 +479,7 @@ const CLOUD_TABLE_MAP: Record<string, string> = {
   bankAlerts: 'bank_alerts',
   bankCategories: 'bank_categories',
   idempotencyKeys: 'idempotency_keys',
+  financialYears: 'financial_years',
   customerNotificationLogs: 'customer_notification_logs',
   whatsappChats: 'whatsapp_chats',
   whatsappTemplates: 'whatsapp_templates',
@@ -574,6 +576,7 @@ const STORE_NAMES: (keyof NexusDB)[] = [
     'walletTransactions', 'deliveryNotes', 'budgets', 'cheques',
     'transfers', 'employees', 'payrollRuns', 'payslips', 'tasks',
     'users', 'userGroups', 'goodsReceipts', 'files',
+    'financialYears',
     'smsCampaigns', 'subscribers', 'smsTemplates', 'shipments',
     'subcontractOrders', 'maintenanceLogs',
     'auditLogs', 'syncOutbox', 'alerts', 'reminders',
@@ -636,9 +639,9 @@ export const initDB = async (): Promise<IDBPDatabase<NexusDB>> => {
             async upgrade(db, oldVersion, newVersion, transaction) {
                 // Upgrading/Creating DB
                 for (const store of STORE_NAMES) {
-                    if (!db.objectStoreNames.contains(store)) {
+                    if (!db.objectStoreNames.contains(store as any)) {
                         // Creating store
-                        db.createObjectStore(store, { keyPath: 'id' });
+                        db.createObjectStore(store as any, { keyPath: 'id' });
                     }
                 }
                 // All stores created
@@ -1053,44 +1056,16 @@ export const dbService = {
     },
 
     async getAll<T>(storeName: keyof NexusDB): Promise<T[]> {
-        // Cloud-authoritative: read from Supabase first when online
-        if (!LOCAL_ONLY_STORES.has(String(storeName)) && String(storeName) !== 'syncOutbox') {
-            try {
-                const cloudValues = await cloudDb.getAll<T>(String(storeName));
-                if (cloudValues !== null && cloudValues.length > 0) {
-                    // Silently hydrate local cache for offline availability
-                    try {
-                        for (const item of cloudValues) {
-                            await putToLegacyStore(storeName, item).catch(() => {});
-                        }
-                    } catch { /* cache best-effort */ }
-                    return cloudValues;
-                }
-            } catch (err) {
-                console.warn(`[DB] Cloud getAll failed for ${String(storeName)}, reading from offline cache:`, err);
-            }
-        }
+        // Local-first: read from IndexedDB immediately
+        try {
+            const localValues = await getAllFromLegacyStore<T>(storeName);
+            if (localValues.length > 0) return localValues;
+        } catch { /* fall through */ }
 
-        // Offline fallback: read-only from local IndexedDB cache
         return getAllFromLegacyStore<T>(storeName);
     },
 
     async get<T>(storeName: keyof NexusDB, id: string): Promise<T | undefined> {
-        // Cloud-authoritative: read from Supabase first when online
-        if (!LOCAL_ONLY_STORES.has(String(storeName)) && String(storeName) !== 'syncOutbox') {
-            try {
-                const cloudValue = await cloudDb.get<T>(String(storeName), id);
-                if (cloudValue !== null) {
-                    // Silently hydrate local cache for offline availability
-                    try { await putToLegacyStore(storeName, cloudValue as T); } catch { /* cache best-effort */ }
-                    return cloudValue;
-                }
-            } catch (err) {
-                console.warn(`[DB] Cloud get failed for ${String(storeName)}/${id}, reading from offline cache:`, err);
-            }
-        }
-
-        // Offline fallback: read-only from local cache
         return getFromLegacyStore<T>(storeName, id);
     },
 
@@ -1104,33 +1079,23 @@ export const dbService = {
 
         const itemId = String(raw.id ?? '');
 
-        // Always write to local cache first
+        // Local-first: always write to IndexedDB, return immediately
         const localResultId = await putToLegacyStore(storeName, item);
 
-        // Then try cloud write (fire-and-forget for non-local-only stores)
+        // Background sync: fire-and-forget queue to cloud
         const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
-        if (!isLocalOnly) {
-            cloudDb.put(String(storeName), item).then(cloudResult => {
-                if (cloudResult?.id) {
-                    this.triggerSync();
-                    emitDataChange([String(storeName)]);
-                }
-            }).catch(err => {
-                console.warn(`[DB] Cloud put failed for ${String(storeName)}:`, err);
-                try {
-                    const table = getCloudTable(String(storeName));
-                    durableSyncQueue.enqueue({
-                        table,
-                        recordId: itemId || null,
-                        operation: 'upsert',
-                        payload: item,
-                        companyId: currentCompanyId || null,
-                    });
-                    backgroundSyncService.trigger();
-                } catch (qErr) {
-                    console.warn('[DB] Failed to queue offline write:', qErr);
-                }
-            });
+        if (!isLocalOnly && itemId) {
+            try {
+                const table = getCloudTable(String(storeName));
+                durableSyncQueue.enqueue({
+                    table,
+                    recordId: itemId,
+                    operation: 'upsert',
+                    payload: item,
+                    companyId: currentCompanyId || null,
+                }).catch(() => {});
+                backgroundSyncService.trigger();
+            } catch { /* background sync best-effort */ }
         }
 
         this.triggerSync();
@@ -1142,7 +1107,7 @@ export const dbService = {
       if (items.length === 0) return;
       // Skip cloud writes — bulkPut is for syncing cloud data into local cache
       await withDbRecovery(async (db) => {
-        if (!db?.objectStoreNames?.contains?.(storeName)) return;
+        if (!db?.objectStoreNames?.contains?.(storeName as any)) return;
         const tx = db.transaction(storeName as any, 'readwrite');
         const store = tx.objectStore(storeName as any);
         for (const item of items) {
@@ -1157,19 +1122,40 @@ export const dbService = {
 
     async getSetting<T>(key: string): Promise<T | undefined> {
         try {
-            const cloudValue = await cloudDb.getSetting<T>(key);
-            return cloudValue ?? undefined;
+            const record = await getFromLegacyStore<any>('settings', key);
+            if (record && record.value !== undefined) {
+                return record.value as T;
+            }
+            if (record && typeof record === 'object' && !('value' in record)) {
+                return record as T;
+            }
+            const local = localStorage.getItem(key);
+            if (local !== null) {
+                try {
+                    return JSON.parse(local) as T;
+                } catch {
+                    return local as unknown as T;
+                }
+            }
+            return undefined;
         } catch (err) {
-            console.warn(`[DB] Cloud getSetting failed for ${key}:`, err);
+            console.warn(`[DB] Local getSetting error for ${key}:`, err);
             return undefined;
         }
     },
 
     async saveSetting<T>(key: string, value: T): Promise<void> {
         try {
-            await cloudDb.saveSetting<T>(key, value);
+            const record = { id: key, key, value, _updatedAt: new Date().toISOString() };
+            await this.put('settings', record);
+            try {
+                const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+                localStorage.setItem(key, serialized);
+            } catch {
+                // Ignore localStorage quota errors
+            }
         } catch (err) {
-            console.warn(`[DB] Cloud saveSetting failed for ${key}:`, err);
+            console.warn(`[DB] Local saveSetting error for ${key}:`, err);
         }
         this.triggerSync();
         emitDataChange(['settings']);
@@ -1222,32 +1208,32 @@ export const dbService = {
     },
 
     async delete(storeName: keyof NexusDB, id: string): Promise<void> {
-        // Cloud-authoritative: delete from Supabase first
-        const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
-        if (!isLocalOnly) {
-            try {
-                await cloudDb.delete(String(storeName), id);
-            } catch (err) {
-                console.warn(`[DB] Cloud delete failed for ${String(storeName)}/${id}, queueing for retry:`, err);
-                try {
-                    const table = getCloudTable(String(storeName));
-                    await durableSyncQueue.enqueue({
-                        table,
-                        recordId: id,
-                        operation: 'delete',
-                        payload: { id },
-                        companyId: currentCompanyId || null,
-                    });
-                    backgroundSyncService.trigger();
-                } catch (qErr) {
-                    console.warn('[DB] Failed to queue delete:', qErr);
-                }
-                return;
-            }
+        // Local-first: soft delete in IndexedDB immediately
+        const existing = await getFromLegacyStore<any>(storeName, id);
+        if (existing) {
+            existing._updatedAt = new Date().toISOString();
+            existing.deletedAt = existing.deletedAt || new Date().toISOString();
+            await putToLegacyStore(storeName, existing);
+        } else {
+            await deleteFromLegacyStore(storeName, id);
         }
 
-        // Remove from local cache (only reached on success or local-only)
-        await deleteFromLegacyStore(storeName, id);
+        // Background sync: queue delete to cloud
+        const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
+        if (!isLocalOnly && id) {
+            try {
+                const table = getCloudTable(String(storeName));
+                durableSyncQueue.enqueue({
+                    table,
+                    recordId: id,
+                    operation: 'delete',
+                    payload: { id },
+                    companyId: currentCompanyId || null,
+                }).catch(() => {});
+                backgroundSyncService.trigger();
+            } catch { /* background sync best-effort */ }
+        }
+
         this.triggerSync();
         emitDataChange([String(storeName)]);
     },
@@ -1412,7 +1398,7 @@ export const dbService = {
 
         const tx = db.transaction(db.objectStoreNames as any, 'readwrite');
         for (const store of STORE_NAMES) {
-            if (!db.objectStoreNames.contains(store)) continue;
+            if (!db.objectStoreNames.contains(store as any)) continue;
             const objectStore = tx.objectStore(store as any);
             await objectStore.clear();
             const items = parsed.data[store];
@@ -1463,7 +1449,7 @@ export const dbService = {
         try {
             const db = await initDB();
             STORE_NAMES.forEach(store => {
-                if (!db.objectStoreNames.contains(store)) {
+                if (!db.objectStoreNames.contains(store as any)) {
                     issues.push(`Missing object store: ${store} `);
                 }
             });

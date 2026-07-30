@@ -1,5 +1,5 @@
 import { ReferralCampaign } from '../types/referral-extended'
-import { cloudDb } from './cloudDb'
+import { dbService } from './db'
 import { generateId } from './transactions/_internal'
 import { referralEventBus } from './referralEventBus'
 import { referralAuditService } from './referralAuditService'
@@ -47,7 +47,7 @@ export const referralCampaignService = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    await cloudDb.put('referralCampaigns', campaign)
+    await dbService.put('referralCampaigns', campaign)
 
     await referralAuditService.log({
       entityType: 'campaign',
@@ -61,7 +61,7 @@ export const referralCampaignService = {
   },
 
   async updateCampaign(id: string, updates: Partial<ReferralCampaign>, updatedBy?: string): Promise<ReferralCampaign> {
-    const all = (await cloudDb.getAll<ReferralCampaign>('referralCampaigns')) || []
+    const all = (await dbService.getAll<ReferralCampaign>('referralCampaigns')) || []
     const campaign = all.find(c => c.id === id)
     if (!campaign) throw new Error('Campaign not found')
 
@@ -69,7 +69,7 @@ export const referralCampaignService = {
     Object.assign(campaign, updates, {
       updatedAt: new Date().toISOString(),
     })
-    await cloudDb.put('referralCampaigns', campaign)
+    await dbService.put('referralCampaigns', campaign)
 
     await referralAuditService.log({
       entityType: 'campaign',
@@ -84,13 +84,13 @@ export const referralCampaignService = {
   },
 
   async activateCampaign(id: string, activatedBy?: string): Promise<ReferralCampaign> {
-    const all = (await cloudDb.getAll<ReferralCampaign>('referralCampaigns')) || []
+    const all = (await dbService.getAll<ReferralCampaign>('referralCampaigns')) || []
     const campaign = all.find(c => c.id === id)
     if (!campaign) throw new Error('Campaign not found')
 
     campaign.status = 'active'
     campaign.updatedAt = new Date().toISOString()
-    await cloudDb.put('referralCampaigns', campaign)
+    await dbService.put('referralCampaigns', campaign)
 
     await referralEventBus.emit('campaign.started', {
       source: 'referralCampaignService',
@@ -114,13 +114,13 @@ export const referralCampaignService = {
   },
 
   async pauseCampaign(id: string, pausedBy?: string): Promise<ReferralCampaign> {
-    const all = (await cloudDb.getAll<ReferralCampaign>('referralCampaigns')) || []
+    const all = (await dbService.getAll<ReferralCampaign>('referralCampaigns')) || []
     const campaign = all.find(c => c.id === id)
     if (!campaign) throw new Error('Campaign not found')
 
     campaign.status = 'paused'
     campaign.updatedAt = new Date().toISOString()
-    await cloudDb.put('referralCampaigns', campaign)
+    await dbService.put('referralCampaigns', campaign)
 
     await referralEventBus.emit('campaign.paused', {
       source: 'referralCampaignService',
@@ -134,13 +134,13 @@ export const referralCampaignService = {
   },
 
   async endCampaign(id: string, endedBy?: string): Promise<ReferralCampaign> {
-    const all = (await cloudDb.getAll<ReferralCampaign>('referralCampaigns')) || []
+    const all = (await dbService.getAll<ReferralCampaign>('referralCampaigns')) || []
     const campaign = all.find(c => c.id === id)
     if (!campaign) throw new Error('Campaign not found')
 
     campaign.status = 'completed'
     campaign.updatedAt = new Date().toISOString()
-    await cloudDb.put('referralCampaigns', campaign)
+    await dbService.put('referralCampaigns', campaign)
 
     await referralEventBus.emit('campaign.ended', {
       source: 'referralCampaignService',
@@ -154,17 +154,17 @@ export const referralCampaignService = {
   },
 
   async getActiveCampaigns(): Promise<ReferralCampaign[]> {
-    const all = (await cloudDb.getAll<ReferralCampaign>('referralCampaigns')) || []
+    const all = (await dbService.getAll<ReferralCampaign>('referralCampaigns')) || []
     return all.filter(c => c.status === 'active')
   },
 
   async getCampaignsByStatus(status: ReferralCampaign['status']): Promise<ReferralCampaign[]> {
-    const all = (await cloudDb.getAll<ReferralCampaign>('referralCampaigns')) || []
+    const all = (await dbService.getAll<ReferralCampaign>('referralCampaigns')) || []
     return all.filter(c => c.status === status)
   },
 
   async getAllCampaigns(): Promise<ReferralCampaign[]> {
-    return (await cloudDb.getAll<ReferralCampaign>('referralCampaigns')) || []
+    return (await dbService.getAll<ReferralCampaign>('referralCampaigns')) || []
   },
 
   async getApplicableCampaign(invoiceCustomerId: string, paidAmount: number): Promise<ReferralCampaign | null> {

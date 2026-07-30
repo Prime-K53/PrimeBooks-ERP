@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Printer, Truck, Wrench, Monitor, Package, MoreVertical, Edit2, Trash2, X, ChevronDown, Calendar, DollarSign, MapPin, User, FileText, AlertCircle } from 'lucide-react';
-import { api } from '../services/api';
+import { dbService } from '../services/db';
 
 const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
 const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
@@ -65,7 +65,7 @@ const AssetManagement: React.FC = () => {
 
   const fetchAssets = async () => {
     try {
-      const data = await api.get('/api/assets');
+      const data = await dbService.getAll('assets');
       setAssets(data || []);
     } catch { setAssets([]); }
     finally { setLoading(false); }
@@ -85,8 +85,8 @@ const AssetManagement: React.FC = () => {
   const handleSave = async () => {
     if (!form.name.trim()) return alert('Asset name is required');
     try {
-      if (editingId) await api.put(`/api/assets/${editingId}`, form);
-      else await api.post('/api/assets', form);
+      const assetData = { ...form, id: editingId || `AST-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, createdAt: new Date().toISOString() };
+      await dbService.put('assets', assetData);
       setShowForm(false); setEditingId(null); setForm(emptyForm);
       await fetchAssets();
     } catch (err) { alert('Failed to save asset'); }
@@ -106,7 +106,7 @@ const AssetManagement: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this asset?')) return;
-    try { await api.delete(`/api/assets/${id}`); await fetchAssets(); }
+    try { await dbService.delete('assets', id); await fetchAssets(); }
     catch { alert('Failed to delete'); }
   };
 

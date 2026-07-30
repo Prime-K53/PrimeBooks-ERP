@@ -30,7 +30,6 @@ import { z } from 'zod';
 import { api } from '../services/api';
 import { dbService } from '../services/db';
 import cloudDb from '../services/cloudDb';
-import { supabase } from '../services/supabaseClient';
 import { isSupabaseConfigured } from '../services/cloudMode';
 import { getPlaceholder } from '../constants/placeholders';
 import { isPasswordProtectionEnabled, normalizeSecuritySettings, withNormalizedSecurityConfig } from '../utils/securitySettings';
@@ -728,7 +727,7 @@ const Settings: React.FC = () => {
                                     if (companyId) {
                                         await cloudDb.deleteCompany(companyId);
                                     }
-                                    await supabase.auth.signOut();
+                                    sessionStorage.removeItem('nexus_user');
                                 } else {
                                     await api.system.deleteWorkspace();
                                 }

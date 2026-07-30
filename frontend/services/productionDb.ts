@@ -1,4 +1,4 @@
-import { initDB } from './db';
+import { dbService } from './db';
 
 type TableAccessor = {
   toArray: <T>() => Promise<T[]>;
@@ -8,10 +8,18 @@ type TableAccessor = {
 };
 
 const createTable = (storeName: string): TableAccessor => ({
-  toArray: async <T>() => { const db = await initDB(); return db.getAll(storeName) as T[]; },
-  get: async <T>(id: string) => { const db = await initDB(); return db.get(storeName, id) as T | undefined; },
-  put: async <T>(value: T) => { const db = await initDB(); await db.put(storeName, value as any); },
-  delete: async (id: string) => { const db = await initDB(); await db.delete(storeName, id); },
+  toArray: async <T>() => {
+    return dbService.getAll<T>(storeName as any);
+  },
+  get: async <T>(id: string) => {
+    return dbService.get<T>(storeName as any, id);
+  },
+  put: async <T>(value: T) => {
+    await dbService.put(storeName as any, value);
+  },
+  delete: async (id: string) => {
+    await dbService.delete(storeName as any, id);
+  },
 });
 
 export const productionDb = {

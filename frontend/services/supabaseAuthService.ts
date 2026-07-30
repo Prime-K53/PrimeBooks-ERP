@@ -98,8 +98,11 @@ export async function signUp(email: string, password: string, metadata?: Record<
 
       if (signInError) {
         logger.error('[Supabase] Auto-login after signup failed:', signInError);
-        // If signIn fails, it might be because email confirmation IS required despite expectations
-        if (signInError.message?.toLowerCase().includes('email not confirmed')) {
+        // If signIn fails, it's because email confirmation IS required — we
+        // know the password is correct (we just created the account), so any
+        // "invalid login credentials" error is actually an unconfirmed email.
+        if (signInError.message?.toLowerCase().includes('email not confirmed') ||
+            signInError.message?.toLowerCase().includes('invalid login credentials')) {
           return {
             success: false,
             error: 'Signup succeeded but email confirmation is required. Please check your email or disable email confirmation in Supabase settings.'
@@ -168,7 +171,11 @@ export async function signIn(email: string, password: string): Promise<AuthResul
       });
 
       if (error.message?.toLowerCase().includes('invalid login credentials')) {
-        return { success: false, error: error.message };
+        // Some Supabase versions return 'invalid_credentials' for unconfirmed emails
+        if (authErr?.code === 'email_not_confirmed' || authErr?.status === 401) {
+          return { success: false, error: 'Email confirmation is required. Please check your inbox or disable email confirmation in Supabase settings.' };
+        }
+        return { success: false, error: 'Invalid email or password. Please check your credentials and try again.' };
       }
       return { success: false, error: error.message };
     }

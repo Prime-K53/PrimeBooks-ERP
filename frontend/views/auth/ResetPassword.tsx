@@ -2,13 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Lock, ArrowLeft, Loader2, ShieldCheck, AlertCircle, CheckCircle2, Key } from 'lucide-react';
 import { Input } from '../../components/Input';
 import AuthLayout from './AuthLayout';
-import { supabase } from '../../services/supabaseClient';
-
-const SUPABASE_ENABLED = Boolean(
-  import.meta.env.VITE_SUPABASE_URL &&
-  import.meta.env.VITE_SUPABASE_ANON_KEY &&
-  import.meta.env.VITE_SUPABASE_URL !== 'https://placeholder.supabase.co'
-);
+import { dbService } from '../../services/db';
 
 const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState('');
@@ -16,22 +10,10 @@ const ResetPassword: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionReady, setSessionReady] = useState(true);
 
   useEffect(() => {
-    if (!SUPABASE_ENABLED) return;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' && session) {
-        setSessionReady(true);
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setSessionReady(true);
-    });
-
-    return () => { subscription.unsubscribe(); };
+    setSessionReady(true);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +31,14 @@ const ResetPassword: React.FC = () => {
     setError(null);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
-      if (updateError) throw updateError;
+      const sessionUser = sessionStorage.getItem('nexus_user');
+      if (!sessionUser) throw new Error('No active session.');
+      const user = JSON.parse(sessionUser);
+      const users = await dbService.getAll<any>('users');
+      const updated = users.map((u: any) =>
+        u.id === user.id ? { ...u, password } : u
+      );
+      await dbService.bulkPut('users', updated);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset password.');
@@ -79,13 +67,6 @@ const ResetPassword: React.FC = () => {
               : 'Verifying your reset link...'}
         </p>
       </div>
-
-      {!SUPABASE_ENABLED && (
-        <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2">
-          <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-300">Supabase auth is not configured.</p>
-        </div>
-      )}
 
       {error && (
         <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-start gap-2">

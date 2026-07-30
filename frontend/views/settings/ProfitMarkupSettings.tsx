@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { ConfirmDialog, ConfirmDialogType } from '../../components/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
-import { getUrl, HAS_REMOTE_BACKEND } from '../../config/api';
+
 import { dbService } from '../../services/db';
 import { logger } from '../../services/logger';
 import {
@@ -60,17 +60,6 @@ interface ModalState {
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
 const OFFLINE_MARGIN_KEY = 'nexus_profit_margin_settings';
-
-const getHeaders = () => {
-  const rawConfig = localStorage.getItem('nexus_company_config');
-  const companyId = rawConfig ? JSON.parse(rawConfig)?.companyId : null;
-  return {
-    'Content-Type': 'application/json',
-    'x-user-id': localStorage.getItem('prime_user_id') || 'unknown',
-    'x-user-role': localStorage.getItem('prime_user_role') || 'Admin',
-    ...(companyId ? { 'x-company-id': String(companyId) } : {}),
-  };
-};
 
 const parseBody = (body?: BodyInit | null) => {
   if (typeof body !== 'string') return {};
@@ -124,35 +113,8 @@ async function apiFetchOffline(path: string, opts: RequestInit = {}) {
   throw new Error(`Unsupported offline request: ${method} ${cleanPath}`);
 }
 
-const SUPABASE_IS_BACKEND = Boolean(import.meta.env.VITE_SUPABASE_URL);
-
 async function apiFetch(path: string, opts: RequestInit = {}) {
-  if (!HAS_REMOTE_BACKEND || SUPABASE_IS_BACKEND) {
-    return apiFetchOffline(path, opts);
-  }
-
-  try {
-    const res = await fetch(getUrl(`settings${path}`), {
-      ...opts,
-      headers: { ...getHeaders(), ...(opts.headers || {}) },
-      signal: AbortSignal.timeout(6000),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Request failed');
-    return data;
-  } catch (error) {
-    if (
-      error instanceof TypeError
-      || (error instanceof Error && (
-        error.name === 'AbortError'
-        || error.message.toLowerCase().includes('failed to fetch')
-        || error.message.toLowerCase().includes('network')
-      ))
-    ) {
-      return apiFetchOffline(path, opts);
-    }
-    throw error;
-  }
+  return apiFetchOffline(path, opts);
 }
 
 /** Persist a margin record array to the cloud-first setting store for offline access. */

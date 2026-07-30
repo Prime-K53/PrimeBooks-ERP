@@ -1,24 +1,9 @@
 import { ExaminationBatchNotification, NotificationAuditLog, NotificationType, NotificationPriority } from '../types';
 import { logger } from '@/services/logger';
-import { getUrl, API_BASE_URL } from '../config/api.js';
 import { dbService } from './db';
 import { examinationDb } from './examinationDb';
-import { getHeaders, joinPath, safeJson, toServiceError, isLikelyNetworkError } from './examinationServiceUtils';
 
-const REQUEST_TIMEOUT_MS = 30000;
-const HEAVY_REQUEST_TIMEOUT_MS = 180000;
-const FALLBACK_CANDIDATE_TIMEOUT_MS = 12000;
-const BACKEND_RETRY_COOLDOWN_MS = 60000;
-const PASSWORD_BYPASS_USER_ID = 'USR-PASSWORD-BYPASS';
 const loggedLocalNotificationStores = new Set<string>();
-
-const EXAM_BACKEND_URL = (import.meta as any)?.env?.VITE_EXAM_BACKEND_URL;
-
-const API_BASE_CANDIDATES = () => {
-  if (!EXAM_BACKEND_URL) return [];
-  return [`${EXAM_BACKEND_URL}/api/examination`];
-};
-let backendRetryAfter = 0;
 
 const getLocalNotificationsForUser = async (
   userId: string,
@@ -38,106 +23,6 @@ const getLocalNotificationsForUser = async (
     .filter(n => n.user_id === userId)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, limit);
-};
-
-const markBackendUnavailable = () => {
-  backendRetryAfter = Date.now() + BACKEND_RETRY_COOLDOWN_MS;
-};
-
-const clearBackendUnavailable = () => {
-  backendRetryAfter = 0;
-};
-
-const shouldUseLocalNotificationsOnly = (userId?: string) => {
-  const currentUserId = String(userId || '').trim();
-  if (currentUserId === PASSWORD_BYPASS_USER_ID) return true;
-  if (API_BASE_CANDIDATES().length === 0) return true;
-  return Boolean(import.meta.env?.DEV)
-    && String(import.meta.env?.VITE_USE_REMOTE_EXAM_NOTIFICATION_API || '').toLowerCase() !== 'true';
-};
-
-const fetchWithTimeout = async (
-  endpoint: string,
-  options: RequestInit = {},
-  timeoutMs: number = REQUEST_TIMEOUT_MS
-) => {
-  let lastError: Error | null = null;
-  const baseCandidates = API_BASE_CANDIDATES();
-  if (baseCandidates.length === 0) {
-    throw new Error('Failed to fetch: backend disabled in offline mode');
-  }
-
-  for (let index = 0; index < baseCandidates.length; index += 1) {
-    const base = baseCandidates[index];
-    const isLastAttempt = index === baseCandidates.length - 1;
-    const controller = new AbortController();
-    const timeoutForAttempt = !isLastAttempt
-      ? Math.min(timeoutMs, FALLBACK_CANDIDATE_TIMEOUT_MS)
-      : timeoutMs;
-
-    let didTimeout = false;
-    const timeoutId = setTimeout(() => {
-      didTimeout = true;
-      controller.abort();
-    }, timeoutForAttempt);
-
-    try {
-      const url = getUrl(joinPath(base, endpoint));
-      logger.debug(`[examinationNotificationService] fetch attempt ${index + 1}/${baseCandidates.length} -> ${url} (timeout ${timeoutForAttempt}ms)`);
-      const start = Date.now();
-      const response = await fetch(url, {
-        ...options,
-        headers: { ...getHeaders(), ...options.headers },
-        signal: controller.signal
-      });
-      const duration = Date.now() - start;
-      const contentType = response.headers.get('content-type') || '';
-      logger.debug(`[API Response] ${response.status} ${url} in ${duration}ms (Content-Type: ${contentType})`);
-
-      const shouldTryNext = !isLastAttempt
-        && base.startsWith('/')
-        && (response.status === 404 || response.status === 405 || response.status === 501);
-
-      if (!response.ok && shouldTryNext) {
-        lastError = new Error(`HTTP error! status: ${response.status}`);
-        console.warn(`[examinationNotificationService] non-ok response (${response.status}) from ${url}, will try next candidate`);
-        continue;
-      }
-
-      if (contentType.includes('text/html')) {
-        const err = new Error('Wrong API URL or backend route missing: Received HTML instead of JSON');
-        logger.error(`[API Error] HTML response detected for ${url}`, { status: response.status, contentType });
-        if (shouldTryNext) {
-          lastError = err;
-          continue;
-        }
-        throw err;
-      }
-
-      return response;
-    } catch (err: unknown) {
-      const normalizedError = err instanceof Error ? err : new Error(String(err) || 'Unknown request error');
-      if (didTimeout) {
-        lastError = new Error(`Request timeout after ${timeoutMs}ms`);
-      } else {
-        lastError = normalizedError;
-      }
-
-      const canTryNextCandidate = !isLastAttempt && (
-        didTimeout
-        || normalizedError.name === 'AbortError'
-        || isLikelyNetworkError(normalizedError)
-      );
-
-      if (!canTryNextCandidate) {
-        throw lastError;
-      }
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  throw lastError || new Error('All API candidates failed');
 };
 
 export const examinationNotificationService = {
@@ -186,71 +71,17 @@ export const examinationNotificationService = {
       expires_at: this.calculateExpiry(notificationType)
     };
 
-    if (shouldUseLocalNotificationsOnly(user)) {
-      try {
-        await examinationDb.examinationBatchNotifications.put(notification as ExaminationBatchNotification);
-      } catch {
-        await dbService.put('examinationBatchNotifications', notification as ExaminationBatchNotification);
-      }
-      await this.createLocalAuditLog(notification.id || this.generateId(), user, 'CREATED', {
-        notificationType,
-        batchId,
-        source: 'local_only_mode'
-      });
-      return notification as ExaminationBatchNotification;
-    }
-
-    // Try to save to backend first
     try {
-      const response = await fetchWithTimeout('/notifications', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(notification)
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-
-      if (!response.ok) {
-        throw new Error(await toServiceError(response, 'Failed to create notification'));
-      }
-
-      const result = await safeJson(response, 'createBatchNotification');
-
-      // Audit log for successful creation
-      await this.createAuditLog(result.id, user, 'CREATED', {
-        notificationType,
-        batchId,
-        source: 'batch_calculation'
-      });
-
-      return result;
-    } catch (error) {
-      logger.error('[NotificationService] Failed to create notification on backend:', error);
-
-      // Fallback: store in local IndexedDB
-      try {
-        const localNotification = {
-          ...notification,
-          id: `local-${notification.id}`
-        };
-        try {
-          await examinationDb.examinationBatchNotifications.put(localNotification as ExaminationBatchNotification);
-        } catch {
-          await dbService.put('examinationBatchNotifications', localNotification as ExaminationBatchNotification);
-        }
-
-        // Still create audit log locally
-        await this.createLocalAuditLog(localNotification.id, user, 'CREATED', {
-          notificationType,
-          batchId,
-          source: 'batch_calculation',
-          error: error instanceof Error ? error.message : 'Backend unavailable, stored locally'
-        });
-
-        return localNotification as ExaminationBatchNotification;
-      } catch (localError) {
-        logger.error('[NotificationService] Failed to store notification locally:', localError);
-        throw error;
-      }
+      await examinationDb.examinationBatchNotifications.put(notification as ExaminationBatchNotification);
+    } catch {
+      await dbService.put('examinationBatchNotifications', notification as ExaminationBatchNotification);
     }
+    await this.createLocalAuditLog(notification.id || this.generateId(), user, 'CREATED', {
+      notificationType,
+      batchId,
+      source: 'batch_calculation'
+    });
+    return notification as ExaminationBatchNotification;
   },
 
   /**
@@ -262,58 +93,10 @@ export const examinationNotificationService = {
       return [];
     }
 
-    if (shouldUseLocalNotificationsOnly(user)) {
-      return getLocalNotificationsForUser(user, limit);
-    }
-
-    if (backendRetryAfter > Date.now()) {
-      try {
-        logger.debug('[NotificationService] Backend cooldown active, skipping remote fetch');
-        return await getLocalNotificationsForUser(user, limit);
-      } catch (localError) {
-        console.warn('[NotificationService] Failed to fetch local notifications during backend cooldown:', localError);
-        return [];
-      }
-    }
-
     try {
-      const response = await fetchWithTimeout(`/notifications?user_id=${user}&limit=${limit}`, {
-        method: 'GET',
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-
-      if (!response.ok) {
-        throw new Error(await toServiceError(response, 'Failed to fetch notifications'));
-      }
-
-      clearBackendUnavailable();
-      return safeJson(response, 'getUserNotifications');
-    } catch (error) {
-      // Distinguish between network errors and server errors
-      const isNetworkError = error instanceof TypeError ||
-        (error instanceof Error && (
-          error.message.includes('Failed to fetch') ||
-          error.message.includes('ERR_CONNECTION') ||
-          error.message.includes('connection closed') ||
-          error.message.includes('Network') ||
-          error.message.includes('timeout')
-        ));
-
-      if (isNetworkError) {
-        markBackendUnavailable();
-        console.warn('[NotificationService] Network error fetching notifications, falling back to local cache:', error);
-      } else {
-        logger.error('[NotificationService] Failed to fetch notifications from backend:', error);
-      }
-
-      // Fallback to local storage when network error occurs
-      try {
-        return await getLocalNotificationsForUser(user, limit);
-      } catch (localError) {
-        console.warn('[NotificationService] Failed to fetch local notifications:', localError);
-        // Return empty array instead of propagating error
-        return [];
-      }
+      return await getLocalNotificationsForUser(user, limit);
+    } catch {
+      return [];
     }
   },
 
@@ -326,7 +109,7 @@ export const examinationNotificationService = {
       throw new Error('No user ID available');
     }
 
-    if (shouldUseLocalNotificationsOnly(user)) {
+    try {
       let notifications: ExaminationBatchNotification[];
       try {
         notifications = await examinationDb.examinationBatchNotifications.toArray() as ExaminationBatchNotification[];
@@ -344,51 +127,10 @@ export const examinationNotificationService = {
         }
       }
 
-      await this.createLocalAuditLog(notificationId, user, 'READ', { source: 'local_only_mode' });
-      return;
-    }
-
-    try {
-      const response = await fetchWithTimeout(`/notifications/${notificationId}/read`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ user_id: user })
-      }, REQUEST_TIMEOUT_MS);
-
-      if (!response.ok) {
-        throw new Error(await toServiceError(response, 'Failed to mark notification as read'));
-      }
-
-      await this.createAuditLog(notificationId, user, 'READ', {});
+      await this.createLocalAuditLog(notificationId, user, 'READ', {});
     } catch (error) {
-      logger.error('[NotificationService] Failed to mark notification as read on backend:', error);
-
-      // Fallback: update local storage
-      try {
-        let notifications: ExaminationBatchNotification[];
-        try {
-          notifications = await examinationDb.examinationBatchNotifications.toArray() as ExaminationBatchNotification[];
-        } catch {
-          notifications = await dbService.getAll<ExaminationBatchNotification>('examinationBatchNotifications');
-        }
-        const notification = notifications.find(n => n.id === notificationId || n.id === `local-${notificationId}`);
-        if (notification) {
-          notification.is_read = true;
-          notification.read_at = new Date().toISOString();
-          try {
-            await examinationDb.examinationBatchNotifications.put(notification as ExaminationBatchNotification);
-          } catch {
-            await dbService.put('examinationBatchNotifications', notification as ExaminationBatchNotification);
-          }
-        }
-
-        await this.createLocalAuditLog(notificationId, user, 'READ', {
-          error: error instanceof Error ? error.message : 'Backend unavailable'
-        });
-      } catch (localError) {
-        logger.error('[NotificationService] Failed to update local notification:', localError);
-        throw error;
-      }
+      logger.error('[NotificationService] Failed to update local notification:', error);
+      throw error;
     }
   },
 
@@ -401,7 +143,7 @@ export const examinationNotificationService = {
       throw new Error('No user ID available');
     }
 
-    if (shouldUseLocalNotificationsOnly(user)) {
+    try {
       try {
         await examinationDb.examinationBatchNotifications.delete(notificationId);
       } catch {
@@ -416,40 +158,10 @@ export const examinationNotificationService = {
         }
       }
 
-      await this.createLocalAuditLog(notificationId, user, 'DISMISSED', { source: 'local_only_mode' });
-      return;
-    }
-
-    try {
-      const response = await fetchWithTimeout(`/notifications/${notificationId}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-
-      if (!response.ok) {
-        throw new Error(await toServiceError(response, 'Failed to dismiss notification'));
-      }
-
-      await this.createAuditLog(notificationId, user, 'DISMISSED', {});
+      await this.createLocalAuditLog(notificationId, user, 'DISMISSED', {});
     } catch (error) {
-      logger.error('[NotificationService] Failed to dismiss notification on backend:', error);
-
-      // Fallback: remove from local storage
-      try {
-        const idToDelete = notificationId.startsWith('local-') ? notificationId : `local-${notificationId}`;
-        try {
-          await examinationDb.examinationBatchNotifications.delete(idToDelete);
-        } catch {
-          await dbService.delete('examinationBatchNotifications', idToDelete);
-        }
-
-        await this.createLocalAuditLog(notificationId, user, 'DISMISSED', {
-          error: error instanceof Error ? error.message : 'Backend unavailable'
-        });
-      } catch (localError) {
-        logger.error('[NotificationService] Failed to delete local notification:', localError);
-        throw error;
-      }
+      logger.error('[NotificationService] Failed to dismiss notification:', error);
+      throw error;
     }
   },
 
@@ -483,33 +195,7 @@ export const examinationNotificationService = {
     action: 'CREATED' | 'DELIVERED' | 'READ' | 'DISMISSED' | 'EXPIRED' | 'FAILED',
     details: Record<string, unknown>
   ): Promise<void> {
-    if (shouldUseLocalNotificationsOnly(userId)) {
-      await this.createLocalAuditLog(notificationId, userId, action, details);
-      return;
-    }
-
-    try {
-      const auditLog: Partial<NotificationAuditLog> = {
-        id: this.generateId(),
-        notification_id: notificationId,
-        user_id: userId,
-        action,
-        details_json: details,
-        ip_address: this.getClientIp(),
-        user_agent: navigator.userAgent,
-        created_at: new Date().toISOString()
-      };
-
-      await fetchWithTimeout('/audit/notifications', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(auditLog)
-      }, REQUEST_TIMEOUT_MS).catch(() => {
-        // Silently fail audit logging - don't block main functionality
-      });
-    } catch (error) {
-      console.warn('[NotificationService] Failed to create audit log:', error);
-    }
+    await this.createLocalAuditLog(notificationId, userId, action, details);
   },
 
   /**
@@ -650,14 +336,6 @@ export const examinationNotificationService = {
    */
   generateId(): string {
     return `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  },
-
-  /**
-   * Get client IP (approximation)
-   */
-  getClientIp(): string {
-    // This is a simplified version - in production you'd get this from server
-    return '127.0.0.1';
   },
 
   /**

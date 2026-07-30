@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { dbService } from './db';
 
 const META_API_VERSION = 'v22.0';
 const META_GRAPH_URL = `https://graph.facebook.com/${META_API_VERSION}`;
@@ -62,14 +62,15 @@ class WhatsAppClientService {
 
   private _account: WhatsAppAccount | null = null;
 
+  private accountSettingsKey(userId: string): string {
+    return `whatsapp_account_${userId}`;
+  }
+
   async getAccount(userId: string): Promise<WhatsAppAccount | null> {
-    const { data } = await supabase
-      .from('whatsapp_accounts')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const key = this.accountSettingsKey(userId);
+    const data = await dbService.getSetting<WhatsAppAccount>(key);
     if (data) {
-      this._account = data as WhatsAppAccount;
+      this._account = data;
       this.currentStatus = {
         configured: !!data.access_token,
         ready: !!data.access_token,
@@ -78,56 +79,57 @@ class WhatsAppClientService {
         userId: data.user_id,
       };
     }
-    return data as WhatsAppAccount | null;
+    return data || null;
   }
 
   async saveConfig(userId: string, phoneNumberId: string, accessToken: string): Promise<WhatsAppAccount> {
     const existing = await this.getAccount(userId);
-    const payload = {
+    const key = this.accountSettingsKey(userId);
+    const now = new Date().toISOString();
+
+    const account: WhatsAppAccount = existing || {
+      id: `wa-${userId}-${Date.now()}`,
       user_id: userId,
-      phone_number_id: phoneNumberId,
-      access_token: accessToken,
+      created_at: now,
       display_name: 'Meta WhatsApp API',
-      connection_status: 'connected' as const,
-      last_connected_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      connection_status: 'connected',
+      last_connected_at: null,
+      phone_number_id: null,
+      access_token: null,
+      updated_at: now,
     };
 
-    if (existing) {
-      const { data } = await supabase
-        .from('whatsapp_accounts')
-        .update(payload)
-        .eq('id', existing.id)
-        .select()
-        .single();
-      this._account = data as WhatsAppAccount;
-    } else {
-      const { data } = await supabase
-        .from('whatsapp_accounts')
-        .insert({ ...payload, created_at: new Date().toISOString() })
-        .select()
-        .single();
-      this._account = data as WhatsAppAccount;
-    }
+    account.phone_number_id = phoneNumberId;
+    account.access_token = accessToken;
+    account.display_name = 'Meta WhatsApp API';
+    account.connection_status = 'connected';
+    account.last_connected_at = now;
+    account.updated_at = now;
 
+    await dbService.saveSetting(key, account);
+
+    this._account = account;
     this.currentStatus = {
       configured: true,
       ready: true,
       status: 'connected',
-      accountId: this._account!.id,
+      accountId: account.id,
       userId,
     };
     this.statusListeners.forEach((cb) => cb(this.currentStatus));
     this.accountListeners.forEach((cb) => cb(this._account));
-    return this._account!;
+    return account;
   }
 
   async disconnect(userId: string): Promise<void> {
-    if (this._account) {
-      await supabase
-        .from('whatsapp_accounts')
-        .update({ connection_status: 'disconnected', access_token: null, phone_number_id: null, updated_at: new Date().toISOString() })
-        .eq('id', this._account.id);
+    const key = this.accountSettingsKey(userId);
+    const existing = await dbService.getSetting<WhatsAppAccount>(key);
+    if (existing) {
+      existing.connection_status = 'disconnected';
+      existing.access_token = null;
+      existing.phone_number_id = null;
+      existing.updated_at = new Date().toISOString();
+      await dbService.saveSetting(key, existing);
     }
     this._account = null;
     this.currentStatus = { configured: false, ready: false, status: 'disconnected', accountId: null, userId: null };
@@ -158,7 +160,8 @@ class WhatsAppClientService {
   }
 
   async logMessage(accountId: string, userId: string, recipient: string, content: string, status: string, direction: string, messageId?: string) {
-    await supabase.from('whatsapp_messages').insert({
+    await dbService.put('whatsappChats', {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       account_id: accountId,
       user_id: userId,
       recipient,
@@ -171,91 +174,82 @@ class WhatsAppClientService {
   }
 
   async getMessageLogs(accountId: string, userId: string, filters?: { status?: string; dateRange?: string }): Promise<any[]> {
-    let query = supabase
-      .from('whatsapp_messages')
-      .select('*')
-      .eq('account_id', accountId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(200);
+    const all = await dbService.getAll<any>('whatsappChats');
+    let filtered = all.filter((m: any) => m.account_id === accountId && m.user_id === userId);
 
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      filtered = filtered.filter((m: any) => m.status === filters.status);
     }
     if (filters?.dateRange === 'today') {
       const start = new Date(); start.setHours(0, 0, 0, 0);
-      query = query.gte('created_at', start.toISOString());
+      filtered = filtered.filter((m: any) => new Date(m.created_at) >= start);
     } else if (filters?.dateRange === 'week') {
       const start = new Date(); start.setDate(start.getDate() - 7);
-      query = query.gte('created_at', start.toISOString());
+      filtered = filtered.filter((m: any) => new Date(m.created_at) >= start);
     } else if (filters?.dateRange === 'month') {
       const start = new Date(); start.setMonth(start.getMonth() - 1);
-      query = query.gte('created_at', start.toISOString());
+      filtered = filtered.filter((m: any) => new Date(m.created_at) >= start);
     }
 
-    const { data } = await query;
-    return (data || []);
+    filtered.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return filtered.slice(0, 200);
+  }
+
+  private queueSettingsKey(accountId: string): string {
+    return `whatsapp_message_queue_${accountId}`;
   }
 
   async queueMessages(accountId: string, userId: string, recipients: { phone: string; name?: string }[], messageContent: string, options?: { batchId?: string }): Promise<{ queued: number }> {
     const batchId = options?.batchId || `batch-${Date.now()}`;
-    const rows = recipients.map((r) => ({
+    const key = this.queueSettingsKey(accountId);
+    const existing: QueuedMessage[] = (await dbService.getSetting<QueuedMessage[]>(key)) || [];
+    const rows: QueuedMessage[] = recipients.map((r) => ({
+      id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       account_id: accountId,
-      user_id: userId,
       recipient: r.phone,
       message_content: messageContent,
       status: 'pending',
+      retry_count: 0,
       batch_id: batchId,
-      created_at: new Date().toISOString(),
     }));
-
-    const { error } = await supabase.from('whatsapp_message_queue').insert(rows);
-    if (error) throw new Error(error.message);
+    existing.push(...rows);
+    await dbService.saveSetting(key, existing);
     return { queued: rows.length };
   }
 
   async processQueue(accountId: string, userId: string, phoneNumberId: string, accessToken: string): Promise<number> {
-    const { data: pending } = await supabase
-      .from('whatsapp_message_queue')
-      .select('*')
-      .eq('account_id', accountId)
-      .eq('user_id', userId)
-      .eq('status', 'pending')
-      .limit(50);
-
-    if (!pending || pending.length === 0) return 0;
+    const key = this.queueSettingsKey(accountId);
+    const all: QueuedMessage[] = (await dbService.getSetting<QueuedMessage[]>(key)) || [];
+    const pending = all.filter((item) => item.status === 'pending').slice(0, 50);
+    if (pending.length === 0) return 0;
 
     let processed = 0;
     for (const item of pending) {
       try {
         const result = await this.sendMessage(phoneNumberId, accessToken, item.recipient, item.message_content);
-        await supabase.from('whatsapp_message_queue').update({ status: 'sent', updated_at: new Date().toISOString() }).eq('id', item.id);
+        item.status = 'sent';
+        item.retry_count = (item.retry_count || 0) + 1;
         await this.logMessage(accountId, userId, item.recipient, item.message_content, 'sent', 'outbound', result.messageId);
         processed++;
       } catch {
-        await supabase.from('whatsapp_message_queue').update({
-          status: 'failed',
-          retry_count: (item.retry_count || 0) + 1,
-          updated_at: new Date().toISOString(),
-        }).eq('id', item.id);
+        item.status = 'failed';
+        item.retry_count = (item.retry_count || 0) + 1;
         await this.logMessage(accountId, userId, item.recipient, item.message_content, 'failed', 'outbound');
       }
     }
+
+    await dbService.saveSetting(key, all);
     return processed;
   }
 
   async getQueueStatus(accountId: string): Promise<{ status: string; count: number }[]> {
-    const { data } = await supabase
-      .from('whatsapp_message_queue')
-      .select('status, count')
-      .eq('account_id', accountId)
-      .then(({ data: rows }) => {
-        if (!rows) return { data: [] };
-        const counts: Record<string, number> = {};
-        for (const r of rows as { status: string; count: number }[]) { counts[r.status] = (counts[r.status] || 0) + 1; }
-        return { data: Object.entries(counts).map(([status, count]) => ({ status, count })) };
-      });
-    return data || [];
+    const key = this.queueSettingsKey(accountId);
+    const all: QueuedMessage[] = (await dbService.getSetting<QueuedMessage[]>(key)) || [];
+    const counts: Record<string, number> = {};
+    for (const item of all) {
+      counts[item.status] = (counts[item.status] || 0) + 1;
+    }
+    return Object.entries(counts).map(([status, count]) => ({ status, count }));
   }
 
   getStatus(): WhatsAppClientStatus {

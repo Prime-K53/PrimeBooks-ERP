@@ -1,4 +1,3 @@
-import { HAS_REMOTE_BACKEND } from '../config/api.js';
 import { resolveOfflineEffectiveMargin } from '../services/offlineProfitMargins';
 
 export interface EffectiveMargin {
@@ -9,8 +8,6 @@ export interface EffectiveMargin {
 }
 
 const cache = new Map<string, EffectiveMargin>();
-
-const getApiBaseUrl = () => String((window as { API_BASE_URL?: string })?.API_BASE_URL || '').trim();
 
 export async function getEffectiveMargin(
   lineItemId?: string | null,
@@ -23,46 +20,9 @@ export async function getEffectiveMargin(
     return cache.get(cacheKey)!;
   }
 
-  const apiBaseUrl = getApiBaseUrl();
-
-  if (!HAS_REMOTE_BACKEND || !apiBaseUrl) {
-    const localMargin = resolveOfflineEffectiveMargin(lineItemId, categoryId);
-    if (useCache) cache.set(cacheKey, localMargin);
-    return localMargin;
-  }
-
-  try {
-    const params = new URLSearchParams();
-    if (lineItemId) params.set('lineItemId', lineItemId);
-    if (categoryId) params.set('categoryId', categoryId);
-
-    const response = await fetch(
-      `${apiBaseUrl}/settings/profit-margins/resolve?${params.toString()}`,
-      {
-        headers: {
-          'x-user-id': localStorage.getItem('prime_user_id') || 'guest',
-          'x-user-role': localStorage.getItem('prime_user_role') || 'Viewer',
-          'x-company-id': (() => { try { const r = localStorage.getItem('nexus_company_config'); return r ? JSON.parse(r)?.companyId : null; } catch { return null; } })(),
-        },
-      }
-    );
-
-    const contentType = response.headers.get('content-type') || '';
-    if (!response.ok || !contentType.includes('json')) {
-      const localMargin = resolveOfflineEffectiveMargin(lineItemId, categoryId);
-      if (useCache) cache.set(cacheKey, localMargin);
-      return localMargin;
-    }
-
-    const data: EffectiveMargin = await response.json();
-    if (useCache) cache.set(cacheKey, data);
-    return data;
-  } catch (error) {
-    console.warn('[getEffectiveMargin] Falling back to offline margin resolution:', error);
-    const localMargin = resolveOfflineEffectiveMargin(lineItemId, categoryId);
-    if (useCache) cache.set(cacheKey, localMargin);
-    return localMargin;
-  }
+  const localMargin = resolveOfflineEffectiveMargin(lineItemId, categoryId);
+  if (useCache) cache.set(cacheKey, localMargin);
+  return localMargin;
 }
 
 export function invalidateMarginCache(lineItemId?: string, categoryId?: string) {

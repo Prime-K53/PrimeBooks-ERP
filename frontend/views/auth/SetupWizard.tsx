@@ -255,18 +255,17 @@ const SetupWizard: React.FC = () => {
       const fyEndDate = `${fyBaseYear + 1}-${String(fyStartMonth + 1).padStart(2, '0')}-${new Date(fyBaseYear + 1, fyStartMonth + 1, 0).getDate()}`;
 
       try {
-        await fetch((import.meta.env.VITE_API_URL || 'https://primebooks-erp.onrender.com') + '/api/financial-years', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: `${fyBaseYear}/${String(fyBaseYear + 1).slice(2)}`,
-            code: `FY${fyBaseYear}`,
-            start_date: fyStartDate,
-            end_date: fyEndDate,
-            is_default: true,
-            status: 'Active',
-            is_closed: false
-          })
+        const { dbService } = await import('../../services/db');
+        await dbService.put('financialYears', {
+          id: `FY-${Date.now()}`,
+          name: `${fyBaseYear}/${String(fyBaseYear + 1).slice(2)}`,
+          code: `FY${fyBaseYear}`,
+          start_date: fyStartDate,
+          end_date: fyEndDate,
+          is_default: true,
+          status: 'Active',
+          is_closed: false,
+          createdAt: new Date().toISOString()
         });
       } catch (fyError) {
         console.warn('[Setup] Failed to create initial financial year:', fyError);

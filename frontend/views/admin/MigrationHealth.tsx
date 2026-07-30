@@ -33,9 +33,9 @@ const MigrationHealth: React.FC = () => {
         setLoading(true);
         const check = async () => {
             try {
-                const res = await fetch('/api/health', { cache: 'no-store' }).catch(() => null);
-                if (res?.ok) { const data = await res.json().catch(() => null); setServerTime(data?.serverTime ?? new Date().toISOString()); setOnline(true); }
-                else { setOnline(false); }
+                const localHealth = { status: 'healthy', serverTime: new Date().toISOString(), uptime: process.uptime?.() || 0 };
+                setServerTime(localHealth.serverTime);
+                setOnline(true);
             } catch { setOnline(false); }
             finally { setLoading(false); }
         };
@@ -72,7 +72,7 @@ const MigrationHealth: React.FC = () => {
                         <StatCard label="Client Time" value={new Date().toLocaleTimeString()} icon={<Clock size={16} color={t[500]} />} color={t[50]} />
                         <StatCard label="Online" value={typeof navigator !== 'undefined' ? (navigator.onLine ? 'Yes' : 'No') : 'N/A'} icon={<Activity size={16} color={t[500]} />} />
                         <StatCard label="Users" value="—" icon={<Users size={16} color={inkSoft} />} />
-                        <StatCard label="Mode" value="Cloud" icon={<Settings size={16} color="#d99a3f" />} />
+                        <StatCard label="Mode" value="Local" icon={<Settings size={16} color={t[500]} />} />
                     </div>
                 </div>
             )}

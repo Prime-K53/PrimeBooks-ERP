@@ -16,7 +16,6 @@ interface AlertConfig {
 }
 
 const STORAGE_KEY = 'prime_erp_low_stock_alert_config';
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'https://primebooks-erp.onrender.com';
 
 export const getAlertConfig = async (): Promise<AlertConfig> => {
   try {
@@ -43,17 +42,8 @@ export const checkAndSendLowStockAlerts = async (items: LowStockItem[]) => {
 
   if (lastAlert && (now.getTime() - lastAlert.getTime()) < cooldownHours * 3600000) return;
 
-  try {
-    await fetch(`${BACKEND_URL}/api/notifications/email/low-stock`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items: lowItems.map(i => ({ name: i.name, sku: i.sku, stock: i.stock, reorderPoint: i.reorderPoint })),
-        recipients: config.recipients,
-      }),
-    });
+  if (lowItems.length > 0) {
+    console.info(`[LowStockAlert] ${lowItems.length} item(s) below reorder point. Timestamp recorded.`);
     await saveAlertConfig({ ...config, lastAlertedAt: now.toISOString() });
-  } catch (err) {
-    console.warn('[LowStockAlert] Backend unavailable — alert queued for next attempt');
   }
 };

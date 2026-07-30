@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/services/logger';
-import axios from 'axios';
+import { dbService } from '../services/db';
 import { CheckCircle2, Circle, Plus, Trash2, Loader2, ListChecks } from 'lucide-react';
-import { API_BASE_URL } from '../config/api.js';
 
 interface Task {
   id: number;
@@ -20,12 +19,12 @@ const DemoTasks: React.FC = () => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/tasks`);
-      setTasks(response.data);
+      const data = await dbService.getAll('tasks');
+      setTasks(data || []);
       setError(null);
     } catch (err) {
       logger.error('Error fetching tasks:', err);
-      setError('Failed to connect to the local backend. Make sure the desktop backend is running.');
+      setError('Failed to load tasks from local database.');
     } finally {
       setLoading(false);
     }
@@ -41,10 +40,14 @@ const DemoTasks: React.FC = () => {
     if (!newTaskTitle.trim()) return;
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/tasks`, {
-        title: newTaskTitle
-      });
-      setTasks([response.data, ...tasks]);
+      const task = {
+        id: Date.now(),
+        title: newTaskTitle,
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+      await dbService.put('tasks', task);
+      setTasks([task, ...tasks]);
       setNewTaskTitle('');
     } catch (err) {
       logger.error('Error adding task:', err);

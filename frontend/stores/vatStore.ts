@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { logger } from '@/services/logger';
 import { VATConfig, VatTransaction, VatReturn } from '../types';
 import { dbService } from '../services/db';
-import { cloudDb } from '../services/cloudDb';
 import { generateNextId } from '../utils/helpers';
 
 interface VatState {
@@ -20,11 +19,12 @@ interface VatState {
 
 export const useVatStore = create<VatState>((set, get) => ({
     config: {
-        enabled: true, // This will be driven by pricingMode logic but we keep it for compatibility
-        pricingMode: 'VAT',
-        rate: 17.5, // Default for Malawi
+        vatEnabled: true,
+        vatNumber: 'VAT-PENDING',
+        defaultVatRate: 16.5,
         filingFrequency: 'Monthly',
-        defaultTaxCategory: 'Standard'
+        taxAuthority: 'MRA',
+        cashAccounting: false,
     },
     transactions: [],
     returns: [],
@@ -33,19 +33,14 @@ export const useVatStore = create<VatState>((set, get) => ({
     fetchVatData: async () => {
         set({ isLoading: true });
         try {
-            const db = await dbService.initDB();
-
-            const storedConfig = localStorage.getItem('nexus_company_config');
-            if (storedConfig) {
-                const parsed = JSON.parse(storedConfig);
-                if (parsed.vat) {
-                    set({ config: parsed.vat });
-                }
-            }
-
-            const transactions = await db.getAll('vatTransactions');
-            const returns = await db.getAll('vatReturns');
-            set({ transactions, returns });
+            const [transactions, returns] = await Promise.all([
+                dbService.getAll<VatTransaction>('vatTransactions'),
+                dbService.getAll<VatReturn>('vatReturns'),
+            ]);
+            set({
+                transactions: transactions || [],
+                returns: returns || [],
+            });
         } catch (error) {
             logger.error('Failed to fetch VAT data:', error);
         } finally {
@@ -54,27 +49,20 @@ export const useVatStore = create<VatState>((set, get) => ({
     },
 
     updateConfig: async (config: VATConfig) => {
-        // Update local state
         set({ config });
-
-        // Update CompanyConfig in localStorage and sync to cloud
         const storedConfig = localStorage.getItem('nexus_company_config');
         let newCompanyConfig: Record<string, unknown> = {};
         if (storedConfig) {
-            newCompanyConfig = JSON.parse(storedConfig);
+            try {
+                newCompanyConfig = JSON.parse(storedConfig);
+            } catch {}
         }
         (newCompanyConfig as Record<string, unknown>).vat = config;
-        localStorage.setItem('nexus_company_config', JSON.stringify(newCompanyConfig));
-        try {
-            await cloudDb.upsertCompany(newCompanyConfig as { vat: VATConfig; [key: string]: unknown });
-        } catch (err) {
-            logger.error('[VatStore] Failed to sync config to cloud:', err);
-        }
+        await dbService.saveSetting('companyConfig', newCompanyConfig);
     },
 
     addTransaction: async (transaction: VatTransaction) => {
-        const db = await dbService.initDB();
-        await db.put('vatTransactions', transaction);
+        await dbService.put('vatTransactions', transaction);
         set(state => ({ transactions: [...state.transactions, transaction] }));
     },
 

@@ -1,10 +1,7 @@
 import { dbService } from './db';
-import { apiClient as fetchApiClient, OfflineRequestError } from './apiClient';
 import { pricingService } from './pricingService';
 import { inventoryTransactionService } from './inventoryTransactionService';
 import { currencyService } from './currencyService';
-import { isCloudOnlyMode } from './cloudMode';
-import { cloudDb } from './cloudDb';
 import {
     Sale, CartItem, LedgerEntry, WalletTransaction, Customer, SalesExchange,
     ReprintJob, SalesExchangeItem, SalesExchangeApproval, Invoice, Expense,
@@ -1822,19 +1819,6 @@ export const transactionService = {
 
     async postJournalEntry(entries: Omit<LedgerEntry, 'id' | 'date'>[]) {
         const date = new Date().toISOString();
-
-        if (isCloudOnlyMode()) {
-            for (const entry of entries) {
-                const newEntry: LedgerEntry = {
-                    ...entry,
-                    id: generateId('LG'),
-                    date,
-                    reconciled: entry.reconciled || false
-                };
-                await cloudDb.put('ledger', newEntry);
-            }
-            return { success: true };
-        }
 
         return dbService.executeAtomicOperation(
             ['ledger'],
@@ -3907,26 +3891,6 @@ export const transactionService = {
 
             let adjustmentCost = item.cost || 0;
 
-            try {
-                const transactionDate = new Date().toISOString();
-                await fetchApiClient.requestJson({
-                    endpoint: '/inventory/transactions',
-                    method: 'POST',
-                    body: JSON.stringify({
-                        itemId: params.itemId,
-                        warehouseId: params.warehouseId || 'WH-MAIN',
-                        quantity: Math.abs(params.qtyChange),
-                        reason: params.reason,
-                        type: params.qtyChange > 0 ? 'IN' : 'OUT',
-                        transaction_date: transactionDate
-                    })
-                });
-            } catch (apiErr: any) {
-                if (!(apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError')) {
-                    throw apiErr;
-                }
-            }
-
             return dbService.executeAtomicOperation(
                 ['inventory', 'ledger', 'warehouseInventory', 'inventoryTransactions'],
                 async (tx) => {
@@ -4001,22 +3965,6 @@ export const transactionService = {
         }
 
         try {
-            const cloudItem = await dbService.get<Item>('inventory', itemId);
-            if (cloudItem) {
-                const newReserved = (cloudItem.reserved || 0) + reservedChange;
-                try {
-                    await fetchApiClient.requestJson({
-                        endpoint: `/inventory/${itemId}`,
-                        method: 'PUT',
-                        body: JSON.stringify({ reserved: newReserved })
-                    });
-                } catch (apiErr: any) {
-                    if (!(apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError')) {
-                        throw apiErr;
-                    }
-                }
-            }
-
             return dbService.executeAtomicOperation(
                 ['inventory'],
                 async (tx) => {
@@ -4047,30 +3995,6 @@ export const transactionService = {
 
     async transferStock(itemId: string, fromWarehouseId: string, toWarehouseId: string, quantity: number) {
         try {
-            try {
-                const transactionDate = new Date().toISOString();
-                await fetchApiClient.requestJson({
-                    endpoint: '/inventory/transactions',
-                    method: 'POST',
-                    body: JSON.stringify({
-                        itemId, warehouseId: fromWarehouseId, quantity, reason: 'Stock Transfer OUT',
-                        reference: 'TRANSFER', type: 'OUT', transaction_date: transactionDate
-                    })
-                });
-                await fetchApiClient.requestJson({
-                    endpoint: '/inventory/transactions',
-                    method: 'POST',
-                    body: JSON.stringify({
-                        itemId, warehouseId: toWarehouseId, quantity, reason: 'Stock Transfer IN',
-                        reference: 'TRANSFER', type: 'IN', transaction_date: transactionDate
-                    })
-                });
-            } catch (apiErr: any) {
-                if (!(apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError')) {
-                    throw apiErr;
-                }
-            }
-
             return dbService.executeAtomicOperation(
                 ['inventory', 'warehouseInventory', 'inventoryTransactions'],
                 async (tx) => {

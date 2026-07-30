@@ -5,7 +5,7 @@ import { currencyService } from '../../services/currencyService'
 import { referralService } from '../../services/referralService'
 import { whatsappClient } from '../../services/whatsappClientService'
 import type { Referral, ReferralReward } from '../../types/referral'
-import { cloudDb } from '../../services/cloudDb'
+import { customerRepository } from '../../services/repositories'
 
 import type { ReferralAnalytics, ReferralCampaign, ReversalRequest } from '../../types/referral-extended'
 
@@ -88,7 +88,7 @@ const Referrals: React.FC = () => {
     setIsLoading(true)
     try {
       const [allCustomers, allReferrals] = await Promise.all([
-        cloudDb.getAll<any>('customers').then(c => c || []),
+        customerRepository.getAll().then(c => c || []),
         referralService.getAllReferrals().catch(() => [] as Referral[]),
       ])
       setCustomers(allCustomers)

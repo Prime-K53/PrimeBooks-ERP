@@ -1,5 +1,5 @@
 import { ReferralTimelineEntry } from '../types/referral-extended'
-import { cloudDb } from './cloudDb'
+import { dbService } from './db'
 import { generateId } from './transactions/_internal'
 import { logger } from './logger'
 
@@ -27,19 +27,19 @@ export const referralTimelineService = {
       timestamp: new Date().toISOString(),
       createdAt: new Date().toISOString(),
     }
-    await cloudDb.put('referralTimeline', entry)
+    await dbService.put('referralTimeline', entry)
     return entry
   },
 
   async getTimelineForReferral(referralId: string): Promise<ReferralTimelineEntry[]> {
-    const all = (await cloudDb.getAll<ReferralTimelineEntry>('referralTimeline')) || []
+    const all = (await dbService.getAll<ReferralTimelineEntry>('referralTimeline')) || []
     return all
       .filter(e => e.referralId === referralId)
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
   },
 
   async getAllTimeline(limit = 100): Promise<ReferralTimelineEntry[]> {
-    const all = (await cloudDb.getAll<ReferralTimelineEntry>('referralTimeline')) || []
+    const all = (await dbService.getAll<ReferralTimelineEntry>('referralTimeline')) || []
     return all
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit)

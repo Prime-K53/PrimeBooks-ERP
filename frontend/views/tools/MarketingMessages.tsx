@@ -15,7 +15,6 @@ import { useSales } from '../../context/SalesContext';
 import { whatsAppMarketingService, WhatsAppTemplate, WhatsAppCampaign, AutomationFlow, WhatsAppChat } from '../../services/whatsAppMarketingService';
 import { aiService, SmartReplySuggestion, AIConfig } from '../../services/aiService';
 import { whatsappClient, WhatsAppAccount } from '../../services/whatsappClientService';
-import { supabase } from '../../services/supabaseClient';
 import { currencyService } from '../../services/currencyService';
 import { ConfirmDialog, ConfirmDialogType } from '../../components/ConfirmDialog';
 
@@ -196,7 +195,8 @@ const MarketingMessages: React.FC = () => {
 
   const initWhatsApp = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const sessionUser = sessionStorage.getItem('nexus_user');
+      const user = sessionUser ? JSON.parse(sessionUser) : null;
       if (user) {
         const account = await whatsappClient.getAccount(user.id);
         setWAAccount(account);
@@ -263,7 +263,8 @@ const MarketingMessages: React.FC = () => {
     }
     setConfiguringWA(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const sessionUser = sessionStorage.getItem('nexus_user');
+      const user = sessionUser ? JSON.parse(sessionUser) : null;
       if (!user) { notify('Please sign in first', 'error'); return; }
       const account = await whatsappClient.saveConfig(user.id, waPhoneNumberId.trim(), waAccessToken.trim());
       setWAAccount(account);
@@ -281,7 +282,8 @@ const MarketingMessages: React.FC = () => {
 
   const handleDisconnectWhatsApp = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const sessionUser = sessionStorage.getItem('nexus_user');
+      const user = sessionUser ? JSON.parse(sessionUser) : null;
       if (user) {
         await whatsappClient.disconnect(user.id);
       }
@@ -316,7 +318,8 @@ const MarketingMessages: React.FC = () => {
       return;
     }
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const sessionUser = sessionStorage.getItem('nexus_user');
+      const user = sessionUser ? JSON.parse(sessionUser) : null;
       if (!user) { notify('Please sign in first', 'error'); return; }
       const result = await whatsappClient.queueMessages(account.id, user.id, recipients, bulkMessage);
       setBulkProgress({ total: result.queued, sent: 0, failed: 0 });
@@ -339,7 +342,8 @@ const MarketingMessages: React.FC = () => {
     const account = whatsappClient.getAccountInfo();
     if (!account) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const sessionUser = sessionStorage.getItem('nexus_user');
+      const user = sessionUser ? JSON.parse(sessionUser) : null;
       if (user) {
         const logs = await whatsappClient.getMessageLogs(account.id, user.id, activityFilters);
         setActivityLog(logs);
@@ -363,7 +367,8 @@ const MarketingMessages: React.FC = () => {
     if (account?.phone_number_id && account?.access_token) {
       try {
         const result = await whatsappClient.sendMessage(account.phone_number_id, account.access_token, selectedChat.customerPhone, newMessage);
-        const { data: { user } } = await supabase.auth.getUser();
+        const sessionUser = sessionStorage.getItem('nexus_user');
+        const user = sessionUser ? JSON.parse(sessionUser) : null;
         if (user) {
           await whatsappClient.logMessage(account.id, user.id, selectedChat.customerPhone, newMessage, 'sent', 'outbound', result.messageId);
         }
@@ -1599,7 +1604,7 @@ const MarketingMessages: React.FC = () => {
 
               {waConfigured && (
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <button onClick={async () => { const { data: { user } } = await supabase.auth.getUser(); if (user) await whatsappClient.disconnect(user.id); setWAAccount(null); setWAConfigured(false); setShowWASettings(false); notify('Disconnected', 'success'); }} className="prime-btn-secondary" style={{ flex: 1, padding: '8px 16px', borderRadius: 9, fontWeight: 600, fontSize: 13, color: danger, background: '#fef7f6', border: 'none', cursor: 'pointer', lineHeight: 1.4 }}>Disconnect</button>
+                  <button onClick={async () => { const sessionUser = sessionStorage.getItem('nexus_user'); const user = sessionUser ? JSON.parse(sessionUser) : null; if (user) await whatsappClient.disconnect(user.id); setWAAccount(null); setWAConfigured(false); setShowWASettings(false); notify('Disconnected', 'success'); }} className="prime-btn-secondary" style={{ flex: 1, padding: '8px 16px', borderRadius: 9, fontWeight: 600, fontSize: 13, color: danger, background: '#fef7f6', border: 'none', cursor: 'pointer', lineHeight: 1.4 }}>Disconnect</button>
                   <button onClick={handleSaveConfig} disabled={configuringWA} className="prime-btn" style={{ flex: 1, padding: '8px 16px', borderRadius: 9, fontWeight: 600, fontSize: 13, border: 'none', cursor: configuringWA ? 'default' : 'pointer', background: `linear-gradient(135deg, ${dt[500]}, ${dt[700]})`, color: '#fff', opacity: configuringWA ? 0.7 : 1, lineHeight: 1.4 }}>{configuringWA ? 'Saving...' : 'Update'}</button>
                 </div>
               )}

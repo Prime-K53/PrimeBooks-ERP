@@ -1,13 +1,8 @@
 import { ExaminationBatch, ExaminationClass, ExaminationPricingSettings, ExaminationSubject, Item, MarketAdjustment } from '../types';
-import { getUrl, API_BASE_URL } from '../config/api.js';
 import { dbService } from './db';
-import { supabase } from './supabaseClient';
 import { generateNextExaminationBatchNumber } from './documentNumberService';
-import { getHeaders, safeJson, toServiceError, isLikelyNetworkError } from './examinationServiceUtils';
-import { ensureBackendInProd } from './api';
 import { calculateBatchPricing, PricingSettings } from '../utils/examinationPricingCalculator';
 import { isExaminationDebugLoggingEnabled } from '../utils/debugFlags';
-import { apiClient } from './apiClient';
 import { examinationDb } from './examinationDb';
 import { getQueuedMutations, removeQueuedMutation } from './offlineQueueManager';
 import type { BatchRecord } from '../types/offline';
@@ -76,43 +71,9 @@ export interface ExaminationGeneratedInvoicePayload {
   origin_batch_id?: string;
 }
 
-const toTimeoutMs = (value: unknown, fallback: number) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-};
-
-const REQUEST_TIMEOUT_MS = toTimeoutMs((import.meta as any)?.env?.VITE_EXAM_REQUEST_TIMEOUT_MS, 30000);
-const HEAVY_REQUEST_TIMEOUT_MS = toTimeoutMs((import.meta as any)?.env?.VITE_EXAM_HEAVY_REQUEST_TIMEOUT_MS, 180000);
-const MEDIUM_REQUEST_TIMEOUT_MS = toTimeoutMs((import.meta as any)?.env?.VITE_EXAM_MEDIUM_REQUEST_TIMEOUT_MS, 60000);
-const FALLBACK_CANDIDATE_TIMEOUT_MS = toTimeoutMs((import.meta as any)?.env?.VITE_EXAM_FALLBACK_CANDIDATE_TIMEOUT_MS, 12000);
-const LIST_REQUEST_TIMEOUT_MS = toTimeoutMs((import.meta as any)?.env?.VITE_EXAM_LIST_REQUEST_TIMEOUT_MS, 5000);
-const LIST_SYNC_BUDGET_MS = toTimeoutMs((import.meta as any)?.env?.VITE_EXAM_LIST_SYNC_BUDGET_MS, 2000);
-const CREATE_REQUEST_TIMEOUT_MS = toTimeoutMs((import.meta as any)?.env?.VITE_EXAM_CREATE_REQUEST_TIMEOUT_MS, 60000);
-const AUTH_RETRY_COOLDOWN_MS = toTimeoutMs((import.meta as any)?.env?.VITE_EXAM_AUTH_RETRY_COOLDOWN_MS, 15000);
 const EXAM_PRICING_SETTINGS_KEY = 'examinationPricingSettings';
 const DEFAULT_TONER_PAGES_PER_UNIT = 20000;
 const DEFAULT_PAPER_CONVERSION_RATE = 500;
-let authCooldownUntil = 0;
-let backendCooldownUntil = 0;
-
-const isAuthRetryCoolingDown = () => authCooldownUntil > Date.now();
-const markAuthRetryCooldown = () => {
-  authCooldownUntil = Date.now() + AUTH_RETRY_COOLDOWN_MS;
-};
-
-const isBackendCoolingDown = () => backendCooldownUntil > Date.now();
-const markBackendCooldown = () => {
-  backendCooldownUntil = Date.now() + AUTH_RETRY_COOLDOWN_MS;
-};
-
-const EXAM_BACKEND_URL = (import.meta as any)?.env?.VITE_EXAM_BACKEND_URL;
-
-const API_BASE_CANDIDATES = () => {
-  if (!EXAM_BACKEND_URL || isAuthRetryCoolingDown() || isBackendCoolingDown() || !apiClient.canUseRemoteApi()) return [];
-  return [`${EXAM_BACKEND_URL}/api/examination`];
-};
-
-const isProd = Boolean((import.meta as any)?.env?.PROD);
 const examinationDebugLoggingEnabled = isExaminationDebugLoggingEnabled();
 
 const debugExam = (...args: any[]) => {
@@ -120,64 +81,6 @@ const debugExam = (...args: any[]) => {
     console.debug(...args);
   }
 };
-
-const isAuthorizationErrorStatus = (status: unknown) => Number(status) === 401 || Number(status) === 403;
-
-const joinPath = (base: string, endpoint: string) => {
-  const trimmedBase = String(base || '').replace(/^\/+|\/+$/g, '');
-  const trimmedEndpoint = String(endpoint || '').replace(/^\/+/, '');
-  if (!trimmedBase) return trimmedEndpoint;
-  if (!trimmedEndpoint) return trimmedBase;
-  return `${trimmedBase}/${trimmedEndpoint}`;
-};
-
-const isTimeoutError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error || '');
-  return message.toLowerCase().includes('timeout');
-};
-
-const isOfflineError = (error: unknown) => {
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
-  const message = error instanceof Error ? error.message : String(error || '');
-  const normalized = message.toLowerCase();
-  return normalized.includes('failed to fetch')
-    || normalized.includes('networkerror')
-    || normalized.includes('network request failed')
-    || normalized.includes('network unavailable')
-    || normalized.includes('load failed')
-    || normalized.includes('timeout')
-    || normalized.includes('aborted')
-    || normalized.includes('backend disabled in offline mode')
-    || normalized.includes('remote requests are paused')
-    || normalized.includes('remote api unavailable')
-    || normalized.includes('http 401')
-    || normalized.includes('no authentication token provided')
-    || normalized.includes('authentication required')
-    || normalized.includes('session is not authorized')
-    || normalized.includes('please sign in again');
-};
-
-const isBackendDisabledError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error || '');
-  return message.toLowerCase().includes('backend disabled in offline mode');
-};
-
-const isAuthUnavailableError = (error: unknown) => {
-  const status = Number((error as any)?.status);
-  if (status === 401) return true;
-
-  const message = error instanceof Error ? error.message : String(error || '');
-  const normalized = message.toLowerCase();
-  return normalized.includes('http 401')
-    || normalized.includes('no authentication token provided')
-    || normalized.includes('authentication required')
-    || normalized.includes('authentication is unavailable')
-    || normalized.includes('session is not authorized')
-    || normalized.includes('please sign in again');
-};
-
-const shouldUseLocalFallback = (error: unknown) =>
-  isOfflineError(error) || isBackendDisabledError(error) || isAuthUnavailableError(error);
 
 const generateLocalId = () => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -247,34 +150,9 @@ const storeLocalBatches = async (batches: Array<Record<string, any>>) => {
     await examinationDb.examinationBatches.bulkPut(entries);
   } catch {
   }
-  for (const entry of entries) {
-    await syncBatchToSupabase(entry);
-  }
 };
 
-const syncBatchToSupabase = async (entry: Record<string, any>) => {
-  try {
-    const record = {
-      id: entry.id,
-      name: entry.name || null,
-      school_id: entry.school_id || null,
-      exam_type: entry.exam_type || null,
-      currency: entry.currency || null,
-      status: entry.status || null,
-      total_amount: entry.total_amount ?? 0,
-      classes_json: Array.isArray(entry.classes) ? JSON.stringify(entry.classes) : entry.classes_json || null,
-      approvals_json: entry.approvals_json || null,
-      invoice_json: entry.invoice_json || null,
-      company_id: entry._companyId || entry.company_id || null,
-      updated_at: new Date().toISOString(),
-    };
-    const { error } = await supabase
-      .from('examination_batches')
-      .upsert(record, { onConflict: 'id', ignoreDuplicates: false });
-    if (error) throw error;
-  } catch {
-  }
-};
+
 
 const storeLocalBatch = async (batch: Record<string, any>) => {
   const entry = normalizeBatchForStorage(batch);
@@ -282,7 +160,6 @@ const storeLocalBatch = async (batch: Record<string, any>) => {
     await examinationDb.examinationBatches.put(entry);
   } catch {
   }
-  await syncBatchToSupabase(entry);
   return entry;
 };
 
@@ -692,187 +569,11 @@ const buildLocalInvoicePayload = async (
   };
 };
 
-const fetchWithTimeout = async (
-  endpoint: string,
-  options: RequestInit = {},
-  timeoutMs: number = REQUEST_TIMEOUT_MS
-) => {
-  const baseCandidates = API_BASE_CANDIDATES();
-  if (baseCandidates.length === 0) {
-    throw new Error('Failed to fetch: backend disabled in offline mode');
-  }
-
-  try {
-    return await apiClient.requestRaw({
-      endpoint,
-      method: String(options.method || 'GET').toUpperCase(),
-      headers: options.headers as Record<string, string> | undefined,
-      body: (options.body as BodyInit | null) || null,
-      timeoutMs: Math.min(timeoutMs, Math.max(FALLBACK_CANDIDATE_TIMEOUT_MS, timeoutMs)),
-      baseCandidates,
-      retries: 0,
-      expectJson: true
-    });
-  } catch (error) {
-    if (isAuthUnavailableError(error)) {
-      markAuthRetryCooldown();
-    }
-    if (isOfflineError(error)) {
-      markBackendCooldown();
-    }
-    throw error;
-  }
-};
-
-const requestWithFallback = async (
-  path: string,
-  options: RequestInit = {},
-  timeoutMs: number = REQUEST_TIMEOUT_MS
-) => {
-  return fetchWithTimeout(path, options, timeoutMs);
-};
-
-const createBatchRemote = async (payload: Partial<ExaminationBatch>) => {
-  const mappedPayload = {
-    ...payload,
-    customerId: payload.school_id,
-    name: payload.batch_number || payload.batchNumber,
-  };
-  debugExam('[DEBUG] createBatchRemote - mapped payload:', JSON.stringify(mappedPayload, null, 2));
-  const response = await fetchWithTimeout('/batches', {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(mappedPayload),
-  }, CREATE_REQUEST_TIMEOUT_MS);
-  if (!response.ok) throw new Error(await toServiceError(response, 'Failed to create batch'));
-  const result = await safeJson(response, 'createBatch');
-  return {
-    ...result,
-    school_id: result.customerId,
-    batch_number: result.name,
-    batchNumber: result.name,
-  };
-};
-
-const updateBatchRemote = async (id: string, payload: Partial<ExaminationBatch>) => {
-  const resolvedId = await resolveBatchId(id);
-  const response = await fetchWithTimeout(`/batches/${resolvedId}`, {
-    method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify(payload),
-  }, REQUEST_TIMEOUT_MS);
-  if (!response.ok) throw new Error(await toServiceError(response, 'Failed to update batch'));
-  return safeJson(response, 'updateBatch');
-};
-
-const deleteBatchRemote = async (id: string) => {
-  const resolvedId = await resolveBatchId(id);
-  const response = await fetchWithTimeout(`/batches/${resolvedId}`, {
-    method: 'DELETE',
-    headers: getHeaders()
-  }, REQUEST_TIMEOUT_MS);
-  if (!response.ok) throw new Error(await toServiceError(response, 'Failed to delete batch'));
-};
-
 export const examinationBatchService = {
   _syncInProgress: false,
 
   async listBatches(): Promise<ExaminationBatch[]> {
-    const localBatches = isProd ? [] : await getLocalBatches();
-    const headers = getHeaders();
-    const toBatchArray = (value: any): ExaminationBatch[] => {
-      if (!Array.isArray(value)) return [];
-      return value.filter((batch) => batch && typeof batch === 'object' && batch.id);
-    };
-    const mergeById = (remoteRows: ExaminationBatch[]) => {
-      if (isProd) return remoteRows;
-      const mergedMap = new Map<string, any>();
-      remoteRows.forEach((batch) => {
-        mergedMap.set(String(batch.id), batch);
-      });
-      localBatches.forEach((batch) => {
-        const id = String((batch as any).id || '');
-        if (!id || mergedMap.has(id)) {
-          return;
-        }
-        mergedMap.set(id, batch);
-      });
-      return Array.from(mergedMap.values());
-    };
-    const attemptList = async (path: string) => {
-      const response = await fetchWithTimeout(path, {
-        method: 'GET',
-        headers
-      }, LIST_REQUEST_TIMEOUT_MS);
-      if (!response.ok) {
-        const error = new Error(await toServiceError(response, 'Failed to fetch batches'));
-        (error as any).status = response.status;
-        throw error;
-      }
-      return safeJson(response, 'listBatches');
-    };
-
-    try {
-      await Promise.race([
-        this.syncPendingBatches(),
-        new Promise<void>((resolve) => setTimeout(resolve, LIST_SYNC_BUDGET_MS))
-      ]);
-    } catch (error) {
-      debugExam('[examinationBatchService] syncPendingBatches skipped for list path:', error);
-    }
-
-    try {
-      const primary = toBatchArray(await attemptList('/batches?mode=summary&include_subjects=1&include_class_stats=1'));
-      const merged = mergeById(primary);
-      await storeLocalBatches(merged.map(batch => ({
-        ...batch,
-        _syncStatus: (batch as any)._syncStatus || 'synced',
-        _lastSyncedAt: toIso()
-      })));
-      return merged;
-    } catch (error) {
-      ensureBackendInProd('examinationBatchService.listBatches', error);
-      const status = (error as any)?.status;
-      const shouldFallback = shouldUseLocalFallback(error) || isAuthorizationErrorStatus(status);
-      if (status && status < 500 && !shouldFallback) {
-        throw error;
-      }
-      if (shouldFallback) {
-        return (localBatches.length > 0 ? localBatches : await getLocalBatches()) as ExaminationBatch[];
-      }
-    }
-
-    try {
-      const lite = toBatchArray(await attemptList('/batches?mode=lite&include_subjects=0&include_class_stats=0'));
-      const merged = mergeById(lite);
-      await storeLocalBatches(merged.map(batch => ({
-        ...batch,
-        _syncStatus: (batch as any)._syncStatus || 'synced',
-        _lastSyncedAt: toIso()
-      })));
-      return merged;
-    } catch (error) {
-      ensureBackendInProd('examinationBatchService.listBatches', error);
-      const fallbackLocal = localBatches.length > 0 ? localBatches : await getLocalBatches();
-      if (fallbackLocal.length > 0) return fallbackLocal as ExaminationBatch[];
-      const pendingOutbox = (await loadOutbox())
-        .filter((entry) => entry?.type === 'examinationBatch:create')
-        .map((entry) => normalizeBatchForStorage(
-          {
-            ...(entry.payload || {}),
-            id: entry.entityId || entry.id,
-            status: (entry.payload || {}).status || 'Draft'
-          },
-          {
-            _offline: true,
-            _syncStatus: 'pending'
-          }
-        ));
-      if (pendingOutbox.length > 0) {
-        return pendingOutbox as ExaminationBatch[];
-      }
-      return [];
-    }
+    return (await getLocalBatches()) as ExaminationBatch[];
   },
 
   async getBatch(id: string): Promise<ExaminationBatch> {
@@ -880,8 +581,8 @@ export const examinationBatchService = {
 
     if (isLocalBatchId(id)) {
       const local = await getLocalBatches();
-      const fallback = local.find(batch => String(batch.id) === String(id));
-      if (fallback) return fallback as ExaminationBatch;
+      const found = local.find(batch => String(batch.id) === String(id));
+      if (found) return found as ExaminationBatch;
       throw new Error('Local batch not found');
     }
 
@@ -892,50 +593,10 @@ export const examinationBatchService = {
       throw new Error(`Batch not found: ${id}`);
     }
 
-    try {
-      const response = await fetchWithTimeout(`/batches/${id}`, {
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-      if (!response.ok) {
-        // Try batch number lookup if batch not found
-        if (response.status === 404) {
-          const local = await getLocalBatches();
-          const localBatch = local.find(batch => String(batch.id) === String(id));
-          if (localBatch?.batch_number) {
-            debugExam('[DEBUG] examinationBatchService.getBatch - Batch ID not found, trying batch number lookup:', { id, batchNumber: localBatch.batch_number });
-            const foundByNumber = await this.getBatchByNumber(localBatch.batch_number);
-            if (foundByNumber?.id) {
-              debugExam('[DEBUG] examinationBatchService.getBatch - Found batch by number:', { oldId: id, newId: foundByNumber.id });
-              return this.getBatch(foundByNumber.id);
-            }
-          }
-        }
-        const errorMsg = await toServiceError(response, 'Failed to fetch batch');
-        debugExam('[DEBUG] examinationBatchService.getBatch - API Error:', {
-          id,
-          status: response.status,
-          error: errorMsg
-        });
-        throw new Error(errorMsg);
-      }
-      const data = await safeJson(response, 'getBatch');
-      await storeLocalBatch({
-        ...data,
-        _syncStatus: 'synced',
-        _lastSyncedAt: toIso()
-      });
-      debugExam('[DEBUG] examinationBatchService.getBatch - Success:', { id, batchNumber: data.batch_number });
-      return data;
-    } catch (error) {
-      if (shouldUseLocalFallback(error)) {
-        ensureBackendInProd('examinationBatchService.getBatch', error);
-        const local = await getLocalBatches();
-        const fallback = local.find(batch => String(batch.id) === String(id));
-        if (fallback) return fallback as ExaminationBatch;
-      }
-      debugExam('[DEBUG] examinationBatchService.getBatch - Error:', { id, error });
-      throw error;
-    }
+    const local = await getLocalBatches();
+    const found = local.find(batch => String(batch.id) === String(id));
+    if (found) return found as ExaminationBatch;
+    throw new Error(`Batch not found: ${id}`);
   },
 
   async createBatch(payload: Partial<ExaminationBatch>): Promise<ExaminationBatch> {
@@ -947,121 +608,48 @@ export const examinationBatchService = {
       batchNumber: reservedBatchNumber
     };
 
-    debugExam('[DEBUG] examinationBatchService.createBatch - Starting request with payload:', payloadWithBatchNumber);
-    const headers = getHeaders();
-    debugExam('[DEBUG] examinationBatchService.createBatch - Headers:', headers);
+    debugExam('[DEBUG] examinationBatchService.createBatch - Creating batch locally:', payloadWithBatchNumber);
 
-    try {
-      const result = await createBatchRemote(payloadWithBatchNumber);
-      debugExam('[DEBUG] examinationBatchService.createBatch - Success result:', result);
-      
-      // Verify batch was actually created
-      const batchId = result?.id || result?.batchId;
-      if (batchId) {
-        try {
-          const verifyResponse = await fetchWithTimeout(`/batches/${batchId}`, { headers: getHeaders() }, REQUEST_TIMEOUT_MS);
-          if (!verifyResponse.ok) {
-            debugExam('[DEBUG] examinationBatchService.createBatch - Verification failed! Batch not found after creation:', { batchId, status: verifyResponse.status });
-          } else {
-            debugExam('[DEBUG] examinationBatchService.createBatch - Verified batch exists:', { batchId });
-          }
-        } catch (verifyError) {
-          debugExam('[DEBUG] examinationBatchService.createBatch - Verification error:', verifyError);
-        }
+    const now = toIso();
+    const offlineBatch = normalizeBatchForStorage(
+      {
+        ...payloadWithBatchNumber,
+        status: payload.status || 'Draft'
+      },
+      {
+        _offline: true,
+        _syncStatus: 'pending',
+        _lastModifiedAt: now,
+        created_at: now,
+        updated_at: now
       }
-      
-      await storeLocalBatch({
-        ...result,
-        _syncStatus: 'synced',
-        _lastSyncedAt: toIso()
-      });
-      return result;
-    } catch (error) {
-      if (!shouldUseLocalFallback(error)) {
-        debugExam('[DEBUG] examinationBatchService.createBatch - Error response:', error);
-        throw error;
-      }
-      ensureBackendInProd('examinationBatchService.createBatch', error);
-      const now = toIso();
-      const offlineBatch = normalizeBatchForStorage(
-        {
-          ...payloadWithBatchNumber,
-          status: payload.status || 'Draft'
-        },
-        {
-          _offline: true,
-          _syncStatus: 'pending',
-          _lastModifiedAt: now,
-          created_at: now,
-          updated_at: now
-        }
-      );
+    );
 
-      await storeLocalBatch(offlineBatch);
-      await enqueueOutbox('examinationBatch:create', String(offlineBatch.id), payloadWithBatchNumber as any);
-      return offlineBatch as ExaminationBatch;
-    }
+    await storeLocalBatch(offlineBatch);
+    await enqueueOutbox('examinationBatch:create', String(offlineBatch.id), payloadWithBatchNumber as any);
+    return offlineBatch as ExaminationBatch;
   },
 
   async updateBatch(id: string, payload: Partial<ExaminationBatch>): Promise<ExaminationBatch> {
-    if (isLocalBatchId(id)) {
-      const local = await getLocalBatches();
-      const existing = local.find(batch => String(batch.id) === String(id)) || {};
-      const updated = normalizeBatchForStorage({
-        ...existing,
-        ...payload,
-        id
-      }, {
-        _offline: true,
-        _syncStatus: 'pending',
-        _lastModifiedAt: toIso()
-      });
-      await storeLocalBatch(updated);
-      await enqueueOutbox('examinationBatch:create', String(id), {
-        ...(existing as any),
-        ...payload
-      } as any);
-      return updated as ExaminationBatch;
-    }
-
-    try {
-      const result = await updateBatchRemote(id, payload);
-      await storeLocalBatch({
-        ...result,
-        _syncStatus: 'synced',
-        _lastSyncedAt: toIso()
-      });
-      return result;
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      ensureBackendInProd('examinationBatchService.updateBatch', error);
-      const local = await getLocalBatches();
-      const existing = local.find(batch => String(batch.id) === String(id)) || {};
-      const updated = normalizeBatchForStorage({
-        ...existing,
-        ...payload,
-        id
-      }, {
-        _offline: true,
-        _syncStatus: 'pending',
-        _lastModifiedAt: toIso()
-      });
-      await storeLocalBatch(updated);
-      await enqueueOutbox('examinationBatch:update', String(id), payload as any);
-      return updated as ExaminationBatch;
-    }
+    const local = await getLocalBatches();
+    const existing = local.find(batch => String(batch.id) === String(id)) || {};
+    const updated = normalizeBatchForStorage({
+      ...existing,
+      ...payload,
+      id
+    }, {
+      _offline: true,
+      _syncStatus: 'pending',
+      _lastModifiedAt: toIso()
+    });
+    await storeLocalBatch(updated);
+    await enqueueOutbox('examinationBatch:update', String(id), payload as any);
+    return updated as ExaminationBatch;
   },
 
   async deleteBatch(id: string): Promise<void> {
-    try {
-      await deleteBatchRemote(id);
-      await removeLocalBatch(id);
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      ensureBackendInProd('examinationBatchService.deleteBatch', error);
-      await removeLocalBatch(id);
-      await enqueueOutbox('examinationBatch:delete', String(id), { id });
-    }
+    await removeLocalBatch(id);
+    await enqueueOutbox('examinationBatch:delete', String(id), { id });
   },
 
   async deleteBatches(ids: string[]): Promise<{ success: string[]; failed: { id: string; error: string }[] }> {
@@ -1083,110 +671,8 @@ export const examinationBatchService = {
   },
 
   async syncPendingBatches(): Promise<{ synced: number; failed: number; pending: number }> {
-    if (this._syncInProgress) {
-      const outboxCount = (await loadOutbox()).filter(entry => String(entry.type || '').startsWith('examinationBatch:')).length;
-      return { synced: 0, failed: 0, pending: outboxCount };
-    }
-
-    if (API_BASE_CANDIDATES().length === 0) {
-      const pending = (await loadOutbox()).filter(entry => String(entry.type || '').startsWith('examinationBatch:')).length;
-      return { synced: 0, failed: 0, pending };
-    }
-
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      const pending = (await loadOutbox()).filter(entry => String(entry.type || '').startsWith('examinationBatch:')).length;
-      return { synced: 0, failed: 0, pending };
-    }
-
     const outbox = (await loadOutbox()).filter(entry => String(entry.type || '').startsWith('examinationBatch:'));
-    if (outbox.length === 0) {
-      return { synced: 0, failed: 0, pending: 0 };
-    }
-
-    this._syncInProgress = true;
-    try {
-      const ordered = [...outbox].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      const grouped: Record<string, { create?: any; update?: any; delete?: boolean; entries: string[] }> = {};
-
-      for (const entry of ordered) {
-        const entityId = String(entry.entityId || '');
-        if (!entityId) continue;
-        if (!grouped[entityId]) {
-          grouped[entityId] = { entries: [] };
-        }
-        grouped[entityId].entries.push(entry.id);
-        if (entry.type === 'examinationBatch:create') {
-          grouped[entityId].create = { ...(grouped[entityId].create || {}), ...(entry.payload || {}) };
-        }
-        if (entry.type === 'examinationBatch:update') {
-          grouped[entityId].update = { ...(grouped[entityId].update || {}), ...(entry.payload || {}) };
-        }
-        if (entry.type === 'examinationBatch:delete') {
-          grouped[entityId].delete = true;
-        }
-      }
-
-      let synced = 0;
-      let failed = 0;
-
-      for (const [entityId, entry] of Object.entries(grouped)) {
-        if (entry.delete && entry.create) {
-          await removeLocalBatch(entityId);
-          await removeOutboxEntries(entry.entries);
-          synced += entry.entries.length;
-          continue;
-        }
-
-        if (entry.create) {
-          const payload = { ...(entry.create || {}), ...(entry.update || {}) };
-          try {
-            const remote = await createBatchRemote(payload);
-            await removeLocalBatch(entityId);
-            await storeLocalBatch({
-              ...remote,
-              _syncStatus: 'synced',
-              _lastSyncedAt: toIso()
-            });
-            await removeOutboxEntries(entry.entries);
-            synced += entry.entries.length;
-          } catch (error) {
-            failed += entry.entries.length;
-          }
-          continue;
-        }
-
-        if (entry.delete) {
-          try {
-            await deleteBatchRemote(entityId);
-            await removeLocalBatch(entityId);
-            await removeOutboxEntries(entry.entries);
-            synced += entry.entries.length;
-          } catch (error) {
-            failed += entry.entries.length;
-          }
-          continue;
-        }
-
-        if (entry.update) {
-          try {
-            const remote = await updateBatchRemote(entityId, entry.update || {});
-            await storeLocalBatch({
-              ...remote,
-              _syncStatus: 'synced',
-              _lastSyncedAt: toIso()
-            });
-            await removeOutboxEntries(entry.entries);
-            synced += entry.entries.length;
-          } catch (error) {
-            failed += entry.entries.length;
-          }
-        }
-      }
-
-      return { synced, failed, pending: outbox.length - synced };
-    } finally {
-      this._syncInProgress = false;
-    }
+    return { synced: 0, failed: 0, pending: outbox.length };
   },
 
   async calculateBatch(
@@ -1203,113 +689,42 @@ export const examinationBatchService = {
       adjustments?: MarketAdjustment[];
     }
   ): Promise<ExaminationBatch> {
-    try {
-      const resolvedId = await resolveBatchId(id);
-      const response = await fetchWithTimeout(`/batches/${resolvedId}/calculate`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(options || {})
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to calculate batch'));
-      const result = await safeJson(response, 'calculateBatch');
-      await storeLocalBatch({
-        ...result,
-        _syncStatus: 'synced',
-        _lastSyncedAt: toIso()
-      });
-      return result;
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const localBatch = await this.getBatch(id);
-      const recalculated = await applyCalculatedBatchState(localBatch as any, {
-        paper_item_id: options?.paperId || null,
-        toner_item_id: options?.tonerId || null,
-        paper_unit_cost: options?.paperUnitCost,
-        toner_unit_cost: options?.tonerUnitCost,
-        conversion_rate: options?.paperConversionRate
-      }, options?.adjustments);
-      return updateLocalBatch(String((localBatch as any).id || id), () => ({
-        ...recalculated,
-        status: 'Calculated'
-      })) as Promise<ExaminationBatch>;
-    }
+    const localBatch = await this.getBatch(id);
+    const recalculated = await applyCalculatedBatchState(localBatch as any, {
+      paper_item_id: options?.paperId || null,
+      toner_item_id: options?.tonerId || null,
+      paper_unit_cost: options?.paperUnitCost,
+      toner_unit_cost: options?.tonerUnitCost,
+      conversion_rate: options?.paperConversionRate
+    }, options?.adjustments);
+    return updateLocalBatch(String((localBatch as any).id || id), () => ({
+      ...recalculated,
+      status: 'Calculated'
+    })) as Promise<ExaminationBatch>;
   },
 
   async approveBatch(id: string): Promise<{ batch: ExaminationBatch; warnings?: Array<{ item_id: string; item_name: string; available: number; required: number; message: string }> }> {
-    try {
-      const resolvedId = await resolveBatchId(id);
-      const response = await fetchWithTimeout(`/batches/${resolvedId}/approve`, {
-        method: 'POST',
-        headers: getHeaders()
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to approve batch'));
-      const data = await safeJson(response, 'approveBatch');
-      const batch = data.batch || data;
-      const warnings = data.warnings || [];
-      await storeLocalBatch({
-        ...batch,
-        _syncStatus: 'synced',
-        _lastSyncedAt: toIso()
-      });
-      return { batch, warnings };
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const batch = await updateLocalBatch(id, (b: any) => ({
-        ...b,
-        status: 'Approved'
-      })) as unknown as ExaminationBatch;
-      return { batch, warnings: [] };
-    }
+    const batch = await updateLocalBatch(id, (b: any) => ({
+      ...b,
+      status: 'Approved'
+    })) as unknown as ExaminationBatch;
+    return { batch, warnings: [] };
   },
 
   async getCostBreakdown(id: string): Promise<any[]> {
-    try {
-      const resolvedId = await resolveBatchId(id);
-      const response = await fetchWithTimeout(`/batches/${resolvedId}/cost-breakdown`, {
-        headers: getHeaders()
-      }, MEDIUM_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to fetch cost breakdown'));
-      return safeJson(response, 'getCostBreakdown');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const batch = await this.getBatch(id);
-      return buildLocalBomRows(batch as any);
-    }
+    const batch = await this.getBatch(id);
+    return buildLocalBomRows(batch as any);
   },
 
   async getBOM(id: string): Promise<any[]> {
-    try {
-      const resolvedId = await resolveBatchId(id);
-      try {
-        return await this.getCostBreakdown(resolvedId);
-      } catch {
-        const response = await fetchWithTimeout(`/batches/${resolvedId}/bom`, {
-          headers: getHeaders()
-        }, MEDIUM_REQUEST_TIMEOUT_MS);
-        if (!response.ok) throw new Error(await toServiceError(response, 'Failed to fetch BOM'));
-        return safeJson(response, 'getBOM');
-      }
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const batch = await this.getBatch(id);
-      return buildLocalBomRows(batch as any);
-    }
+    return this.getCostBreakdown(id);
   },
 
   async getAdjustmentMeta(): Promise<{ adjustments: MarketAdjustment[]; fetched_at: string }> {
-    try {
-      const response = await fetchWithTimeout('/meta/adjustments', {
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to fetch adjustment metadata'));
-      return safeJson(response, 'getAdjustmentMeta');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      return {
-        adjustments: await getLocalAdjustments(),
-        fetched_at: toIso()
-      };
-    }
+    return {
+      adjustments: await getLocalAdjustments(),
+      fetched_at: toIso()
+    };
   },
 
   async syncMarketAdjustments(payload: {
@@ -1325,35 +740,24 @@ export const examinationBatchService = {
     item_count: number;
     recalculation?: any;
   }> {
-    try {
-      const response = await fetchWithTimeout('/sync/market-adjustments', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload)
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to sync market adjustments'));
-      return safeJson(response, 'syncMarketAdjustments');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const adjustments = Array.isArray(payload.adjustments) ? payload.adjustments : [];
-      await Promise.all(adjustments.map((adjustment) => dbService.put('marketAdjustments', {
-        id: String(adjustment.id || generateLocalId()),
-        name: String(adjustment.name || adjustment.displayName || 'Adjustment'),
-        displayName: String(adjustment.displayName || adjustment.name || 'Adjustment'),
-        type: String(adjustment.type || 'PERCENTAGE').toUpperCase() === 'FIXED' ? 'FIXED' : 'PERCENTAGE',
-        value: Number(adjustment.value ?? adjustment.percentage ?? 0) || 0,
-        percentage: Number(adjustment.percentage ?? adjustment.value ?? 0) || 0,
-        active: adjustment.active ?? adjustment.isActive ?? true
-      } as any)));
-      return {
-        success: true,
-        upserted: adjustments.length,
-        changed: adjustments.length,
-        deactivated: 0,
-        checksum: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        item_count: adjustments.length
-      };
-    }
+    const adjustments = Array.isArray(payload.adjustments) ? payload.adjustments : [];
+    await Promise.all(adjustments.map((adjustment) => dbService.put('marketAdjustments', {
+      id: String(adjustment.id || generateLocalId()),
+      name: String(adjustment.name || adjustment.displayName || 'Adjustment'),
+      displayName: String(adjustment.displayName || adjustment.name || 'Adjustment'),
+      type: String(adjustment.type || 'PERCENTAGE').toUpperCase() === 'FIXED' ? 'FIXED' : 'PERCENTAGE',
+      value: Number(adjustment.value ?? adjustment.percentage ?? 0) || 0,
+      percentage: Number(adjustment.percentage ?? adjustment.value ?? 0) || 0,
+      active: adjustment.active ?? adjustment.isActive ?? true
+    } as any)));
+    return {
+      success: true,
+      upserted: adjustments.length,
+      changed: adjustments.length,
+      deactivated: 0,
+      checksum: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      item_count: adjustments.length
+    };
   },
 
   async syncInventoryItems(payload: {
@@ -1368,26 +772,15 @@ export const examinationBatchService = {
     item_count: number;
     recalculation?: any;
   }> {
-    try {
-      const response = await fetchWithTimeout('/sync/inventory-items', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload)
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to sync inventory items'));
-      return safeJson(response, 'syncInventoryItems');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const items = Array.isArray(payload.items) ? payload.items : [];
-      return {
-        success: true,
-        upserted: items.length,
-        changed: items.length,
-        cost_changed: 0,
-        checksum: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        item_count: items.length
-      };
-    }
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    return {
+      success: true,
+      upserted: items.length,
+      changed: items.length,
+      cost_changed: 0,
+      checksum: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      item_count: items.length
+    };
   },
 
   async getSyncHealth(): Promise<{
@@ -1402,50 +795,41 @@ export const examinationBatchService = {
       drift: boolean;
     }>;
   }> {
-    try {
-      const response = await fetchWithTimeout('/sync/health', {
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to fetch sync health'));
-      return safeJson(response, 'getSyncHealth');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const [batches, adjustments, inventory] = await Promise.all([
-        getLocalBatches(),
-        getLocalAdjustments(),
-        getLocalInventory()
-      ]);
-      return {
-        checked_at: toIso(),
-        ok: true,
-        entities: {
-          examinationBatches: {
-            last_synced_at: null,
-            state_checksum: 'offline-local-first',
-            backend_checksum: 'offline-disabled',
-            state_count: batches.length,
-            backend_count: 0,
-            drift: false
-          },
-          marketAdjustments: {
-            last_synced_at: null,
-            state_checksum: 'offline-local-first',
-            backend_checksum: 'offline-disabled',
-            state_count: adjustments.length,
-            backend_count: 0,
-            drift: false
-          },
-          inventoryItems: {
-            last_synced_at: null,
-            state_checksum: 'offline-local-first',
-            backend_checksum: 'offline-disabled',
-            state_count: inventory.length,
-            backend_count: 0,
-            drift: false
-          }
+    const [batches, adjustments, inventory] = await Promise.all([
+      getLocalBatches(),
+      getLocalAdjustments(),
+      getLocalInventory()
+    ]);
+    return {
+      checked_at: toIso(),
+      ok: true,
+      entities: {
+        examinationBatches: {
+          last_synced_at: null,
+          state_checksum: 'offline-local-first',
+          backend_checksum: 'offline-disabled',
+          state_count: batches.length,
+          backend_count: 0,
+          drift: false
+        },
+        marketAdjustments: {
+          last_synced_at: null,
+          state_checksum: 'offline-local-first',
+          backend_checksum: 'offline-disabled',
+          state_count: adjustments.length,
+          backend_count: 0,
+          drift: false
+        },
+        inventoryItems: {
+          last_synced_at: null,
+          state_checksum: 'offline-local-first',
+          backend_checksum: 'offline-disabled',
+          state_count: inventory.length,
+          backend_count: 0,
+          drift: false
         }
-      };
-    }
+      }
+    };
   },
 
   async recalculateNonInvoicedBatches(payload?: {
@@ -1459,70 +843,48 @@ export const examinationBatchService = {
     skipped: number;
     errors: Array<{ batch_id: string; status: string; error: string }>;
   }> {
-    try {
-      const response = await fetchWithTimeout('/backfill/recalculate-non-invoiced', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload || {})
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to recalculate non-invoiced batches'));
-      return safeJson(response, 'recalculateNonInvoicedBatches');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const batches = await getLocalBatches();
-      const includeApproved = Boolean(payload?.includeApproved);
-      const limit = Math.max(1, Number(payload?.limit || batches.length));
-      const targets = batches
-        .filter((batch: any) => {
-          const status = String(batch?.status || '').toLowerCase();
-          if (status === 'invoiced' || status === 'paid') return false;
-          if (!includeApproved && status === 'approved') return false;
-          return true;
-        })
-        .slice(0, limit);
+    const batches = await getLocalBatches();
+    const includeApproved = Boolean(payload?.includeApproved);
+    const limit = Math.max(1, Number(payload?.limit || batches.length));
+    const targets = batches
+      .filter((batch: any) => {
+        const status = String(batch?.status || '').toLowerCase();
+        if (status === 'invoiced' || status === 'paid') return false;
+        if (!includeApproved && status === 'approved') return false;
+        return true;
+      })
+      .slice(0, limit);
 
-      let recalculated = 0;
-      let failed = 0;
-      let skipped = Math.max(0, batches.length - targets.length);
-      const errors: Array<{ batch_id: string; status: string; error: string }> = [];
+    let recalculated = 0;
+    let failed = 0;
+    let skipped = Math.max(0, batches.length - targets.length);
+    const errors: Array<{ batch_id: string; status: string; error: string }> = [];
 
-      for (const batch of targets) {
-        try {
-          await this.calculateBatch(String(batch.id));
-          recalculated += 1;
-        } catch (recalcError) {
-          failed += 1;
-          errors.push({
-            batch_id: String(batch.id),
-            status: String(batch.status || 'Draft'),
-            error: recalcError instanceof Error ? recalcError.message : 'Unknown error'
-          });
-        }
+    for (const batch of targets) {
+      try {
+        await this.calculateBatch(String(batch.id));
+        recalculated += 1;
+      } catch (recalcError) {
+        failed += 1;
+        errors.push({
+          batch_id: String(batch.id),
+          status: String(batch.status || 'Draft'),
+          error: recalcError instanceof Error ? recalcError.message : 'Unknown error'
+        });
       }
-
-      return {
-        attempted: targets.length,
-        recalculated,
-        failed,
-        skipped,
-        errors
-      };
     }
+
+    return {
+      attempted: targets.length,
+      recalculated,
+      failed,
+      skipped,
+      errors
+    };
   },
 
   async recalculateBatch(batchId: string): Promise<any> {
-    try {
-      const response = await fetchWithTimeout(`/recalculate-batch/${batchId}`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({})
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to recalculate batch'));
-      return safeJson(response, 'recalculateBatch');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      return this.calculateBatch(batchId);
-    }
+    return this.calculateBatch(batchId);
   },
 
   async generateInvoice(
@@ -1535,60 +897,30 @@ export const examinationBatchService = {
     idempotent?: boolean;
     invoice?: ExaminationGeneratedInvoicePayload;
   }> {
-    try {
-      const headers = getHeaders();
-      const resolvedId = await resolveBatchId(id);
-      const idempotencyKey = payload?.idempotencyKey || `EXAM-BATCH-${resolvedId}`;
-      const invoiceNumber = payload?.invoiceNumber;
-
-      const response = await fetchWithTimeout(`/batches/${resolvedId}/invoice`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ idempotencyKey, invoiceNumber })
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to generate invoice'));
-      return safeJson(response, 'generateInvoice');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const localBatch = await this.getBatch(id);
-      const recalculated = await applyCalculatedBatchState(localBatch as any);
-      const updatedBatch = await updateLocalBatch(String((localBatch as any).id || id), () => ({
-        ...recalculated,
-        status: 'Invoiced'
-      }));
-      const invoicePayload = await buildLocalInvoicePayload(updatedBatch as any, payload);
-      return {
-        success: true,
-        invoiceId: Date.now() * 1000 + Math.floor(Math.random() * 1000),
-        created: true,
-        idempotent: false,
-        invoice: invoicePayload
-      };
-    }
+    const localBatch = await this.getBatch(id);
+    const recalculated = await applyCalculatedBatchState(localBatch as any);
+    const updatedBatch = await updateLocalBatch(String((localBatch as any).id || id), () => ({
+      ...recalculated,
+      status: 'Invoiced'
+    }));
+    const invoicePayload = await buildLocalInvoicePayload(updatedBatch as any, payload);
+    return {
+      success: true,
+      invoiceId: Date.now() * 1000 + Math.floor(Math.random() * 1000),
+      created: true,
+      idempotent: false,
+      invoice: invoicePayload
+    };
   },
 
   // Class methods
   async getBatchByNumber(batchNumber: string): Promise<ExaminationBatch | null> {
     const local = await getLocalBatches();
     const localMatch = local.find(batch => batch.batch_number === batchNumber || batch.batchNumber === batchNumber);
-    if (localMatch) return localMatch as ExaminationBatch;
-
-    try {
-      const response = await fetchWithTimeout(`/batches?batch_number=${encodeURIComponent(batchNumber)}`, {
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-      if (!response.ok) return null;
-      const data = await safeJson(response, 'getBatchByNumber');
-      return data?.batches?.[0] || data?.[0] || null;
-    } catch {
-      return null;
-    }
+    return (localMatch as ExaminationBatch) || null;
   },
 
   async findBatchByNumber(batchNumber: string): Promise<ExaminationBatch | null> {
-    const local = await getLocalBatches();
-    const found = local.find(b => b.batch_number === batchNumber || b.batchNumber === batchNumber);
-    if (found) return found as ExaminationBatch;
     return this.getBatchByNumber(batchNumber);
   },
 
@@ -1606,73 +938,47 @@ export const examinationBatchService = {
       throw new Error('Number of learners must be greater than 0');
     }
 
-    try {
-      const response = await fetchWithTimeout('/classes', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ ...payload, batch_id: batchId }),
-      }, HEAVY_REQUEST_TIMEOUT_MS);
+    const createdClass = {
+      ...payload,
+      id: generateLocalId(),
+      batch_id: batchId,
+      class_name: String(payload.class_name || '').trim(),
+      number_of_learners: Math.max(1, Math.floor(Number(payload.number_of_learners) || 0)),
+      subjects: Array.isArray(payload.subjects) ? payload.subjects : [],
+      is_manual_override: false,
+      manual_cost_per_learner: null,
+      created_at: toIso(),
+      updated_at: toIso()
+    };
 
-      if (!response.ok) {
-        throw new Error(await toServiceError(response, 'Failed to add class'));
-      }
-
-      return safeJson(response, 'addClass');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const createdClass = {
-        ...payload,
-        id: generateLocalId(),
-        batch_id: batchId,
-        class_name: String(payload.class_name || '').trim(),
-        number_of_learners: Math.max(1, Math.floor(Number(payload.number_of_learners) || 0)),
-        subjects: Array.isArray(payload.subjects) ? payload.subjects : [],
-        is_manual_override: false,
-        manual_cost_per_learner: null,
-        created_at: toIso(),
-        updated_at: toIso()
-      };
-
-      const updatedBatch = await updateLocalBatch(batchId, (batch) => ({
-        ...batch,
-        classes: [...(Array.isArray(batch.classes) ? batch.classes : []), createdClass]
-      }));
-      const recalculated = await applyCalculatedBatchState(updatedBatch);
-      const storedBatch = await updateLocalBatch(String(updatedBatch.id), () => ({
-        ...recalculated,
-        status: updatedBatch.status || 'Draft'
-      }));
-      return (Array.isArray((storedBatch as any).classes) ? (storedBatch as any).classes : []).find((row: any) => String(row.id) === String(createdClass.id));
-    }
+    const updatedBatch = await updateLocalBatch(batchId, (batch) => ({
+      ...batch,
+      classes: [...(Array.isArray(batch.classes) ? batch.classes : []), createdClass]
+    }));
+    const recalculated = await applyCalculatedBatchState(updatedBatch);
+    const storedBatch = await updateLocalBatch(String(updatedBatch.id), () => ({
+      ...recalculated,
+      status: updatedBatch.status || 'Draft'
+    }));
+    return (Array.isArray((storedBatch as any).classes) ? (storedBatch as any).classes : []).find((row: any) => String(row.id) === String(createdClass.id));
   },
 
   async updateClass(classId: string, payload: Partial<ExaminationClass>): Promise<ExaminationClass> {
-    try {
-      const response = await fetchWithTimeout(`/classes/${classId}`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to update class'));
-      return safeJson(response, 'updateClass');
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalClassOwner(classId);
-      if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
-      const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
-        const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
-        classes[owner.classIndex] = {
-          ...classes[owner.classIndex],
-          ...payload,
-          id: classId,
-          updated_at: toIso()
-        };
-        return { ...batch, classes };
-      });
-      const recalculated = await applyCalculatedBatchState(updatedBatch);
-      const storedBatch = await updateLocalBatch(String(updatedBatch.id), () => recalculated);
-      return (Array.isArray((storedBatch as any).classes) ? (storedBatch as any).classes : []).find((row: any) => String(row.id) === String(classId));
-    }
+    const owner = await findLocalClassOwner(classId);
+    if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
+    const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
+      const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
+      classes[owner.classIndex] = {
+        ...classes[owner.classIndex],
+        ...payload,
+        id: classId,
+        updated_at: toIso()
+      };
+      return { ...batch, classes };
+    });
+    const recalculated = await applyCalculatedBatchState(updatedBatch);
+    const storedBatch = await updateLocalBatch(String(updatedBatch.id), () => recalculated);
+    return (Array.isArray((storedBatch as any).classes) ? (storedBatch as any).classes : []).find((row: any) => String(row.id) === String(classId));
   },
 
   async updateClassPricing(
@@ -1680,184 +986,110 @@ export const examinationBatchService = {
     payload: { cost_per_learner?: number; is_manual_override?: boolean; override_reason?: string },
     canOverrideSuggestedCost = false
   ): Promise<ExaminationBatch> {
-    try {
-      const headers = getHeaders();
-      headers['x-can-override-exam-cost'] = canOverrideSuggestedCost ? 'true' : 'false';
-
-      const response = await fetchWithTimeout(`/classes/${classId}/pricing`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(payload),
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to update class pricing'));
-      return response.json();
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalClassOwner(classId);
-      if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
-      const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
-        const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
-        const existing = classes[owner.classIndex] || {};
-        const learners = Math.max(1, Math.floor(Number(existing.number_of_learners) || 0));
-        const manualFee = Number(payload.cost_per_learner ?? existing.manual_cost_per_learner ?? 0) || 0;
-        classes[owner.classIndex] = {
-          ...existing,
-          is_manual_override: payload.is_manual_override ?? existing.is_manual_override ?? true,
-          manual_cost_per_learner: manualFee,
-          final_fee_per_learner: manualFee,
-          price_per_learner: manualFee,
-          live_total_preview: Number((manualFee * learners).toFixed(2)),
-          override_reason: payload.override_reason || existing.override_reason,
-          updated_at: toIso()
-        };
-        return summarizeBatchTotals({ ...batch, classes });
-      });
-      return updatedBatch as ExaminationBatch;
-    }
+    const owner = await findLocalClassOwner(classId);
+    if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
+    const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
+      const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
+      const existing = classes[owner.classIndex] || {};
+      const learners = Math.max(1, Math.floor(Number(existing.number_of_learners) || 0));
+      const manualFee = Number(payload.cost_per_learner ?? existing.manual_cost_per_learner ?? 0) || 0;
+      classes[owner.classIndex] = {
+        ...existing,
+        is_manual_override: payload.is_manual_override ?? existing.is_manual_override ?? true,
+        manual_cost_per_learner: manualFee,
+        final_fee_per_learner: manualFee,
+        price_per_learner: manualFee,
+        live_total_preview: Number((manualFee * learners).toFixed(2)),
+        override_reason: payload.override_reason || existing.override_reason,
+        updated_at: toIso()
+      };
+      return summarizeBatchTotals({ ...batch, classes });
+    });
+    return updatedBatch as ExaminationBatch;
   },
 
   async getClassPricingHistory(classId: string, limit = 100): Promise<any[]> {
-    try {
-      const response = await fetchWithTimeout(`/classes/${classId}/pricing-history?limit=${limit}`, {
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to fetch class pricing history'));
-      return response.json();
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      return [];
-    }
+    return [];
   },
 
   async deleteClass(classId: string): Promise<void> {
-    try {
-      const response = await fetchWithTimeout(`/classes/${classId}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to delete class'));
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalClassOwner(classId);
-      if (!owner) return;
-      const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => ({
-        ...batch,
-        classes: (Array.isArray(batch.classes) ? batch.classes : []).filter((row: any) => String(row?.id) !== String(classId))
-      }));
-      const recalculated = await applyCalculatedBatchState(updatedBatch);
-      await updateLocalBatch(String(updatedBatch.id), () => recalculated);
-    }
+    const owner = await findLocalClassOwner(classId);
+    if (!owner) return;
+    const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => ({
+      ...batch,
+      classes: (Array.isArray(batch.classes) ? batch.classes : []).filter((row: any) => String(row?.id) !== String(classId))
+    }));
+    const recalculated = await applyCalculatedBatchState(updatedBatch);
+    await updateLocalBatch(String(updatedBatch.id), () => recalculated);
   },
 
   // Subject methods
   async addSubject(classId: string, payload: Partial<ExaminationSubject>): Promise<ExaminationSubject> {
-    try {
-      const response = await fetchWithTimeout('/subjects', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ ...payload, class_id: classId }),
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to add subject'));
-      return response.json();
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalClassOwner(classId);
-      if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
-      const createdSubject = {
-        ...payload,
-        id: generateLocalId(),
-        class_id: classId,
-        subject_name: String((payload as any).subject_name || payload.name || 'Subject').trim(),
-        name: String(payload.name || (payload as any).subject_name || 'Subject').trim(),
-        pages: Math.max(1, Math.floor(Number((payload as any).pages || 0) || 1)),
-        extra_copies: Math.max(0, Math.floor(Number((payload as any).extra_copies || 0))),
-        created_at: toIso(),
-        updated_at: toIso()
-      };
-      const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
-        const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
-        const currentClass = { ...classes[owner.classIndex] };
-        currentClass.subjects = [...(Array.isArray(currentClass.subjects) ? currentClass.subjects : []), createdSubject];
-        classes[owner.classIndex] = currentClass;
-        return { ...batch, classes };
-      });
-      const recalculated = await applyCalculatedBatchState(updatedBatch);
-      await updateLocalBatch(String(updatedBatch.id), () => recalculated);
-      return createdSubject as ExaminationSubject;
-    }
+    const owner = await findLocalClassOwner(classId);
+    if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
+    const createdSubject = {
+      ...payload,
+      id: generateLocalId(),
+      class_id: classId,
+      subject_name: String((payload as any).subject_name || payload.name || 'Subject').trim(),
+      name: String(payload.name || (payload as any).subject_name || 'Subject').trim(),
+      pages: Math.max(1, Math.floor(Number((payload as any).pages || 0) || 1)),
+      extra_copies: Math.max(0, Math.floor(Number((payload as any).extra_copies || 0))),
+      created_at: toIso(),
+      updated_at: toIso()
+    };
+    const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
+      const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
+      const currentClass = { ...classes[owner.classIndex] };
+      currentClass.subjects = [...(Array.isArray(currentClass.subjects) ? currentClass.subjects : []), createdSubject];
+      classes[owner.classIndex] = currentClass;
+      return { ...batch, classes };
+    });
+    const recalculated = await applyCalculatedBatchState(updatedBatch);
+    await updateLocalBatch(String(updatedBatch.id), () => recalculated);
+    return createdSubject as ExaminationSubject;
   },
 
   async updateSubject(subjectId: string, payload: Partial<ExaminationSubject>): Promise<ExaminationSubject> {
-    try {
-      const response = await fetchWithTimeout(`/subjects/${subjectId}`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to update subject'));
-      return response.json();
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalSubjectOwner(subjectId);
-      if (!owner) throw new Error(`Subject not found in local storage: ${subjectId}`);
-      const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
-        const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
-        const currentClass = { ...classes[owner.classIndex] };
-        const subjects = Array.isArray(currentClass.subjects) ? [...currentClass.subjects] : [];
-        subjects[owner.subjectIndex] = {
-          ...subjects[owner.subjectIndex],
-          ...payload,
-          id: subjectId,
-          updated_at: toIso()
-        };
-        currentClass.subjects = subjects;
-        classes[owner.classIndex] = currentClass;
-        return { ...batch, classes };
-      });
-      const recalculated = await applyCalculatedBatchState(updatedBatch);
-      await updateLocalBatch(String(updatedBatch.id), () => recalculated);
-      const currentClass = (Array.isArray((updatedBatch as any).classes) ? (updatedBatch as any).classes : [])[owner.classIndex];
-      return (Array.isArray(currentClass?.subjects) ? currentClass.subjects : []).find((row: any) => String(row.id) === String(subjectId));
-    }
+    const owner = await findLocalSubjectOwner(subjectId);
+    if (!owner) throw new Error(`Subject not found in local storage: ${subjectId}`);
+    const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
+      const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
+      const currentClass = { ...classes[owner.classIndex] };
+      const subjects = Array.isArray(currentClass.subjects) ? [...currentClass.subjects] : [];
+      subjects[owner.subjectIndex] = {
+        ...subjects[owner.subjectIndex],
+        ...payload,
+        id: subjectId,
+        updated_at: toIso()
+      };
+      currentClass.subjects = subjects;
+      classes[owner.classIndex] = currentClass;
+      return { ...batch, classes };
+    });
+    const recalculated = await applyCalculatedBatchState(updatedBatch);
+    await updateLocalBatch(String(updatedBatch.id), () => recalculated);
+    const currentClass = (Array.isArray((updatedBatch as any).classes) ? (updatedBatch as any).classes : [])[owner.classIndex];
+    return (Array.isArray(currentClass?.subjects) ? currentClass.subjects : []).find((row: any) => String(row.id) === String(subjectId));
   },
 
   async deleteSubject(subjectId: string): Promise<void> {
-    try {
-      const response = await fetchWithTimeout(`/subjects/${subjectId}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to delete subject'));
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalSubjectOwner(subjectId);
-      if (!owner) return;
-      const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
-        const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
-        const currentClass = { ...classes[owner.classIndex] };
-        currentClass.subjects = (Array.isArray(currentClass.subjects) ? currentClass.subjects : []).filter((row: any) => String(row?.id) !== String(subjectId));
-        classes[owner.classIndex] = currentClass;
-        return { ...batch, classes };
-      });
-      const recalculated = await applyCalculatedBatchState(updatedBatch);
-      await updateLocalBatch(String(updatedBatch.id), () => recalculated);
-    }
+    const owner = await findLocalSubjectOwner(subjectId);
+    if (!owner) return;
+    const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
+      const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
+      const currentClass = { ...classes[owner.classIndex] };
+      currentClass.subjects = (Array.isArray(currentClass.subjects) ? currentClass.subjects : []).filter((row: any) => String(row?.id) !== String(subjectId));
+      classes[owner.classIndex] = currentClass;
+      return { ...batch, classes };
+    });
+    const recalculated = await applyCalculatedBatchState(updatedBatch);
+    await updateLocalBatch(String(updatedBatch.id), () => recalculated);
   },
 
   // Settings methods
   async getPricingSettings(): Promise<ExaminationPricingSettings> {
-    try {
-      const response = await fetchWithTimeout('/settings/pricing', {
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to fetch examination pricing settings'));
-      const result = await response.json();
-      await dbService.saveSetting(EXAM_PRICING_SETTINGS_KEY, result);
-      return result;
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      return getLocalPricingSettings();
-    }
+    return getLocalPricingSettings() as Promise<ExaminationPricingSettings>;
   },
 
   async updatePricingSettings(payload: {
@@ -1873,38 +1105,25 @@ export const examinationBatchService = {
     recalculation?: any;
     pricing_lock?: any;
   }> {
-    try {
-      const response = await fetchWithTimeout('/settings/pricing', {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify(payload)
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to update examination pricing settings'));
-      const result = await response.json();
-      await dbService.saveSetting(EXAM_PRICING_SETTINGS_KEY, result);
-      return result;
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const settings = await saveLocalPricingSettings(payload);
-      if (payload.lock_batch_id) {
-        await updateLocalBatch(String(payload.lock_batch_id), (batch) => ({
-          ...batch,
-          pricing_settings_snapshot: settings,
-          pricing_lock: payload.lock_pricing_snapshot ? {
-            locked: true,
-            reason: payload.lock_reason || 'Offline pricing snapshot',
-            locked_at: toIso()
-          } : batch.pricing_lock
-        }));
-      }
-      return {
-        success: true,
+    const settings = await saveLocalPricingSettings(payload);
+    if (payload.lock_batch_id) {
+      await updateLocalBatch(String(payload.lock_batch_id), (batch) => ({
+        ...batch,
+        pricing_settings_snapshot: settings,
         pricing_lock: payload.lock_pricing_snapshot ? {
           locked: true,
-          reason: payload.lock_reason || 'Offline pricing snapshot'
-        } : undefined
-      };
+          reason: payload.lock_reason || 'Offline pricing snapshot',
+          locked_at: toIso()
+        } : batch.pricing_lock
+      }));
     }
+    return {
+      success: true,
+      pricing_lock: payload.lock_pricing_snapshot ? {
+        locked: true,
+        reason: payload.lock_reason || 'Offline pricing snapshot'
+      } : undefined
+    };
   },
 
   async getExamPricingSettings() {
@@ -1924,20 +1143,10 @@ export const examinationBatchService = {
   },
 
   // New methods for Examination Pricing Redesign
-
   async getClass(classId: string): Promise<ExaminationClass> {
-    try {
-      const response = await fetchWithTimeout(`/classes/${classId}`, {
-        headers: getHeaders()
-      }, REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to fetch class'));
-      return response.json();
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalClassOwner(classId);
-      if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
-      return owner.batch.classes?.[owner.classIndex] as ExaminationClass;
-    }
+    const owner = await findLocalClassOwner(classId);
+    if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
+    return owner.batch.classes?.[owner.classIndex] as ExaminationClass;
   },
 
   async getClassPreview(
@@ -1984,48 +1193,36 @@ export const examinationBatchService = {
         allocationRatio: number;
       }>;
   }> {
-    try {
-      const response = await fetchWithTimeout(`/classes/${classId}/preview`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(options || {})
-      }, MEDIUM_REQUEST_TIMEOUT_MS);
-
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to fetch class preview'));
-      return response.json();
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalClassOwner(classId);
-      if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
-      const recalculated = await applyCalculatedBatchState(owner.batch, {
-        paper_item_id: options?.paperId || null,
-        toner_item_id: options?.tonerId || null,
-        paper_unit_cost: options?.paperUnitCost,
-        toner_unit_cost: options?.tonerUnitCost,
-        conversion_rate: options?.paperConversionRate
-      }, options?.adjustments);
-      const classRow = (Array.isArray(recalculated.classes) ? recalculated.classes : []).find((row: any) => String(row.id) === String(classId));
-      if (!classRow) throw new Error(`Class not found in local storage: ${classId}`);
-      return {
-        classId: String(classRow.id),
-        className: String(classRow.class_name || 'Class'),
-        learners: Math.max(0, Math.floor(Number(classRow.number_of_learners) || 0)),
-        totalSheets: Number(classRow.total_sheets || 0),
-        totalPages: Number(classRow.total_pages || 0),
-        paperQuantity: Number((Number(classRow.total_sheets || 0) / Math.max(1, Number(options?.paperConversionRate || DEFAULT_PAPER_CONVERSION_RATE))).toFixed(4)),
-        tonerQuantity: Number((Number(classRow.total_pages || 0) / DEFAULT_TONER_PAGES_PER_UNIT).toFixed(6)),
-        paperCost: Number(classRow.material_total_cost || 0),
-        tonerCost: 0,
-        totalBomCost: Number(classRow.material_total_cost || 0),
-        totalAdjustments: Number(classRow.adjustment_total_cost || 0),
-        totalCost: Number(classRow.calculated_total_cost || classRow.live_total_preview || 0),
-        expectedFeePerLearner: Number(classRow.expected_fee_per_learner || 0),
-        materialTotalCost: Number(classRow.material_total_cost || 0),
-        adjustmentTotalCost: Number(classRow.adjustment_total_cost || 0),
-        calculatedTotalCost: Number(classRow.calculated_total_cost || classRow.live_total_preview || 0),
-        adjustmentBreakdown: []
-      };
-    }
+    const owner = await findLocalClassOwner(classId);
+    if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
+    const recalculated = await applyCalculatedBatchState(owner.batch, {
+      paper_item_id: options?.paperId || null,
+      toner_item_id: options?.tonerId || null,
+      paper_unit_cost: options?.paperUnitCost,
+      toner_unit_cost: options?.tonerUnitCost,
+      conversion_rate: options?.paperConversionRate
+    }, options?.adjustments);
+    const classRow = (Array.isArray(recalculated.classes) ? recalculated.classes : []).find((row: any) => String(row.id) === String(classId));
+    if (!classRow) throw new Error(`Class not found in local storage: ${classId}`);
+    return {
+      classId: String(classRow.id),
+      className: String(classRow.class_name || 'Class'),
+      learners: Math.max(0, Math.floor(Number(classRow.number_of_learners) || 0)),
+      totalSheets: Number(classRow.total_sheets || 0),
+      totalPages: Number(classRow.total_pages || 0),
+      paperQuantity: Number((Number(classRow.total_sheets || 0) / Math.max(1, Number(options?.paperConversionRate || DEFAULT_PAPER_CONVERSION_RATE))).toFixed(4)),
+      tonerQuantity: Number((Number(classRow.total_pages || 0) / DEFAULT_TONER_PAGES_PER_UNIT).toFixed(6)),
+      paperCost: Number(classRow.material_total_cost || 0),
+      tonerCost: 0,
+      totalBomCost: Number(classRow.material_total_cost || 0),
+      totalAdjustments: Number(classRow.adjustment_total_cost || 0),
+      totalCost: Number(classRow.calculated_total_cost || classRow.live_total_preview || 0),
+      expectedFeePerLearner: Number(classRow.expected_fee_per_learner || 0),
+      materialTotalCost: Number(classRow.material_total_cost || 0),
+      adjustmentTotalCost: Number(classRow.adjustment_total_cost || 0),
+      calculatedTotalCost: Number(classRow.calculated_total_cost || classRow.live_total_preview || 0),
+      adjustmentBreakdown: []
+    };
   },
 
   async updateClassFinancialMetrics(
@@ -2044,30 +1241,19 @@ export const examinationBatchService = {
       financial_metrics_updated_at?: string;
     }
   ): Promise<ExaminationClass> {
-    try {
-      const response = await fetchWithTimeout(`/classes/${classId}/financial-metrics`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to update class financial metrics'));
-      return response.json();
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const owner = await findLocalClassOwner(classId);
-      if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
-      const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
-        const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
-        classes[owner.classIndex] = {
-          ...classes[owner.classIndex],
-          ...payload,
-          id: classId,
-          updated_at: toIso()
-        };
-        return summarizeBatchTotals({ ...batch, classes });
-      });
-      return (Array.isArray((updatedBatch as any).classes) ? (updatedBatch as any).classes : []).find((row: any) => String(row.id) === String(classId));
-    }
+    const owner = await findLocalClassOwner(classId);
+    if (!owner) throw new Error(`Class not found in local storage: ${classId}`);
+    const updatedBatch = await updateLocalBatch(String(owner.batch.id), (batch) => {
+      const classes = Array.isArray(batch.classes) ? [...batch.classes] : [];
+      classes[owner.classIndex] = {
+        ...classes[owner.classIndex],
+        ...payload,
+        id: classId,
+        updated_at: toIso()
+      };
+      return summarizeBatchTotals({ ...batch, classes });
+    });
+    return (Array.isArray((updatedBatch as any).classes) ? (updatedBatch as any).classes : []).find((row: any) => String(row.id) === String(classId));
   },
 
   async syncPricingToBatch(
@@ -2082,31 +1268,17 @@ export const examinationBatchService = {
     classesUpdated: number;
     errors: Array<{ classId: string; error: string }>;
   }> {
-    try {
-      const headers = getHeaders();
-      headers['x-user-id'] = headers['x-user-id'] || 'System';
-
-      const response = await fetchWithTimeout(`/batches/${batchId}/sync-pricing`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      }, HEAVY_REQUEST_TIMEOUT_MS);
-      if (!response.ok) throw new Error(await toServiceError(response, 'Failed to sync pricing to batch'));
-      return response.json();
-    } catch (error) {
-      if (!isOfflineError(error)) throw error;
-      const updatedSettings = await saveLocalPricingSettings(payload.settings || {});
-      const localBatch = await this.getBatch(batchId);
-      const recalculated = await applyCalculatedBatchState(localBatch as any, updatedSettings, payload.adjustments);
-      const storedBatch = await updateLocalBatch(String((localBatch as any).id || batchId), () => ({
-        ...recalculated,
-        pricing_settings_snapshot: updatedSettings
-      }));
-      return {
-        success: true,
-        classesUpdated: Array.isArray((storedBatch as any).classes) ? (storedBatch as any).classes.length : 0,
-        errors: []
-      };
-    }
+    const updatedSettings = await saveLocalPricingSettings(payload.settings || {});
+    const localBatch = await this.getBatch(batchId);
+    const recalculated = await applyCalculatedBatchState(localBatch as any, updatedSettings, payload.adjustments);
+    const storedBatch = await updateLocalBatch(String((localBatch as any).id || batchId), () => ({
+      ...recalculated,
+      pricing_settings_snapshot: updatedSettings
+    }));
+    return {
+      success: true,
+      classesUpdated: Array.isArray((storedBatch as any).classes) ? (storedBatch as any).classes.length : 0,
+      errors: []
+    };
   }
 };

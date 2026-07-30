@@ -2,7 +2,6 @@ import { logger } from './logger';
 import { InventoryTransaction, MaterialBatch, WarehouseInventory } from '../types';
 import { dbService } from './db';
 import { generateOpaqueId } from '../utils/idGeneration';
-import { apiClient as fetchApiClient, OfflineRequestError } from './apiClient';
 
 export interface InventoryDeductionRequest {
   itemId: string;
@@ -94,19 +93,6 @@ class InventoryTransactionService {
         await dbService.put('materialBatches', updatedBatch);
       }
 
-      try {
-        await fetchApiClient.requestJson({
-          endpoint: '/inventory/transactions',
-          method: 'POST',
-          body: JSON.stringify({ itemId, warehouseId, quantity, reason, reference, referenceId, performedBy, type: 'OUT', transaction_date: transactionDate })
-        });
-      } catch (apiErr: any) {
-        if (apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError') {
-          return this.executeLocalDeduction(request, item, warehouseInventoryList, currentQuantity);
-        }
-        throw apiErr;
-      }
-
       const unitCost = item.cost || 0;
       const transaction: InventoryTransaction = {
         id: generateOpaqueId('TXN'),
@@ -151,55 +137,6 @@ class InventoryTransactionService {
     }
   }
 
-  private async executeLocalDeduction(
-    request: InventoryDeductionRequest,
-    item: any,
-    warehouseInventoryList: WarehouseInventory[],
-    currentQuantity: number
-  ): Promise<InventoryDeductionResult> {
-    const { itemId, warehouseId, quantity, batchId, reason, reference, referenceId, performedBy } = request;
-    const unitCost = item.cost || 0;
-    const totalCost = quantity * unitCost;
-
-    const transaction: InventoryTransaction = {
-      id: generateOpaqueId('TXN'),
-      itemId,
-      warehouseId,
-      batchId,
-      type: 'OUT',
-      quantity: -quantity,
-      previousQuantity: currentQuantity,
-      newQuantity: currentQuantity - quantity,
-      unitCost,
-      totalCost: -totalCost,
-      reference,
-      referenceId,
-      reason,
-      performedBy,
-      timestamp: new Date().toISOString()
-    };
-
-    await dbService.put('inventoryTransactions', transaction);
-
-    const updatedItem = { ...item, stock: (item.stock || 0) - quantity };
-    await dbService.put('inventory', updatedItem);
-
-    if (warehouseId) {
-      const whInv = warehouseInventoryList.find(w => w.itemId === itemId && w.warehouseId === warehouseId);
-      if (whInv) {
-        const updatedWhInv = {
-          ...whInv,
-          quantity: (whInv.quantity || 0) - quantity,
-          available: ((whInv.available || 0) - quantity),
-          lastUpdated: new Date().toISOString()
-        };
-        await dbService.put('warehouseInventory', updatedWhInv);
-      }
-    }
-
-    return { success: true, transaction, remainingQuantity: currentQuantity - quantity };
-  }
-
   async addInventory(request: InventoryAdditionRequest): Promise<InventoryDeductionResult> {
     const { itemId, warehouseId, quantity, batchId, unitCost, reason, reference, referenceId, performedBy, supplierId, supplierName, expiryDate } = request;
 
@@ -212,33 +149,6 @@ class InventoryTransactionService {
       let currentQuantity = item.stock || 0;
       let newQuantity = currentQuantity + quantity;
       const transactionDate = new Date().toISOString();
-
-      try {
-        await fetchApiClient.requestJson({
-          endpoint: '/inventory/transactions',
-          method: 'POST',
-          body: JSON.stringify({ itemId, warehouseId, quantity, reason, reference, referenceId, performedBy, type: 'IN', transaction_date: transactionDate })
-        });
-
-        const currentCost = item.normalizedCP ?? item.cost ?? 0;
-        const newNormalizedCP = currentQuantity > 0
-          ? ((currentCost * currentQuantity) + (unitCost * quantity)) / newQuantity
-          : unitCost;
-
-        await fetchApiClient.requestJson({
-          endpoint: `/inventory/${itemId}`,
-          method: 'PUT',
-          body: JSON.stringify({
-            quantity: newQuantity,
-            cost_per_unit: newNormalizedCP
-          })
-        });
-      } catch (apiErr: any) {
-        if (apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError') {
-          return this.executeLocalAddition(request, item, currentQuantity);
-        }
-        throw apiErr;
-      }
 
       if (batchId && quantity > 0) {
         const batchNumber = batchId || generateOpaqueId('BATCH');
@@ -325,124 +235,7 @@ class InventoryTransactionService {
     }
   }
 
-  private async executeLocalAddition(request: InventoryAdditionRequest, item: any, currentQuantity: number): Promise<InventoryDeductionResult> {
-    const { itemId, warehouseId, quantity, batchId, unitCost, reason, reference, referenceId, performedBy, supplierId, supplierName, expiryDate } = request;
-    let newQuantity = currentQuantity + quantity;
-
-    if (batchId && quantity > 0) {
-      const batchNumber = batchId || generateOpaqueId('BATCH');
-      const newBatch: MaterialBatch = {
-        id: batchNumber,
-        itemId,
-        batchNumber,
-        quantity,
-        remainingQuantity: quantity,
-        costPerUnit: unitCost,
-        receivedDate: new Date().toISOString(),
-        expiryDate,
-        supplierId,
-        supplierName,
-        warehouseId,
-        status: 'active',
-        createdAt: new Date().toISOString()
-      };
-      await dbService.put('materialBatches', newBatch);
-    }
-
-    const totalCost = quantity * unitCost;
-    const transaction: InventoryTransaction = {
-      id: generateOpaqueId('TXN'),
-      itemId,
-      warehouseId,
-      batchId,
-      type: 'IN',
-      quantity,
-      previousQuantity: currentQuantity,
-      newQuantity,
-      unitCost,
-      totalCost,
-      reference,
-      referenceId,
-      reason,
-      performedBy,
-      timestamp: new Date().toISOString()
-    };
-
-    await dbService.put('inventoryTransactions', transaction);
-
-    const currentCost = item.normalizedCP ?? item.cost ?? 0;
-    const newNormalizedCP = currentQuantity > 0
-      ? ((currentCost * currentQuantity) + (unitCost * quantity)) / newQuantity
-      : unitCost;
-    const updatedItem = {
-      ...item,
-      stock: newQuantity,
-      normalizedCP: newNormalizedCP,
-      cost: newNormalizedCP,
-      costPrice: newNormalizedCP,
-    };
-    await dbService.put('inventory', updatedItem);
-
-    const warehouseInventoryList = await dbService.getAll<WarehouseInventory>('warehouseInventory');
-    const whInv = warehouseInventoryList.find(w => w.itemId === itemId && w.warehouseId === warehouseId);
-
-    if (whInv) {
-      const updatedWhInv = {
-        ...whInv,
-        quantity: (whInv.quantity || 0) + quantity,
-        available: ((whInv.available || 0) + quantity),
-        lastUpdated: new Date().toISOString()
-      };
-      await dbService.put('warehouseInventory', updatedWhInv);
-    } else if (warehouseId) {
-      const newWhInv: WarehouseInventory = {
-        id: generateOpaqueId('WHINV'),
-        itemId,
-        warehouseId,
-        quantity,
-        reserved: 0,
-        available: quantity,
-        lastUpdated: new Date().toISOString()
-      };
-      await dbService.put('warehouseInventory', newWhInv);
-    }
-
-    return { success: true, transaction, remainingQuantity: newQuantity };
-  }
-
   async getTransactionHistory(itemId: string, limit: number = 50): Promise<InventoryTransaction[]> {
-    try {
-      const response = await fetchApiClient.requestJson<any[]>({ endpoint: `/inventory/${itemId}/transactions?limit=${limit}` });
-      if (Array.isArray(response)) {
-        const mapped = response.map((t: any) => ({
-          id: t.id,
-          itemId: t.item_id,
-          warehouseId: t.warehouse_id,
-          batchId: t.batch_id,
-          type: t.type,
-          quantity: t.quantity,
-          previousQuantity: t.previous_quantity,
-          newQuantity: t.new_quantity,
-          unitCost: t.unit_cost,
-          totalCost: t.total_cost,
-          reference: t.reference,
-          referenceId: t.reference_id,
-          reason: t.reason,
-          performedBy: t.performed_by,
-          timestamp: t.timestamp
-        })) as InventoryTransaction[];
-
-        for (const txn of mapped) {
-          await dbService.put('inventoryTransactions', txn);
-        }
-        return mapped;
-      }
-    } catch (apiErr: any) {
-      if (!(apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError')) {
-        logger.warn('[InventoryTransactionService] API error fetching transactions, falling back to local:', apiErr);
-      }
-    }
-
     const transactions = await dbService.getAll<InventoryTransaction>('inventoryTransactions');
     return transactions
       .filter(t => t.itemId === itemId)
@@ -458,32 +251,6 @@ class InventoryTransactionService {
   }
 
   async getWarehouseInventory(warehouseId?: string): Promise<WarehouseInventory[]> {
-    try {
-      if (warehouseId) {
-        const response = await fetchApiClient.requestJson<any[]>({ endpoint: `/inventory/warehouse/${warehouseId}` });
-        if (Array.isArray(response)) {
-          const mapped = response.map((w: any) => ({
-            id: w.id || `${w.warehouse_id}_${w.item_id}`,
-            itemId: w.item_id,
-            warehouseId: w.warehouse_id,
-            quantity: w.quantity || 0,
-            reserved: w.reserved || 0,
-            available: (w.quantity || 0) - (w.reserved || 0),
-            lastUpdated: w.last_updated || new Date().toISOString()
-          })) as WarehouseInventory[];
-
-          for (const wh of mapped) {
-            await dbService.put('warehouseInventory', wh);
-          }
-          return mapped;
-        }
-      }
-    } catch (apiErr: any) {
-      if (!(apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError')) {
-        logger.warn('[InventoryTransactionService] API error fetching warehouse inventory, falling back to local:', apiErr);
-      }
-    }
-
     const inventory = await dbService.getAll<WarehouseInventory>('warehouseInventory');
     if (warehouseId) {
       return inventory.filter(i => i.warehouseId === warehouseId);
@@ -690,18 +457,6 @@ class InventoryReservationService {
   }
 
   private async updateReservedStock(materialId: string, quantity: number, warehouseId?: string): Promise<void> {
-    try {
-      await fetchApiClient.requestJson({
-        endpoint: `/inventory/${materialId}`,
-        method: 'PUT',
-        body: JSON.stringify({ reserved: quantity >= 0 ? quantity : 0 })
-      });
-    } catch (apiErr: any) {
-      if (!(apiErr instanceof OfflineRequestError || apiErr?.name === 'OfflineRequestError')) {
-        logger.warn('[InventoryReservationService] API error updating reserved stock:', apiErr);
-      }
-    }
-
     const inventory = await dbService.getAll<any>('inventory');
     const item = inventory.find(i => i.id === materialId);
 

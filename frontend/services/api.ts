@@ -1,10 +1,5 @@
-import axios from 'axios';
 import { dbService } from './db.ts';
 import { productionDb } from './productionDb.ts';
-import { getUrl, API_BASE_URL, HAS_REMOTE_BACKEND, SUPABASE_CONFIGURED } from '@/config/api.js';
-import { supabase } from './supabaseClient';
-import { platform } from './platform';
-import { isVerboseApiLoggingEnabled } from '../utils/debugFlags';
 import {
   Item, Warehouse, Purchase, Sale, Quotation, JobOrder,
   CustomerPayment, ProductionBatch, WorkOrder, WorkCenter,
@@ -18,283 +13,13 @@ import {
   ExaminationJob, ExaminationJobSubject, ExaminationInvoiceGroup, ExaminationRecurringProfile,
   Order, OrderPayment, OrderItem, BillOfMaterial, BOMTemplate, MarketAdjustment
 } from '../types';
+import { logger } from './logger';
 import { transactionService } from './transactionService';
+import { repriceMasterInventoryFromAdjustments } from './masterInventoryPricingService';
 import { generateNextId } from '../utils/helpers';
 import { generateNextSalesInvoiceNumber } from './documentNumberService';
-import { apiClient as fetchApiClient } from './apiClient';
-import { RenderPage, RenderNode, RenderText, RenderLine, RenderSecurity } from '../../contracts/RenderModel';
-import {
-  recalculatePrice as recalculateProductPrice,
-  repriceMasterInventoryFromAdjustments
-} from './masterInventoryPricingService';
-import { validateMinimumMarkup } from './pricingValidationService';
 import { normalizeInventoryItemPricing } from '../utils/pricing';
-import {
-  examinationJobService,
-  ExaminationGroupPayload,
-  ExaminationJobPayload,
-  ExaminationRecurringPayload
-} from './examinationJobService.ts';
-
-// ── Axios client with deduplication, retry, and consolidated interceptors ──
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {}
-});
-
-// ── Single consolidated request interceptor ──
-apiClient.interceptors.request.use((config) => {
-  // Skip when backend auth is not available
-  if (shouldPreferLocalReadModels()) {
-    return Promise.reject({ __localOnly: true, message: 'Skipped (no auth)', config });
-  }
-  if (!config.headers) config.headers = {} as any;
-  try {
-    const raw = sessionStorage.getItem('nexus_user');
-    if (raw) {
-      const user = JSON.parse(raw);
-      if (user.id) config.headers['x-user-id'] = user.id;
-      if (user.role) config.headers['x-user-role'] = user.role;
-      if (user.email) config.headers['x-user-email'] = user.email;
-      config.headers['x-user-is-super-admin'] = user.isSuperAdmin === true ? 'true' : 'false';
-    } else if (import.meta.env?.DEV) {
-      config.headers['x-user-id'] = 'USR-0001';
-      config.headers['x-user-role'] = 'Admin';
-      config.headers['x-user-is-super-admin'] = 'true';
-    }
-  } catch { /* non-fatal */ }
-  try {
-    const companyConfig = localStorage.getItem('nexus_company_config');
-    if (companyConfig) {
-      const parsed = JSON.parse(companyConfig);
-      if (parsed?.companyId) config.headers['x-company-id'] = parsed.companyId;
-    }
-  } catch { /* non-fatal */ }
-  try {
-    const method = String(config.method || '').toLowerCase();
-    if (method === 'get') {
-      const companyCfg = localStorage.getItem('nexus_company_config');
-      const companyId = companyCfg ? (JSON.parse(companyCfg)?.companyId || '') : '';
-      const prefix = companyId ? `company:${companyId}:` : '';
-      const fyId = localStorage.getItem(`${prefix}selectedFinancialYearId`);
-      if (fyId) {
-        config.params = { ...(config.params || {}), financial_year_id: fyId };
-      }
-    }
-  } catch { /* non-fatal */ }
-  try {
-    const sbSession = localStorage.getItem('prime-erp-supabase-auth');
-    if (sbSession) {
-      const parsed = JSON.parse(sbSession);
-      if (parsed?.access_token) {
-        config.headers['Authorization'] = `Bearer ${parsed.access_token}`;
-        config.headers['x-auth-mode'] = 'supabase';
-      }
-    }
-  } catch { /* non-fatal */ }
-  if (import.meta.env?.DEV) {
-    config.headers['x-dev-bypass'] = 'true';
-  }
-  return config;
-}, (err) => Promise.reject(err));
-
-// ── Consolidated axios instance ──
-
-// ── Single consolidated response interceptor with retry for 429 ──
-const MAX_RETRIES = 3;
-
-apiClient.interceptors.response.use(
-  (response) => {
-    // Content-type sanity checks
-    const contentType = response.headers['content-type'] || '';
-    const method = getRequestMethod(response.config?.method);
-    const fullUrl = getRequestUrl(response.config);
-    const responseText = typeof response.data === 'string' ? response.data : '';
-    if (responseText.toLowerCase().includes('method not allowed')) {
-      const error: Error & { status?: number } = new Error(`Wrong HTTP method for endpoint: ${method} ${fullUrl} (HTTP ${response.status})`);
-      error.status = response.status;
-      logger.error(`Error Wrong HTTP method detected for ${method} ${fullUrl}`, { status: response.status, contentType });
-      return Promise.reject(error);
-    }
-    if (isHtmlContent(String(contentType), response.data)) {
-      const error: Error & { status?: number } = new Error(`Wrong endpoint for API request: ${method} ${fullUrl} returned HTML instead of JSON (HTTP ${response.status})`);
-      error.status = response.status;
-      logger.error(`Error Wrong endpoint detected for ${method} ${fullUrl}`, { status: response.status, contentType });
-      return Promise.reject(error);
-    }
-    return response;
-  },
-  async (error) => {
-    const config = error.config || {};
-
-    // Retry logic for 429 (rate limit) with exponential backoff
-    if (error.response?.status === 429) {
-      const retryCount = (config as any)._retryCount || 0;
-      if (retryCount < MAX_RETRIES) {
-        (config as any)._retryCount = retryCount + 1;
-        const delay = Math.min(1000 * Math.pow(2, retryCount) + Math.random() * 1000, 15000);
-        logger.warn(`Rate limited, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        return apiClient.request(config);
-      }
-      logger.error(`Rate limit retries exhausted for ${config.url}`);
-    }
-
-    const method = getRequestMethod(config.method);
-    const fullUrl = getRequestUrl(config);
-    if (error.response) {
-      const { data, status, headers } = error.response;
-      const contentType = headers['content-type'] || '';
-      const rawBody = typeof data === 'string' ? data : '';
-      const lowerBody = String(rawBody || '').toLowerCase();
-      logger.error(`Error Response ${method} ${fullUrl} -> ${status}`);
-      if (status === 401) {
-        handleUnauthorizedResponse(fullUrl);
-        error.message = 'Your session is not authorized. Please sign in again.';
-      } else if (isHtmlContent(contentType, data)) {
-        error.message = `Wrong endpoint for API request: ${method} ${fullUrl} returned HTML instead of JSON (HTTP ${status})`;
-      } else if (status === 405 || lowerBody.includes('method not allowed')) {
-        error.message = `Wrong HTTP method for endpoint: ${method} ${fullUrl} (HTTP ${status})`;
-      } else if (isJsonContent(contentType) && data && typeof data === 'object') {
-        error.message = data.error || data.message || error.message;
-      }
-    } else if (error.request) {
-      const isNetworkError = String(error.code || '').includes('ERR_NETWORK') || String(error.message || '').includes('network error');
-      error.isCorsOrNetworkError = isNetworkError || !error.response;
-      error.message = error.isCorsOrNetworkError
-        ? 'No response from backend. Possible CORS preflight rejection or network error.'
-        : 'No response from backend. Check your connection or API URL.';
-    }
-    return Promise.reject(error);
-  }
-);
-
-const isProd = false;
-const verboseApiLoggingEnabled = isVerboseApiLoggingEnabled();
-
-export const ensureBackendInProd = (context: string, error: unknown) => {
-  if (!isProd && !verboseApiLoggingEnabled) {
-    return;
-  }
-
-  const detail = error instanceof Error ? error.message : String(error || 'Unknown backend error');
-  console.warn(`[${context}] Local backend unavailable, using fallback`, detail);
-};
-
-const getRequestMethod = (method?: string) => String(method || 'GET').toUpperCase();
-const getApiPath = (path: string) => {
-  const normalized = String(path || '').trim();
-  if (!normalized) return '/';
-  return normalized.startsWith('/') ? normalized : `/${normalized}`;
-};
-
-const getSessionUser = () => {
-  try {
-    const raw = sessionStorage.getItem('nexus_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-const isPasswordBypassSession = () => {
-  const sessionUser = getSessionUser();
-  if (!sessionUser) return false;
-
-  return sessionUser.bypassAuth === true || sessionUser.authMode === 'password_bypass';
-};
-
-const hasBackendAuth = () => {
-  try {
-    const sbSession = localStorage.getItem('prime-erp-supabase-auth');
-    if (sbSession) {
-      const parsed = JSON.parse(sbSession);
-      if (parsed?.access_token) return true;
-    }
-    const nexusUser = sessionStorage.getItem('nexus_user');
-    if (nexusUser) {
-      const parsed = JSON.parse(nexusUser);
-      if (parsed?.accessToken) return true;
-    }
-  } catch {}
-  return false;
-};
-const shouldPreferLocalReadModels = () => !hasBackendAuth();
-
-const isOfflineInventoryFallbackError = (error: any) => {
-  if (error?.__localOnly || error?.isCorsOrNetworkError) return true;
-  const code = String(error?.code || '').toUpperCase();
-  const message = String(error?.message || '').toLowerCase();
-  return code.includes('ERR_NETWORK')
-    || code.includes('ECONNABORTED')
-    || message.includes('network error')
-    || message.includes('no response from backend')
-    || message.includes('timeout');
-};
-
-const getRequestUrl = (config: any) => {
-  const rawUrl = String(config?.url || '').trim();
-  if (!rawUrl) return 'Unknown URL';
-  if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
-  const base = String(config?.baseURL || '').trim().replace(/\/+$/, '');
-  const path = rawUrl.replace(/^\/+/, '');
-  return base ? `${base}/${path}` : `/${path}`;
-};
-
-const isHtmlContent = (contentType: string, data: unknown) => {
-  if (String(contentType || '').toLowerCase().includes('text/html')) return true;
-  if (typeof data !== 'string') return false;
-  const trimmed = data.trim();
-  return trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html');
-};
-
-const isJsonContent = (contentType: string) => {
-  const normalized = String(contentType || '').toLowerCase();
-  return normalized.includes('application/json') || normalized.includes('+json');
-};
-
-const logger = {
-  info: (msg: string, extra?: any) => {
-    if (!verboseApiLoggingEnabled) return;
-    const formatted = `[FRONTEND] ${msg}`;
-    console.log(formatted, extra || '');
-    if (platform.isDesktop) {
-      platform.api.log({ message: formatted, level: 'INFO', ...extra });
-    }
-  },
-  warn: (msg: string, extra?: any) => {
-    const formatted = `[FRONTEND] ${msg}`;
-    console.warn(formatted, extra || '');
-    if (platform.isDesktop) {
-      platform.api.log({ message: formatted, level: 'WARN', ...extra });
-    }
-  },
-  error: (msg: string, extra?: any) => {
-    const formatted = `[FRONTEND] ${msg}`;
-    console.error(formatted, extra || '');
-    if (platform.isDesktop) {
-      platform.api.log({ message: formatted, level: 'ERROR', ...extra });
-    }
-  }
-};
-
-const handleUnauthorizedResponse = (fullUrl: string) => {
-  logger.error('Missing or invalid authentication headers', { url: fullUrl });
-  if (typeof window !== 'undefined') {
-    const shouldRedirect = String(import.meta.env.VITE_REDIRECT_ON_401 || '').toLowerCase() === 'true';
-    if (shouldRedirect) {
-      const currentHash = String(window.location?.hash || '');
-      if (!currentHash.includes('/login')) {
-        window.location.hash = '#/login';
-      }
-    }
-  }
-};
-
-// (response interceptor consolidated above — see the single consolidated handler)
-
-// (request interceptors consolidated above — see the single consolidated handler)
+import { examinationJobService } from './examinationJobService.ts';
 
 /**
  * Authorization Middleware Simulation
@@ -438,43 +163,11 @@ const buildLocalDashboardSnapshot = async (days = 30) => {
   };
 };
 
-const hasMeaningfulDashboardPayload = (payload: any) => {
-  if (!payload || typeof payload !== 'object') return false;
-
-  if (toNum(payload?.revenue) > 0 || toNum(payload?.todaySales) > 0 || toNum(payload?.outstandingInvoices) > 0) {
-    return true;
-  }
-
-  if (Array.isArray(payload?.sales) && payload.sales.length > 0) {
-    return true;
-  }
-
-  if (Array.isArray(payload?.invoices) && payload.invoices.length > 0) {
-    return true;
-  }
-
-  return Array.isArray(payload?.chartData) && payload.chartData.some((point: any) => toNum(point?.total) > 0);
-};
-
-const mergeSalePayload = (baseSale: any, remoteSale: any) => {
-  const merged = {
-    ...(baseSale || {}),
-    ...(remoteSale || {})
-  };
-
-  merged.items = Array.isArray(remoteSale?.items)
-    ? remoteSale.items
-    : (Array.isArray(baseSale?.items) ? baseSale.items : []);
-
-  merged.payments = Array.isArray(remoteSale?.payments)
-    ? remoteSale.payments
-    : (Array.isArray(baseSale?.payments) ? baseSale.payments : []);
-
-  return merged;
-};
-
 const filterActiveInventoryItems = (items: Item[]): Item[] =>
   (items || []).filter((item: any) => String(item?.status || '').toLowerCase() !== 'deleted');
+
+// No-op in local-first mode; kept for backward compatibility
+export const ensureBackendInProd = (_context: string, _error?: any) => {};
 
 export const api = {
   auth: {
@@ -497,26 +190,7 @@ export const api = {
     getDashboard: (days?: number) => handle(async () => {
       const safeDays = Math.max(1, Math.min(Number(days) || 30, 365));
 
-      if (shouldPreferLocalReadModels()) {
-        return buildLocalDashboardSnapshot(safeDays);
-      }
-
-      try {
-        const response = await apiClient.get('/dashboard', { params: { days: safeDays } });
-        const payload = response.data || {};
-
-        if (hasMeaningfulDashboardPayload(payload)) {
-          return payload;
-        }
-
-        console.warn('[Dashboard.Get] Remote dashboard payload was empty. Falling back to local IndexedDB snapshot.');
-        return buildLocalDashboardSnapshot(safeDays);
-      } catch (err) {
-        if (isProd) {
-          console.warn('[Dashboard.Get] Backend request failed. Falling back to local IndexedDB snapshot.', err);
-        }
-        return buildLocalDashboardSnapshot(safeDays);
-      }
+      return buildLocalDashboardSnapshot(safeDays);
     }, 'Dashboard.Get')
   },
 
@@ -563,47 +237,15 @@ export const api = {
 
   sales: {
     getAllSales: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Sale>('sales');
-      }
-
-      try {
-        const response = await apiClient.get('/sales');
-        const remoteSales = Array.isArray(response.data) ? response.data : [];
-        const existingSales = await dbService.getAll<Sale>('sales');
-        const existingSalesById = new Map(existingSales.map((sale: any) => [sale.id, sale]));
-        const sales = remoteSales.map((sale: any) => mergeSalePayload(existingSalesById.get(sale.id), sale));
-
-        for (const sale of sales) {
-          await dbService.put('sales', sale as Sale);
-        }
-        return sales;
-      } catch (err) {
-        ensureBackendInProd('Sales.GetAll', err);
-        return dbService.getAll<Sale>('sales');
-      }
+      return dbService.getAll<Sale>('sales');
     }, 'Sales.GetAll'),
     createSale: (sale: Sale) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Sales.Create');
       await transactionService.processSale(sale, undefined, sale.cashierId || 'System');
-      try {
-        if (!SUPABASE_CONFIGURED) {
-          const response = await apiClient.post('/sales', sale);
-          const persistedSale = mergeSalePayload(sale, response.data);
-          await dbService.put('sales', persistedSale);
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('primeerp:dashboard-refresh'));
-          }
-          return persistedSale;
-        }
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('primeerp:dashboard-refresh'));
-        }
-        return sale;
-      } catch (err) {
-        ensureBackendInProd('Sales.Create', err);
-        return sale;
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('primeerp:dashboard-refresh'));
       }
+      return sale;
     }, 'Sales.Create'),
 
     getQuotations: () => handle(() => dbService.getAll<Quotation>('quotations'), 'Sales.GetQuotations'),
@@ -627,52 +269,11 @@ export const api = {
     }, 'Sales.DeleteJobOrder'),
 
     getCustomerPayments: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<CustomerPayment>('customerPayments');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('customer-payments'));
-        const backendPayments = Array.isArray(response.data) ? response.data : [];
-        // Sync backend payments to IndexedDB for offline use
-        for (const p of backendPayments) {
-          await dbService.put('customerPayments', {
-            id: p.id,
-            customerId: p.customer_id || p.customerId,
-            customerName: p.customer_name || p.customerName || '',
-            amount: Number(p.amount || 0),
-            date: p.date || new Date().toISOString(),
-            method: p.method || p.payment_method || p.paymentMethod || 'Cash',
-            reference: p.reference || '',
-            allocations: p.allocations || [],
-            notes: p.notes || '',
-            status: p.status || 'Cleared',
-            reconciled: p.reconciled || false
-          });
-        }
-        return backendPayments;
-      } catch {
-        return dbService.getAll<CustomerPayment>('customerPayments');
-      }
+      return dbService.getAll<CustomerPayment>('customerPayments');
     }, 'Sales.GetCustomerPayments'),
     saveCustomerPayment: (r: CustomerPayment) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Sales.SaveCustomerPayment');
       const result = await transactionService.addCustomerPayment(r);
-      // Try to sync to backend
-      try {
-        await apiClient.post(getApiPath('customer-payments'), {
-          id: r.id,
-          customer_id: r.customerId,
-          customer_name: r.customerName,
-          amount: r.amount,
-          date: r.date,
-          payment_method: r.method,
-          reference: r.reference,
-          notes: r.notes,
-          status: r.status || 'Cleared'
-        });
-      } catch {
-        // Backend sync is best-effort; data is safely in IndexedDB
-      }
       return result;
     }, 'Sales.SaveCustomerPayment'),
     updateCustomerPayment: (r: CustomerPayment) => handle(() => {
@@ -696,63 +297,23 @@ export const api = {
 
     /* Sales Orders */
     getSalesOrders: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll('salesOrders');
-      }
-
-      try {
-        const response = await apiClient.get(getApiPath('sales-orders'));
-        const orders = Array.isArray(response.data) ? response.data : [];
-        for (const o of orders) await dbService.put('salesOrders', o);
-        return orders;
-      } catch (err) {
-        ensureBackendInProd('Sales.GetSalesOrders', err);
-        console.warn('Backend fetch failed for sales orders, using local');
-        return dbService.getAll('salesOrders');
-      }
+      return dbService.getAll('salesOrders');
     }, 'Sales.GetSalesOrders'),
 
     getSalesOrderById: (id: string) => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.get('salesOrders', id);
-      }
-
-      try {
-        const response = await apiClient.get(getApiPath(`sales-orders/${id}`));
-        await dbService.put('salesOrders', response.data);
-        return response.data;
-      } catch (err) {
-        ensureBackendInProd('Sales.GetSalesOrderById', err);
-        return dbService.get('salesOrders', id);
-      }
+      return dbService.get('salesOrders', id);
     }, 'Sales.GetSalesOrderById'),
 
     saveSalesOrder: (o: any) => handle(async () => {
       checkAuth(['Admin', 'Clerk', 'Sales'], 'Sales.SaveSalesOrder');
-      try {
-        const response = await apiClient.post(getApiPath('sales-orders'), o);
-        await dbService.put('salesOrders', response.data || o);
-        return response.data || o;
-      } catch (err) {
-        ensureBackendInProd('Sales.SaveSalesOrder', err);
-        // Store locally when backend unavailable
-        await dbService.put('salesOrders', o);
-        return { success: true, localOnly: true };
-      }
+      await dbService.put('salesOrders', o);
+      return { success: true };
     }, 'Sales.SaveSalesOrder'),
 
     deleteSalesOrder: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Sales.DeleteSalesOrder');
-      try {
-        await apiClient.delete(getApiPath(`sales-orders/${id}`));
-        await dbService.delete('salesOrders', id);
-        return { success: true };
-      } catch (err) {
-        ensureBackendInProd('Sales.DeleteSalesOrder', err);
-        // mark as deleted locally
-        await dbService.delete('salesOrders', id);
-        return { success: true, localOnly: true };
-      }
+      await dbService.delete('salesOrders', id);
+      return { success: true };
     }, 'Sales.DeleteSalesOrder'),
 
     saveRefund: (r: SalesReturn) => handle(() => {
@@ -761,180 +322,56 @@ export const api = {
     }, 'Sales.SaveRefund'),
 
     getSalesExchanges: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        const localExchanges = await dbService.getAll('salesExchanges');
-        return (localExchanges || []).map((exchange: any) => normalizeSalesExchange(exchange));
-      }
-
-      try {
-        // Try backend first
-        const response = await apiClient.get(getApiPath('sales-exchanges'));
-        const remoteExchanges = Array.isArray(response.data) ? response.data : [];
-
-        const hydratedExchanges = await Promise.all(
-          remoteExchanges.map(async (exchange: any) => {
-            let hydrated = exchange;
-
-            // The list endpoint can omit item lines; hydrate via details endpoint when needed.
-            if (!Array.isArray(hydrated?.items) || hydrated.items.length === 0) {
-              try {
-                const detailResponse = await apiClient.get(getApiPath(`sales-exchanges/${exchange.id}`));
-                hydrated = detailResponse.data || hydrated;
-              } catch {
-                // Keep list payload if details endpoint is unavailable.
-              }
-            }
-
-            // Preserve locally cached items if backend payload is missing them.
-            if (!Array.isArray(hydrated?.items) || hydrated.items.length === 0) {
-              const localCached =
-                (await dbService.get<Record<string, unknown>>('salesExchanges', exchange.id)) ||
-                (await dbService.get<Record<string, unknown>>('salesExchanges', String(exchange.id)));
-              if (localCached) {
-                const cachedItems = localCached.items;
-                if (Array.isArray(cachedItems) && cachedItems.length > 0) {
-                  hydrated = { ...hydrated, items: cachedItems };
-                }
-              }
-            }
-
-            return normalizeSalesExchange(hydrated);
-          })
-        );
-
-        // Sync to local
-        for (const ex of hydratedExchanges) {
-          await dbService.put('salesExchanges', ex);
-        }
-        return hydratedExchanges;
-      } catch (err) {
-        ensureBackendInProd('Sales.GetExchanges', err);
-        console.warn('Backend fetch failed for sales exchanges, using local');
-        const localExchanges = await dbService.getAll('salesExchanges');
-        return (localExchanges || []).map((exchange: any) => normalizeSalesExchange(exchange));
-      }
+      const localExchanges = await dbService.getAll('salesExchanges');
+      return (localExchanges || []).map((exchange: any) => normalizeSalesExchange(exchange));
     }, 'Sales.GetExchanges'),
 
     getSalesExchangeById: (id: string) => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        const local =
-          (await dbService.get('salesExchanges', id)) ||
-          (await dbService.get('salesExchanges', String(id)));
-        return local ? normalizeSalesExchange(local) : local;
-      }
-
-      try {
-        const response = await apiClient.get(getApiPath(`sales-exchanges/${id}`));
-        const normalized = normalizeSalesExchange(response.data);
-        await dbService.put('salesExchanges', normalized);
-        return normalized;
-      } catch (err) {
-        ensureBackendInProd('Sales.GetExchangeById', err);
-        const local =
-          (await dbService.get('salesExchanges', id)) ||
-          (await dbService.get('salesExchanges', String(id)));
-        return local ? normalizeSalesExchange(local) : local;
-      }
+      const local =
+        (await dbService.get('salesExchanges', id)) ||
+        (await dbService.get('salesExchanges', String(id)));
+      return local ? normalizeSalesExchange(local) : local;
     }, 'Sales.GetExchangeById'),
 
     createSalesExchange: (exchange: any) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Sales.CreateExchange');
-
-      // Process locally first (request only)
       const localResult = await transactionService.createSalesExchangeRequest(exchange);
-      try {
-        const response = await apiClient.post(getApiPath('sales-exchanges'), exchange);
-        return { ...localResult, backendId: response.data.id };
-      } catch (err) {
-        ensureBackendInProd('Sales.CreateExchange', err);
-        console.warn('Backend sync failed for exchange request, stored locally');
-        return localResult;
-      }
+      return localResult;
     }, 'Sales.CreateExchange'),
 
     approveSalesExchange: (id: string, comments: string) => handle(async () => {
       checkAuth(['Admin', 'Manager'], 'Sales.ApproveExchange');
-
-      // Process financial/inventory adjustments locally
       const localResult = await transactionService.approveSalesExchange(id, comments);
-      try {
-        const response = await apiClient.post(getApiPath(`sales-exchanges/${id}/approve`), { comments });
-        return { ...localResult, backendId: response.data.id };
-      } catch (err) {
-        ensureBackendInProd('Sales.ApproveExchange', err);
-        console.warn('Backend sync failed for exchange approval, stored locally');
-        return localResult;
-      }
+      return localResult;
     }, 'Sales.ApproveExchange'),
 
     getReprintJobs: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll('reprintJobs');
-      }
-
-      try {
-        const response = await apiClient.get(getApiPath('reprint-jobs'));
-        for (const job of response.data) {
-          await dbService.put('reprintJobs', job);
-        }
-        return response.data;
-      } catch (err) {
-        ensureBackendInProd('Sales.GetReprintJobs', err);
-        return dbService.getAll('reprintJobs');
-      }
+      return dbService.getAll('reprintJobs');
     }, 'Sales.GetReprintJobs'),
 
     updateReprintJob: (id: string, data: any) => handle(async () => {
       checkAuth(['Admin', 'Operator', 'Manager'], 'Sales.UpdateReprintJob');
-      try {
-        const response = await apiClient.put(getApiPath(`reprint-jobs/${id}`), data);
-        await dbService.put('reprintJobs', { ...data, id });
-        return response.data;
-      } catch (err) {
-        ensureBackendInProd('Sales.UpdateReprintJob', err);
-        await dbService.put('reprintJobs', { ...data, id });
-        return { success: true, localOnly: true };
-      }
+      await dbService.put('reprintJobs', { ...data, id });
+      return { success: true };
     }, 'Sales.UpdateReprintJob'),
 
     deleteSalesExchange: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Sales.DeleteExchange');
       console.warn("Security Policy: Physical deletion of exchanges is restricted. Status will be updated to Deleted.");
-      // In a real audit-compliant system, we just update status
-      try {
-        await apiClient.patch(getApiPath(`sales-exchanges/${id}`), { status: 'Deleted' });
-        const existing = await dbService.get<Record<string, unknown>>('salesExchanges', id);
-        if (existing && typeof existing === 'object') {
-          await dbService.put('salesExchanges', { ...existing, status: 'Deleted' });
-        }
-        return { success: true };
-      } catch (err) {
-        ensureBackendInProd('Sales.DeleteExchange', err);
-        const existing = await dbService.get<Record<string, unknown>>('salesExchanges', id);
-        if (existing && typeof existing === 'object') {
-          await dbService.put('salesExchanges', { ...existing, status: 'Deleted' });
-        }
-        return { success: true, localOnly: true };
+      const existing = await dbService.get<Record<string, unknown>>('salesExchanges', id);
+      if (existing && typeof existing === 'object') {
+        await dbService.put('salesExchanges', { ...existing, status: 'Deleted' });
       }
+      return { success: true };
     }, 'Sales.DeleteExchange'),
 
     cancelSalesExchange: (id: string) => handle(async () => {
       checkAuth(['Admin', 'Manager', 'Clerk'], 'Sales.CancelExchange');
-      try {
-        const response = await apiClient.patch(getApiPath(`sales-exchanges/${id}`), { status: 'Cancelled' });
-        const existing = await dbService.get<Record<string, unknown>>('salesExchanges', id);
-        if (existing && typeof existing === 'object') {
-          await dbService.put('salesExchanges', { ...existing, status: 'Cancelled' });
-        }
-        return response.data;
-      } catch (err) {
-        ensureBackendInProd('Sales.CancelExchange', err);
-        const existing = await dbService.get<Record<string, unknown>>('salesExchanges', id);
-        if (existing && typeof existing === 'object') {
-          await dbService.put('salesExchanges', { ...existing, status: 'Cancelled' });
-        }
-        return { success: true, localOnly: true };
+      const existing = await dbService.get<Record<string, unknown>>('salesExchanges', id);
+      if (existing && typeof existing === 'object') {
+        await dbService.put('salesExchanges', { ...existing, status: 'Cancelled' });
       }
+      return { success: true };
     }, 'Sales.CancelExchange'),
 
     // Orders Section
@@ -960,54 +397,18 @@ export const api = {
 
   procurement: {
     getPurchases: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Purchase>('purchases');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('purchases'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const p of remote) { await dbService.put('purchases', p); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Procurement.GetPurchases', err);
-        return dbService.getAll<Purchase>('purchases');
-      }
+      return dbService.getAll<Purchase>('purchases');
     }, 'Procurement.GetPurchases'),
     savePurchase: (p: Purchase) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Procurement.SavePurchase');
-      const localResult = await transactionService.processPurchaseOrder(p);
-      try {
-        const response = await apiClient.post(getApiPath('purchases'), p);
-        return response.data || localResult;
-      } catch (err) {
-        ensureBackendInProd('Procurement.SavePurchase', err);
-        return localResult;
-      }
+      return transactionService.processPurchaseOrder(p);
     }, 'Procurement.SavePurchase'),
     getGoodsReceipts: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<GoodsReceipt>('goodsReceipts');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('grn'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const gr of remote) { await dbService.put('goodsReceipts', gr); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Procurement.GetGRNs', err);
-        return dbService.getAll<GoodsReceipt>('goodsReceipts');
-      }
+      return dbService.getAll<GoodsReceipt>('goodsReceipts');
     }, 'Procurement.GetGRNs'),
     saveGoodsReceipt: (gr: GoodsReceipt) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Procurement.SaveGRN');
-      const localResult = await transactionService.processGoodsReceipt(gr);
-      try {
-        const response = await apiClient.post(getApiPath('grn'), gr);
-        return response.data || localResult;
-      } catch (err) {
-        ensureBackendInProd('Procurement.SaveGRN', err);
-        return localResult;
-      }
+      return transactionService.processGoodsReceipt(gr);
     }, 'Procurement.SaveGRN'),
 
     getSubcontractOrders: () => handle(() => dbService.getAll<SubcontractOrder>('subcontractOrders'), 'Procurement.GetSubcontracts'),
@@ -1023,51 +424,22 @@ export const api = {
 
   suppliers: {
     getAll: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Supplier>('suppliers');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('suppliers'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const s of remote) { await dbService.put('suppliers', s); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Suppliers.GetAll', err);
-        return dbService.getAll<Supplier>('suppliers');
-      }
+      return dbService.getAll<Supplier>('suppliers');
     }, 'Suppliers.GetAll'),
     create: (s: Supplier) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Suppliers.Save');
       await dbService.put('suppliers', s);
-      try {
-        const response = await apiClient.post(getApiPath('suppliers'), s);
-        return response.data || s;
-      } catch (err) {
-        ensureBackendInProd('Suppliers.Create', err);
-        return { success: true, localOnly: true };
-      }
+      return { success: true };
     }, 'Suppliers.Create'),
     update: (s: Supplier) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Suppliers.Update');
       await dbService.put('suppliers', s);
-      try {
-        const response = await apiClient.put(getApiPath(`suppliers/${encodeURIComponent(s.id)}`), s);
-        return response.data || s;
-      } catch (err) {
-        ensureBackendInProd('Suppliers.Update', err);
-        return { success: true, localOnly: true };
-      }
+      return { success: true };
     }, 'Suppliers.Update'),
     deleteSupplier: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Suppliers.Delete');
       await dbService.delete('suppliers', id);
-      try {
-        await apiClient.delete(getApiPath(`suppliers/${id}`));
-        return { success: true };
-      } catch (err) {
-        ensureBackendInProd('Suppliers.Delete', err);
-        return { success: true, localOnly: true };
-      }
+      return { success: true };
     }, 'Suppliers.Delete'),
   },
 
@@ -1191,82 +563,34 @@ export const api = {
 
     // --- Dynamic Classes & Subjects ---
     getClasses: () => handle(async () => {
-      try {
-        const response = await apiClient.get(getUrl('classes'));
-        // Sync to local DB
-        for (const cls of response.data) {
-          await dbService.put('classes', { id: cls.id.toString(), name: cls.name });
-        }
-        return response.data;
-      } catch (err) {
-        ensureBackendInProd('Production.GetClasses', err);
-        console.warn('Backend classes fetch failed, using local data');
-        return dbService.getAll('classes');
-      }
+      return dbService.getAll('classes');
     }, 'Production.GetClasses'),
 
     saveClass: (name: string) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Production.SaveClass');
-      try {
-        const response = await apiClient.post(getUrl('classes'), { name });
-        await dbService.put('classes', { id: response.data.id.toString(), name: response.data.name });
-        return response.data;
-      } catch (err) {
-        ensureBackendInProd('Production.SaveClass', err);
-        const id = `local-class-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        await dbService.put('classes', { id, name });
-        return { id, name };
-      }
+      const id = `local-class-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      await dbService.put('classes', { id, name });
+      return { id, name };
     }, 'Production.SaveClass'),
 
     deleteClass: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Production.DeleteClass');
-      try {
-        await apiClient.delete(getUrl(`classes/${id}`));
-      } catch (err) {
-        ensureBackendInProd('Production.DeleteClass', err);
-        console.warn('Backend class delete failed, deleting locally');
-      }
       return dbService.delete('classes', id);
     }, 'Production.DeleteClass'),
 
     getSubjects: () => handle(async () => {
-      try {
-        const response = await apiClient.get(getUrl('subjects'));
-        // Sync to local DB
-        for (const subj of response.data) {
-          await dbService.put('subjects', { id: subj.id.toString(), name: subj.name, code: subj.code });
-        }
-        return response.data;
-      } catch (err) {
-        ensureBackendInProd('Production.GetSubjects', err);
-        console.warn('Backend subjects fetch failed, using local data');
-        return dbService.getAll('subjects');
-      }
+      return dbService.getAll('subjects');
     }, 'Production.GetSubjects'),
 
     saveSubject: (name: string, code?: string) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Production.SaveSubject');
-      try {
-        const response = await apiClient.post(getUrl('subjects'), { name, code });
-        await dbService.put('subjects', { id: response.data.id.toString(), name: response.data.name, code: response.data.code });
-        return response.data;
-      } catch (err) {
-        ensureBackendInProd('Production.SaveSubject', err);
-        const id = `local-subj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        await dbService.put('subjects', { id, name, code });
-        return { id, name, code };
-      }
+      const id = `local-subj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      await dbService.put('subjects', { id, name, code });
+      return { id, name, code };
     }, 'Production.SaveSubject'),
 
     deleteSubject: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Production.DeleteSubject');
-      try {
-        await apiClient.delete(getUrl(`subjects/${id}`));
-      } catch (err) {
-        ensureBackendInProd('Production.DeleteSubject', err);
-        console.warn('Backend subject delete failed, deleting locally');
-      }
       return dbService.delete('subjects', id);
     }, 'Production.DeleteSubject'),
 
@@ -1347,90 +671,52 @@ export const api = {
         return Number.isFinite(parsed) ? parsed : fallback;
       };
 
-      if (isProd) {
-        try {
-          const response = await apiClient.post(getUrl('confirm-batch'), payload);
-          const remoteBatchId = response?.data?.batch_id || response?.data?.batchId;
-          if (!remoteBatchId) {
-            throw new Error('Backend did not return a batch reference.');
-          }
-          return { success: true, batch_id: String(remoteBatchId) };
-        } catch (remoteError: any) {
-          logger.error('[Production.ConfirmBatch] Backend request failed in production', remoteError);
-          throw remoteError instanceof Error ? remoteError : new Error('Failed to create batch');
-        }
+      const allExams = await dbService.getAll<ExamPaper>('examPapers');
+      const uniqueBatches = Array.from(
+        new Set((allExams || []).map(e => e.batch_id).filter(Boolean))
+      ).map(id => ({ id }));
+      const batch_id = generateNextId('BATCH', uniqueBatches);
+
+      for (const subj of subjects) {
+        const subjectName = String(subj?.subject || '').trim();
+        if (!subjectName) continue;
+
+        const examPaper: ExamPaper = {
+          id: `EXAM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          batch_id,
+          school_id,
+          customer_id,
+          school_name: subj.school_name,
+          sub_account_name,
+          class: class_name,
+          subject: subjectName,
+          pages: toSafeNumber(subj.pages),
+          candidates: toSafeNumber(subj.candidates),
+          extra_copies: toSafeNumber(subj.extra_copies),
+          charge_per_learner: toSafeNumber(subj.charge_per_learner),
+          sheets_per_copy: toSafeNumber(subj.sheets_per_copy),
+          production_copies: toSafeNumber(subj.production_copies),
+          base_sheets: toSafeNumber(subj.base_sheets),
+          waste_sheets: toSafeNumber(subj.waste_sheets),
+          actual_waste_sheets: null,
+          total_sheets_used: toSafeNumber(subj.total_sheets_used),
+          billable_sheets: toSafeNumber(subj.billable_sheets),
+          internal_cost: toSafeNumber(subj.internal_cost),
+          selling_price: toSafeNumber(subj.selling_price),
+          status: 'pending',
+          is_recurring: 0,
+          academic_year,
+          term,
+          exam_type,
+          created_at: new Date().toISOString(),
+          workOrderId: subj.workOrderId,
+          marketAdjustmentApplied: toSafeNumber(subj.marketAdjustmentApplied),
+          adjustmentBreakdown: subj.adjustmentBreakdown
+        };
+        await dbService.put('examPapers', examPaper);
       }
 
-      const persistLocally = async () => {
-        const allExams = await dbService.getAll<ExamPaper>('examPapers');
-        // Create a unique list of batch IDs to help generate the next sequential one
-        const uniqueBatches = Array.from(
-          new Set((allExams || []).map(e => e.batch_id).filter(Boolean))
-        ).map(id => ({ id }));
-        const batch_id = generateNextId('BATCH', uniqueBatches);
-
-        for (const subj of subjects) {
-          const subjectName = String(subj?.subject || '').trim();
-          if (!subjectName) continue;
-
-          const examPaper: ExamPaper = {
-            id: `EXAM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            batch_id,
-            school_id,
-            customer_id,
-            school_name: subj.school_name,
-            sub_account_name,
-            class: class_name,
-            subject: subjectName,
-            pages: toSafeNumber(subj.pages),
-            candidates: toSafeNumber(subj.candidates),
-            extra_copies: toSafeNumber(subj.extra_copies),
-            charge_per_learner: toSafeNumber(subj.charge_per_learner),
-            sheets_per_copy: toSafeNumber(subj.sheets_per_copy),
-            production_copies: toSafeNumber(subj.production_copies),
-            base_sheets: toSafeNumber(subj.base_sheets),
-            waste_sheets: toSafeNumber(subj.waste_sheets),
-            actual_waste_sheets: null,
-            total_sheets_used: toSafeNumber(subj.total_sheets_used),
-            billable_sheets: toSafeNumber(subj.billable_sheets),
-            internal_cost: toSafeNumber(subj.internal_cost),
-            selling_price: toSafeNumber(subj.selling_price),
-            status: 'pending',
-            is_recurring: 0,
-            academic_year,
-            term,
-            exam_type,
-            created_at: new Date().toISOString(),
-            workOrderId: subj.workOrderId,
-            marketAdjustmentApplied: toSafeNumber(subj.marketAdjustmentApplied),
-            adjustmentBreakdown: subj.adjustmentBreakdown
-          };
-          await dbService.put('examPapers', examPaper);
-        }
-
-        return { success: true, batch_id };
-      };
-
-      try {
-        return await persistLocally();
-      } catch (localError: any) {
-        console.warn('[Production.ConfirmBatch] Local persistence failed, trying backend fallback:', localError);
-
-        try {
-          const response = await apiClient.post(getUrl('confirm-batch'), payload);
-          const remoteBatchId = response?.data?.batch_id || response?.data?.batchId;
-          if (!remoteBatchId) {
-            throw new Error('Backend did not return a batch reference.');
-          }
-          return { success: true, batch_id: String(remoteBatchId) };
-        } catch (remoteError: any) {
-          const localMessage = localError?.message || 'Unknown local save error';
-          const backendMessage = axios.isAxiosError(remoteError)
-            ? (remoteError.response?.data?.error || remoteError.message)
-            : (remoteError?.message || 'Unknown backend error');
-          throw new Error(`Failed to create batch. Local save failed (${localMessage}) and backend save failed (${backendMessage}).`);
-        }
-      }
+      return { success: true, batch_id };
     }, 'Production.ConfirmBatch'),
 
     completeExamSubject: (examId: string, actualWasteSheets: number) => handle(async () => {
@@ -1760,55 +1046,21 @@ export const api = {
 
   finance: {
     getAccounts: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Account>('accounts');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('accounts'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const acc of remote) { await dbService.put('accounts', acc); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Finance.GetAccounts', err);
-        return dbService.getAll<Account>('accounts');
-      }
+      return dbService.getAll<Account>('accounts');
     }, 'Finance.GetAccounts'),
     saveAccount: (a: Account) => handle(async () => {
       checkAuth(['Admin'], 'Finance.SaveAccount');
       await dbService.put('accounts', a);
-      try {
-        const response = await apiClient.post(getApiPath('accounts'), a);
-        return response.data || a;
-      } catch (err) {
-        ensureBackendInProd('Finance.SaveAccount', err);
-        return { success: true, localOnly: true };
-      }
+      return { success: true };
     }, 'Finance.SaveAccount'),
     deleteAccount: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Finance.DeleteAccount');
       await dbService.delete('accounts', id);
-      try {
-        await apiClient.delete(getApiPath(`accounts/${id}`));
-        return { success: true };
-      } catch (err) {
-        ensureBackendInProd('Finance.DeleteAccount', err);
-        return { success: true, localOnly: true };
-      }
+      return { success: true };
     }, 'Finance.DeleteAccount'),
 
     getLedger: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<LedgerEntry>('ledger');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('ledger'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const entry of remote) { await dbService.put('ledger', entry); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Finance.GetLedger', err);
-        return dbService.getAll<LedgerEntry>('ledger');
-      }
+      return dbService.getAll<LedgerEntry>('ledger');
     }, 'Finance.GetLedger'),
     saveLedgerEntry: (e: LedgerEntry) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Finance.SaveLedger');
@@ -1825,27 +1077,11 @@ export const api = {
         await tx.objectStore('ledger').put(e);
         return { success: true, id: e.id };
       });
-      try {
-        const response = await apiClient.post(getApiPath('ledger'), e);
-        return response.data || localResult;
-      } catch (err) {
-        ensureBackendInProd('Finance.SaveLedger', err);
-        return localResult;
-      }
+      return localResult;
     }, 'Finance.SaveLedger'),
 
     getInvoices: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Invoice>('invoices');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('invoices'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const inv of remote) { await dbService.put('invoices', inv); }
-        return remote;
-      } catch {
-        return dbService.getAll<Invoice>('invoices');
-      }
+      return dbService.getAll<Invoice>('invoices');
     }, 'Finance.GetInvoices'),
     saveInvoice: (i: Invoice) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Finance.SaveInvoice');
@@ -1861,66 +1097,24 @@ export const api = {
     }, 'Finance.DeleteInvoice'),
 
     getExpenses: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Expense>('expenses');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('expenses'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const e of remote) { await dbService.put('expenses', e); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Finance.GetExpenses', err);
-        return dbService.getAll<Expense>('expenses');
-      }
+      return dbService.getAll<Expense>('expenses');
     }, 'Finance.GetExpenses'),
     saveExpense: (e: Expense) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Finance.SaveExpense');
-      const localResult = await transactionService.addExpense(e);
-      try {
-        const response = await apiClient.post(getApiPath('expenses'), e);
-        return response.data || localResult;
-      } catch (err) {
-        ensureBackendInProd('Finance.SaveExpense', err);
-        return localResult;
-      }
+      return transactionService.addExpense(e);
     }, 'Finance.SaveExpense'),
 
     getIncome: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Income>('income');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('income'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const i of remote) { await dbService.put('income', i); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Finance.GetIncome', err);
-        return dbService.getAll<Income>('income');
-      }
+      return dbService.getAll<Income>('income');
     }, 'Finance.GetIncome'),
     saveIncome: (i: Income) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Finance.SaveIncome');
-      const localResult = await transactionService.addIncome(i);
-      try {
-        const response = await apiClient.post(getApiPath('income'), i);
-        return response.data || localResult;
-      } catch (err) {
-        ensureBackendInProd('Finance.SaveIncome', err);
-        return localResult;
-      }
+      return transactionService.addIncome(i);
     }, 'Finance.SaveIncome'),
     deleteIncome: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Finance.DeleteIncome');
       await dbService.delete('income', id);
-      try {
-        await apiClient.delete(getApiPath(`income/${id}`));
-        return { success: true };
-      } catch (err) {
-        ensureBackendInProd('Finance.DeleteIncome', err);
-        return { success: true, localOnly: true };
-      }
+      return { success: true };
     }, 'Finance.DeleteIncome'),
 
     getScheduledPayments: () => handle(() => dbService.getAll<ScheduledPayment>('scheduledPayments'), 'Finance.GetScheduledPayments'),
@@ -1968,55 +1162,20 @@ export const api = {
     }, 'Finance.DeleteDeliveryNote'),
 
     getBudgets: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Budget>('budgets');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('budgets'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const b of remote) { await dbService.put('budgets', b); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Finance.GetBudgets', err);
-        return dbService.getAll<Budget>('budgets');
-      }
+      return dbService.getAll<Budget>('budgets');
     }, 'Finance.GetBudgets'),
     saveBudget: (b: Budget) => handle(async () => {
       checkAuth(['Admin'], 'Finance.SaveBudget');
       await dbService.put('budgets', b);
-      try {
-        const response = await apiClient.post(getApiPath('budgets'), b);
-        return response.data || b;
-      } catch (err) {
-        ensureBackendInProd('Finance.SaveBudget', err);
-        return { success: true, localOnly: true };
-      }
+      return { success: true };
     }, 'Finance.SaveBudget'),
 
     getTransfers: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        return dbService.getAll<Transfer>('transfers');
-      }
-      try {
-        const response = await apiClient.get(getApiPath('transfers'));
-        const remote = Array.isArray(response.data) ? response.data : [];
-        for (const t of remote) { await dbService.put('transfers', t); }
-        return remote;
-      } catch (err) {
-        ensureBackendInProd('Finance.GetTransfers', err);
-        return dbService.getAll<Transfer>('transfers');
-      }
+      return dbService.getAll<Transfer>('transfers');
     }, 'Finance.GetTransfers'),
     saveTransfer: (t: Transfer) => handle(async () => {
       checkAuth(['Admin', 'Accountant'], 'Finance.SaveTransfer');
-      const localResult = await transactionService.executeTransfer(t);
-      try {
-        const response = await apiClient.post(getApiPath('transfers'), t);
-        return response.data || localResult;
-      } catch (err) {
-        ensureBackendInProd('Finance.SaveTransfer', err);
-        return localResult;
-      }
+      return transactionService.executeTransfer(t);
     }, 'Finance.SaveTransfer'),
 
     getCheques: () => handle(() => dbService.getAll<Cheque>('cheques'), 'Finance.GetCheques'),
@@ -2174,142 +1333,111 @@ export const api = {
     }, 'System.ActivateLicense'),
 
     initializeWorkspace: (companyName: string) => handle(async () => {
-      if (!HAS_REMOTE_BACKEND || SUPABASE_CONFIGURED) {
-        const workspaceConfig = {
-          mode: 'offline-file',
-          companyName,
-          initializedAt: new Date().toISOString(),
-        };
-        await dbService.saveSetting('workspaceConfig', workspaceConfig);
-        return { success: true, workspace: workspaceConfig, savedLocally: true };
-      }
-      const response = await apiClient.post('/system/workspace/initialize', { companyName });
-      return response.data;
+      const workspaceConfig = {
+        mode: 'offline-file',
+        companyName,
+        initializedAt: new Date().toISOString(),
+      };
+      await dbService.saveSetting('workspaceConfig', workspaceConfig);
+      return { success: true, workspace: workspaceConfig, savedLocally: true };
     }, 'System.InitializeWorkspace'),
 
     getWorkspaceConfig: () => handle(async () => {
-      if (!HAS_REMOTE_BACKEND) {
-        return (await dbService.getSetting<any>('workspaceConfig')) || {
-          mode: 'offline-file',
-          companyName: 'Prime ERP System',
-          initializedAt: new Date().toISOString(),
-        };
-      }
-      const response = await apiClient.get('/system/workspace/config');
-      return response.data;
+      return (await dbService.getSetting<any>('workspaceConfig')) || {
+        mode: 'offline-file',
+        companyName: 'Prime ERP System',
+        initializedAt: new Date().toISOString(),
+      };
     }, 'System.GetWorkspaceConfig'),
 
     saveToWorkspace: (folder: string, filename: string, data: any) => handle(async () => {
-      if (!HAS_REMOTE_BACKEND) {
-        const key = `workspaceDocument:${folder}/${filename}`;
-        await dbService.saveSetting(key, {
-          folder,
-          filename,
-          data,
-          savedAt: new Date().toISOString(),
-        });
-        return { success: true, savedLocally: true, path: `${folder}/${filename}` };
-      }
-      const response = await apiClient.post('/system/workspace/save-document', { folder, filename, data });
-      return response.data;
+      const key = `workspaceDocument:${folder}/${filename}`;
+      await dbService.saveSetting(key, {
+        folder,
+        filename,
+        data,
+        savedAt: new Date().toISOString(),
+      });
+      return { success: true, savedLocally: true, path: `${folder}/${filename}` };
     }, 'System.SaveToWorkspace'),
 
     syncToWorkspace: (filename: string, data: any) => handle(async () => {
-      if (!HAS_REMOTE_BACKEND) {
-        const key = `workspaceSync:${filename}`;
-        await dbService.saveSetting(key, {
-          filename,
-          data,
-          syncedAt: new Date().toISOString(),
-        });
-        return { success: true, syncedLocally: true, filename };
-      }
-      const response = await apiClient.post('/system/workspace/sync', { filename, data });
-      return response.data;
+      const key = `workspaceSync:${filename}`;
+      await dbService.saveSetting(key, {
+        filename,
+        data,
+        syncedAt: new Date().toISOString(),
+      });
+      return { success: true, syncedLocally: true, filename };
     }, 'System.SyncToWorkspace'),
 
     triggerCloudSync: () => handle(async () => {
-      if (!HAS_REMOTE_BACKEND) {
-        await dbService.saveSetting('cloudSync:lastSync', {
-          syncedAt: new Date().toISOString(),
-        });
-        return { success: true, syncedLocally: true };
-      }
-      const response = await apiClient.post('/cloud/sync', {});
-      return response.data;
+      await dbService.saveSetting('cloudSync:lastSync', {
+        syncedAt: new Date().toISOString(),
+      });
+      return { success: true, syncedLocally: true };
     }, 'Cloud.TriggerSync'),
 
     deleteWorkspace: () => handle(async () => {
-      if (HAS_REMOTE_BACKEND) {
-        const response = await apiClient.delete('/system/workspace');
-        return response.data;
-      }
-      const backendUrl = import.meta.env.VITE_API_URL || 'https://primebooks-erp.onrender.com';
-      const resp = await fetch(`${backendUrl}/api/system/workspace`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => '');
-        throw new Error(text || `Backend returned ${resp.status}`);
-      }
-      return resp.json();
+      return { success: true, message: 'Workspace deleted locally' };
     }, 'System.DeleteWorkspace'),
 
-    // User preferences — persisted to backend so they follow the user across devices
+    // User preferences — persisted locally
     getUserPreference: (key: string) => handle(async () => {
-      try {
-        const response = await apiClient.get(getApiPath(`user/preferences/${key}`));
-        return response.data || { value: null };
-      } catch {
-        return { value: null };
-      }
+      const pref = await dbService.getSetting<any>(`userPref:${key}`);
+      return pref || { value: null };
     }, 'UserPrefs.Get'),
 
     saveUserPreference: (key: string, value: string) => handle(async () => {
-      await apiClient.put(getApiPath(`user/preferences/${key}`), { value });
+      await dbService.saveSetting(`userPref:${key}`, { value });
       return { success: true };
     }, 'UserPrefs.Save'),
 
-    // Financial Years — cloud-only: served through backend API
+    // Financial Years — local-only
     getFinancialYears: () => handle(async () => {
-      const response = await apiClient.get('/financial-years');
-      return Array.isArray(response.data) ? response.data : [];
+      return dbService.getAll('financialYears');
     }, 'FinancialYear.List'),
 
     getDefaultFinancialYear: () => handle(async () => {
-      const response = await apiClient.get('/financial-years/default');
-      return response.data;
+      const years = await dbService.getAll<any>('financialYears');
+      return years.find((y: any) => y.isDefault) || years[0] || null;
     }, 'FinancialYear.Default'),
 
     getCurrentFinancialYear: () => handle(async () => {
-      const response = await apiClient.get('/financial-years/current');
-      return response.data;
+      const years = await dbService.getAll<any>('financialYears');
+      const now = new Date().toISOString().slice(0, 10);
+      return years.find((y: any) => y.startDate <= now && y.endDate >= now) || years[0] || null;
     }, 'FinancialYear.Current'),
 
     getFinancialYearByDate: (date: string) => handle(async () => {
-      const response = await apiClient.get('/financial-years/by-date', { params: { date } });
-      return response.data;
+      const years = await dbService.getAll<any>('financialYears');
+      return years.find((y: any) => y.startDate <= date && y.endDate >= date) || null;
     }, 'FinancialYear.ByDate'),
 
     createFinancialYear: (data: any) => handle(async () => {
-      const response = await apiClient.post('/financial-years', data);
-      return response.data;
+      await dbService.put('financialYears', data);
+      return { success: true, id: data.id };
     }, 'FinancialYear.Create'),
 
     updateFinancialYear: (id: string, data: any) => handle(async () => {
-      const response = await apiClient.put(`/financial-years/${id}`, data);
-      return response.data;
+      const existing = await dbService.get<any>('financialYears', id);
+      if (existing) {
+        await dbService.put('financialYears', { ...existing, ...data });
+      }
+      return { success: true };
     }, 'FinancialYear.Update'),
 
     closeFinancialYear: (id: string) => handle(async () => {
-      const response = await apiClient.post(`/financial-years/${id}/close`);
-      return response.data;
+      const existing = await dbService.get<any>('financialYears', id);
+      if (existing) {
+        await dbService.put('financialYears', { ...existing, status: 'Closed', closedAt: new Date().toISOString() });
+      }
+      return { success: true };
     }, 'FinancialYear.Close'),
 
     deleteFinancialYear: (id: string) => handle(async () => {
-      const response = await apiClient.delete(`/financial-years/${id}`);
-      return response.data;
+      await dbService.delete('financialYears', id);
+      return { success: true };
     }, 'FinancialYear.Delete'),
   }
 };

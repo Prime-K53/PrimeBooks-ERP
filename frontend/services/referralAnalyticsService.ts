@@ -1,13 +1,13 @@
 import { Referral, ReferralReward } from '../types/referral'
 import { ReferralAnalytics } from '../types/referral-extended'
-import { cloudDb } from './cloudDb'
+import { dbService } from './db'
 import { generateId } from './transactions/_internal'
 import { logger } from './logger'
 
 export const referralAnalyticsService = {
   async generateAnalytics(period: ReferralAnalytics['period'], periodStart: string, periodEnd: string): Promise<ReferralAnalytics> {
-    const allReferrals = (await cloudDb.getAll<Referral>('referrals')) || []
-    const allRewards = (await cloudDb.getAll<ReferralReward>('referralRewards')) || []
+    const allReferrals = (await dbService.getAll<Referral>('referrals')) || []
+    const allRewards = (await dbService.getAll<ReferralReward>('referralRewards')) || []
     const start = new Date(periodStart)
     const end = new Date(periodEnd)
 
@@ -77,12 +77,12 @@ export const referralAnalyticsService = {
       generatedAt: new Date().toISOString(),
     }
 
-    await cloudDb.put('referralAnalytics', analytics)
+    await dbService.put('referralAnalytics', analytics)
     return analytics
   },
 
   async getAnalyticsHistory(period?: ReferralAnalytics['period'], limit = 12): Promise<ReferralAnalytics[]> {
-    const all = (await cloudDb.getAll<ReferralAnalytics>('referralAnalytics')) || []
+    const all = (await dbService.getAll<ReferralAnalytics>('referralAnalytics')) || []
     let filtered = all
     if (period) {
       filtered = filtered.filter(a => a.period === period)
@@ -93,7 +93,7 @@ export const referralAnalyticsService = {
   },
 
   async getLatestAnalytics(): Promise<ReferralAnalytics | null> {
-    const all = (await cloudDb.getAll<ReferralAnalytics>('referralAnalytics')) || []
+    const all = (await dbService.getAll<ReferralAnalytics>('referralAnalytics')) || []
     if (all.length === 0) return null
     return all.sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())[0]
   },
@@ -105,13 +105,13 @@ export const referralAnalyticsService = {
     totalRewards: number
     totalRewardAmount: number
   }> {
-    const allReferrals = (await cloudDb.getAll<Referral>('referrals')) || []
+    const allReferrals = (await dbService.getAll<Referral>('referrals')) || []
     const customerReferrals = allReferrals.filter(r => r.referredById === customerId)
     const totalReferrals = customerReferrals.length
     const activeReferrals = customerReferrals.filter(r => r.status === 'active').length
     const convertedReferrals = customerReferrals.filter(r => r.status === 'converted').length
 
-    const allRewards = (await cloudDb.getAll<ReferralReward>('referralRewards')) || []
+    const allRewards = (await dbService.getAll<ReferralReward>('referralRewards')) || []
     const customerRewards = allRewards.filter(r => r.customerId === customerId)
     const totalRewards = customerRewards.length
     const totalRewardAmount = toMoney(customerRewards.reduce((sum, r) => sum + r.amount, 0))

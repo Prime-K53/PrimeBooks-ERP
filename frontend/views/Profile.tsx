@@ -187,13 +187,13 @@ const Profile: React.FC = () => {
 
       await manageUser(updatedUser as Record<string, unknown>);
       
-      // If cloud mode is enabled, sync with profiles table
+      // If cloud mode is enabled, sync with profiles table in background
       if (cloudDb.isConfigured()) {
-        await cloudDb.upsertProfile({
+        cloudDb.upsertProfile({
           ...updatedUser,
           user_id: user?.id,
           full_name: profileData.fullName,
-        });
+        }).catch((err) => logger.warn('[Profile] Background cloud sync warning:', err));
       }
 
       setOriginalData({ ...profileData });

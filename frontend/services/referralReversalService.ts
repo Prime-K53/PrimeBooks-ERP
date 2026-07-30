@@ -1,6 +1,6 @@
 import { ReferralReward } from '../types/referral'
 import { ReversalRequest } from '../types/referral-extended'
-import { cloudDb } from './cloudDb'
+import { dbService } from './db'
 import { generateId } from './transactions/_internal'
 import { referralEventBus } from './referralEventBus'
 import { referralAuditService } from './referralAuditService'
@@ -34,12 +34,12 @@ export const referralReversalService = {
     requestedBy: string
     notes?: string
   }): Promise<ReversalRequest> {
-    const allRewards = (await cloudDb.getAll<ReferralReward>('referralRewards')) || []
+    const allRewards = (await dbService.getAll<ReferralReward>('referralRewards')) || []
     const reward = allRewards.find(r => r.id === params.rewardId)
     if (!reward) throw new Error('Reward not found')
     if (reward.status === 'cancelled') throw new Error('Reward is already cancelled')
 
-    const all = (await cloudDb.getAll<ReversalRequest>('referralReversals')) || []
+    const all = (await dbService.getAll<ReversalRequest>('referralReversals')) || []
     const existing = all.find(r => r.rewardId === params.rewardId && r.status === 'pending')
     if (existing) throw new Error('A reversal request for this reward is already pending')
 
@@ -54,7 +54,7 @@ export const referralReversalService = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    await cloudDb.put('referralReversals', reversal)
+    await dbService.put('referralReversals', reversal)
 
     await referralAuditService.log({
       entityType: 'reversal',
@@ -68,7 +68,7 @@ export const referralReversalService = {
   },
 
   async approveReversal(reversalId: string, approvedBy: string): Promise<ReversalRequest> {
-    const all = (await cloudDb.getAll<ReversalRequest>('referralReversals')) || []
+    const all = (await dbService.getAll<ReversalRequest>('referralReversals')) || []
     const reversal = all.find(r => r.id === reversalId)
     if (!reversal) throw new Error('Reversal request not found')
     if (reversal.status !== 'pending') throw new Error('Reversal is not in pending status')
@@ -77,13 +77,13 @@ export const referralReversalService = {
     reversal.approvedBy = approvedBy
     reversal.approvedAt = new Date().toISOString()
     reversal.updatedAt = new Date().toISOString()
-    await cloudDb.put('referralReversals', reversal)
+    await dbService.put('referralReversals', reversal)
 
-    const allRewards = (await cloudDb.getAll<ReferralReward>('referralRewards')) || []
+    const allRewards = (await dbService.getAll<ReferralReward>('referralRewards')) || []
     const reward = allRewards.find(r => r.id === reversal.rewardId)
     if (!reward) throw new Error('Associated reward not found')
 
-    const allReferrals = (await cloudDb.getAll<any>('referrals')) || []
+    const allReferrals = (await dbService.getAll<any>('referrals')) || []
     const referral = allReferrals.find((r: any) => r.id === reward.referralId)
     const referrerCustomerId = referral?.referredById
 
@@ -102,11 +102,11 @@ export const referralReversalService = {
     }
 
     if (referrerCustomerId) {
-      const customers = (await cloudDb.getAll<any>('customers')) || []
+      const customers = (await dbService.getAll<any>('customers')) || []
       const referrer = customers.find((c: any) => c.id === referrerCustomerId)
       if (referrer) {
         referrer.walletBalance = toMoney((referrer.walletBalance || 0) - reward.amount)
-        await cloudDb.put('customers', referrer)
+        await dbService.put('customers', referrer)
       }
     }
 
@@ -134,10 +134,10 @@ export const referralReversalService = {
     reversal.updatedAt = new Date().toISOString()
 
     await Promise.all([
-      cloudDb.put('walletTransactions', walletTx),
-      cloudDb.put('ledger', ledgerEntry),
-      cloudDb.put('referralRewards', reward),
-      cloudDb.put('referralReversals', reversal),
+      dbService.put('walletTransactions', walletTx),
+      dbService.put('ledger', ledgerEntry),
+      dbService.put('referralRewards', reward),
+      dbService.put('referralReversals', reversal),
     ])
 
     await referralEventBus.emit('reward.reversed', {
@@ -163,7 +163,7 @@ export const referralReversalService = {
   },
 
   async rejectReversal(reversalId: string, rejectedBy: string, rejectReason: string): Promise<ReversalRequest> {
-    const all = (await cloudDb.getAll<ReversalRequest>('referralReversals')) || []
+    const all = (await dbService.getAll<ReversalRequest>('referralReversals')) || []
     const reversal = all.find(r => r.id === reversalId)
     if (!reversal) throw new Error('Reversal request not found')
     if (reversal.status !== 'pending') throw new Error('Reversal is not in pending status')
@@ -173,7 +173,7 @@ export const referralReversalService = {
     reversal.rejectedAt = new Date().toISOString()
     reversal.rejectReason = rejectReason
     reversal.updatedAt = new Date().toISOString()
-    await cloudDb.put('referralReversals', reversal)
+    await dbService.put('referralReversals', reversal)
 
     await referralAuditService.log({
       entityType: 'reversal',
@@ -190,12 +190,12 @@ export const referralReversalService = {
   },
 
   async getPendingReversals(): Promise<ReversalRequest[]> {
-    const all = (await cloudDb.getAll<ReversalRequest>('referralReversals')) || []
+    const all = (await dbService.getAll<ReversalRequest>('referralReversals')) || []
     return all.filter(r => r.status === 'pending')
   },
 
   async getAllReversals(): Promise<ReversalRequest[]> {
-    return (await cloudDb.getAll<ReversalRequest>('referralReversals')) || []
+    return (await dbService.getAll<ReversalRequest>('referralReversals')) || []
   },
 }
 

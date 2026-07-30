@@ -12,10 +12,13 @@ import { hydrateCompanyPdfAssets } from '../utils/companyAssetUtils';
 import { supabase } from '../services/supabaseClient';
 import type { AuthResult } from '../services/supabaseAuthService';
 import { cloudDb } from '../services/cloudDb';
-import { isSupabaseConfigured } from '../services/cloudMode';
 import { logger } from '../services/logger';
 
-const SUPABASE_ENABLED = isSupabaseConfigured();
+const SUPABASE_ENABLED = Boolean(
+  import.meta.env.VITE_SUPABASE_URL &&
+  import.meta.env.VITE_SUPABASE_ANON_KEY &&
+  import.meta.env.VITE_SUPABASE_URL !== 'https://placeholder.supabase.co'
+);
 
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   const timer = new Promise<never>((_, reject) =>
@@ -368,149 +371,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return ['GRP-USER'];
   }, []);
 
+  const syncSupabaseUserToLocal = useCallback(async (supabaseUser: any): Promise<User | null> => {
+    const userId = supabaseUser?.id;
+    if (!userId) return null;
+
+    // 1. Check local users store
+    try {
+      const localUsers = await dbService.getAll<User>('users');
+      const found = localUsers.find(u => u.id === userId || u.email === supabaseUser.email);
+      if (found) return found;
+    } catch { /* fall through */ }
+
+    // 2. Build from user_metadata (set during signup)
+    const meta = supabaseUser?.user_metadata || {};
+    if (meta.role || meta.is_super_admin) {
+      return {
+        id: userId,
+        username: meta.username || supabaseUser.email || 'user',
+        fullName: meta.full_name || meta.fullName || 'User',
+        name: meta.full_name || meta.fullName || 'User',
+        email: supabaseUser.email || meta.email || '',
+        role: (meta.role || 'Staff') as UserRole,
+        status: 'Active',
+        active: true,
+        isSuperAdmin: Boolean(meta.is_super_admin),
+        securityLevel: 'Standard',
+        groupIds: meta.group_ids || (meta.is_super_admin ? ['GRP-ADMIN'] : []),
+        authMode: 'supabase',
+      } as User;
+    }
+
+    return null;
+  }, []);
+
   const updateLoginDiagnostic = useCallback(async (email: string, updates: Partial<LoginDiagnostic> = {}) => {
-    let authState = 'unknown';
-    let sessionState = 'unknown';
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      authState = user ? `authenticated:${user.id}` : 'no authenticated user';
-    } catch (error) {
-      authState = `auth lookup failed: ${error instanceof Error ? error.message : String(error)}`;
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      sessionState = session ? `active:${session.user?.id || 'unknown user'}` : 'no active session';
-    } catch (error) {
-      sessionState = `session lookup failed: ${error instanceof Error ? error.message : String(error)}`;
-    }
-
     setLoginDiagnostic({
-      supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+      supabaseUrl: '',
       email,
       timestamp: new Date().toISOString(),
       errorCode: '',
       errorMessage: '',
-      authState,
-      sessionState,
+      authState: 'local',
+      sessionState: 'local',
       ...updates,
     });
   }, []);
 
-  const syncSupabaseUserToLocal = useCallback(async (supabaseUser: import('@supabase/supabase-js').User): Promise<User | null> => {
-    const { data: profileRows, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', supabaseUser.id);
 
-    console.log('[Auth] Profile validation result:', {
-      user_id: supabaseUser.id,
-      rows: profileRows,
-      error: profileError,
-    });
-
-    if (profileError) {
-      logger.error('[Auth] Profile lookup failed:', profileError);
-      throw new AuthFlowError(profileError.message, {
-        code: getAuthErrorCode(profileError),
-        status: (profileError as { status?: number })?.status,
-        userMessage: 'Your profile could not be loaded. Please contact an administrator.',
-      });
-    }
-
-    if (!profileRows || profileRows.length === 0) {
-      throw new AuthFlowError('Missing profile for authenticated user.', {
-        code: 'profile_missing',
-        userMessage: 'Your company was deleted. To start fresh, create a new workspace below.',
-      });
-    }
-
-    if (profileRows.length > 1) {
-      throw new AuthFlowError('Multiple profiles found for authenticated user.', {
-        code: 'profile_duplicate',
-        userMessage: 'Multiple profiles were found for your account. Please contact an administrator.',
-      });
-    }
-
-    const cloudProfile = profileRows[0];
-    const profileData = cloudProfile?.data || {};
-    const companyId = cloudProfile?.company_id || supabaseUser.user_metadata?.company_id || '';
-    const role = normalizeRoleForDisplay(cloudProfile?.role || profileData.role || supabaseUser.user_metadata?.role || 'Sales Staff') as UserRole;
-    const isSuperAdmin = Boolean(profileData.is_super_admin || supabaseUser.user_metadata?.is_super_admin || role === 'Super Admin' || role === 'Company Admin' || role === 'Admin');
-    const groupIds = profileData.group_ids || profileData.groupIds || supabaseUser.user_metadata?.group_ids || roleToGroupIds(String(role), isSuperAdmin);
-    const fullName = cloudProfile?.full_name || profileData.fullName || profileData.full_name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'User';
-
-    if (!companyId) {
-      throw new AuthFlowError('Profile is missing company_id.', {
-        code: 'profile_company_missing',
-        userMessage: 'Your profile is not linked to a company workspace. Please contact an administrator.',
-      });
-    }
-
-    dbService.setCurrentCompanyId(companyId);
-    cloudDb.setActiveCompanyId(companyId);
-
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('id', companyId)
-      .maybeSingle();
-
-    console.log('[Auth] Company validation result:', {
-      company_id: companyId,
-      company,
-      error: companyError,
-    });
-
-    if (companyError) {
-      logger.error('[Auth] Company lookup failed:', companyError);
-      throw new AuthFlowError(companyError.message, {
-        code: getAuthErrorCode(companyError),
-        status: (companyError as { status?: number })?.status,
-        userMessage: 'Your company workspace could not be loaded. Please contact an administrator.',
-      });
-    }
-
-    if (!company) {
-      throw new AuthFlowError(`Company ${companyId} was not found.`, {
-        code: 'company_missing',
-        userMessage: 'Your company was deleted. To start fresh, create a new workspace below.',
-      });
-    }
-
-    const companyData = company.data || {};
-    const hydratedConfig = await hydrateCompanyPdfAssets(withNormalizedSecurityConfig(normalizeCompanyNumberingConfig({
-      ...defaultCompanyConfig,
-      ...companyData,
-      companyId,
-      companyName: company.company_name || companyData.companyName || defaultCompanyConfig.companyName,
-      email: company.email || companyData.email || defaultCompanyConfig.email,
-      phone: company.phone || companyData.phone || defaultCompanyConfig.phone,
-      addressLine1: companyData.addressLine1 || company.address || defaultCompanyConfig.addressLine1,
-      pricingSettings: {
-        ...DEFAULT_PRICING_SETTINGS,
-        ...(companyData?.pricingSettings || {})
-      }
-    } as CompanyConfig)));
-    setCompanyConfig(hydratedConfig);
-
-    return {
-      id: supabaseUser.id,
-      username: cloudProfile?.username || profileData.username || supabaseUser.user_metadata?.username || supabaseUser.email?.split('@')[0] || 'user',
-      fullName,
-      name: fullName,
-      email: supabaseUser.email || profileData.email || '',
-      role,
-      status: cloudProfile?.status || profileData.status || 'Active',
-      active: cloudProfile?.status !== 'Inactive',
-      isSuperAdmin,
-      securityLevel: profileData.securityLevel || 'Standard',
-      groupIds,
-      authMode: 'supabase',
-      companyId
-    } as User;
-  }, [defaultCompanyConfig, roleToGroupIds]);
 
   useEffect(() => {
     const loadInitData = async () => {
@@ -870,10 +777,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             sessionState: 'pending',
           });
 
-          const { data: signInData, error } = await withTimeout(supabase.auth.signInWithPassword({
-            email,
-            password,
-          }), 15000);
+          // Check if device is offline before attempting network auth
+          if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            const cachedRaw = sessionStorage.getItem('nexus_user') || localStorage.getItem('nexus_cached_user_session');
+            if (cachedRaw) {
+              try {
+                const cachedUser = JSON.parse(cachedRaw);
+                if (cachedUser?.email === email || cachedUser?.username === username || cachedUser?.id) {
+                  const offlineUser = { ...cachedUser, offlineAuthenticated: true, authMode: 'supabase' as const };
+                  setUser(offlineUser);
+                  sessionStorage.setItem('nexus_user', JSON.stringify(offlineUser));
+                  setRequiresSetup(false);
+                  return 'SUCCESS';
+                }
+              } catch {}
+            }
+            throw new AuthFlowError('Offline: No cached session available for this user. Connect to the internet to sign in.', {
+              code: 'offline_session_not_found',
+              userMessage: 'Offline: No cached session available for this account. Please connect to the internet to sign in.',
+            });
+          }
+
+          let signInData: any = null;
+          let error: any = null;
+
+          try {
+            const result = await withTimeout(supabase.auth.signInWithPassword({
+              email,
+              password,
+            }), 15000);
+            signInData = result.data;
+            error = result.error;
+          } catch (netErr: any) {
+            // If network timed out or failed, attempt offline session restoration
+            const cachedRaw = sessionStorage.getItem('nexus_user') || localStorage.getItem('nexus_cached_user_session');
+            if (cachedRaw) {
+              try {
+                const cachedUser = JSON.parse(cachedRaw);
+                if (cachedUser?.email === email || cachedUser?.username === username || cachedUser?.id) {
+                  const offlineUser = { ...cachedUser, offlineAuthenticated: true, authMode: 'supabase' as const };
+                  setUser(offlineUser);
+                  sessionStorage.setItem('nexus_user', JSON.stringify(offlineUser));
+                  setRequiresSetup(false);
+                  return 'SUCCESS';
+                }
+              } catch {}
+            }
+            throw new AuthFlowError('Network unavailable and no cached session found. Connect to internet to sign in.', {
+              code: 'network_unavailable_no_session',
+              userMessage: 'Network unavailable and no cached session found. Connect to the internet to sign in.',
+            });
+          }
 
           console.log("AUTH RESPONSE:", signInData);
           console.log("AUTH ERROR:", error);
@@ -921,13 +875,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const profile = await syncSupabaseUserToLocal(signInData.user);
           setRequiresSetup(false);
-          const supabaseUser = { ...profile, authMode: 'supabase' as const };
+          const supabaseUser = { ...profile, authMode: 'supabase' as const, offlineAuthenticated: true };
           setUser(supabaseUser);
-          sessionStorage.setItem('nexus_user', JSON.stringify({
+          const sessionPayload = JSON.stringify({
             ...supabaseUser,
             accessToken: signInData.session?.access_token || null,
             tokenExpiry: signInData.session?.expires_at ? new Date(signInData.session.expires_at * 1000).toISOString() : null,
-          }));
+          });
+          sessionStorage.setItem('nexus_user', sessionPayload);
+          localStorage.setItem('nexus_cached_user_session', sessionPayload);
           await updateLoginDiagnostic(email, {
             errorCode: '',
             errorMessage: '',
