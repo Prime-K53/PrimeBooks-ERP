@@ -30,9 +30,23 @@ export const CompactView: React.FC<Props> = ({ items, onView, onEdit }) => (
           <span className="font-mono text-[12.5px] shrink-0" style={{ color: '#64748B' }}>{item.sku}</span>
           <span className="inline-flex px-[9px] py-[3px] rounded-[99px] text-[12px] shrink-0" style={{ background: '#F8FAFC', color: '#475569' }}>{item.type}</span>
           {(item.type === 'Raw Material' || item.type === 'Material') && (
-            <span className={`inline-flex px-[9px] py-[3px] rounded-[99px] text-[12px] shrink-0 ${(item as any).rawMaterialCategory === 'non_consumable' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600'}`}>
-              {(item as any).rawMaterialCategory === 'non_consumable' ? 'Non-Consumable' : 'Consumable'}
-            </span>
+            <>
+              <span className={`inline-flex px-[9px] py-[3px] rounded-[99px] text-[12px] shrink-0 ${(item as any).rawMaterialCategory === 'non_consumable' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                {(item as any).rawMaterialCategory === 'non_consumable' ? 'Non-Consumable' : 'Consumable'}
+              </span>
+              {(item as any).rawBomCategory ? (
+                <span className={`inline-flex px-[9px] py-[3px] rounded-[99px] text-[12px] shrink-0 ${
+                  (item as any).rawBomCategory === 'Paper' ? 'bg-blue-50 text-blue-700' :
+                  (item as any).rawBomCategory === 'Toner' ? 'bg-red-50 text-red-700' :
+                  (item as any).rawBomCategory === 'Cover/Card' ? 'bg-violet-50 text-violet-700' :
+                  (item as any).rawBomCategory === 'Staple' ? 'bg-green-50 text-green-700' :
+                  (item as any).rawBomCategory === 'Binding Tape' ? 'bg-orange-50 text-orange-700' :
+                  'bg-slate-50 text-slate-600'
+                }`}>
+                  {(item as any).rawBomCategory}
+                </span>
+              ) : null}
+            </>
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">

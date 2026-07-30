@@ -8,6 +8,7 @@ import {
   getStoredCompanyConfig,
   resolvePrimeTemplateSettings,
 } from './templateSettings.ts';
+import { resolvePdfQrCodeSource } from '../../../../utils/companyAssetUtils.ts';
 
 // Format amount helper
 const formatAmount = (amount: number) => {
@@ -27,6 +28,7 @@ export const StatementSummaryTemplate: React.FC<{ data: StatementDoc; configOver
   };
   const companyName = config?.companyName || 'PRIME PRINTING INC';
   const logo = resolvePdfLogoSource(config, templateSettings.showCompanyLogo);
+  const fontScale = templateSettings.bodyFontSize / 12;
 
   const isCancelled =
     String(data.status || (data as any).transactionStatus || '').toLowerCase() === 'cancelled' ||
@@ -128,15 +130,24 @@ export const StatementSummaryTemplate: React.FC<{ data: StatementDoc; configOver
           </View>
         ))}
 
-         {/* Static Bottom Disclaimer */}
-         <View style={s.legalBottom} fixed>
-           <Text style={{ fontSize: 7, fontWeight: 'bold', marginBottom: 2 }}>Computer Generated Statement</Text>
-            <Text style={{ marginTop: 4, fontSize: 7, color: '#94a3b8' }}>
-              This is a computer-generated document. No signature required, For enquiries contact:
-            </Text>
-            <Text style={{ marginTop: 2, fontSize: 7, color: '#94a3b8' }}>
-              {`${config?.companyName || 'PRIME PRINTING INC'}, ${config?.addressLine1 || ''}, Phone ${config?.phone || ''}`}
-           </Text>
+         {/* Security Footer */}
+         <View style={s.securityFooter} fixed>
+           <View style={s.securityFooterText}>
+             <Text style={[s.securityFooterLine, { fontSize: 10 * fontScale, lineHeight: 1.4, textAlign: 'left' }]}>
+               This is a computer-generated document. No signature required. For enquiries contact:
+             </Text>
+             <Text style={[s.securityFooterLine, { marginTop: 2, fontSize: 10 * fontScale, lineHeight: 1.4, textAlign: 'left' }]}>
+               {`${companyName}${config?.addressLine1 ? `, ${config.addressLine1}` : ''}${config?.phone ? `, Phone ${config.phone}` : ''}`}
+             </Text>
+           </View>
+           {(() => {
+             const qrUrl = resolvePdfQrCodeSource(String((data as any)?.securityQrCodeDataUrl || '').trim());
+             return qrUrl ? (
+               <View style={[s.securityQrPanel, { width: 58, alignItems: 'center', borderWidth: 0, backgroundColor: 'transparent', paddingVertical: 0, paddingHorizontal: 0 }]}>
+                 <Image src={qrUrl} style={{ width: 50, height: 50 }} />
+               </View>
+             ) : null;
+           })()}
          </View>
       </Page>
     </Document>

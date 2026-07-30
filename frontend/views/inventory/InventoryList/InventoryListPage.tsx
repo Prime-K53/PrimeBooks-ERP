@@ -78,6 +78,15 @@ function getBomSummary(item: any, allItems: any[]): string {
 
 type TabKey = 'dashboard' | 'raw' | 'product' | 'stationery' | 'printing';
 
+const BOM_CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+  Paper: { bg: '#EFF6FF', text: '#1D4ED8' },
+  Toner: { bg: '#FEF2F2', text: '#B91C1C' },
+  'Cover/Card': { bg: '#F5F3FF', text: '#6D28D9' },
+  Staple: { bg: '#F0FDF4', text: '#15803D' },
+  'Binding Tape': { bg: '#FFF7ED', text: '#C2410C' },
+  Other: { bg: '#F8FAFC', text: '#64748B' },
+};
+
 export const InventoryListPage: React.FC = () => {
   const navigate = useNavigate();
   const { addItem, updateItem, deleteItem, warehouses } = useInventory();
@@ -372,10 +381,11 @@ const handleProduce = useCallback((item: Item) => {
   const availableColumns = ['Name', 'SKU', 'Classification', 'Status', 'Stock', 'Base Unit', 'Cost Price', 'Selling Price', 'Markup'];
 
   // Derived tab data
-  const rawMaterials = useMemo(() => allItems.filter(i => (i.type || i.classification) === 'Raw Material'), [allItems]);
-  const products = useMemo(() => allItems.filter(i => (i.type || i.classification) === 'Product'), [allItems]);
-  const stationery = useMemo(() => allItems.filter(i => (i.type || i.classification) === 'Stationery'), [allItems]);
-  const printingServices = useMemo(() => allItems.filter(i => (i.type || i.classification) === 'Service' || (i as Record<string, unknown>).classification === 'Printing Service'), [allItems]);
+  const sortByName = (a: Item, b: Item) => (a.name || '').localeCompare(b.name || '');
+  const rawMaterials = useMemo(() => allItems.filter(i => (i.type || i.classification) === 'Raw Material').sort(sortByName), [allItems]);
+  const products = useMemo(() => allItems.filter(i => (i.type || i.classification) === 'Product').sort(sortByName), [allItems]);
+  const stationery = useMemo(() => allItems.filter(i => (i.type || i.classification) === 'Stationery').sort(sortByName), [allItems]);
+  const printingServices = useMemo(() => allItems.filter(i => (i.type || i.classification) === 'Service' || (i as Record<string, unknown>).classification === 'Printing Service').sort(sortByName), [allItems]);
 
   const lowStock = useCallback((item: Item) => {
     return item.reorderPoint != null && Number(item.stock) <= Number(item.reorderPoint);
@@ -563,7 +573,17 @@ const handleProduce = useCallback((item: Item) => {
                           </td>
                           <td className="mono" style={{fontFamily:'IBM Plex Mono,monospace', fontSize:10, color:'#64748B'}}>{esc(m.sku)}</td>
                           <td>
-                            {esc(m.name)}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {esc(m.name)}
+                              {(m as any).rawBomCategory ? (
+                                <span className="inline-flex px-[7px] py-[2px] rounded-[99px] text-[11px]" style={{
+                                  background: BOM_CATEGORY_COLORS[(m as any).rawBomCategory]?.bg || '#F1F5F9',
+                                  color: BOM_CATEGORY_COLORS[(m as any).rawBomCategory]?.text || '#475569',
+                                }}>
+                                  {(m as any).rawBomCategory}
+                                </span>
+                              ) : null}
+                            </div>
                             {(m as Record<string, unknown>).supplierName ? <div className="pp-sub">{esc((m as Record<string, unknown>).supplierName)}</div> : ''}
                           </td>
                           <td className="mono" style={{ fontFamily:'IBM Plex Mono,monospace' }}>{esc(m.unit || 'pcs')}</td>

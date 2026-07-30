@@ -159,6 +159,18 @@ const Orders: React.FC = () => {
       type?: 'warning' | 'danger' | 'info' | 'success' | 'question';
       onConfirm?: () => void;
     }>({ open: false, title: '', message: '' });
+    const [cancelReasonModal, setCancelReasonModal] = useState<{
+      open: boolean;
+      title: string;
+      onConfirm: (reason: string) => void;
+    }>({ open: false, title: '', onConfirm: () => {} });
+    const [cancelReasonText, setCancelReasonText] = useState('');
+    const [paymentAmountModal, setPaymentAmountModal] = useState<{
+      open: boolean;
+      title: string;
+      onConfirm: (amount: string) => void;
+    }>({ open: false, title: '', onConfirm: () => {} });
+    const [paymentAmountText, setPaymentAmountText] = useState('');
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -227,18 +239,23 @@ const Orders: React.FC = () => {
         if (count === 0) return;
 
         if (activeView === 'Orders') {
-            const reason = window.prompt(`Reason for cancelling ${count} orders:`);
-            if (reason) {
-                try {
-                    for (const id of selectedInvoiceIds) {
-                        await cancelOrder(id, reason);
+            setCancelReasonText('');
+            setCancelReasonModal({
+                open: true,
+                title: `Reason for cancelling ${count} orders`,
+                onConfirm: async (reason) => {
+                    if (!reason) return;
+                    try {
+                        for (const id of selectedInvoiceIds) {
+                            await cancelOrder(id, reason);
+                        }
+                        setSelectedInvoiceIds([]);
+                        notify(`${count} orders cancelled`, "success");
+                    } catch (error: any) {
+                        notify(`Failed to cancel some orders: ${error.message}`, "error");
                     }
-                    setSelectedInvoiceIds([]);
-                    notify(`${count} orders cancelled`, "success");
-                } catch (error: any) {
-                    notify(`Failed to cancel some orders: ${error.message}`, "error");
                 }
-            }
+            });
             return;
         }
 
@@ -368,11 +385,16 @@ const Orders: React.FC = () => {
         }
 
         if (activeView === 'Orders') {
-            const reason = window.prompt("Reason for cancelling this order (Deletion is restricted for audit compliance):");
-            if (reason) {
-                await cancelOrder(id, reason);
-                notify("Order cancelled successfully", "info");
-            }
+            setCancelReasonText('');
+            setCancelReasonModal({
+                open: true,
+                title: 'Reason for cancelling this order (Deletion is restricted for audit compliance)',
+                onConfirm: async (reason) => {
+                    if (!reason) return;
+                    await cancelOrder(id, reason);
+                    notify("Order cancelled successfully", "info");
+                }
+            });
             return;
         }
 
@@ -1096,14 +1118,19 @@ const Orders: React.FC = () => {
                 });
             }
             if (action === 'cancel_order') {
-                const reason = window.prompt(`Reason for cancelling Order #${item.orderNumber}: `);
-                if (reason) {
-                    try {
-                        await cancelOrder(item.id, reason);
-                    } catch (error: any) {
-                        notify(`Cancellation failed: ${error.message} `, "error");
+                setCancelReasonText('');
+                setCancelReasonModal({
+                    open: true,
+                    title: `Reason for cancelling Order #${item.orderNumber}`,
+                    onConfirm: async (reason) => {
+                        if (!reason) return;
+                        try {
+                            await cancelOrder(item.id, reason);
+                        } catch (error: any) {
+                            notify(`Cancellation failed: ${error.message} `, "error");
+                        }
                     }
-                }
+                });
             }
             if (action === 'convert_to_job_ticket') {
                 const ticketId = await convertOrderToJobTicket(item);
@@ -1210,49 +1237,59 @@ const Orders: React.FC = () => {
         if (action === 'bulk_delete') {
             if (activeView === 'Orders') {
                 const count = selectedInvoiceIds.length;
-                const reason = window.prompt(`Reason for cancelling ${count} orders: `);
-                if (reason) {
-                    try {
-                        for (const id of selectedInvoiceIds) {
-                            await cancelOrder(id, reason);
+                setCancelReasonText('');
+                setCancelReasonModal({
+                    open: true,
+                    title: `Reason for cancelling ${count} orders`,
+                    onConfirm: async (reason) => {
+                        if (!reason) return;
+                        try {
+                            for (const id of selectedInvoiceIds) {
+                                await cancelOrder(id, reason);
+                            }
+                            setSelectedInvoiceIds([]);
+                            notify(`${count} orders cancelled`, "success");
+                        } catch (error: any) {
+                            notify(`Failed to cancel some orders: ${error.message} `, "error");
                         }
-                        setSelectedInvoiceIds([]);
-                        notify(`${count} orders cancelled`, "success");
-                    } catch (error: any) {
-                        notify(`Failed to cancel some orders: ${error.message} `, "error");
                     }
-                }
+                });
                 return;
             }
             handleBulkDelete();
         } else if (action === 'bulk_pay') {
             if (activeView === 'Orders') {
                 const count = selectedInvoiceIds.length;
-                const amountStr = window.prompt(`Enter payment amount to record for EACH of the ${count} selected orders(or leave empty to mark as fully paid): `);
+                setPaymentAmountText('');
+                setPaymentAmountModal({
+                    open: true,
+                    title: `Enter payment amount to record for EACH of the ${count} selected orders (leave empty to mark as fully paid)`,
+                    onConfirm: async (amountStr) => {
+                        try {
+                            for (const id of selectedInvoiceIds) {
+                                const order = orders.find(o => o.id === id);
+                                if (!order) continue;
 
-                try {
-                    for (const id of selectedInvoiceIds) {
-                        const order = orders.find(o => o.id === id);
-                        if (!order) continue;
-
-                        const amount = amountStr ? parseFloat(amountStr) : order.remainingBalance;
-                        if (amount > 0) {
-                            await recordPayment(id, {
-                                id: `PAY - BLK - ${Date.now()} -${id} -${Math.random().toString(36).substr(2, 5)}`,
-                                orderId: id,
-                                amountPaid: amount,
-                                paymentDate: new Date().toISOString(),
-                                paymentMethod: 'Cash',
-                                recordedBy: user?.name || 'System User',
-                                reference: `Bulk Payment for Order #${order.orderNumber}`
-                            });
+                                const amount = amountStr ? parseFloat(amountStr) : order.remainingBalance;
+                                if (amount > 0) {
+                                    await recordPayment(id, {
+                                        id: `PAY - BLK - ${Date.now()} -${id} -${Math.random().toString(36).substr(2, 5)}`,
+                                        orderId: id,
+                                        amountPaid: amount,
+                                        paymentDate: new Date().toISOString(),
+                                        paymentMethod: 'Cash',
+                                        recordedBy: user?.name || 'System User',
+                                        reference: `Bulk Payment for Order #${order.orderNumber}`
+                                    });
+                                }
+                            }
+                            setSelectedInvoiceIds([]);
+                            notify(`Payments recorded for ${count} orders`, "success");
+                        } catch (error: any) {
+                            notify(`Bulk payment failed: ${error.message} `, "error");
                         }
                     }
-                    setSelectedInvoiceIds([]);
-                    notify(`Payments recorded for ${count} orders`, "success");
-                } catch (error: any) {
-                    notify(`Bulk payment failed: ${error.message} `, "error");
-                }
+                });
                 return;
             }
             setConfirmState({
@@ -1896,6 +1933,130 @@ const Orders: React.FC = () => {
                 cancelText={confirmState.cancelText}
                 type={confirmState.type || 'question'}
             />
+
+            {cancelReasonModal.open && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setCancelReasonModal(m => ({ ...m, open: false }));
+                        }
+                    }}
+                >
+                    <div className="w-full max-w-md animate-in zoom-in-95 duration-200" role="dialog" aria-modal="true">
+                        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                            <div className="flex items-center justify-between py-4 px-6 border-b border-slate-100">
+                                <h2 className="text-lg font-semibold text-slate-800">Cancel Reason</h2>
+                                <button
+                                    onClick={() => setCancelReasonModal(m => ({ ...m, open: false }))}
+                                    className="text-slate-400 hover:text-slate-600 transition-colors text-xl font-bold"
+                                    type="button"
+                                    aria-label="Close"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="px-6 py-5">
+                                <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                                    {cancelReasonModal.title}
+                                </p>
+                                <textarea
+                                    value={cancelReasonText}
+                                    onChange={(e) => setCancelReasonText(e.target.value)}
+                                    placeholder="Enter reason for cancellation..."
+                                    className="w-full min-h-[100px] p-3 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y placeholder-slate-400"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+                                <button
+                                    onClick={() => setCancelReasonModal(m => ({ ...m, open: false }))}
+                                    className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all"
+                                    type="button"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        cancelReasonModal.onConfirm(cancelReasonText);
+                                        setCancelReasonModal(m => ({ ...m, open: false }));
+                                    }}
+                                    disabled={!cancelReasonText.trim()}
+                                    className="px-5 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    type="button"
+                                >
+                                    Confirm Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {paymentAmountModal.open && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setPaymentAmountModal(m => ({ ...m, open: false }));
+                        }
+                    }}
+                >
+                    <div className="w-full max-w-md animate-in zoom-in-95 duration-200" role="dialog" aria-modal="true">
+                        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                            <div className="flex items-center justify-between py-4 px-6 border-b border-slate-100">
+                                <h2 className="text-lg font-semibold text-slate-800">Payment Amount</h2>
+                                <button
+                                    onClick={() => setPaymentAmountModal(m => ({ ...m, open: false }))}
+                                    className="text-slate-400 hover:text-slate-600 transition-colors text-xl font-bold"
+                                    type="button"
+                                    aria-label="Close"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="px-6 py-5">
+                                <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                                    {paymentAmountModal.title}
+                                </p>
+                                <input
+                                    type="number"
+                                    value={paymentAmountText}
+                                    onChange={(e) => setPaymentAmountText(e.target.value)}
+                                    placeholder="Enter amount (leave empty for full payment)"
+                                    className="w-full p-3 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400"
+                                    autoFocus
+                                    min="0"
+                                    step="0.01"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+                                <button
+                                    onClick={() => setPaymentAmountModal(m => ({ ...m, open: false }))}
+                                    className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all"
+                                    type="button"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        paymentAmountModal.onConfirm(paymentAmountText);
+                                        setPaymentAmountModal(m => ({ ...m, open: false }));
+                                    }}
+                                    className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all"
+                                    type="button"
+                                >
+                                    Record Payment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -38,6 +38,17 @@ import type { ReferralTimelineEntry, ReferralAuditEntry } from '../../../types/r
 import { EngagementDashboard } from './EngagementDashboard';
 import { EngagementTimeline } from './EngagementTimeline';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
 
 interface CustomerWorkspaceProps {
   customer: Customer;
@@ -304,64 +315,47 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-      {/* Top Header/Action Bar */}
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm">
-        <div className="flex items-center gap-4">
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: paper, overflow: 'hidden', position: 'relative', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink }}>
+      {/* Accent stripe */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, zIndex: 10, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
+
+      {/* Header */}
+      <div style={{ background: paper, borderBottom: `1px solid ${hairline}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button
             onClick={onBack}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
+            style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease', fontSize: 16 }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={16} />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-blue-100">
-              {customer.name.charAt(0)}
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0 }}>
+            <User size={19} color="#fff" />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h1 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2 }}>
+                {customer.name}
+              </h1>
+              <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, border: '1px solid', display: 'inline-flex', lineHeight: 1.3, ...(customer.status === 'Active' ? { background: teal[50], color: teal[700], borderColor: teal[100] } : customer.status === 'Suspended' ? { background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' } : customer.status === 'VIP' ? { background: amber[100], color: amber[600], borderColor: amber[300] } : customer.status === 'Prospect' ? { background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' } : { background: '#f1f5f9', color: '#475569', borderColor: '#e2e8f0' }) }}>
+                {customer.status}
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-slate-900 tracking-tight">{customer.name}</h2>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${customer.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                  customer.status === 'Suspended' ? 'bg-rose-50 text-rose-700 border-rose-100' :
-                    customer.status === 'VIP' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                      customer.status === 'Prospect' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                        'bg-slate-100 text-slate-600 border-slate-200'
-                  }`}>
-                  {customer.status}
-                </span>
-                {customer.segment && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 uppercase">
-                    {customer.segment}
-                  </span>
-                )}
-                {(customer as Customer & Record<string, unknown>).pipelineStage && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase">
-                    {(customer as Customer & Record<string, unknown>).pipelineStage}
-                  </span>
-                )}
-                {(customer as Customer & Record<string, unknown>).leadSource && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
-                    Source: {(customer as Customer & Record<string, unknown>).leadSource}
-                  </span>
-                )}
-                {customer.creditHold && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-100 animate-pulse">
-                    <ShieldAlert size={12} />
-                    Credit Hold
-                  </span>
-                )}
-              </div>
-              <p className="text-slate-500 font-medium">Customer ID: {customer.id} • {customer.category || 'Standard Client'}</p>
-            </div>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: inkSoft, letterSpacing: 0.02, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: teal[500], display: 'inline-block' }}></span>
+              Customer ID: {customer.id} &middot; {customer.category || 'Standard Client'}
+            </p>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => onEdit(customer)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 font-semibold hover:bg-slate-50 transition-all text-[13px]"
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 9, background: paper, border: `1.4px solid ${hairline}`, color: inkSoft, fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
           >
-            <Edit2 size={16} />
+            <Edit2 size={15} />
             Edit Profile
           </button>
           <AICustomerInsights
@@ -372,27 +366,40 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           />
           <button
             onClick={toggleCreditHold}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold text-[13px] ${customer.creditHold ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease', border: 'none', ...(customer.creditHold ? { background: danger, color: '#fff' } : { background: paper, border: `1.4px solid ${hairline}`, color: inkSoft }) }}
+            onMouseEnter={e => { if (!customer.creditHold) { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; } }}
+            onMouseLeave={e => { if (!customer.creditHold) { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; } }}
           >
-            {customer.creditHold ? <ShieldAlert size={16} /> : <ShieldAlert size={16} />}
+            <ShieldAlert size={15} />
             {customer.creditHold ? 'Release Hold' : 'Place on Hold'}
           </button>
-          <div className="h-6 w-px bg-slate-200 mx-1" />
-          <div className="relative">
+          <div style={{ width: 1, height: 24, background: hairline, margin: '0 4px' }} />
+          <div style={{ position: 'relative' }}>
             <button
               onClick={() => setIsTransactionMenuOpen(!isTransactionMenuOpen)}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 text-[13px]"
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 9, background: `linear-gradient(135deg, ${teal[500]}, ${teal[700]})`, color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease', border: 'none', boxShadow: `0 4px 12px -4px ${teal[400]}` }}
             >
-              <Plus size={16} />
+              <Plus size={15} />
               New Transaction
             </button>
             {isTransactionMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-30 animate-in fade-in zoom-in-95 origin-top-right">
+              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, width: 192, background: paper, borderRadius: 12, boxShadow: '0 20px 50px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.04)', padding: '6px 0', zIndex: 30 }}>
                 <button
-                  onClick={() => { alert('Opening New Invoice form...'); setIsTransactionMenuOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  onClick={() => {
+                    navigate('/sales-flow/invoices', {
+                      state: {
+                        action: 'create',
+                        customer: customer.name,
+                        customerId: customer.id
+                      }
+                    });
+                    setIsTransactionMenuOpen(false);
+                  }}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <FileText size={16} className="text-slate-400" />
+                  <FileText size={15} style={{ color: inkSoft, flexShrink: 0 }} />
                   New Invoice
                 </button>
                 <button
@@ -406,42 +413,65 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                     });
                     setIsTransactionMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <DollarSign size={16} className="text-slate-400" />
+                  <DollarSign size={15} style={{ color: inkSoft, flexShrink: 0 }} />
                   New Payment
                 </button>
                 <button
-                  onClick={() => { alert('Opening New Quotation form...'); setIsTransactionMenuOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  onClick={() => {
+                    navigate('/sales-flow/quotations', {
+                      state: {
+                        action: 'create',
+                        type: 'Quotation',
+                        customer: customer.name,
+                        customerId: customer.id
+                      }
+                    });
+                    setIsTransactionMenuOpen(false);
+                  }}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <FileSearch size={16} className="text-slate-400" />
+                  <FileSearch size={15} style={{ color: inkSoft, flexShrink: 0 }} />
                   New Quotation
                 </button>
               </div>
             )}
           </div>
-          <div className="relative group">
-            <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400">
-              <MoreHorizontal size={20} />
+          <div style={{ position: 'relative' }}>
+            <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease', fontSize: 16 }}
+              onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+              onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+            >
+              <MoreHorizontal size={18} />
             </button>
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right">
+            <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, width: 192, background: paper, borderRadius: 12, boxShadow: '0 20px 50px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.04)', padding: '6px 0', zIndex: 30, opacity: 0, visibility: 'hidden', transition: 'all .15s ease' }}
+              className="group-hover:opacity-100 group-hover:visible"
+            >
               <button
                 onClick={() => alert('Generating Price List...')}
-                className="w-full text-left px-4 py-2 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <TrendingUp size={16} className="text-slate-400" />
+                <TrendingUp size={15} style={{ color: inkSoft, flexShrink: 0 }} />
                 Customer Price List
               </button>
-              <div className="h-px bg-slate-100 my-1" />
+              <div style={{ height: 1, background: hairline, margin: '4px 0' }} />
               <button
                 onClick={() => {
                   setIsReminderSent(true);
                   setTimeout(() => setIsReminderSent(false), 3000);
                 }}
-                className="w-full text-left px-4 py-2 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <Clock size={16} className={isReminderSent ? "text-emerald-500" : "text-slate-400"} />
+                <Clock size={15} style={{ color: isReminderSent ? teal[500] : inkSoft, flexShrink: 0 }} />
                 {isReminderSent ? "Reminder Sent!" : "Send Reminder"}
               </button>
             </div>
@@ -449,246 +479,234 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {/* KPI Dashboard Row (QBO Style) */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-emerald-500 hover:bg-slate-50 transition-all duration-200">
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
-              <DollarSign size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total Balance</p>
-              <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{kpis.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full w-fit">
-                <TrendingUp size={10} />
-                Good Standing
-              </div>
-            </div>
+      {/* Main Content */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* Sidebar Tabs */}
+        <div style={{ width: 240, flexShrink: 0, background: paper, borderRight: `1px solid ${hairline}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.8px', padding: '16px 14px 10px' }}>
+            Customer Sections
           </div>
-
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-rose-500 hover:bg-slate-50 transition-all duration-200">
-            <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg shrink-0">
-              <AlertTriangle size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Overdue Balance</p>
-              <p className={`text-lg md:text-xl font-semibold finance-nums ${kpis.overdueBalance > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{currency}{kpis.overdueBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <p className="text-[10px] text-slate-500 font-medium mt-0.5">{customerInvoices.filter(i => i.status === 'Overdue').length} invoices</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-blue-500 hover:bg-slate-50 transition-all duration-200">
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg shrink-0">
-              <BadgeCheck size={20} />
-            </div>
-            <div className="flex-1">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Credit Limit</p>
-              <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{kpis.creditLimit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <div className="mt-1.5 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${(kpis.balance / kpis.creditLimit) > 0.8 ? 'bg-rose-500' : 'bg-blue-500'}`}
-                  style={{ width: `${Math.min((kpis.balance / kpis.creditLimit) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium mt-0.5">{Math.round((kpis.balance / kpis.creditLimit) * 100)}% Utilized</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-amber-500 hover:bg-slate-50 transition-all duration-200">
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0">
-              <Clock size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Outstanding</p>
-              <p className={`text-lg md:text-xl font-semibold finance-nums ${kpis.outstandingBalance > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{currency}{(kpis.outstandingBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <p className="text-[10px] text-slate-500 font-medium mt-0.5">Open invoices & unpaid</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 border-l-4 border-l-indigo-500 hover:bg-slate-50 transition-all duration-200">
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
-              <TrendingUp size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">YTD Purchases</p>
-              <p className="text-lg md:text-xl font-semibold text-slate-900 finance-nums">{currency}{kpis.ytdSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <p className="text-[10px] text-slate-500 font-medium mt-0.5">FY {new Date().getFullYear()}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="px-6 border-b border-slate-200 bg-white sticky top-[65px] z-10">
-          <div className="flex items-center gap-8">
-            {(['Overview', 'Timeline', 'Invoices', 'Payments', 'Ledger', 'Accounting', 'Wallet', 'Referrals', 'Engagement', 'Documents', 'Segmentation', 'Settings', 'Security Audit'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-3 text-[13px] font-bold transition-all border-b-2 relative ${activeTab === tab
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
-                  }`}
-              >
-                {tab}
-                {tab === 'Invoices' && customerInvoices.length > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px]">
-                    {customerInvoices.length}
-                  </span>
-                )}
-                {tab === 'Accounting' && customerLedger.length > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-full text-[10px]">
-                    {customerLedger.length}
-                  </span>
-                )}
-                {tab === 'Wallet' && customerWalletTransactions.length > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px]">
-                    {customerWalletTransactions.length}
-                  </span>
-                )}
-                {tab === 'Referrals' && referrals.length > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full text-[10px]">
-                    {referrals.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab Content */}
-        <div className="p-6">
-          {activeTab === 'Overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Profile Details */}
-              <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                      <User size={18} className="text-blue-600" />
-                      Client Profile
-                    </h3>
+          <div style={{ flex: 1, overflow: 'auto', padding: '0 10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {([
+              { tab: 'Overview', icon: <User size={16} />, color: teal[500], desc: 'KPI summary & client profile overview' },
+              { tab: 'Timeline', icon: <History size={16} />, color: teal[500], desc: 'Unified chronological activity feed' },
+              { tab: 'Invoices', icon: <FileText size={16} />, color: teal[500], desc: 'All invoices & outstanding balances' },
+              { tab: 'Payments', icon: <DollarSign size={16} />, color: teal[500], desc: 'Payment history & transaction records' },
+              { tab: 'Ledger', icon: <FileBarChart size={16} />, color: teal[500], desc: 'Running balance & date-filtered entries' },
+              { tab: 'Accounting', icon: <Briefcase size={16} />, color: teal[500], desc: 'Double-entry GL postings & account views' },
+              { tab: 'Wallet', icon: <CreditCard size={16} />, color: teal[500], desc: 'Prepaid wallet deposits & deductions' },
+              { tab: 'Referrals', icon: <TrendingUp size={16} />, color: amber[500], desc: 'Referral program & reward earnings' },
+              { tab: 'Engagement', icon: <MessageSquare size={16} />, color: teal[500], desc: 'Interaction metrics & activity timeline' },
+              { tab: 'Documents', icon: <Paperclip size={16} />, color: teal[500], desc: 'Uploaded files & generated reports' },
+              { tab: 'Segmentation', icon: <PieChart size={16} />, color: teal[500], desc: 'CRM segment rules & classification' },
+              { tab: 'Settings', icon: <Settings size={16} />, color: teal[500], desc: 'Billing terms, shipping & preferences' },
+              { tab: 'Security Audit', icon: <ShieldAlert size={16} />, color: teal[500], desc: 'Immutable client modification trail' },
+            ] as const).map(({ tab, icon, color, desc }) => {
+              const counts: Record<string, number> = {
+                Invoices: customerInvoices.length,
+                Accounting: customerLedger.length,
+                Wallet: customerWalletTransactions.length,
+                Referrals: referrals.length,
+              };
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 12px', borderRadius: 10,
+                    background: paper,
+                    border: `1.4px solid ${isActive ? teal[200] : hairline}`,
+                    borderLeft: `4px solid ${isActive ? color : 'transparent'}`,
+                    cursor: 'pointer', textAlign: 'left', width: '100%',
+                    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.06)' : '0 1px 2px rgba(0,0,0,0.03)',
+                    transition: 'all .15s ease',
+                    position: 'relative',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.borderColor = teal[200];
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.borderColor = hairline;
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)';
+                    }
+                  }}
+                >
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: isActive ? `${color}15` : teal[50],
+                    color: isActive ? color : inkSoft,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, transition: 'all .15s ease'
+                  }}>
+                    {icon}
                   </div>
-                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
-                          <Mail size={16} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: isActive ? ink : inkSoft, transition: 'color .15s ease' }}>{tab}</div>
+                    <div style={{ fontSize: 9.5, color: inkSoft, marginTop: 1, lineHeight: 1.3, opacity: 0.7 }}>{desc}</div>
+                  </div>
+                  {counts[tab] > 0 && (
+                    <span style={{
+                      padding: '1px 7px', borderRadius: 20,
+                      fontSize: 10, fontWeight: 700, lineHeight: 1.4,
+                      background: isActive ? `${color}15` : teal[50],
+                      color: isActive ? color : inkSoft,
+                      flexShrink: 0
+                    }}>
+                      {counts[tab]}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div style={{ flex: 1, overflow: 'auto', background: paper }}>
+          {activeTab === 'Overview' && (
+            <div style={{ display: 'flex', gap: 24, padding: 24 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {/* KPI Dashboard Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                  {[
+                    { icon: DollarSign, label: 'Total Balance', value: kpis.balance, color: teal[500], accent: teal[500], sub: 'Good Standing' },
+                    { icon: AlertTriangle, label: 'Overdue Balance', value: kpis.overdueBalance, color: danger, accent: danger, sub: `${customerInvoices.filter(i => i.status === 'Overdue').length} invoices` },
+                    { icon: Clock, label: 'Outstanding', value: kpis.outstandingBalance || 0, color: amber[500], accent: amber[500], sub: 'Open invoices & unpaid' },
+                    { icon: TrendingUp, label: 'YTD Purchases', value: kpis.ytdSales, color: teal[700], accent: teal[500], sub: `FY ${new Date().getFullYear()}` },
+                  ].map((kpi, i) => {
+                    const Icon = kpi.icon;
+                    return (
+                      <div key={i} style={{ background: paper, padding: '14px 16px', borderRadius: 12, border: `1px solid ${hairline}`, borderLeft: `4px solid ${kpi.accent}`, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                        <div style={{ padding: 8, background: `${kpi.color}15`, borderRadius: 8, color: kpi.color, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon size={20} />
                         </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">Email Address</p>
-                          <p className="font-semibold text-slate-700">{customer.email || 'N/A'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
-                          <Phone size={16} />
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">Phone Number</p>
-                          <p className="font-semibold text-slate-700">{customer.phone || 'N/A'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
-                          <Globe size={16} />
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">Website</p>
-                          <p className="font-semibold text-slate-700">{customer.website || 'N/A'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
-                          <MapPin size={16} />
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">Billing Address</p>
-                          <p className="font-semibold text-slate-700 whitespace-pre-line">{customer.billingAddress || customer.address || 'N/A'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
-                          <Briefcase size={16} />
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">Account Manager</p>
-                          <p className="font-semibold text-slate-700">{customer.assignedSalesperson || 'Unassigned'}</p>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.05, lineHeight: 1, marginBottom: 4 }}>{kpi.label}</p>
+                          <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums' }}>{currency}{kpi.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                          <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: inkSoft, marginTop: 4 }}>{kpi.sub}</p>
                         </div>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {[
+                      { icon: Mail, label: 'Email Address', value: customer.email || 'N/A' },
+                      { icon: Phone, label: 'Phone Number', value: customer.phone || 'N/A' },
+                      { icon: Globe, label: 'Website', value: customer.website || 'N/A' },
+                    ].map((item, i) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ padding: 8, background: teal[50], borderRadius: 8, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Icon size={16} />
+                          </div>
+                          <div>
+                            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.03 }}>{item.label}</p>
+                            <p style={{ margin: 0, fontWeight: 600, color: ink }}>{item.value}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {[
+                      { icon: MapPin, label: 'Billing Address', value: customer.billingAddress || customer.address || 'N/A' },
+                      { icon: Briefcase, label: 'Account Manager', value: customer.assignedSalesperson || 'Unassigned' },
+                    ].map((item, i) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ padding: 8, background: teal[50], borderRadius: 8, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Icon size={16} />
+                          </div>
+                          <div>
+                            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.03 }}>{item.label}</p>
+                            <p style={{ margin: 0, fontWeight: 600, color: ink, whiteSpace: 'pre-line' }}>{item.value}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Notes Section */}
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                      <MessageSquare size={18} className="text-blue-600" />
+                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <MessageSquare size={18} style={{ color: teal[600] }} />
                       Client Notes
                     </h3>
                   </div>
-                  <div className="p-6">
-                    <p className="text-slate-600 whitespace-pre-line leading-relaxed">
+                  <div style={{ padding: 20 }}>
+                    <p style={{ margin: 0, color: inkSoft, lineHeight: 1.6, whiteSpace: 'pre-line' }}>
                       {customer.notes || 'No notes available for this client.'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Sidebar Stats */}
-              <div className="space-y-6">
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                      <PieChart size={18} className="text-blue-600" />
+              <div style={{ width: 300, display: 'flex', flexDirection: 'column', gap: 24, flexShrink: 0 }}>
+                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <PieChart size={18} style={{ color: teal[600] }} />
                       Financial Health
                     </h3>
                   </div>
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-medium">Avg. Payment Days</span>
-                      <span className="font-bold text-slate-900">{customer.avgPaymentDays || 12} Days</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-medium">Profitability Score</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-emerald-500 rounded-full"
-                            style={{ width: `${customer.profitabilityScore || 85}%` }}
-                          />
-                        </div>
-                        <span className="font-bold text-slate-900">{customer.profitabilityScore || 85}%</span>
+                  <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {[
+                      { label: 'Avg. Payment Days', value: `${customer.avgPaymentDays || 12} Days` },
+                      { label: 'Profitability Score', value: `${customer.profitabilityScore || 85}%`, bar: customer.profitabilityScore || 85 },
+                      { label: 'Risk Profile', value: 'Low Risk', badge: true },
+                    ].map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: inkSoft }}>{item.label}</span>
+                        {'bar' in item ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 80, background: teal[100], height: 6, borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', background: teal[500], borderRadius: 4, width: `${item.bar}%` }} />
+                            </div>
+                            <span style={{ fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{item.value}</span>
+                          </div>
+                        ) : 'badge' in item && item.badge ? (
+                          <span style={{ padding: '2px 10px', background: teal[50], color: teal[700], borderRadius: 20, fontSize: 10, fontWeight: 700, border: `1px solid ${teal[100]}`, textTransform: 'uppercase' }}>{item.value}</span>
+                        ) : (
+                          <span style={{ fontWeight: 700, color: ink }}>{item.value}</span>
+                        )}
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-medium">Risk Profile</span>
-                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold border border-emerald-100 uppercase">Low Risk</span>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                      <History size={18} className="text-blue-600" />
+                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <History size={18} style={{ color: teal[600] }} />
                       Recent Activity
                     </h3>
                   </div>
-                  <div className="p-4 space-y-3">
+                  <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {customerLogs.slice(0, 5).map(log => (
-                      <div key={log.id} className="flex gap-3">
-                        <div className="mt-1 w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      <div key={log.id} style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ marginTop: 4, width: 8, height: 8, borderRadius: '50%', background: teal[500], flexShrink: 0 }} />
                         <div>
-                          <p className="text-[12.5px] font-semibold text-slate-700">{log.details}</p>
-                          <p className="text-[11px] text-slate-400">{format(parseISO(log.date), 'MMM dd, yyyy HH:mm')}</p>
+                          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: ink }}>{log.details}</p>
+                          <p style={{ margin: 0, fontSize: 11, color: inkSoft }}>{format(parseISO(log.date), 'MMM dd, yyyy HH:mm')}</p>
                         </div>
                       </div>
                     ))}
                     {customerLogs.length === 0 && (
-                      <p className="text-center py-4 text-slate-400 italic">No recent activity logs.</p>
+                      <p style={{ margin: 0, textAlign: 'center', padding: '12px 0', color: inkSoft, fontStyle: 'italic' }}>No recent activity logs.</p>
                     )}
                   </div>
                 </div>
@@ -697,19 +715,20 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Timeline' && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-4xl mx-auto">
-              <h3 className="text-lg font-bold text-slate-900 mb-6">Unified History Feed</h3>
-              <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
+            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 4px rgba(0,0,0,.03)', padding: 24, maxWidth: 960, margin: '24px auto' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, color: ink, fontSize: 18, marginBottom: 24 }}>Unified History Feed</h3>
+              <div style={{ position: 'relative' }} className="space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
                 {[...customerInvoices, ...customerPaymentsList, ...customerSales, ...customerQuotes]
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .map((item: any, idx) => (
                     <div key={item.id + idx} className="relative flex items-center justify-between md:justify-start md:odd:flex-row-reverse group">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-500 shadow transition-all z-10 shrink-0">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', border: '2px solid #fff', background: teal[100], color: teal[700], boxShadow: '0 2px 6px rgba(0,0,0,.08)', transition: 'all .15s ease', zIndex: 10, flexShrink: 0 }}
+                        className="group-hover:bg-teal-600 group-hover:text-white">
                         {item.totalAmount !== undefined ? <FileText size={18} /> : <DollarSign size={18} />}
                       </div>
-                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-slate-100 bg-white group-hover:border-blue-200 transition-all shadow-sm ml-6">
+                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-slate-100 bg-white group-hover:border-teal-200 transition-all shadow-sm ml-6">
                         <div className="flex items-center justify-between mb-1">
-                          <time className="font-bold text-blue-600 text-[11px] uppercase">{format(parseISO(item.date), 'MMM dd, yyyy')}</time>
+                          <time style={{ fontWeight: 700, color: teal[600], fontSize: 11, textTransform: 'uppercase' }}>{format(parseISO(item.date), 'MMM dd, yyyy')}</time>
                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${item.status === 'Paid' || item.status === 'Cleared' ? 'bg-emerald-50 text-emerald-700' :
                             item.status === 'Unpaid' || item.status === 'Overdue' ? 'bg-rose-50 text-rose-700' :
                               'bg-slate-100 text-slate-600'
@@ -737,10 +756,10 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Invoices' && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', margin: 24 }}>
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100">
+                  <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Date</th>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Invoice #</th>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Status</th>
@@ -770,10 +789,10 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                          <button className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
                             <Download size={16} />
                           </button>
-                          <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                          <button className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
                             <ExternalLink size={16} />
                           </button>
                         </div>
@@ -786,10 +805,10 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Payments' && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', margin: 24 }}>
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100">
+                  <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Date</th>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Payment #</th>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Method</th>
@@ -825,11 +844,11 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
             <CRMSegmentation />
           )}
           {activeTab === 'Settings' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <Settings size={18} className="text-blue-600" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ padding: 24 }}>
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Settings size={18} style={{ color: teal[600] }} />
                     Billing Settings
                   </h3>
                 </div>
@@ -845,10 +864,10 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <Truck size={18} className="text-blue-600" />
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Truck size={18} style={{ color: teal[600] }} />
                     Shipping & Logistics
                   </h3>
                 </div>
@@ -872,7 +891,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Security Audit' && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 overflow-hidden flex flex-col h-[600px]">
+            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: 24, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 600, margin: 24 }}>
               <AuditTimeline 
                 logs={customerLogs} 
                 title={`Security Audit: ${customer.name}`}
@@ -882,14 +901,14 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Documents' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
-                <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="space-y-6" style={{ padding: 24 }}>
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '32px 24px', textAlign: 'center' }}>
+                <div style={{ width: 64, height: 64, background: teal[50], color: inkSoft, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                   <Paperclip size={32} />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2">No Documents Uploaded</h3>
-                <p className="text-slate-500 mb-6 max-w-xs mx-auto">Upload contracts, purchase orders, or ID documents for this customer.</p>
-                <div className="flex items-center justify-center gap-3">
+                <h3 style={{ margin: 0, fontWeight: 700, color: ink, fontSize: 18, marginBottom: 8 }}>No Documents Uploaded</h3>
+                <p style={{ margin: 0, color: inkSoft, marginBottom: 24, maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>Upload contracts, purchase orders, or ID documents for this customer.</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                   <button
                     onClick={() => {
                       setIsUploading(true);
@@ -899,7 +918,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                       }, 2000);
                     }}
                     disabled={isUploading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 disabled:opacity-50"
+                    style={{ padding: '10px 20px', background: `linear-gradient(135deg, ${teal[500]}, ${teal[700]})`, color: '#fff', borderRadius: 9, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', boxShadow: `0 4px 12px -4px ${teal[400]}`, opacity: isUploading ? 0.5 : 1 }}
                   >
                     {isUploading ? 'Uploading...' : 'Upload Document'}
                   </button>
@@ -908,7 +927,9 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                       const url = prompt('Enter folder URL (Google Drive, Dropbox, etc.):');
                       if (url) alert(`Folder linked: ${url}`);
                     }}
-                    className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-50 transition-all"
+                    style={{ padding: '10px 20px', background: paper, border: `1.4px solid ${hairline}`, color: inkSoft, borderRadius: 9, fontWeight: 700, cursor: 'pointer', transition: 'all .15s ease' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
                   >
                     Link Shared Folder
                   </button>
@@ -916,18 +937,18 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                      <FileText size={18} className="text-blue-600" />
+                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <FileText size={18} style={{ color: teal[600] }} />
                       Generated Reports
                     </h3>
                   </div>
                   <div className="p-6">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group hover:border-blue-200 transition-all">
+                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group hover:border-teal-200 transition-all">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-white rounded shadow-sm text-blue-600">
+                          <div className="p-2 bg-white rounded shadow-sm" style={{ color: teal[600] }}>
                             <FileText size={16} />
                           </div>
                           <div>
@@ -963,25 +984,25 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                      <Settings size={18} className="text-blue-600" />
+                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
+                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Settings size={18} style={{ color: teal[600] }} />
                       Document Settings
                     </h3>
                   </div>
                   <div className="p-6 space-y-4">
-                    <label className="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors cursor-pointer">
+                    <label className="flex items-center justify-between p-2 hover:bg-teal-50 rounded transition-colors cursor-pointer">
                       <span className="font-medium text-slate-700">Auto-attach Invoices to Statement</span>
-                      <input type="checkbox" name="autoAttachInvoices" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                      <input type="checkbox" name="autoAttachInvoices" className="rounded border-slate-300 focus:ring-teal-500" style={{ accentColor: teal[600] }} defaultChecked />
                     </label>
-                    <label className="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors cursor-pointer">
+                    <label className="flex items-center justify-between p-2 hover:bg-teal-50 rounded transition-colors cursor-pointer">
                       <span className="font-medium text-slate-700">Email Monthly Statement</span>
-                      <input type="checkbox" name="emailMonthlyStatement" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                      <input type="checkbox" name="emailMonthlyStatement" className="rounded border-slate-300 focus:ring-teal-500" style={{ accentColor: teal[600] }} />
                     </label>
-                    <label className="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors cursor-pointer">
+                    <label className="flex items-center justify-between p-2 hover:bg-teal-50 rounded transition-colors cursor-pointer">
                       <span className="font-medium text-slate-700">Include Sub-accounts in Ledger</span>
-                      <input type="checkbox" name="includeSubAccounts" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                      <input type="checkbox" name="includeSubAccounts" className="rounded border-slate-300 focus:ring-teal-500" style={{ accentColor: teal[600] }} defaultChecked />
                     </label>
                   </div>
                 </div>
@@ -990,27 +1011,27 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Ledger' && (
-            <div className="space-y-4">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <h3 className="font-bold text-slate-900">Transaction Ledger</h3>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1">
-                      <Calendar size={14} className="text-slate-400" />
+            <div className="space-y-4" style={{ padding: 24 }}>
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', flexDirection: 'column', gap: 16 }} className="md:flex-row md:items-center md:justify-between">
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink }}>Transaction Ledger</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: paper, border: `1px solid ${hairline}`, borderRadius: 8, padding: '4px 8px' }}>
+                      <Calendar size={14} style={{ color: inkSoft }} />
                       <input
                         type="date"
                         name="ledgerStartDate"
                         value={ledgerStartDate}
                         onChange={(e) => setLedgerStartDate(e.target.value)}
-                        className="text-[11px] font-semibold text-slate-700 outline-none bg-transparent"
+                        style={{ fontSize: 11, fontWeight: 600, color: ink, outline: 'none', border: 'none', background: 'transparent', fontFamily: "'Inter', sans-serif" }}
                       />
-                      <span className="text-slate-300">-</span>
+                      <span style={{ color: hairline }}>-</span>
                       <input
                         type="date"
                         name="ledgerEndDate"
                         value={ledgerEndDate}
                         onChange={(e) => setLedgerEndDate(e.target.value)}
-                        className="text-[11px] font-semibold text-slate-700 outline-none bg-transparent"
+                        style={{ fontSize: 11, fontWeight: 600, color: ink, outline: 'none', border: 'none', background: 'transparent', fontFamily: "'Inter', sans-serif" }}
                       />
                     </div>
 
@@ -1018,7 +1039,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                       name="ledgerTypeFilter"
                       value={ledgerTypeFilter}
                       onChange={(e) => setLedgerTypeFilter(e.target.value as 'All' | 'Invoice' | 'Payment')}
-                      className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20"
+                      style={{ padding: '4px 10px', background: paper, border: `1px solid ${hairline}`, borderRadius: 8, fontSize: 11, fontWeight: 700, color: ink, outline: 'none', cursor: 'pointer' }}
                     >
                       <option value="All">All Types</option>
                       <option value="Invoice">Invoices</option>
@@ -1030,7 +1051,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                         name="ledgerSubAccountFilter"
                         value={ledgerSubAccountFilter}
                         onChange={(e) => setLedgerSubAccountFilter(e.target.value)}
-                        className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20"
+                        style={{ padding: '4px 10px', background: paper, border: `1px solid ${hairline}`, borderRadius: 8, fontSize: 11, fontWeight: 700, color: ink, outline: 'none', cursor: 'pointer' }}
                       >
                         <option value="All">All Accounts</option>
                         <option value="Main">Main Account</option>
@@ -1040,7 +1061,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                       </select>
                     )}
 
-                    <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block" />
+                    <div style={{ width: 1, height: 24, background: hairline, margin: '0 4px' }} className="hidden md:block" />
 
                     <button
                       onClick={handleExportLedger}
@@ -1053,7 +1074,9 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
 
                     <button
                       onClick={handlePreviewStatement}
-                      className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-lg text-blue-600 font-bold hover:bg-blue-50 transition-all text-[11px]"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 8, color: teal[600], fontWeight: 700, cursor: 'pointer', transition: 'all .15s ease', fontSize: 11 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; }}
                       title="Download PDF Statement"
                     >
                       <FileDown size={14} />
@@ -1064,7 +1087,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100">
+                      <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Date</th>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Type</th>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Account</th>
@@ -1075,7 +1098,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      <tr className="bg-blue-50/30">
+                      <tr style={{ background: teal[50] }}>
                         <td colSpan={6} className="px-6 py-3 font-bold text-slate-500">Opening Balance</td>
                         <td className="px-6 py-3 text-right font-bold text-slate-900 finance-nums">{currency}0.00</td>
                       </tr>
@@ -1098,16 +1121,15 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Accounting' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-4 animate-in fade-in duration-300" style={{ padding: 24 }}>
               {/* Account Actions Menu (Floating) */}
               {accountMenu && (
                 <div
-                  className="fixed z-[200] bg-white rounded-xl shadow-2xl border border-slate-200 py-2 w-56 animate-in fade-in zoom-in-95 duration-200"
-                  style={{ top: accountMenu.y + 8, left: accountMenu.x }}
+                  style={{ position: 'fixed', zIndex: 200, background: paper, borderRadius: 12, boxShadow: '0 20px 50px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.04)', top: accountMenu.y + 8, left: accountMenu.x, padding: '6px 0', width: 224 }}
                   onMouseLeave={() => setAccountMenu(null)}
                 >
-                  <div className="px-4 py-2 border-b border-slate-50 mb-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Actions</p>
+                  <div style={{ padding: '8px 16px', borderBottom: `1px solid ${hairline}`, marginBottom: 4 }}>
+                    <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1 }}>Account Actions</p>
                     <p className="text-[11px] font-bold text-slate-900 truncate">
                       {accounts.find(a => a.id === accountMenu.id || a.code === accountMenu.id)?.name || accountMenu.id}
                     </p>
@@ -1172,13 +1194,13 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                   </button>
                 </div>
               )}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <History size={18} className="text-blue-600" />
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <History size={18} style={{ color: teal[600] }} />
                     General Ledger Postings
                   </h3>
-                  <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-widest">Double Entry View</span>
+                  <span style={{ fontSize: 10, fontWeight: 800, background: teal[100], color: teal[700], padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.1 }}>Double Entry View</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
@@ -1259,13 +1281,13 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Referrals' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-6 animate-in fade-in duration-300" style={{ padding: 24 }}>
               {/* Timeline Section */}
               {referralTimeline.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                      <History size={18} className="text-amber-600" />
+                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <History size={18} style={{ color: amber[500] }} />
                       Referral Timeline
                     </h3>
                   </div>
@@ -1289,50 +1311,39 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-2xl shadow-lg shadow-amber-100 text-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 bg-white/20 rounded-lg">
-                      <TrendingUp size={24} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                {[
+                  { icon: TrendingUp, label: 'Referrals Made', value: referrals.length, sub: 'Total referrals', color: amber[500], accent: amber[500] },
+                  { icon: DollarSign, label: 'Rewards Earned', value: referralRewards.filter(r => r.status === 'paid' || r.status === 'approved').reduce((sum, r) => sum + r.amount, 0), sub: 'Total rewards paid', color: teal[500], accent: teal[500], isCurrency: true },
+                  { icon: Clock, label: 'Pending', value: referralRewards.filter(r => r.status === 'pending').length, sub: 'Awaiting approval', color: amber[500], accent: amber[500] },
+                ].map((kpi, i) => {
+                  const Icon = kpi.icon;
+                  return (
+                    <div key={i} style={{ background: paper, padding: '14px 16px', borderRadius: 12, border: `1px solid ${hairline}`, borderLeft: `4px solid ${kpi.accent}`, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                      <div style={{ padding: 8, background: `${kpi.color}15`, borderRadius: 8, color: kpi.color, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon size={20} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.05, lineHeight: 1, marginBottom: 4 }}>{kpi.label}</p>
+                        <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums' }}>{kpi.isCurrency ? currency : ''}{typeof kpi.value === 'number' ? kpi.value.toLocaleString(undefined, { minimumFractionDigits: kpi.isCurrency ? 2 : 0 }) : kpi.value}</p>
+                        <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: inkSoft, marginTop: 4 }}>{kpi.sub}</p>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Referrals Made</span>
-                  </div>
-                  <div className="text-3xl font-black">{referrals.length}</div>
-                  <p className="text-[11px] font-bold mt-2 opacity-80 uppercase tracking-tight">Total referrals</p>
-                </div>
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Rewards Earned</span>
-                    <DollarSign size={16} className="text-emerald-500" />
-                  </div>
-                  <div className="text-2xl font-black text-slate-900 finance-nums">
-                    {currency}{referralRewards.filter(r => r.status === 'paid' || r.status === 'approved').reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Total rewards paid</p>
-                </div>
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Pending</span>
-                    <Clock size={16} className="text-amber-500" />
-                  </div>
-                  <div className="text-2xl font-black text-slate-900 finance-nums">
-                    {referralRewards.filter(r => r.status === 'pending').length}
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Awaiting approval</p>
-                </div>
+                  );
+                })}
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <TrendingUp size={18} className="text-amber-600" />
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <TrendingUp size={18} style={{ color: amber[500] }} />
                     Referrals Made
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100">
+                      <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Referred Customer</th>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Code</th>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Date</th>
@@ -1363,17 +1374,17 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <DollarSign size={18} className="text-emerald-600" />
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <DollarSign size={18} style={{ color: teal[600] }} />
                     Reward History
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100">
+                      <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Date</th>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Invoice</th>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Amount</th>
@@ -1407,12 +1418,12 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Engagement' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-6 animate-in fade-in duration-300" style={{ padding: 24 }}>
               <EngagementDashboard customerId={customer.id} customer={customer} />
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <History size={18} className="text-purple-600" />
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <History size={18} style={{ color: teal[600] }} />
                     Engagement Timeline
                   </h3>
                 </div>
@@ -1424,57 +1435,42 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Wallet' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-6 animate-in fade-in duration-300" style={{ padding: 24 }}>
               {/* Wallet Header */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-2xl shadow-lg shadow-emerald-100 text-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 bg-white/20 rounded-lg">
-                      <CreditCard size={24} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                {[
+                  { icon: CreditCard, label: 'Current Balance', value: customer.walletBalance || 0, sub: 'Available for purchases', color: teal[500], accent: teal[500], isCurrency: true },
+                  { icon: Plus, label: 'Total Deposits', value: customerWalletTransactions.filter(t => t.type === 'Deposit').reduce((sum, t) => sum + t.amount, 0), sub: 'Lifetime contributions', color: teal[500], accent: teal[500], isCurrency: true },
+                  { icon: TrendingUp, label: 'Total Spent', value: customerWalletTransactions.filter(t => t.type === 'Deduction').reduce((sum, t) => sum + t.amount, 0), sub: 'Used for payments', color: danger, accent: danger, isCurrency: true },
+                ].map((kpi, i) => {
+                  const Icon = kpi.icon;
+                  return (
+                    <div key={i} style={{ background: paper, padding: '14px 16px', borderRadius: 12, border: `1px solid ${hairline}`, borderLeft: `4px solid ${kpi.accent}`, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                      <div style={{ padding: 8, background: `${kpi.color}15`, borderRadius: 8, color: kpi.color, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon size={20} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.05, lineHeight: 1, marginBottom: 4 }}>{kpi.label}</p>
+                        <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums' }}>{kpi.isCurrency ? currency : ''}{kpi.value.toLocaleString(undefined, { minimumFractionDigits: kpi.isCurrency ? 2 : 0 })}</p>
+                        <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: inkSoft, marginTop: 4 }}>{kpi.sub}</p>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Current Balance</span>
-                  </div>
-                  <div className="text-3xl font-black finance-nums">
-                    {currency}{(customer.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-[11px] font-bold mt-2 opacity-80 uppercase tracking-tight">Available for purchases</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Deposits</span>
-                    <Plus size={16} className="text-emerald-500" />
-                  </div>
-                  <div className="text-2xl font-black text-slate-900 finance-nums">
-                    {currency}{customerWalletTransactions.filter(t => t.type === 'Deposit').reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Lifetime contributions</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Spent</span>
-                    <TrendingUp size={16} className="text-blue-500" />
-                  </div>
-                  <div className="text-2xl font-black text-slate-900 finance-nums">
-                    {currency}{customerWalletTransactions.filter(t => t.type === 'Deduction').reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Used for payments</p>
-                </div>
+                  );
+                })}
               </div>
 
               {/* Wallet Transactions Table */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <History size={18} className="text-emerald-600" />
+              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <History size={18} style={{ color: teal[600] }} />
                     Wallet Activity History
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100">
+                      <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Date</th>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Type</th>
                         <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Description</th>
@@ -1515,34 +1511,36 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
 
       {/* Account Activity Modal */}
       {viewingAccountId && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col border border-slate-200">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-600 rounded-lg text-white">
-                  <History size={20} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)', width: '100%', maxWidth: 960, maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', border: `1px solid ${hairline}` }}>
+            <div style={{ padding: '16px 24px', borderBottom: `1px solid ${hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: teal[50] }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <History size={20} color="#fff" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900">
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink }}>
                     {accounts.find(a => a.id === viewingAccountId || a.code === viewingAccountId)?.name || viewingAccountId} Activity
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">
+                  <p style={{ margin: '2px 0 0', fontSize: 11, color: inkSoft }}>
                     Ledger Transactions for {customer.name}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setViewingAccountId(null)}
-                className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
+                style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease' }}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
               >
-                <X size={20} />
+                <X size={16} />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-0">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 z-10">
-                  <tr className="bg-slate-100 border-b border-slate-200">
+                  <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Date</th>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Description</th>
                     <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-widest">Reference</th>
@@ -1582,30 +1580,32 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
               </table>
             </div>
 
-            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-              <div className="flex gap-4">
-                <div className="text-[11px] font-bold">
-                  <span className="text-slate-400 uppercase tracking-widest mr-2">Total Debit:</span>
-                  <span className="text-emerald-600 finance-nums">
+            <div style={{ padding: '14px 24px', borderTop: `1px solid ${hairline}`, background: teal[50], display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  <span style={{ color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1, marginRight: 6 }}>Total Debit:</span>
+                  <span style={{ color: teal[600], fontFamily: "'JetBrains Mono', monospace" }}>
                     {currency}{accountTransactions
                       .filter(t => t.debitAccountId === viewingAccountId)
                       .reduce((sum, t) => sum + t.amount, 0)
                       .toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
-                </div>
-                <div className="text-[11px] font-bold">
-                  <span className="text-slate-400 uppercase tracking-widest mr-2">Total Credit:</span>
-                  <span className="text-rose-600 finance-nums">
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  <span style={{ color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.1, marginRight: 6 }}>Total Credit:</span>
+                  <span style={{ color: danger, fontFamily: "'JetBrains Mono', monospace" }}>
                     {currency}{accountTransactions
                       .filter(t => t.creditAccountId === viewingAccountId)
                       .reduce((sum, t) => sum + t.amount, 0)
                       .toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
-                </div>
+                </span>
               </div>
               <button
                 onClick={() => setViewingAccountId(null)}
-                className="px-4 py-2 bg-slate-900 text-white rounded-lg font-bold text-[12px] hover:bg-slate-800 transition-all"
+                style={{ padding: '8px 18px', background: ink, color: '#fff', borderRadius: 9, fontWeight: 700, fontSize: 12, border: 'none', cursor: 'pointer', transition: 'all .15s ease' }}
+                onMouseEnter={e => e.currentTarget.style.background = teal[800]}
+                onMouseLeave={e => e.currentTarget.style.background = ink}
               >
                 Close View
               </button>
@@ -1616,23 +1616,25 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
 
       {/* Statement Preview Modal */}
       {isStatementModalOpen && statementPdfUrl && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                <FileText className="text-blue-600" size={20} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(15,23,42,0.75)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)', width: '100%', maxWidth: 1200, height: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 24px', borderBottom: `1px solid ${hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: teal[50] }}>
+              <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FileText size={20} style={{ color: teal[600] }} />
                 Statement Preview
               </h3>
               <button
                 onClick={() => setIsStatementModalOpen(false)}
-                className="p-2 hover:bg-slate-200 text-slate-500 rounded-full transition-colors"
+                style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease' }}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
                 title="Close Preview"
               >
-                <X size={20} />
+                <X size={16} />
               </button>
             </div>
 
-            <div className="flex-1 bg-slate-100 p-4 overflow-hidden">
+            <div className="flex-1" style={{ background: teal[50], padding: 16, overflow: 'hidden' }}>
               <iframe
                 src={statementPdfUrl}
                 className="w-full h-full rounded-lg shadow-sm border border-slate-300 bg-white"
@@ -1640,17 +1642,21 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
               />
             </div>
 
-            <div className="px-6 py-4 border-t border-slate-200 bg-white flex justify-end gap-3">
+            <div style={{ padding: '14px 24px', borderTop: `1px solid ${hairline}`, background: paper, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
               <button
                 onClick={() => setIsStatementModalOpen(false)}
-                className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition-colors"
+                style={{ padding: '9px 18px', background: paper, border: `1.4px solid ${hairline}`, color: inkSoft, borderRadius: 9, fontWeight: 700, cursor: 'pointer', transition: 'all .15s ease', fontSize: 13 }}
+                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
               >
                 Close
               </button>
               <a
                 href={statementPdfUrl}
                 download={`Statement_${customer.name}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md shadow-blue-100 flex items-center gap-2"
+                style={{ padding: '9px 18px', background: `linear-gradient(135deg, ${teal[500]}, ${teal[700]})`, color: '#fff', borderRadius: 9, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 4px 12px -4px ${teal[400]}`, transition: 'all .15s ease', fontSize: 13 }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '0.9' }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <Download size={18} />

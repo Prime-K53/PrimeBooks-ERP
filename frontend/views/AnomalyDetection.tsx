@@ -7,6 +7,18 @@ import { useSales } from '../context/SalesContext';
 import { useFinance } from '../context/FinanceContext';
 import { useInventory } from '../context/InventoryContext';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
 type Severity = 'low' | 'medium' | 'high';
 
 interface AnomalyBase {
@@ -28,13 +40,17 @@ interface FraudIndicator extends AnomalyBase {
 const SEVERITY_ORDER: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
 
 const severityBadge = (severity: Severity) => {
-  const colors: Record<Severity, string> = {
-    low: 'bg-blue-100 text-blue-700',
-    medium: 'bg-amber-100 text-amber-700',
-    high: 'bg-red-100 text-red-700'
+  const styles: Record<Severity, { bg: string; text: string; border: string }> = {
+    high: { bg: '#fef2f2', text: danger, border: '#fecaca' },
+    medium: { bg: amber[100], text: amber[600], border: amber[300] },
+    low: { bg: teal[50], text: teal[700], border: teal[200] },
   };
+  const s = styles[severity];
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${colors[severity]}`}>
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 10px',
+      borderRadius: 20, fontSize: 10, fontWeight: 700, background: s.bg, color: s.text, border: `1px solid ${s.border}`,
+    }}>
       {severity === 'high' && <AlertCircle size={10} />}
       {severity === 'medium' && <AlertTriangle size={10} />}
       {severity === 'low' && <Clock size={10} />}
@@ -45,15 +61,15 @@ const severityBadge = (severity: Severity) => {
 
 const categoryIcon = (category: string) => {
   const icons: Record<string, React.ReactNode> = {
-    duplicate_payment: <DollarSign size={14} className="text-rose-500" />,
-    sales_spike: <TrendingUp size={14} className="text-emerald-500" />,
-    sales_drop: <TrendingDown size={14} className="text-orange-500" />,
-    unusual_inventory: <Package size={14} className="text-purple-500" />,
-    suspicious_discount: <Percent size={14} className="text-yellow-500" />,
-    abnormal_expense: <DollarSign size={14} className="text-red-500" />,
-    fraud_indicator: <ShieldAlert size={14} className="text-rose-600" />
+    duplicate_payment: <DollarSign size={14} color={danger} />,
+    sales_spike: <TrendingUp size={14} color={teal[500]} />,
+    sales_drop: <TrendingDown size={14} color={amber[500]} />,
+    unusual_inventory: <Package size={14} color={teal[500]} />,
+    suspicious_discount: <Percent size={14} color={amber[500]} />,
+    abnormal_expense: <DollarSign size={14} color={danger} />,
+    fraud_indicator: <ShieldAlert size={14} color={danger} />
   };
-  return icons[category] || <AlertCircle size={14} className="text-slate-500" />;
+  return icons[category] || <AlertCircle size={14} color={inkSoft} />;
 };
 
 const categoryLabel = (category: string) => {
@@ -237,10 +253,10 @@ const AnomalyDetection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="animate-spin text-blue-600" size={24} />
-          <p className="text-sm text-slate-500">Running anomaly detection...</p>
+      <div style={{ padding: 24, maxWidth: 1600, margin: '0 auto', minHeight: '100vh', background: paper, fontFamily: "'Inter','DM Sans',sans-serif", color: ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite', color: teal[500] }} />
+          <p style={{ fontSize: 13.5, fontWeight: 500, color: inkSoft }}>Running anomaly detection...</p>
         </div>
       </div>
     );
@@ -248,14 +264,19 @@ const AnomalyDetection: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="prime-card p-8 max-w-md text-center">
-          <AlertCircle className="mx-auto mb-3" size={32} style={{ color: '#b5493f' }} />
-          <h3 className="font-bold text-sm mb-2" style={{ color: '#23282A' }}>Detection Failed</h3>
-          <p className="text-xs mb-4" style={{ color: '#5c6567' }}>{error}</p>
+      <div style={{ padding: 24, maxWidth: 1600, margin: '0 auto', minHeight: '100vh', background: paper, fontFamily: "'Inter','DM Sans',sans-serif", color: ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, padding: 32, maxWidth: 400, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <AlertCircle size={32} style={{ color: danger, margin: '0 auto 12px' }} />
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: ink, margin: '0 0 8px' }}>Detection Failed</h3>
+          <p style={{ fontSize: 13, color: inkSoft, margin: '0 0 16px' }}>{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700"
+            style={{
+              padding: '9px 18px', borderRadius: 9, border: 'none',
+              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+              color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif",
+            }}
           >
             Retry
           </button>
@@ -265,61 +286,53 @@ const AnomalyDetection: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto flex flex-col overflow-hidden" style={{ minHeight: '100vh', background: '#f0f4f8' }}>
-      <div className="mb-6 shrink-0">
-        <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <ShieldAlert className="text-rose-600" size={20} />
+    <div style={{ padding: 24, maxWidth: 1600, margin: '0 auto', display: 'flex', flexDirection: 'column', minHeight: '100vh', background: paper, fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 400, fontFamily: "'DM Serif Display', 'Georgia', serif", color: teal[800], letterSpacing: 0.2, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <ShieldAlert color={danger} size={20} />
           Anomaly Detection
         </h1>
-        <p className="text-xs text-slate-500 mt-0.5">Automated detection of unusual patterns, fraud indicators, and data anomalies</p>
+        <p style={{ fontSize: 12.5, color: inkSoft, marginTop: 4, fontWeight: 500 }}>Automated detection of unusual patterns, fraud indicators, and data anomalies</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 shrink-0">
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-slate-500">
-          <div className="p-2.5 bg-slate-50 text-slate-600 rounded-lg">
-            <AlertTriangle size={20} />
-          </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 24 }}>
+        <div style={{ background: paper, borderRadius: 14, padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 14, borderLeft: `4px solid ${teal[500]}` }}>
+          <div style={{ padding: 10, borderRadius: 10, background: teal[50], color: teal[500], display: 'inline-flex' }}><AlertTriangle size={20} /></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Total Anomalies</p>
-            <p className="text-xl font-semibold text-slate-900">{summaryStats.total}</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Total Anomalies</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontVariantNumeric: 'tabular-nums' }}>{summaryStats.total}</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-red-500">
-          <div className="p-2.5 bg-red-50 text-red-600 rounded-lg">
-            <AlertCircle size={20} />
-          </div>
+        <div style={{ background: paper, borderRadius: 14, padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 14, borderLeft: `4px solid ${danger}` }}>
+          <div style={{ padding: 10, borderRadius: 10, background: '#fef2f2', color: danger, display: 'inline-flex' }}><AlertCircle size={20} /></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Critical (High)</p>
-            <p className="text-xl font-semibold text-slate-900">{summaryStats.critical}</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Critical (High)</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontVariantNumeric: 'tabular-nums' }}>{summaryStats.critical}</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-amber-500">
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
-            <ShieldAlert size={20} />
-          </div>
+        <div style={{ background: paper, borderRadius: 14, padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 14, borderLeft: `4px solid ${amber[500]}` }}>
+          <div style={{ padding: 10, borderRadius: 10, background: amber[100], color: amber[500], display: 'inline-flex' }}><ShieldAlert size={20} /></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Fraud Indicators</p>
-            <p className="text-xl font-semibold text-slate-900">{fraudIndicators.length}</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Fraud Indicators</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontVariantNumeric: 'tabular-nums' }}>{fraudIndicators.length}</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 border-l-4 border-l-purple-500">
-          <div className="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
-            <Package size={20} />
-          </div>
+        <div style={{ background: paper, borderRadius: 14, padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: `1.4px solid ${hairline}`, display: 'flex', alignItems: 'center', gap: 14, borderLeft: `4px solid ${teal[500]}` }}>
+          <div style={{ padding: 10, borderRadius: 10, background: teal[50], color: teal[500], display: 'inline-flex' }}><Package size={20} /></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-none mb-1.5">Categories Affected</p>
-            <p className="text-xl font-semibold text-slate-900">{uniqueCategories.length}</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Categories Affected</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontVariantNumeric: 'tabular-nums' }}>{uniqueCategories.length}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-4 shrink-0 flex-wrap">
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
-          <Filter size={14} className="text-slate-400" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '7px 12px' }}>
+          <Filter size={14} color={inkSoft} />
           <select
             value={filterSeverity}
             onChange={e => setFilterSeverity(e.target.value as Severity | 'all')}
-            className="text-xs font-semibold text-slate-600 bg-transparent border-none outline-none appearance-none cursor-pointer"
+            style={{ fontSize: 12.5, fontWeight: 600, color: inkSoft, background: 'transparent', border: 'none', outline: 'none', cursor: 'pointer', fontFamily: "'Inter', sans-serif", appearance: 'none', paddingRight: 20 }}
           >
             <option value="all">All Severities</option>
             <option value="high">High</option>
@@ -327,12 +340,12 @@ const AnomalyDetection: React.FC = () => {
             <option value="low">Low</option>
           </select>
         </div>
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
-          <Search size={14} className="text-slate-400" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '7px 12px' }}>
+          <Search size={14} color={inkSoft} />
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            className="text-xs font-semibold text-slate-600 bg-transparent border-none outline-none appearance-none cursor-pointer"
+            style={{ fontSize: 12.5, fontWeight: 600, color: inkSoft, background: 'transparent', border: 'none', outline: 'none', cursor: 'pointer', fontFamily: "'Inter', sans-serif", appearance: 'none', paddingRight: 20 }}
           >
             <option value="all">All Categories</option>
             {uniqueCategories.map(cat => (
@@ -340,79 +353,82 @@ const AnomalyDetection: React.FC = () => {
             ))}
           </select>
         </div>
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
-          <Calendar size={14} className="text-slate-400" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '7px 12px' }}>
+          <Calendar size={14} color={inkSoft} />
           <input
             type="date"
             value={filterDateFrom}
             onChange={e => setFilterDateFrom(e.target.value)}
-            className="text-xs font-semibold text-slate-600 bg-transparent border-none outline-none"
+            style={{ fontSize: 12.5, fontWeight: 600, color: inkSoft, background: 'transparent', border: 'none', outline: 'none', fontFamily: "'Inter', sans-serif" }}
             placeholder="From"
           />
-          <span className="text-slate-300">-</span>
+          <span style={{ color: hairline }}>-</span>
           <input
             type="date"
             value={filterDateTo}
             onChange={e => setFilterDateTo(e.target.value)}
-            className="text-xs font-semibold text-slate-600 bg-transparent border-none outline-none"
+            style={{ fontSize: 12.5, fontWeight: 600, color: inkSoft, background: 'transparent', border: 'none', outline: 'none', fontFamily: "'Inter', sans-serif" }}
             placeholder="To"
           />
         </div>
         {(filterSeverity !== 'all' || filterCategory !== 'all' || filterDateFrom || filterDateTo) && (
           <button
             onClick={() => { setFilterSeverity('all'); setFilterCategory('all'); setFilterDateFrom(''); setFilterDateTo(''); }}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-500 hover:text-red-600 transition-colors"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 9, border: `1px solid ${hairline}`, background: paper, color: inkSoft, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}
           >
             <X size={14} /> Clear
           </button>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
-        <div className="prime-card overflow-hidden">
-          <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1.4px solid #e4ddd1', background: '#eef7f6' }}>
-            <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: '#23282A' }}>
-              <ArrowUpDown size={14} style={{ color: '#5c6567' }} />
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+          <div style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1.4px solid ${hairline}`, background: teal[50] }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ArrowUpDown size={14} color={inkSoft} />
               All Detected Anomalies
             </h3>
-            <span className="text-[10px] font-bold" style={{ color: '#5c6567' }}>{filteredAnomalies.length} of {allAnomalies.length}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: inkSoft }}>{filteredAnomalies.length} of {allAnomalies.length}</span>
           </div>
           {filteredAnomalies.length === 0 ? (
-            <div className="p-12 text-center">
-              <AlertCircle className="mx-auto mb-3" size={32} style={{ color: '#e4ddd1' }} />
-              <p className="text-sm font-semibold" style={{ color: '#5c6567' }}>No Anomalies Found</p>
-              <p className="text-xs mt-1" style={{ color: '#5c6567' }}>All business data appears normal for the selected filters</p>
+            <div style={{ padding: 48, textAlign: 'center' }}>
+              <AlertCircle size={32} style={{ margin: '0 auto 12px', color: hairline }} />
+              <p style={{ fontSize: 13, fontWeight: 700, color: inkSoft, margin: 0 }}>No Anomalies Found</p>
+              <p style={{ fontSize: 12, marginTop: 4, color: inkSoft }}>All business data appears normal for the selected filters</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
-                  <tr>
-                    <th className="px-6 py-4">Type</th>
-                    <th className="px-6 py-4">Description</th>
-                    <th className="px-6 py-4 text-right">Amount</th>
-                    <th className="px-6 py-4 text-center">Severity</th>
-                    <th className="px-6 py-4">Date / Reference</th>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ backgroundColor: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: '0.04em' }}>Type</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: '0.04em' }}>Description</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>Amount</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center' }}>Severity</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: '0.04em' }}>Date / Reference</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody style={{ borderBottom: `1px solid ${hairline}` }}>
                   {filteredAnomalies.map(a => (
-                    <tr key={a.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
+                    <tr key={a.id} style={{ borderBottom: `1px solid ${hairline}`, transition: 'background-color 0.1s' }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[50]; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {categoryIcon(a.category)}
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{categoryLabel(a.category)}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{categoryLabel(a.category)}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-700 max-w-[320px]">{a.description}</td>
-                      <td className="px-6 py-4 text-right text-xs font-bold text-slate-900 finance-nums">
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft, maxWidth: 320 }}>{a.description}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: ink, fontVariantNumeric: 'tabular-nums' }}>
                         {a.amount !== undefined ? formatCurrency(a.amount) : '-'}
                       </td>
-                      <td className="px-6 py-4 text-center">{severityBadge(a.severity)}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          {a.date && <span className="text-xs text-slate-500">{a.date}</span>}
-                          {a.transactionRef && <span className="text-[10px] text-slate-400 font-mono">{a.transactionRef}</span>}
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>{severityBadge(a.severity)}</td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          {a.date && <span style={{ fontSize: 12, color: inkSoft }}>{a.date}</span>}
+                          {a.transactionRef && <span style={{ fontSize: 10, color: inkSoft, fontFamily: "'JetBrains Mono', monospace" }}>{a.transactionRef}</span>}
                         </div>
                       </td>
                     </tr>
@@ -424,40 +440,43 @@ const AnomalyDetection: React.FC = () => {
         </div>
 
         {fraudIndicators.length > 0 && (
-          <div className="prime-card overflow-hidden" style={{ borderColor: '#fecaca' }}>
-            <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1.4px solid #fecaca', background: '#fef2f2' }}>
-              <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: '#991b1b' }}>
+          <div style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+            <div style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1.4px solid ${hairline}`, background: '#fef2f2' }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: danger, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ShieldAlert size={14} />
                 Fraud Indicators
-                <span className="text-[10px] font-bold ml-2" style={{ color: '#b5493f' }}>({fraudIndicators.length} detected)</span>
+                <span style={{ fontSize: 10, fontWeight: 700, marginLeft: 8, color: danger }}>({fraudIndicators.length} detected)</span>
               </h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-rose-50/50 text-rose-700 font-medium border-b border-rose-200 text-xs uppercase tracking-wider">
-                  <tr>
-                    <th className="px-6 py-4">Type</th>
-                    <th className="px-6 py-4">Detail</th>
-                    <th className="px-6 py-4 text-right">Amount</th>
-                    <th className="px-6 py-4 text-center">Severity</th>
-                    <th className="px-6 py-4">Recommendation</th>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#fef2f2', borderBottom: `1px solid ${hairline}` }}>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: danger, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Type</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: danger, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Detail</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: danger, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>Amount</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: danger, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center' }}>Severity</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: danger, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Recommendation</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-rose-100">
+                <tbody>
                   {fraudIndicators.map(fi => (
-                    <tr key={fi.id} className="hover:bg-rose-50/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <ShieldAlert size={14} className="text-rose-500" />
-                          <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">{fi.fraudType.replace(/_/g, ' ')}</span>
+                    <tr key={fi.id} style={{ borderBottom: `1px solid ${hairline}`, transition: 'background-color 0.1s' }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#fef2f2'; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <ShieldAlert size={14} color={danger} />
+                          <span style={{ fontSize: 10, fontWeight: 700, color: danger, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{fi.fraudType.replace(/_/g, ' ')}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-700 max-w-[300px]">{fi.description}</td>
-                      <td className="px-6 py-4 text-right text-xs font-bold text-slate-900 finance-nums">
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft, maxWidth: 300 }}>{fi.description}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: ink, fontVariantNumeric: 'tabular-nums' }}>
                         {fi.amount !== undefined ? formatCurrency(fi.amount) : '-'}
                       </td>
-                      <td className="px-6 py-4 text-center">{severityBadge(fi.severity)}</td>
-                      <td className="px-6 py-4 text-xs text-slate-600 max-w-[250px]">{fi.recommendation}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>{severityBadge(fi.severity)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft, maxWidth: 250 }}>{fi.recommendation}</td>
                     </tr>
                   ))}
                 </tbody>

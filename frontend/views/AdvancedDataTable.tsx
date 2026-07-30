@@ -13,6 +13,18 @@ import {
 } from '../services/advancedDataTableService';
 import { useAuth } from '../context/AuthContext';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
 type DataSource = 'Sales' | 'Invoices' | 'Expenses' | 'Inventory' | 'Payments' | 'Customers';
 type AggregateFn = 'sum' | 'avg' | 'count';
 type TabMode = 'table' | 'pivot';
@@ -172,105 +184,131 @@ const AdvancedDataTable: React.FC = () => {
   const hasActiveFilters = Object.keys(filters).length > 0 || searchQuery.length > 0;
 
   return (
-    <div className="p-4 md:p-6 max-w-[1600px] mx-auto flex flex-col h-full relative w-full" style={{ background: '#f0f4f8', minHeight: '100vh' }}>
-      <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0">
+    <div style={{ padding: '20px', minHeight: '100vh', background: paper, fontFamily: "'Inter','DM Sans',sans-serif", color: ink }}>
+      <div style={{ marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2 tracking-tight">
-            <Table2 className="text-blue-600" size={20} /> Advanced Data Table
+          <h1 style={{ fontSize: 22, fontWeight: 400, fontFamily: "'DM Serif Display', 'Georgia', serif", color: teal[800], letterSpacing: 0.2, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Table2 color={teal[500]} size={20} /> Advanced Data Table
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">Explore, filter, sort, and export your business data</p>
+          <p style={{ fontSize: 12.5, color: inkSoft, marginTop: 4, fontWeight: 500 }}>Explore, filter, sort, and export your business data</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex bg-white/70 backdrop-blur-md p-1 rounded-2xl border border-white/50 shadow-sm">
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 2, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: 2 }}>
             <button
               onClick={() => setTabMode('table')}
-              className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${tabMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
+              style={{
+                padding: '7px 14px', borderRadius: 8, border: 'none',
+                background: tabMode === 'table' ? paper : 'transparent',
+                color: tabMode === 'table' ? ink : inkSoft,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                boxShadow: tabMode === 'table' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+              }}
             >
-              <Table2 size={14} className="inline mr-1" /> Table
+              <Table2 size={14} style={{ display: 'inline', marginRight: 4 }} /> Table
             </button>
             <button
               onClick={() => setTabMode('pivot')}
-              className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${tabMode === 'pivot' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
+              style={{
+                padding: '7px 14px', borderRadius: 8, border: 'none',
+                background: tabMode === 'pivot' ? paper : 'transparent',
+                color: tabMode === 'pivot' ? ink : inkSoft,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                boxShadow: tabMode === 'pivot' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+              }}
             >
-              <PieChart size={14} className="inline mr-1" /> Pivot
+              <PieChart size={14} style={{ display: 'inline', marginRight: 4 }} /> Pivot
             </button>
           </div>
         </div>
       </div>
 
-      <div className="mb-3 flex flex-col md:flex-row gap-3 shrink-0">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
         <select
           value={dataSource}
           onChange={e => setDataSource(e.target.value as DataSource)}
-          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors shadow-sm"
+          style={{
+            padding: '9px 12px', borderRadius: 9, border: `1.4px solid ${hairline}`,
+            fontSize: 12.5, fontWeight: 600, color: inkSoft, background: paper,
+            outline: 'none', cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+            appearance: 'none', paddingRight: 28,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
+          }}
         >
           {DATA_SOURCES.map(ds => <option key={ds} value={ds}>{ds}</option>)}
         </select>
 
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+        <div style={{ position: 'relative', flex: 1, maxWidth: 400 }}>
+          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: inkSoft }} />
           <input
             type="text"
             placeholder="Search across all fields..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs w-full outline-none focus:ring-4 focus:ring-blue-500/5 shadow-sm transition-all"
+            style={{
+              width: '100%', padding: '9px 12px 9px 32px', borderRadius: 9,
+              border: `1.4px solid ${hairline}`, fontSize: 12.5, outline: 'none',
+              fontFamily: "'Inter', sans-serif", color: ink, background: paper,
+            }}
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: inkSoft }}>
               <X size={14} />
             </button>
           )}
         </div>
 
-        <div className="flex gap-2">
-          <div className="relative">
-            <button
-              onClick={() => setShowColumnPanel(!showColumnPanel)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-xs font-bold ${showColumnPanel ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'}`}
-            >
-              <Columns size={14} /> Columns
-            </button>
-            {showColumnPanel && (
-              <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Toggle Columns</label>
-                  <button onClick={() => setShowColumnPanel(false)} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
-                </div>
-                <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
-                  {columns.map(col => (
-                    <label key={col.key} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors group">
-                      <input
-                        type="checkbox"
-                        checked={columnVisibility[col.key] !== false}
-                        onChange={() => setColumnVisibility(prev => ({ ...prev, [col.key]: prev[col.key] === false ? true : false }))}
-                        className="w-4 h-4 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      />
-                      <span className="text-[12px] font-medium text-slate-600 group-hover:text-blue-600 transition-colors">{col.label}</span>
-                      <span className="ml-auto text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{col.type}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setShowColumnPanel(!showColumnPanel)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
+              borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper,
+              color: inkSoft, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif", transition: 'all 0.15s',
+            }}
+          >
+            <Columns size={14} /> Columns
+          </button>
 
           <button
             onClick={() => setShowFilterPanel(!showFilterPanel)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-xs font-bold ${showFilterPanel || hasActiveFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
+              borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper,
+              color: inkSoft, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif", transition: 'all 0.15s',
+            }}
           >
-            <Filter size={14} /> Filters {hasActiveFilters && <span className="bg-blue-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">{Object.keys(filters).length + (searchQuery ? 1 : 0)}</span>}
+            <Filter size={14} /> Filters
           </button>
 
-          <button onClick={handleExportCsv} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all">
+          <button onClick={handleExportCsv} style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
+            borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper,
+            color: inkSoft, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            fontFamily: "'Inter', sans-serif", transition: 'all 0.15s',
+          }}>
             <FileSpreadsheet size={14} /> CSV
           </button>
-          <button onClick={handleExportPdf} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all">
+          <button onClick={handleExportPdf} style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
+            borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper,
+            color: inkSoft, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            fontFamily: "'Inter', sans-serif", transition: 'all 0.15s',
+          }}>
             <FileText size={14} /> PDF
           </button>
 
           {hasActiveFilters && (
-            <button onClick={clearFilters} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 shadow-sm transition-all">
+            <button onClick={clearFilters} style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
+              borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper,
+              color: danger, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif", transition: 'all 0.15s',
+            }}>
               <RotateCcw size={14} /> Reset
             </button>
           )}
@@ -278,24 +316,28 @@ const AdvancedDataTable: React.FC = () => {
       </div>
 
       {showFilterPanel && (
-        <div className="mb-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm animate-in fade-in slide-in-from-top-2 shrink-0">
-          <div className="flex justify-between items-center mb-3">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Filter size={12} /> Filter By Column</label>
-            <button onClick={() => setShowFilterPanel(false)} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+        <div style={{ marginBottom: 16, background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Filter size={12} /> Filter By Column
+            </label>
+            <button onClick={() => setShowFilterPanel(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: inkSoft }}>
+              <X size={14} />
+            </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
             {columns.map(col => {
               const currentVal = filters[col.key];
               if (col.type === 'string') {
                 return (
-                  <div key={col.key} className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{col.label}</label>
+                  <div key={col.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{col.label}</label>
                     <input
                       type="text"
                       placeholder={`Contains "${col.label}"...`}
                       value={typeof currentVal === 'string' ? currentVal : ''}
                       onChange={e => handleFilterChange(col.key, e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-blue-500 transition-colors"
+                      style={{ padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
                     />
                   </div>
                 );
@@ -303,22 +345,22 @@ const AdvancedDataTable: React.FC = () => {
               if (col.type === 'number' || col.type === 'currency') {
                 const rangeVal = currentVal as { min?: string; max?: string } | undefined;
                 return (
-                  <div key={col.key} className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{col.label}</label>
-                    <div className="flex gap-2">
+                  <div key={col.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{col.label}</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
                       <input
                         type="number"
                         placeholder="Min"
                         value={rangeVal?.min ?? ''}
                         onChange={e => handleFilterChange(col.key, { ...(rangeVal || {}), min: e.target.value ? Number(e.target.value) : undefined })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-blue-500 transition-colors"
+                        style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
                       />
                       <input
                         type="number"
                         placeholder="Max"
                         value={rangeVal?.max ?? ''}
                         onChange={e => handleFilterChange(col.key, { ...(rangeVal || {}), max: e.target.value ? Number(e.target.value) : undefined })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-blue-500 transition-colors"
+                        style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
                       />
                     </div>
                   </div>
@@ -327,20 +369,20 @@ const AdvancedDataTable: React.FC = () => {
               if (col.type === 'date') {
                 const dateVal = currentVal as { start?: string; end?: string } | undefined;
                 return (
-                  <div key={col.key} className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{col.label}</label>
-                    <div className="flex gap-2">
+                  <div key={col.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{col.label}</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
                       <input
                         type="date"
                         value={dateVal?.start ?? ''}
                         onChange={e => handleFilterChange(col.key, { ...(dateVal || {}), start: e.target.value || undefined })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-blue-500 transition-colors"
+                        style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
                       />
                       <input
                         type="date"
                         value={dateVal?.end ?? ''}
                         onChange={e => handleFilterChange(col.key, { ...(dateVal || {}), end: e.target.value || undefined })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-blue-500 transition-colors"
+                        style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
                       />
                     </div>
                   </div>
@@ -348,15 +390,15 @@ const AdvancedDataTable: React.FC = () => {
               }
               if (col.type === 'boolean') {
                 return (
-                  <div key={col.key} className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{col.label}</label>
+                  <div key={col.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{col.label}</label>
                     <select
                       value={currentVal === undefined ? '' : currentVal ? 'true' : 'false'}
                       onChange={e => {
                         const v = e.target.value;
                         handleFilterChange(col.key, v === '' ? undefined : v === 'true');
                       }}
-                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-blue-500 transition-colors"
+                      style={{ padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
                     >
                       <option value="">All</option>
                       <option value="true">True</option>
@@ -372,47 +414,47 @@ const AdvancedDataTable: React.FC = () => {
       )}
 
       {tabMode === 'pivot' && (
-        <div className="mb-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm shrink-0">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Row Field</label>
+        <div style={{ marginBottom: 16, background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', padding: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Row Field</label>
               <select
                 value={pivotRowField}
                 onChange={e => setPivotRowField(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:border-blue-500 transition-colors"
+                style={{ padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
               >
                 <option value="">Select row field...</option>
                 {columns.map(col => <option key={col.key} value={col.key}>{col.label}</option>)}
               </select>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Column Field</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Column Field</label>
               <select
                 value={pivotColField}
                 onChange={e => setPivotColField(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:border-blue-500 transition-colors"
+                style={{ padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
               >
                 <option value="">Select column field...</option>
                 {columns.map(col => <option key={col.key} value={col.key}>{col.label}</option>)}
               </select>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Value Field</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Value Field</label>
               <select
                 value={pivotValueField}
                 onChange={e => setPivotValueField(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:border-blue-500 transition-colors"
+                style={{ padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
               >
                 <option value="">Select value field...</option>
                 {columns.filter(c => c.type === 'number' || c.type === 'currency').map(col => <option key={col.key} value={col.key}>{col.label}</option>)}
               </select>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aggregate</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Aggregate</label>
               <select
                 value={pivotAggFn}
                 onChange={e => setPivotAggFn(e.target.value as AggregateFn)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:border-blue-500 transition-colors"
+                style={{ padding: '7px 10px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 12, outline: 'none', fontFamily: "'Inter', sans-serif", color: ink, background: paper }}
               >
                 <option value="sum">Sum</option>
                 <option value="avg">Average</option>
@@ -424,44 +466,47 @@ const AdvancedDataTable: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3 text-slate-400">
-            <Loader2 className="animate-spin text-blue-600" size={32} />
-            <p className="text-sm font-bold">Loading data...</p>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: paper, borderRadius: 14, border: `1.4px solid ${hairline}` }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: teal[500] }} />
+            <p style={{ fontSize: 13.5, fontWeight: 600, color: inkSoft }}>Loading data...</p>
           </div>
         </div>
       ) : error ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2 text-rose-500">
-            <p className="text-sm font-bold">Failed to load data</p>
-            <p className="text-xs text-slate-400">{error}</p>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: paper, borderRadius: 14, border: `1.4px solid ${hairline}` }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <p style={{ fontSize: 13.5, fontWeight: 700, color: danger }}>Failed to load data</p>
+            <p style={{ fontSize: 12, color: inkSoft }}>{error}</p>
           </div>
         </div>
       ) : tabMode === 'pivot' ? (
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
           {pivotResult.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-slate-400">
-              <div className="text-center">
-                <PieChart size={48} className="mx-auto mb-3 opacity-20" />
-                <p className="text-sm font-bold">Configure pivot fields above</p>
-                <p className="text-xs mt-1">Select row, column, and value fields to generate the pivot table</p>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: inkSoft }}>
+              <div style={{ textAlign: 'center' }}>
+                <PieChart size={48} style={{ margin: '0 auto 12px', opacity: 0.2 }} />
+                <p style={{ fontSize: 13.5, fontWeight: 700, margin: 0 }}>Configure pivot fields above</p>
+                <p style={{ fontSize: 12, marginTop: 4, color: inkSoft }}>Select row, column, and value fields to generate the pivot table</p>
               </div>
             </div>
           ) : (
-            <div className="overflow-auto custom-scrollbar flex-1">
-              <table className="w-full text-left text-xs">
+            <div style={{ overflow: 'auto', flex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
                 <thead>
-                  <tr className="text-slate-400 font-bold text-[10px] tracking-widest border-b border-slate-100 uppercase bg-slate-50">
-                    <th className="px-4 py-3 sticky left-0 bg-slate-50 shadow-sm z-10">{pivotRowField}</th>
-                    {pivotColValues.map(col => <th key={col} className="px-4 py-3 text-right">{col}</th>)}
+                  <tr style={{ color: inkSoft, fontWeight: 700, fontSize: 10, letterSpacing: '0.08em', borderBottom: `1px solid ${hairline}`, backgroundColor: teal[50], textTransform: 'uppercase' }}>
+                    <th style={{ padding: '10px 14px', position: 'sticky', left: 0, background: teal[50], boxShadow: '2px 0 4px rgba(0,0,0,0.04)', zIndex: 10 }}>{pivotRowField}</th>
+                    {pivotColValues.map(col => <th key={col} style={{ padding: '10px 14px', textAlign: 'right' }}>{col}</th>)}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody style={{ borderBottom: `1px solid ${hairline}` }}>
                   {pivotResult.map((row, i) => (
-                    <tr key={i} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-700 sticky left-0 bg-white shadow-sm">{row[pivotRowField]}</td>
+                    <tr key={i} style={{ transition: 'background-color 0.1s' }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[50]; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      <td style={{ padding: '8px 14px', fontWeight: 600, color: ink, position: 'sticky', left: 0, background: paper, boxShadow: '2px 0 4px rgba(0,0,0,0.04)' }}>{row[pivotRowField]}</td>
                       {pivotColValues.map(col => (
-                        <td key={col} className="px-4 py-3 text-right tabular-nums text-slate-600">{Number(row[col] ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td key={col} style={{ padding: '8px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: inkSoft }}>{Number(row[col] ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       ))}
                     </tr>
                   ))}
@@ -471,52 +516,55 @@ const AdvancedDataTable: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
           {rawData.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-slate-400">
-              <div className="text-center">
-                <Table2 size={48} className="mx-auto mb-3 opacity-20" />
-                <p className="text-sm font-bold">No data available</p>
-                <p className="text-xs mt-1">Select a different data source or adjust your filters</p>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: inkSoft }}>
+              <div style={{ textAlign: 'center' }}>
+                <Table2 size={48} style={{ margin: '0 auto 12px', opacity: 0.2 }} />
+                <p style={{ fontSize: 13.5, fontWeight: 700, margin: 0 }}>No data available</p>
+                <p style={{ fontSize: 12, marginTop: 4, color: inkSoft }}>Select a different data source or adjust your filters</p>
               </div>
             </div>
           ) : (
             <>
-              <div className="overflow-auto custom-scrollbar flex-1">
-                <table className="w-full text-left text-xs">
+              <div style={{ overflow: 'auto', flex: 1 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
                   <thead>
-                    <tr className="text-slate-400 font-bold text-[10px] tracking-widest border-b border-slate-100 uppercase bg-slate-50">
+                    <tr style={{ color: inkSoft, fontWeight: 700, fontSize: 10, letterSpacing: '0.08em', borderBottom: `1px solid ${hairline}`, backgroundColor: teal[50], textTransform: 'uppercase' }}>
                       {visibleColumns.map(col => (
                         <th
                           key={col.key}
                           onClick={() => handleSort(col.key)}
-                          className="px-4 py-3 cursor-pointer hover:text-slate-700 transition-colors whitespace-nowrap select-none"
+                          style={{ padding: '10px 14px', cursor: 'pointer', hoverColor: ink, transition: 'color 0.1s', whiteSpace: 'nowrap', userSelect: 'none' }}
                         >
-                          <span className="flex items-center gap-1">
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             {col.label}
                             {sortBy === col.key ? (
                               sortDir === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />
                             ) : (
-                              <ArrowUpDown size={10} className="opacity-30" />
+                              <ArrowUpDown size={10} style={{ opacity: 0.3 }} />
                             )}
                           </span>
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody style={{ borderBottom: `1px solid ${hairline}` }}>
                     {paginated.data.length === 0 ? (
                       <tr>
-                        <td colSpan={visibleColumns.length} className="px-4 py-12 text-center text-slate-400">
-                          <p className="text-sm font-bold">No matching records</p>
-                          <p className="text-xs mt-1">Try adjusting your filters or search terms</p>
+                        <td colSpan={visibleColumns.length} style={{ padding: '48px 14px', textAlign: 'center', color: inkSoft }}>
+                          <p style={{ fontSize: 13.5, fontWeight: 700, margin: 0 }}>No matching records</p>
+                          <p style={{ fontSize: 12, marginTop: 4, color: inkSoft }}>Try adjusting your filters or search terms</p>
                         </td>
                       </tr>
                     ) : (
                       paginated.data.map((row, rowIdx) => (
-                        <tr key={rowIdx} className={`hover:bg-slate-50 transition-colors ${rowIdx % 2 === 1 ? 'bg-slate-50/50' : ''}`}>
+                        <tr key={rowIdx} style={{ transition: 'background-color 0.1s' }}
+                          onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[50]; }}
+                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
                           {visibleColumns.map(col => (
-                            <td key={col.key} className="px-4 py-3 text-slate-600 whitespace-nowrap max-w-[300px] truncate">
+                            <td key={col.key} style={{ padding: '8px 14px', color: inkSoft, whiteSpace: 'nowrap', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {formatCellValue(row[col.key], col.type)}
                             </td>
                           ))}
@@ -526,11 +574,11 @@ const AdvancedDataTable: React.FC = () => {
                   </tbody>
                   {aggregationRow && (
                     <tfoot>
-                      <tr className="bg-blue-50/70 border-t-2 border-blue-200 font-semibold text-slate-800">
+                      <tr style={{ backgroundColor: teal[50], borderTop: `2px solid ${hairline}` }}>
                         {visibleColumns.map(col => (
-                          <td key={col.key} className="px-4 py-3 whitespace-nowrap text-xs">
+                          <td key={col.key} style={{ padding: '8px 14px', whiteSpace: 'nowrap', fontSize: 11 }}>
                             {(col.type === 'number' || col.type === 'currency') && aggregationRow[col.key]
-                              ? <span className="tabular-nums">{aggregationRow[col.key]}</span>
+                              ? <span style={{ fontVariantNumeric: 'tabular-nums' }}>{aggregationRow[col.key]}</span>
                               : col === visibleColumns[0] ? 'Totals (Sum / Avg)' : '-'}
                           </td>
                         ))}
@@ -540,9 +588,9 @@ const AdvancedDataTable: React.FC = () => {
                 </table>
               </div>
 
-              <div className="shrink-0 flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-white rounded-b-2xl">
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-slate-500 font-medium">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderTop: `1px solid ${hairline}`, background: paper }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 11, color: inkSoft, fontWeight: 500 }}>
                     {paginated.totalItems > 0
                       ? `${(paginated.currentPage - 1) * pageSize + 1}-${Math.min(paginated.currentPage * pageSize, paginated.totalItems)} of ${paginated.totalItems} items`
                       : '0 items'}
@@ -550,16 +598,16 @@ const AdvancedDataTable: React.FC = () => {
                   <select
                     value={pageSize}
                     onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
-                    className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-600 outline-none focus:border-blue-500 transition-colors"
+                    style={{ padding: '4px 8px', borderRadius: 8, border: `1.4px solid ${hairline}`, fontSize: 11, fontWeight: 600, color: inkSoft, outline: 'none', fontFamily: "'Inter', sans-serif", background: paper }}
                   >
                     {PAGE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
-                <div className="flex items-center gap-1">
+                <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={!paginated.hasPrev}
-                    className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', fontSize: 12, transition: 'all 0.15s', fontFamily: "'Inter', sans-serif" }}
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -571,7 +619,12 @@ const AdvancedDataTable: React.FC = () => {
                       <button
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
-                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${paginated.currentPage === pageNum ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 border border-slate-200'}`}
+                        style={{
+                          width: 32, height: 32, borderRadius: 8, fontSize: 11, fontWeight: 600,
+                          border: `1px solid ${hairline}`, background: paginated.currentPage === pageNum ? teal[500] : paper,
+                          color: paginated.currentPage === pageNum ? '#fff' : inkSoft,
+                          cursor: 'pointer', transition: 'all 0.15s', fontFamily: "'Inter', sans-serif",
+                        }}
                       >
                         {pageNum}
                       </button>
@@ -580,7 +633,7 @@ const AdvancedDataTable: React.FC = () => {
                   <button
                     onClick={() => setPage(p => Math.min(paginated.totalPages, p + 1))}
                     disabled={!paginated.hasNext}
-                    className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', fontSize: 12, transition: 'all 0.15s', fontFamily: "'Inter', sans-serif" }}
                   >
                     <ChevronRight size={16} />
                   </button>

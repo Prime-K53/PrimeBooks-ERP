@@ -365,6 +365,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({ type, initialData, onSave,
     });
     const isEditing = !!initialData?.id;
     const [localUnlock, setLocalUnlock] = useState(false);
+    const [priceUnlockModal, setPriceUnlockModal] = useState({
+      open: false,
+    });
+    const [priceUnlockReason, setPriceUnlockReason] = useState('');
     const isQuotation = type === 'Quotation';
     const isRecurring = type === 'Recurring';
     const primaryActionLabel = isRecurring
@@ -2081,8 +2085,8 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         <div className="flex items-center gap-2">
                             {isPriceLocked && (
                                 <button onClick={() => {
-                                    const reason = window.prompt("Enter audit reason for price unlock:");
-                                    if (reason && reason.trim()) { setLocalUnlock(true); setAuditReason(reason.trim()); notify("Price unlocked for revision", "info"); }
+                                    setPriceUnlockReason('');
+                                    setPriceUnlockModal({ open: true });
                                 }}
                                     className="px-3 py-1.5 rounded-lg text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100 flex items-center gap-1.5">
                                     <ShieldCheck size={13} /> Unlock Price
@@ -2815,6 +2819,71 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                         onSave={handleCreateItemSave}
                         allItems={inventory}
                     />
+                )}
+
+                {priceUnlockModal.open && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setPriceUnlockModal({ open: false });
+                            }
+                        }}
+                    >
+                        <div className="w-full max-w-md animate-in zoom-in-95 duration-200" role="dialog" aria-modal="true">
+                            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                                <div className="flex items-center justify-between py-4 px-6 border-b border-slate-100">
+                                    <h2 className="text-lg font-semibold text-slate-800">Price Unlock</h2>
+                                    <button
+                                        onClick={() => setPriceUnlockModal({ open: false })}
+                                        className="text-slate-400 hover:text-slate-600 transition-colors text-xl font-bold"
+                                        type="button"
+                                        aria-label="Close"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                <div className="px-6 py-5">
+                                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                                        Enter audit reason for price unlock:
+                                    </p>
+                                    <textarea
+                                        value={priceUnlockReason}
+                                        onChange={(e) => setPriceUnlockReason(e.target.value)}
+                                        placeholder="Enter audit reason..."
+                                        className="w-full min-h-[100px] p-3 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y placeholder-slate-400"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+                                    <button
+                                        onClick={() => setPriceUnlockModal({ open: false })}
+                                        className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all"
+                                        type="button"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (priceUnlockReason.trim()) {
+                                                setLocalUnlock(true);
+                                                setAuditReason(priceUnlockReason.trim());
+                                                notify("Price unlocked for revision", "info");
+                                                setPriceUnlockModal({ open: false });
+                                            }
+                                        }}
+                                        disabled={!priceUnlockReason.trim()}
+                                        className="px-5 py-2 text-sm font-medium text-white bg-amber-600 rounded-xl hover:bg-amber-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        type="button"
+                                    >
+                                        Unlock
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
             </div>

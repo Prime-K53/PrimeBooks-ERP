@@ -7,6 +7,18 @@ import { useFinance } from '../context/FinanceContext';
 import { useInventory } from '../context/InventoryContext';
 import { useProcurement } from '../context/ProcurementContext';
 
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
+
 const typeIconMap: Record<string, React.ReactNode> = {
   string: <Hash size={14} />,
   number: <Hash size={14} />,
@@ -111,28 +123,28 @@ const NaturalLanguageReporting: React.FC = () => {
       flexDirection: 'column',
       height: '100vh',
       width: '100%',
-backgroundColor: '#f0f4f8',
-      fontFamily: "'Inter', sans-serif",
-      fontSize: 13,
+      backgroundColor: paper,
+      fontFamily: "'Inter','DM Sans',sans-serif",
+      fontSize: 13.5,
       lineHeight: 1.5,
-      color: '#334155',
+      color: ink,
       overflow: 'hidden',
     }}>
       <div style={{
-        backgroundColor: '#fff',
-        borderBottom: '1px solid #e2e8f0',
+        backgroundColor: paper,
+        borderBottom: `1px solid ${hairline}`,
         flexShrink: 0,
         padding: '18px 28px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 2px 8px rgba(99,102,241,0.25)' }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${teal[500]}, ${teal[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 2px 8px rgba(15,84,76,0.25)' }}>
             <Sparkles size={18} />
           </div>
           <div>
-            <h1 style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
+            <h1 style={{ fontSize: 17, fontWeight: 400, fontFamily: "'DM Serif Display', 'Georgia', serif", color: teal[800], letterSpacing: '-0.02em', margin: 0 }}>
               Natural Language Reporting
             </h1>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '1px 0 0' }}>
+            <p style={{ fontSize: 12, color: inkSoft, margin: '1px 0 0' }}>
               Ask questions about your business data in plain English
             </p>
           </div>
@@ -147,18 +159,16 @@ backgroundColor: '#f0f4f8',
       }}>
         <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{
-            background: 'rgba(255,255,255,0.75)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
+            background: paper,
             borderRadius: 14,
-            border: '1px solid rgba(255,255,255,0.6)',
+            border: `1.4px solid ${hairline}`,
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             padding: '6px 6px 6px 18px',
             display: 'flex',
             alignItems: 'center',
             gap: 10,
           }}>
-            <Search size={18} color="#94a3b8" style={{ flexShrink: 0 }} />
+            <Search size={18} color={inkSoft} style={{ flexShrink: 0 }} />
             <input
               ref={inputRef}
               value={query}
@@ -171,7 +181,7 @@ backgroundColor: '#f0f4f8',
                 outline: 'none',
                 fontSize: 14,
                 fontWeight: 500,
-                color: '#0f172a',
+                color: ink,
                 backgroundColor: 'transparent',
                 padding: '11px 8px',
                 fontFamily: "'Inter', sans-serif",
@@ -184,7 +194,7 @@ backgroundColor: '#f0f4f8',
                   border: 'none',
                   backgroundColor: 'transparent',
                   cursor: 'pointer',
-                  color: '#94a3b8',
+                  color: inkSoft,
                   padding: '6px',
                   display: 'flex',
                   alignItems: 'center',
@@ -202,14 +212,14 @@ backgroundColor: '#f0f4f8',
                 alignItems: 'center',
                 gap: 6,
                 padding: '9px 18px',
-                borderRadius: 10,
+                borderRadius: 9,
                 border: 'none',
-                background: !query.trim() ? '#e2e8f0' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                color: !query.trim() ? '#94a3b8' : '#fff',
+                background: !query.trim() ? hairline : `linear-gradient(135deg, ${teal[500]}, ${teal[700]})`,
+                color: !query.trim() ? inkSoft : '#fff',
                 fontWeight: 600,
                 fontSize: 13,
                 cursor: !query.trim() ? 'not-allowed' : 'pointer',
-                boxShadow: !query.trim() ? 'none' : '0 2px 8px rgba(99,102,241,0.3)',
+                boxShadow: !query.trim() ? 'none' : '0 2px 8px rgba(15,84,76,0.3)',
                 fontFamily: "'Inter', sans-serif",
               }}
             >
@@ -219,62 +229,65 @@ backgroundColor: '#f0f4f8',
           </div>
 
           <div style={{ display: 'flex', gap: 20, flex: 1, minHeight: 0 }}>
-            {/* Left Column: Suggested Queries */}
+            {/* Left Column: Suggested Queries as Cards */}
             <div style={{ width: 270, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
               {suggestions.length > 0 && (
                 <div style={{
-                  background: 'rgba(255,255,255,0.75)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
+                  background: paper,
                   borderRadius: 14,
-                  border: '1px solid rgba(255,255,255,0.6)',
+                  border: `1.4px solid ${hairline}`,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                  padding: '16px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
                 }}>
-                  {(() => {
-                    const grouped: Record<string, typeof suggestions> = {};
-                    suggestions.forEach(s => {
-                      const cat = s.category || 'Other';
-                      if (!grouped[cat]) grouped[cat] = [];
-                      grouped[cat].push(s);
-                    });
-                    return Object.entries(grouped).map(([category, items]) => (
-                      <div key={category} style={{ marginBottom: 14 }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, paddingLeft: 2 }}>
-                          {category}
+                  <div style={{ fontSize: 9, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingLeft: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Sparkles size={10} color={teal[400]} />
+                    Suggested Queries
+                  </div>
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSuggestionClick(s)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '10px 12px',
+                        borderRadius: 9,
+                        border: `1px solid transparent`,
+                        backgroundColor: 'transparent',
+                        color: ink,
+                        fontSize: 12.5,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontFamily: "'Inter', sans-serif",
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = teal[50]; e.currentTarget.style.borderColor = hairline; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
+                      title={s.description}
+                    >
+                      <div style={{
+                        width: 30, height: 30, borderRadius: 8,
+                        background: teal[50],
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, color: teal[500],
+                      }}>
+                        <Sparkles size={13} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 500, color: ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {s.query}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {items.map((s, i) => (
-                            <button
-                              key={i}
-                              onClick={() => handleSuggestionClick(s)}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                padding: '8px 12px',
-                                borderRadius: 8,
-                                border: 'none',
-                                backgroundColor: 'transparent',
-                                color: '#475569',
-                                fontSize: 12,
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                fontFamily: "'Inter', sans-serif",
-                              }}
-                              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f1f5f9'; }}
-                              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                              title={s.description}
-                            >
-                              <Sparkles size={12} color="#a5b4fc" style={{ flexShrink: 0 }} />
-                              <span>{s.query}</span>
-                            </button>
-                          ))}
+                        <div style={{ fontSize: 10, color: inkSoft, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {s.description}
                         </div>
                       </div>
-                    ));
-                  })()}
+                    </button>
+                  ))}
                 </div>
               )}
 
@@ -285,13 +298,13 @@ backgroundColor: '#f0f4f8',
                   alignItems: 'center',
                   textAlign: 'center',
                   padding: '32px 16px',
-                  color: '#94a3b8',
+                  color: inkSoft,
                 }}>
                   <Search size={36} style={{ marginBottom: 10, opacity: 0.3 }} />
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#64748b', margin: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: inkSoft, margin: 0 }}>
                     Ask a question
                   </p>
-                  <p style={{ fontSize: 11, margin: '4px 0 0', color: '#94a3b8' }}>
+                  <p style={{ fontSize: 11, margin: '4px 0 0', color: inkSoft }}>
                     Try clicking a suggestion
                   </p>
                 </div>
@@ -306,16 +319,16 @@ backgroundColor: '#f0f4f8',
                   alignItems: 'center',
                   gap: 12,
                   padding: '18px 22px',
-                  backgroundColor: '#eef2ff',
+                  backgroundColor: teal[50],
                   borderRadius: 12,
-                  border: '1px solid #e0e7ff',
+                  border: `1px solid ${teal[100]}`,
                 }}>
-                  <Loader2 size={18} className="animate-spin" color="#6366f1" />
+                  <Loader2 size={18} className="animate-spin" color={teal[500]} />
                   <div>
-                    <p style={{ fontWeight: 600, color: '#4338ca', margin: 0, fontSize: 13 }}>
+                    <p style={{ fontWeight: 600, color: teal[700], margin: 0, fontSize: 13 }}>
                       Processing your query...
                     </p>
-                    <p style={{ color: '#6366f1', margin: '2px 0 0', fontSize: 12 }}>
+                    <p style={{ color: teal[500], margin: '2px 0 0', fontSize: 12 }}>
                       Analyzing business data for "{query}"
                     </p>
                   </div>
@@ -324,11 +337,9 @@ backgroundColor: '#f0f4f8',
 
               {result && (
                 <div style={{
-                  background: 'rgba(255,255,255,0.75)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
+                  background: paper,
                   borderRadius: 14,
-                  border: '1px solid rgba(255,255,255,0.6)',
+                  border: `1.4px solid ${hairline}`,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                   padding: '20px',
                 }}>
@@ -339,10 +350,10 @@ backgroundColor: '#f0f4f8',
                     marginBottom: 16,
                   }}>
                     <div>
-                      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>
+                      <h2 style={{ fontSize: 18, fontWeight: 400, fontFamily: "'DM Serif Display', 'Georgia', serif", color: ink, margin: 0, letterSpacing: '-0.01em' }}>
                         {result.title}
                       </h2>
-                      <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+                      <p style={{ fontSize: 13, color: inkSoft, margin: '4px 0 0' }}>
                         {result.description}
                       </p>
                     </div>
@@ -354,9 +365,9 @@ backgroundColor: '#f0f4f8',
                         gap: 6,
                         padding: '7px 14px',
                         borderRadius: 8,
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: '#fff',
-                        color: '#64748b',
+                        border: `1px solid ${hairline}`,
+                        backgroundColor: paper,
+                        color: inkSoft,
                         fontSize: 12,
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -374,13 +385,13 @@ backgroundColor: '#f0f4f8',
                       alignItems: 'center',
                       gap: 8,
                       padding: '12px 18px',
-                      backgroundColor: '#f0fdf4',
+                      backgroundColor: teal[50],
                       borderRadius: 10,
-                      border: '1px solid #bbf7d0',
+                      border: `1px solid ${teal[100]}`,
                       marginBottom: 16,
                     }}>
-                      <TrendingUp size={16} color="#16a34a" />
-                      <p style={{ color: '#166534', fontWeight: 500, margin: 0, fontSize: 13 }}>
+                      <TrendingUp size={16} color={teal[600]} />
+                      <p style={{ color: teal[700], fontWeight: 500, margin: 0, fontSize: 13 }}>
                         {result.summary}
                       </p>
                     </div>
@@ -388,7 +399,7 @@ backgroundColor: '#f0f4f8',
 
                   {result.columns.length > 0 && result.data.length > 0 && (
                     <div style={{
-                      border: '1px solid #e2e8f0',
+                      border: `1px solid ${hairline}`,
                       borderRadius: 12,
                       overflow: 'hidden',
                     }}>
@@ -399,7 +410,7 @@ backgroundColor: '#f0f4f8',
                           fontSize: 13,
                         }}>
                           <thead>
-                            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                            <tr style={{ backgroundColor: teal[50], borderBottom: `1px solid ${hairline}` }}>
                               {result.columns.map(col => (
                                 <th
                                   key={col.key}
@@ -408,7 +419,7 @@ backgroundColor: '#f0f4f8',
                                     padding: '10px 14px',
                                     fontWeight: 700,
                                     fontSize: 11,
-                                    color: '#64748b',
+                                    color: teal[800],
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.04em',
                                     whiteSpace: 'nowrap',
@@ -427,8 +438,8 @@ backgroundColor: '#f0f4f8',
                               <tr
                                 key={i}
                                 style={{
-                                  borderBottom: '1px solid #f1f5f9',
-                                  backgroundColor: i % 2 === 0 ? '#fff' : '#fafbfc',
+                                  borderBottom: `1px solid ${hairline}`,
+                                  backgroundColor: i % 2 === 0 ? paper : '#fafbfc',
                                 }}
                               >
                                 {result.columns.map(col => (
@@ -438,7 +449,7 @@ backgroundColor: '#f0f4f8',
                                       textAlign: isNumericColumn(col) ? 'right' : 'left',
                                       padding: '8px 14px',
                                       fontWeight: isNumericColumn(col) ? 600 : 400,
-                                      color: '#0f172a',
+                                      color: ink,
                                       fontVariantNumeric: isNumericColumn(col) ? 'tabular-nums' : 'normal',
                                       whiteSpace: 'nowrap',
                                     }}
@@ -451,7 +462,7 @@ backgroundColor: '#f0f4f8',
                           </tbody>
                           {columnTotals && (
                             <tfoot>
-                              <tr style={{ borderTop: '2px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                              <tr style={{ borderTop: `2px solid ${hairline}`, backgroundColor: teal[50] }}>
                                 {result.columns.map(col => (
                                   <td
                                     key={col.key}
@@ -459,7 +470,7 @@ backgroundColor: '#f0f4f8',
                                       textAlign: isNumericColumn(col) ? 'right' : 'left',
                                       padding: '10px 14px',
                                       fontWeight: 700,
-                                      color: '#0f172a',
+                                      color: ink,
                                       fontSize: 13,
                                       fontVariantNumeric: 'tabular-nums',
                                     }}
@@ -474,9 +485,9 @@ backgroundColor: '#f0f4f8',
                       </div>
                       <div style={{
                         padding: '8px 14px',
-                        borderTop: '1px solid #f1f5f9',
+                        borderTop: `1px solid ${hairline}`,
                         fontSize: 11,
-                        color: '#94a3b8',
+                        color: inkSoft,
                         display: 'flex',
                         justifyContent: 'space-between',
                       }}>
@@ -493,10 +504,10 @@ backgroundColor: '#f0f4f8',
                       alignItems: 'center',
                       justifyContent: 'center',
                       padding: '40px 20px',
-                      color: '#94a3b8',
+                      color: inkSoft,
                     }}>
                       <Search size={36} style={{ opacity: 0.2, marginBottom: 10 }} />
-                      <p style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#64748b' }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, margin: 0, color: inkSoft }}>
                         No results found
                       </p>
                       <p style={{ fontSize: 12, margin: '4px 0 0' }}>

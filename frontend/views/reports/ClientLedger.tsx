@@ -5,11 +5,12 @@ import { useFinance } from '../../context/FinanceContext';
 import { format, parseISO, differenceInDays, subMonths } from 'date-fns';
 import {
   Users, Printer, AlertTriangle, Clock, FileText, Eye,
-  Search, X, ChevronDown, CreditCard, TrendingDown, TrendingUp,
+  Search, ChevronDown, CreditCard, TrendingDown, TrendingUp,
   Building2, Phone, Mail
 } from 'lucide-react';
 import { currencyService } from '../../services/currencyService';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import { useDocumentStore } from '../../stores/documentStore';
 
 const teal = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
 const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f' };
@@ -43,7 +44,7 @@ const ClientLedger: React.FC = () => {
   const [selectedSubAccountNames, setSelectedSubAccountNames] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<'all' | '3m' | '6m' | '12m'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPreview, setShowPreview] = useState(false);
+  const { safeOpenPreview } = useDocumentStore();
 
   const formatCurrency = useCallback((val: number) => {
     if (val === undefined || val === null || isNaN(val)) return `${currency}0.00`;
@@ -132,131 +133,33 @@ const ClientLedger: React.FC = () => {
     return { customerName: selectedCustomer.name, customerEmail: selectedCustomer.email, customerPhone: selectedCustomer.phone, customerAddress: selectedCustomer.address, statementDate: format(new Date(), 'yyyy-MM-dd'), periodStart: dateCutoff ? format(dateCutoff, 'yyyy-MM-dd') : format(subMonths(new Date(), 12), 'yyyy-MM-dd'), periodEnd: format(new Date(), 'yyyy-MM-dd'), openingBalance: customerStats.openingBalance, transactions: customerStats.transactions, totalDebits: customerStats.totalDebits, totalCredits: customerStats.totalCredits, closingBalance: customerStats.totalOutstanding, aging: customerStats.aging, totalOutstanding: customerStats.totalOutstanding };
   }, [customerStats, selectedCustomer, dateCutoff]);
 
-  const renderPreviewModal = () => {
-    if (!showPreview || !previewData) return null;
+  const handlePreviewStatement = () => {
+    if (!previewData) return;
     const d = previewData;
-    return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,.6)', backdropFilter: 'blur(4px)', padding: 16, fontFamily: "'Inter',sans-serif", fontSize: 13, color: ink }} onClick={() => setShowPreview(false)}>
-        <div style={{ width: '100%', maxWidth: 1024, background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', border: `1.4px solid ${hairline}`, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px 18px', borderBottom: `1px ${hairline}`, background: paper }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0 }}>
-                <FileText size={19} color="#fff" />
-              </div>
-              <div>
-                <h1 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2 }}>Account Statement</h1>
-                <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>{d.customerName}</p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 9, background: teal[50], border: 'none', color: inkSoft, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
-                onMouseEnter={e => e.currentTarget.style.background = teal[100]}> <Printer size={14} /> Print</button>
-              <button onClick={() => setShowPreview(false)} aria-label="Close" style={{ width: 32, height: 32, borderRadius: 8, border: `1px ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease', fontSize: 16 }}
-                onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
-                onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}>
-                <X size={15} />
-              </button>
-            </div>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: 32, background: paper }}>
-            <div style={{ maxWidth: 768, margin: '0 auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, paddingBottom: 24, borderBottom: `2px solid ${teal[100]}` }}>
-                <div>
-                  <h1 style={{ fontSize: 24, fontWeight: 900, color: ink, letterSpacing: -0.02, margin: 0 }}>{companyName}</h1>
-                  <p style={{ fontSize: 13, color: inkSoft, marginTop: 4 }}>Account Statement</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, margin: 0 }}>Statement Date</p>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: ink, margin: 0 }}>{format(parseISO(d.statementDate), 'MMMM dd, yyyy')}</p>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginBottom: 32, padding: 20, background: teal[50], borderRadius: 12, border: `1.4px solid ${teal[100]}` }}>
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, margin: '0 0 8px' }}>Customer</p>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0 }}>{d.customerName}</h3>
-                  {d.customerEmail && <p style={{ fontSize: 13, color: inkSoft, margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 6 }}><Mail size={13} /> {d.customerEmail}</p>}
-                  {d.customerPhone && <p style={{ fontSize: 13, color: inkSoft, margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={13} /> {d.customerPhone}</p>}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, margin: '0 0 8px' }}>Statement Period</p>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>{format(parseISO(d.periodStart), 'MMM dd, yyyy')} — {format(parseISO(d.periodEnd), 'MMM dd, yyyy')}</p>
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1.4px solid ${teal[100]}` }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, margin: 0 }}>Opening Balance</p>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: d.openingBalance >= 0 ? danger : teal[600], margin: 0 }}>{formatCurrency(d.openingBalance)}</p>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginBottom: 32 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: ink, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FileText size={16} style={{ color: teal[500] }} /> Transaction History
-                </h3>
-                <table style={{ width: '100%', textAlign: 'left', fontSize: 12, borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: `2px solid ${teal[100]}` }}>
-                      {['Date', 'Reference', 'Description', 'Debit', 'Credit', 'Balance'].map(h => (
-                        <th key={h} style={{ padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, textAlign: h === 'Debit' || h === 'Credit' || h === 'Balance' ? 'right' : 'left' }}>{h === 'Balance' ? `${h} (K)` : h === 'Debit' || h === 'Credit' ? `${h} (K)` : h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ background: teal[50], fontWeight: 600 }}>
-                      <td style={{ padding: '8px 12px', color: inkSoft }} colSpan={5}>Opening Balance</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 900, color: d.openingBalance >= 0 ? danger : teal[600] }}>{formatCurrency(d.openingBalance)}</td>
-                    </tr>
-                    {d.transactions.map((tx, idx) => (
-                      <tr key={`${tx.id}-${idx}`} style={{ borderBottom: `1.4px solid ${teal[50]}` }}
-                        onMouseEnter={e => e.currentTarget.style.background = teal[50]}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                        <td style={{ padding: '8px 12px', color: inkSoft, fontWeight: 500 }}>{format(parseISO(tx.date), 'MMM dd, yyyy')}</td>
-                        <td style={{ padding: '8px 12px', fontFamily: "'JetBrains Mono',monospace", color: inkSoft, fontSize: 11 }}>{tx.reference.slice(-10)}</td>
-                        <td style={{ padding: '8px 12px' }}>
-                          <span style={{ fontWeight: 600, color: ink }}>{tx.description}</span>
-                          <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700, background: tx.type === 'INVOICE' ? teal[50] : tx.type === 'PAYMENT' ? teal[50] : amber[100], color: tx.type === 'INVOICE' ? teal[700] : tx.type === 'PAYMENT' ? teal[600] : amber[500], border: `1.4px solid ${tx.type === 'INVOICE' ? teal[200] : tx.type === 'PAYMENT' ? teal[200] : amber[300]}` }}>
-                            {tx.type === 'INVOICE' ? 'INV' : tx.type === 'PAYMENT' ? 'PAY' : 'POS'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: danger }}>{tx.debit > 0 ? formatCurrency(tx.debit) : '—'}</td>
-                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: teal[600] }}>{tx.credit > 0 ? formatCurrency(tx.credit) : '—'}</td>
-                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: ink }}>{formatCurrency(tx.balance)}</td>
-                      </tr>
-                    ))}
-                    <tr style={{ background: teal[50], fontWeight: 700, borderTop: `2px solid ${hairline}` }}>
-                      <td style={{ padding: '12px 12px', color: ink }} colSpan={3}>Period Totals</td>
-                      <td style={{ padding: '12px 12px', textAlign: 'right', color: danger }}>{formatCurrency(d.totalDebits)}</td>
-                      <td style={{ padding: '12px 12px', textAlign: 'right', color: teal[600] }}>{formatCurrency(d.totalCredits)}</td>
-                      <td style={{ padding: '12px 12px', textAlign: 'right', color: ink }}>{formatCurrency(d.closingBalance)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div style={{ borderTop: `2px solid ${teal[100]}`, paddingTop: 24 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: ink, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Clock size={16} style={{ color: amber[500] }} /> Aging Summary
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
-                  {(Object.keys(d.aging) as (keyof AgingBucket)[]).map(bucket => (
-                    <div key={bucket} style={{ padding: 12, borderRadius: 12, border: `1.4px solid ${getAgingBorder(bucket)}`, textAlign: 'center', background: getAgingBg(bucket) }}>
-                      <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.06, margin: '0 0 4px', color: getAgingTextColor(bucket) }}>{getAgingLabel(bucket)}</p>
-                      <p style={{ fontSize: 13, fontWeight: 900, color: getAgingTextColor(bucket), margin: 0 }}>{formatCurrency(d.aging[bucket])}</p>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 16, padding: 16, background: `linear-gradient(90deg, ${teal[800]}, ${teal[900]})`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, opacity: 0.8, textTransform: 'uppercase', letterSpacing: 0.06, margin: 0 }}>Total Outstanding</p>
-                  <p style={{ fontSize: 24, fontWeight: 900, margin: 0 }}>{formatCurrency(d.totalOutstanding)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    const statementData = {
+      date: format(new Date(), 'yyyy-MM-dd'),
+      customerName: d.customerName,
+      startDate: d.periodStart,
+      endDate: d.periodEnd,
+      currency: currencyService.getBaseCurrency() || 'MWK',
+      openingBalance: d.openingBalance,
+      transactions: d.transactions.map(tx => ({
+        date: tx.date,
+        reference: tx.reference,
+        memo: tx.description,
+        debit: tx.debit,
+        credit: tx.credit,
+        runningBalance: tx.balance,
+      })),
+      totalInvoiced: d.totalDebits,
+      totalReceived: d.totalCredits,
+      finalBalance: d.closingBalance,
+    };
+    safeOpenPreview('ACCOUNT_STATEMENT', statementData);
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontFamily: "'Inter',sans-serif", fontSize: 13, color: ink }}>
-      {renderPreviewModal()}
 
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -271,7 +174,7 @@ const ClientLedger: React.FC = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {selectedCustomerId && customerStats && (
-              <button onClick={() => setShowPreview(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 12, fontSize: 13, fontWeight: 600, color: inkSoft, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,.04)' }}
+              <button onClick={handlePreviewStatement} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 12, fontSize: 13, fontWeight: 600, color: inkSoft, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,.04)' }}
                 onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.color = teal[600]; }}
                 onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = inkSoft; }}>
                 <Eye size={16} /> Preview Statement

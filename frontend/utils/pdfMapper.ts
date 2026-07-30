@@ -336,14 +336,18 @@ export const mapToInvoiceData = (item: any, companyConfig: any, targetType?: str
             qty: toNum(i.quantity || i.qty || item.totalQuantity),
         }))
     };
-
     const explicitStatus = String(item.status || '').trim().toLowerCase();
+
+    const isCancelledStatus = (s: string) => s === 'cancelled' || s === 'canceled' || s === 'void' || s === 'voided';
+
     const resolvedFinancialStatus = (() => {
         if (docType === 'SUBSCRIPTION') {
             return item.status || 'Active';
         }
 
         if (docType === 'INVOICE' || docType === 'EXAMINATION_INVOICE' || docType === 'ORDER' || docType === 'SALES_ORDER') {
+            if (isCancelledStatus(explicitStatus)) return 'Cancelled';
+
             const totalAmount = toNum(item.totalAmount || item.total || item.total_amount || item.total_cost || 0);
             const paidAmount = toNum(item.paidAmount || item.amountPaid || item.paid_amount || 0);
 
@@ -378,6 +382,7 @@ export const mapToInvoiceData = (item: any, companyConfig: any, targetType?: str
             invoiceNumber: item.invoiceNumber || (docType === 'INVOICE' ? item.id : undefined),
             orderNumber: item.orderNumber || (['ORDER', 'SALES_ORDER'].includes(docType) ? item.id : undefined),
             status: resolvedFinancialStatus,
+            isCancelled: isCancelledStatus(explicitStatus) || item.isCancelled === true || item.cancelled === true,
             walletBalance: toNum(item.walletBalance ?? item.wallet_balance ?? 0),
             totalCustomerOutstanding: item.totalCustomerOutstanding !== undefined ? toNum(item.totalCustomerOutstanding) : undefined,
         };
