@@ -28,7 +28,7 @@ import {
   repriceMasterInventoryFromAdjustments
 } from './masterInventoryPricingService';
 import { validateMinimumMarkup } from './pricingValidationService';
-import { normalizeInventoryItemPricing, normalizeInventoryItemType } from '../utils/pricing';
+import { normalizeInventoryItemPricing } from '../utils/pricing';
 import {
   examinationJobService,
   ExaminationGroupPayload,
@@ -473,74 +473,8 @@ const mergeSalePayload = (baseSale: any, remoteSale: any) => {
   return merged;
 };
 
-const normalizeBackendInventoryItem = (item: any): Item => {
-  const stock = Number(item.stock ?? item.quantity ?? 0);
-  const cost = Number(item.cost_per_unit ?? item.cost_price ?? item.cost ?? item.costPrice ?? 0);
-  const sellingPrice = Number(item.selling_price ?? item.sellingPrice ?? item.price ?? 0);
-  const normalizedType = normalizeInventoryItemType(item.type, item.classification);
-
-  return normalizeInventoryItemPricing({
-    ...item,
-    id: item.id,
-    name: item.name,
-    sku: item.sku || '',
-    material: item.material || '',
-    type: normalizedType,
-    category: item.category || item.category_id || '',
-    quantity: stock,
-    stock,
-    unit: item.unit || 'units',
-    cost,
-    costPrice: cost,
-    cost_price: cost,
-    cost_per_unit: cost,
-    price: sellingPrice,
-    sellingPrice,
-    selling_price: sellingPrice,
-    minStockLevel: Number(item.min_stock_level ?? item.minStockLevel ?? 0),
-    maxStockLevel: Number(item.max_stock_level ?? item.maxStockLevel ?? 0),
-    reorderPoint: Number(item.reorder_point ?? item.reorderPoint ?? 0),
-    warehouseId: item.warehouse_id || item.warehouseId || '',
-    reserved: Number(item.reserved || 0),
-    isProtected: Boolean(item.is_protected || item.isProtected),
-    status: item.status || 'Active',
-    category_id: item.category_id || null,
-    min_stock_level: Number(item.min_stock_level ?? item.minStockLevel ?? 0),
-    max_stock_level: Number(item.max_stock_level ?? item.maxStockLevel ?? 0),
-    reorder_point: Number(item.reorder_point ?? item.reorderPoint ?? 0),
-    warehouse_id: item.warehouse_id || item.warehouseId || '',
-    company_id: item.company_id || '',
-    created_at: item.created_at || item.last_updated || '',
-    updated_at: item.updated_at || item.last_updated || '',
-  } as Item);
-};
-
 const filterActiveInventoryItems = (items: Item[]): Item[] =>
   (items || []).filter((item: any) => String(item?.status || '').toLowerCase() !== 'deleted');
-
-const mapInventoryItemToBackend = (item: Item): any => ({
-  id: item.id,
-  name: item.name,
-  sku: item.sku || null,
-  material: item.material || item.category || '',
-  type: (() => {
-    const canonicalType = normalizeInventoryItemType(item.type, item.classification);
-    if (canonicalType === 'Product') return 'product';
-    if (canonicalType === 'Stationery') return 'stationery';
-    if (canonicalType === 'Service') return 'service';
-    return 'material';
-  })(),
-  category_id: item.category_id || null,
-  quantity: Number(item.quantity || item.stock || 0),
-  unit: item.unit || 'units',
-  cost_per_unit: Number(item.costPrice ?? item.cost ?? item.cost_per_unit ?? 0),
-  selling_price: Number(item.sellingPrice ?? item.price ?? item.selling_price ?? 0),
-  min_stock_level: Number(item.minStockLevel ?? item.min_stock_level ?? 0),
-  max_stock_level: Number(item.maxStockLevel ?? item.max_stock_level ?? 0),
-  reorder_point: Number(item.reorderPoint ?? item.reorder_point ?? 0),
-  warehouse_id: item.warehouseId || item.warehouse_id || null,
-  reserved: Number(item.reserved || 0),
-});
 
 export const api = {
   auth: {
@@ -588,83 +522,25 @@ export const api = {
 
   inventory: {
     getAllItems: () => handle(async () => {
-      if (shouldPreferLocalReadModels()) {
-        const localItems = await dbService.getAll<Item>('inventory');
-        return filterActiveInventoryItems(localItems);
-      }
-      try {
-        const response = await apiClient.get('/inventory', { params: { include_deleted: '1' } });
-        const remoteItems = Array.isArray(response.data) ? response.data : [];
-        const normalized = remoteItems.map(normalizeBackendInventoryItem);
-        for (const item of normalized) {
-          await dbService.put('inventory', item);
-        }
-        return filterActiveInventoryItems(normalized);
-      } catch (err) {
-        if (!isOfflineInventoryFallbackError(err)) {
-          throw err;
-        }
-        ensureBackendInProd('Inventory.GetAll', err);
-        const localItems = await dbService.getAll<Item>('inventory');
-        return filterActiveInventoryItems(localItems);
-      }
+      const localItems = await dbService.getAll<Item>('inventory');
+      return filterActiveInventoryItems(localItems);
     }, 'Inventory.GetAll'),
 
     createItem: (item: Item) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Inventory.Create');
-      const payload = mapInventoryItemToBackend(item);
-      // Strip client-generated ID for creation - backend/database must generate primary key
-      delete payload.id;
-
-      try {
-        const response = await apiClient.post('/inventory', payload);
-        const createdRecord = response.data;
-        const normalized = normalizeBackendInventoryItem(createdRecord);
-        await dbService.put('inventory', normalized);
-        return normalized;
-      } catch (err: any) {
-        if (err?.response?.status === 409) {
-          throw new Error(err.response.data?.error || 'Inventory SKU already exists in this company.');
-        }
-        if (err?.response?.data?.error) {
-          throw new Error(err.response.data.error);
-        }
-        if (isOfflineInventoryFallbackError(err)) {
-          const fallbackItem = { ...item, id: item.id || `temp-itm-${Date.now()}` };
-          await dbService.put('inventory', fallbackItem);
-          return fallbackItem;
-        }
-        throw err;
-      }
+      const normalized = normalizeInventoryItemPricing(item);
+      await dbService.put('inventory', normalized);
+      return normalized;
     }, 'Inventory.Create'),
 
     updateItem: (item: Item) => handle(async () => {
       checkAuth(['Admin', 'Accountant', 'Clerk'], 'Inventory.Update');
-      const payload = mapInventoryItemToBackend(item);
-      try {
-        await apiClient.put(`/inventory/${encodeURIComponent(item.id)}`, payload);
-      } catch (err: any) {
-        if (err?.response?.status === 409) {
-          throw new Error(err.response.data?.error || 'Inventory SKU already exists in this company.');
-        }
-        if (!isOfflineInventoryFallbackError(err)) {
-          throw err;
-        }
-      }
-      return dbService.put('inventory', item);
+      const normalized = normalizeInventoryItemPricing(item);
+      return dbService.put('inventory', normalized);
     }, 'Inventory.Update'),
 
     deleteItem: (id: string) => handle(async () => {
       checkAuth(['Admin'], 'Inventory.Delete');
-      try {
-        await apiClient.delete(`/inventory/${encodeURIComponent(id)}`);
-      } catch (err) {
-        if (!isOfflineInventoryFallbackError(err)) {
-          throw err;
-        }
-        ensureBackendInProd('Inventory.Delete', err);
-      }
-      // Soft delete: mark as deleted in IndexedDB instead of removing
       const existingItem: any = await dbService.get<Item>('inventory', id);
       if (existingItem) {
         existingItem.status = 'Deleted';
