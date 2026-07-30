@@ -1415,8 +1415,10 @@ export const api = {
     }, 'FinancialYear.ByDate'),
 
     createFinancialYear: (data: any) => handle(async () => {
-      await dbService.put('financialYears', data);
-      return { success: true, id: data.id };
+      const id = data.id || `FY-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const record = { ...data, id };
+      await dbService.put('financialYears', record);
+      return { success: true, id };
     }, 'FinancialYear.Create'),
 
     updateFinancialYear: (id: string, data: any) => handle(async () => {
