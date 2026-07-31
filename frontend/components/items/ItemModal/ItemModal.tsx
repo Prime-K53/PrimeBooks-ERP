@@ -619,7 +619,15 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
     return rate > 0 ? rate : fallback;
   };
 
-  /* Derive paper/toner costs from raw material items */
+  /* Derive paper/toner costs from raw material items.
+     This always applies the live inventory rate (cost_price ÷ conversion
+     rate) so BOM Materials tracks inventory changes and conversion-rate
+     fixes. Previously this only filled in the cost when the field was
+     empty (`prev || cost`), so an existing item's frozen smartPricing
+     snapshot — set on load just above — would never be replaced by the
+     corrected live rate. It now only falls back to that snapshot when the
+     matching raw material can't be found in inventory at all (e.g. it was
+     deleted). */
   useEffect(() => {
     if (!open || !allItems) return;
     const rawItems = allItems.filter(i => i.type === 'Raw Material' || (i as any).classification === 'raw');
@@ -628,14 +636,14 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
     if (paperItem) {
       const rate = getItemConversionRate(paperItem);
       const cost = (paperItem.cost_price || paperItem.cost || 0) / rate;
-      if (category === 'product') setProductPaperCost(prev => prev || cost);
-      if (category === 'service') setServicePaperCost(prev => prev || cost);
+      if (category === 'product') setProductPaperCost(cost);
+      if (category === 'service') setServicePaperCost(cost);
     }
     if (tonerItem) {
       const rate = getItemConversionRate(tonerItem);
       const cost = (tonerItem.cost_price || tonerItem.cost || 0) / rate;
-      if (category === 'service') setServiceTonerCost(prev => prev || cost);
-      if (category === 'product') setProductTonerCost(prev => prev || cost);
+      if (category === 'service') setServiceTonerCost(cost);
+      if (category === 'product') setProductTonerCost(cost);
     }
   }, [open, allItems, category]);
 
@@ -1098,13 +1106,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
       </div>
       <div style={s.section}>
         <p style={s.sectionTitle}>Category</p>
-        <select style={s.input} value={rawCategory} onChange={e => setRawCategory(e.target.value)}>
-          <option value="">Select category...</option>
-          <option value="Paper">Paper</option>
-          <option value="Toner">Toner</option>
-          <option value="Ink">Ink</option>
-          <option value="Binding">Binding</option>
-        </select>
+        <input type="text" style={s.input} value={rawCategory} onChange={e => setRawCategory(e.target.value)} placeholder="e.g. Paper, Toner, Ink, Binding" />
       </div>
       {rawConsumableType === 'non_consumable' && (
         <div style={s.section}>
