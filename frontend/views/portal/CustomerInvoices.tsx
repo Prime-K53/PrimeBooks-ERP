@@ -40,13 +40,13 @@ const CustomerInvoices: React.FC = () => {
   });
 
   if (loading) return <div className="p-6 max-w-7xl mx-auto"><PortalLoadingSkeleton type="table" count={8} /></div>;
-  if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-rose-300 text-sm">{error}</div></div>;
+  if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-100">Invoices</h1>
-        <p className="text-sm text-slate-400 mt-1">View and manage your invoices</p>
+        <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
+        <p className="text-sm text-slate-500 mt-1">View and manage your invoices</p>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -57,7 +57,7 @@ const CustomerInvoices: React.FC = () => {
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
               filter === s
                 ? 'bg-emerald-600 text-white'
-                : 'bg-slate-800/60 text-slate-400 border border-slate-700/60 hover:bg-slate-700/60'
+                : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
             }`}
           >
             {s}
@@ -68,11 +68,11 @@ const CustomerInvoices: React.FC = () => {
       {filtered.length === 0 ? (
         <EmptyState icon={<Eye size={28} />} title="No invoices found" description={filter === 'All' ? 'You have no invoices yet.' : `No invoices with status "${filter}".`} />
       ) : (
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-500 uppercase tracking-wider bg-slate-800/80">
+                <tr className="text-left text-xs text-slate-400 uppercase tracking-wider bg-white">
                   <th className="px-5 py-3 font-medium">Invoice #</th>
                   <th className="px-5 py-3 font-medium">Date</th>
                   <th className="px-5 py-3 font-medium text-right">Amount</th>
@@ -81,20 +81,20 @@ const CustomerInvoices: React.FC = () => {
                   <th className="px-5 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/60">
+              <tbody className="divide-y divide-slate-200">
                 {filtered.map((inv) => (
                   <tr
                     key={inv.id}
                     onClick={() => navigate(`/portal/invoices/${inv.id}`)}
-                    className="text-slate-300 hover:bg-slate-700/30 transition-colors cursor-pointer"
+                    className="text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                   >
-                    <td className="px-5 py-3 font-medium text-slate-100">{inv.invoice_number}</td>
-                    <td className="px-5 py-3 text-slate-400 whitespace-nowrap">{new Date(inv.created_at).toLocaleDateString()}</td>
+                    <td className="px-5 py-3 font-medium text-slate-900">{inv.invoice_number}</td>
+                    <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(inv.created_at).toLocaleDateString()}</td>
                     <td className="px-5 py-3 text-right font-mono">K {Number(inv.total_amount).toFixed(2)}</td>
                     <td className="px-5 py-3"><StatusBadge status={inv.status} /></td>
-                    <td className="px-5 py-3 text-slate-400 whitespace-nowrap">{new Date(inv.due_date).toLocaleDateString()}</td>
+                    <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(inv.due_date).toLocaleDateString()}</td>
                     <td className="px-5 py-3 text-right">
-                      <button className="p-1.5 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-slate-200 transition-colors">
+                      <button className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors">
                         <Eye size={16} />
                       </button>
                     </td>

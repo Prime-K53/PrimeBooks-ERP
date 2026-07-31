@@ -23,10 +23,10 @@ interface Ticket {
 }
 
 const priorityColors: Record<string, string> = {
-  low: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+  low: 'bg-slate-500/20 text-slate-700 border-slate-500/30',
   normal: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
   high: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  urgent: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+  urgent: 'bg-rose-500/20 text-rose-600 border-rose-500/30',
 };
 
 const CustomerSupport: React.FC = () => {
@@ -106,15 +106,15 @@ const CustomerSupport: React.FC = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-100">Support</h1>
-        <p className="text-sm text-slate-400 mt-1">Get help with your account</p>
+        <h1 className="text-2xl font-bold text-slate-900">Support</h1>
+        <p className="text-sm text-slate-500 mt-1">Get help with your account</p>
       </div>
 
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setActiveTab('tickets')}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'tickets' ? 'bg-emerald-600 text-white' : 'bg-slate-800/60 text-slate-400 border border-slate-700/60 hover:bg-slate-700/60'
+            activeTab === 'tickets' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
           }`}
         >
           <MessageCircle size={16} className="inline mr-1.5" />My Tickets
@@ -122,7 +122,7 @@ const CustomerSupport: React.FC = () => {
         <button
           onClick={() => setActiveTab('new')}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'new' ? 'bg-emerald-600 text-white' : 'bg-slate-800/60 text-slate-400 border border-slate-700/60 hover:bg-slate-700/60'
+            activeTab === 'new' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
           }`}
         >
           <Plus size={16} className="inline mr-1.5" />New Ticket
@@ -134,20 +134,20 @@ const CustomerSupport: React.FC = () => {
           {loading ? (
             <PortalLoadingSkeleton type="list" count={5} />
           ) : error ? (
-            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-rose-300 text-sm">{error}</div>
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div>
           ) : tickets.length === 0 ? (
             <EmptyState icon={<MessageCircle size={28} />} title="No support tickets" description="You haven't created any support tickets yet." action={{ label: 'Create Ticket', onClick: () => setActiveTab('new') }} />
           ) : (
             <div className="space-y-3">
               {tickets.map((ticket) => (
-                <div key={ticket.id} className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
+                <div key={ticket.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
                   <div
                     onClick={() => handleExpand(ticket)}
-                    className="p-4 flex items-start justify-between gap-4 cursor-pointer hover:bg-slate-700/30 transition-colors"
+                    className="p-4 flex items-start justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-100">{ticket.subject}</p>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{ticket.message}</p>
+                      <p className="text-sm font-medium text-slate-900">{ticket.subject}</p>
+                      <p className="text-xs text-slate-400 mt-1 line-clamp-2">{ticket.message}</p>
                       <p className="text-[10px] text-slate-600 mt-1">{new Date(ticket.created_at).toLocaleDateString()}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -159,11 +159,11 @@ const CustomerSupport: React.FC = () => {
                   </div>
 
                   {expandedId === ticket.id && (
-                    <div className="border-t border-slate-700/60 p-4 space-y-3">
+                    <div className="border-t border-slate-200 p-4 space-y-3">
                       {(ticket.messages || []).map((msg, i) => (
-                        <div key={i} className="bg-slate-700/40 rounded-lg p-3">
-                          <p className="text-xs text-slate-500 mb-1">{msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</p>
-                          <p className="text-sm text-slate-300">{msg.message}</p>
+                        <div key={i} className="bg-slate-100 rounded-lg p-3">
+                          <p className="text-xs text-slate-400 mb-1">{msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</p>
+                          <p className="text-sm text-slate-700">{msg.message}</p>
                         </div>
                       ))}
                       <div className="flex gap-2 pt-2">
@@ -171,7 +171,7 @@ const CustomerSupport: React.FC = () => {
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                           placeholder="Type your reply..."
-                          className="flex-1 h-10 px-3 bg-slate-700/60 border border-slate-600/60 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                          className="flex-1 h-10 px-3 bg-slate-100 border border-slate-600/60 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                         />
                         <button
                           onClick={() => handleReply(ticket.id)}
@@ -192,39 +192,39 @@ const CustomerSupport: React.FC = () => {
       )}
 
       {activeTab === 'new' && (
-        <form onSubmit={handleCreateTicket} className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-6">
+        <form onSubmit={handleCreateTicket} className="bg-white border border-slate-200 rounded-xl p-6">
           {createMsg && (
-            <div className={`mb-5 p-3.5 border rounded-xl text-sm ${createMsg.includes('successfully') ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-rose-500/10 border-rose-500/20 text-rose-300'}`}>
+            <div className={`mb-5 p-3.5 border rounded-xl text-sm ${createMsg.includes('successfully') ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
               {createMsg}
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Subject</label>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Subject</label>
               <input
                 value={newTicket.subject}
                 onChange={(e) => setNewTicket((t) => ({ ...t, subject: e.target.value }))}
                 placeholder="Brief description of your issue"
-                className="w-full h-10 px-3 bg-slate-800/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+                className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Message</label>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Message</label>
               <textarea
                 value={newTicket.message}
                 onChange={(e) => setNewTicket((t) => ({ ...t, message: e.target.value }))}
                 rows={4}
                 placeholder="Describe your issue in detail"
-                className="w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60 resize-none"
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60 resize-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Priority</label>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Priority</label>
               <select
                 value={newTicket.priority}
                 onChange={(e) => setNewTicket((t) => ({ ...t, priority: e.target.value }))}
-                className="w-full h-10 px-3 bg-slate-800/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+                className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
               >
                 <option value="low">Low</option>
                 <option value="normal">Normal</option>

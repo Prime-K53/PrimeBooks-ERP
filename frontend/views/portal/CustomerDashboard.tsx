@@ -46,7 +46,7 @@ const CustomerDashboard: React.FC = () => {
   if (error) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
-        <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-rose-300 text-sm">{error}</div>
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div>
       </div>
     );
   }
@@ -63,8 +63,8 @@ const CustomerDashboard: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
-        <p className="text-sm text-slate-400 mt-1">Welcome to your customer portal</p>
+        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+        <p className="text-sm text-slate-500 mt-1">Welcome to your customer portal</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -76,28 +76,28 @@ const CustomerDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-700/60">
-              <h2 className="text-sm font-semibold text-slate-200">Recent Activity</h2>
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200">
+              <h2 className="text-sm font-semibold text-slate-800">Recent Activity</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-slate-500 uppercase tracking-wider">
+                  <tr className="text-left text-xs text-slate-400 uppercase tracking-wider">
                     <th className="px-5 py-3 font-medium">Date</th>
                     <th className="px-5 py-3 font-medium">Description</th>
                     <th className="px-5 py-3 font-medium text-right">Amount</th>
                     <th className="px-5 py-3 font-medium text-right">Type</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/60">
+                <tbody className="divide-y divide-slate-200">
                   {(data.recentTransactions || []).slice(0, 5).map((t, i) => (
-                    <tr key={i} className="text-slate-300 hover:bg-slate-700/30 transition-colors">
-                      <td className="px-5 py-3 text-slate-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
+                    <tr key={i} className="text-slate-700 hover:bg-slate-50 transition-colors">
+                      <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
                       <td className="px-5 py-3">{t.description}</td>
                       <td className="px-5 py-3 text-right font-mono">{t.amount.toFixed(2)}</td>
                       <td className="px-5 py-3 text-right">
-                        <span className={`text-xs font-semibold ${t.type === 'credit' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <span className={`text-xs font-semibold ${t.type === 'credit' ? 'text-emerald-600' : 'text-rose-600'}`}>
                           {t.type}
                         </span>
                       </td>
@@ -105,7 +105,7 @@ const CustomerDashboard: React.FC = () => {
                   ))}
                   {(!data.recentTransactions || data.recentTransactions.length === 0) && (
                     <tr>
-                      <td colSpan={4} className="px-5 py-8 text-center text-slate-500">No recent transactions</td>
+                      <td colSpan={4} className="px-5 py-8 text-center text-slate-400">No recent transactions</td>
                     </tr>
                   )}
                 </tbody>
@@ -115,17 +115,17 @@ const CustomerDashboard: React.FC = () => {
         </div>
 
         <div>
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-slate-200 mb-4">Quick Actions</h2>
+          <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-slate-800 mb-4">Quick Actions</h2>
             <div className="space-y-2">
               {quickActions.map((action, i) => (
                 <button
                   key={i}
                   onClick={action.onClick}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-slate-700/40 hover:bg-slate-700/60 rounded-lg text-sm text-slate-300 transition-colors group"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-slate-100 hover:bg-slate-100 rounded-lg text-sm text-slate-700 transition-colors group"
                 >
                   <span className="flex items-center gap-2">{action.icon}{action.label}</span>
-                  <ArrowRight size={14} className="text-slate-500 group-hover:text-slate-300 transition-colors" />
+                  <ArrowRight size={14} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
                 </button>
               ))}
             </div>

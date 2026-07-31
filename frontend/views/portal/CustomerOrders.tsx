@@ -50,14 +50,14 @@ const CustomerOrders: React.FC = () => {
   const filtered = filter === 'All' ? orders : orders.filter((o) => o.status === filter);
 
   if (loading) return <div className="p-6 max-w-7xl mx-auto"><PortalLoadingSkeleton type="table" count={8} /></div>;
-  if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-rose-300 text-sm">{error}</div></div>;
+  if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Orders</h1>
-          <p className="text-sm text-slate-400 mt-1">View your order history</p>
+          <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
+          <p className="text-sm text-slate-500 mt-1">View your order history</p>
         </div>
         <button
           onClick={() => navigate('/portal/new-request?type=order')}
@@ -75,7 +75,7 @@ const CustomerOrders: React.FC = () => {
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
               filter === s
                 ? 'bg-emerald-600 text-white'
-                : 'bg-slate-800/60 text-slate-400 border border-slate-700/60 hover:bg-slate-700/60'
+                : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
             }`}
           >
             {s}
@@ -86,11 +86,11 @@ const CustomerOrders: React.FC = () => {
       {filtered.length === 0 ? (
         <EmptyState icon={<ShoppingCart size={28} />} title="No orders found" description={filter === 'All' ? 'You have no orders yet.' : `No orders with status "${filter}".`} />
       ) : (
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-500 uppercase tracking-wider bg-slate-800/80">
+                <tr className="text-left text-xs text-slate-400 uppercase tracking-wider bg-white">
                   <th className="px-5 py-3 font-medium">Order #</th>
                   <th className="px-5 py-3 font-medium">Date</th>
                   <th className="px-5 py-3 font-medium text-right">Total</th>
@@ -98,19 +98,19 @@ const CustomerOrders: React.FC = () => {
                   <th className="px-5 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/60">
+              <tbody className="divide-y divide-slate-200">
                 {filtered.map((order) => (
                   <tr
                     key={order.id}
                     onClick={() => navigate(`/portal/orders/${order.id}`)}
-                    className="text-slate-300 hover:bg-slate-700/30 transition-colors cursor-pointer"
+                    className="text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                   >
-                    <td className="px-5 py-3 font-medium text-slate-100">#{order.id.slice(0, 8)}</td>
-                    <td className="px-5 py-3 text-slate-400 whitespace-nowrap">{new Date(order.orderDate).toLocaleDateString()}</td>
+                    <td className="px-5 py-3 font-medium text-slate-900">#{order.id.slice(0, 8)}</td>
+                    <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(order.orderDate).toLocaleDateString()}</td>
                     <td className="px-5 py-3 text-right font-mono">K {Number(order.totalAmount).toFixed(2)}</td>
                     <td className="px-5 py-3"><StatusBadge status={order.status} /></td>
                     <td className="px-5 py-3 text-right">
-                      <button className="p-1.5 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-slate-200 transition-colors">
+                      <button className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors">
                         <Eye size={16} />
                       </button>
                     </td>

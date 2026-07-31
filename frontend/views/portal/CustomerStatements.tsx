@@ -52,7 +52,7 @@ const CustomerStatements: React.FC = () => {
   };
 
   if (loading) return <div className="p-6 max-w-7xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
-  if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-rose-300 text-sm">{error}</div></div>;
+  if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
   if (!data) return null;
 
   const txns = data.transactions || [];
@@ -60,27 +60,27 @@ const CustomerStatements: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-100">Statements</h1>
-        <p className="text-sm text-slate-400 mt-1">View account statements for any period</p>
+        <h1 className="text-2xl font-bold text-slate-900">Statements</h1>
+        <p className="text-sm text-slate-500 mt-1">View account statements for any period</p>
       </div>
 
       <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-3 mb-6">
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Start Date</label>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="h-10 px-3 bg-slate-800/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+            className="h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">End Date</label>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="h-10 px-3 bg-slate-800/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+            className="h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
           />
         </div>
         <button
@@ -92,24 +92,24 @@ const CustomerStatements: React.FC = () => {
       </form>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Opening Balance</span>
-          <div className="text-2xl font-bold text-slate-100 mt-1">K {Number(data.opening_balance || 0).toFixed(2)}</div>
+        <div className="bg-white border border-slate-200 rounded-xl p-5">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Opening Balance</span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">K {Number(data.opening_balance || 0).toFixed(2)}</div>
         </div>
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Closing Balance</span>
-          <div className="text-2xl font-bold text-slate-100 mt-1">K {Number(data.closing_balance || 0).toFixed(2)}</div>
+        <div className="bg-white border border-slate-200 rounded-xl p-5">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Closing Balance</span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">K {Number(data.closing_balance || 0).toFixed(2)}</div>
         </div>
       </div>
 
       {txns.length === 0 ? (
         <EmptyState icon={<FileText size={28} />} title="No transactions" description="No transactions found for the selected period." />
       ) : (
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-500 uppercase tracking-wider bg-slate-800/80">
+                <tr className="text-left text-xs text-slate-400 uppercase tracking-wider bg-white">
                   <th className="px-5 py-3 font-medium">Date</th>
                   <th className="px-5 py-3 font-medium">Description</th>
                   <th className="px-5 py-3 font-medium text-right">Debit</th>
@@ -117,13 +117,13 @@ const CustomerStatements: React.FC = () => {
                   <th className="px-5 py-3 font-medium text-right">Balance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/60">
+              <tbody className="divide-y divide-slate-200">
                 {txns.map((t, i) => (
-                  <tr key={i} className="text-slate-300 hover:bg-slate-700/30 transition-colors">
-                    <td className="px-5 py-3 text-slate-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
+                  <tr key={i} className="text-slate-700 hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
                     <td className="px-5 py-3">{t.description}</td>
-                    <td className="px-5 py-3 text-right font-mono text-rose-400">{t.debit ? `K ${Number(t.debit).toFixed(2)}` : '-'}</td>
-                    <td className="px-5 py-3 text-right font-mono text-emerald-400">{t.credit ? `K ${Number(t.credit).toFixed(2)}` : '-'}</td>
+                    <td className="px-5 py-3 text-right font-mono text-rose-600">{t.debit ? `K ${Number(t.debit).toFixed(2)}` : '-'}</td>
+                    <td className="px-5 py-3 text-right font-mono text-emerald-600">{t.credit ? `K ${Number(t.credit).toFixed(2)}` : '-'}</td>
                     <td className="px-5 py-3 text-right font-mono font-semibold">K {Number(t.balance).toFixed(2)}</td>
                   </tr>
                 ))}

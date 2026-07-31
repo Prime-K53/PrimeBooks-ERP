@@ -36,60 +36,62 @@ const CustomerLogin: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 overflow-y-auto bg-[#070B17] font-sans">
+    <div className="fixed inset-0 overflow-y-auto bg-[var(--dashboard-bg)] font-sans">
       <div className="min-h-full flex items-center justify-center p-6">
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-gradient-to-br from-emerald-600/15 to-green-500/5 rounded-full blur-[120px]" />
-          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-gradient-to-tr from-teal-500/10 to-slate-800/20 rounded-full blur-[100px]" />
+          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-gradient-to-br from-teal-500/10 to-emerald-400/5 rounded-full blur-[120px]" />
+          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-gradient-to-tr from-amber-500/10 to-teal-500/10 rounded-full blur-[100px]" />
         </div>
 
-        <div className="w-full max-w-[420px] relative z-10">
+        <div className="w-full max-w-[420px] relative z-10 bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-10">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-400 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-            <Lock size={20} className="text-white" />
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
+            <Lock size={20} />
           </div>
           <div>
-            <div className="text-slate-100 font-bold text-lg tracking-tight">Customer Portal</div>
-            <div className="text-[10px] text-emerald-400 uppercase tracking-[0.18em] font-semibold">Prime ERP</div>
+            <div className="font-bold text-lg tracking-tight" style={{ color: '#23282A' }}>
+              Prime<span style={{ color: '#b97e2b' }}>PORTAL</span>
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: '#5c6567' }}>Customer Sign In</div>
           </div>
         </div>
 
         <div className="mb-8">
-          <h1 className="text-[1.65rem] font-bold text-slate-100 tracking-tight leading-snug">Welcome back</h1>
-          <p className="mt-2 text-sm text-slate-400 leading-relaxed">Sign in to your account to view invoices, orders, and more.</p>
+          <h1 className="text-[1.65rem] font-bold tracking-tight leading-snug" style={{ color: '#23282A' }}>Welcome back</h1>
+          <p className="mt-2 text-sm leading-relaxed" style={{ color: '#5c6567' }}>Sign in to your account to view invoices, orders, and more.</p>
         </div>
 
         {error && (
-          <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-            <p className="text-xs text-rose-300 leading-relaxed">{error}</p>
+          <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl">
+            <p className="text-xs text-rose-600 leading-relaxed">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Customer ID</label>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Customer ID</label>
             <div className="relative">
-              <Fingerprint size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Fingerprint size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
                 placeholder="Enter your customer ID"
-                className="w-full h-11 pl-10 pr-4 bg-slate-800/60 border border-slate-700/60 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60 transition-all"
+                className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Full Name</label>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Full Name</label>
             <div className="relative">
-              <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name (exact match)"
-                className="w-full h-11 pl-10 pr-4 bg-slate-800/60 border border-slate-700/60 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60 transition-all"
+                className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
               />
             </div>
           </div>
@@ -97,7 +99,7 @@ const CustomerLogin: React.FC = () => {
           <button
             type="submit"
             disabled={submitting || !customerId.trim() || !fullName.trim()}
-            className="w-full h-11 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
+            className="w-full h-11 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(90deg, #146b60, #3fa294)', boxShadow: '0 8px 20px rgba(20,107,96,.25)' }}
           >
             {submitting ? (
               <Loader2 size={16} className="animate-spin" />
@@ -108,13 +110,13 @@ const CustomerLogin: React.FC = () => {
         </form>
 
         <div className="mt-4 flex items-center justify-end text-xs">
-          <Link to="/portal/forgot-password" className="text-slate-400 hover:text-emerald-400 transition-colors">
+          <Link to="/portal/forgot-password" className="text-slate-500 hover:text-teal-600 transition-colors">
             Forgot password?
           </Link>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-slate-800/60 text-center">
-          <Link to="/login" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+        <div className="mt-10 pt-6 border-t border-slate-200 text-center">
+          <Link to="/login" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
             Admin Login
           </Link>
         </div>

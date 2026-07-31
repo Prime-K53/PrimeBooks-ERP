@@ -188,7 +188,7 @@ const CustomerCreateRequest: React.FC = () => {
   if (loading) {
     return (
       <div className="p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
-        <Loader2 size={28} className="animate-spin text-emerald-400" />
+        <Loader2 size={28} className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -196,14 +196,14 @@ const CustomerCreateRequest: React.FC = () => {
   if (successId) {
     return (
       <div className="p-6 max-w-4xl mx-auto">
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-10 text-center">
+        <div className="bg-white border border-slate-200 rounded-xl p-10 text-center">
           <div className="w-14 h-14 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 size={28} className="text-emerald-400" />
+            <CheckCircle2 size={28} className="text-emerald-600" />
           </div>
-          <h2 className="text-lg font-bold text-slate-100 mb-1">
+          <h2 className="text-lg font-bold text-slate-900 mb-1">
             {type === 'order' ? 'Order submitted' : 'Quotation requested'}
           </h2>
-          <p className="text-sm text-slate-400 mb-6">
+          <p className="text-sm text-slate-500 mb-6">
             Reference #{successId} — our team will review your request shortly.
           </p>
           <div className="flex items-center justify-center gap-3">
@@ -215,7 +215,7 @@ const CustomerCreateRequest: React.FC = () => {
             </button>
             <button
               onClick={() => navigate('/portal/new-request')}
-              className="px-5 py-2.5 bg-slate-700/60 hover:bg-slate-700/80 text-slate-200 text-sm font-semibold rounded-xl transition-all"
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-xl transition-all"
             >
               Create Another
             </button>
@@ -227,13 +227,13 @@ const CustomerCreateRequest: React.FC = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <button onClick={() => navigate(type === 'order' ? '/portal/orders' : '/portal/quotations')} className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 mb-6 transition-colors">
+      <button onClick={() => navigate(type === 'order' ? '/portal/orders' : '/portal/quotations')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
         <ArrowLeft size={14} /> Back to {type === 'order' ? 'Orders' : 'Quotations'}
       </button>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-100">New Request</h1>
-        <p className="text-sm text-slate-400 mt-1">Create an order or request a quotation</p>
+        <h1 className="text-2xl font-bold text-slate-900">New Request</h1>
+        <p className="text-sm text-slate-500 mt-1">Create an order or request a quotation</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 max-w-sm mb-8">
@@ -242,7 +242,7 @@ const CustomerCreateRequest: React.FC = () => {
           className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
             type === 'order'
               ? 'bg-emerald-600 border-emerald-500 text-white'
-              : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:bg-slate-700/60'
+              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'
           }`}
         >
           <ShoppingCart size={16} /> Order
@@ -252,7 +252,7 @@ const CustomerCreateRequest: React.FC = () => {
           className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
             type === 'quotation'
               ? 'bg-emerald-600 border-emerald-500 text-white'
-              : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:bg-slate-700/60'
+              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'
           }`}
         >
           <FileText size={16} /> Quotation
@@ -260,38 +260,38 @@ const CustomerCreateRequest: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm text-rose-300">{error}</div>
+        <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{error}</div>
       )}
 
-      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 mb-6">
-        <h2 className="text-sm font-semibold text-slate-200 mb-4">Add Items</h2>
+      <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-4">Add Items</h2>
         <div className="relative mb-4">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products..."
-            className="w-full h-10 pl-9 pr-3 bg-slate-900/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+            className="w-full h-10 pl-9 pr-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
           />
         </div>
         {search.trim() && (
-          <div className="mb-4 max-h-52 overflow-y-auto custom-scrollbar border border-slate-700/60 rounded-lg divide-y divide-slate-700/50">
+          <div className="mb-4 max-h-52 overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg divide-y divide-slate-700/50">
             {filteredCatalog.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-slate-500">No products match your search</p>
+              <p className="px-4 py-3 text-sm text-slate-400">No products match your search</p>
             ) : (
               filteredCatalog.slice(0, 20).map((item: any) => (
                 <button
                   key={item.id}
                   onClick={() => addLine(item)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-700/40 transition-colors text-left"
+                  className="w-full flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-left"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-200 truncate">{item.name}</p>
-                    <p className="text-xs text-slate-500">{item.sku || ''}{item.unit ? ` • ${item.unit}` : ''}</p>
+                    <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
+                    <p className="text-xs text-slate-400">{item.sku || ''}{item.unit ? ` • ${item.unit}` : ''}</p>
                   </div>
                   <span className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-mono text-slate-300">K {Number(item.price).toFixed(2)}</span>
-                    <Plus size={16} className="text-emerald-400" />
+                    <span className="text-sm font-mono text-slate-700">K {Number(item.price).toFixed(2)}</span>
+                    <Plus size={16} className="text-emerald-600" />
                   </span>
                 </button>
               ))
@@ -300,18 +300,18 @@ const CustomerCreateRequest: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden mb-6">
-        <div className="px-5 py-4 border-b border-slate-700/60 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-200">Selected Items ({lines.length})</h2>
-          <span className="text-xs text-slate-400">{customerName}</span>
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-800">Selected Items ({lines.length})</h2>
+          <span className="text-xs text-slate-500">{customerName}</span>
         </div>
         {lines.length === 0 ? (
-          <p className="px-5 py-10 text-center text-sm text-slate-500">No items selected yet — search and add products above.</p>
+          <p className="px-5 py-10 text-center text-sm text-slate-400">No items selected yet — search and add products above.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-500 uppercase tracking-wider bg-slate-800/80">
+                <tr className="text-left text-xs text-slate-400 uppercase tracking-wider bg-white">
                   <th className="px-5 py-3 font-medium">Item</th>
                   <th className="px-5 py-3 font-medium text-right">Unit Price</th>
                   <th className="px-5 py-3 font-medium text-right">Qty</th>
@@ -319,12 +319,12 @@ const CustomerCreateRequest: React.FC = () => {
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/60">
+              <tbody className="divide-y divide-slate-200">
                 {lines.map((l) => (
-                  <tr key={l.id} className="text-slate-300">
+                  <tr key={l.id} className="text-slate-700">
                     <td className="px-5 py-3">
-                      <p className="font-medium text-slate-200">{l.name}</p>
-                      {l.unit && <p className="text-xs text-slate-500">{l.unit}</p>}
+                      <p className="font-medium text-slate-800">{l.name}</p>
+                      {l.unit && <p className="text-xs text-slate-400">{l.unit}</p>}
                     </td>
                     <td className="px-5 py-3 text-right font-mono">K {l.unitPrice.toFixed(2)}</td>
                     <td className="px-5 py-3 text-right">
@@ -333,12 +333,12 @@ const CustomerCreateRequest: React.FC = () => {
                         min={1}
                         value={l.quantity}
                         onChange={(e) => updateQuantity(l.id, parseInt(e.target.value, 10) || 1)}
-                        className="w-16 h-8 px-2 bg-slate-900/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className="w-16 h-8 px-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                       />
                     </td>
                     <td className="px-5 py-3 text-right font-mono">K {(l.quantity * l.unitPrice).toFixed(2)}</td>
                     <td className="px-5 py-3 text-right">
-                      <button onClick={() => removeLine(l.id)} className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors">
+                      <button onClick={() => removeLine(l.id)} className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors">
                         <Trash2 size={15} />
                       </button>
                     </td>
@@ -350,31 +350,31 @@ const CustomerCreateRequest: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 mb-6 space-y-4">
+      <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 space-y-4">
         {type === 'order' && (
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Preferred Delivery Date</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Preferred Delivery Date</label>
             <input
               type="date"
               value={deliveryDate}
               onChange={(e) => setDeliveryDate(e.target.value)}
-              className="w-full sm:w-64 h-10 px-3 bg-slate-900/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              className="w-full sm:w-64 h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
             />
           </div>
         )}
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Notes</label>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Notes</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder={type === 'order' ? 'Order instructions, special requirements...' : 'Tell us what you need...'}
-            className="w-full px-3 py-2.5 bg-slate-900/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
+            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
           />
         </div>
-        <div className="flex items-center justify-between border-t border-slate-700/60 pt-4">
-          <span className="text-sm font-semibold text-slate-300">Total</span>
-          <span className="text-2xl font-bold text-slate-100 font-mono">K {subtotal.toFixed(2)}</span>
+        <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+          <span className="text-sm font-semibold text-slate-700">Total</span>
+          <span className="text-2xl font-bold text-slate-900 font-mono">K {subtotal.toFixed(2)}</span>
         </div>
       </div>
 

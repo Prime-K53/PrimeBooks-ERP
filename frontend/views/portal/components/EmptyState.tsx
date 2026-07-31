@@ -10,10 +10,10 @@ interface Props {
 const EmptyState: React.FC<Props> = ({ icon, title, description, action }) => {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/50 mb-5 text-slate-500">
+      <div className="p-4 rounded-2xl bg-white border border-slate-200 mb-5 text-slate-400 shadow-sm">
         {React.isValidElement(icon) ? icon : React.createElement(icon as React.ElementType, { size: 36 })}
       </div>
-      <h3 className="text-lg font-semibold text-slate-200 mb-1.5">{title}</h3>
+      <h3 className="text-lg font-semibold text-slate-800 mb-1.5">{title}</h3>
       {description && (
         <p className="text-sm text-slate-500 max-w-sm leading-relaxed mb-6">{description}</p>
       )}

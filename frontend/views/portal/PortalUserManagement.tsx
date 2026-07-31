@@ -188,8 +188,8 @@ const PortalUserManagement: React.FC = () => {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Portal Users</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage customer portal access</p>
+          <h1 className="text-2xl font-bold text-slate-900">Portal Users</h1>
+          <p className="text-sm text-slate-500 mt-1">Manage customer portal access</p>
         </div>
         <button
           onClick={() => { setShowCreate(!showCreate); setMessage(null); }}
@@ -201,9 +201,9 @@ const PortalUserManagement: React.FC = () => {
       </div>
 
       {message && (
-        <div className={`mb-4 p-3.5 rounded-xl flex items-start gap-3 ${message.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-rose-500/10 border border-rose-500/20'}`}>
-          {message.type === 'success' ? <Check size={16} className="text-emerald-400 mt-0.5" /> : <AlertCircle size={16} className="text-rose-400 mt-0.5" />}
-          <p className={`text-xs ${message.type === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{message.text}</p>
+        <div className={`mb-4 p-3.5 rounded-xl flex items-start gap-3 ${message.type === 'success' ? 'bg-emerald-50 border border-emerald-200' : 'bg-rose-50 border border-rose-200'}`}>
+          {message.type === 'success' ? <Check size={16} className="text-emerald-600 mt-0.5" /> : <AlertCircle size={16} className="text-rose-600 mt-0.5" />}
+          <p className={`text-xs ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>{message.text}</p>
         </div>
       )}
 
@@ -305,50 +305,50 @@ const PortalUserManagement: React.FC = () => {
 
 
       <div className="relative mb-4">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full h-10 pl-10 pr-4 bg-slate-800/60 border border-slate-700/60 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          className="w-full h-10 pl-10 pr-4 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           placeholder="Search customers or emails..." />
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-emerald-400" />
+          <Loader2 size={24} className="animate-spin text-emerald-600" />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-700/50">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-800/80">
-                <th className="text-left p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Customer</th>
-                <th className="text-left p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Portal Email</th>
-                <th className="text-left p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="text-left p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Last Login</th>
-                <th className="text-right p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Actions</th>
+              <tr className="bg-white">
+                <th className="text-left p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+                <th className="text-left p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Portal Email</th>
+                <th className="text-left p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                <th className="text-left p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Login</th>
+                <th className="text-right p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/30">
               {filtered.map((u) => (
-                <tr key={u.customer_id} className="hover:bg-slate-800/40 transition-colors">
+                <tr key={u.customer_id} className="hover:bg-white/40 transition-colors">
                   <td className="p-3">
-                    <div className="font-medium text-slate-200">{u.customer_name}</div>
-                    <div className="text-xs text-slate-500">{u.customer_email}</div>
+                    <div className="font-medium text-slate-800">{u.customer_name}</div>
+                    <div className="text-xs text-slate-400">{u.customer_email}</div>
                   </td>
                   <td className="p-3">
                     {u.portal_email ? (
-                      <span className="text-slate-300">{u.portal_email}</span>
+                      <span className="text-slate-700">{u.portal_email}</span>
                     ) : (
                       <span className="text-slate-600 italic">No portal account</span>
                     )}
                   </td>
                   <td className="p-3">
                     {u.portal_status === 'active' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                         Active
                       </span>
                     ) : u.portal_status === 'disabled' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 text-xs font-semibold">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 text-xs font-semibold">
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                         Disabled
                       </span>
@@ -358,7 +358,7 @@ const PortalUserManagement: React.FC = () => {
                   </td>
                   <td className="p-3">
                     {u.last_login_at ? (
-                      <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                      <span className="text-xs text-slate-500 flex items-center gap-1.5">
                         <Clock size={12} />
                         {new Date(u.last_login_at).toLocaleDateString()}
                       </span>
@@ -371,14 +371,14 @@ const PortalUserManagement: React.FC = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleToggleStatus(u.portal_user_id!, u.portal_status || 'disabled')}
-                          className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
+                          className="p-2 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors"
                           title={u.portal_status === 'active' ? 'Disable' : 'Enable'}
                         >
                           {u.portal_status === 'active' ? <ShieldOff size={14} /> : <Shield size={14} />}
                         </button>
                         <button
                           onClick={() => { setShowResetPw(u.portal_user_id); setResetPw(''); }}
-                          className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
+                          className="p-2 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors"
                           title="Reset Password"
                         >
                           <Key size={14} />
@@ -386,15 +386,15 @@ const PortalUserManagement: React.FC = () => {
                         {showResetPw === u.portal_user_id && (
                           <div className="flex items-center gap-2">
                             <input type="password" value={resetPw} onChange={e => setResetPw(e.target.value)}
-                              className="w-28 h-8 px-2 bg-slate-900/60 border border-slate-700/60 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                              className="w-28 h-8 px-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                               placeholder="New password" minLength={6} />
                             <button onClick={() => handleResetPassword(u.portal_user_id!)}
                               disabled={submitting || resetPw.length < 6}
-                              className="p-2 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 disabled:opacity-50 transition-colors">
+                              className="p-2 rounded-lg bg-emerald-600/20 text-emerald-600 hover:bg-emerald-600/30 disabled:opacity-50 transition-colors">
                               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                             </button>
                             <button onClick={() => setShowResetPw(null)}
-                              className="p-2 rounded-lg text-slate-500 hover:text-slate-300 transition-colors">
+                              className="p-2 rounded-lg text-slate-400 hover:text-slate-700 transition-colors">
                               <X size={14} />
                             </button>
                           </div>

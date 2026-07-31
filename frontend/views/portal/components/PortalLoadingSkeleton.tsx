@@ -6,11 +6,11 @@ interface Props {
 }
 
 const SkeletonBlock: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div className={`animate-pulse bg-slate-700/50 rounded-lg ${className}`} />
+  <div className={`animate-pulse bg-slate-200 rounded-lg ${className}`} />
 );
 
 const CardSkeleton: React.FC = () => (
-  <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl p-5 space-y-4">
+  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
     <div className="flex items-center justify-between">
       <SkeletonBlock className="h-3 w-20" />
       <SkeletonBlock className="h-8 w-8 rounded-xl" />
@@ -21,8 +21,8 @@ const CardSkeleton: React.FC = () => (
 );
 
 const TableSkeleton: React.FC = () => (
-  <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl p-5 space-y-4">
-    <div className="flex gap-4 pb-3 border-b border-slate-700/40">
+  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+    <div className="flex gap-4 pb-3 border-b border-slate-200">
       <SkeletonBlock className="h-3 flex-1" />
       <SkeletonBlock className="h-3 flex-1" />
       <SkeletonBlock className="h-3 w-24" />
@@ -42,7 +42,7 @@ const TableSkeleton: React.FC = () => (
 const DetailSkeleton: React.FC = () => (
   <div className="space-y-6">
     <SkeletonBlock className="h-7 w-56" />
-    <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl p-6 space-y-5">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-5">
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
           <SkeletonBlock className="h-3 w-16" />
@@ -61,7 +61,7 @@ const DetailSkeleton: React.FC = () => (
           <SkeletonBlock className="h-5 w-36" />
         </div>
       </div>
-      <div className="border-t border-slate-700/40 pt-5 space-y-3">
+      <div className="border-t border-slate-200 pt-5 space-y-3">
         <SkeletonBlock className="h-3 w-32" />
         <SkeletonBlock className="h-4 w-full" />
         <SkeletonBlock className="h-4 w-3/4" />
