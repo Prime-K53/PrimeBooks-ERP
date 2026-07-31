@@ -619,6 +619,33 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
     return rate > 0 ? rate : fallback;
   };
 
+  const rawCategoryOf = (item: any): string =>
+    String((item as any)?.category ?? (item as any)?.material ?? (item as any)?.rawCategory ?? '').toLowerCase();
+
+  /* Resolve which raw material drives a BOM rate. Scanning by name alone is
+     ambiguous: e.g. "Fuser Paper" or "Glossy Paper" also match /paper|bond/,
+     and whichever item appears first in the list silently wins — producing
+     rates that contradict the item's own Cost Summary. We therefore score
+     candidates: an explicit category match (Paper/Toner/Staple/…) outranks a
+     name-only match, and a stored conversion rate (i.e. a real bulk-priced
+     material) outranks an item with no rate. Ties keep list order. */
+  const resolveRawMaterial = (rawItems: any[], namePattern: RegExp, categoryKeywords: string[]): any | undefined => {
+    const candidates = rawItems.filter(i =>
+      namePattern.test(String(i?.name || '')) ||
+      categoryKeywords.some(k => rawCategoryOf(i).includes(k))
+    );
+    if (candidates.length <= 1) return candidates[0];
+    return candidates
+      .map(item => ({
+        item,
+        score:
+          (categoryKeywords.some(k => rawCategoryOf(item).includes(k)) ? 10 : 0) +
+          (namePattern.test(String(item?.name || '')) ? 5 : 0) +
+          (getItemConversionRate(item) > 1 ? 2 : 0),
+      }))
+      .sort((a, b) => b.score - a.score)[0].item;
+  };
+
   /* Derive paper/toner costs from raw material items.
      This always applies the live inventory rate (cost_price ÷ conversion
      rate) so BOM Materials tracks inventory changes and conversion-rate
@@ -631,8 +658,8 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
   useEffect(() => {
     if (!open || !allItems) return;
     const rawItems = allItems.filter(i => i.type === 'Raw Material' || (i as any).classification === 'raw');
-    const paperItem = rawItems.find(i => /paper|bond/i.test(i.name));
-    const tonerItem = rawItems.find(i => /toner|ink|cartridge/i.test(i.name));
+    const paperItem = resolveRawMaterial(rawItems, /paper|bond/i, ['paper', 'bond']);
+    const tonerItem = resolveRawMaterial(rawItems, /toner|ink|cartridge/i, ['toner', 'ink', 'cartridge']);
     if (paperItem) {
       const rate = getItemConversionRate(paperItem);
       const cost = (paperItem.cost_price || paperItem.cost || 0) / rate;
@@ -659,17 +686,26 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
 
   const bomRates = useMemo(() => {
     const rawItems = allItems?.filter(i => i.type === 'Raw Material' || (i as any).classification === 'raw') || [];
-    const paperItem = rawItems.find(i => /paper|bond/i.test(i.name));
-    const tonerItem = rawItems.find(i => /toner|ink|cartridge/i.test(i.name));
-    const coverItem = rawItems.find(i => /card|cover|board/i.test(i.name));
-    const stapleItem = rawItems.find(i => /staple/i.test(i.name));
-    const tapeItem = rawItems.find(i => /tape|binding tape/i.test(i.name));
-    const paperRate = paperItem ? ((paperItem.cost_price || paperItem.cost || 0) / getItemConversionRate(paperItem)) : BOM_DEFAULT_RATES.paper;
-    const tonerRate = tonerItem ? ((tonerItem.cost_price || tonerItem.cost || 0) / getItemConversionRate(tonerItem)) : BOM_DEFAULT_RATES.toner;
-    const coverRate = coverItem ? ((coverItem.cost_price || coverItem.cost || 0) / getItemConversionRate(coverItem)) : BOM_DEFAULT_RATES.cover;
-    const stapleRate = stapleItem ? ((stapleItem.cost_price || stapleItem.cost || 0) / getItemConversionRate(stapleItem)) : BOM_DEFAULT_RATES.staple;
-    const tapeRate = tapeItem ? ((tapeItem.cost_price || tapeItem.cost || 0) / getItemConversionRate(tapeItem)) : BOM_DEFAULT_RATES.tape;
-    return { paper: paperRate, toner: tonerRate, cover: coverRate, staple: stapleRate, tape: tapeRate };
+    const paperItem = resolveRawMaterial(rawItems, /paper|bond/i, ['paper', 'bond']);
+    const tonerItem = resolveRawMaterial(rawItems, /toner|ink|cartridge/i, ['toner', 'ink', 'cartridge']);
+    const coverItem = resolveRawMaterial(rawItems, /card|cover|board/i, ['cover', 'card', 'board']);
+    const stapleItem = resolveRawMaterial(rawItems, /staple/i, ['staple']);
+    const tapeItem = resolveRawMaterial(rawItems, /tape/i, ['tape']);
+    const rateOf = (item: any, fallback: number) => item ? ((item.cost_price || item.cost || 0) / getItemConversionRate(item)) : fallback;
+    return {
+      paper: rateOf(paperItem, BOM_DEFAULT_RATES.paper),
+      toner: rateOf(tonerItem, BOM_DEFAULT_RATES.toner),
+      cover: rateOf(coverItem, BOM_DEFAULT_RATES.cover),
+      staple: rateOf(stapleItem, BOM_DEFAULT_RATES.staple),
+      tape: rateOf(tapeItem, BOM_DEFAULT_RATES.tape),
+      sources: {
+        paper: paperItem?.name || '',
+        toner: tonerItem?.name || '',
+        cover: coverItem?.name || '',
+        staple: stapleItem?.name || '',
+        tape: tapeItem?.name || '',
+      },
+    };
   }, [allItems]);
 
   const productBomTotal = useMemo(() => {
@@ -679,6 +715,12 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
       + productBomStaples * bomRates.staple
       + productBomTape * bomRates.tape;
   }, [productBomPages, productBomCovers, productBomStaples, productBomTape, bomRates]);
+
+  const bomRateLabel = (key: keyof typeof BOM_DEFAULT_RATES, unit: string): string => {
+    const label = { paper: 'Paper', toner: 'Toner', cover: 'Cover', staple: 'Staple', tape: 'Binding Tape' }[key];
+    const source = bomRates.sources[key];
+    return `${label} ${formatCurrency(bomRates[key], currencySymbol)}/${unit}${source ? ` (${source})` : ''}`;
+  };
 
   const productBase = useMemo(() => {
     if (productBomTotal > 0) return productBomTotal;
@@ -1190,7 +1232,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
           <span style={s.bomCostLabel}>BOM Cost</span>
           <span style={s.bomCostValue}>{formatCurrency(productBomTotal, currencySymbol)}</span>
         </div>
-        <p style={s.bomRateNote}>Rates — Paper {formatCurrency(bomRates.paper, currencySymbol)}/sheet · Toner {formatCurrency(bomRates.toner, currencySymbol)}/page · Cover {formatCurrency(bomRates.cover, currencySymbol)}/ea · Staple {formatCurrency(bomRates.staple, currencySymbol)}/ea · Binding Tape {formatCurrency(bomRates.tape, currencySymbol)}/cm</p>
+        <p style={s.bomRateNote}>Rates — {bomRateLabel('paper', 'sheet')} · {bomRateLabel('toner', 'page')} · {bomRateLabel('cover', 'ea')} · {bomRateLabel('staple', 'ea')} · {bomRateLabel('tape', 'cm')}</p>
       </div>
       <div style={s.section}>
         <p style={s.sectionTitle}>Variants (optional)</p>
@@ -1706,7 +1748,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
                     <span style={s.bomTotalAmt}>{formatCurrency(Math.ceil(bomPages / PAGES_PER_SHEET) * bomRates.paper + bomPages * bomRates.toner + bomCovers * bomRates.cover + bomStaples * bomRates.staple + bomTape * bomRates.tape, currencySymbol)}</span>
                   </div>
                 </div>
-                <p style={s.bomRateNote}>Rates — Paper {formatCurrency(bomRates.paper, currencySymbol)}/sheet · Toner {formatCurrency(bomRates.toner, currencySymbol)}/page · Cover {formatCurrency(bomRates.cover, currencySymbol)}/ea · Staple {formatCurrency(bomRates.staple, currencySymbol)}/ea · Binding Tape {formatCurrency(bomRates.tape, currencySymbol)}/cm</p>
+                <p style={s.bomRateNote}>Rates — {bomRateLabel('paper', 'sheet')} · {bomRateLabel('toner', 'page')} · {bomRateLabel('cover', 'ea')} · {bomRateLabel('staple', 'ea')} · {bomRateLabel('tape', 'cm')}</p>
               </div>
             </div>
             <div style={s.modalFooter}>

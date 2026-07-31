@@ -10,7 +10,11 @@ build
 *.err
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 .opencode
 .vite
 coverage

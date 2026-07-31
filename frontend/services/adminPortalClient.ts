@@ -149,6 +149,21 @@ export async function subscribeAdminEvents(callbacks: {
   return () => source?.close();
 }
 
+export interface AdminUser {
+  customer_id: string;
+  customer_name: string;
+  customer_email?: string;
+  customer_phone?: string;
+  customer_status?: string;
+  portal_user_id?: string;
+  portal_email?: string;
+  full_name?: string;
+  portal_phone?: string;
+  portal_status?: string;
+  last_login_at?: string;
+  portal_created_at?: string;
+}
+
 export const adminLifecycle = {
   requests: {
     list(status?: string): Promise<AdminQuotationRequest[]> {
@@ -206,6 +221,11 @@ export const adminLifecycle = {
   analytics: {
     get(): Promise<any> {
       return adminPortalApi.get<any>('/analytics');
+    },
+  },
+  users: {
+    list(): Promise<AdminUser[]> {
+      return adminPortalApi.get<AdminUser[]>('/users');
     },
   },
 };

@@ -61,7 +61,7 @@ const CustomerDocuments: React.FC = () => {
               <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-3 capitalize">{type}s</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {grouped[type].map((doc) => (
-                  <div key={doc.id} className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group">
+                  <div key={doc.id} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
                       {typeIcons[doc.type?.toLowerCase()] || <File size={20} />}
                     </div>

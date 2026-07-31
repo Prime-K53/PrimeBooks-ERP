@@ -192,7 +192,7 @@ const CustomerSupport: React.FC = () => {
       )}
 
       {activeTab === 'new' && (
-        <form onSubmit={handleCreateTicket} className="bg-white border border-slate-200 rounded-xl p-6">
+        <form onSubmit={handleCreateTicket} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6">
           {createMsg && (
             <div className={`mb-5 p-3.5 border rounded-xl text-sm ${createMsg.includes('successfully') ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
               {createMsg}
@@ -206,7 +206,7 @@ const CustomerSupport: React.FC = () => {
                 value={newTicket.subject}
                 onChange={(e) => setNewTicket((t) => ({ ...t, subject: e.target.value }))}
                 placeholder="Brief description of your issue"
-                className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+                className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
               />
             </div>
             <div>
@@ -216,7 +216,7 @@ const CustomerSupport: React.FC = () => {
                 onChange={(e) => setNewTicket((t) => ({ ...t, message: e.target.value }))}
                 rows={4}
                 placeholder="Describe your issue in detail"
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60 resize-none"
+                className="w-full px-3 py-2.5 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60 resize-none"
               />
             </div>
             <div>
@@ -224,7 +224,7 @@ const CustomerSupport: React.FC = () => {
               <select
                 value={newTicket.priority}
                 onChange={(e) => setNewTicket((t) => ({ ...t, priority: e.target.value }))}
-                className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+                className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
               >
                 <option value="low">Low</option>
                 <option value="normal">Normal</option>

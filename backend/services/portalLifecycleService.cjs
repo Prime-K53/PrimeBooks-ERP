@@ -347,21 +347,36 @@ const portalLifecycleService = {
   },
 
   async getRequests({ customerId, companyId, status } = {}) {
-    let query = `SELECT * FROM quotation_requests WHERE 1=1`;
+    let query = `
+      SELECT q.*, c.name AS resolved_customer_name
+      FROM quotation_requests q
+      LEFT JOIN customers c ON c.id = q.customer_id
+      WHERE 1=1`;
     const params = [];
-    if (customerId) { query += ' AND customer_id = ?'; params.push(customerId); }
-    if (companyId) { query += ' AND company_id = ?'; params.push(companyId); }
-    if (status) { query += ' AND status = ?'; params.push(status); }
-    query += ' ORDER BY created_at DESC';
+    if (customerId) { query += ' AND q.customer_id = ?'; params.push(customerId); }
+    if (companyId) { query += ' AND q.company_id = ?'; params.push(companyId); }
+    if (status) { query += ' AND q.status = ?'; params.push(status); }
+    query += ' ORDER BY q.created_at DESC';
     const rows = await getAll(query, params);
-    return rows.map((r) => ({ ...r, items: parseJson(r.items, []) }));
+    return rows.map((r) => ({
+      ...r,
+      customer_name: r.resolved_customer_name || r.customer_name,
+      items: parseJson(r.items, []),
+    }));
   },
 
   async getRequestById(id, { customerId, companyId } = {}) {
-    const request = await getOne('SELECT * FROM quotation_requests WHERE id = ?', [id]);
+    const request = await getOne(
+      `SELECT q.*, c.name AS resolved_customer_name
+         FROM quotation_requests q
+         LEFT JOIN customers c ON c.id = q.customer_id
+        WHERE q.id = ?`,
+      [id]
+    );
     if (!request) return null;
     if (companyId && request.company_id !== companyId) return null;
     if (customerId && request.customer_id !== customerId) return null;
+    request.customer_name = request.resolved_customer_name || request.customer_name;
     request.items = parseJson(request.items, []);
     return request;
   },
@@ -602,21 +617,36 @@ const portalLifecycleService = {
 
   // ─── Quotation reads ───────────────────────────────────────────────────────
   async getQuotations({ customerId, companyId, status } = {}) {
-    let query = 'SELECT * FROM quotations WHERE 1=1';
+    let query = `
+      SELECT q.*, c.name AS resolved_customer_name
+      FROM quotations q
+      LEFT JOIN customers c ON c.id = q.customer_id
+      WHERE 1=1`;
     const params = [];
-    if (customerId) { query += ' AND customer_id = ?'; params.push(customerId); }
-    if (companyId) { query += ' AND company_id = ?'; params.push(companyId); }
-    if (status) { query += ' AND status = ?'; params.push(status); }
-    query += ' ORDER BY created_at DESC';
+    if (customerId) { query += ' AND q.customer_id = ?'; params.push(customerId); }
+    if (companyId) { query += ' AND q.company_id = ?'; params.push(companyId); }
+    if (status) { query += ' AND q.status = ?'; params.push(status); }
+    query += ' ORDER BY q.created_at DESC';
     const rows = await getAll(query, params);
-    return rows.map((r) => ({ ...r, items: parseJson(r.items, []) }));
+    return rows.map((r) => ({
+      ...r,
+      customer_name: r.resolved_customer_name || r.customer_name,
+      items: parseJson(r.items, []),
+    }));
   },
 
   async getQuotationById(id, { customerId, companyId } = {}) {
-    const quotation = await getOne('SELECT * FROM quotations WHERE id = ?', [id]);
+    const quotation = await getOne(
+      `SELECT q.*, c.name AS resolved_customer_name
+         FROM quotations q
+         LEFT JOIN customers c ON c.id = q.customer_id
+        WHERE q.id = ?`,
+      [id]
+    );
     if (!quotation) return null;
     if (companyId && quotation.company_id !== companyId) return null;
     if (customerId && quotation.customer_id !== customerId) return null;
+    quotation.customer_name = quotation.resolved_customer_name || quotation.customer_name;
     quotation.items = parseJson(quotation.items, []);
     return quotation;
   },

@@ -76,8 +76,8 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
           </button>
 
           {showDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/80 overflow-hidden z-50">
-              <div className="px-4 py-3 border-b border-slate-200">
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl shadow-xl shadow-slate-200/80 overflow-hidden z-50">
+              <div className="px-4 py-3 border-b border-slate-200/60">
                 <p className="text-sm font-medium text-slate-900 truncate">{user?.full_name || 'Customer'}</p>
                 <p className="text-xs text-slate-500 truncate">{user?.email || ''}</p>
               </div>

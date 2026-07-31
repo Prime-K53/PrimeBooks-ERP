@@ -61,7 +61,7 @@ const CustomerNotifications: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="list" count={6} /></div>;
+  if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={6} /></div>;
   if (error) return <div className="p-6 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
 
   const unread = notifications.filter((n) => !n.is_read).length;
@@ -97,8 +97,8 @@ const CustomerNotifications: React.FC = () => {
               <div
                 key={n.id}
                 onClick={() => !n.is_read && markAsRead(n.id)}
-                className={`bg-white border rounded-xl p-4 flex items-start gap-3 transition-colors cursor-pointer ${
-                  n.is_read ? 'border-slate-200 opacity-70' : 'border-slate-200 hover:bg-slate-50'
+                className={`bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4 flex items-start gap-3 transition-colors cursor-pointer ${
+                  n.is_read ? 'opacity-70' : 'hover:bg-slate-50'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>

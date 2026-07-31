@@ -258,7 +258,7 @@ const CustomerQuotationDetail: React.FC = () => {
                 onChange={(e) => setRevisionNote(e.target.value)}
                 rows={2}
                 placeholder="Describe the changes you need (prices, quantities, terms)..."
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
+                className="w-full px-3 py-2.5 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
               />
             </div>
             <div>
@@ -268,7 +268,7 @@ const CustomerQuotationDetail: React.FC = () => {
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={2}
                 placeholder="Why are you rejecting this quotation?"
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40 resize-none"
+                className="w-full px-3 py-2.5 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40 resize-none"
               />
             </div>
           </div>

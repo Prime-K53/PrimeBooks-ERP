@@ -2,19 +2,24 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell, CheckCircle2, XCircle, FileText, RefreshCw, Loader2, MessageSquare,
-  PackageCheck, Inbox, History, ChevronDown, Trash2, Plus, ArrowUpRight,
+  PackageCheck, Inbox, History, ChevronDown, ArrowUpRight,
 } from 'lucide-react';
 import {
   adminLifecycle, subscribeAdminEvents,
   AdminQuotationRequest, AdminQuotation, AdminNotification,
 } from '../../services/adminPortalClient';
 
-const teal = { main: '#0f766e', soft: '#e6f4f2', accent: '#0d9488', dark: '#134e4a' };
-const paper = '#ffffff';
-const ink = '#0f172a';
-const muted = '#64748b';
-const hairline = '#e2e8f0';
-const bg = '#f6f8fa';
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
+const danger = '#b5493f';
 
 const REQUEST_TABS = [
   { key: 'inbox', label: 'Inbox', icon: Inbox, statuses: ['submitted', 'under_review'] },
@@ -36,6 +41,35 @@ const quotationStatusMeta: Record<string, { label: string; color: string; bg: st
   rejected: { label: 'Rejected', color: '#b91c1c', bg: '#fef2f2' },
   revision_requested: { label: 'Revision Requested', color: '#7c3aed', bg: '#f5f3ff' },
   converted: { label: 'Converted', color: '#0f766e', bg: '#f0fdfa' },
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  fontSize: 12, fontWeight: 600, color: teal[800],
+  marginBottom: 6, letterSpacing: 0.01
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: paper,
+  border: `1.4px solid ${hairline}`, borderRadius: 9,
+  padding: '9px 12px', outline: 'none',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  paddingRight: 30,
+  cursor: 'pointer'
+};
+
+const sectionLabelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 10,
+  margin: '26px 0 14px'
 };
 
 function StatusPill({ meta, status }: { meta: Record<string, any>; status: string }) {
@@ -61,20 +95,30 @@ const QuotationRequests: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [bellOpen, setBellOpen] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
+  const [customerNameMap, setCustomerNameMap] = useState<Record<string, string>>({});
+
   const bellRef = useRef<HTMLDivElement | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
-      const [reqs, quotes, notifs, analyticsData] = await Promise.all([
+      const [reqs, quotes, notifs, analyticsData, users] = await Promise.all([
         adminLifecycle.requests.list(),
         adminLifecycle.quotations.list(),
         adminLifecycle.notifications.list(),
         adminLifecycle.analytics.get(),
+        adminLifecycle.users.list().catch(() => []),
       ]);
       setRequests(reqs || []);
       setQuotations(quotes || []);
       setNotifications(notifs || []);
       setAnalytics(analyticsData);
+      const nameMap: Record<string, string> = {};
+      for (const u of (users as any[]) || []) {
+        if (u.customer_id && u.customer_name) {
+          nameMap[u.customer_id] = u.customer_name;
+        }
+      }
+      setCustomerNameMap(nameMap);
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to load requests');
@@ -133,53 +177,87 @@ const QuotationRequests: React.FC = () => {
     }
   };
 
-  const headerStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: 16, marginBottom: 20, flexWrap: 'wrap',
+  const btnPrimary: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+    padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+    background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+    color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 7,
+    boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
+    transition: 'all .15s ease'
   };
+
+  const btnGhost: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+    padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+    background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+    display: 'inline-flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+  };
+
   const cardStyle: React.CSSProperties = {
-    background: paper, border: `1px solid ${hairline}`, borderRadius: 14,
+    background: paper, border: `1.4px solid ${hairline}`, borderRadius: 14,
+    boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
   };
+
   const chipStyle = (active: boolean): React.CSSProperties => ({
     display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 10,
-    fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', background: active ? teal.main : '#eef1f4',
+    fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none',
+    background: active ? teal[500] : '#eef1f4',
     color: active ? '#ffffff' : '#475569', transition: 'all .15s ease',
   });
-  const btnPrimary: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 10,
-    fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', color: '#fff',
-    background: `linear-gradient(135deg, ${teal.accent}, ${teal.main})`, transition: 'all .15s ease',
-  };
-  const btnGhost: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 10,
-    fontSize: 13, fontWeight: 700, cursor: 'pointer', border: `1px solid ${hairline}`, background: paper,
-    color: '#334155', transition: 'all .15s ease',
-  };
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${hairline}`,
-    fontSize: 13, color: ink, background: paper, outline: 'none', boxSizing: 'border-box',
-  };
 
   if (loading) {
     return (
       <div style={{ padding: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <Loader2 size={26} className="animate-spin" style={{ color: teal.main }} />
+        <div style={{
+          width: 40, height: 40, borderRadius: 10,
+          background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)'
+        }}>
+          <Loader2 size={20} color="#fff" className="animate-spin" />
+        </div>
       </div>
     );
   }
 
   return (
     <div style={{ padding: 28, maxWidth: 1100, margin: '0 auto' }}>
-      <div style={headerStyle}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: ink, margin: 0 }}>Quotation Requests</h1>
-          <p style={{ fontSize: 13, color: muted, margin: '4px 0 0' }}>
-            Review customer requests, issue official quotations, and convert accepted quotes into orders.
-          </p>
+      {/* Accent stripe */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+        background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)`
+      }} />
+
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 16, marginBottom: 20, flexWrap: 'wrap',
+        position: 'relative'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
+          }}>
+            <FileText size={19} color="#fff" />
+          </div>
+          <div>
+            <h1 style={{
+              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+              fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+            }}>
+              Quotation Requests
+            </h1>
+            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+              Review customer requests, issue official quotations, and convert accepted quotes into orders.
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }} ref={bellRef}>
           {analytics && (
-            <span style={{ fontSize: 12, color: muted }}>
+            <span style={{ fontSize: 12, color: inkSoft }}>
               <b style={{ color: ink }}>{analytics.totalRequests || 0}</b> requests •{' '}
               <b style={{ color: ink }}>{analytics.convertedQuotations || 0}</b> converted •{' '}
               <b style={{ color: ink }}>{analytics.totalDownloads || 0}</b> downloads
@@ -187,9 +265,11 @@ const QuotationRequests: React.FC = () => {
           )}
           <button
             onClick={() => setBellOpen((v) => !v)}
-            style={{ position: 'relative', background: paper, border: `1px solid ${hairline}`, borderRadius: 10, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            style={{ position: 'relative', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all .15s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.color = teal[700]; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = inkSoft; }}
           >
-            <Bell size={17} style={{ color: ink }} />
+            <Bell size={17} style={{ color: inkSoft }} />
             {unread > 0 && (
               <span style={{ position: 'absolute', top: -6, right: -6, background: '#e11d48', color: '#fff', fontSize: 10, fontWeight: 800, minWidth: 18, height: 18, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {unread}
@@ -197,15 +277,15 @@ const QuotationRequests: React.FC = () => {
             )}
           </button>
           {bellOpen && (
-            <div style={{ position: 'absolute', top: 46, right: 0, width: 340, maxHeight: 420, overflowY: 'auto', background: paper, border: `1px solid ${hairline}`, borderRadius: 14, boxShadow: '0 12px 40px rgba(15,23,42,.14)', zIndex: 60 }}>
+            <div style={{ position: 'absolute', top: 46, right: 0, width: 340, maxHeight: 420, overflowY: 'auto', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 14, boxShadow: '0 12px 40px rgba(15,23,42,.14)', zIndex: 60 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${hairline}` }}>
                 <b style={{ fontSize: 13, color: ink }}>Notifications</b>
-                <button onClick={markAllRead} style={{ fontSize: 11, fontWeight: 700, color: teal.accent, background: 'none', border: 'none', cursor: 'pointer' }}>
+                <button onClick={markAllRead} style={{ fontSize: 11, fontWeight: 700, color: teal[600], background: 'none', border: 'none', cursor: 'pointer' }}>
                   Mark all read
                 </button>
               </div>
               {notifications.length === 0 ? (
-                <p style={{ padding: 20, textAlign: 'center', fontSize: 12, color: muted }}>No notifications yet.</p>
+                <p style={{ padding: 20, textAlign: 'center', fontSize: 12, color: inkSoft }}>No notifications yet.</p>
               ) : (
                 notifications.slice(0, 30).map((n) => (
                   <button
@@ -218,12 +298,14 @@ const QuotationRequests: React.FC = () => {
                     }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px',
-                      borderBottom: `1px solid ${hairline}`, background: n.is_read ? paper : teal.soft, cursor: 'pointer', borderLeft: `3px solid ${n.is_read ? 'transparent' : teal.accent}`,
+                      borderBottom: `1px solid ${hairline}`, background: n.is_read ? paper : teal[50], cursor: 'pointer', borderLeft: `3px solid ${n.is_read ? 'transparent' : teal[400]}`, transition: 'background .15s'
                     }}
+                    onMouseEnter={e => { if (!n.is_read) e.currentTarget.style.background = teal[100]; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = n.is_read ? paper : teal[50]; }}
                   >
                     <p style={{ fontSize: 12.5, fontWeight: 700, color: ink, margin: 0 }}>{n.title}</p>
-                    <p style={{ fontSize: 11.5, color: muted, margin: '2px 0 0' }}>{n.body}</p>
-                    <p style={{ fontSize: 10, color: muted, margin: '4px 0 0' }}>{new Date(n.created_at).toLocaleString()}</p>
+                    <p style={{ fontSize: 11.5, color: inkSoft, margin: '2px 0 0' }}>{n.body}</p>
+                    <p style={{ fontSize: 10, color: inkSoft, margin: '4px 0 0' }}>{new Date(n.created_at).toLocaleString()}</p>
                   </button>
                 ))
               )}
@@ -238,6 +320,7 @@ const QuotationRequests: React.FC = () => {
         </div>
       )}
 
+      {/* Tabs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {REQUEST_TABS.map((t) => {
           const count = t.key === 'inbox' ? inboxCount : t.key === 'quotations' ? quotations.length : requests.filter((r) => r.status === 'rejected' || r.status === 'cancelled').length;
@@ -250,20 +333,19 @@ const QuotationRequests: React.FC = () => {
         })}
       </div>
 
-      {tab === 'inbox' && <RequestInbox requests={activeRequests} busy={busy} onAction={action} cardStyle={cardStyle} inputStyle={inputStyle} btnPrimary={btnPrimary} btnGhost={btnGhost} setExpanded={setExpandedId} expandedId={expandedId} />}
-      {tab === 'quotations' && <QuotationPanel quotations={quotations} busy={busy} onAction={action} cardStyle={cardStyle} inputStyle={inputStyle} btnPrimary={btnPrimary} btnGhost={btnGhost} />}
+      {tab === 'inbox' && <RequestInbox requests={activeRequests} busy={busy} onAction={action} cardStyle={cardStyle} inputStyle={inputStyle} btnPrimary={btnPrimary} btnGhost={btnGhost} setExpanded={setExpandedId} expandedId={expandedId} customerNameMap={customerNameMap} />}
+      {tab === 'quotations' && <QuotationPanel quotations={quotations} busy={busy} onAction={action} cardStyle={cardStyle} inputStyle={inputStyle} btnPrimary={btnPrimary} btnGhost={btnGhost} customerNameMap={customerNameMap} />}
       {tab === 'history' && (
         <div style={cardStyle}>
           {activeRequests.length === 0 ? (
-            <p style={{ padding: 40, textAlign: 'center', fontSize: 13, color: muted }}>No rejected or cancelled requests.</p>
+            <p style={{ padding: 40, textAlign: 'center', fontSize: 13, color: inkSoft }}>No rejected or cancelled requests.</p>
           ) : (
             activeRequests.map((r) => (
               <div key={r.id} style={{ padding: 16, borderBottom: `1px solid ${hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div>
-                  <b style={{ fontSize: 13.5, color: ink }}>{r.request_number}</b>
-                  <span style={{ fontSize: 12, color: muted, marginLeft: 10 }}>{r.customer_name}</span>
-                  <span style={{ fontSize: 12, color: muted, marginLeft: 10 }}>{new Date(r.created_at).toLocaleDateString()}</span>
-                  {r.review_note && <p style={{ fontSize: 12, color: muted, margin: '4px 0 0' }}>Reason: {r.review_note}</p>}
+                  <b style={{ fontSize: 13.5, color: ink }}>{customerNameMap[r.customer_id] || r.customer_name || 'Unknown Customer'}</b>
+                  <span style={{ fontSize: 12, color: inkSoft, marginLeft: 10 }}>{new Date(r.created_at).toLocaleDateString()}</span>
+                  {r.review_note && <p style={{ fontSize: 12, color: inkSoft, margin: '4px 0 0' }}>Reason: {r.review_note}</p>}
                 </div>
                 <StatusPill meta={requestStatusMeta} status={r.status} />
               </div>
@@ -287,9 +369,10 @@ interface PanelProps {
   btnGhost: React.CSSProperties;
   setExpanded: (id: string | null) => void;
   expandedId: string | null;
+  customerNameMap: Record<string, string>;
 }
 
-const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyle, inputStyle, btnPrimary, btnGhost, setExpanded, expandedId }) => {
+const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyle, inputStyle, btnPrimary, btnGhost, setExpanded, expandedId, customerNameMap }) => {
   const [reviewState, setReviewState] = useState<Record<string, { items: any[]; notes: string }>>({});
   const [quoteForm, setQuoteForm] = useState<Record<string, any>>({});
   const [clarifyNote, setClarifyNote] = useState<Record<string, string>>({});
@@ -334,7 +417,7 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
   if (requests.length === 0) {
     return (
       <div style={cardStyle}>
-        <p style={{ padding: 40, textAlign: 'center', fontSize: 13, color: muted }}>Inbox is clear — no pending requests.</p>
+        <p style={{ padding: 40, textAlign: 'center', fontSize: 13, color: inkSoft }}>Inbox is clear — no pending requests.</p>
       </div>
     );
   }
@@ -346,13 +429,13 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
         const state = stateFor(r);
         const subtotal = state.items.reduce((sum, i) => sum + (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0), 0);
         return (
-          <div key={r.id} style={cardStyle}>
+          <div key={r.id} style={{ ...cardStyle, overflow: 'hidden' }}>
             <div
               onClick={() => setExpanded(expanded ? null : r.id)}
               style={{ padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-                <div style={{ background: teal.soft, color: teal.dark, borderRadius: 10, padding: 9, display: 'flex' }}>
+                <div style={{ background: teal[50], color: teal[700], borderRadius: 10, padding: 9, display: 'flex' }}>
                   <MessageSquare size={17} />
                 </div>
                 <div style={{ minWidth: 0 }}>
@@ -360,15 +443,15 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                     <b style={{ fontSize: 14, color: ink }}>{r.request_number}</b>
                     <StatusPill meta={requestStatusMeta} status={r.status} />
                   </div>
-                  <p style={{ fontSize: 12.5, color: muted, margin: '3px 0 0' }}>
-                    {r.customer_name} • {new Date(r.created_at).toLocaleString()} • {r.request_type || 'quotation'}
-                    {r.quotation_id ? ' • Quotation issued' : ''}
+                  <p style={{ fontSize: 12.5, color: inkSoft, margin: '3px 0 0' }}>
+                    {customerNameMap[r.customer_id] || r.customer_name || 'Unknown Customer'} • {new Date(r.created_at).toLocaleDateString()} • {r.request_type || 'quotation'}
+                    {r.review_note ? ` • Reason: ${r.review_note}` : ''}
                   </p>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: ink }}>K {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <ChevronDown size={16} style={{ color: muted, transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                <span style={{ fontSize: 14, fontWeight: 800, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>K {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <ChevronDown size={16} style={{ color: inkSoft, transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
               </div>
             </div>
 
@@ -377,42 +460,48 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                 <div style={{ overflowX: 'auto', marginTop: 14 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ color: muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: .4 }}>
-                        <th style={{ textAlign: 'left', padding: '6px 8px' }}>Item</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px' }}>Qty</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px' }}>Unit Price</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px' }}>Total</th>
+                      <tr style={{ background: teal[50] }}>
+                        <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Item</th>
+                        <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Qty</th>
+                        <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Unit Price</th>
+                        <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {state.items.map((item, idx) => (
                         <tr key={idx} style={{ borderTop: `1px solid ${hairline}` }}>
-                          <td style={{ padding: '6px 8px' }}>
+                          <td style={{ padding: '8px 12px' }}>
                             <input
                               value={item.name}
                               onChange={(e) => updateItem(r, idx, { name: e.target.value })}
                               style={{ ...inputStyle, minWidth: 180 }}
+                              onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
+                              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
                             />
                           </td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                          <td style={{ padding: '8px 12px', textAlign: 'right' }}>
                             <input
                               type="number"
                               min={1}
                               value={item.quantity}
                               onChange={(e) => updateItem(r, idx, { quantity: parseInt(e.target.value, 10) || 1 })}
-                              style={{ ...inputStyle, width: 76, textAlign: 'right' }}
+                              style={{ ...inputStyle, width: 76, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
+                              onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
+                              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
                             />
                           </td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                          <td style={{ padding: '8px 12px', textAlign: 'right' }}>
                             <input
                               type="number"
                               min={0}
                               value={item.unitPrice}
                               onChange={(e) => updateItem(r, idx, { unitPrice: parseFloat(e.target.value) || 0 })}
-                              style={{ ...inputStyle, width: 100, textAlign: 'right' }}
+                              style={{ ...inputStyle, width: 100, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
+                              onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
+                              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
                             />
                           </td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" }}>
                             K {((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </td>
                         </tr>
@@ -427,20 +516,22 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                     onChange={(e) => setReviewState((prev) => ({ ...prev, [r.id]: { ...state, notes: e.target.value } }))}
                     rows={2}
                     placeholder="Internal note for this request..."
-                    style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+                    style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit', minHeight: 66, lineHeight: 1.5 }}
                   />
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 13, color: muted }}>
+                  <div style={{ fontSize: 13, color: inkSoft }}>
                     Subtotal:{' '}
-                    <b style={{ color: ink, fontSize: 15 }}>K {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+                    <b style={{ color: ink, fontSize: 15, fontFamily: "'JetBrains Mono', monospace" }}>K {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button
                       onClick={() => saveReview(r)}
                       disabled={busy === `save_${r.id}`}
                       style={{ ...btnGhost, opacity: busy === `save_${r.id}` ? .5 : 1 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
                     >
                       {busy === `save_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <PackageCheck size={14} />} Save Review
                     </button>
@@ -451,7 +542,9 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                         onAction(`reject_${r.id}`, () => adminLifecycle.requests.reject(r.id, reason));
                       }}
                       disabled={busy === `reject_${r.id}`}
-                      style={{ ...btnGhost, color: '#b91c1c', borderColor: '#fecaca', background: '#fff7f7', opacity: busy === `reject_${r.id}` ? .5 : 1 }}
+                      style={{ ...btnGhost, color: danger, borderColor: '#fecaca', background: '#fff7f7', opacity: busy === `reject_${r.id}` ? .5 : 1 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#fff7f7'; e.currentTarget.style.borderColor = '#fecaca'; }}
                     >
                       {busy === `reject_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Reject
                     </button>
@@ -485,6 +578,8 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                     }}
                     disabled={busy === `clarify_${r.id}`}
                     style={{ ...btnGhost, opacity: busy === `clarify_${r.id}` ? .5 : 1 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
                   >
                     {busy === `clarify_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />} Ask Customer
                   </button>
@@ -493,13 +588,13 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                 {/* Generate quotation */}
                 <div style={{ background: '#f8fafc', border: `1px solid ${hairline}`, borderRadius: 12, padding: 14, marginTop: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <FileText size={15} style={{ color: teal.main }} />
+                    <FileText size={15} style={{ color: teal[600] }} />
                     <b style={{ fontSize: 13, color: ink }}>Generate Official Quotation</b>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
                     {(['discount', 'taxRate', 'deliveryFee'] as const).map((field) => (
                       <div key={field}>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: muted, textTransform: 'capitalize', display: 'block', marginBottom: 4 }}>{field === 'taxRate' ? 'Tax Rate %' : field}</label>
+                        <label style={{ ...labelStyle, marginBottom: 4 }}>{field === 'taxRate' ? 'Tax Rate %' : field}</label>
                         <input
                           type="number"
                           min={0}
@@ -510,7 +605,7 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                       </div>
                     ))}
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: muted, display: 'block', marginBottom: 4 }}>Payment Terms</label>
+                      <label style={{ ...labelStyle, marginBottom: 4 }}>Payment Terms</label>
                       <input
                         value={(quoteForm[r.id] || {}).paymentTerms || 'Net 7'}
                         onChange={(e) => setQuoteForm((prev) => ({ ...prev, [r.id]: { ...(prev[r.id] || {}), paymentTerms: e.target.value } }))}
@@ -518,7 +613,7 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: muted, display: 'block', marginBottom: 4 }}>Valid Until</label>
+                      <label style={{ ...labelStyle, marginBottom: 4 }}>Valid Until</label>
                       <input
                         type="date"
                         value={(quoteForm[r.id] || {}).validUntil || ''}
@@ -531,6 +626,8 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                     onClick={() => generateQuote(r)}
                     disabled={busy === `quote_${r.id}`}
                     style={{ ...btnPrimary, marginTop: 12, opacity: busy === `quote_${r.id}` ? .6 : 1 }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
                   >
                     {busy === `quote_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Generate Quotation
                   </button>
@@ -554,16 +651,17 @@ interface QuotePanelProps {
   inputStyle: React.CSSProperties;
   btnPrimary: React.CSSProperties;
   btnGhost: React.CSSProperties;
+  customerNameMap: Record<string, string>;
 }
 
-const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction, cardStyle, inputStyle, btnPrimary, btnGhost }) => {
+const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction, cardStyle, inputStyle, btnPrimary, btnGhost, customerNameMap }) => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [regenerateForm, setRegenerateForm] = useState<Record<string, any>>({});
   const [conversion, setConversion] = useState<Record<string, { deliveryDate: string; notes: string }>>({});
   if (quotations.length === 0) {
     return (
       <div style={cardStyle}>
-        <p style={{ padding: 40, textAlign: 'center', fontSize: 13, color: muted }}>No official quotations yet.</p>
+        <p style={{ padding: 40, textAlign: 'center', fontSize: 13, color: inkSoft }}>No official quotations yet.</p>
       </div>
     );
   }
@@ -573,13 +671,13 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
       {quotations.map((q) => {
         const open = expanded === q.id;
         return (
-          <div key={q.id} style={cardStyle}>
+          <div key={q.id} style={{ ...cardStyle, overflow: 'hidden' }}>
             <div
               onClick={() => setExpanded(open ? null : q.id)}
               style={{ padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ background: teal.soft, color: teal.dark, borderRadius: 10, padding: 9, display: 'flex' }}>
+                <div style={{ background: teal[50], color: teal[700], borderRadius: 10, padding: 9, display: 'flex' }}>
                   <FileText size={17} />
                 </div>
                 <div>
@@ -587,16 +685,16 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
                     <b style={{ fontSize: 14, color: ink }}>{q.quotation_number}</b>
                     <StatusPill meta={quotationStatusMeta} status={q.status} />
                   </div>
-                  <p style={{ fontSize: 12.5, color: muted, margin: '3px 0 0' }}>
-                    {q.customer_name} • {new Date(q.created_at).toLocaleDateString()}
+                  <p style={{ fontSize: 12.5, color: inkSoft, margin: '3px 0 0' }}>
+                    {customerNameMap[q.customer_id] || q.customer_name || 'Unknown Customer'} • {new Date(q.created_at).toLocaleDateString()}
                     {q.valid_until ? ` • valid until ${new Date(q.valid_until).toLocaleDateString()}` : ''}
                     {q.order_id ? ' • converted to order' : ''}
                   </p>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: ink }}>K {Number(q.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <ChevronDown size={16} style={{ color: muted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                <span style={{ fontSize: 14, fontWeight: 800, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(q.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <ChevronDown size={16} style={{ color: inkSoft, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
               </div>
             </div>
 
@@ -605,30 +703,30 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
                 <div style={{ overflowX: 'auto', marginTop: 14 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ color: muted, fontSize: 11, textTransform: 'uppercase' }}>
-                        <th style={{ textAlign: 'left', padding: '6px 8px' }}>Item</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px' }}>Qty</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px' }}>Unit Price</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px' }}>Total</th>
+                      <tr style={{ background: teal[50] }}>
+                        <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Item</th>
+                        <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Qty</th>
+                        <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Unit Price</th>
+                        <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(q.items || []).map((item, idx) => (
                         <tr key={idx} style={{ borderTop: `1px solid ${hairline}` }}>
-                          <td style={{ padding: '6px 8px' }}>{item.name}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }}>{item.quantity}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }}>K {Number(item.unitPrice).toFixed(2)}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>K {Number(item.lineTotal ?? item.quantity * item.unitPrice).toFixed(2)}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: 600, color: ink }}>{item.name}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right' }}>{item.quantity}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>K {Number(item.unitPrice).toFixed(2)}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(item.lineTotal ?? item.quantity * item.unitPrice).toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, marginTop: 10, fontSize: 13 }}>
-                  <span style={{ color: muted }}>Subtotal <b style={{ color: ink }}>K {Number(q.subtotal).toFixed(2)}</b></span>
-                  {Number(q.discount) > 0 && <span style={{ color: muted }}>Discount <b style={{ color: ink }}>-K {Number(q.discount).toFixed(2)}</b></span>}
-                  {Number(q.delivery_fee) > 0 && <span style={{ color: muted }}>Delivery <b style={{ color: ink }}>K {Number(q.delivery_fee).toFixed(2)}</b></span>}
-                  <span style={{ color: ink, fontWeight: 800 }}>Total K {Number(q.total).toFixed(2)}</span>
+                  <span style={{ color: inkSoft }}>Subtotal <b style={{ color: ink, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(q.subtotal).toFixed(2)}</b></span>
+                  {Number(q.discount) > 0 && <span style={{ color: inkSoft }}>Discount <b style={{ color: ink, fontFamily: "'JetBrains Mono', monospace" }}>-K {Number(q.discount).toFixed(2)}</b></span>}
+                  {Number(q.delivery_fee) > 0 && <span style={{ color: inkSoft }}>Delivery <b style={{ color: ink, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(q.delivery_fee).toFixed(2)}</b></span>}
+                  <span style={{ color: ink, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>Total K {Number(q.total).toFixed(2)}</span>
                 </div>
                 {q.revision_note && (
                   <p style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', color: '#6d28d9', borderRadius: 10, padding: '10px 14px', fontSize: 12.5, margin: '12px 0 0' }}>
@@ -644,13 +742,13 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
                 {q.status === 'revision_requested' && (
                   <div style={{ background: '#f8fafc', border: `1px solid ${hairline}`, borderRadius: 12, padding: 14, marginTop: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <RefreshCw size={15} style={{ color: teal.main }} />
+                      <RefreshCw size={15} style={{ color: teal[600] }} />
                       <b style={{ fontSize: 13, color: ink }}>Regenerate Quotation</b>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
                       {(['discount', 'taxRate', 'deliveryFee'] as const).map((field) => (
                         <div key={field}>
-                          <label style={{ fontSize: 11, fontWeight: 700, color: muted, textTransform: 'capitalize', display: 'block', marginBottom: 4 }}>{field === 'taxRate' ? 'Tax Rate %' : field}</label>
+                          <label style={{ ...labelStyle, marginBottom: 4 }}>{field === 'taxRate' ? 'Tax Rate %' : field}</label>
                           <input
                             type="number"
                             min={0}
@@ -661,7 +759,7 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
                         </div>
                       ))}
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: muted, display: 'block', marginBottom: 4 }}>Valid Until</label>
+                        <label style={{ ...labelStyle, marginBottom: 4 }}>Valid Until</label>
                         <input
                           type="date"
                           value={(regenerateForm[q.id] || {}).validUntil || ''}
@@ -684,6 +782,8 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
                       }
                       disabled={busy === `regenerate_${q.id}`}
                       style={{ ...btnPrimary, marginTop: 12, opacity: busy === `regenerate_${q.id}` ? .6 : 1 }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
                     >
                       {busy === `regenerate_${q.id}` ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Regenerate Quotation
                     </button>
@@ -693,12 +793,12 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
                 {q.status === 'accepted' && (
                   <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 12, padding: 14, marginTop: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <CheckCircle2 size={15} style={{ color: teal.main }} />
+                      <CheckCircle2 size={15} style={{ color: teal[600] }} />
                       <b style={{ fontSize: 13, color: ink }}>Customer accepted — convert to order</b>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: muted, display: 'block', marginBottom: 4 }}>Delivery Date</label>
+                        <label style={{ ...labelStyle, marginBottom: 4 }}>Delivery Date</label>
                         <input
                           type="date"
                           value={(conversion[q.id] || {}).deliveryDate || ''}
@@ -707,7 +807,7 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
                         />
                       </div>
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: muted, display: 'block', marginBottom: 4 }}>Notes</label>
+                        <label style={{ ...labelStyle, marginBottom: 4 }}>Notes</label>
                         <input
                           value={(conversion[q.id] || {}).notes || ''}
                           onChange={(e) => setConversion((prev) => ({ ...prev, [q.id]: { ...(prev[q.id] || { deliveryDate: '', notes: '' }), notes: e.target.value } }))}
@@ -725,6 +825,8 @@ const QuotationPanel: React.FC<QuotePanelProps> = ({ quotations, busy, onAction,
                       }
                       disabled={busy === `convert_${q.id}`}
                       style={{ ...btnPrimary, marginTop: 12, opacity: busy === `convert_${q.id}` ? .6 : 1 }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
                     >
                       {busy === `convert_${q.id}` ? <Loader2 size={14} className="animate-spin" /> : <ArrowUpRight size={14} />} Convert to Order
                     </button>

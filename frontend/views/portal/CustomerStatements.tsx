@@ -71,7 +71,7 @@ const CustomerStatements: React.FC = () => {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+            className="h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
           />
         </div>
         <div>
@@ -80,7 +80,7 @@ const CustomerStatements: React.FC = () => {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+            className="h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
           />
         </div>
         <button

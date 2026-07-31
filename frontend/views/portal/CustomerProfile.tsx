@@ -117,7 +117,7 @@ const CustomerProfile: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl p-6 mb-8">
+      <form onSubmit={handleSave} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-8">
         <h2 className="text-sm font-semibold text-slate-800 mb-5">Personal Information</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -126,7 +126,7 @@ const CustomerProfile: React.FC = () => {
               name="full_name"
               value={form.full_name || ''}
               onChange={handleChange}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
           <div>
@@ -135,7 +135,7 @@ const CustomerProfile: React.FC = () => {
               name="email"
               value={form.email || ''}
               readOnly
-              className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-400 cursor-not-allowed"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-400 cursor-not-allowed"
             />
           </div>
           <div>
@@ -144,7 +144,7 @@ const CustomerProfile: React.FC = () => {
               name="phone"
               value={form.phone || ''}
               onChange={handleChange}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
           <div>
@@ -153,7 +153,7 @@ const CustomerProfile: React.FC = () => {
               name="address"
               value={form.address || ''}
               onChange={handleChange}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
           <div>
@@ -162,7 +162,7 @@ const CustomerProfile: React.FC = () => {
               name="city"
               value={form.city || ''}
               onChange={handleChange}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
           <div>
@@ -171,7 +171,7 @@ const CustomerProfile: React.FC = () => {
               name="state"
               value={form.state || ''}
               onChange={handleChange}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
           <div>
@@ -180,7 +180,7 @@ const CustomerProfile: React.FC = () => {
               name="zip"
               value={form.zip || ''}
               onChange={handleChange}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
           <div>
@@ -189,7 +189,7 @@ const CustomerProfile: React.FC = () => {
               name="country"
               value={form.country || ''}
               onChange={handleChange}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
         </div>
@@ -205,7 +205,7 @@ const CustomerProfile: React.FC = () => {
         </div>
       </form>
 
-      <form onSubmit={handlePasswordChange} className="bg-white border border-slate-200 rounded-xl p-6">
+      <form onSubmit={handlePasswordChange} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6">
         <div className="flex items-center gap-2 mb-5">
           <Lock size={18} className="text-slate-500" />
           <h2 className="text-sm font-semibold text-slate-800">Change Password</h2>
@@ -225,7 +225,7 @@ const CustomerProfile: React.FC = () => {
               type="password"
               value={passwordForm.currentPassword}
               onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
           <div>
@@ -234,7 +234,7 @@ const CustomerProfile: React.FC = () => {
               type="password"
               value={passwordForm.newPassword}
               onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
           <div>
@@ -243,7 +243,7 @@ const CustomerProfile: React.FC = () => {
               type="password"
               value={passwordForm.confirmPassword}
               onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))}
-              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
+              className="w-full h-10 px-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/60"
             />
           </div>
         </div>
