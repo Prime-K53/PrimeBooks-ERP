@@ -13,7 +13,7 @@ export interface ShortcutDef {
 }
 
 export function matchShortcut(e: KeyboardEvent, s: ShortcutDef): boolean {
-  if (!s.key) return false;
+  if (!s.key || typeof e.key !== 'string') return false;
   if (e.key !== s.key && e.key.toLowerCase() !== s.key.toLowerCase()) return false;
   if (s.ctrl && !e.ctrlKey) return false;
   if (s.alt && !e.altKey) return false;

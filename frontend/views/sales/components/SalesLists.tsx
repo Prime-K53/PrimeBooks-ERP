@@ -893,13 +893,13 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
     const { currentItems, currentPage, maxPage, totalItems, next, prev, first, last, setItemsPerPage, itemsPerPage } = usePagination(props.data, props.viewMode === 'Card' ? CARD_ITEMS_PER_PAGE : LIST_ITEMS_PER_PAGE);
 
     const handleOpenPortal = (id: string) => {
-        const url = window.location.origin + window.location.pathname + '#/portal/invoice/' + id;
+        const url = window.location.origin + window.location.pathname + '#/portal/invoices/' + id;
         window.open(url, '_blank');
         setOpenMenuId(null);
     };
 
     const handleCopyPortalLink = (id: string) => {
-        const url = window.location.origin + window.location.pathname + '#/portal/invoice/' + id;
+        const url = window.location.origin + window.location.pathname + '#/portal/invoices/' + id;
         navigator.clipboard.writeText(url);
         notify("Portal link copied to clipboard", "success");
         setOpenMenuId(null);

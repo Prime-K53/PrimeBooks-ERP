@@ -66,6 +66,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
         refresh_token: result.refresh_token,
         expires_in: result.expires_in,
       });
+      setUser(getPortalSession()?.user ?? null);
       scheduleTokenRefresh(25 * 60 * 1000);
       return true;
     } catch {

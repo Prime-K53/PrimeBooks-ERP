@@ -116,12 +116,39 @@ const loginWithCustomerId = (customerId, fullName) => {
               });
             }
             const id = genId('pusr');
+            const rawEmail = String(customer.email || '').trim();
+            const email = rawEmail || `${customerId.toLowerCase()}@portal.local`;
             db.run(
               `INSERT INTO portal_users (id, customer_id, email, password_hash, full_name, phone, status, company_id)
                VALUES (?, ?, ?, ?, ?, ?, 'active', ?)`,
-              [id, customerId, customer.email || '', '', customer.name, customer.phone || '', company_id],
+              [id, customerId, email, '', customer.name, customer.phone || '', company_id],
               function (err) {
-                if (err) return reject(err);
+                if (err) {
+                  if (err.message && err.message.includes('UNIQUE')) {
+                    db.get(
+                      `SELECT id, customer_id, email, full_name, phone, status, company_id FROM portal_users WHERE customer_id = ? AND company_id = ?`,
+                      [customerId, company_id],
+                      (err2, existingAfterRace) => {
+                        if (err2) return reject(err2);
+                        if (existingAfterRace) {
+                          if (existingAfterRace.status !== 'active') return resolve(null);
+                          db.run(`UPDATE portal_users SET last_login_at = datetime('now') WHERE id = ?`, [existingAfterRace.id]);
+                          return resolve({
+                            id: existingAfterRace.id,
+                            customer_id: existingAfterRace.customer_id,
+                            email: existingAfterRace.email || customer.email || '',
+                            full_name: existingAfterRace.full_name || customer.name,
+                            phone: existingAfterRace.phone || customer.phone || '',
+                            company_id: existingAfterRace.company_id || ''
+                          });
+                        }
+                        return resolve(null);
+                      }
+                    );
+                    return;
+                  }
+                  return reject(err);
+                }
                 db.run(`UPDATE portal_users SET last_login_at = datetime('now') WHERE id = ?`, [id]);
                 resolve({
                   id,
@@ -168,6 +195,72 @@ const getPortalUserByCustomerId = (customerId, companyId) => {
   });
 };
 
+const getPortalUserByEmail = (email) => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT id, customer_id, email, full_name, phone, status, company_id, last_login_at, created_at
+       FROM portal_users WHERE email = ?`,
+      [String(email || '').toLowerCase().trim()],
+      (err, row) => {
+        if (err) return reject(err);
+        resolve(row || null);
+      }
+    );
+  });
+};
+
+const createPasswordReset = (portalUserId, code, expiresAt) => {
+  const id = genId('prst');
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO portal_password_resets (id, portal_user_id, code, expires_at)
+       VALUES (?, ?, ?, ?)`,
+      [id, portalUserId, code, expiresAt],
+      (err) => {
+        if (err) return reject(err);
+        resolve({ id, code });
+      }
+    );
+  });
+};
+
+const findValidPasswordReset = (portalUserId, code) => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT * FROM portal_password_resets
+       WHERE portal_user_id = ? AND code = ? AND used_at IS NULL AND expires_at > datetime('now')
+       ORDER BY created_at DESC LIMIT 1`,
+      [portalUserId, code],
+      (err, row) => {
+        if (err) return reject(err);
+        resolve(row || null);
+      }
+    );
+  });
+};
+
+const markPasswordResetUsed = (resetId) => {
+  return new Promise((resolve, reject) => {
+    db.run(`UPDATE portal_password_resets SET used_at = datetime('now') WHERE id = ?`, [resetId], (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+};
+
+const revokeUserPasswordResets = (portalUserId) => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE portal_password_resets SET used_at = datetime('now') WHERE portal_user_id = ? AND used_at IS NULL`,
+      [portalUserId],
+      (err) => {
+        if (err) return reject(err);
+        resolve();
+      }
+    );
+  });
+};
+
 const updatePortalUser = (id, fields) => {
   const allowed = ['full_name', 'phone', 'email'];
   const sets = [];
@@ -197,8 +290,10 @@ const changePassword = async (id, currentPassword, newPassword) => {
     });
   });
   if (!user) throw new Error('User not found');
-  const match = await bcrypt.compare(currentPassword, user.password_hash);
-  if (!match) throw new Error('Current password is incorrect');
+  if (user.password_hash) {
+    const match = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!match) throw new Error('Current password is incorrect');
+  }
   const password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
   return new Promise((resolve, reject) => {
     db.run(`UPDATE portal_users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`, [password_hash, id], (err) => {
@@ -292,6 +387,11 @@ module.exports = {
   loginWithCustomerId,
   getPortalUserById,
   getPortalUserByCustomerId,
+  getPortalUserByEmail,
+  createPasswordReset,
+  findValidPasswordReset,
+  markPasswordResetUsed,
+  revokeUserPasswordResets,
   updatePortalUser,
   changePassword,
   updatePassword,

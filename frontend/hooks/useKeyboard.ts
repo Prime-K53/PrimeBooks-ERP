@@ -14,6 +14,7 @@ export const useKeyboard = (shortcuts: KeyboardShortcut[], deps?: any[]) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       for (const s of shortcuts) {
+        if (typeof e.key !== 'string' || typeof s.key !== 'string') continue;
         const ctrlOrMeta = s.ctrl || s.meta;
         const match =
           e.key.toLowerCase() === s.key.toLowerCase() &&

@@ -103,7 +103,17 @@ const portalService = {
       [orderId, customerId, companyId]
     );
     if (!order) return null;
-    order.items = parseJson(order.items, []);
+    order.items = parseJson(order.items, []).map((item) => {
+      const price = Number(item.price ?? item.unitPrice ?? item.unit_price ?? 0);
+      const quantity = Number(item.quantity ?? 1);
+      const lineTotal = Number(item.lineTotal ?? item.line_total ?? (price * quantity));
+      return {
+        name: item.name || item.productName || item.product_name || 'Item',
+        quantity,
+        unitPrice: price,
+        lineTotal
+      };
+    });
     return order;
   },
 
@@ -261,9 +271,40 @@ const portalService = {
       'SELECT walletBalance FROM customers WHERE id = ? AND company_id = ?',
       [customerId, companyId]
     );
+
+    const rewards = await getAll(
+      `SELECT approved_at as date, amount, 'Referral reward' as reference
+       FROM referral_rewards
+       WHERE customer_id = ? AND company_id = ? AND status = 'approved'
+       ORDER BY approved_at DESC`,
+      [customerId, companyId]
+    );
+
+    const cashback = await getAll(
+      `SELECT approved_at as date, amount, 'Cashback' as reference
+       FROM engagement_cashback
+       WHERE customer_id = ? AND company_id = ? AND status = 'approved'
+       ORDER BY approved_at DESC`,
+      [customerId, companyId]
+    );
+
+    const walletPayments = await getAll(
+      `SELECT date, amount, COALESCE(reference, 'Wallet payment') as reference
+       FROM customer_payments
+       WHERE customer_id = ? AND company_id = ? AND LOWER(method) = 'wallet' AND status != 'Voided'
+       ORDER BY date DESC`,
+      [customerId, companyId]
+    );
+
+    const transactions = [
+      ...(rewards || []).map((r) => ({ date: r.date, amount: Number(r.amount) || 0, type: 'credit', reference: r.reference })),
+      ...(cashback || []).map((c) => ({ date: c.date, amount: Number(c.amount) || 0, type: 'credit', reference: c.reference })),
+      ...(walletPayments || []).map((p) => ({ date: p.date, amount: -(Number(p.amount) || 0), type: 'debit', reference: p.reference })),
+    ].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+
     return {
       balance: (customer && customer.walletBalance) || 0,
-      transactions: []
+      transactions
     };
   },
 
@@ -276,13 +317,23 @@ const portalService = {
   },
 
   async getDocuments(customerId, companyId) {
-    return getAll(
-      `SELECT id, type, COALESCE(logical_number, type) as title, created_at as date, NULL as url
-       FROM documents
-       WHERE company_id = ?
+    const invoices = await getAll(
+      `SELECT id, invoice_number, created_at as date, status,
+              COALESCE(total_amount, 0) as amount
+       FROM invoices
+       WHERE customer_id = ? AND company_id = ?
        ORDER BY created_at DESC`,
-      [companyId]
+      [customerId, companyId]
     );
+
+    return (invoices || []).map((inv) => ({
+      id: inv.id,
+      type: inv.status && /paid|fulfilled/i.test(String(inv.status)) ? 'receipt' : 'invoice',
+      title: `${inv.invoice_number || inv.id} (${inv.status || 'Draft'})`,
+      date: inv.date,
+      url: `#/portal/invoices/${inv.id}`,
+      amount: inv.amount
+    }));
   },
 
   async getNotifications(portalUserId, companyId) {

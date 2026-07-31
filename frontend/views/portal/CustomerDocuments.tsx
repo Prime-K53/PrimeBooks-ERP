@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, File, Download, FileSpreadsheet } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileText, File, Download, FileSpreadsheet, ArrowUpRight } from 'lucide-react';
 import { portalApi } from '../../services/portalApiClient';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
@@ -10,6 +11,7 @@ interface Document {
   title: string;
   date: string;
   url: string;
+  amount?: number;
 }
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -31,7 +33,7 @@ const CustomerDocuments: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-6 max-w-7xl mx-auto"><PortalLoadingSkeleton type="list" count={6} /></div>;
+  if (loading) return <div className="p-6 max-w-7xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
   if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-rose-300 text-sm">{error}</div></div>;
 
   const grouped: Record<string, Document[]> = {};
@@ -51,7 +53,7 @@ const CustomerDocuments: React.FC = () => {
       </div>
 
       {documents.length === 0 ? (
-        <EmptyState icon={<FileText size={28} />} title="No documents available" description="Your documents will appear here once generated." />
+        <EmptyState icon={FileText} title="No documents available" description="Your documents will appear here once generated." />
       ) : (
         <div className="space-y-8">
           {typeKeys.map((type) => (
@@ -65,15 +67,29 @@ const CustomerDocuments: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-200 truncate">{doc.title}</p>
-                      <p className="text-xs text-slate-500">{doc.date ? new Date(doc.date).toLocaleDateString() : ''}</p>
+                      <p className="text-xs text-slate-500">
+                        {doc.date ? new Date(doc.date).toLocaleDateString() : ''}
+                        {doc.amount !== undefined ? ` • K ${Number(doc.amount).toFixed(2)}` : ''}
+                      </p>
                     </div>
-                    <a
-                      href={doc.url}
-                      download
-                      className="p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <Download size={16} />
-                    </a>
+                    {doc.url?.startsWith('#/') ? (
+                      <Link
+                        to={doc.url.slice(2)}
+                        className="p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Open document"
+                      >
+                        <ArrowUpRight size={16} />
+                      </Link>
+                    ) : (
+                      <a
+                        href={doc.url}
+                        download
+                        className="p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Download"
+                      >
+                        <Download size={16} />
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>

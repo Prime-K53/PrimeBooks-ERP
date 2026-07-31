@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { createElement } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { pdf } from '@react-pdf/renderer';
 import { portalApi } from '../../services/portalApiClient';
+import { mapToInvoiceData } from '../../utils/pdfMapper';
+import { attachDocumentSecurity } from '../../utils/documentSecurity';
+import { initializePrimePdfFonts } from '../shared/components/PDF/templateSettings';
+import { PrimeDocument } from '../shared/components/PDF/PrimeDocument';
+import { useAuth } from '../../context/AuthContext';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 
@@ -27,9 +34,12 @@ interface InvoiceDetail {
 const CustomerInvoiceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { companyConfig } = useAuth();
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -38,6 +48,45 @@ const CustomerInvoiceDetail: React.FC = () => {
       .catch((err) => setError(err.message || 'Failed to load invoice'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const items = (invoice.line_items || []).map((i) => ({
+        desc: i.item_name,
+        qty: Number(i.quantity || 1),
+        price: Number(i.unit_price || 0),
+        total: Number(i.line_total ?? i.unit_price * i.quantity),
+      }));
+      const mapped = mapToInvoiceData(
+        {
+          ...invoice,
+          items,
+          customerName: invoice.customer_name,
+          subtotal: invoice.total_amount,
+        },
+        companyConfig,
+        'INVOICE'
+      ) as any;
+      const secured = await attachDocumentSecurity(mapped, companyConfig?.companyName);
+      await initializePrimePdfFonts();
+      const blob = await pdf(createElement(PrimeDocument as any, { type: 'INVOICE', data: secured }) as any).toBlob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${invoice.invoice_number || invoice.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    } catch (err: any) {
+      setDownloadError(err.message || 'Failed to generate PDF');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
   if (error) return <div className="p-6 max-w-4xl mx-auto"><div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-rose-300 text-sm">{error}</div></div>;
@@ -52,6 +101,10 @@ const CustomerInvoiceDetail: React.FC = () => {
         <ArrowLeft size={14} /> Back to Invoices
       </button>
 
+      {downloadError && (
+        <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm text-rose-300">{downloadError}</div>
+      )}
+
       <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
@@ -62,8 +115,12 @@ const CustomerInvoiceDetail: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <StatusBadge status={invoice.status} />
-            <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/60 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors">
-              <Download size={14} /> PDF
+            <button
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/60 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-300 text-xs font-semibold rounded-lg transition-colors"
+            >
+              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {downloading ? 'Generating...' : 'PDF'}
             </button>
           </div>
         </div>

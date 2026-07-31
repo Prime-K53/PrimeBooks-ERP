@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Fingerprint, Loader2 } from 'lucide-react';
+import { User, Fingerprint, Loader2, Lock } from 'lucide-react';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 
 const CustomerLogin: React.FC = () => {
@@ -105,6 +105,12 @@ const CustomerLogin: React.FC = () => {
             )}
           </button>
         </form>
+
+        <div className="mt-4 flex items-center justify-end text-xs">
+          <Link to="/portal/forgot-password" className="text-slate-400 hover:text-emerald-400 transition-colors">
+            Forgot password?
+          </Link>
+        </div>
 
         <div className="mt-10 pt-6 border-t border-slate-800/60 text-center">
           <Link to="/login" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">

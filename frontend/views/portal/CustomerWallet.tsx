@@ -28,7 +28,7 @@ const CustomerWallet: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-6 max-w-7xl mx-auto"><PortalLoadingSkeleton type="list" count={5} /></div>;
+  if (loading) return <div className="p-6 max-w-7xl mx-auto"><PortalLoadingSkeleton type="table" count={5} /></div>;
   if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-rose-300 text-sm">{error}</div></div>;
   if (!data) return null;
 
@@ -56,7 +56,7 @@ const CustomerWallet: React.FC = () => {
           <h2 className="text-sm font-semibold text-slate-200">Transaction History</h2>
         </div>
         {txns.length === 0 ? (
-          <EmptyState icon={<Wallet size={28} />} title="No transactions" description="Your wallet transactions will appear here." />
+          <EmptyState icon={Wallet} title="No transactions" description="Your wallet transactions will appear here." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

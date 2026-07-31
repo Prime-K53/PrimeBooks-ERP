@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CreditCard } from 'lucide-react';
 import { portalApi } from '../../services/portalApiClient';
 import EmptyState from './components/EmptyState';
@@ -13,6 +14,7 @@ interface Payment {
 }
 
 const CustomerPayments: React.FC = () => {
+  const navigate = useNavigate();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ const CustomerPayments: React.FC = () => {
       </div>
 
       {payments.length === 0 ? (
-        <EmptyState icon={<CreditCard size={28} />} title="No payments yet" description="Your payment transactions will appear here." />
+        <EmptyState icon={CreditCard} title="No payments yet" description="Your payment transactions will appear here." />
       ) : (
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
@@ -50,7 +52,11 @@ const CustomerPayments: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-700/60">
                 {payments.map((p) => (
-                  <tr key={p.id} className="text-slate-300 hover:bg-slate-700/30 transition-colors">
+                  <tr
+                    key={p.id}
+                    onClick={() => navigate(`/portal/payments/${p.id}`)}
+                    className="text-slate-300 hover:bg-slate-700/30 transition-colors cursor-pointer"
+                  >
                     <td className="px-5 py-3 text-slate-400 whitespace-nowrap">{new Date(p.date).toLocaleDateString()}</td>
                     <td className="px-5 py-3 font-medium text-slate-100">{p.reference}</td>
                     <td className="px-5 py-3">{p.payment_method}</td>

@@ -13,7 +13,22 @@ router.post('/register', async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
-    const user = await portalAuthService.registerPortalUser({ customer_id, email, password, full_name, phone, company_id });
+    const { db } = require('../db.cjs');
+    const customer = await new Promise((resolve) => {
+      db.get('SELECT id, name, company_id FROM customers WHERE id = ?', [customer_id], (err, row) => resolve(err ? null : row));
+    });
+    if (!customer) {
+      return res.status(400).json({ error: 'Customer ID not found' });
+    }
+    const resolvedCompanyId = company_id || customer.company_id || '';
+    const user = await portalAuthService.registerPortalUser({
+      customer_id,
+      email,
+      password,
+      full_name: full_name || customer.name || '',
+      phone,
+      company_id: resolvedCompanyId
+    });
     const token = generatePortalToken({ ...user, customer_id: user.customer_id });
     const refreshToken = crypto.randomBytes(48).toString('hex');
     try {
@@ -102,6 +117,29 @@ router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const user = await portalAuthService.getPortalUserByEmail(email);
+    if (user && user.status === 'active') {
+      const code = crypto.randomInt(100000, 1000000).toString();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      await portalAuthService.revokeUserPasswordResets(user.id);
+      await portalAuthService.createPasswordReset(user.id, code, expiresAt);
+
+      const { sendEmail } = require('../services/emailService.cjs');
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Password reset code',
+          text: `Your Prime ERP customer portal password reset code is ${code}. It expires in 30 minutes. If you did not request this, you can ignore this email.`,
+          html: `<p>Your Prime ERP customer portal password reset code is:</p>
+                 <h2 style="font-size:28px;letter-spacing:4px;">${code}</h2>
+                 <p>It expires in 30 minutes. If you did not request this, you can ignore this email.</p>`
+        });
+      } catch (emailErr) {
+        console.error('[PortalAuth] Reset email send failed:', emailErr.message);
+        console.log('[PortalAuth] Dev fallback — reset code for', user.email, ':', code);
+      }
+    }
     res.json({ message: 'If the email exists, a reset link has been sent.' });
   } catch (err) {
     console.error('[PortalAuth] Forgot password error:', err);
@@ -115,6 +153,18 @@ router.post('/reset-password', async (req, res) => {
     if (!email || !code || !password) {
       return res.status(400).json({ error: 'Email, code, and new password are required' });
     }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    const user = await portalAuthService.getPortalUserByEmail(email);
+    if (!user) return res.status(400).json({ error: 'Invalid or expired reset code' });
+
+    const reset = await portalAuthService.findValidPasswordReset(user.id, String(code).trim());
+    if (!reset) return res.status(400).json({ error: 'Invalid or expired reset code' });
+
+    await portalAuthService.updatePassword(user.id, password);
+    await portalAuthService.markPasswordResetUsed(reset.id);
+    await portalAuthService.revokeAllSessions(user.id);
     res.json({ message: 'Password has been reset successfully.' });
   } catch (err) {
     console.error('[PortalAuth] Reset password error:', err);

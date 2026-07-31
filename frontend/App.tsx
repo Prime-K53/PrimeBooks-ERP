@@ -43,7 +43,9 @@ import ResetPassword from './views/auth/ResetPassword';
 import { CustomerAuthProvider } from './context/CustomerAuthContext';
 import CustomerLayout from './views/portal/CustomerLayout';
 import CustomerLogin from './views/portal/CustomerLogin';
+import CustomerRegister from './views/portal/CustomerRegister';
 import CustomerForgotPassword from './views/portal/CustomerForgotPassword';
+import CustomerResetPassword from './views/portal/CustomerResetPassword';
 import CustomerDashboard from './views/portal/CustomerDashboard';
 import CustomerOrders from './views/portal/CustomerOrders';
 import CustomerOrderDetail from './views/portal/CustomerOrderDetail';
@@ -51,6 +53,7 @@ import CustomerQuotations from './views/portal/CustomerQuotations';
 import CustomerInvoices from './views/portal/CustomerInvoices';
 import CustomerInvoiceDetail from './views/portal/CustomerInvoiceDetail';
 import CustomerPayments from './views/portal/CustomerPayments';
+import CustomerPaymentDetail from './views/portal/CustomerPaymentDetail';
 import CustomerStatements from './views/portal/CustomerStatements';
 import CustomerWallet from './views/portal/CustomerWallet';
 import CustomerLoyalty from './views/portal/CustomerLoyalty';
@@ -170,7 +173,6 @@ const Reports = lazyWithRetry('./views/Reports', () => import('./views/Reports')
 const Settings = lazyWithRetry('./views/Settings', () => import('./views/Settings'));
 const ChatApp = lazyWithRetry('./views/apps/ChatApp', () => import('./views/apps/ChatApp'));
 const AssetManagement = lazyWithRetry('./views/AssetManagement', () => import('./views/AssetManagement'));
-const CustomerPortal = lazyWithRetry('./views/portal/CustomerPortal', () => import('./views/portal/CustomerPortal'));
 const DocumentTemplateBuilder = lazyWithRetry('./views/tools/DocumentTemplateBuilder', () => import('./views/tools/DocumentTemplateBuilder'));
 const APIUsageDashboard = lazyWithRetry('./views/admin/APIUsageDashboard', () => import('./views/admin/APIUsageDashboard'));
 const SubscriptionsView = lazyWithRetry('./components/subscriptions/RecurringBilling', () => import('./components/subscriptions/RecurringBilling'));
@@ -722,8 +724,9 @@ const AppLayout: React.FC = () => {
                 <Route path="/search" element={<ErrorBoundary name="Search"><GlobalSearch /></ErrorBoundary>} />
                 {/* Customer Portal Routes */}
                 <Route path="/portal/login" element={<CustomerLogin />} />
+                <Route path="/portal/register" element={<CustomerRegister />} />
                 <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
-                <Route path="/portal/reset-password" element={<CustomerForgotPassword />} />
+                <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
                 <Route path="/portal" element={<CustomerLayout />}>
                   <Route index element={<Navigate to="/portal/dashboard" replace />} />
                   <Route path="dashboard" element={<CustomerDashboard />} />
@@ -733,7 +736,7 @@ const AppLayout: React.FC = () => {
                   <Route path="invoices" element={<CustomerInvoices />} />
                   <Route path="invoices/:id" element={<CustomerInvoiceDetail />} />
                   <Route path="payments" element={<CustomerPayments />} />
-                  <Route path="payments/:id" element={<CustomerPayments />} />
+                  <Route path="payments/:id" element={<CustomerPaymentDetail />} />
                   <Route path="statements" element={<CustomerStatements />} />
                   <Route path="wallet" element={<CustomerWallet />} />
                   <Route path="loyalty" element={<CustomerLoyalty />} />
@@ -1117,8 +1120,9 @@ const RootNavigator: React.FC = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/portal/login" element={<CustomerLogin />} />
+          <Route path="/portal/register" element={<CustomerRegister />} />
           <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
-          <Route path="/portal/reset-password" element={<CustomerForgotPassword />} />
+          <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
           <Route path="*" element={<Navigate to="/setup" replace />} />
         </Routes>
       </Suspense>
@@ -1136,8 +1140,9 @@ const RootNavigator: React.FC = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/install" element={<PwaInstallPage />} />
           <Route path="/portal/login" element={<CustomerLogin />} />
+          <Route path="/portal/register" element={<CustomerRegister />} />
           <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
-          <Route path="/portal/reset-password" element={<CustomerForgotPassword />} />
+          <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>
@@ -1179,7 +1184,9 @@ const App: React.FC = () => {
                         <SalesProvider>
                           <OrdersProvider>
                             <DataProvider>
-                              <RootNavigator />
+                              <CustomerAuthProvider>
+                                <RootNavigator />
+                              </CustomerAuthProvider>
                             </DataProvider>
                           </OrdersProvider>
                         </SalesProvider>
