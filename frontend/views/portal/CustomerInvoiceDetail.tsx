@@ -105,7 +105,7 @@ const CustomerInvoiceDetail: React.FC = () => {
         <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{downloadError}</div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <h1 className="text-xl font-bold text-slate-900">Invoice {invoice.invoice_number}</h1>
@@ -129,24 +129,24 @@ const CustomerInvoiceDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200">
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-200/60">
           <h2 className="text-sm font-semibold text-slate-800">Line Items</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-slate-400 uppercase tracking-wider bg-white">
-                <th className="px-5 py-3 font-medium">Item</th>
-                <th className="px-5 py-3 font-medium text-right">Qty</th>
-                <th className="px-5 py-3 font-medium text-right">Unit Price</th>
-                <th className="px-5 py-3 font-medium text-right">Total</th>
+          <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+            <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+              <tr>
+                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Item</th>
+                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Qty</th>
+                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Unit Price</th>
+                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-slate-100/50">
               {(invoice.line_items || []).map((item, i) => (
                 <tr key={i} className="text-slate-700">
-                  <td className="px-5 py-3">{item.item_name}</td>
+                  <td className="px-5 py-3 font-medium text-slate-900">{item.item_name}</td>
                   <td className="px-5 py-3 text-right">{item.quantity}</td>
                   <td className="px-5 py-3 text-right font-mono">K {Number(item.unit_price).toFixed(2)}</td>
                   <td className="px-5 py-3 text-right font-mono">K {Number(item.line_total).toFixed(2)}</td>
@@ -155,7 +155,7 @@ const CustomerInvoiceDetail: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-4 border-t border-slate-200 space-y-1">
+        <div className="px-5 py-4 border-t border-slate-200/60 space-y-1">
           <div className="flex justify-between text-sm">
             <span className="text-slate-500">Subtotal</span>
             <span className="text-slate-700 font-mono">K {subtotal.toFixed(2)}</span>
@@ -168,11 +168,11 @@ const CustomerInvoiceDetail: React.FC = () => {
           )}
           {remaining > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-amber-400">Remaining</span>
-              <span className="text-amber-400 font-mono">K {remaining.toFixed(2)}</span>
+              <span className="text-amber-600">Remaining</span>
+              <span className="text-amber-600 font-mono">K {remaining.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between text-base font-bold pt-2 border-t border-slate-200">
+          <div className="flex justify-between text-base font-bold pt-2 border-t border-slate-200/60">
             <span className="text-slate-900">Total</span>
             <span className="text-slate-900 font-mono">K {Number(invoice.total_amount).toFixed(2)}</span>
           </div>

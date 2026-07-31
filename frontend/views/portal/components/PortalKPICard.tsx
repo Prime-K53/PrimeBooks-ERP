@@ -7,35 +7,47 @@ interface Props {
   icon: React.ElementType;
   trend?: { value: number; positive: boolean };
   color?: 'emerald' | 'blue' | 'amber' | 'rose' | 'violet';
+  selected?: boolean;
+  onClick?: () => void;
 }
 
-const colorConfig: Record<string, { circle: string; icon: string }> = {
-  emerald: { circle: 'bg-emerald-100', icon: 'text-emerald-600' },
-  blue: { circle: 'bg-blue-100', icon: 'text-blue-600' },
-  amber: { circle: 'bg-amber-100', icon: 'text-amber-600' },
-  rose: { circle: 'bg-rose-100', icon: 'text-rose-600' },
-  violet: { circle: 'bg-violet-100', icon: 'text-violet-600' },
+const colorConfig: Record<string, { border: string; bg: string; iconBg: string; iconColor: string }> = {
+  emerald: { border: '#1f8577', bg: '#FEFDFB', iconBg: '#eef7f6', iconColor: '#1f8577' },
+  blue: { border: '#3b82f6', bg: '#FEFDFB', iconBg: '#eff6ff', iconColor: '#3b82f6' },
+  amber: { border: '#d99a3f', bg: '#FEFDFB', iconBg: '#fbead0', iconColor: '#d99a3f' },
+  rose: { border: '#b5493f', bg: '#FEFDFB', iconBg: '#fef2f2', iconColor: '#b5493f' },
+  violet: { border: '#6366F1', bg: '#FEFDFB', iconBg: '#eef2ff', iconColor: '#6366F1' },
 };
 
-const PortalKPICard: React.FC<Props> = ({ label, value, icon: Icon, trend, color = 'emerald' }) => {
+const PortalKPICard: React.FC<Props> = ({ label, value, icon: Icon, trend, color = 'emerald', selected = false, onClick }) => {
   const colors = colorConfig[color];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5 hover:border-slate-300 hover:shadow-md hover:shadow-slate-200/60 transition-all">
-      <div className="flex items-start justify-between mb-4">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</span>
-        <div className={`p-2.5 rounded-xl ${colors.circle}`}>
-          <Icon size={18} className={colors.icon} />
-        </div>
+    <div
+      onClick={onClick}
+      style={{
+        cursor: onClick ? 'pointer' : 'default',
+        padding: '14px 16px',
+        borderRadius: 14,
+        background: colors.bg,
+        border: '1.4px solid #e4ddd1',
+        borderLeft: `4px solid ${colors.border}`,
+        boxShadow: selected ? '0 8px 20px -8px rgba(0,0,0,.12)' : '0 1px 3px rgba(0,0,0,.04)',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 14,
+        transition: 'transform .15s ease, box-shadow .15s ease',
+        transform: selected ? 'scale(1.01)' : 'scale(1)',
+      }}
+    >
+      <div style={{ padding: 10, borderRadius: 10, background: colors.iconBg, color: colors.iconColor, display: 'inline-flex' }}>
+        <Icon size={20} />
       </div>
-      <div className="flex items-baseline gap-3">
-        <span className="text-2xl font-bold text-slate-900">{value}</span>
-        {trend && (
-          <span className={`inline-flex items-center gap-1 text-xs font-semibold ${trend.positive ? 'text-emerald-600' : 'text-rose-600'}`}>
-            {trend.positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-            {trend.value}%
-          </span>
-        )}
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>{label}</p>
+        <p style={{ fontSize: 18, fontWeight: 700, color: '#23282A', margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+          {value}
+        </p>
       </div>
     </div>
   );

@@ -51,7 +51,7 @@ const CustomerPaymentDetail: React.FC = () => {
         <ArrowLeft size={14} /> Back to Payments
       </button>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <h1 className="text-xl font-bold text-slate-900">Payment #{payment.reference || payment.id.slice(0, 8)}</h1>
@@ -68,26 +68,26 @@ const CustomerPaymentDetail: React.FC = () => {
         {payment.notes && <div className="text-sm text-slate-500">{payment.notes}</div>}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200">
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-200/60">
           <h2 className="text-sm font-semibold text-slate-800">Applied To Invoices</h2>
         </div>
         {allocations.length === 0 ? (
           <div className="px-5 py-8 text-center text-slate-400 text-sm">No invoice allocations for this payment.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-400 uppercase tracking-wider bg-white">
-                  <th className="px-5 py-3 font-medium">Invoice</th>
-                  <th className="px-5 py-3 font-medium text-right">Invoice Total</th>
-                  <th className="px-5 py-3 font-medium text-right">Allocated</th>
+            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+              <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Invoice</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Invoice Total</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Allocated</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100/50">
                 {allocations.map((a) => (
-                  <tr key={a.id} className="text-slate-700 hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3 font-medium text-slate-900">{a.invoice_number || a.invoice_id}</td>
+                  <tr key={a.id} className="text-slate-700 hover:bg-blue-50/50 transition-colors border-l-4 border-l-transparent">
+                    <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate">{a.invoice_number || a.invoice_id}</td>
                     <td className="px-5 py-3 text-right font-mono">K {Number(a.invoice_total).toFixed(2)}</td>
                     <td className="px-5 py-3 text-right font-mono text-emerald-600">K {Number(a.amount).toFixed(2)}</td>
                   </tr>

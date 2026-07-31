@@ -125,7 +125,6 @@ const CustomerOrders: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100/50">
                 {filtered.map((order) => {
-                  const isCancelled = order.status === 'Cancelled' || order.status === 'Draft';
                   const statusColorMap: Record<string, string> = {
                     'Confirmed': 'bg-emerald-100 text-emerald-700 border-emerald-200',
                     'Processing': 'bg-amber-100 text-amber-700 border-amber-200',

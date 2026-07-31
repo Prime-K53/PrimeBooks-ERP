@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { DollarSign, Wallet, FileText, ShoppingCart, ArrowRight } from 'lucide-react';
+import { DollarSign, Wallet, FileText, ShoppingCart, ArrowRight, ChevronRight, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { portalApi } from '../../services/portalApiClient';
 import PortalKPICard from './components/PortalKPICard';
@@ -20,6 +20,21 @@ interface DashboardData {
   totalOrders: number;
   recentTransactions: Transaction[];
 }
+
+const getTransactionIcon = (t: Transaction) => {
+  if (t.type === 'credit') return <TrendingUp size={16} color="#059669" />;
+  return <TrendingDown size={16} color="#dc2626" />;
+};
+
+const getTransactionIconBg = (t: Transaction) => {
+  if (t.type === 'credit') return '#ecfdf5';
+  return '#fef2f2';
+};
+
+const getTransactionBorderColor = (t: Transaction) => {
+  if (t.type === 'credit') return '#059669';
+  return '#dc2626';
+};
 
 const CustomerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -60,6 +75,8 @@ const CustomerDashboard: React.FC = () => {
     { label: 'Contact Support', onClick: () => navigate('/portal/support'), icon: <FileText size={16} /> },
   ];
 
+  const recentTransactions = (data.recentTransactions || []).slice(0, 5);
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
@@ -67,7 +84,7 @@ const CustomerDashboard: React.FC = () => {
         <p className="text-sm text-slate-500 mt-1">Welcome to your customer portal</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 18 }}>
         <PortalKPICard label="Balance" value={`K ${(data.balance || 0).toFixed(2)}`} icon={DollarSign} color="emerald" />
         <PortalKPICard label="Wallet Balance" value={`K ${(data.walletBalance || 0).toFixed(2)}`} icon={Wallet} color="blue" />
         <PortalKPICard label="Active Invoices" value={data.activeInvoiceCount ?? 0} icon={FileText} color="amber" />
@@ -76,53 +93,104 @@ const CustomerDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200/60">
               <h2 className="text-sm font-semibold text-slate-800">Recent Activity</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-slate-400 uppercase tracking-wider">
-                    <th className="px-5 py-3 font-medium">Date</th>
-                    <th className="px-5 py-3 font-medium">Description</th>
-                    <th className="px-5 py-3 font-medium text-right">Amount</th>
-                    <th className="px-5 py-3 font-medium text-right">Type</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {(data.recentTransactions || []).slice(0, 5).map((t, i) => (
-                    <tr key={i} className="text-slate-700 hover:bg-slate-50 transition-colors">
-                      <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
-                      <td className="px-5 py-3">{t.description}</td>
-                      <td className="px-5 py-3 text-right font-mono">{t.amount.toFixed(2)}</td>
-                      <td className="px-5 py-3 text-right">
-                        <span className={`text-xs font-semibold ${t.type === 'credit' ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <div className="p-2">
+              {recentTransactions.length === 0 ? (
+                <div className="p-6 text-center text-slate-400">
+                  <Activity size={28} className="mx-auto mb-2" />
+                  <p>No recent transactions</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {recentTransactions.map((t, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        borderRadius: 10,
+                        padding: '12px 14px',
+                        background: '#FEFDFB',
+                        border: '1.4px solid #e4ddd1',
+                        borderLeft: `4px solid ${getTransactionBorderColor(t)}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                        transition: 'transform .15s ease, box-shadow .15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+                      }}
+                    >
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 8,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: getTransactionIconBg(t),
+                        flexShrink: 0,
+                      }}>
+                        {getTransactionIcon(t)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{t.description}</div>
+                        <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                          {new Date(t.date).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', minWidth: 80 }}>
+                        <div style={{
+                          fontSize: 14, fontWeight: 700,
+                          color: t.type === 'credit' ? '#059669' : '#dc2626',
+                          fontFamily: "'JetBrains Mono', monospace",
+                        }}>
+                          {t.type === 'credit' ? '+' : '-'}{t.amount.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#5c6567', textTransform: 'uppercase', marginTop: 1 }}>
                           {t.type}
-                        </span>
-                      </td>
-                    </tr>
+                        </div>
+                      </div>
+                      <div style={{
+                        marginLeft: 'auto',
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        background: '#eef7f6',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: '#1f8577',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        flexShrink: 0,
+                      }}>
+                        View
+                        <ChevronRight size={10} />
+                      </div>
+                    </div>
                   ))}
-                  {(!data.recentTransactions || data.recentTransactions.length === 0) && (
-                    <tr>
-                      <td colSpan={4} className="px-5 py-8 text-center text-slate-400">No recent transactions</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div>
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5">
             <h2 className="text-sm font-semibold text-slate-800 mb-4">Quick Actions</h2>
             <div className="space-y-2">
               {quickActions.map((action, i) => (
                 <button
                   key={i}
                   onClick={action.onClick}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-slate-100 hover:bg-slate-100 rounded-lg text-sm text-slate-700 transition-colors group"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-slate-100 hover:bg-slate-100 rounded-xl text-sm text-slate-700 transition-colors group"
                 >
                   <span className="flex items-center gap-2">{action.icon}{action.label}</span>
                   <ArrowRight size={14} className="text-slate-400 group-hover:text-slate-700 transition-colors" />

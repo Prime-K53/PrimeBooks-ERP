@@ -10,39 +10,52 @@ const SkeletonBlock: React.FC<{ className?: string }> = ({ className = '' }) => 
 );
 
 const CardSkeleton: React.FC = () => (
-  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-    <div className="flex items-center justify-between">
-      <SkeletonBlock className="h-3 w-20" />
-      <SkeletonBlock className="h-8 w-8 rounded-xl" />
+  <div style={{ padding: '14px 16px', borderRadius: 14, background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #e4ddd1' }}>
+    <div className="flex items-center gap-3">
+      <SkeletonBlock className="h-10 w-10 rounded-[10px]" />
+      <div className="flex-1 space-y-2">
+        <SkeletonBlock className="h-2.5 w-16" />
+        <SkeletonBlock className="h-5 w-24" />
+      </div>
     </div>
-    <SkeletonBlock className="h-7 w-28" />
-    <SkeletonBlock className="h-3 w-16" />
   </div>
 );
 
 const TableSkeleton: React.FC = () => (
-  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-    <div className="flex gap-4 pb-3 border-b border-slate-200">
-      <SkeletonBlock className="h-3 flex-1" />
-      <SkeletonBlock className="h-3 flex-1" />
-      <SkeletonBlock className="h-3 w-24" />
-      <SkeletonBlock className="h-3 w-20" />
+  <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+        <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+          <tr>
+            <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Invoice #</th>
+            <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Date</th>
+            <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Amount</th>
+            <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center">Status</th>
+            <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Due Date</th>
+            <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100/50">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <tr key={i}>
+              <td className="px-5 py-3"><SkeletonBlock className="h-4 w-20" /></td>
+              <td className="px-5 py-3"><SkeletonBlock className="h-4 w-16" /></td>
+              <td className="px-5 py-3"><SkeletonBlock className="h-4 w-16" /></td>
+              <td className="px-5 py-3"><SkeletonBlock className="h-4 w-12" /></td>
+              <td className="px-5 py-3"><SkeletonBlock className="h-4 w-16" /></td>
+              <td className="px-5 py-3"><SkeletonBlock className="h-4 w-12" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
-    {Array.from({ length: 5 }).map((_, i) => (
-      <div key={i} className="flex gap-4">
-        <SkeletonBlock className="h-4 flex-1" />
-        <SkeletonBlock className="h-4 flex-1" />
-        <SkeletonBlock className="h-4 w-24" />
-        <SkeletonBlock className="h-4 w-20" />
-      </div>
-    ))}
   </div>
 );
 
 const DetailSkeleton: React.FC = () => (
   <div className="space-y-6">
     <SkeletonBlock className="h-7 w-56" />
-    <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-5">
+    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 space-y-5">
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
           <SkeletonBlock className="h-3 w-16" />
@@ -61,7 +74,7 @@ const DetailSkeleton: React.FC = () => (
           <SkeletonBlock className="h-5 w-36" />
         </div>
       </div>
-      <div className="border-t border-slate-200 pt-5 space-y-3">
+      <div className="border-t border-slate-200/60 pt-5 space-y-3">
         <SkeletonBlock className="h-3 w-32" />
         <SkeletonBlock className="h-4 w-full" />
         <SkeletonBlock className="h-4 w-3/4" />
@@ -81,7 +94,7 @@ const PortalLoadingSkeleton: React.FC<Props> = ({ type = 'card', count = 4 }) =>
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 18 }}>
       {Array.from({ length: count }).map((_, i) => (
         <CardSkeleton key={i} />
       ))}

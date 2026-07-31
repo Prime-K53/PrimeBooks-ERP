@@ -92,11 +92,11 @@ const CustomerStatements: React.FC = () => {
       </form>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Opening Balance</span>
           <div className="text-2xl font-bold text-slate-900 mt-1">K {Number(data.opening_balance || 0).toFixed(2)}</div>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Closing Balance</span>
           <div className="text-2xl font-bold text-slate-900 mt-1">K {Number(data.closing_balance || 0).toFixed(2)}</div>
         </div>
@@ -105,21 +105,21 @@ const CustomerStatements: React.FC = () => {
       {txns.length === 0 ? (
         <EmptyState icon={<FileText size={28} />} title="No transactions" description="No transactions found for the selected period." />
       ) : (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-400 uppercase tracking-wider bg-white">
-                  <th className="px-5 py-3 font-medium">Date</th>
-                  <th className="px-5 py-3 font-medium">Description</th>
-                  <th className="px-5 py-3 font-medium text-right">Debit</th>
-                  <th className="px-5 py-3 font-medium text-right">Credit</th>
-                  <th className="px-5 py-3 font-medium text-right">Balance</th>
+            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+              <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Date</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Description</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Debit</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Credit</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Balance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100/50">
                 {txns.map((t, i) => (
-                  <tr key={i} className="text-slate-700 hover:bg-slate-50 transition-colors">
+                  <tr key={i} className="text-slate-700 hover:bg-blue-50/50 transition-colors border-l-4 border-l-transparent">
                     <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
                     <td className="px-5 py-3">{t.description}</td>
                     <td className="px-5 py-3 text-right font-mono text-rose-600">{t.debit ? `K ${Number(t.debit).toFixed(2)}` : '-'}</td>

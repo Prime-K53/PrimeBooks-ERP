@@ -138,9 +138,9 @@ const CustomerSupport: React.FC = () => {
           ) : tickets.length === 0 ? (
             <EmptyState icon={<MessageCircle size={28} />} title="No support tickets" description="You haven't created any support tickets yet." action={{ label: 'Create Ticket', onClick: () => setActiveTab('new') }} />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {tickets.map((ticket) => (
-                <div key={ticket.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                <div key={ticket.id} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
                   <div
                     onClick={() => handleExpand(ticket)}
                     className="p-4 flex items-start justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
@@ -159,7 +159,7 @@ const CustomerSupport: React.FC = () => {
                   </div>
 
                   {expandedId === ticket.id && (
-                    <div className="border-t border-slate-200 p-4 space-y-3">
+                    <div className="border-t border-slate-200/60 p-4 space-y-3">
                       {(ticket.messages || []).map((msg, i) => (
                         <div key={i} className="bg-slate-100 rounded-lg p-3">
                           <p className="text-xs text-slate-400 mb-1">{msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</p>
