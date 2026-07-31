@@ -462,7 +462,7 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
         setRawLocation(item.binLocation || '');
         setRawBuyUnit((item as any).purchaseUnit || (item as any).usageUnit || 'Ream');
         setRawUseUnit((item as any).usageUnit || 'Sheet');
-        setRawConvRate((item as any).conversionRate || (item as any).conversionFactor || 500);
+        setRawConvRate((item as any).conversionRate || (item as any).conversion_rate || (item as any).conversionFactor || 500);
         setRawConsumableType((item as any).rawMaterialCategory || 'consumable');
         setRawCategory((item as any).category || '');
       }
@@ -602,6 +602,23 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
     if (generated) setSku(generated);
   }, [name, category, open, isEditing, skuManuallySet, allItems]);
 
+  /* Resolve a raw material's conversion rate no matter which field it was
+     persisted under. The DB column is snake_case `conversion_rate`
+     (see backend/db.cjs), but items created/edited through this modal are
+     saved as camelCase `conversionRate`/`conversionFactor`, and some flows
+     nest it under `smartPricing.conversionRate`. Reading only one of these
+     silently falls back to a rate of 1, which turns the item's full
+     cost_price into a per-unit rate (e.g. a K12,000 toner cartridge priced
+     as K12,000/page instead of being divided by its page yield). */
+  const getItemConversionRate = (item: any, fallback = 1): number => {
+    const rate = item?.conversionRate
+      ?? item?.conversion_rate
+      ?? item?.conversionFactor
+      ?? item?.smartPricing?.conversionRate
+      ?? fallback;
+    return rate > 0 ? rate : fallback;
+  };
+
   /* Derive paper/toner costs from raw material items */
   useEffect(() => {
     if (!open || !allItems) return;
@@ -609,14 +626,14 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
     const paperItem = rawItems.find(i => /paper|bond/i.test(i.name));
     const tonerItem = rawItems.find(i => /toner|ink|cartridge/i.test(i.name));
     if (paperItem) {
-      const rate = (paperItem as any).conversionRate || (paperItem as any).smartPricing?.conversionRate || 1;
-      const cost = (paperItem.cost_price || paperItem.cost || 0) / (rate > 0 ? rate : 1);
+      const rate = getItemConversionRate(paperItem);
+      const cost = (paperItem.cost_price || paperItem.cost || 0) / rate;
       if (category === 'product') setProductPaperCost(prev => prev || cost);
       if (category === 'service') setServicePaperCost(prev => prev || cost);
     }
     if (tonerItem) {
-      const rate = (tonerItem as any).conversionRate || (tonerItem as any).smartPricing?.conversionRate || 1;
-      const cost = (tonerItem.cost_price || tonerItem.cost || 0) / (rate > 0 ? rate : 1);
+      const rate = getItemConversionRate(tonerItem);
+      const cost = (tonerItem.cost_price || tonerItem.cost || 0) / rate;
       if (category === 'service') setServiceTonerCost(prev => prev || cost);
       if (category === 'product') setProductTonerCost(prev => prev || cost);
     }
@@ -639,11 +656,11 @@ export const ItemModal: React.FC<Props> = ({ open, item, onClose, onSave, allIte
     const coverItem = rawItems.find(i => /card|cover|board/i.test(i.name));
     const stapleItem = rawItems.find(i => /staple/i.test(i.name));
     const tapeItem = rawItems.find(i => /tape|binding tape/i.test(i.name));
-    const paperRate = paperItem ? ((paperItem.cost_price || paperItem.cost || 0) / ((paperItem as any).conversionRate || 1)) : BOM_DEFAULT_RATES.paper;
-    const tonerRate = tonerItem ? ((tonerItem.cost_price || tonerItem.cost || 0) / ((tonerItem as any).conversionRate || 1)) : BOM_DEFAULT_RATES.toner;
-    const coverRate = coverItem ? ((coverItem.cost_price || coverItem.cost || 0) / ((coverItem as any).conversionRate || 1)) : BOM_DEFAULT_RATES.cover;
-    const stapleRate = stapleItem ? ((stapleItem.cost_price || stapleItem.cost || 0) / ((stapleItem as any).conversionRate || 1)) : BOM_DEFAULT_RATES.staple;
-    const tapeRate = tapeItem ? ((tapeItem.cost_price || tapeItem.cost || 0) / ((tapeItem as any).conversionRate || 1)) : BOM_DEFAULT_RATES.tape;
+    const paperRate = paperItem ? ((paperItem.cost_price || paperItem.cost || 0) / getItemConversionRate(paperItem)) : BOM_DEFAULT_RATES.paper;
+    const tonerRate = tonerItem ? ((tonerItem.cost_price || tonerItem.cost || 0) / getItemConversionRate(tonerItem)) : BOM_DEFAULT_RATES.toner;
+    const coverRate = coverItem ? ((coverItem.cost_price || coverItem.cost || 0) / getItemConversionRate(coverItem)) : BOM_DEFAULT_RATES.cover;
+    const stapleRate = stapleItem ? ((stapleItem.cost_price || stapleItem.cost || 0) / getItemConversionRate(stapleItem)) : BOM_DEFAULT_RATES.staple;
+    const tapeRate = tapeItem ? ((tapeItem.cost_price || tapeItem.cost || 0) / getItemConversionRate(tapeItem)) : BOM_DEFAULT_RATES.tape;
     return { paper: paperRate, toner: tonerRate, cover: coverRate, staple: stapleRate, tape: tapeRate };
   }, [allItems]);
 
