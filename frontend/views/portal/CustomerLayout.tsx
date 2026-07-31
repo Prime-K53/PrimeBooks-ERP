@@ -6,6 +6,7 @@ import PortalHeader from './components/PortalHeader';
 
 const pageTitles: Record<string, string> = {
   '/portal/dashboard': 'Dashboard',
+  '/portal/requests': 'Requests',
   '/portal/orders': 'Orders',
   '/portal/quotations': 'Quotations',
   '/portal/invoices': 'Invoices',

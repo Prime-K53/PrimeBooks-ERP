@@ -3,8 +3,198 @@ const router = express.Router();
 const { verifyPortalToken } = require('../middleware/portalAuth.cjs');
 const portalService = require('../services/portalService.cjs');
 const portalAuthService = require('../services/portalAuthService.cjs');
+const portalLifecycleService = require('../services/portalLifecycleService.cjs');
 
 router.use(verifyPortalToken);
+
+function requestContext(req) {
+  return {
+    ip: req.ip || req.headers['x-forwarded-for'] || null,
+    userAgent: req.headers['user-agent'] || null,
+    method: req.method,
+    path: req.originalUrl,
+    correlationId: req.correlationId,
+  };
+}
+
+// ─── Realtime events (SSE) — no manual refresh needed ────────────────────────
+router.get('/events', (req, res) => {
+  const unsubscribe = portalLifecycleService.subscribePortal(req, res);
+  res.on('close', unsubscribe);
+});
+
+// ─── Quotation Requests (customer-submitted, NOT official documents) ────────
+router.get('/requests', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const data = await portalLifecycleService.getRequests({ customerId: customer_id, companyId: company_id });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Requests error:', err);
+    res.status(500).json({ error: 'Failed to load requests' });
+  }
+});
+
+router.post('/requests', async (req, res) => {
+  try {
+    const { id, customer_id, company_id, email, full_name } = req.portalUser;
+    const { requestType, items, notes } = req.body;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'At least one line item is required' });
+    }
+    const result = await portalLifecycleService.createQuotationRequest({
+      portalUserId: id,
+      customerId: customer_id,
+      customerName: full_name || email || 'Customer',
+      companyId: company_id,
+      requestType,
+      items,
+      notes,
+      context: requestContext(req),
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    console.error('[Portal] Create request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to submit request' });
+  }
+});
+
+router.get('/requests/:id', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const data = await portalLifecycleService.getRequestById(req.params.id, { customerId: customer_id, companyId: company_id });
+    if (!data) return res.status(404).json({ error: 'Request not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Request detail error:', err);
+    res.status(500).json({ error: 'Failed to load request' });
+  }
+});
+
+router.post('/requests/:id/cancel', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const result = await portalLifecycleService.cancelRequest(req.params.id, {
+      portalUserId: id,
+      customerId: customer_id,
+      companyId: company_id,
+      context: requestContext(req),
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('[Portal] Cancel request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to cancel request' });
+  }
+});
+
+// ─── Quotations (official documents — read-only for customers) ──────────────
+router.get('/quotations/:id', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const data = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id, companyId: company_id });
+    if (!data) return res.status(404).json({ error: 'Quotation not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Quotation detail error:', err);
+    res.status(500).json({ error: 'Failed to load quotation' });
+  }
+});
+
+router.post('/quotations/:id/accept', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const result = await portalLifecycleService.acceptQuotation(req.params.id, {
+      portalUserId: id,
+      customerId: customer_id,
+      companyId: company_id,
+      context: requestContext(req),
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('[Portal] Accept quotation error:', err);
+    res.status(400).json({ error: err.message || 'Failed to accept quotation' });
+  }
+});
+
+router.post('/quotations/:id/reject', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const { reason } = req.body || {};
+    const result = await portalLifecycleService.rejectQuotation(req.params.id, {
+      portalUserId: id,
+      customerId: customer_id,
+      companyId: company_id,
+      reason,
+      context: requestContext(req),
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('[Portal] Reject quotation error:', err);
+    res.status(400).json({ error: err.message || 'Failed to reject quotation' });
+  }
+});
+
+router.post('/quotations/:id/revision', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const { comments } = req.body || {};
+    const result = await portalLifecycleService.requestRevision(req.params.id, {
+      portalUserId: id,
+      customerId: customer_id,
+      companyId: company_id,
+      comments,
+      context: requestContext(req),
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('[Portal] Revision request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to request revision' });
+  }
+});
+
+// ─── Downloads (gated + audited) ─────────────────────────────────────────────
+router.post('/downloads', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const { docType, docId } = req.body || {};
+    if (!docType || !docId) {
+      return res.status(400).json({ error: 'docType and docId are required' });
+    }
+    const result = await portalLifecycleService.recordDownload({
+      docType,
+      docId,
+      portalUserId: id,
+      customerId: customer_id,
+      companyId: company_id,
+      context: requestContext(req),
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('[Portal] Download audit error:', err);
+    res.status(400).json({ error: err.message || 'Download not permitted' });
+  }
+});
+
+// ─── Timeline (merged chronological history per document) ────────────────────
+router.get('/timeline', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const { docType, docId } = req.query;
+    if (!docType || !docId) {
+      return res.status(400).json({ error: 'docType and docId are required' });
+    }
+    const data = await portalLifecycleService.getTimeline({
+      docType,
+      docId,
+      customerId: customer_id,
+      companyId: company_id,
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Timeline error:', err);
+    res.status(500).json({ error: 'Failed to load timeline' });
+  }
+});
 
 // ─── Dashboard ────────────────────────────────────────────────
 router.get('/dashboard', async (req, res) => {

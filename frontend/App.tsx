@@ -61,6 +61,9 @@ import CustomerNotifications from './views/portal/CustomerNotifications';
 import CustomerProfile from './views/portal/CustomerProfile';
 import CustomerSupport from './views/portal/CustomerSupport';
 import CustomerCreateRequest from './views/portal/CustomerCreateRequest';
+import CustomerRequests from './views/portal/CustomerRequests';
+import CustomerRequestDetail from './views/portal/CustomerRequestDetail';
+import CustomerQuotationDetail from './views/portal/CustomerQuotationDetail';
 import PortalUserManagement from './views/portal/PortalUserManagement';
 
 import { isResponsiveDebugEnabled } from './utils/debugFlags';
@@ -165,6 +168,7 @@ const FiscalReportsHub = lazyWithRetry('./views/FiscalReportsHub', () => import(
 const InternalToolsHub = lazyWithRetry('./views/InternalToolsHub', () => import('./views/InternalToolsHub'));
 const Payments = lazyWithRetry('./views/sales/Payments', () => import('./views/sales/Payments'));
 const Orders = lazyWithRetry('./views/sales/Orders', () => import('./views/sales/Orders'));
+const QuotationRequests = lazyWithRetry('./views/sales/QuotationRequests', () => import('./views/sales/QuotationRequests'));
 const JobTickets = lazyWithRetry('./views/sales/JobTickets', () => import('./views/sales/JobTickets'));
 const Clients = lazyWithRetry('./views/sales/Clients', () => import('./views/sales/Clients'));
 const ShippingManager = lazyWithRetry('./views/sales/ShippingManager', () => import('./views/sales/ShippingManager'));
@@ -813,6 +817,7 @@ const AppLayout: React.FC = () => {
                   <Route path="/sales-flow" element={<SalesFlowHub />} />
                   <Route path="/sales-flow/pos" element={<ProtectedRoute permission="sales.pos"><POS /></ProtectedRoute>} />
                   <Route path="/sales-flow/quotations" element={<ProtectedRoute permission="sales.view"><Orders /></ProtectedRoute>} />
+                  <Route path="/sales-flow/requests" element={<ProtectedRoute permission="sales.view"><QuotationRequests /></ProtectedRoute>} />
                   <Route path="/sales-flow/orders" element={<ProtectedRoute permission="sales.view"><Orders /></ProtectedRoute>} />
                   <Route path="/sales-flow/invoices" element={<ProtectedRoute permission="sales.view"><Orders /></ProtectedRoute>} />
                   <Route path="/sales-flow/subscriptions" element={<ProtectedRoute permission="sales.view"><SubscriptionsView /></ProtectedRoute>} />
@@ -1055,9 +1060,12 @@ const PortalRoutes = (
     <Route path="/portal" element={<CustomerLayout />}>
       <Route index element={<Navigate to="/portal/dashboard" replace />} />
       <Route path="dashboard" element={<CustomerDashboard />} />
+      <Route path="requests" element={<CustomerRequests />} />
+      <Route path="requests/:id" element={<CustomerRequestDetail />} />
       <Route path="orders" element={<CustomerOrders />} />
       <Route path="orders/:id" element={<CustomerOrderDetail />} />
       <Route path="quotations" element={<CustomerQuotations />} />
+      <Route path="quotations/:id" element={<CustomerQuotationDetail />} />
       <Route path="new-request" element={<CustomerCreateRequest />} />
       <Route path="invoices" element={<CustomerInvoices />} />
       <Route path="invoices/:id" element={<CustomerInvoiceDetail />} />

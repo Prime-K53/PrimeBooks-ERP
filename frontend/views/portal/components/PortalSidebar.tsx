@@ -16,6 +16,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/portal/dashboard', icon: LayoutDashboard },
   { label: 'New Request', path: '/portal/new-request', icon: ClipboardList },
+  { label: 'Requests', path: '/portal/requests', icon: ClipboardList },
   { label: 'Orders', path: '/portal/orders', icon: ShoppingCart },
   { label: 'Quotations', path: '/portal/quotations', icon: FileText },
   { label: 'Invoices', path: '/portal/invoices', icon: Receipt },
@@ -49,22 +50,24 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose }) => {
     navigate('/portal/login');
   };
 
-  const sidebarContent = (
-    <div className="flex flex-col h-full">
-      <div className="h-16 flex items-center gap-3 px-5 shrink-0 border-b border-white/5">
-        <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-white font-['DM_Serif_Display']" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
-          <Globe size={18} />
-        </div>
-        <div className="flex flex-col min-w-0">
-          <span className="font-bold text-[16px] tracking-tight text-white truncate">
-            Prime<span style={{ color: '#d99a3f' }}>PORTAL</span>
-          </span>
-          <span className="text-[10px] font-semibold uppercase tracking-wider -mt-0.5 truncate" style={{ color: 'rgba(255,255,255,.4)' }}>
-            Customer Portal
-          </span>
-        </div>
+  const sidebarHeader = (
+    <div className="h-16 flex items-center gap-3 px-5 shrink-0 border-b border-white/5">
+      <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-white font-['DM_Serif_Display']" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
+        <Globe size={18} />
       </div>
+      <div className="flex flex-col min-w-0">
+        <span className="font-bold text-[16px] tracking-tight text-white truncate">
+          Prime<span style={{ color: '#d99a3f' }}>PORTAL</span>
+        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider -mt-0.5 truncate" style={{ color: 'rgba(255,255,255,.4)' }}>
+          Customer Portal
+        </span>
+      </div>
+    </div>
+  );
 
+  const sidebarBody = (
+    <div className="flex flex-col h-full">
       <nav className="flex-1 overflow-y-auto custom-scrollbar py-3 px-3 space-y-1">
         {navItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
@@ -109,7 +112,8 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose }) => {
   return (
     <>
       <aside className="fixed top-0 left-0 z-40 h-full w-64 hidden md:flex flex-col text-white/70 border-r border-white/5" style={{ background: 'linear-gradient(180deg, #0b3e39, #082e2a)' }}>
-        {sidebarContent}
+        {sidebarHeader}
+        {sidebarBody}
       </aside>
 
       {isOpen && (
@@ -134,7 +138,7 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose }) => {
                 <X size={18} />
               </button>
             </div>
-            {sidebarContent}
+            {sidebarBody}
           </aside>
         </div>
       )}

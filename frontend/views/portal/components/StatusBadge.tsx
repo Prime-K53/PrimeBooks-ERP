@@ -21,6 +21,14 @@ const statusColorMap: Record<string, { bg: string; text: string; dot: string }> 
   processing: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
   inprogress: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
   in_progress: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  submitted: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  under_review: { bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
+  quotation_ready: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  ready: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  accepted: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  converted: { bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
+  revision_requested: { bg: 'bg-violet-100', text: 'text-violet-700', dot: 'bg-violet-500' },
+  rejected: { bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500' },
 };
 
 const StatusBadge: React.FC<Props> = ({ status, size = 'md' }) => {

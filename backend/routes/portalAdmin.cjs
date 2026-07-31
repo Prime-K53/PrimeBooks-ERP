@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../db.cjs');
 const portalAuthService = require('../services/portalAuthService.cjs');
+const portalLifecycleService = require('../services/portalLifecycleService.cjs');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const { canUseHeaderAuth, getHeaderAuthUser } = require('../middleware/auth.cjs');
@@ -26,6 +27,17 @@ const verifyAdminAuth = async (req, res, next) => {
   }
 
   const authHeader = req.headers['authorization'];
+  // EventSource (SSE) cannot send Authorization headers — the realtime stream
+  // authenticates with a short-lived ticket issued by GET /events-ticket.
+  if (req.path === '/events' && req.query.token) {
+    try {
+      const decoded = jwt.verify(req.query.token, process.env.JWT_SECRET);
+      if (decoded.sse === true) {
+        req.user = decoded;
+        return next();
+      }
+    } catch { /* fall through to standard auth */ }
+  }
   const token = authHeader && authHeader.split(' ')[1];
   if (token) {
     try {
@@ -65,6 +77,283 @@ const verifyAdminAuth = async (req, res, next) => {
 };
 
 router.use(verifyAdminAuth);
+
+// Short-lived ticket so the browser EventSource stream can authenticate via
+// query param (EventSource cannot send Authorization/custom headers).
+router.get('/events-ticket', (req, res) => {
+  try {
+    const ticket = jwt.sign(
+      { id: req.user.id, username: req.user.username || 'sales', role: req.user.role || 'admin', sse: true },
+      process.env.JWT_SECRET,
+      { expiresIn: '5m' }
+    );
+    res.json({ ticket, expiresIn: 300 });
+  } catch (err) {
+    console.error('[PortalAdmin] SSE ticket error:', err);
+    res.status(500).json({ error: 'Failed to create realtime ticket' });
+  }
+});
+
+function adminActor(req) {
+  return {
+    id: req.user.id,
+    name: req.user.username || req.user.email || 'Sales',
+    role: req.user.role || 'admin',
+  };
+}
+
+function requestContext(req) {
+  return {
+    ip: req.ip || req.headers['x-forwarded-for'] || null,
+    userAgent: req.headers['user-agent'] || null,
+    method: req.method,
+    path: req.originalUrl,
+    correlationId: req.correlationId,
+  };
+}
+
+// ─── Realtime events (SSE) — staff dashboard updates instantly ──────────────
+router.get('/events', (req, res) => {
+  const unsubscribe = portalLifecycleService.subscribeAdmin(req, res);
+  res.on('close', unsubscribe);
+});
+
+// ─── Quotation Requests (review workspace) ───────────────────────────────────
+router.get('/requests', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { status } = req.query;
+    const data = await portalLifecycleService.adminListRequests({ companyId: company_id, status });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] List requests error:', err);
+    res.status(500).json({ error: 'Failed to load requests' });
+  }
+});
+
+router.get('/requests/:id', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const data = await portalLifecycleService.adminGetRequest(req.params.id, company_id);
+    if (!data) return res.status(404).json({ error: 'Request not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Request detail error:', err);
+    res.status(500).json({ error: 'Failed to load request' });
+  }
+});
+
+router.put('/requests/:id', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { items, notes } = req.body;
+    const data = await portalLifecycleService.updateRequest(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      items,
+      notes,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Update request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to update request' });
+  }
+});
+
+router.post('/requests/:id/reject', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { reason } = req.body || {};
+    const data = await portalLifecycleService.rejectRequest(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      reason,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Reject request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to reject request' });
+  }
+});
+
+router.post('/requests/:id/clarify', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { note } = req.body || {};
+    const data = await portalLifecycleService.requestClarification(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      note,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Clarify request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to request clarification' });
+  }
+});
+
+// Generate official quotation (approve request → official document)
+router.post('/requests/:id/generate-quotation', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { items, discount, taxRate, deliveryFee, paymentTerms, validUntil } = req.body || {};
+    const data = await portalLifecycleService.generateQuotation(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      items,
+      discount,
+      taxRate,
+      deliveryFee,
+      paymentTerms,
+      validUntil,
+      context: requestContext(req),
+    });
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Generate quotation error:', err);
+    res.status(400).json({ error: err.message || 'Failed to generate quotation' });
+  }
+});
+
+// ─── Official Quotations (admin) ─────────────────────────────────────────────
+router.get('/quotations', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { status } = req.query;
+    const data = await portalLifecycleService.getQuotations({ companyId: company_id, status });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] List quotations error:', err);
+    res.status(500).json({ error: 'Failed to load quotations' });
+  }
+});
+
+router.get('/quotations/:id', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const data = await portalLifecycleService.getQuotationById(req.params.id, { companyId: company_id });
+    if (!data) return res.status(404).json({ error: 'Quotation not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Quotation detail error:', err);
+    res.status(500).json({ error: 'Failed to load quotation' });
+  }
+});
+
+// Regenerate a quotation after a customer revision request
+router.post('/quotations/:id/regenerate', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { items, discount, taxRate, deliveryFee, paymentTerms, validUntil } = req.body || {};
+    const data = await portalLifecycleService.regenerateQuotation(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      items,
+      discount,
+      taxRate,
+      deliveryFee,
+      paymentTerms,
+      validUntil,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Regenerate quotation error:', err);
+    res.status(400).json({ error: err.message || 'Failed to update quotation' });
+  }
+});
+
+// Convert an accepted quotation into an official sales order
+router.post('/quotations/:id/convert-to-order', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { deliveryDate, notes } = req.body || {};
+    const data = await portalLifecycleService.convertToOrder(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      deliveryDate,
+      notes,
+      context: requestContext(req),
+    });
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Convert to order error:', err);
+    res.status(400).json({ error: err.message || 'Failed to convert to order' });
+  }
+});
+
+// ─── Admin notifications ─────────────────────────────────────────────────────
+router.get('/notifications', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const data = await portalLifecycleService.getAdminNotifications(company_id, { limit });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Notifications error:', err);
+    res.status(500).json({ error: 'Failed to load notifications' });
+  }
+});
+
+router.get('/notifications/unread-count', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const count = await portalLifecycleService.getAdminUnreadCount(company_id);
+    res.json({ count });
+  } catch (err) {
+    console.error('[PortalAdmin] Unread count error:', err);
+    res.status(500).json({ error: 'Failed to load unread count' });
+  }
+});
+
+router.put('/notifications/:id/read', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    await portalLifecycleService.markAdminNotificationRead(req.params.id, company_id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[PortalAdmin] Mark notification read error:', err);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+router.put('/notifications/read-all', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    await portalLifecycleService.markAllAdminNotificationsRead(company_id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[PortalAdmin] Mark all read error:', err);
+    res.status(500).json({ error: 'Failed to mark notifications as read' });
+  }
+});
+
+// ─── Activity feed + analytics ───────────────────────────────────────────────
+router.get('/activity', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const limit = Math.min(parseInt(req.query.limit, 10) || 25, 100);
+    const data = await portalLifecycleService.getActivity(company_id, { limit });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Activity error:', err);
+    res.status(500).json({ error: 'Failed to load activity' });
+  }
+});
+
+router.get('/analytics', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const data = await portalLifecycleService.getAnalytics(company_id);
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Analytics error:', err);
+    res.status(500).json({ error: 'Failed to load analytics' });
+  }
+});
 
 router.get('/users', async (req, res) => {
   try {

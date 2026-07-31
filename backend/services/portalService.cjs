@@ -1,6 +1,7 @@
 const { db } = require('../db.cjs');
 const crypto = require('crypto');
 const portalAuthService = require('./portalAuthService.cjs');
+const portalLifecycleService = require('./portalLifecycleService.cjs');
 
 function getOne(query, params = []) {
   return new Promise((resolve, reject) => {
@@ -56,6 +57,11 @@ const portalService = {
       [customerId, companyId]
     );
 
+    const requestRow = await getOne(
+      "SELECT COUNT(*) as count FROM quotation_requests WHERE customer_id = ? AND company_id = ? AND status IN ('submitted', 'under_review')",
+      [customerId, companyId]
+    );
+
     const recentSales = await getAll(
       `SELECT date, total_amount as amount, customer_name as description, 'sale' as type
        FROM sales WHERE customer_id = ? AND company_id = ? AND status != 'Voided'
@@ -80,6 +86,7 @@ const portalService = {
       outstandingBalance: (customer && customer.outstandingBalance) || 0,
       activeInvoiceCount: (invoiceCount && invoiceCount.count) || 0,
       totalOrders: (ordersRow && ordersRow.count) || 0,
+      activeRequestCount: (requestRow && requestRow.count) || 0,
       recentTransactions: combined
     };
   },
@@ -109,7 +116,7 @@ const portalService = {
       const quantity = Number(item.quantity ?? 1);
       const lineTotal = Number(item.lineTotal ?? item.line_total ?? (price * quantity));
       return {
-        name: item.name || item.productName || item.product_name || 'Item',
+        name: item.name || item.productName || item.product_name || item.description || 'Item',
         quantity,
         unitPrice: price,
         lineTotal
@@ -119,7 +126,7 @@ const portalService = {
   },
 
   async getQuotations(customerId, companyId) {
-    return [];
+    return portalLifecycleService.getQuotations({ customerId, companyId });
   },
 
   async getInvoices(customerId, companyId) {

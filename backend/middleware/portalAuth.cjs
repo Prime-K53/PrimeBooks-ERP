@@ -29,7 +29,11 @@ const verifyPortalToken = (req, res, next) => {
   }
 
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  // EventSource (SSE) cannot send Authorization headers — allow token via query
+  // for the realtime stream endpoint only; every other endpoint requires the header.
+  const token = req.path === '/events'
+    ? (authHeader && authHeader.split(' ')[1]) || req.query.token
+    : (authHeader && authHeader.split(' ')[1]);
 
   if (!token) {
     return res.status(401).json({

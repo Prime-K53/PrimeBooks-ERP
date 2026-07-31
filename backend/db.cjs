@@ -971,7 +971,8 @@ const initDb = () => {
         { table: 'invoices', column: 'customer_id', type: 'TEXT' },
         { table: 'invoices', column: 'sub_account_name', type: 'TEXT' },
         { table: 'inventory', column: 'conversion_rate', type: 'REAL DEFAULT 500' },
-        { table: 'examination_batches', column: 'batch_number', type: 'TEXT' },
+        { table: 'sales_orders', column: 'other_charges', type: 'REAL DEFAULT 0' },
+        { table: 'sales_orders', column: 'quotation_id', type: 'TEXT' },        { table: 'examination_batches', column: 'batch_number', type: 'TEXT' },
         { table: 'examination_batches', column: 'sub_account_name', type: 'TEXT' },
         { table: 'examination_batches', column: 'type', type: "TEXT DEFAULT 'Original'" },
         { table: 'examination_batches', column: 'parent_batch_id', type: 'TEXT' },
@@ -2278,6 +2279,115 @@ const initDb = () => {
         FOREIGN KEY (ticket_id) REFERENCES portal_tickets(id)
       )`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_portal_ticket_messages_ticket ON portal_ticket_messages(ticket_id)`);
+
+      // Portal document lifecycle — customer quotation/order requests (NOT official documents)
+      db.run(`CREATE TABLE IF NOT EXISTS quotation_requests (
+        id TEXT PRIMARY KEY,
+        request_number TEXT UNIQUE NOT NULL,
+        customer_id TEXT NOT NULL,
+        customer_name TEXT,
+        company_id TEXT NOT NULL DEFAULT '',
+        request_type TEXT NOT NULL DEFAULT 'quotation' CHECK(request_type IN ('quotation', 'order')),
+        items TEXT NOT NULL,
+        subtotal REAL DEFAULT 0,
+        notes TEXT,
+        status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('submitted', 'under_review', 'quotation_ready', 'rejected', 'cancelled')),
+        review_note TEXT,
+        reviewed_by TEXT,
+        reviewed_at TEXT,
+        quotation_id TEXT,
+        created_by TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_company ON quotation_requests(company_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_status ON quotation_requests(company_id, status)`);
+
+      // Portal document lifecycle — official quotations (backend-authoritative, customer read-only)
+      db.run(`CREATE TABLE IF NOT EXISTS quotations (
+        id TEXT PRIMARY KEY,
+        quotation_number TEXT UNIQUE NOT NULL,
+        request_id TEXT,
+        customer_id TEXT NOT NULL,
+        customer_name TEXT,
+        company_id TEXT NOT NULL DEFAULT '',
+        items TEXT NOT NULL,
+        subtotal REAL DEFAULT 0,
+        discount REAL DEFAULT 0,
+        tax_rate REAL DEFAULT 0,
+        tax_amount REAL DEFAULT 0,
+        delivery_fee REAL DEFAULT 0,
+        total REAL DEFAULT 0,
+        currency TEXT DEFAULT 'MWK',
+        payment_terms TEXT DEFAULT 'Net 7',
+        valid_until TEXT,
+        status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('ready', 'accepted', 'rejected', 'revision_requested', 'converted')),
+        revision_note TEXT,
+        rejection_reason TEXT,
+        accepted_at TEXT,
+        rejected_at TEXT,
+        revision_requested_at TEXT,
+        converted_at TEXT,
+        order_id TEXT,
+        created_by TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_customer ON quotations(customer_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_company ON quotations(company_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_request ON quotations(request_id)`);
+
+      // Portal document lifecycle — merged chronological timeline per document
+      db.run(`CREATE TABLE IF NOT EXISTS portal_timeline_events (
+        id TEXT PRIMARY KEY,
+        company_id TEXT NOT NULL DEFAULT '',
+        customer_id TEXT,
+        doc_type TEXT NOT NULL,
+        doc_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        actor_type TEXT NOT NULL DEFAULT 'system' CHECK(actor_type IN ('customer', 'admin', 'system')),
+        actor_id TEXT,
+        actor_name TEXT,
+        metadata TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_doc ON portal_timeline_events(doc_type, doc_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_company ON portal_timeline_events(company_id)`);
+
+      // Portal document lifecycle — download audit trail + analytics counters
+      db.run(`CREATE TABLE IF NOT EXISTS portal_downloads (
+        id TEXT PRIMARY KEY,
+        company_id TEXT NOT NULL DEFAULT '',
+        customer_id TEXT NOT NULL,
+        portal_user_id TEXT,
+        doc_type TEXT NOT NULL,
+        doc_id TEXT NOT NULL,
+        doc_number TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_downloads_doc ON portal_downloads(doc_type, doc_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_downloads_company ON portal_downloads(company_id)`);
+
+      // Admin notifications — new quotation requests, customer decisions, downloads
+      db.run(`CREATE TABLE IF NOT EXISTS admin_notifications (
+        id TEXT PRIMARY KEY,
+        company_id TEXT NOT NULL DEFAULT '',
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT,
+        link TEXT,
+        customer_id TEXT,
+        customer_name TEXT,
+        is_read INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_admin_notifications_company ON admin_notifications(company_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_admin_notifications_read ON admin_notifications(company_id, is_read)`);
 
       // Add company_id to newly created tables if not already present
       const newTableColumns = [

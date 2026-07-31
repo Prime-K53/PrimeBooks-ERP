@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Search, Plus, Trash2, ShoppingCart, FileText, Loader2, CheckCircle2 } from 'lucide-react';
 import { api } from '../../services/api';
-import { dbService } from '../../services/db';
-import { generateNextId } from '../../utils/helpers';
+import { portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 
 type RequestType = 'order' | 'quotation';
@@ -25,8 +24,6 @@ const CustomerCreateRequest: React.FC = () => {
   const [type, setType] = useState<RequestType>(searchParams.get('type') === 'order' ? 'order' : 'quotation');
   const [catalog, setCatalog] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
-  const [existingOrders, setExistingOrders] = useState<any[]>([]);
-  const [existingQuotations, setExistingQuotations] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [lines, setLines] = useState<LineItem[]>([]);
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -39,16 +36,12 @@ const CustomerCreateRequest: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [items, custs, orders, quotations] = await Promise.all([
+        const [items, custs] = await Promise.all([
           api.inventory.getAllItems(),
           api.customers.getAll(),
-          api.sales.getSalesOrders(),
-          api.sales.getQuotations(),
         ]);
         setCatalog(items || []);
         setCustomers(custs || []);
-        setExistingOrders(orders || []);
-        setExistingQuotations(quotations || []);
       } catch (err: any) {
         setError(err.message || 'Failed to load catalog');
       } finally {
@@ -118,66 +111,17 @@ const CustomerCreateRequest: React.FC = () => {
     setSaving(true);
     setError(null);
     try {
-      const now = new Date().toISOString();
-      if (type === 'order') {
-        const order: any = {
-          id: generateNextId('SO', existingOrders),
-          quotationId: null,
-          customerId: user?.customer_id || '',
-          customerName,
-          customerPhone,
-          orderDate: now,
-          deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString() : null,
-          status: 'Draft',
-          items: lines.map((l) => ({
-            id: l.id,
-            productId: l.productId,
-            description: l.name,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            lineTotal: l.quantity * l.unitPrice,
-          })),
-          subtotal,
-          discounts: 0,
-          tax: 0,
-          total: subtotal,
-          notes,
-          source: 'Customer Portal',
-          companyId: user?.company_id || '',
-        };
-        await dbService.put('salesOrders', order);
-        setSuccessId(order.id);
-      } else {
-        const validUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        const quotation: any = {
-          id: generateNextId('QTN', existingQuotations),
-          customerId: user?.customer_id || '',
-          customerName,
-          customerPhone,
-          items: lines.map((l) => ({
-            id: l.id,
-            productId: l.productId,
-            name: l.name,
-            unit: l.unit,
-            quantity: l.quantity,
-            price: l.unitPrice,
-          })),
-          total: subtotal,
-          subtotal,
-          date: now,
-          paymentTerms: 'Net 7',
-          dueDate: validUntil,
-          validUntil,
-          status: 'Pending',
-          notes,
-          quotationType: 'Customer Request',
-          currency: 'MWK',
-          source: 'Customer Portal',
-          companyId: user?.company_id || '',
-        };
-        await dbService.put('quotations', quotation);
-        setSuccessId(quotation.id);
-      }
+      const created = await portalLifecycle.requests.create({
+        requestType: type === 'order' ? 'order' : 'quotation',
+        items: lines.map((l) => ({
+          productId: l.productId,
+          name: l.name,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+        })),
+        notes: notes || undefined,
+      });
+      setSuccessId(created.request_number || created.id);
     } catch (err: any) {
       setError(err.message || 'Failed to submit request');
     } finally {
@@ -201,17 +145,17 @@ const CustomerCreateRequest: React.FC = () => {
             <CheckCircle2 size={28} className="text-emerald-600" />
           </div>
           <h2 className="text-lg font-bold text-slate-900 mb-1">
-            {type === 'order' ? 'Order submitted' : 'Quotation requested'}
+            {type === 'order' ? 'Order requested' : 'Quotation requested'}
           </h2>
           <p className="text-sm text-slate-500 mb-6">
             Reference #{successId} — our team will review your request shortly.
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
-              onClick={() => navigate(type === 'order' ? '/portal/orders' : '/portal/quotations')}
+              onClick={() => navigate('/portal/requests')}
               className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white text-sm font-semibold rounded-xl transition-all"
             >
-              View {type === 'order' ? 'Orders' : 'Quotations'}
+              Track Request
             </button>
             <button
               onClick={() => navigate('/portal/new-request')}
@@ -227,8 +171,8 @@ const CustomerCreateRequest: React.FC = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <button onClick={() => navigate(type === 'order' ? '/portal/orders' : '/portal/quotations')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
-        <ArrowLeft size={14} /> Back to {type === 'order' ? 'Orders' : 'Quotations'}
+      <button onClick={() => navigate('/portal/requests')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
+        <ArrowLeft size={14} /> Back to Requests
       </button>
 
       <div className="mb-6">
@@ -300,8 +244,8 @@ const CustomerCreateRequest: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-6">
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-slate-200/60 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800">Selected Items ({lines.length})</h2>
           <span className="text-xs text-slate-500">{customerName}</span>
         </div>
@@ -309,17 +253,17 @@ const CustomerCreateRequest: React.FC = () => {
           <p className="px-5 py-10 text-center text-sm text-slate-400">No items selected yet — search and add products above.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-400 uppercase tracking-wider bg-white">
-                  <th className="px-5 py-3 font-medium">Item</th>
-                  <th className="px-5 py-3 font-medium text-right">Unit Price</th>
-                  <th className="px-5 py-3 font-medium text-right">Qty</th>
-                  <th className="px-5 py-3 font-medium text-right">Total</th>
+            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+              <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Item</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Unit Price</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Qty</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Total</th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100/50">
                 {lines.map((l) => (
                   <tr key={l.id} className="text-slate-700">
                     <td className="px-5 py-3">
@@ -333,7 +277,7 @@ const CustomerCreateRequest: React.FC = () => {
                         min={1}
                         value={l.quantity}
                         onChange={(e) => updateQuantity(l.id, parseInt(e.target.value, 10) || 1)}
-                        className="w-16 h-8 px-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className="w-16 h-8 px-2 bg-white/70 backdrop-blur-xl border border-slate-200 rounded-lg text-sm text-slate-800 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                       />
                     </td>
                     <td className="px-5 py-3 text-right font-mono">K {(l.quantity * l.unitPrice).toFixed(2)}</td>
@@ -350,18 +294,7 @@ const CustomerCreateRequest: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 space-y-4">
-        {type === 'order' && (
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Preferred Delivery Date</label>
-            <input
-              type="date"
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
-              className="w-full sm:w-64 h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-            />
-          </div>
-        )}
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5 mb-6 space-y-4">
         <div>
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Notes</label>
           <textarea
@@ -369,10 +302,10 @@ const CustomerCreateRequest: React.FC = () => {
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder={type === 'order' ? 'Order instructions, special requirements...' : 'Tell us what you need...'}
-            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
+            className="w-full px-3 py-2.5 bg-white/70 backdrop-blur-xl border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
           />
         </div>
-        <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+        <div className="flex items-center justify-between border-t border-slate-200/60 pt-4">
           <span className="text-sm font-semibold text-slate-700">Total</span>
           <span className="text-2xl font-bold text-slate-900 font-mono">K {subtotal.toFixed(2)}</span>
         </div>
