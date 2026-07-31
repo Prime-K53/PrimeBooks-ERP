@@ -643,6 +643,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Push any local-only profit margins into the sync pipeline
             migrateLocalMarginsToIndexedDB().catch(() => {});
 
+            // Migrate legacy local-only Financial Years into the sync pipeline
+            // (pre-schema-fix records that never reached the cloud).
+            import('../services/repositories/financialYearRepository').then(({ financialYearRepository }) => {
+              financialYearRepository.migrateLegacyLocalYears().catch(() => undefined);
+            }).catch(() => undefined);
+
             // Migrate existing local business settings to cloud
             const LOCAL_BUSINESS_KEYS = [
               'nexus_volume_discount_tiers',
@@ -1166,15 +1172,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const resetSystem = async () => {
+    // Device reset must NEVER touch cloud data (financial years, company
+    // settings, etc.). It only clears the local cache, IndexedDB and the
+    // sync queue — after the next login the device re-downloads everything.
     if (SUPABASE_ENABLED) {
       await supabase.auth.signOut();
-      setUser(null);
-      return;
     }
-    await dbService.factoryReset();
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.reload();
+    try {
+      await dbService.factoryReset();
+    } catch (err) {
+      logger.error('[Auth] factoryReset failed:', err);
+    }
+    try {
+      localStorage.clear();
+    } catch {
+      const appPrefixes = ['nexus_', 'prime_', 'db_', 'user_', 'auth_', 'finance_', 'sales_'];
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && appPrefixes.some(prefix => key.startsWith(prefix))) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+    try {
+      sessionStorage.clear();
+    } catch {
+      // Ignore session storage cleanup failures.
+    }
+    setUser(null);
+    if (!SUPABASE_ENABLED) {
+      window.location.reload();
+    }
   };
 
   const completeSetup = async (config: CompanyConfig, adminUser: User) => {

@@ -36,6 +36,8 @@ const DataImport: React.FC = () => {
     const [previewData, setPreviewData] = useState<any[]>([]);
     const [importResults, setImportResults] = useState<{ accepted: any[]; rejected: any[] } | null>(null);
     const [activeResultsTab, setActiveResultsTab] = useState<'accepted' | 'rejected'>('accepted');
+    const [progress, setProgress] = useState<{ current: number; total: number; percent: number; timeLeft: string } | null>(null);
+    const progressStartTime = useRef<number>(0);
 
     // All business logic preserved — only styling changed
     const normalizePhone = (val: any): string => {
@@ -57,10 +59,16 @@ const DataImport: React.FC = () => {
         finally { setIsProcessing(false); e.target.value = ''; }
     };
 
-    const processImport = async () => {
+const processImport = async () => {
     if (!importingType || previewData.length === 0) return;
 
     setIsProcessing(true);
+    setImportStats(null);
+    setImportResults(null);
+    const total = previewData.length;
+    progressStartTime.current = Date.now();
+    setProgress({ current: 0, total, percent: 0, timeLeft: 'Calculating...' });
+
     const accepted: any[] = [];
     const rejected: any[] = [];
 
@@ -68,7 +76,17 @@ const DataImport: React.FC = () => {
     let currentInventory = [...inventory];
 
     try {
-      for (const row of previewData) {
+      for (let i = 0; i < previewData.length; i++) {
+        const row = previewData[i];
+        const elapsed = Date.now() - progressStartTime.current;
+        const percent = Math.round(((i + 1) / total) * 100);
+        const estimatedTotal = elapsed / ((i + 1) / total);
+        const remaining = estimatedTotal - elapsed;
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        const timeLeft = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        setProgress({ current: i + 1, total, percent, timeLeft });
+
         try {
           if (importingType === 'Customers') {
             const name = row['Full name'] || row.Name || row.name || row.CustomerName;
@@ -82,107 +100,124 @@ const DataImport: React.FC = () => {
                 continue;
               }
               const phoneValue = normalizePhone(row['Phone number'] || row.Contact || row.Phone || row.contact || row['Phone Number'] || row.PhoneNumber || row.Mobile || row['Mobile Number'] || row.MobileNumber || row.Telephone || row['Phone No'] || row.Phone_Number || '');
-               const customer = {
-                id: row['Customer ID'] || row.ID || row.id || generateNextId('customer', currentCustomers, companyConfig),
-                name,
-                accountNumber: row['Branch Account'] || row.AccountNumber || row.accountNumber || generateAccountNumber(),
-                contact: phoneValue,
-                phone: phoneValue,
-                email: row.Email || row.email || '',
-                address: row['Billing Address'] || row.Address || row.address || row['Street Address'] || row['Addr'] || row.Addr || '',
-                billingAddress: row['Billing Address'] || row.Address || row.address || row['Street Address'] || row['Addr'] || row.Addr || '',
-                shippingAddress: row['Shipping Address'] || row['Delivery Address'] || '',
-                segment: row.Segment || row.segment || '',
-                balance: Number(row['Opening Balance'] || row.balance || 0),
-                customerType: (row.Type || row.type || row.CustomerType) === 'Credit' ? 'Credit' : 'Retail',
-                walletBalance: Number(row['Wallet Balance'] || row.WalletBalance || row.balance || 0),
-                loyaltyPoints: Number(row.LoyaltyPoints || row.points || 0)
-              };
-              await addCustomer(customer);
-              currentCustomers.push(customer);
-              accepted.push({ ...row, status: 'Accepted', message: 'Successfully imported' });
-            } else {
-              rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
-            }
-          } else {
-            const name = row.Name || row.name || row.ItemName;
-            if (name) {
-              const nameLower = name.toLowerCase();
-              const sku = (row.SKU || row.sku || '').toString().trim();
-              const exists = currentInventory.some(
-                item => item.name.toLowerCase() === nameLower || (sku && item.sku === sku)
-              );
-              if (exists) {
-                rejected.push({ ...row, status: 'Skipped', message: 'Duplicate - product/service already exists' });
-                continue;
-              }
-              const category = row.Category || row.category || 'General';
-              const costPriceVal = Number(row.Cost || row.cost || 0);
-              const sellingPriceVal = Number(row.Price || row.price || 0);
-              const itemType = (row.Type || row.type || 'Product') as ItemType;
-              const validation = itemType !== 'Stationery'
-                ? validateMinimumMarkup(sellingPriceVal, costPriceVal)
-                : { valid: true, profit: 0, profitMarkup: 0, minimumMarkup: 0 };
-              const meta = typeMeta[itemType] || typeMeta['Product'];
-              const item: Item = {
-                id: row.ID || row.id || generateNextId('item', currentInventory, companyConfig),
-                name,
-                sku: sku || generateSku(category, currentInventory),
-                price: sellingPriceVal,
-                cost: costPriceVal,
-                costPrice: costPriceVal,
-                sellingPrice: sellingPriceVal,
-                profitAmount: validation.profit,
-                profitMargin: validation.profitMarkup,
-                minimumMargin: validation.minimumMarkup,
-                pricingValidated: validation.valid,
-                validationTimestamp: new Date().toISOString(),
-                stock: Number(row.Stock || row.stock || 0),
-                minStockLevel: Number(row.MinStock || row.minStock || 10),
-                category: category,
-                type: itemType,
-                unit: row.Unit || row.unit || 'pcs',
-                status: 'Active',
-                inventoryRole: meta.inventoryRole,
-                productType: meta.productType,
-                resourceSubtype: meta.resourceSubtype,
-              };
-              await addItem(item);
-              currentInventory.push(item);
-              if (!validation.valid) {
-                accepted.push({ ...row, status: 'Accepted', message: `Imported with low margin (${validation.profitMarkup.toFixed(1)}% vs min ${validation.minimumMarkup}%)` });
-              } else {
-                accepted.push({ ...row, status: 'Accepted', message: 'Successfully imported' });
-              }
-            } else {
-              rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
-            }
-          }
-        } catch (err: any) {
-          rejected.push({ ...row, status: 'Rejected', message: err.message || 'Unknown error' });
-        }
-      }
+                const customer = {
+                 id: row['Customer ID'] || row.ID || row.id || generateNextId('customer', currentCustomers, companyConfig),
+                 name,
+                 accountNumber: row['Branch Account'] || row.AccountNumber || row.accountNumber || generateAccountNumber(),
+                 contact: phoneValue,
+                 phone: phoneValue,
+                 email: row.Email || row.email || '',
+                 address: row['Billing Address'] || row.Address || row.address || row['Street Address'] || row['Addr'] || row.Addr || '',
+                 billingAddress: row['Billing Address'] || row.Address || row.address || row['Street Address'] || row['Addr'] || row.Addr || '',
+                 shippingAddress: row['Shipping Address'] || row['Delivery Address'] || '',
+                 segment: row.Segment || row.segment || '',
+                 balance: Number(row['Opening Balance'] || row.balance || 0),
+                 customerType: (row.Type || row.type || row.CustomerType) === 'Credit' ? 'Credit' : 'Retail',
+                 walletBalance: Number(row['Wallet Balance'] || row.WalletBalance || row.balance || 0),
+                 loyaltyPoints: Number(row.LoyaltyPoints || row.points || 0)
+               };
+               await addCustomer(customer);
+               currentCustomers.push(customer);
+               accepted.push({ ...row, status: 'Accepted', message: 'Successfully imported' });
+             } else {
+               rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
+             }
+           } else {
+             const name = row.Name || row.name || row.ItemName;
+             if (name) {
+               const nameLower = name.toLowerCase();
+               const sku = (row.SKU || row.sku || '').toString().trim();
+               const exists = currentInventory.some(
+                 item => item.name.toLowerCase() === nameLower || (sku && item.sku === sku)
+               );
+               if (exists) {
+                 rejected.push({ ...row, status: 'Skipped', message: 'Duplicate - product/service already exists' });
+                 continue;
+               }
+               const category = row.Category || row.category || 'General';
+               const costPriceVal = Number(row.Cost || row.cost || 0);
+               const sellingPriceVal = Number(row.Price || row.price || 0);
+               const itemType = (row.Type || row.type || 'Product') as ItemType;
+               const validation = itemType !== 'Stationery'
+                 ? validateMinimumMarkup(sellingPriceVal, costPriceVal)
+                 : { valid: true, profit: 0, profitMarkup: 0, minimumMarkup: 0 };
+               const meta = typeMeta[itemType] || typeMeta['Product'];
+               const item: Item = {
+                 id: row.ID || row.id || generateNextId('item', currentInventory, companyConfig),
+                 name,
+                 sku: sku || generateSku(category, currentInventory),
+                 price: sellingPriceVal,
+                 cost: costPriceVal,
+                 costPrice: costPriceVal,
+                 sellingPrice: sellingPriceVal,
+                 profitAmount: validation.profit,
+                 profitMargin: validation.profitMarkup,
+                 minimumMargin: validation.minimumMarkup,
+                 pricingValidated: validation.valid,
+                 validationTimestamp: new Date().toISOString(),
+                 stock: Number(row.Stock || row.stock || 0),
+                 minStockLevel: Number(row.MinStock || row.minStock || 10),
+                 category: category,
+                 type: itemType,
+                 unit: row.Unit || row.unit || 'pcs',
+                 status: 'Active',
+                 inventoryRole: meta.inventoryRole,
+                 productType: meta.productType,
+                 resourceSubtype: meta.resourceSubtype,
+               };
+               await addItem(item);
+               currentInventory.push(item);
+               if (!validation.valid) {
+                 accepted.push({ ...row, status: 'Accepted', message: `Imported with low margin (${validation.profitMarkup.toFixed(1)}% vs min ${validation.minimumMarkup}%)` });
+               } else {
+                 accepted.push({ ...row, status: 'Accepted', message: 'Successfully imported' });
+               }
+             } else {
+               rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
+             }
+           }
+         } catch (err: any) {
+           rejected.push({ ...row, status: 'Rejected', message: err.message || 'Unknown error' });
+         }
+       }
 
-      setImportStats({ success: accepted.length, failed: rejected.length });
-      setImportResults({ accepted, rejected });
-      setPreviewData([]);
-      notify(`Import complete: ${accepted.length} successful, ${rejected.length} skipped.`, accepted.length > 0 ? 'success' : 'error');
-    } catch (error) {
-      notify("Import failed unexpectedly.", "error");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+       setImportStats({ success: accepted.length, failed: rejected.length });
+       setImportResults({ accepted, rejected });
+       setPreviewData([]);
+       notify(`Import complete: ${accepted.length} successful, ${rejected.length} skipped.`, accepted.length > 0 ? 'success' : 'error');
+     } catch (error) {
+       notify("Import failed unexpectedly.", "error");
+     } finally {
+       setIsProcessing(false);
+       setProgress(null);
+     }
+   };
 
-  const processUpdate = async () => {
+const processUpdate = async () => {
     if (!importingType || previewData.length === 0) return;
 
     setIsProcessing(true);
+    setImportStats(null);
+    setImportResults(null);
+    const total = previewData.length;
+    progressStartTime.current = Date.now();
+    setProgress({ current: 0, total, percent: 0, timeLeft: 'Calculating...' });
+
     const accepted: any[] = [];
     const rejected: any[] = [];
 
     try {
-      for (const row of previewData) {
+      for (let i = 0; i < previewData.length; i++) {
+        const row = previewData[i];
+        const elapsed = Date.now() - progressStartTime.current;
+        const percent = Math.round(((i + 1) / total) * 100);
+        const estimatedTotal = elapsed / ((i + 1) / total);
+        const remaining = estimatedTotal - elapsed;
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        const timeLeft = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        setProgress({ current: i + 1, total, percent, timeLeft });
+
         try {
           if (importingType === 'Customers') {
             const name = row['Full name'] || row.Name || row.name || row.CustomerName;
@@ -190,97 +225,98 @@ const DataImport: React.FC = () => {
               const nameLower = name.toLowerCase();
               const existing = customers.find(c => c.name.toLowerCase() === nameLower);
               if (existing) {
-                 const phoneValue = normalizePhone(row['Phone number'] || row.Contact || row.Phone || row.contact || row['Phone Number'] || row.PhoneNumber || row.Mobile || row['Mobile Number'] || row.MobileNumber || row.Telephone || row['Phone No'] || row.Phone_Number || row['Tel'] || row.Tel || row['Contact Number'] || row['ContactNo'] || row['Cell'] || row.Cell || '');
-                 const updatedCustomer = {
+                  const phoneValue = normalizePhone(row['Phone number'] || row.Contact || row.Phone || row.contact || row['Phone Number'] || row.PhoneNumber || row.Mobile || row['Mobile Number'] || row.MobileNumber || row.Telephone || row['Phone No'] || row.Phone_Number || row['Tel'] || row.Tel || row['Contact Number'] || row['ContactNo'] || row['Cell'] || row.Cell || '');
+                  const updatedCustomer = {
+                    ...existing,
+                    name,
+                    accountNumber: row['Branch Account'] || row.AccountNumber || row.accountNumber || existing.accountNumber,
+                    contact: phoneValue || existing.contact,
+                    phone: phoneValue || existing.phone,
+                    email: row.Email || row.email || existing.email || '',
+                    address: row['Billing Address'] || row.Address || row.address || row['Street Address'] || row['Addr'] || row.Addr || existing.address || '',
+                    billingAddress: row['Billing Address'] || row.Address || row.address || row['Street Address'] || row['Addr'] || row.Addr || existing.billingAddress || existing.address || '',
+                    shippingAddress: row['Shipping Address'] || row['Delivery Address'] || existing.shippingAddress || '',
+                   segment: row.Segment || row.segment || existing.segment || '',
+                   balance: Number(row['Opening Balance'] || row.balance || existing.balance || 0),
+                   customerType: (row.Type || row.type || row.CustomerType) === 'Credit' ? 'Credit' : (existing.customerType || 'Retail'),
+                   walletBalance: Number(row['Wallet Balance'] || row.WalletBalance || row.balance || existing.walletBalance || 0),
+                   loyaltyPoints: Number(row.LoyaltyPoints || row.points || existing.loyaltyPoints || 0)
+                 };
+                 await updateCustomer(updatedCustomer);
+                 accepted.push({ ...row, status: 'Updated', message: 'Successfully updated' });
+               } else {
+                 rejected.push({ ...row, status: 'Skipped', message: 'Customer not found - no matching record to update' });
+               }
+             } else {
+               rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
+             }
+           } else {
+             const name = row.Name || row.name || row.ItemName;
+             if (name) {
+               const nameLower = name.toLowerCase();
+               const sku = (row.SKU || row.sku || '').toString().trim();
+               const existing = inventory.find(
+                 item => item.name.toLowerCase() === nameLower || (sku && item.sku === sku)
+               );
+               if (existing) {
+                 const costPriceVal = Number(row.Cost || row.cost || existing.cost || 0);
+                 const sellingPriceVal = Number(row.Price || row.price || existing.price || 0);
+                 const itemType = (row.Type || row.type || existing.type || 'Product') as ItemType;
+                 const validation = itemType !== 'Stationery'
+                   ? validateMinimumMarkup(sellingPriceVal, costPriceVal, existing)
+                   : { valid: true, profit: 0, profitMarkup: 0, minimumMarkup: 0 };
+                 const meta = typeMeta[itemType] || typeMeta['Product'];
+                 const updatedItem: Item = {
                    ...existing,
                    name,
-                   accountNumber: row['Branch Account'] || row.AccountNumber || row.accountNumber || existing.accountNumber,
-                   contact: phoneValue || existing.contact,
-                   phone: phoneValue || existing.phone,
-                   email: row.Email || row.email || existing.email || '',
-                   address: row['Billing Address'] || row.Address || row.address || row['Street Address'] || row['Addr'] || row.Addr || existing.address || '',
-                   billingAddress: row['Billing Address'] || row.Address || row.address || row['Street Address'] || row['Addr'] || row.Addr || existing.billingAddress || existing.address || '',
-                   shippingAddress: row['Shipping Address'] || row['Delivery Address'] || existing.shippingAddress || '',
-                  segment: row.Segment || row.segment || existing.segment || '',
-                  balance: Number(row['Opening Balance'] || row.balance || existing.balance || 0),
-                  customerType: (row.Type || row.type || row.CustomerType) === 'Credit' ? 'Credit' : (existing.customerType || 'Retail'),
-                  walletBalance: Number(row['Wallet Balance'] || row.WalletBalance || row.balance || existing.walletBalance || 0),
-                  loyaltyPoints: Number(row.LoyaltyPoints || row.points || existing.loyaltyPoints || 0)
-                };
-                await updateCustomer(updatedCustomer);
-                accepted.push({ ...row, status: 'Updated', message: 'Successfully updated' });
-              } else {
-                rejected.push({ ...row, status: 'Skipped', message: 'Customer not found - no matching record to update' });
-              }
-            } else {
-              rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
-            }
-          } else {
-            const name = row.Name || row.name || row.ItemName;
-            if (name) {
-              const nameLower = name.toLowerCase();
-              const sku = (row.SKU || row.sku || '').toString().trim();
-              const existing = inventory.find(
-                item => item.name.toLowerCase() === nameLower || (sku && item.sku === sku)
-              );
-              if (existing) {
-                const costPriceVal = Number(row.Cost || row.cost || existing.cost || 0);
-                const sellingPriceVal = Number(row.Price || row.price || existing.price || 0);
-                const itemType = (row.Type || row.type || existing.type || 'Product') as ItemType;
-                const validation = itemType !== 'Stationery'
-                  ? validateMinimumMarkup(sellingPriceVal, costPriceVal, existing)
-                  : { valid: true, profit: 0, profitMarkup: 0, minimumMarkup: 0 };
-                const meta = typeMeta[itemType] || typeMeta['Product'];
-                const updatedItem: Item = {
-                  ...existing,
-                  name,
-                  sku: sku || existing.sku,
-                  price: sellingPriceVal,
-                  cost: costPriceVal,
-                  costPrice: costPriceVal,
-                  sellingPrice: sellingPriceVal,
-                  profitAmount: validation.profit,
-                  profitMargin: validation.profitMarkup,
-                  minimumMargin: validation.minimumMarkup,
-                  pricingValidated: validation.valid,
-                  validationTimestamp: new Date().toISOString(),
-                  stock: Number(row.Stock || row.stock || existing.stock || 0),
-                  minStockLevel: Number(row.MinStock || row.minStock || existing.minStockLevel || 10),
-                  category: row.Category || row.category || existing.category || 'General',
-                  type: itemType,
-                  unit: row.Unit || row.unit || existing.unit || 'pcs',
-                  inventoryRole: meta.inventoryRole,
-                  productType: meta.productType,
-                  resourceSubtype: meta.resourceSubtype,
-                };
-                await updateItem(updatedItem);
-                if (!validation.valid) {
-                  accepted.push({ ...row, status: 'Updated', message: `Updated with low margin (${validation.profitMarkup.toFixed(1)}% vs min ${validation.minimumMarkup}%)` });
-                } else {
-                  accepted.push({ ...row, status: 'Updated', message: 'Successfully updated' });
-                }
-              } else {
-                rejected.push({ ...row, status: 'Skipped', message: 'Product not found - no matching record to update' });
-              }
-            } else {
-              rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
-            }
-          }
-        } catch (err: any) {
-          rejected.push({ ...row, status: 'Rejected', message: err.message || 'Unknown error' });
-        }
-      }
+                   sku: sku || existing.sku,
+                   price: sellingPriceVal,
+                   cost: costPriceVal,
+                   costPrice: costPriceVal,
+                   sellingPrice: sellingPriceVal,
+                   profitAmount: validation.profit,
+                   profitMargin: validation.profitMarkup,
+                   minimumMargin: validation.minimumMarkup,
+                   pricingValidated: validation.valid,
+                   validationTimestamp: new Date().toISOString(),
+                   stock: Number(row.Stock || row.stock || existing.stock || 0),
+                   minStockLevel: Number(row.MinStock || row.minStock || existing.minStockLevel || 10),
+                   category: row.Category || row.category || existing.category || 'General',
+                   type: itemType,
+                   unit: row.Unit || row.unit || existing.unit || 'pcs',
+                   inventoryRole: meta.inventoryRole,
+                   productType: meta.productType,
+                   resourceSubtype: meta.resourceSubtype,
+                 };
+                 await updateItem(updatedItem);
+                 if (!validation.valid) {
+                   accepted.push({ ...row, status: 'Updated', message: `Updated with low margin (${validation.profitMarkup.toFixed(1)}% vs min ${validation.minimumMarkup}%)` });
+                 } else {
+                   accepted.push({ ...row, status: 'Updated', message: 'Successfully updated' });
+                 }
+               } else {
+                 rejected.push({ ...row, status: 'Skipped', message: 'Product not found - no matching record to update' });
+               }
+             } else {
+               rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
+             }
+           }
+         } catch (err: any) {
+           rejected.push({ ...row, status: 'Rejected', message: err.message || 'Unknown error' });
+         }
+       }
 
-      setImportStats({ success: accepted.length, failed: rejected.length });
-      setImportResults({ accepted, rejected });
-      setPreviewData([]);
-      notify(`Update complete: ${accepted.length} updated, ${rejected.length} skipped.`, accepted.length > 0 ? 'success' : 'error');
-    } catch (error) {
-      notify("Update failed unexpectedly.", "error");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+       setImportStats({ success: accepted.length, failed: rejected.length });
+       setImportResults({ accepted, rejected });
+       setPreviewData([]);
+       notify(`Update complete: ${accepted.length} updated, ${rejected.length} skipped.`, accepted.length > 0 ? 'success' : 'error');
+     } catch (error) {
+       notify("Update failed unexpectedly.", "error");
+     } finally {
+       setIsProcessing(false);
+       setProgress(null);
+     }
+   };
 
     const handleExportCustomers = () => {
         const data = customers.map(c => ({ 'Customer ID': c.id, 'Full name': c.name, 'Billing Address': c.billingAddress || c.address || '', 'Phone number': c.phone, 'Segment': c.segment, 'Shipping Address': c.shippingAddress || '', 'Opening Balance': c.balance || 0, 'Wallet Balance': c.walletBalance || 0, 'Branch Account': c.accountNumber || '' }));
@@ -324,6 +360,18 @@ const DataImport: React.FC = () => {
                             <button className="prime-btn" onClick={processUpdate} disabled={isProcessing} style={{ padding: '4px 12px', background: t[600], color: '#fff', borderRadius: 8, border: 'none', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>{isProcessing ? <Loader2 size={10} /> : <Upload size={10} />} Update</button>
                         </div>
                     </div>
+                    {/* Progress Bar */}
+                    {isProcessing && progress && (
+                        <div style={{ padding: '12px 16', background: t[50], borderRadius: 8, border: `1px solid ${hairline}`, marginTop: 12 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: ink }}>Processing {progress.current} of {progress.total}</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: t[500] }}>{progress.percent}% — ~{progress.timeLeft} remaining</span>
+                            </div>
+                            <div style={{ width: '100%', height: 8, background: t[100], borderRadius: 4, overflow: 'hidden' }}>
+                                <div style={{ width: `${progress.percent}%`, height: '100%', background: `linear-gradient(90deg, ${t[500]}, ${t[600]})`, borderRadius: 4, transition: 'width 0.3s ease' }} />
+                            </div>
+                        </div>
+                    )}
                     <div style={{ overflowX: 'auto', borderRadius: 8, border: `1px solid ${hairline}` }}>
                         <table style={{ width: '100%', fontSize: 9, textAlign: 'left', borderCollapse: 'collapse' }}>
                             <thead style={{ background: t[50], color: inkSoft }}>

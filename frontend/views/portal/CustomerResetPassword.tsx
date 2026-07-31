@@ -45,7 +45,8 @@ const CustomerResetPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070B17] font-sans flex items-center justify-center p-6">
+    <div className="fixed inset-0 overflow-y-auto bg-[#070B17] font-sans">
+      <div className="min-h-full flex items-center justify-center p-6">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-gradient-to-br from-emerald-600/15 to-green-500/5 rounded-full blur-[120px]" />
       </div>
@@ -162,6 +163,7 @@ const CustomerResetPassword: React.FC = () => {
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );

@@ -245,6 +245,7 @@ export const cloudDb = {
       'companies',
       'profiles',
       'users',
+      'financial_years',
     ]));
   },
 
@@ -665,6 +666,36 @@ export const cloudDb = {
       }
 
       return result;
+    });
+  },
+
+  async get<T = Record<string, unknown>>(storeName: string, id: string): Promise<T | null> {
+    return withSession(async () => {
+      const table = getTable(storeName);
+      let query = supabase.from(table).select('*').eq('id', id);
+      const companyId = await getCompanyId();
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const {
+        id: _id,
+        company_id,
+        created_at,
+        updated_at,
+        data: domainData,
+        ...rest
+      } = data as Record<string, unknown>;
+      return {
+        ...(domainData as Record<string, unknown> | undefined),
+        ...rest,
+        id: _id,
+        company_id,
+        created_at,
+        updated_at,
+      } as T;
     });
   },
 

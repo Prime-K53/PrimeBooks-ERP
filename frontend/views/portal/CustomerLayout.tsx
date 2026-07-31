@@ -45,8 +45,8 @@ const CustomerLayout: React.FC = () => {
       )}
       <PortalSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <PortalHeader title={currentTitle} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-      <main className="pt-16 md:ml-64 min-h-screen">
-        <div className="p-4 md:p-6">
+      <main className="fixed top-16 bottom-0 left-0 right-0 md:left-64 overflow-x-auto overflow-y-auto custom-scrollbar">
+        <div className="p-4 md:p-6 min-w-0">
           <Outlet />
         </div>
       </main>

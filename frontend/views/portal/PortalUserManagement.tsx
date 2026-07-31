@@ -85,6 +85,34 @@ const PortalUserManagement: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Styling constants (mirroring Add Customer modal)
+  const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+  const amber: Record<string, string> = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+  const paper = '#FEFDFB';
+  const ink = '#23282A';
+  const inkSoft = '#5c6567';
+  const hairline = '#e4ddd1';
+  const danger = '#b5493f';
+
+  const labelStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 6,
+    fontSize: 12, fontWeight: 600, color: teal[800],
+    marginBottom: 6, letterSpacing: 0.01
+  };
+  const inputStyle: React.CSSProperties = {
+    width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+    color: ink, background: paper,
+    border: `1.4px solid ${hairline}`, borderRadius: 9,
+    padding: '9px 12px', outline: 'none',
+    transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+  };
+  const btnGhostStyle: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+    padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+    background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+    display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+  };
+
   const loadUsers = async () => {
     setLoading(true);
     try {
@@ -179,48 +207,102 @@ const PortalUserManagement: React.FC = () => {
         </div>
       )}
 
-      {showCreate && (
-        <div className="mb-6 p-5 bg-slate-800/80 border border-slate-700/50 rounded-2xl">
-          <h3 className="text-sm font-bold text-slate-200 mb-4">New Portal Account</h3>
-          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">Customer ID</label>
-              <input value={createForm.customer_id} onChange={e => setCreateForm({ ...createForm, customer_id: e.target.value })}
-                className="w-full h-10 px-3 bg-slate-900/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                placeholder="Customer ID from database" required />
+        {showCreate && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.6)', padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink
+          }} onClick={() => { if (!submitting) setShowCreate(false); }}>
+            <div style={{
+              width: '100%', maxWidth: '32rem', maxHeight: '92vh',
+              background: paper, borderRadius: 14,
+              border: `1px solid ${hairline}`,
+              boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
+              overflow: 'hidden', position: 'relative'
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ height: 4, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '22px 28px 18px', borderBottom: `1px solid ${hairline}`, background: paper
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10,
+                    background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+                  }}>
+                    <Plus size={16} color="#fff" />
+                  </div>
+                  <div>
+                    <h2 style={{
+                      fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                      fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+                    }}>
+                      New Portal Account
+                    </h2>
+                    <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+                      Create a portal access account for a customer
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => { if (!submitting) setShowCreate(false); }} aria-label="Close" style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  border: `1px solid ${hairline}`, background: paper, color: inkSoft,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', transition: 'all .15s ease', fontSize: 16
+                }}>
+                  <X size={15} />
+                </button>
+              </div>
+              <form onSubmit={handleCreate} style={{ padding: '24px 28px 8px' }}>
+                <div style={{ marginBottom: 18 }}>
+                  <label style={labelStyle}>Customer ID <span style={{ color: danger, fontWeight: 700 }}>*</span></label>
+                  <input value={createForm.customer_id} onChange={e => setCreateForm({ ...createForm, customer_id: e.target.value })}
+                    style={inputStyle} placeholder="Customer ID from database" required />
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <label style={labelStyle}>Email <span style={{ color: danger, fontWeight: 700 }}>*</span></label>
+                  <input type="email" value={createForm.email} onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
+                    style={inputStyle} placeholder="customer@example.com" required />
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <label style={labelStyle}>Password <span style={{ color: danger, fontWeight: 700 }}>*</span></label>
+                  <input type="password" value={createForm.password} onChange={e => setCreateForm({ ...createForm, password: e.target.value })}
+                    style={inputStyle} placeholder="Min 6 characters" required minLength={6} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+                  <div>
+                    <label style={labelStyle}>Full Name</label>
+                    <input value={createForm.full_name} onChange={e => setCreateForm({ ...createForm, full_name: e.target.value })}
+                      style={inputStyle} placeholder="John Doe" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Phone</label>
+                    <input value={createForm.phone} onChange={e => setCreateForm({ ...createForm, phone: e.target.value })}
+                      style={inputStyle} placeholder="+1 (555) 000-0000" />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '16px 28px', borderTop: `1px solid ${hairline}`, background: paper }}>
+                  <button type="button" onClick={() => setShowCreate(false)} disabled={submitting} style={btnGhostStyle}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={submitting}
+                    style={{
+                      fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                      padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                      background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                      color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                      boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+                      transition: 'all .15s ease', opacity: submitting ? 0.6 : 1
+                    }}>
+                    {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                    Create Account
+                  </button>
+                </div>
+              </form>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">Email</label>
-              <input type="email" value={createForm.email} onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
-                className="w-full h-10 px-3 bg-slate-900/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                placeholder="customer@example.com" required />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">Password</label>
-              <input type="password" value={createForm.password} onChange={e => setCreateForm({ ...createForm, password: e.target.value })}
-                className="w-full h-10 px-3 bg-slate-900/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                placeholder="Min 6 characters" required minLength={6} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">Full Name (optional)</label>
-              <input value={createForm.full_name} onChange={e => setCreateForm({ ...createForm, full_name: e.target.value })}
-                className="w-full h-10 px-3 bg-slate-900/60 border border-slate-700/60 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                placeholder="John Doe" />
-            </div>
-            <div className="md:col-span-2 flex items-center gap-3">
-              <button type="submit" disabled={submitting}
-                className="px-5 h-10 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors flex items-center gap-2">
-                {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                Create Account
-              </button>
-              <button type="button" onClick={() => setShowCreate(false)}
-                className="px-5 h-10 text-slate-400 hover:text-slate-200 text-sm font-medium rounded-xl transition-colors">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
+        )}
+
 
       <div className="relative mb-4">
         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />

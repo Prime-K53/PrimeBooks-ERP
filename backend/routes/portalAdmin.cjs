@@ -110,9 +110,9 @@ router.post('/users', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
     const company_id = req.user.company_id || '';
-    const existing = await portalAuthService.getPortalUserByCustomerId(customer_id, company_id);
+    const existing = await portalAuthService.getPortalUserByEmail(email, company_id);
     if (existing) {
-      return res.status(409).json({ error: 'This customer already has a portal account' });
+      return res.status(409).json({ error: 'A portal account with this email already exists' });
     }
     const user = await portalAuthService.registerPortalUser({
       customer_id,

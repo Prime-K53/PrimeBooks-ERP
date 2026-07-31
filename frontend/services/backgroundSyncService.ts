@@ -100,6 +100,24 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
       }
 
       await durableSyncQueue.markCompleted(item.id);
+
+      // Mark the local record as synced so the FY migration is idempotent
+      // and the record is never re-queued. Uses bulkPut (no re-enqueue).
+      if (item.table === 'financial_years' && item.recordId) {
+        try {
+          const { dbService } = await import('./db');
+          const record = await dbService.get<any>('financialYears', item.recordId);
+          if (record && !record.deletedAt) {
+            record.syncStatus = 'synced';
+            record.lastSyncedAt = new Date().toISOString();
+            record._cloudSource = true;
+            await dbService.bulkPut('financialYears', [record]);
+          }
+        } catch {
+          // best-effort status write
+        }
+      }
+
       success++;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);

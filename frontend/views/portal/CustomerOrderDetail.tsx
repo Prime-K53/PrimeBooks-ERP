@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
+import { api } from '../../services/api';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 
@@ -19,6 +19,7 @@ interface OrderDetail {
   totalAmount: number;
   status: string;
   items: OrderItem[];
+  notes?: string;
 }
 
 const CustomerOrderDetail: React.FC = () => {
@@ -30,8 +31,28 @@ const CustomerOrderDetail: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-    portalApi.get<OrderDetail>(`/orders/${id}`)
-      .then(setOrder)
+    api.sales.getSalesOrderById(id)
+      .then((o: any) => {
+        if (!o) throw new Error('Order not found');
+        setOrder({
+          id: o.id,
+          orderDate: o.orderDate || o.created_at || '',
+          customerName: o.customerName || '',
+          totalAmount: Number(o.total ?? o.subtotal ?? 0),
+          status: o.status || 'Draft',
+          items: (o.items || []).map((item: any) => {
+            const quantity = Number(item.quantity ?? 1);
+            const unitPrice = Number(item.unitPrice ?? item.price ?? 0);
+            return {
+              name: item.description || item.name || item.productName || 'Item',
+              quantity,
+              unitPrice,
+              lineTotal: Number(item.lineTotal ?? (quantity * unitPrice)),
+            };
+          }),
+          notes: o.notes || '',
+        });
+      })
       .catch((err) => setError(err.message || 'Failed to load order'))
       .finally(() => setLoading(false));
   }, [id]);
@@ -86,10 +107,16 @@ const CustomerOrderDetail: React.FC = () => {
           </table>
         </div>
         <div className="px-5 py-4 border-t border-slate-700/60 flex justify-between items-center">
-          <span className="text-sm font-semibold text-slate-200">Total</span>
+          <span className="text-sm font-semibold text-slate-300">Total</span>
           <span className="text-lg font-bold text-slate-100">K {Number(order.totalAmount).toFixed(2)}</span>
         </div>
       </div>
+      {order.notes && (
+        <div className="mt-4 bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Notes</p>
+          <p className="text-sm text-slate-300">{order.notes}</p>
+        </div>
+      )}
     </div>
   );
 };

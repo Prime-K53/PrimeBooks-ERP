@@ -255,16 +255,18 @@ const SetupWizard: React.FC = () => {
       const fyEndDate = `${fyBaseYear + 1}-${String(fyStartMonth + 1).padStart(2, '0')}-${new Date(fyBaseYear + 1, fyStartMonth + 1, 0).getDate()}`;
 
       try {
-        const { dbService } = await import('../../services/db');
-        await dbService.put('financialYears', {
-          id: `FY-${Date.now()}`,
+        const { api } = await import('../../services/api');
+        await api.system.createFinancialYear({
+          id: `FY-${fyBaseYear}`,
           name: `${fyBaseYear}/${String(fyBaseYear + 1).slice(2)}`,
           code: `FY${fyBaseYear}`,
           start_date: fyStartDate,
           end_date: fyEndDate,
           is_default: true,
+          is_active: true,
           status: 'Active',
           is_closed: false,
+          company_id: preGeneratedCompanyId,
           createdAt: new Date().toISOString()
         });
       } catch (fyError) {

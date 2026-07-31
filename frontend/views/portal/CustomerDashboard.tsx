@@ -68,10 +68,10 @@ const CustomerDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <PortalKPICard label="Balance" value={`K ${(data.balance || 0).toFixed(2)}`} icon={<DollarSign size={20} />} color="emerald" />
-        <PortalKPICard label="Wallet Balance" value={`K ${(data.walletBalance || 0).toFixed(2)}`} icon={<Wallet size={20} />} color="blue" />
-        <PortalKPICard label="Active Invoices" value={data.activeInvoiceCount ?? 0} icon={<FileText size={20} />} color="amber" />
-        <PortalKPICard label="Total Orders" value={data.totalOrders ?? 0} icon={<ShoppingCart size={20} />} color="violet" />
+        <PortalKPICard label="Balance" value={`K ${(data.balance || 0).toFixed(2)}`} icon={DollarSign} color="emerald" />
+        <PortalKPICard label="Wallet Balance" value={`K ${(data.walletBalance || 0).toFixed(2)}`} icon={Wallet} color="blue" />
+        <PortalKPICard label="Active Invoices" value={data.activeInvoiceCount ?? 0} icon={FileText} color="amber" />
+        <PortalKPICard label="Total Orders" value={data.totalOrders ?? 0} icon={ShoppingCart} color="violet" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

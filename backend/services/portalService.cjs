@@ -1,5 +1,6 @@
 const { db } = require('../db.cjs');
 const crypto = require('crypto');
+const portalAuthService = require('./portalAuthService.cjs');
 
 function getOne(query, params = []) {
   return new Promise((resolve, reject) => {
@@ -309,11 +310,47 @@ const portalService = {
   },
 
   async getProfile(customerId, companyId) {
-    return getOne(
+    const local = await getOne(
       `SELECT id, name, email, phone, address, city, balance, walletBalance, creditLimit, outstandingBalance, status
        FROM customers WHERE id = ? AND company_id = ?`,
       [customerId, companyId]
     );
+    if (local) {
+      return {
+        id: local.id,
+        full_name: local.name || '',
+        email: local.email || '',
+        phone: local.phone || '',
+        address: local.address || '',
+        city: local.city || '',
+        state: '',
+        zip: '',
+        country: '',
+        balance: local.balance || 0,
+        walletBalance: local.walletBalance || 0,
+        creditLimit: local.creditLimit || 0,
+        outstandingBalance: local.outstandingBalance || 0,
+        status: local.status || ''
+      };
+    }
+    const cloud = await portalAuthService.findCustomerInSupabase(customerId);
+    if (!cloud) return null;
+    return {
+      id: cloud.id,
+      full_name: cloud.name || '',
+      email: cloud.email || '',
+      phone: cloud.phone || '',
+      address: cloud.address || '',
+      city: cloud.city || '',
+      state: cloud.state || '',
+      zip: cloud.zip || '',
+      country: cloud.country || '',
+      balance: Number(cloud.balance) || 0,
+      walletBalance: Number(cloud.walletBalance) || 0,
+      creditLimit: Number(cloud.creditLimit) || 0,
+      outstandingBalance: Number(cloud.outstandingBalance) || 0,
+      status: cloud.status || ''
+    };
   },
 
   async getDocuments(customerId, companyId) {

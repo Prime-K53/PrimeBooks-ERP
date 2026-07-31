@@ -116,6 +116,7 @@ const STORE_TO_TABLE: Record<string, string> = {
   subscribers: 'subscribers',
   shipments: 'shipments',
   schools: 'schools',
+  financialYears: 'financial_years',
   tasks: 'tasks',
 };
 
@@ -145,6 +146,7 @@ const TABLES_TO_SYNC = [
   'salesExchangeItems', 'salesExchangeApprovals',
   'subcontractOrders', 'maintenanceLogs', 'classes', 'subjects',
   'subscribers', 'shipments', 'schools', 'tasks',
+  'financialYears',
   'bankScheduledPayments', 'bankExchangeRates', 'bankFees',
   'bankReconciliations', 'bankAdjustments', 'bankCashFlowForecasts',
   'bankAlerts', 'bankCategories',

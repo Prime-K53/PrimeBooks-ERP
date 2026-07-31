@@ -3421,7 +3421,7 @@ id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 };
 
 const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string) => void }> = ({ notify }) => {
-    const { availableFinancialYears, selectedFinancialYear, refreshFinancialYears } = useFinancialYear();
+    const { availableFinancialYears, selectedFinancialYear, refreshFinancialYears, setFinancialYear } = useFinancialYear();
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [newName, setNewName] = useState('');
     const [newStart, setNewStart] = useState('');
@@ -3446,6 +3446,7 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                 start_date: newStart,
                 end_date: newEnd,
                 is_default: availableFinancialYears.length === 0,
+                is_active: availableFinancialYears.length === 0,
                 status: 'Active',
                 is_closed: false
             });
@@ -3461,7 +3462,8 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
 
     const handleSetActive = async (fy: any) => {
         try {
-            await api.system.updateFinancialYear(fy.id, { is_default: true });
+            await api.system.setActiveFinancialYear(fy.id);
+            setFinancialYear(fy);
             notify('Active financial year updated', 'success');
             refreshFinancialYears();
         } catch (err: any) {
@@ -3595,7 +3597,7 @@ const FinancialYearsSettingsTab: React.FC<{ notify: (msg: string, type?: string)
                             ) : (
                                 availableFinancialYears.map(fy => {
                                     const isActive = selectedFinancialYear?.id === fy.id;
-                                    const isDefault = fy.is_default === 1;
+                                    const isDefault = Boolean(fy.is_default) || Boolean(fy.is_active);
                                     return (
                                         <tr key={fy.id} className={`hover:bg-slate-50/50 transition-colors ${isActive ? 'bg-blue-50/30' : ''}`}>
                                             <td style={{ paddingLeft: '24px', paddingTop: '16px', paddingRight: '24px', paddingBottom: '16px' }}>

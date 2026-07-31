@@ -219,6 +219,14 @@ app.use((req, res, next) => {
 // 600 requests per 60s window = 10 req/s average; accommodates parallel refresh bursts
 app.use('/api', createLimiter({ windowMs: 60 * 1000, maxRequests: 600 }));
 
+// Body parsing must be registered BEFORE route mounting so req.body is
+// available to /api/auth, /api/portal/auth and /api/portal/admin handlers
+app.use(express.json({ limit: '5mb' }));
+app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
+
+// Global input sanitization to prevent XSS
+app.use(sanitizeInput);
+
 app.use('/api/auth', auditAuthMiddleware, authLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 }), authRoutes);
 
 // Portal Auth Routes — no JWT needed for login/register
@@ -227,6 +235,14 @@ app.use('/api/portal/auth', portalAuthRoutes);
 
 // Portal admin routes — registered before global verifyToken to avoid Supabase JWT collisions
 app.use('/api/portal/admin', portalAdminRoutes);
+
+// Customer portal data routes — registered before the global admin verifyToken /
+// tenantContext chain. Portal requests authenticate with portal JWTs and are
+// company-scoped by the portal token itself, so they must not require the
+// admin x-company-id header.
+const portalRoutes = require('./routes/portal.cjs');
+const { verifyPortalToken } = require('./middleware/portalAuth.cjs');
+app.use('/api/portal', verifyPortalToken, portalRoutes);
 
 // Apply JWT verification to all /api routes (auth routes are skipped by verifyToken internally)
 app.use('/api', verifyToken);
@@ -292,12 +308,6 @@ app.use((req, res, next) => {
   });
   next();
 });
-
-app.use(express.json({ limit: '5mb' }));
-app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
-
-// Global input sanitization to prevent XSS
-app.use(sanitizeInput);
 
 const applyDocumentResponseHeaders = (res, { contentType, filename, inline = true }) => {
   const safeFilename = String(filename || 'document').replace(/"/g, '');
@@ -1037,11 +1047,6 @@ async function startServer() {
   // --- Referral Management ---
   const referralRoutes = require('./routes/referralRoutes.cjs');
   app.use('/api/referrals', verifyToken, referralRoutes);
-
-  // --- Customer Portal Data Endpoints ---
-  const portalRoutes = require('./routes/portal.cjs');
-  const { verifyPortalToken } = require('./middleware/portalAuth.cjs');
-  app.use('/api/portal', verifyPortalToken, portalRoutes);
 
   // --- Finance / Accounting Endpoints ---
   const finance = new (require('./services/financeService.cjs'))();

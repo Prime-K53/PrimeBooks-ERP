@@ -36,13 +36,14 @@ const CustomerLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070B17] font-sans flex items-center justify-center p-6">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-gradient-to-br from-emerald-600/15 to-green-500/5 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-gradient-to-tr from-teal-500/10 to-slate-800/20 rounded-full blur-[100px]" />
-      </div>
+    <div className="fixed inset-0 overflow-y-auto bg-[#070B17] font-sans">
+      <div className="min-h-full flex items-center justify-center p-6">
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-gradient-to-br from-emerald-600/15 to-green-500/5 rounded-full blur-[120px]" />
+          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-gradient-to-tr from-teal-500/10 to-slate-800/20 rounded-full blur-[100px]" />
+        </div>
 
-      <div className="w-full max-w-[420px] relative z-10">
+        <div className="w-full max-w-[420px] relative z-10">
         <div className="flex items-center gap-3 mb-10">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-400 flex items-center justify-center shadow-lg shadow-emerald-500/25">
             <Lock size={20} className="text-white" />
@@ -117,6 +118,7 @@ const CustomerLogin: React.FC = () => {
             Admin Login
           </Link>
         </div>
+      </div>
       </div>
     </div>
   );

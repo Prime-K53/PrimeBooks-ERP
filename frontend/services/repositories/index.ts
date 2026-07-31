@@ -2,11 +2,13 @@ import { BaseRepository } from './baseRepository';
 import { InventoryRepository, inventoryRepository } from './inventoryRepository';
 import { CustomerRepository, customerRepository } from './customerRepository';
 import { SettingsRepository, settingsRepository } from './settingsRepository';
+import { FinancialYearRepository, financialYearRepository } from './financialYearRepository';
 
 export { BaseRepository } from './baseRepository';
 export { InventoryRepository, inventoryRepository } from './inventoryRepository';
 export { CustomerRepository, customerRepository } from './customerRepository';
 export { SettingsRepository, settingsRepository } from './settingsRepository';
+export { FinancialYearRepository, financialYearRepository } from './financialYearRepository';
 
 const STORE_TO_TABLE: Record<string, string> = {
   inventory: 'products',
@@ -148,6 +150,7 @@ export function getRepository(storeName: string): BaseRepository<any> {
   if (storeName === 'inventory') return inventoryRepository;
   if (storeName === 'customers') return customerRepository;
   if (storeName === 'settings') return settingsRepository;
+  if (storeName === 'financialYears') return financialYearRepository;
   if (!repoCache.has(storeName)) {
     const syncTable = STORE_TO_TABLE[storeName] || storeName;
     repoCache.set(storeName, new BaseRepository<any>(storeName, syncTable));

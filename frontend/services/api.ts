@@ -1393,52 +1393,58 @@ export const api = {
       return { success: true };
     }, 'UserPrefs.Save'),
 
-    // Financial Years — local-only
+    // Financial Years — company-wide shared data (local-first via repository)
     getFinancialYears: () => handle(async () => {
-      return dbService.getAll('financialYears');
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      return financialYearRepository.list();
     }, 'FinancialYear.List'),
 
     getDefaultFinancialYear: () => handle(async () => {
-      const years = await dbService.getAll<any>('financialYears');
-      return years.find((y: any) => y.isDefault) || years[0] || null;
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      const years = await financialYearRepository.list();
+      return years.find((y: any) => y.is_active || y.is_default) || years[0] || null;
     }, 'FinancialYear.Default'),
 
     getCurrentFinancialYear: () => handle(async () => {
-      const years = await dbService.getAll<any>('financialYears');
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      const years = await financialYearRepository.list();
       const now = new Date().toISOString().slice(0, 10);
-      return years.find((y: any) => y.startDate <= now && y.endDate >= now) || years[0] || null;
+      return years.find((y: any) => y.start_date <= now && y.end_date >= now) || years[0] || null;
     }, 'FinancialYear.Current'),
 
     getFinancialYearByDate: (date: string) => handle(async () => {
-      const years = await dbService.getAll<any>('financialYears');
-      return years.find((y: any) => y.startDate <= date && y.endDate >= date) || null;
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      const years = await financialYearRepository.list();
+      return years.find((y: any) => y.start_date <= date && y.end_date >= date) || null;
     }, 'FinancialYear.ByDate'),
 
     createFinancialYear: (data: any) => handle(async () => {
-      const id = data.id || `FY-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const record = { ...data, id };
-      await dbService.put('financialYears', record);
-      return { success: true, id };
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      const record = await financialYearRepository.create(data);
+      return { success: true, id: record.id };
     }, 'FinancialYear.Create'),
 
     updateFinancialYear: (id: string, data: any) => handle(async () => {
-      const existing = await dbService.get<any>('financialYears', id);
-      if (existing) {
-        await dbService.put('financialYears', { ...existing, ...data });
-      }
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      await financialYearRepository.update(id, data);
       return { success: true };
     }, 'FinancialYear.Update'),
 
+    setActiveFinancialYear: (id: string) => handle(async () => {
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      await financialYearRepository.setActive(id);
+      return { success: true };
+    }, 'FinancialYear.SetActive'),
+
     closeFinancialYear: (id: string) => handle(async () => {
-      const existing = await dbService.get<any>('financialYears', id);
-      if (existing) {
-        await dbService.put('financialYears', { ...existing, status: 'Closed', closedAt: new Date().toISOString() });
-      }
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      await financialYearRepository.close(id);
       return { success: true };
     }, 'FinancialYear.Close'),
 
     deleteFinancialYear: (id: string) => handle(async () => {
-      await dbService.delete('financialYears', id);
+      const { financialYearRepository } = await import('./repositories/financialYearRepository');
+      await financialYearRepository.remove(id);
       return { success: true };
     }, 'FinancialYear.Delete'),
   }

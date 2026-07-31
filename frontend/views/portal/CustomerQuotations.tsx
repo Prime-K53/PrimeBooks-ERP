@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileText, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { FileText, ChevronDown, Plus } from 'lucide-react';
 import { api } from '../../services/api';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import EmptyState from './components/EmptyState';
@@ -28,6 +29,7 @@ interface Quotation {
 
 const CustomerQuotations: React.FC = () => {
   const { user } = useCustomerAuth();
+  const navigate = useNavigate();
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +67,17 @@ const CustomerQuotations: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-100">Quotations</h1>
-        <p className="text-sm text-slate-400 mt-1">Review and track your quotation requests</p>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100">Quotations</h1>
+          <p className="text-sm text-slate-400 mt-1">Review and track your quotation requests</p>
+        </div>
+        <button
+          onClick={() => navigate('/portal/new-request?type=quotation')}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-600/25 transition-all"
+        >
+          <Plus size={16} /> Request Quotation
+        </button>
       </div>
 
       {sorted.length === 0 ? (

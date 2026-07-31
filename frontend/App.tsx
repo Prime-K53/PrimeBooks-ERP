@@ -60,6 +60,7 @@ import CustomerDocuments from './views/portal/CustomerDocuments';
 import CustomerNotifications from './views/portal/CustomerNotifications';
 import CustomerProfile from './views/portal/CustomerProfile';
 import CustomerSupport from './views/portal/CustomerSupport';
+import CustomerCreateRequest from './views/portal/CustomerCreateRequest';
 import PortalUserManagement from './views/portal/PortalUserManagement';
 
 import { isResponsiveDebugEnabled } from './utils/debugFlags';
@@ -721,28 +722,6 @@ const AppLayout: React.FC = () => {
                 <Route path="/" element={<ErrorBoundary name="Dashboard"><Dashboard /></ErrorBoundary>} />
                 <Route path="/install" element={<PwaInstallPage />} />
                 <Route path="/search" element={<ErrorBoundary name="Search"><GlobalSearch /></ErrorBoundary>} />
-                {/* Customer Portal Routes */}
-                <Route path="/portal/login" element={<CustomerLogin />} />
-                <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
-                <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
-                <Route path="/portal" element={<CustomerLayout />}>
-                  <Route index element={<Navigate to="/portal/dashboard" replace />} />
-                  <Route path="dashboard" element={<CustomerDashboard />} />
-                  <Route path="orders" element={<CustomerOrders />} />
-                  <Route path="orders/:id" element={<CustomerOrderDetail />} />
-                  <Route path="quotations" element={<CustomerQuotations />} />
-                  <Route path="invoices" element={<CustomerInvoices />} />
-                  <Route path="invoices/:id" element={<CustomerInvoiceDetail />} />
-                  <Route path="payments" element={<CustomerPayments />} />
-                  <Route path="payments/:id" element={<CustomerPaymentDetail />} />
-                  <Route path="statements" element={<CustomerStatements />} />
-                  <Route path="wallet" element={<CustomerWallet />} />
-                  <Route path="loyalty" element={<CustomerLoyalty />} />
-                  <Route path="documents" element={<CustomerDocuments />} />
-                  <Route path="notifications" element={<CustomerNotifications />} />
-                  <Route path="profile" element={<CustomerProfile />} />
-                  <Route path="support" element={<CustomerSupport />} />
-                </Route>
 
                 {/* Hierarchical Redirects - no error boundary needed */}
                 <Route path="/inventory" element={<Navigate to="/supply-chain/inventory" replace />} />
@@ -1065,6 +1044,36 @@ const AppLayout: React.FC = () => {
   );
 };
 
+// Customer portal routes — available regardless of admin auth state so
+// customers can sign in and use the portal without an admin session.
+// Must be a React.Fragment element (not a component) so <Routes> accepts it.
+const PortalRoutes = (
+  <React.Fragment>
+    <Route path="/portal/login" element={<CustomerLogin />} />
+    <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
+    <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
+    <Route path="/portal" element={<CustomerLayout />}>
+      <Route index element={<Navigate to="/portal/dashboard" replace />} />
+      <Route path="dashboard" element={<CustomerDashboard />} />
+      <Route path="orders" element={<CustomerOrders />} />
+      <Route path="orders/:id" element={<CustomerOrderDetail />} />
+      <Route path="quotations" element={<CustomerQuotations />} />
+      <Route path="new-request" element={<CustomerCreateRequest />} />
+      <Route path="invoices" element={<CustomerInvoices />} />
+      <Route path="invoices/:id" element={<CustomerInvoiceDetail />} />
+      <Route path="payments" element={<CustomerPayments />} />
+      <Route path="payments/:id" element={<CustomerPaymentDetail />} />
+      <Route path="statements" element={<CustomerStatements />} />
+      <Route path="wallet" element={<CustomerWallet />} />
+      <Route path="loyalty" element={<CustomerLoyalty />} />
+      <Route path="documents" element={<CustomerDocuments />} />
+      <Route path="notifications" element={<CustomerNotifications />} />
+      <Route path="profile" element={<CustomerProfile />} />
+      <Route path="support" element={<CustomerSupport />} />
+    </Route>
+  </React.Fragment>
+);
+
 const RootNavigator: React.FC = () => {
   const { user, isInitialized, requiresSetup } = useAuth();
 
@@ -1117,9 +1126,7 @@ const RootNavigator: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/portal/login" element={<CustomerLogin />} />
-          <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
-          <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
+          {PortalRoutes}
           <Route path="*" element={<Navigate to="/setup" replace />} />
         </Routes>
       </Suspense>
@@ -1136,9 +1143,7 @@ const RootNavigator: React.FC = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/install" element={<PwaInstallPage />} />
-          <Route path="/portal/login" element={<CustomerLogin />} />
-          <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
-          <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
+          {PortalRoutes}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>
@@ -1150,6 +1155,7 @@ const RootNavigator: React.FC = () => {
     <PwaInstallProvider>
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          {PortalRoutes}
           <Route path="*" element={<AppLayout />} />
         </Routes>
       </Suspense>

@@ -1,10 +1,14 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const axios = require('axios');
 const { db } = require('../db.cjs');
 
 const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRY = '30m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 30;
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
 function genId(prefix = 'pusr') {
   return `${prefix}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
@@ -86,6 +90,80 @@ const authenticatePortalUser = (email, password) => {
   });
 };
 
+const findCustomerInSupabase = async (customerId) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) return null;
+  try {
+    const { data } = await axios.get(`${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/customers`, {
+      params: { id: `eq.${customerId}`, select: 'id,company_id,data' },
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      timeout: 5000,
+    });
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const row = data[0];
+    const domain = (row.data && typeof row.data === 'object') ? row.data : {};
+    return {
+      id: row.id,
+      name: domain.name || row.name || '',
+      email: domain.email || row.email || '',
+      phone: domain.phone || row.phone || '',
+      address: domain.address || '',
+      city: domain.city || '',
+      state: domain.state || '',
+      zip: domain.zip || '',
+      country: domain.country || '',
+      balance: domain.balance || 0,
+      walletBalance: domain.walletBalance || 0,
+      creditLimit: domain.creditLimit || 0,
+      outstandingBalance: domain.outstandingBalance || 0,
+      status: domain.status || row.status || '',
+      company_id: row.company_id || domain.company_id || '',
+    };
+  } catch {
+    return null;
+  }
+};
+
+const finishPortalLogin = (existing, customer, resolve) => {
+  if (!existing) return resolve(null);
+  if (existing.status !== 'active') return resolve(null);
+  db.run(`UPDATE portal_users SET last_login_at = datetime('now') WHERE id = ?`, [existing.id]);
+  resolve({
+    id: existing.id,
+    customer_id: existing.customer_id,
+    email: existing.email || customer.email || '',
+    full_name: existing.full_name || customer.name,
+    phone: existing.phone || customer.phone || '',
+    company_id: existing.company_id || ''
+  });
+};
+
+const resolvePortalUserForCustomer = (customer, fullName) => {
+  return new Promise((resolve, reject) => {
+    if (String(customer.name || '').trim().toLowerCase() !== String(fullName || '').trim().toLowerCase()) {
+      return resolve(null);
+    }
+    const customerId = customer.customer_id || customer.id;
+    const company_id = customer.company_id || '';
+    db.get(
+      `SELECT id, customer_id, email, full_name, phone, status, company_id FROM portal_users WHERE customer_id = ? AND company_id = ?`,
+      [customerId, company_id],
+      (err, existing) => {
+        if (err) return reject(err);
+        if (existing) return finishPortalLogin(existing, customer, resolve);
+        // Fallback: match on customer_id alone when stored company_id differs
+        db.get(
+          `SELECT id, customer_id, email, full_name, phone, status, company_id FROM portal_users WHERE customer_id = ?`,
+          [customerId],
+          (err2, row) => {
+            if (err2) return reject(err2);
+            finishPortalLogin(row, customer, resolve);
+          }
+        );
+      }
+    );
+  });
+};
+
 const loginWithCustomerId = (customerId, fullName) => {
   return new Promise((resolve, reject) => {
     db.get(
@@ -93,29 +171,22 @@ const loginWithCustomerId = (customerId, fullName) => {
       [customerId],
       async (err, customer) => {
         if (err) return reject(err);
-        if (!customer) return resolve(null);
-        if (String(customer.name).trim().toLowerCase() !== String(fullName).trim().toLowerCase()) {
-          return resolve(null);
-        }
-        const company_id = customer.company_id || '';
-        db.get(
-          `SELECT id, customer_id, email, full_name, phone, status, company_id FROM portal_users WHERE customer_id = ? AND company_id = ?`,
-          [customerId, company_id],
-          (err, existing) => {
-            if (err) return reject(err);
-            if (!existing) return resolve(null);
-            if (existing.status !== 'active') return resolve(null);
-            db.run(`UPDATE portal_users SET last_login_at = datetime('now') WHERE id = ?`, [existing.id]);
-            return resolve({
-              id: existing.id,
-              customer_id: existing.customer_id,
-              email: existing.email || customer.email || '',
-              full_name: existing.full_name || customer.name,
-              phone: existing.phone || customer.phone || '',
-              company_id: existing.company_id || ''
-            });
+        if (customer) {
+          try {
+            return resolve(await resolvePortalUserForCustomer(customer, fullName));
+          } catch (e) {
+            return reject(e);
           }
-        );
+        }
+        // The ERP app is local-first and syncs real customer data to Supabase;
+        // the backend customers table may be empty. Fall back to Supabase.
+        try {
+          const cloudCustomer = await findCustomerInSupabase(customerId);
+          if (!cloudCustomer) return resolve(null);
+          return resolve(await resolvePortalUserForCustomer({ ...cloudCustomer, customer_id: cloudCustomer.id }, fullName));
+        } catch (e) {
+          return reject(e);
+        }
       }
     );
   });
@@ -149,12 +220,18 @@ const getPortalUserByCustomerId = (customerId, companyId) => {
   });
 };
 
-const getPortalUserByEmail = (email) => {
+const getPortalUserByEmail = (email, companyId) => {
   return new Promise((resolve, reject) => {
+    const params = [String(email || '').toLowerCase().trim()];
+    let where = 'email = ?';
+    if (companyId !== undefined && companyId !== null) {
+      where += ' AND company_id = ?';
+      params.push(companyId);
+    }
     db.get(
       `SELECT id, customer_id, email, full_name, phone, status, company_id, last_login_at, created_at
-       FROM portal_users WHERE email = ?`,
-      [String(email || '').toLowerCase().trim()],
+       FROM portal_users WHERE ${where}`,
+      params,
       (err, row) => {
         if (err) return reject(err);
         resolve(row || null);
@@ -339,6 +416,7 @@ module.exports = {
   registerPortalUser,
   authenticatePortalUser,
   loginWithCustomerId,
+  findCustomerInSupabase,
   getPortalUserById,
   getPortalUserByCustomerId,
   getPortalUserByEmail,

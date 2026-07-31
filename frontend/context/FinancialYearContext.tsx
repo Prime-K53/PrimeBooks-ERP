@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { api } from '../services/api';
 
@@ -8,7 +8,8 @@ export interface FinancialYear {
   code: string;
   start_date: string;
   end_date: string;
-  is_default: number;
+  is_default: number | boolean;
+  is_active: number | boolean;
   is_closed: number;
   status: string;
   company_id: string;
@@ -27,148 +28,64 @@ interface FinancialYearContextType {
 
 const FinancialYearContext = createContext<FinancialYearContextType | undefined>(undefined);
 
-/**
- * Get the current company ID from the stored config
- */
-function getCompanyId(): string {
-  try {
-    const config = localStorage.getItem('nexus_company_config');
-    if (config) {
-      const parsed = JSON.parse(config);
-      return parsed.companyId || '';
-    }
-  } catch {
-    // ignore
-  }
-  return '';
-}
+const DATA_CHANGED_EVENT = 'primeerp:data-changed';
+const DATA_CHANGED_CHANNEL = 'primeerp-data-sync';
 
-/**
- * Get tenant-scoped storage key
- */
-function getTenantStorageKey(key: string): string {
-  const companyId = getCompanyId();
-  return companyId ? `company:${companyId}:${key}` : key;
-}
-
-/**
- * Persist financial year to tenant-scoped localStorage keys
- */
-function persistFyToLocalStorage(fy: FinancialYear) {
-  const companyId = getCompanyId();
-  const companySuffix = companyId ? `company:${companyId}:` : '';
-  
-  localStorage.setItem(`${companySuffix}selectedFinancialYearId`, fy.id);
-  localStorage.setItem(`${companySuffix}selectedFinancialYearName`, fy.name);
-  localStorage.setItem(`${companySuffix}selectedFinancialYearStart`, fy.start_date);
-  localStorage.setItem(`${companySuffix}selectedFinancialYearEnd`, fy.end_date);
-  localStorage.setItem(`${companySuffix}selectedFinancialYearClosed`, String(fy.is_closed));
-}
-
-/**
- * Get financial year ID from URL parameters
- */
 function getFyIdFromUrl(): string | null {
   const params = new URLSearchParams(window.location.search);
   return params.get('financialYear') || params.get('fy') || null;
 }
 
-/**
- * Provider component for Financial Year context
- */
+function isActive(fy: FinancialYear | null | undefined): boolean {
+  if (!fy) return false;
+  return Boolean(fy.is_active) || Boolean(fy.is_default) || fy.is_default === 1;
+}
+
 export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { companyConfig, isInitialized } = useAuth();
+  const { isInitialized } = useAuth();
   const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
   const [selected, setSelected] = useState<FinancialYear | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchFinancialYears = useCallback(async () => {
-    try {
-      const [years, defaultFy] = await Promise.all([
-        api.system.getFinancialYears(),
-        api.system.getDefaultFinancialYear(),
-      ]);
-      setFinancialYears(years || []);
-      return { years: years || [], defaultFy: defaultFy || null };
-    } catch {
-      return { years: [], defaultFy: null };
-    }
+    const [years, defaultFy] = await Promise.all([
+      api.system.getFinancialYears(),
+      api.system.getDefaultFinancialYear(),
+    ]);
+    return { years: years || [], defaultFy: defaultFy || null };
   }, []);
 
-  /**
-   * Persist the selected FY ID to the cloud (Supabase via backend API)
-   * so the user's choice follows them across devices.
-   */
-  const persistFyToCloud = useCallback(async (fyId: string) => {
-    try {
-      await api.system.saveUserPreference('selectedFinancialYearId', fyId);
-    } catch {
-      // Cloud persistence is best-effort; localStorage still works offline
-    }
-  }, []);
-
-  /**
-   * Load the user's preferred FY ID from the cloud.
-   * This is the key function that enables cross-device sync.
-   */
-  const loadFyIdFromCloud = useCallback(async (): Promise<string | null> => {
-    try {
-      const result = await api.system.getUserPreference('selectedFinancialYearId');
-      return result?.value || null;
-    } catch {
-      return null;
-    }
+  const applyFinancialYear = useCallback((fy: FinancialYear) => {
+    setSelected(fy);
   }, []);
 
   const refreshFinancialYears = useCallback(async () => {
     const { years, defaultFy } = await fetchFinancialYears();
     setFinancialYears(years);
 
-    const selectAndPersist = (fy: FinancialYear) => {
-      setSelected(fy);
-      persistFyToLocalStorage(fy);
-      persistFyToCloud(fy.id);
-    };
-
     // Priority 1: URL parameter (explicit navigation)
     const urlId = getFyIdFromUrl();
     if (urlId) {
       const urlMatch = years.find((fy: FinancialYear) => fy.id === urlId);
       if (urlMatch) {
-        selectAndPersist(urlMatch);
+        applyFinancialYear(urlMatch);
         setIsLoading(false);
         return;
       }
     }
 
-    // Priority 2: Cloud preference (cross-device sync)
-    const cloudFyId = await loadFyIdFromCloud();
-    if (cloudFyId) {
-      const cloudMatch = years.find((fy: FinancialYear) => fy.id === cloudFyId);
-      if (cloudMatch) {
-        selectAndPersist(cloudMatch);
-        setIsLoading(false);
-        return;
-      }
+    // Priority 2: Company-wide active Financial Year (synced from IndexedDB)
+    const activeMatch = years.find((fy: FinancialYear) => isActive(fy));
+    if (activeMatch) {
+      applyFinancialYear(activeMatch);
+      setIsLoading(false);
+      return;
     }
 
-    // Priority 3: Local storage (device-specific fallback for offline)
-    const companyId = getCompanyId();
-    const companySuffix = companyId ? `company:${companyId}:` : '';
-    const storedId = localStorage.getItem(`${companySuffix}selectedFinancialYearId`);
-    if (storedId) {
-      const match = years.find((fy: FinancialYear) => fy.id === storedId);
-      if (match) {
-        selectAndPersist(match);
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    // Priority 4: Default FY from backend
+    // Priority 3: Default FY from backend/repository
     if (defaultFy) {
-      selectAndPersist(defaultFy);
-      // Re-fetch the years list if it didn't include the auto-created FY
+      applyFinancialYear(defaultFy);
       if (years.length === 0) {
         try {
           const freshYears = await api.system.getFinancialYears();
@@ -176,42 +93,61 @@ export const FinancialYearProvider: React.FC<{ children: React.ReactNode }> = ({
         } catch { /* best-effort */ }
       }
     } else if (years.length > 0) {
-      selectAndPersist(years[0]);
+      applyFinancialYear(years[0]);
     }
     setIsLoading(false);
-  }, [fetchFinancialYears, loadFyIdFromCloud, persistFyToCloud]);
+  }, [fetchFinancialYears, applyFinancialYear]);
+
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => {
+      refreshFinancialYears().catch(() => undefined);
+    }, 400);
+  }, [refreshFinancialYears]);
+
+  // Refresh when company data changes (pull, realtime sync, cross-tab writes)
+  useEffect(() => {
+    const onDataChanged = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { stores?: string[] } | undefined;
+      if (!detail?.stores || detail.stores.includes('financialYears') || detail.stores.includes('settings')) {
+        scheduleRefresh();
+      }
+    };
+
+    window.addEventListener(DATA_CHANGED_EVENT, onDataChanged);
+
+    let channel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      channel = new BroadcastChannel(DATA_CHANGED_CHANNEL);
+      channel.onmessage = (event: MessageEvent) => {
+        const detail = event.data as { stores?: string[] } | undefined;
+        if (!detail?.stores || detail.stores.includes('financialYears') || detail.stores.includes('settings')) {
+          scheduleRefresh();
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener(DATA_CHANGED_EVENT, onDataChanged);
+      if (channel) channel.close();
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    };
+  }, [scheduleRefresh]);
 
   useEffect(() => {
     if (!isInitialized) return;
     refreshFinancialYears();
   }, [isInitialized, refreshFinancialYears]);
 
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (!e.key) return;
-      const companyId = getCompanyId();
-      const companySuffix = companyId ? `company:${companyId}:` : '';
-      const relevantKeys = [
-        `${companySuffix}selectedFinancialYearId`,
-        `${companySuffix}selectedFinancialYearName`,
-        `${companySuffix}selectedFinancialYearStart`,
-        `${companySuffix}selectedFinancialYearEnd`,
-        `${companySuffix}selectedFinancialYearClosed`
-      ];
-      if (relevantKeys.includes(e.key) && e.newValue !== e.oldValue) {
-        refreshFinancialYears();
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [refreshFinancialYears]);
-
-  const setFinancialYear = useCallback((fy: FinancialYear) => {
+  const setFinancialYear = useCallback(async (fy: FinancialYear) => {
     setSelected(fy);
-    persistFyToLocalStorage(fy);
-    // Persist to cloud immediately so the change shows on other devices
-    persistFyToCloud(fy.id);
-  }, [persistFyToCloud]);
+    // Company-wide: persist the active FY so every device sees the change.
+    try {
+      await api.system.setActiveFinancialYear(fy.id);
+    } catch {
+      // Best-effort; local selection is already applied.
+    }
+  }, []);
 
   const isDateInFY = useCallback((date: string): boolean => {
     if (!selected) return true;

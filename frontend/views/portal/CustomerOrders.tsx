@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Eye } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
+import { ShoppingCart, Eye, Plus } from 'lucide-react';
+import { api } from '../../services/api';
+import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import StatusBadge from './components/StatusBadge';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
@@ -18,17 +19,33 @@ const statuses = ['All', 'Pending', 'Fulfilled', 'Shipped', 'Cancelled', 'Draft'
 
 const CustomerOrders: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useCustomerAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('All');
 
   useEffect(() => {
-    portalApi.get<Order[]>('/orders')
-      .then(setOrders)
-      .catch((err) => setError(err.message || 'Failed to load orders'))
-      .finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const all = await api.sales.getSalesOrders();
+        if (cancelled) return;
+        const customerId = user?.customer_id;
+        const mine = customerId
+          ? (all || []).filter((o: any) => String(o.customerId || '') === String(customerId))
+          : (all || []);
+        setOrders(mine as Order[]);
+      } catch (err: any) {
+        if (!cancelled) setError(err.message || 'Failed to load orders');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const filtered = filter === 'All' ? orders : orders.filter((o) => o.status === filter);
 
@@ -37,9 +54,17 @@ const CustomerOrders: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-100">Orders</h1>
-        <p className="text-sm text-slate-400 mt-1">View your order history</p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100">Orders</h1>
+          <p className="text-sm text-slate-400 mt-1">View your order history</p>
+        </div>
+        <button
+          onClick={() => navigate('/portal/new-request?type=order')}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-600/25 transition-all"
+        >
+          <Plus size={16} /> New Order
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
