@@ -4,51 +4,6 @@ const router = express.Router();
 const portalAuthService = require('../services/portalAuthService.cjs');
 const { generatePortalToken, verifyPortalToken } = require('../middleware/portalAuth.cjs');
 
-router.post('/register', async (req, res) => {
-  try {
-    const { customer_id, email, password, full_name, phone, company_id } = req.body;
-    if (!customer_id || !email || !password) {
-      return res.status(400).json({ error: 'customer_id, email, and password are required' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
-    const { db } = require('../db.cjs');
-    const customer = await new Promise((resolve) => {
-      db.get('SELECT id, name, company_id FROM customers WHERE id = ?', [customer_id], (err, row) => resolve(err ? null : row));
-    });
-    if (!customer) {
-      return res.status(400).json({ error: 'Customer ID not found' });
-    }
-    const resolvedCompanyId = company_id || customer.company_id || '';
-    const user = await portalAuthService.registerPortalUser({
-      customer_id,
-      email,
-      password,
-      full_name: full_name || customer.name || '',
-      phone,
-      company_id: resolvedCompanyId
-    });
-    const token = generatePortalToken({ ...user, customer_id: user.customer_id });
-    const refreshToken = crypto.randomBytes(48).toString('hex');
-    try {
-      await portalAuthService.createSession(user.id, user.company_id, refreshToken);
-    } catch {}
-    res.status(201).json({
-      message: 'Portal user registered successfully',
-      user: { id: user.id, customer_id: user.customer_id, email: user.email, full_name: user.full_name, phone: user.phone },
-      access_token: token,
-      refresh_token: refreshToken
-    });
-  } catch (err) {
-    if (err.message === 'Email already registered') {
-      return res.status(409).json({ error: err.message });
-    }
-    console.error('[PortalAuth] Registration error:', err);
-    res.status(500).json({ error: 'Registration failed' });
-  }
-});
-
 router.post('/login', async (req, res) => {
   try {
     const { customer_id, full_name } = req.body;

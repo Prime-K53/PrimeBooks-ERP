@@ -103,63 +103,17 @@ const loginWithCustomerId = (customerId, fullName) => {
           [customerId, company_id],
           (err, existing) => {
             if (err) return reject(err);
-            if (existing) {
-              if (existing.status !== 'active') return resolve(null);
-              db.run(`UPDATE portal_users SET last_login_at = datetime('now') WHERE id = ?`, [existing.id]);
-              return resolve({
-                id: existing.id,
-                customer_id: existing.customer_id,
-                email: existing.email || customer.email || '',
-                full_name: existing.full_name || customer.name,
-                phone: existing.phone || customer.phone || '',
-                company_id: existing.company_id || ''
-              });
-            }
-            const id = genId('pusr');
-            const rawEmail = String(customer.email || '').trim();
-            const email = rawEmail || `${customerId.toLowerCase()}@portal.local`;
-            db.run(
-              `INSERT INTO portal_users (id, customer_id, email, password_hash, full_name, phone, status, company_id)
-               VALUES (?, ?, ?, ?, ?, ?, 'active', ?)`,
-              [id, customerId, email, '', customer.name, customer.phone || '', company_id],
-              function (err) {
-                if (err) {
-                  if (err.message && err.message.includes('UNIQUE')) {
-                    db.get(
-                      `SELECT id, customer_id, email, full_name, phone, status, company_id FROM portal_users WHERE customer_id = ? AND company_id = ?`,
-                      [customerId, company_id],
-                      (err2, existingAfterRace) => {
-                        if (err2) return reject(err2);
-                        if (existingAfterRace) {
-                          if (existingAfterRace.status !== 'active') return resolve(null);
-                          db.run(`UPDATE portal_users SET last_login_at = datetime('now') WHERE id = ?`, [existingAfterRace.id]);
-                          return resolve({
-                            id: existingAfterRace.id,
-                            customer_id: existingAfterRace.customer_id,
-                            email: existingAfterRace.email || customer.email || '',
-                            full_name: existingAfterRace.full_name || customer.name,
-                            phone: existingAfterRace.phone || customer.phone || '',
-                            company_id: existingAfterRace.company_id || ''
-                          });
-                        }
-                        return resolve(null);
-                      }
-                    );
-                    return;
-                  }
-                  return reject(err);
-                }
-                db.run(`UPDATE portal_users SET last_login_at = datetime('now') WHERE id = ?`, [id]);
-                resolve({
-                  id,
-                  customer_id: customerId,
-                  email: customer.email || '',
-                  full_name: customer.name,
-                  phone: customer.phone || '',
-                  company_id
-                });
-              }
-            );
+            if (!existing) return resolve(null);
+            if (existing.status !== 'active') return resolve(null);
+            db.run(`UPDATE portal_users SET last_login_at = datetime('now') WHERE id = ?`, [existing.id]);
+            return resolve({
+              id: existing.id,
+              customer_id: existing.customer_id,
+              email: existing.email || customer.email || '',
+              full_name: existing.full_name || customer.name,
+              phone: existing.phone || customer.phone || '',
+              company_id: existing.company_id || ''
+            });
           }
         );
       }

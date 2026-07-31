@@ -43,7 +43,6 @@ import ResetPassword from './views/auth/ResetPassword';
 import { CustomerAuthProvider } from './context/CustomerAuthContext';
 import CustomerLayout from './views/portal/CustomerLayout';
 import CustomerLogin from './views/portal/CustomerLogin';
-import CustomerRegister from './views/portal/CustomerRegister';
 import CustomerForgotPassword from './views/portal/CustomerForgotPassword';
 import CustomerResetPassword from './views/portal/CustomerResetPassword';
 import CustomerDashboard from './views/portal/CustomerDashboard';
@@ -724,7 +723,6 @@ const AppLayout: React.FC = () => {
                 <Route path="/search" element={<ErrorBoundary name="Search"><GlobalSearch /></ErrorBoundary>} />
                 {/* Customer Portal Routes */}
                 <Route path="/portal/login" element={<CustomerLogin />} />
-                <Route path="/portal/register" element={<CustomerRegister />} />
                 <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
                 <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
                 <Route path="/portal" element={<CustomerLayout />}>
@@ -1120,7 +1118,6 @@ const RootNavigator: React.FC = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/portal/login" element={<CustomerLogin />} />
-          <Route path="/portal/register" element={<CustomerRegister />} />
           <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
           <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
           <Route path="*" element={<Navigate to="/setup" replace />} />
@@ -1140,7 +1137,6 @@ const RootNavigator: React.FC = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/install" element={<PwaInstallPage />} />
           <Route path="/portal/login" element={<CustomerLogin />} />
-          <Route path="/portal/register" element={<CustomerRegister />} />
           <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
           <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
