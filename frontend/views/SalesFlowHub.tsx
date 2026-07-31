@@ -1,8 +1,14 @@
 import React from 'react';
-import { FileText, FileCheck, Banknote as PaymentIcon, RefreshCw, Printer, Target, CheckSquare } from 'lucide-react';
+import { FileText, FileCheck, Banknote as PaymentIcon, RefreshCw, Printer, Target, CheckSquare, Inbox } from 'lucide-react';
 import GenericHub from './GenericHub';
 
 const options = [
+  {
+    label: 'Quotation Requests',
+    description: 'Review customer requests, issue official quotations, and convert accepted quotes into orders.',
+    path: '/sales-flow/requests',
+    icon: Inbox,
+  },
   {
     label: 'Quotations',
     description: 'Generate professional estimates and track customer approval status.',
