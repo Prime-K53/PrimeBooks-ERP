@@ -435,6 +435,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (session?.user) {
             restoredSession = await syncSupabaseUserToLocal(session.user);
             if (restoredSession) {
+              let restoredCompanyId =
+                (restoredSession as User & { companyId?: string })?.companyId ||
+                session.user.user_metadata?.company_id ||
+                null;
+              if (!restoredCompanyId) {
+                try {
+                  const { data: profileRow } = await supabase
+                    .from('profiles')
+                    .select('company_id')
+                    .eq('user_id', session.user.id)
+                    .maybeSingle();
+                  restoredCompanyId = profileRow?.company_id || null;
+                } catch (companyLookupErr) {
+                  logger.warn('[Auth] Could not resolve company_id on session restore:', companyLookupErr);
+                }
+              }
+              if (restoredCompanyId) {
+                dbService.setCurrentCompanyId(restoredCompanyId);
+                (restoredSession as User & { companyId?: string }).companyId = restoredCompanyId;
+              }
               setUser(restoredSession);
               sessionStorage.setItem('nexus_user', JSON.stringify({
                 ...restoredSession,
@@ -880,8 +900,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
 
           const profile = await syncSupabaseUserToLocal(signInData.user);
+
+          // Multi-tenant fix: resolve THIS user's actual company_id and force
+          // every cached "current company" pointer to match it. Without this,
+          // the app keeps showing whichever company was last active on this
+          // device/browser, regardless of which account just logged in.
+          let resolvedCompanyId =
+            (profile as (User & { companyId?: string }) | null)?.companyId ||
+            signInData.user.user_metadata?.company_id ||
+            null;
+          if (!resolvedCompanyId) {
+            try {
+              const { data: profileRow } = await supabase
+                .from('profiles')
+                .select('company_id')
+                .eq('user_id', signInData.user.id)
+                .maybeSingle();
+              resolvedCompanyId = profileRow?.company_id || null;
+            } catch (companyLookupErr) {
+              logger.warn('[Auth] Could not resolve company_id at login:', companyLookupErr);
+            }
+          }
+          if (resolvedCompanyId) {
+            dbService.setCurrentCompanyId(resolvedCompanyId);
+          }
+
           setRequiresSetup(false);
-          const supabaseUser = { ...profile, authMode: 'supabase' as const, offlineAuthenticated: true };
+          const supabaseUser = {
+            ...profile,
+            companyId: resolvedCompanyId || (profile as (User & { companyId?: string }) | null)?.companyId,
+            authMode: 'supabase' as const,
+            offlineAuthenticated: true,
+          };
           setUser(supabaseUser);
           const sessionPayload = JSON.stringify({
             ...supabaseUser,
