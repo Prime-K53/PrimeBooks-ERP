@@ -25,6 +25,7 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         customer_id: user.customer_id,
+        company_id: user.company_id,
         email: user.email,
         full_name: user.full_name,
         phone: user.phone
@@ -60,6 +61,7 @@ router.post('/login-password', async (req, res) => {
       user: {
         id: user.id,
         customer_id: user.customer_id,
+        company_id: user.company_id,
         email: user.email,
         full_name: user.full_name,
         phone: user.phone
@@ -160,10 +162,11 @@ router.post('/activate', async (req, res) => {
     const ua = req.headers['user-agent'];
     portalAuthService.recordLoginHistory(user.id, ip, ua).catch(() => {});
     res.json({
-      message: 'Account activated successfully',
+      message: 'Login successful',
       user: {
         id: user.id,
         customer_id: user.customer_id,
+        company_id: user.company_id,
         email: user.email,
         full_name: user.full_name,
         phone: user.phone
