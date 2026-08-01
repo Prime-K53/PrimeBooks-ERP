@@ -25,6 +25,12 @@ async function tenantContext(req, res, next) {
       return next();
     }
 
+    // Portal requests authenticate via portal JWTs and carry their own
+    // company_id on req.portalUser. Skip the admin tenant check for them.
+    if (req.portalUser) {
+      return next();
+    }
+
     // Skip company check for auth endpoints (login, register, etc.)
     if (req.path && (req.path.startsWith('/auth/') || req.path === '/auth')) {
       return next();

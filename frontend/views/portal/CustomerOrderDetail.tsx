@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, MessageSquare, CheckCircle2, ShoppingCart, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Download, MessageSquare, CheckCircle2, ShoppingCart, RotateCcw, Truck } from 'lucide-react';
 import { createElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { portalApi, portalLifecycle, TimelineEvent } from '../../services/portalApiClient';
@@ -35,18 +35,29 @@ interface OrderDetail {
   items: OrderItem[];
   notes?: string;
   quotation_id?: string | null;
+  tracking_number?: string | null;
+  carrier?: string | null;
+  driver_name?: string | null;
+  vehicle_no?: string | null;
+  estimated_delivery?: string | null;
+  actual_arrival?: string | null;
+  current_location?: string | null;
+  proof_of_delivery?: string | null;
+  shipping_address?: string | null;
 }
 
 const stageDefinitions = [
   { key: 'quotation_accepted', label: 'Accepted', description: 'Quotation accepted' },
   { key: 'confirmed', label: 'Confirmed', description: 'Order confirmed by our team' },
   { key: 'processing', label: 'Processing', description: 'Order being prepared' },
+  { key: 'shipped', label: 'Shipped', description: 'In transit' },
   { key: 'delivered', label: 'Delivered', description: 'Order delivered' },
 ];
 
 function stageIndex(status: string): number {
   const normalized = status.toLowerCase().replace(/\s+/g, '');
-  if (normalized === 'delivered' || normalized === 'fulfilled' || normalized === 'complete') return 4;
+  if (normalized === 'delivered' || normalized === 'fulfilled' || normalized === 'complete') return 5;
+  if (normalized === 'shipped' || normalized === 'in_transit' || normalized === 'out_for_delivery') return 4;
   if (normalized === 'processing' || normalized === 'inprogress' || normalized === 'in_progress') return 3;
   if (normalized === 'confirmed') return 2;
   return 1;
@@ -88,6 +99,15 @@ const CustomerOrderDetail: React.FC = () => {
         }),
         notes: o.notes || '',
         quotation_id: o.quotation_id || null,
+        tracking_number: o.tracking_number || null,
+        carrier: o.carrier || null,
+        driver_name: o.driver_name || null,
+        vehicle_no: o.vehicle_no || null,
+        estimated_delivery: o.estimated_delivery || null,
+        actual_arrival: o.actual_arrival || null,
+        current_location: o.current_location || null,
+        proof_of_delivery: o.proof_of_delivery || null,
+        shipping_address: o.shipping_address || null,
       });
       const events = await portalLifecycle.timeline.get('order', id);
       setTimeline(events || []);
@@ -207,6 +227,9 @@ const CustomerOrderDetail: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <StatusBadge status={order.status} />
+            {(order as any).tracking_number && (
+              <PortalButton variant="primary" onClick={() => navigate(`/portal/shipments/${order.id}`)} icon={Truck}>Track Shipment</PortalButton>
+            )}
             {order.status !== 'Draft' && order.status !== 'Cancelled' && (
               <PortalButton variant="secondary" onClick={handleReorderRequest} icon={RotateCcw}>Reorder</PortalButton>
             )}

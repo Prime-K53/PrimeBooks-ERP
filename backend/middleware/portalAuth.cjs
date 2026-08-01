@@ -23,7 +23,7 @@ function generatePortalTokenWithUser(user) {
 }
 
 const verifyPortalToken = (req, res, next) => {
-  const publicEndpoints = ['/portal/auth/login', '/portal/auth/forgot-password', '/portal/auth/reset-password', '/portal/auth/refresh'];
+  const publicEndpoints = ['/auth/login', '/auth/forgot-password', '/auth/reset-password', '/auth/refresh'];
   if (publicEndpoints.includes(req.path)) {
     return next();
   }

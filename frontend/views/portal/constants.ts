@@ -64,6 +64,12 @@ export const ORDER_STATUS_META: Record<string, { label: string; color: string; b
   cancelled: { label: 'Cancelled', color: '#b91c1c', bg: '#fef2f2', dot: '#dc2626' },
 };
 
+export const SHIPMENT_STATUS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  ...ORDER_STATUS_META,
+  in_transit: { label: 'In Transit', color: '#1d4ed8', bg: '#eff6ff', dot: '#3b82f6' },
+  out_for_delivery: { label: 'Out for Delivery', color: '#7c3aed', bg: '#f5f3ff', dot: '#8b5cf6' },
+};
+
 export const REFERRAL_STATUS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   active: { label: 'Active', color: '#0f766e', bg: '#f0fdfa', dot: '#0f766e' },
   converted: { label: 'Converted', color: '#1d4ed8', bg: '#eff6ff', dot: '#3b82f6' },
@@ -109,6 +115,8 @@ export const PAGE_TITLES: Record<string, string> = {
   '/portal/requests/:id': 'Request Details',
   '/portal/orders': 'Orders',
   '/portal/orders/:id': 'Order Details',
+  '/portal/shipments': 'Shipments & Tracking',
+  '/portal/shipments/:id': 'Shipment Details',
   '/portal/quotations': 'Quotations',
   '/portal/quotations/:id': 'Quotation Details',
   '/portal/invoices': 'Invoices',

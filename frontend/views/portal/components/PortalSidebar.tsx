@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, FileText, Receipt, CreditCard,
   FileBarChart, FolderOpen, Gift, Wallet, Bell, MessageSquare,
-  User, LogOut, Globe, X, ClipboardList, Users
+  User, LogOut, Globe, X, ClipboardList, Users, Truck
 } from 'lucide-react';
 import { useCustomerAuth } from '../../../context/CustomerAuthContext';
 
@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/portal/dashboard', icon: LayoutDashboard },
   { label: 'Requests', path: '/portal/requests', icon: ClipboardList },
   { label: 'Orders', path: '/portal/orders', icon: ShoppingCart },
+  { label: 'Shipments & Tracking', path: '/portal/shipments', icon: Truck },
   { label: 'Quotations', path: '/portal/quotations', icon: FileText },
   { label: 'Invoices', path: '/portal/invoices', icon: Receipt },
   { label: 'Payments', path: '/portal/payments', icon: CreditCard },

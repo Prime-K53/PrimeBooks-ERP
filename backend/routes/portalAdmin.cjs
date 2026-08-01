@@ -84,7 +84,13 @@ router.use(verifyAdminAuth);
 router.get('/events-ticket', (req, res) => {
   try {
     const ticket = jwt.sign(
-      { id: req.user.id, username: req.user.username || 'sales', role: req.user.role || 'admin', sse: true },
+      {
+        id: req.user.id,
+        username: req.user.username || 'sales',
+        role: req.user.role || 'admin',
+        company_id: req.user.company_id || '',
+        sse: true
+      },
       process.env.JWT_SECRET,
       { expiresIn: '5m' }
     );

@@ -214,6 +214,24 @@ export interface SalesOrderRecord {
   created_at: string;
 }
 
+export interface PortalShipmentRecord {
+  id: string;
+  order_number: string | null;
+  orderDate: string;
+  customerName: string;
+  status: string;
+  tracking_number: string | null;
+  carrier: string | null;
+  driver_name: string | null;
+  vehicle_no: string | null;
+  estimated_delivery: string | null;
+  actual_arrival: string | null;
+  current_location: string | null;
+  proof_of_delivery: string | null;
+  shipping_address: string | null;
+  items: RequestLineItem[];
+}
+
 export interface DocumentChainEntry {
   docType: 'request' | 'quotation' | 'order';
   docId: string;
@@ -483,6 +501,15 @@ export const portalLifecycle = {
     },
     reorder(id: string): Promise<ReorderResult> {
       return portalApi.post<ReorderResult>(`/orders/${id}/reorder`);
+    },
+  },
+
+  shipments: {
+    list(): Promise<PortalShipmentRecord[]> {
+      return portalApi.get<PortalShipmentRecord[]>('/shipments');
+    },
+    get(id: string): Promise<PortalShipmentRecord> {
+      return portalApi.get<PortalShipmentRecord>(`/shipments/${id}`);
     },
   },
 

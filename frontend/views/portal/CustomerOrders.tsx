@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Eye, Plus, MoreVertical, RotateCcw, Loader2, Search } from 'lucide-react';
+import { ShoppingCart, Eye, Plus, MoreVertical, RotateCcw, Loader2, Search, Truck } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import { useToast } from './components/Toast';
@@ -181,25 +181,35 @@ const CustomerOrders: React.FC = () => {
                            <td className="px-5 py-3 text-center" data-label="Status">
                             <StatusBadge status={FRIENDLY_STATUS_MAP[order.status.toLowerCase()] || order.status} />
                           </td>
-                          <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex justify-center gap-1 items-center shrink-0">
-                              <button className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail" aria-label="View order detail">
-                                <Eye size={14} />
-                              </button>
-                              {order.status !== 'Draft' && order.status !== 'Cancelled' && (
-                                <button
-                                  onClick={() => handleReorderClick(order)}
-                                  disabled={reorderingId === order.id}
-                                  className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Reorder"
-                                  aria-label={`Reorder ${order.orderNumber || order.id}`}
-                                >
-                                  {reorderingId === order.id ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-                                </button>
-                              )}
-                              <button className="p-2 text-[#5c6567] hover:text-slate-600 rounded" aria-label="More actions"><MoreVertical size={14} /></button>
-                            </div>
-                          </td>
+                           <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                             <div className="flex justify-center gap-1 items-center shrink-0">
+                               <button className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail" aria-label="View order detail">
+                                 <Eye size={14} />
+                               </button>
+                               {(order as any).tracking_number && (
+                                 <button
+                                   onClick={() => navigate(`/portal/shipments/${order.id}`)}
+                                   className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all"
+                                   title="Track shipment"
+                                   aria-label={`Track shipment for order ${order.orderNumber || order.id}`}
+                                 >
+                                   <Truck size={14} />
+                                 </button>
+                               )}
+                               {order.status !== 'Draft' && order.status !== 'Cancelled' && (
+                                 <button
+                                   onClick={() => handleReorderClick(order)}
+                                   disabled={reorderingId === order.id}
+                                   className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                   title="Reorder"
+                                   aria-label={`Reorder ${order.orderNumber || order.id}`}
+                                 >
+                                   {reorderingId === order.id ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                                 </button>
+                               )}
+                               <button className="p-2 text-[#5c6567] hover:text-slate-600 rounded" aria-label="More actions"><MoreVertical size={14} /></button>
+                             </div>
+                           </td>
                         </tr>
                       );
                     })}

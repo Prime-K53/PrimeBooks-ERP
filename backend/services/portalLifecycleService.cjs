@@ -90,6 +90,11 @@ const NOTIFICATION_TYPES = Object.freeze({
   REQUEST: 'request',
   QUOTATION: 'quotation',
   ORDER: 'order',
+  INVOICE: 'invoice',
+  PAYMENT: 'payment',
+  RECEIPT: 'receipt',
+  PRODUCTION: 'production',
+  DOCUMENT: 'document',
   DOWNLOAD: 'download',
   DECISION: 'decision',
   SYSTEM: 'system',
@@ -205,9 +210,29 @@ function subscribe(channel, res, req) {
   return () => cleanup();
 }
 
+function shouldDeliver(channel, entry, payload = {}) {
+  if (!entry || !entry.req || !payload || typeof payload !== 'object') return true;
+
+  if (channel === 'portal') {
+    const portalUser = entry.req.portalUser || {};
+    if (!portalUser.customer_id) return false;
+    if (payload.customerId && String(payload.customerId) !== String(portalUser.customer_id)) return false;
+    if (payload.companyId && portalUser.company_id && String(payload.companyId) !== String(portalUser.company_id)) return false;
+    return true;
+  }
+
+  if (channel === 'admin') {
+    const adminCompanyId = entry.req.user?.company_id || entry.req.companyId || '';
+    if (payload.companyId && adminCompanyId && String(payload.companyId) !== String(adminCompanyId)) return false;
+  }
+
+  return true;
+}
+
 function broadcast(channel, eventName, payload) {
   const data = `event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`;
   for (const entry of subscribers[channel].values()) {
+    if (!shouldDeliver(channel, entry, payload)) continue;
     try { entry.res.write(data); } catch { /* connection dropped */ }
   }
 }
@@ -396,9 +421,44 @@ async function assertDocAccess(docType, docId, { customerId, companyId }) {
 }
 
 function docPortalLink(docType, docId) {
+  if (docType === 'invoice') return `#/portal/invoices/${docId}`;
+  if (docType === 'payment' || docType === 'receipt') return `#/portal/payments/${docId}`;
   if (docType === 'quotation') return `#/portal/quotations/${docId}`;
   if (docType === 'order') return `#/portal/orders/${docId}`;
   return `#/portal/requests/${docId}`;
+}
+
+function normalizeActor(actor = {}) {
+  return {
+    type: actor.type || 'system',
+    id: actor.id || actor.userId || null,
+    name: actor.name || actor.username || actor.email || (actor.type === 'admin' ? 'Staff' : 'ERP'),
+    role: actor.role || (actor.type === 'admin' ? 'admin' : 'system'),
+  };
+}
+
+function publicEntityPayload({
+  companyId,
+  customerId,
+  docType,
+  docId,
+  eventType,
+  status,
+  docNumber,
+  metadata = {},
+}) {
+  return {
+    companyId,
+    customerId,
+    docType,
+    docId,
+    event: eventType,
+    eventType,
+    status,
+    docNumber,
+    metadata,
+    updatedAt: nowIso(),
+  };
 }
 
 // ─── Customer: requests ──────────────────────────────────────────────────────
@@ -412,6 +472,74 @@ const portalLifecycleService = {
 
   subscribePortal(req, res) { return subscribe('portal', res, req); },
   subscribeAdmin(req, res) { return subscribe('admin', res, req); },
+  emitEntityChange(channel, payload) { return emitEntityChange(channel, payload); },
+
+  async publishErpEvent({
+    companyId,
+    customerId,
+    docType,
+    docId,
+    docNumber,
+    eventType,
+    status,
+    title,
+    body,
+    link,
+    notificationType,
+    actor = {},
+    metadata = {},
+    notify = true,
+    timeline = true,
+  } = {}) {
+    if (!companyId || !customerId || !docType || !docId || !eventType) {
+      return { published: false, reason: 'missing_required_event_fields' };
+    }
+
+    const safeActor = normalizeActor(actor);
+    const displayTitle = title || `${docType} updated`;
+    const displayBody = body || null;
+    const resolvedLink = link || docPortalLink(docType, docId);
+
+    if (timeline) {
+      await addTimeline(
+        companyId,
+        customerId,
+        docType,
+        docId,
+        eventType,
+        displayTitle,
+        displayBody,
+        safeActor,
+        { docNumber: docNumber || null, status: status || null, ...metadata }
+      );
+    }
+
+    if (notify) {
+      await notifyCustomer({
+        companyId,
+        customerId,
+        type: notificationType || NOTIFICATION_TYPES.SYSTEM,
+        title: displayTitle,
+        body: displayBody,
+        link: resolvedLink,
+        actorName: safeActor.name,
+      });
+    }
+
+    const payload = publicEntityPayload({
+      companyId,
+      customerId,
+      docType,
+      docId,
+      eventType,
+      status,
+      docNumber,
+      metadata,
+    });
+    emitEntityChange('portal', payload);
+    emitEntityChange('admin', payload);
+    return { published: true, payload };
+  },
 
   async createQuotationRequest({ portalUserId, customerId, customerName, companyId, requestType, items, notes, requestedDeliveryDate, attachments, reorderOf, reorderOfNumber, context = {} }) {
     const normalized = normalizeItems(items);

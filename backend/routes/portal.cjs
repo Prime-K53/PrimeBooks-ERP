@@ -25,8 +25,8 @@ function requestContext(req) {
 // ─── Realtime events (SSE) — no manual refresh needed ────────────────────────
 router.post('/events-ticket', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
   try {
-    const { customer_id } = req.portalUser;
-    const ticket = portalAuthService.generateEventTicket(customer_id, 'portal');
+    const { id, customer_id, company_id, email } = req.portalUser;
+    const ticket = portalAuthService.generateEventTicket({ id, customer_id, company_id, email }, 'portal');
     res.json({ ticket, expiresIn: 300 });
   } catch (err) {
     console.error('[Portal] events-ticket error:', err);
@@ -786,6 +786,34 @@ router.post('/support/tickets/:id/messages', async (req, res) => {
   } catch (err) {
     console.error('[Portal] Add message error:', err);
     res.status(500).json({ error: 'Failed to add message' });
+  }
+});
+
+// ─── Shipments / Tracking (customer-facing, read-only) ─────────────────────────
+router.get('/shipments', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const { status, search } = req.query;
+    const rows = await portalService.getShipments(customer_id, company_id, {
+      status: status || undefined,
+      search: search || undefined,
+    });
+    res.json(rows);
+  } catch (err) {
+    console.error('[Portal] Shipments list error:', err);
+    res.status(500).json({ error: 'Failed to load shipments' });
+  }
+});
+
+router.get('/shipments/:id', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const row = await portalService.getShipmentById(req.params.id, customer_id, company_id);
+    if (!row) return res.status(404).json({ error: 'Shipment not found' });
+    res.json(row);
+  } catch (err) {
+    console.error('[Portal] Shipment detail error:', err);
+    res.status(500).json({ error: 'Failed to load shipment' });
   }
 });
 

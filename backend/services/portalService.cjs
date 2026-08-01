@@ -183,7 +183,9 @@ const unpaidInvoiceCount = await getOne(
     return getAll(
       `SELECT so.id, so.order_number, so.orderDate, c.name as customerName, so.total as totalAmount, so.status,
               so.source_request_id, so.source_request_number, so.reorder_of, so.reorder_of_number,
-              so.deliveryDate, so.approved_at, so.items as items_json
+              so.deliveryDate, so.approved_at, so.items as items_json,
+              so.tracking_number, so.carrier, so.driver_name, so.vehicle_no,
+              so.estimated_delivery, so.actual_arrival, so.current_location, so.proof_of_delivery, so.shipping_address
        FROM sales_orders so
        LEFT JOIN customers c ON so.customer_id = c.id
        WHERE so.customer_id = ? AND so.company_id = ?
@@ -221,7 +223,9 @@ const unpaidInvoiceCount = await getOne(
     const rows = await getAll(
       `SELECT so.id, so.order_number, so.orderDate, c.name as customerName, so.total as totalAmount, so.status,
               so.source_request_id, so.source_request_number, so.reorder_of, so.reorder_of_number,
-              so.deliveryDate, so.approved_at, so.items as items_json
+              so.deliveryDate, so.approved_at, so.items as items_json,
+              so.tracking_number, so.carrier, so.driver_name, so.vehicle_no,
+              so.estimated_delivery, so.actual_arrival, so.current_location, so.proof_of_delivery, so.shipping_address
        FROM sales_orders so
        LEFT JOIN customers c ON so.customer_id = c.id
        WHERE ${whereClause}
@@ -964,7 +968,41 @@ const unpaidInvoiceCount = await getOne(
     );
 
     return { id, ticket_id: ticketId, message };
-  }
+  },
+
+  async getShipments(customerId, companyId, { status, search } = {}) {
+    let sql = `SELECT so.id, so.order_number, so.orderDate, so.customer_id, so.status as order_status,
+                    so.tracking_number, so.carrier, so.driver_name, so.vehicle_no,
+                    so.estimated_delivery, so.actual_arrival, so.current_location,
+                    so.proof_of_delivery, so.shipping_address, so.items as items_json,
+                    c.name as customerName
+             FROM sales_orders so
+             LEFT JOIN customers c ON so.customer_id = c.id
+             WHERE so.customer_id = ? AND so.company_id = ?
+               AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''`;
+    const params: any[] = [customerId, companyId];
+    if (status) {
+      sql += ` AND LOWER(so.status) = ?`;
+      params.push(String(status).toLowerCase());
+    }
+    if (search) {
+      sql += ` AND (so.order_number LIKE ? OR so.tracking_number LIKE ? OR c.name LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+    sql += ` ORDER BY so.orderDate DESC`;
+    return getAll(sql, params);
+  },
+
+  async getShipmentById(shipmentId, customerId, companyId) {
+    return getOne(
+      `SELECT so.*, c.name as customerName
+       FROM sales_orders so
+       LEFT JOIN customers c ON so.customer_id = c.id
+       WHERE so.id = ? AND so.customer_id = ? AND so.company_id = ?
+         AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''`,
+      [shipmentId, customerId, companyId]
+    );
+  },
 
 };
 

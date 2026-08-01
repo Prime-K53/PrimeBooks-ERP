@@ -23,10 +23,21 @@ function generateRefreshToken() {
   return crypto.randomBytes(48).toString('hex');
 }
 
-function generateEventTicket(customerId, purpose = 'portal') {
+function generateEventTicket(userOrCustomerId, purpose = 'portal') {
   const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET || 'prime-erp-portal-secret';
+  const user = typeof userOrCustomerId === 'object' && userOrCustomerId !== null
+    ? userOrCustomerId
+    : { customer_id: userOrCustomerId };
   return jwt.sign(
-    { customer_id: customerId, purpose, sse: true },
+    {
+      id: user.id || user.portal_user_id || null,
+      customer_id: user.customer_id,
+      company_id: user.company_id || '',
+      email: user.email || null,
+      role: 'portal_customer',
+      purpose,
+      sse: true
+    },
     JWT_SECRET,
     { expiresIn: '5m' }
   );
