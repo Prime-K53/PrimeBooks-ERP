@@ -29,6 +29,7 @@ const statusColorMap: Record<string, { bg: string; text: string; dot: string }> 
   converted: { bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
   revision_requested: { bg: 'bg-violet-100', text: 'text-violet-700', dot: 'bg-violet-500' },
   rejected: { bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500' },
+  expired: { bg: 'bg-slate-200', text: 'text-slate-600', dot: 'bg-slate-400' },
 };
 
 const StatusBadge: React.FC<Props> = ({ status, size = 'md' }) => {

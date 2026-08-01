@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSalesStore } from '../../stores/salesStore';
 import { useFinanceStore } from '../../stores/financeStore';
+import { adminLifecycle, OrderPrefillPayload } from '../../services/adminPortalClient';
 import SalesOrderForm from './SalesOrderForm';
 import SalesOrderDetail from './SalesOrderDetail';
 
@@ -26,7 +28,71 @@ const statusBadgeColors: Record<string, { bg: string; color: string; border: str
 const SalesOrders: React.FC = () => {
   const { salesOrders, isLoading, fetchSalesData, addSalesOrder, updateSalesOrder } = useSalesStore();
   const { addInvoice } = useFinanceStore();
+  const location = useLocation();
   const [editing, setEditing] = useState<any | null>(null);
+  const [pendingOrderRequest, setPendingOrderRequest] = useState<{ requestId: string; requestNumber: string } | null>(null);
+
+  const completeOrderRequest = async (order: any) => {
+    if (!pendingOrderRequest) return;
+    try {
+      await adminLifecycle.requests.completeOrder(pendingOrderRequest.requestId, {
+        orderSnapshot: {
+          items: order.items || [],
+          subtotal: order.subtotal || 0,
+          discounts: order.discounts || 0,
+          tax: order.tax || 0,
+          otherCharges: 0,
+          total: order.total || 0,
+          notes: order.notes || null,
+          deliveryDate: order.deliveryDate || null,
+          customerId: order.customerId || null
+        }
+      });
+      alert(`Official sales order created. Request ${pendingOrderRequest.requestNumber} marked converted and the customer notified.`);
+    } catch (err: any) {
+      alert('Request conversion failed: ' + (err?.message || err));
+    } finally {
+      setPendingOrderRequest(null);
+      setEditing(null);
+      void fetchSalesData();
+    }
+  };
+
+  const handleCreate = async (o: any) => {
+    await addSalesOrder(o);
+    await fetchSalesData();
+    await completeOrderRequest(o);
+  };
+
+  React.useEffect(() => {
+    const p = (location.state as any)?.orderPrefill as OrderPrefillPayload | undefined;
+    if (p) {
+      const prefill: any = {
+        id: '',
+        customerId: p.customer_id || '',
+        items: (p.items || []).map((it: any, i: number) => ({
+          id: `item-${Date.now()}-${i}`,
+          productId: it.productId || '',
+          description: it.name || '',
+          quantity: Number(it.quantity) || 0,
+          unitPrice: Number(it.unitPrice) || 0,
+          discount: 0,
+          lineTotal: Number(it.lineTotal) || 0
+        })),
+        subtotal: p.subtotal || 0,
+        discounts: 0,
+        tax: 0,
+        total: p.subtotal || 0,
+        orderDate: new Date().toISOString(),
+        deliveryDate: p.deliveryDate || null,
+        status: 'Draft'
+      };
+      setEditing(prefill);
+      setPendingOrderRequest({ requestId: p.id, requestNumber: p.requestNumber });
+      window.history.replaceState({}, '');
+    }
+    fetchSalesData().catch(() => {});
+  }, []);
 
   const handleConvertToInvoice = async (order: any) => {
     const invoice = {
@@ -57,10 +123,6 @@ const SalesOrders: React.FC = () => {
     }
   };
 
-  React.useEffect(() => {
-    fetchSalesData().catch(() => {});
-  }, []);
-
   return (
     <div style={{ background: '#f0ede8', minHeight: '100vh', padding: 24, fontFamily: "'Inter','DM Sans',sans-serif", color: ink }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -75,11 +137,47 @@ const SalesOrders: React.FC = () => {
           Sales Orders
         </h1>
 
+        {pendingOrderRequest && (
+          <div style={{
+            marginBottom: 20,
+            padding: '12px 16px',
+            borderRadius: 12,
+            background: teal[50],
+            border: `1px solid ${teal[200]}`,
+            color: teal[800],
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12
+          }}>
+            <span>
+              Creating official sales order from request <strong>{pendingOrderRequest.requestNumber}</strong>. After saving, the request will be marked converted and the customer notified.
+            </span>
+            <button
+              onClick={() => { setPendingOrderRequest(null); setEditing(null); }}
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 12,
+                fontWeight: 600,
+                padding: '6px 12px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                background: paper,
+                border: `1.4px solid ${teal[200]}`,
+                color: teal[700]
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         <div style={{ marginBottom: 20, background: paper, borderRadius: 14, border: `1px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.03)' }}>
           <div style={{ height: 3, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
           <div style={{ padding: 20 }}>
             {!editing ? (
-              <SalesOrderForm onCreate={(o: any) => addSalesOrder(o).then(() => fetchSalesData())} />
+              <SalesOrderForm onCreate={handleCreate} />
             ) : (
               <div style={{ marginBottom: 16 }}>
                 <SalesOrderForm initial={editing} onDone={() => { setEditing(null); void fetchSalesData(); }} />

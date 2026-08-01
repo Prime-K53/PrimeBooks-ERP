@@ -14,6 +14,7 @@ const crypto = require('crypto');
 const { db } = require('../db.cjs');
 const { auditService } = require('../auditService.cjs');
 const emailService = require('./emailService.cjs');
+const workflowEngine = require('./workflowEngine.cjs');
 
 // ─── Centralized status enums ────────────────────────────────────────────────
 const REQUEST_STATUS = Object.freeze({
@@ -34,6 +35,7 @@ const QUOTATION_STATUS = Object.freeze({
   REJECTED: 'rejected',
   REVISION_REQUESTED: 'revision_requested',
   CONVERTED: 'converted',
+  EXPIRED: 'expired',
 });
 
 const EVENT_TYPES = Object.freeze({
@@ -53,7 +55,13 @@ const EVENT_TYPES = Object.freeze({
   QUOTATION_REJECTED: 'quotation_rejected',
   REVISION_REQUESTED: 'revision_requested',
   REVISION_REGENERATED: 'quotation_regenerated',
+  QUOTATION_EXPIRED: 'quotation_expired',
   ORDER_CONVERTED: 'order_converted',
+  ORDER_GENERATION_STARTED: 'order_generation_started',
+  ORDER_GENERATED: 'order_generated',
+  ORDER_STATUS_CHANGED: 'order_status_changed',
+  REQUEST_REORDERED: 'request_reordered',
+  COMMENT_ADDED: 'comment_added',
 });
 
 const NOTIFICATION_TYPES = Object.freeze({
@@ -136,32 +144,6 @@ function computeTotals(items, discount = 0, taxRate = 0, deliveryFee = 0) {
   const taxAmount = round2(subtotal * (Number(taxRate) || 0) / 100);
   const total = round2(subtotal - round2(discount) + taxAmount + round2(deliveryFee));
   return { subtotal, taxAmount, total };
-}
-
-async function nextSequentialNumber(table, column, prefix) {
-  const rows = await getAll(`SELECT ${column} FROM ${table} WHERE ${column} LIKE ?`, [`${prefix}-%`]);
-  let maxSeq = 0;
-  for (const row of rows) {
-    const suffix = String(row[column] || '').slice(prefix.length + 1);
-    const num = parseInt(suffix, 10);
-    if (Number.isFinite(num) && num > maxSeq) maxSeq = num;
-  }
-  return `${prefix}-${String(maxSeq + 1).padStart(4, '0')}`;
-}
-
-// Year-scoped sequence for quotation requests (QTR-2026-000001). Each calendar
-// year restarts at 000001. Quotation requests never consume official quotation
-// numbers — the two sequences are fully independent.
-async function nextRequestNumber(table, column, prefix) {
-  const year = new Date().getFullYear();
-  const rows = await getAll(`SELECT ${column} FROM ${table} WHERE ${column} LIKE ?`, [`${prefix}-${year}-%`]);
-  let maxSeq = 0;
-  for (const row of rows) {
-    const suffix = String(row[column] || '').slice(prefix.length + 1 + String(year).length + 1);
-    const num = parseInt(suffix, 10);
-    if (Number.isFinite(num) && num > maxSeq) maxSeq = num;
-  }
-  return `${prefix}-${year}-${String(maxSeq + 1).padStart(6, '0')}`;
 }
 
 // Normalizes request statuses from older database generations so the rest of the
@@ -316,10 +298,80 @@ function assertQuotationTransition(quotation, toStatus) {
     [QUOTATION_STATUS.ACCEPTED]: [QUOTATION_STATUS.CONVERTED],
     [QUOTATION_STATUS.REJECTED]: [],
     [QUOTATION_STATUS.CONVERTED]: [],
+    [QUOTATION_STATUS.EXPIRED]: [],
   };
   if (!(allowed[quotation.status] || []).includes(toStatus)) {
     throw new Error(`Invalid quotation transition: ${quotation.status} → ${toStatus}`);
   }
+}
+
+// ─── Phase 3/4 shared primitives ─────────────────────────────────────────────
+
+// Immutable decision signature (accept / reject / revision request).
+async function recordSignature({ companyId, customerId, docType, docId, decision, signedBy, signerName, signerEmail, note, context = {} }) {
+  await runQuery(
+    `INSERT INTO document_signatures
+       (id, company_id, customer_id, doc_type, doc_id, decision, signed_by, signer_name, signer_email, note, ip_address, user_agent)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [genId('dsg'), companyId || '', customerId || null, docType, docId, decision,
+      signedBy || null, signerName || null, signerEmail || null, note || null,
+      context.ip || null, context.userAgent || null]
+  );
+}
+
+// Lazy expiry enforcement: quotations whose valid_until has passed move to
+// 'expired' the moment anyone reads them (or when the admin list is fetched).
+async function applyQuotationExpiry(quotation) {
+  if (!quotation || !quotation.valid_until) return quotation;
+  if (![QUOTATION_STATUS.READY, QUOTATION_STATUS.REVISION_REQUESTED].includes(quotation.status)) return quotation;
+  if (new Date(quotation.valid_until).getTime() > Date.now()) return quotation;
+
+  const expiredAt = nowIso();
+  await runQuery(
+    `UPDATE quotations SET status = ?, expired_at = ?, updated_at = ? WHERE id = ?`,
+    [QUOTATION_STATUS.EXPIRED, expiredAt, expiredAt, quotation.id]
+  );
+  quotation.status = QUOTATION_STATUS.EXPIRED;
+  quotation.expired_at = expiredAt;
+
+  await addTimeline(quotation.company_id, quotation.customer_id, 'quotation', quotation.id, EVENT_TYPES.QUOTATION_EXPIRED,
+    'Quotation expired', `${quotation.quotation_number} expired on ${quotation.valid_until}.`,
+    { type: 'system' }, { validUntil: quotation.valid_until });
+
+  await logAudit({
+    actor: { id: 'system', name: 'Expiry engine', role: 'system' },
+    companyId: quotation.company_id, action: 'QUOTATION_EXPIRE', entityType: 'quotation', entityId: quotation.id,
+    details: `${quotation.quotation_number} expired (valid_until ${quotation.valid_until})`,
+    oldValue: { status: 'ready' }, newValue: { status: QUOTATION_STATUS.EXPIRED },
+  });
+
+  await notifyAdmin({
+    companyId: quotation.company_id, type: NOTIFICATION_TYPES.SYSTEM, title: 'Quotation expired',
+    body: `${quotation.quotation_number} expired on ${quotation.valid_until} without a customer decision.`,
+    link: '#/sales-flow/requests', customerId: quotation.customer_id, customerName: quotation.customer_name,
+  });
+
+  emitEntityChange('admin', { companyId: quotation.company_id, customerId: quotation.customer_id, docType: 'quotation', docId: quotation.id, status: QUOTATION_STATUS.EXPIRED, quotationNumber: quotation.quotation_number });
+  return quotation;
+}
+
+const DOC_TABLES = Object.freeze({ request: 'quotation_requests', quotation: 'quotations', order: 'sales_orders' });
+
+// Confirms the caller may access a chain document; returns the row.
+async function assertDocAccess(docType, docId, { customerId, companyId }) {
+  const table = DOC_TABLES[docType];
+  if (!table) throw new Error('Unknown document type');
+  const row = await getOne(`SELECT id, customer_id, company_id FROM ${table} WHERE id = ?`, [docId]);
+  if (!row) throw new Error('Document not found');
+  if (companyId && row.company_id !== companyId) throw new Error('Document not found');
+  if (customerId && row.customer_id !== customerId) throw new Error('Document not found');
+  return row;
+}
+
+function docPortalLink(docType, docId) {
+  if (docType === 'quotation') return `#/portal/quotations/${docId}`;
+  if (docType === 'order') return `#/portal/orders/${docId}`;
+  return `#/portal/requests/${docId}`;
 }
 
 // ─── Customer: requests ──────────────────────────────────────────────────────
@@ -327,13 +379,14 @@ const portalLifecycleService = {
 
   REQUEST_STATUS,
   QUOTATION_STATUS,
+  SALES_ORDER_STATUS: workflowEngine.SALES_ORDER_STATUS,
   EVENT_TYPES,
   NOTIFICATION_TYPES,
 
   subscribePortal(req, res) { return subscribe('portal', res, req); },
   subscribeAdmin(req, res) { return subscribe('admin', res, req); },
 
-  async createQuotationRequest({ portalUserId, customerId, customerName, companyId, requestType, items, notes, requestedDeliveryDate, attachments, context = {} }) {
+  async createQuotationRequest({ portalUserId, customerId, customerName, companyId, requestType, items, notes, requestedDeliveryDate, attachments, reorderOf, reorderOfNumber, context = {} }) {
     const normalized = normalizeItems(items);
     if (normalized.length === 0) throw new Error('At least one line item is required');
     const requestTypeValue = requestType === 'order' ? 'order' : 'quotation';
@@ -345,23 +398,26 @@ const portalLifecycleService = {
     })) : [];
 
     const id = genId('req');
-    const requestNumber = await nextRequestNumber('quotation_requests', 'request_number', 'QTR');
+    const requestNumber = await workflowEngine.nextYearScopedNumber(
+      'quotation_requests', 'request_number', workflowEngine.requestNumberPrefix(requestTypeValue)
+    );
     await runQuery(
       `INSERT INTO quotation_requests
          (id, request_number, customer_id, customer_name, company_id, request_type, items, subtotal,
-          notes, status, requested_delivery_date, attachments, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          notes, status, requested_delivery_date, attachments, reorder_of, reorder_of_number, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, requestNumber, customerId, customerName, companyId, requestTypeValue,
         JSON.stringify(normalized), subtotal, notes || null, REQUEST_STATUS.SUBMITTED,
         requestedDeliveryDate || null,
         normalizedAttachments.length ? JSON.stringify(normalizedAttachments) : null,
+        reorderOf || null, reorderOfNumber || null,
         portalUserId]
     );
 
     await addTimeline(companyId, customerId, 'request', id, EVENT_TYPES.REQUEST_SUBMITTED,
       'Request submitted', `${customerName} submitted a ${requestTypeValue} request (${requestNumber}).`,
       { type: 'customer', id: portalUserId, name: customerName },
-      { requestNumber, itemCount: normalized.length, subtotal, requestedDeliveryDate: requestedDeliveryDate || null });
+      { requestNumber, itemCount: normalized.length, subtotal, requestedDeliveryDate: requestedDeliveryDate || null, reorderOf: reorderOf || null, reorderOfNumber: reorderOfNumber || null });
 
     await logAudit({
       actor: { id: portalUserId, name: customerName, role: 'portal_customer' },
@@ -369,16 +425,16 @@ const portalLifecycleService = {
       action: 'PORTAL_REQUEST_CREATE',
       entityType: 'quotation_request',
       entityId: id,
-      details: `${requestNumber} created via customer portal`,
-      newValue: { requestNumber, requestType: requestTypeValue, items: normalized, subtotal, requestedDeliveryDate: requestedDeliveryDate || null },
+      details: `${requestNumber} created via customer portal${reorderOfNumber ? ` (reorder of ${reorderOfNumber})` : ''}`,
+      newValue: { requestNumber, requestType: requestTypeValue, items: normalized, subtotal, requestedDeliveryDate: requestedDeliveryDate || null, reorderOf: reorderOf || null, reorderOfNumber: reorderOfNumber || null },
       context,
     });
 
     await notifyAdmin({
       companyId,
       type: NOTIFICATION_TYPES.REQUEST,
-      title: 'New quotation request',
-      body: `Customer: ${customerName} — Request: ${requestNumber} — Submitted just now.`,
+      title: requestTypeValue === 'order' ? 'New order request' : 'New quotation request',
+      body: `Customer: ${customerName} — Request: ${requestNumber} — Submitted just now.${reorderOfNumber ? ` Reorder of ${reorderOfNumber}.` : ''}`,
       link: '#/sales-flow/requests',
       customerId,
       customerName,
@@ -387,7 +443,7 @@ const portalLifecycleService = {
     emitEntityChange('portal', { companyId, customerId, docType: 'request', docId: id, status: REQUEST_STATUS.SUBMITTED, requestNumber });
     emitEntityChange('admin', { companyId, customerId, docType: 'request', docId: id, status: REQUEST_STATUS.SUBMITTED, requestNumber });
 
-    return { id, requestNumber, status: REQUEST_STATUS.SUBMITTED, items: normalized, subtotal };
+    return { id, requestNumber, status: REQUEST_STATUS.SUBMITTED, items: normalized, subtotal, reorderOf: reorderOf || null, reorderOfNumber: reorderOfNumber || null };
   },
 
   async getRequests({ customerId, companyId, status } = {}) {
@@ -715,7 +771,6 @@ const portalLifecycleService = {
   //  3. Records audit + timeline events
   //  4. Notifies the customer
   async completeQuotation(requestId, { admin, companyId, quotationNumber, erpQuotationId, quotationSnapshot = {}, context = {} }) {
-    if (!quotationNumber) throw new Error('quotationNumber is required to complete the conversion');
     const request = await this.adminGetRequest(requestId, companyId);
     if (!request) throw new Error('Request not found');
     if ([REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
@@ -733,6 +788,9 @@ const portalLifecycleService = {
 
     const id = genId('qt');
     const now = nowIso();
+    // Official quotation number comes from the ERP editor when available;
+    // otherwise the backend generates one so the chain never dead-ends.
+    const number = quotationNumber || await workflowEngine.nextYearScopedNumber('quotations', 'quotation_number', 'QT');
 
     await runQuery('BEGIN TRANSACTION');
     try {
@@ -742,7 +800,7 @@ const portalLifecycleService = {
             subtotal, discount, tax_rate, tax_amount, delivery_fee, total, currency,
             payment_terms, valid_until, status, created_by, source_request_number, erp_quotation_id)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, quotationNumber, requestId, request.customer_id, request.customer_name, companyId,
+        [id, number, requestId, request.customer_id, request.customer_name, companyId,
           JSON.stringify(normalizedItems), subtotal, discount, taxRate, taxAmount,
           deliveryFee, total,
           quotationSnapshot.currency || 'MWK',
@@ -756,33 +814,51 @@ const portalLifecycleService = {
         `UPDATE quotation_requests SET status = ?, quotation_id = ?, quotation_number = ?,
            converted_at = ?, converted_by = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ?
          WHERE id = ?`,
-        [REQUEST_STATUS.CONVERTED, id, quotationNumber, now, admin.id, admin.id, now, now, requestId]
+        [REQUEST_STATUS.CONVERTED, id, number, now, admin.id, admin.id, now, now, requestId]
       );
 
       await addTimeline(companyId, request.customer_id, 'request', requestId, EVENT_TYPES.QUOTATION_SAVED,
-        'Quotation saved', `${quotationNumber} was saved for ${request.request_number}.`,
+        'Quotation saved', `${number} was saved for ${request.request_number}.`,
         { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
-        { quotationNumber, total });
+        { quotationNumber: number, total });
+
+      await workflowEngine.createVersionSnapshot({
+        companyId,
+        customerId: request.customer_id,
+        docType: 'quotation',
+        docId: id,
+        version: 1,
+        snapshot: {
+          items: normalizedItems,
+          subtotal, discount, taxRate, taxAmount, deliveryFee, total,
+          currency: quotationSnapshot.currency || 'MWK',
+          paymentTerms: quotationSnapshot.paymentTerms || 'Net 7',
+          validUntil: quotationSnapshot.validUntil || null,
+          status: QUOTATION_STATUS.READY,
+        },
+        reason: 'Original',
+        actor: { id: admin.id, name: admin.name || 'Sales' },
+      });
 
       await addTimeline(companyId, request.customer_id, 'request', requestId, EVENT_TYPES.QUOTATION_NUMBER_ASSIGNED,
-        'Quotation number assigned', `${quotationNumber} was assigned to ${request.request_number}.`,
-        { type: 'system' }, { quotationNumber });
+        'Quotation number assigned', `${number} was assigned to ${request.request_number}.`,
+        { type: 'system' }, { quotationNumber: number });
 
       await addTimeline(companyId, request.customer_id, 'quotation', id, EVENT_TYPES.QUOTATION_GENERATED,
-        'Quotation ready', `Official quotation ${quotationNumber} is ready for review.`,
+        'Quotation ready', `Official quotation ${number} is ready for review.`,
         { type: 'system' }, { total, sourceRequest: request.request_number });
 
       await logAudit({
         actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
         companyId, action: 'QUOTATION_SAVED', entityType: 'quotation', entityId: id,
-        details: `${quotationNumber} created from request ${request.request_number}`,
+        details: `${number} created from request ${request.request_number}`,
         oldValue: { status: request.status },
-        newValue: { status: REQUEST_STATUS.CONVERTED, quotationNumber, items: normalizedItems, subtotal, taxAmount, total }, context,
+        newValue: { status: REQUEST_STATUS.CONVERTED, quotationNumber: number, items: normalizedItems, subtotal, taxAmount, total }, context,
       });
 
       await notifyCustomer({
         companyId, customerId: request.customer_id, type: NOTIFICATION_TYPES.QUOTATION,
-        title: `Your quotation ${quotationNumber} is ready`,
+        title: `Your quotation ${number} is ready`,
         body: `Your official quotation (from request ${request.request_number}) is available for review.`,
         link: `#/portal/quotations/${id}`,
         actorName: admin.name || 'Sales',
@@ -794,8 +870,8 @@ const portalLifecycleService = {
       for (const user of portalUsers) {
         await sendEmailBestEffort({
           to: user.email,
-          subject: `Your quotation ${quotationNumber} is ready for review`,
-          text: `Dear ${request.customer_name},\n\nYour official quotation ${quotationNumber} (total ${total}) prepared from request ${request.request_number} is ready.\nSign in to the customer portal to preview, download or respond.\n\nPrime ERP`,
+          subject: `Your quotation ${number} is ready for review`,
+          text: `Dear ${request.customer_name},\n\nYour official quotation ${number} (total ${total}) prepared from request ${request.request_number} is ready.\nSign in to the customer portal to preview, download or respond.\n\nPrime ERP`,
         });
       }
 
@@ -805,12 +881,261 @@ const portalLifecycleService = {
       throw err;
     }
 
-    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'quotation', docId: id, status: QUOTATION_STATUS.READY, quotationNumber });
-    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.CONVERTED, quotationNumber });
-    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'quotation', docId: id, status: QUOTATION_STATUS.READY, quotationNumber });
-    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.CONVERTED, quotationNumber });
+    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'quotation', docId: id, status: QUOTATION_STATUS.READY, quotationNumber: number });
+    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.CONVERTED, quotationNumber: number });
+    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'quotation', docId: id, status: QUOTATION_STATUS.READY, quotationNumber: number });
+    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.CONVERTED, quotationNumber: number });
 
     return this.getQuotationById(id, { companyId });
+  },
+
+  // ─── Admin: start official sales order generation ──────────────────────────
+  // Mirrors startQuotationGeneration: does NOT create an order and does NOT
+  // reserve an order number. Records the event, moves the order request to
+  // "Ready for Conversion" and returns a prefill payload for the STANDARD ERP
+  // sales order editor.
+  async startOrderGeneration(requestId, { admin, companyId, context = {} }) {
+    const request = await this.adminGetRequest(requestId, companyId);
+    if (!request) throw new Error('Request not found');
+    if (request.request_type !== 'order') throw new Error('Only order requests generate official sales orders');
+    if ([REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
+      throw new Error('Request is closed and cannot be converted');
+    }
+    if (request.sales_order_id) throw new Error('A sales order has already been generated for this request');
+
+    await runQuery(
+      `UPDATE quotation_requests SET status = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ?
+       WHERE id = ?`,
+      [REQUEST_STATUS.READY_FOR_CONVERSION, admin.id, nowIso(), nowIso(), requestId]
+    );
+
+    await addTimeline(companyId, request.customer_id, 'request', requestId, EVENT_TYPES.ORDER_GENERATION_STARTED,
+      'Sales order generation started', `${admin.name || 'Sales'} opened the sales order editor from ${request.request_number}.`,
+      { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
+      { status: REQUEST_STATUS.READY_FOR_CONVERSION });
+
+    await logAudit({
+      actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
+      companyId, action: 'SALES_ORDER_GENERATION_START', entityType: 'quotation_request', entityId: requestId,
+      details: `Sales order generation started from ${request.request_number}`,
+      oldValue: { status: request.status }, newValue: { status: REQUEST_STATUS.READY_FOR_CONVERSION }, context,
+    });
+
+    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.READY_FOR_CONVERSION });
+
+    const customer = await getOne(
+      `SELECT id, name, email, phone, address, billingAddress, shippingAddress, city,
+              segment, paymentTerms, currency, balance
+         FROM customers WHERE id = ?`,
+      [request.customer_id]
+    );
+
+    return {
+      id: request.id,
+      requestNumber: request.request_number,
+      requestType: request.request_type,
+      customer_id: request.customer_id,
+      customer_name: request.customer_name,
+      items: request.items,
+      subtotal: request.subtotal,
+      notes: request.notes,
+      deliveryDate: request.requested_delivery_date || null,
+      reorderOf: request.reorder_of || null,
+      reorderOfNumber: request.reorder_of_number || null,
+      attachments: request.attachments || [],
+      status: REQUEST_STATUS.READY_FOR_CONVERSION,
+      assignedTo: request.assigned_to || null,
+      customer: customer ? {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        address: customer.address,
+        billingAddress: customer.billingAddress || customer.address || '',
+        shippingAddress: customer.shippingAddress || customer.billingAddress || customer.address || '',
+        city: customer.city,
+        segment: customer.segment,
+        paymentTerms: customer.paymentTerms || 'Net 7',
+        currency: customer.currency || 'MWK',
+      } : null,
+    };
+  },
+
+  // ─── Admin: complete the conversion after the ERP sales order is saved ─────
+  // Mirrors completeQuotation. Called by the ERP sales order editor after the
+  // official sales order has been saved. This is the ONLY place an order
+  // request becomes "converted":
+  //  1. Creates the official sales order record (SO-YYYY-######, Confirmed)
+  //  2. Links the request ↔ order (permanent bidirectional reference)
+  //  3. Records audit + timeline events
+  //  4. Notifies the customer
+  async completeSalesOrder(requestId, { admin, companyId, erpOrderId, orderSnapshot = {}, context = {} }) {
+    const request = await this.adminGetRequest(requestId, companyId);
+    if (!request) throw new Error('Request not found');
+    if (request.request_type !== 'order') throw new Error('Only order requests generate official sales orders');
+    if ([REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
+      throw new Error('Request is closed and cannot be converted');
+    }
+    if (request.sales_order_id) throw new Error('A sales order has already been generated for this request');
+
+    const snapshotItems = Array.isArray(orderSnapshot.items) ? orderSnapshot.items : request.items;
+    const normalizedItems = normalizeItems(snapshotItems);
+    if (normalizedItems.length === 0) throw new Error('At least one line item is required');
+    const discount = round2(Number(orderSnapshot.discountAmount ?? orderSnapshot.discount) || 0);
+    const taxRate = Number(orderSnapshot.taxRate ?? orderSnapshot.tax_rate) || 0;
+    const otherCharges = round2(Number(orderSnapshot.otherCharges ?? orderSnapshot.deliveryFee ?? orderSnapshot.delivery_fee) || 0);
+    const { subtotal, taxAmount, total } = computeTotals(normalizedItems, discount, taxRate, otherCharges);
+    const deliveryDate = orderSnapshot.deliveryDate || orderSnapshot.delivery_date || request.requested_delivery_date || null;
+
+    const orderId = genId('so');
+    const orderNumber = await workflowEngine.nextYearScopedNumber('sales_orders', 'order_number', 'SO');
+    const itemsJson = JSON.stringify(
+      normalizedItems.map((item) => ({
+        id: item.productId || genId('itm'),
+        productId: item.productId || null,
+        description: item.name,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+      }))
+    );
+    const now = nowIso();
+
+    await runQuery('BEGIN TRANSACTION');
+    try {
+      await runQuery(
+        `INSERT INTO sales_orders
+           (id, order_number, source_request_id, source_request_number, reorder_of, reorder_of_number,
+            customer_id, orderDate, deliveryDate, status, items,
+            subtotal, discounts, tax, other_charges, total, notes,
+            approved_by, approved_at, erp_order_id, created_by, created_at, updated_at, company_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [orderId, orderNumber, requestId, request.request_number,
+          request.reorder_of || null, request.reorder_of_number || null,
+          request.customer_id, now, deliveryDate, workflowEngine.SALES_ORDER_STATUS.CONFIRMED,
+          itemsJson, subtotal, discount, taxAmount, otherCharges, total,
+          orderSnapshot.notes || request.notes || `Generated from ${request.request_number}`,
+          admin.id, now, erpOrderId || null, admin.id, now, now, companyId]
+      );
+
+      await runQuery(
+        `UPDATE quotation_requests SET status = ?, sales_order_id = ?, sales_order_number = ?,
+           converted_at = ?, converted_by = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ?
+         WHERE id = ?`,
+        [REQUEST_STATUS.CONVERTED, orderId, orderNumber, now, admin.id, admin.id, now, now, requestId]
+      );
+
+      await addTimeline(companyId, request.customer_id, 'request', requestId, EVENT_TYPES.ORDER_GENERATED,
+        'Sales order generated', `${orderNumber} was generated from ${request.request_number}.`,
+        { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
+        { orderNumber, total });
+
+      await addTimeline(companyId, request.customer_id, 'order', orderId, EVENT_TYPES.ORDER_GENERATED,
+        'Order confirmed', `Official sales order ${orderNumber} is confirmed.`,
+        { type: 'system' }, { total, sourceRequest: request.request_number });
+
+      await logAudit({
+        actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
+        companyId, action: 'SALES_ORDER_GENERATED', entityType: 'sales_order', entityId: orderId,
+        details: `${orderNumber} created from request ${request.request_number}`,
+        oldValue: { status: request.status },
+        newValue: { status: REQUEST_STATUS.CONVERTED, orderNumber, items: normalizedItems, subtotal, taxAmount, total }, context,
+      });
+
+      await notifyCustomer({
+        companyId, customerId: request.customer_id, type: NOTIFICATION_TYPES.ORDER,
+        title: `Your order ${orderNumber} is confirmed`,
+        body: `Your order request ${request.request_number} has been confirmed as official order ${orderNumber}.`,
+        link: `#/portal/orders/${orderId}`,
+        actorName: admin.name || 'Sales',
+      });
+      const portalUsers = await getAll(
+        'SELECT id, email FROM portal_users WHERE customer_id = ? AND company_id = ? AND status = ?',
+        [request.customer_id, companyId, 'active']
+      );
+      for (const user of portalUsers) {
+        await sendEmailBestEffort({
+          to: user.email,
+          subject: `Your order ${orderNumber} is confirmed`,
+          text: `Dear ${request.customer_name},\n\nYour order ${orderNumber} (total ${total}) prepared from request ${request.request_number} is confirmed.\nTrack it from the customer portal.\n\nPrime ERP`,
+        });
+      }
+
+      await runQuery('COMMIT');
+    } catch (err) {
+      await runQuery('ROLLBACK');
+      throw err;
+    }
+
+    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'order', docId: orderId, status: workflowEngine.SALES_ORDER_STATUS.CONFIRMED, orderNumber });
+    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.CONVERTED, orderNumber });
+    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'order', docId: orderId, status: workflowEngine.SALES_ORDER_STATUS.CONFIRMED, orderNumber });
+    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.CONVERTED, orderNumber });
+
+    return { id: orderId, orderNumber, status: workflowEngine.SALES_ORDER_STATUS.CONFIRMED };
+  },
+
+  // ─── Customer: reorder an official sales order ─────────────────────────────
+  // A reorder NEVER copies the official order — it creates a brand-new order
+  // request (ODR-YYYY-######) referencing the original order, so the request
+  // goes through the full sales review pipeline again.
+  async reorderFromOrder(orderId, { portalUserId, customerId, companyId, context = {} }) {
+    const order = await getOne(
+      'SELECT * FROM sales_orders WHERE id = ? AND customer_id = ? AND company_id = ?',
+      [orderId, customerId, companyId]
+    );
+    if (!order) throw new Error('Order not found');
+    if ([workflowEngine.SALES_ORDER_STATUS.DRAFT, workflowEngine.SALES_ORDER_STATUS.CANCELLED].includes(String(order.status || ''))) {
+      throw new Error('This order cannot be reordered');
+    }
+    const orderNumber = order.order_number || order.id;
+    const items = workflowEngine.parseOrderItems(order.items);
+    if (items.length === 0) throw new Error('This order has no line items to reorder');
+
+    const customer = await getOne('SELECT name FROM customers WHERE id = ?', [customerId]);
+    const customerName = (customer && customer.name) || 'Customer';
+
+    const id = genId('req');
+    const requestNumber = await workflowEngine.nextYearScopedNumber('quotation_requests', 'request_number', 'ODR');
+    const { subtotal } = computeTotals(items);
+
+    await runQuery(
+      `INSERT INTO quotation_requests
+         (id, request_number, customer_id, customer_name, company_id, request_type, items, subtotal,
+          notes, status, requested_delivery_date, reorder_of, reorder_of_number, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, requestNumber, customerId, customerName, companyId, 'order',
+        JSON.stringify(items), subtotal,
+        `Reorder of ${orderNumber}`, REQUEST_STATUS.SUBMITTED,
+        order.deliveryDate || null, orderId, orderNumber, portalUserId]
+    );
+
+    await addTimeline(companyId, customerId, 'request', id, EVENT_TYPES.REQUEST_REORDERED,
+      'Reorder requested', `${customerName} reordered ${orderNumber} as ${requestNumber}.`,
+      { type: 'customer', id: portalUserId, name: customerName },
+      { reorderOf: orderId, reorderOfNumber: orderNumber, itemCount: items.length, subtotal });
+
+    await logAudit({
+      actor: { id: portalUserId, name: customerName, role: 'portal_customer' },
+      companyId, action: 'PORTAL_REQUEST_REORDER', entityType: 'quotation_request', entityId: id,
+      details: `${requestNumber} created as reorder of ${orderNumber}`,
+      newValue: { requestNumber, reorderOf: orderId, reorderOfNumber: orderNumber, items, subtotal }, context,
+    });
+
+    await notifyAdmin({
+      companyId, type: NOTIFICATION_TYPES.REQUEST, title: 'New order request (reorder)',
+      body: `Customer: ${customerName} — Request: ${requestNumber} — Reorder of ${orderNumber}.`,
+      link: '#/sales-flow/requests', customerId, customerName,
+    });
+
+    emitEntityChange('portal', { companyId, customerId, docType: 'request', docId: id, status: REQUEST_STATUS.SUBMITTED, requestNumber });
+    emitEntityChange('admin', { companyId, customerId, docType: 'request', docId: id, status: REQUEST_STATUS.SUBMITTED, requestNumber, reorderOfNumber: orderNumber });
+
+    return { id, requestNumber, status: REQUEST_STATUS.SUBMITTED, reorderOf: orderId, reorderOfNumber: orderNumber };
+  },
+
+  // ─── Document chain navigation ─────────────────────────────────────────────
+  async getDocumentChain({ docType, docId, companyId, customerId } = {}) {
+    return workflowEngine.getDocumentChain({ docType, docId, companyId, customerId });
   },
 
   // ─── Quotation reads ───────────────────────────────────────────────────────
@@ -826,6 +1151,13 @@ const portalLifecycleService = {
     if (status) { query += ' AND q.status = ?'; params.push(status); }
     query += ' ORDER BY q.created_at DESC';
     const rows = await getAll(query, params);
+    const openRows = rows.filter((r) =>
+      [QUOTATION_STATUS.READY, QUOTATION_STATUS.REVISION_REQUESTED].includes(r.status) &&
+      r.valid_until && new Date(r.valid_until).getTime() <= Date.now()
+    );
+    for (const row of openRows) {
+      await applyQuotationExpiry(row);
+    }
     return rows.map((r) => ({
       ...r,
       customer_name: r.resolved_customer_name || r.customer_name,
@@ -846,58 +1178,77 @@ const portalLifecycleService = {
     if (customerId && quotation.customer_id !== customerId) return null;
     quotation.customer_name = quotation.resolved_customer_name || quotation.customer_name;
     quotation.items = parseJson(quotation.items, []);
+    await applyQuotationExpiry(quotation);
     return quotation;
   },
 
   // ─── Customer: quotation decisions ─────────────────────────────────────────
-  async acceptQuotation(id, { portalUserId, customerId, companyId, context = {} }) {
+  async acceptQuotation(id, { portalUserId, customerId, companyId, signerName, signerEmail, context = {} }) {
     const quotation = await this.getQuotationById(id, { customerId, companyId });
     if (!quotation) throw new Error('Quotation not found');
+    if (quotation.status === QUOTATION_STATUS.EXPIRED) {
+      throw new Error('This quotation has expired and can no longer be accepted');
+    }
     assertQuotationTransition(quotation, QUOTATION_STATUS.ACCEPTED);
 
+    const acceptedBy = signerName || quotation.customer_name || 'Customer';
     await runQuery(
-      `UPDATE quotations SET status = ?, accepted_at = ?, updated_at = ? WHERE id = ?`,
-      [QUOTATION_STATUS.ACCEPTED, nowIso(), nowIso(), id]
+      `UPDATE quotations SET status = ?, accepted_by = ?, accepted_by_email = ?, accepted_at = ?, updated_at = ? WHERE id = ?`,
+      [QUOTATION_STATUS.ACCEPTED, acceptedBy, signerEmail || null, nowIso(), nowIso(), id]
     );
 
+    await recordSignature({
+      companyId, customerId, docType: 'quotation', docId: id, decision: 'accepted',
+      signedBy: portalUserId, signerName: acceptedBy, signerEmail, context,
+    });
+
     await addTimeline(companyId, customerId, 'quotation', id, EVENT_TYPES.QUOTATION_ACCEPTED,
-      'Quotation accepted', `${quotation.customer_name} accepted ${quotation.quotation_number}.`,
-      { type: 'customer', id: portalUserId, name: quotation.customer_name });
+      'Quotation accepted', `${acceptedBy} accepted ${quotation.quotation_number}.`,
+      { type: 'customer', id: portalUserId, name: acceptedBy });
 
     await logAudit({
-      actor: { id: portalUserId, name: quotation.customer_name, role: 'portal_customer' },
+      actor: { id: portalUserId, name: acceptedBy, role: 'portal_customer' },
       companyId, action: 'QUOTATION_ACCEPT', entityType: 'quotation', entityId: id,
       details: `${quotation.quotation_number} accepted by customer`,
-      oldValue: { status: quotation.status }, newValue: { status: QUOTATION_STATUS.ACCEPTED }, context,
+      oldValue: { status: quotation.status }, newValue: { status: QUOTATION_STATUS.ACCEPTED, acceptedBy }, context,
     });
 
     await notifyAdmin({
       companyId, type: NOTIFICATION_TYPES.DECISION, title: 'Quotation accepted',
-      body: `${quotation.customer_name} accepted ${quotation.quotation_number} (${quotation.total}).`,
-      link: '#/sales-flow/requests', customerId, customerName: quotation.customer_name,
+      body: `${acceptedBy} accepted ${quotation.quotation_number} (${quotation.total}).`,
+      link: '#/sales-flow/requests', customerId, customerName: acceptedBy,
     });
 
     emitEntityChange('admin', { companyId, customerId, docType: 'quotation', docId: id, status: QUOTATION_STATUS.ACCEPTED, quotationNumber: quotation.quotation_number });
     return { id, status: QUOTATION_STATUS.ACCEPTED };
   },
 
-  async rejectQuotation(id, { portalUserId, customerId, companyId, reason, context = {} }) {
+  async rejectQuotation(id, { portalUserId, customerId, companyId, reason, signerName, signerEmail, context = {} }) {
     const quotation = await this.getQuotationById(id, { customerId, companyId });
     if (!quotation) throw new Error('Quotation not found');
+    if (quotation.status === QUOTATION_STATUS.EXPIRED) {
+      throw new Error('This quotation has expired and can no longer be responded to');
+    }
     assertQuotationTransition(quotation, QUOTATION_STATUS.REJECTED);
 
+    const signer = signerName || quotation.customer_name || 'Customer';
     await runQuery(
       `UPDATE quotations SET status = ?, rejection_reason = ?, rejected_at = ?, updated_at = ? WHERE id = ?`,
       [QUOTATION_STATUS.REJECTED, reason || null, nowIso(), nowIso(), id]
     );
 
+    await recordSignature({
+      companyId, customerId, docType: 'quotation', docId: id, decision: 'rejected',
+      signedBy: portalUserId, signerName: signer, signerEmail, note: reason || null, context,
+    });
+
     await addTimeline(companyId, customerId, 'quotation', id, EVENT_TYPES.QUOTATION_REJECTED,
-      'Quotation rejected', `${quotation.customer_name} rejected ${quotation.quotation_number}.`,
-      { type: 'customer', id: portalUserId, name: quotation.customer_name },
+      'Quotation rejected', `${signer} rejected ${quotation.quotation_number}.`,
+      { type: 'customer', id: portalUserId, name: signer },
       { reason: reason || '' });
 
     await logAudit({
-      actor: { id: portalUserId, name: quotation.customer_name, role: 'portal_customer' },
+      actor: { id: portalUserId, name: signer, role: 'portal_customer' },
       companyId, action: 'QUOTATION_REJECT', entityType: 'quotation', entityId: id,
       details: `${quotation.quotation_number} rejected${reason ? `: ${reason}` : ''}`,
       oldValue: { status: quotation.status }, newValue: { status: QUOTATION_STATUS.REJECTED, reason }, context,
@@ -905,31 +1256,40 @@ const portalLifecycleService = {
 
     await notifyAdmin({
       companyId, type: NOTIFICATION_TYPES.DECISION, title: 'Quotation rejected',
-      body: `${quotation.customer_name} rejected ${quotation.quotation_number}${reason ? ` — ${reason}` : ''}.`,
-      link: '#/sales-flow/requests', customerId, customerName: quotation.customer_name,
+      body: `${signer} rejected ${quotation.quotation_number}${reason ? ` — ${reason}` : ''}.`,
+      link: '#/sales-flow/requests', customerId, customerName: signer,
     });
 
     emitEntityChange('admin', { companyId, customerId, docType: 'quotation', docId: id, status: QUOTATION_STATUS.REJECTED, quotationNumber: quotation.quotation_number });
     return { id, status: QUOTATION_STATUS.REJECTED };
   },
 
-  async requestRevision(id, { portalUserId, customerId, companyId, comments, context = {} }) {
+  async requestRevision(id, { portalUserId, customerId, companyId, comments, signerName, signerEmail, context = {} }) {
     const quotation = await this.getQuotationById(id, { customerId, companyId });
     if (!quotation) throw new Error('Quotation not found');
+    if (quotation.status === QUOTATION_STATUS.EXPIRED) {
+      throw new Error('This quotation has expired and can no longer be responded to');
+    }
     assertQuotationTransition(quotation, QUOTATION_STATUS.REVISION_REQUESTED);
 
+    const signer = signerName || quotation.customer_name || 'Customer';
     await runQuery(
       `UPDATE quotations SET status = ?, revision_note = ?, revision_requested_at = ?, updated_at = ? WHERE id = ?`,
       [QUOTATION_STATUS.REVISION_REQUESTED, comments || null, nowIso(), nowIso(), id]
     );
 
+    await recordSignature({
+      companyId, customerId, docType: 'quotation', docId: id, decision: 'revision',
+      signedBy: portalUserId, signerName: signer, signerEmail, note: comments || null, context,
+    });
+
     await addTimeline(companyId, customerId, 'quotation', id, EVENT_TYPES.REVISION_REQUESTED,
-      'Revision requested', `${quotation.customer_name} requested changes to ${quotation.quotation_number}.`,
-      { type: 'customer', id: portalUserId, name: quotation.customer_name },
+      'Revision requested', `${signer} requested changes to ${quotation.quotation_number}.`,
+      { type: 'customer', id: portalUserId, name: signer },
       { comments: comments || '' });
 
     await logAudit({
-      actor: { id: portalUserId, name: quotation.customer_name, role: 'portal_customer' },
+      actor: { id: portalUserId, name: signer, role: 'portal_customer' },
       companyId, action: 'QUOTATION_REVISION_REQUEST', entityType: 'quotation', entityId: id,
       details: `Revision requested for ${quotation.quotation_number}${comments ? `: ${comments}` : ''}`,
       oldValue: { status: quotation.status }, newValue: { status: QUOTATION_STATUS.REVISION_REQUESTED, comments }, context,
@@ -937,8 +1297,8 @@ const portalLifecycleService = {
 
     await notifyAdmin({
       companyId, type: NOTIFICATION_TYPES.DECISION, title: 'Revision requested',
-      body: `${quotation.customer_name} requested changes to ${quotation.quotation_number}${comments ? ` — ${comments}` : ''}.`,
-      link: '#/sales-flow/requests', customerId, customerName: quotation.customer_name,
+      body: `${signer} requested changes to ${quotation.quotation_number}${comments ? ` — ${comments}` : ''}.`,
+      link: '#/sales-flow/requests', customerId, customerName: signer,
     });
 
     emitEntityChange('admin', { companyId, customerId, docType: 'quotation', docId: id, status: QUOTATION_STATUS.REVISION_REQUESTED, quotationNumber: quotation.quotation_number });
@@ -955,20 +1315,43 @@ const portalLifecycleService = {
     const normalized = normalizeItems(items);
     if (normalized.length === 0) throw new Error('At least one line item is required');
     const { subtotal, taxAmount, total } = computeTotals(normalized, discount, taxRate, deliveryFee);
+    const nextVersion = (Number(quotation.version) || 1) + 1;
+    const effectivePaymentTerms = paymentTerms || quotation.payment_terms || 'Net 7';
+    const effectiveValidUntil = validUntil || quotation.valid_until;
 
     await runQuery(
       `UPDATE quotations SET items = ?, subtotal = ?, discount = ?, tax_rate = ?, tax_amount = ?,
          delivery_fee = ?, total = ?, payment_terms = ?, valid_until = ?, status = ?, revision_note = NULL,
-         updated_at = ?
+         version = ?, updated_at = ?
        WHERE id = ?`,
       [JSON.stringify(normalized), subtotal, round2(discount), Number(taxRate) || 0, taxAmount,
-        round2(deliveryFee), total, paymentTerms || quotation.payment_terms || 'Net 7',
-        validUntil || quotation.valid_until, QUOTATION_STATUS.READY, nowIso(), id]
+        round2(deliveryFee), total, effectivePaymentTerms,
+        effectiveValidUntil, QUOTATION_STATUS.READY, nextVersion, nowIso(), id]
     );
+
+    // Immutable snapshot of the new revision — older revisions stay intact even
+    // if this one is later accepted and converted into an order.
+    await workflowEngine.createVersionSnapshot({
+      companyId,
+      customerId: quotation.customer_id,
+      docType: 'quotation',
+      docId: id,
+      version: nextVersion,
+      snapshot: {
+        items: normalized,
+        subtotal, discount, taxRate: Number(taxRate) || 0, taxAmount, deliveryFee, total,
+        currency: quotation.currency,
+        paymentTerms: effectivePaymentTerms,
+        validUntil: effectiveValidUntil,
+        status: QUOTATION_STATUS.READY,
+      },
+      reason: `Revision ${nextVersion} — regenerated after customer revision request`,
+      actor: { id: admin.id, name: admin.name || 'Sales' },
+    });
 
     await addTimeline(companyId, quotation.customer_id, 'quotation', id, EVENT_TYPES.REVISION_REGENERATED,
       'Quotation updated', `${admin.name || 'Sales'} updated ${quotation.quotation_number} and sent it back for review.`,
-      { type: 'admin', id: admin.id, name: admin.name || 'Sales' }, { total });
+      { type: 'admin', id: admin.id, name: admin.name || 'Sales' }, { total, version: nextVersion });
 
     await logAudit({
       actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
@@ -998,7 +1381,7 @@ const portalLifecycleService = {
     }
 
     const orderId = genId('so');
-    const orderNumber = await nextSequentialNumber('sales_orders', 'id', 'SO');
+    const orderNumber = await workflowEngine.nextYearScopedNumber('sales_orders', 'order_number', 'SO');
     const itemsJson = JSON.stringify(
       quotation.items.map((item) => ({
         id: item.productId || genId('itm'),
@@ -1011,55 +1394,65 @@ const portalLifecycleService = {
     );
     const now = nowIso();
 
-    await runQuery(
-      `INSERT INTO sales_orders
-         (id, quotation_id, customer_id, orderDate, deliveryDate, status, items,
-          subtotal, discounts, tax, other_charges, total, notes, created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [orderId, id, quotation.customer_id, now, deliveryDate || null,
-        'Confirmed', itemsJson, quotation.subtotal, quotation.discount, quotation.tax_amount,
-        quotation.delivery_fee, quotation.total, notes || `Converted from ${quotation.quotation_number}`,
-        admin.id, now, now]
-    );
+    await runQuery('BEGIN TRANSACTION');
+    try {
+      await runQuery(
+        `INSERT INTO sales_orders
+           (id, order_number, quotation_id, source_request_id, source_request_number, customer_id, orderDate, deliveryDate, status, items,
+            subtotal, discounts, tax, other_charges, total, notes,
+            approved_by, approved_at, created_by, created_at, updated_at, company_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [orderId, orderNumber, id, quotation.request_id || null, quotation.source_request_number || null,
+          quotation.customer_id, now, deliveryDate || null,
+          workflowEngine.SALES_ORDER_STATUS.CONFIRMED, itemsJson, quotation.subtotal, quotation.discount, quotation.tax_amount,
+          quotation.delivery_fee, quotation.total, notes || `Converted from ${quotation.quotation_number}`,
+          admin.id, now, admin.id, now, now, companyId]
+      );
 
-    await runQuery(
-      `UPDATE quotations SET status = ?, order_id = ?, converted_at = ?, updated_at = ? WHERE id = ?`,
-      [QUOTATION_STATUS.CONVERTED, orderId, nowIso(), nowIso(), id]
-    );
+      await runQuery(
+        `UPDATE quotations SET status = ?, order_id = ?, converted_at = ?, updated_at = ? WHERE id = ?`,
+        [QUOTATION_STATUS.CONVERTED, orderId, nowIso(), nowIso(), id]
+      );
 
-    await addTimeline(companyId, quotation.customer_id, 'quotation', id, EVENT_TYPES.ORDER_CONVERTED,
-      'Converted to sales order', `${quotation.quotation_number} was converted to sales order ${orderNumber}.`,
-      { type: 'admin', id: admin.id, name: admin.name || 'Sales' }, { orderNumber });
+      await addTimeline(companyId, quotation.customer_id, 'quotation', id, EVENT_TYPES.ORDER_CONVERTED,
+        'Converted to sales order', `${quotation.quotation_number} was converted to sales order ${orderNumber}.`,
+        { type: 'admin', id: admin.id, name: admin.name || 'Sales' }, { orderNumber });
 
-    await addTimeline(companyId, quotation.customer_id, 'order', orderId, EVENT_TYPES.ORDER_CONVERTED,
-      'Order confirmed', `Sales order ${orderNumber} created from ${quotation.quotation_number}.`,
-      { type: 'system' }, { quotationNumber: quotation.quotation_number, total: quotation.total });
+      await addTimeline(companyId, quotation.customer_id, 'order', orderId, EVENT_TYPES.ORDER_CONVERTED,
+        'Order confirmed', `Sales order ${orderNumber} created from ${quotation.quotation_number}.`,
+        { type: 'system' }, { quotationNumber: quotation.quotation_number, total: quotation.total });
 
-    await logAudit({
-      actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
-      companyId, action: 'SALES_ORDER_CONVERT', entityType: 'sales_order', entityId: orderId,
-      details: `${orderNumber} created from quotation ${quotation.quotation_number}`,
-      oldValue: { status: quotation.status },
-      newValue: { status: QUOTATION_STATUS.CONVERTED, orderId, orderNumber }, context,
-    });
-
-    const portalUsers = await getAll(
-      'SELECT id, email FROM portal_users WHERE customer_id = ? AND company_id = ? AND status = ?',
-      [quotation.customer_id, companyId, 'active']
-    );
-    await notifyCustomer({
-      companyId, customerId: quotation.customer_id, type: NOTIFICATION_TYPES.ORDER,
-      title: `Your order ${orderNumber} is confirmed`,
-      body: `Your order from ${quotation.quotation_number} has been confirmed.`,
-      link: `#/portal/orders/${orderId}`,
-      actorName: admin.name || 'Sales',
-    });
-    for (const user of portalUsers) {
-      await sendEmailBestEffort({
-        to: user.email,
-        subject: `Your order ${orderNumber} is confirmed`,
-        text: `Dear ${quotation.customer_name},\n\nYour order ${orderNumber} (total ${quotation.total}) has been confirmed.\nTrack it from the customer portal.\n\nPrime ERP`,
+      await logAudit({
+        actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
+        companyId, action: 'SALES_ORDER_CONVERT', entityType: 'sales_order', entityId: orderId,
+        details: `${orderNumber} created from quotation ${quotation.quotation_number}`,
+        oldValue: { status: quotation.status },
+        newValue: { status: QUOTATION_STATUS.CONVERTED, orderId, orderNumber }, context,
       });
+
+      const portalUsers = await getAll(
+        'SELECT id, email FROM portal_users WHERE customer_id = ? AND company_id = ? AND status = ?',
+        [quotation.customer_id, companyId, 'active']
+      );
+      await notifyCustomer({
+        companyId, customerId: quotation.customer_id, type: NOTIFICATION_TYPES.ORDER,
+        title: `Your order ${orderNumber} is confirmed`,
+        body: `Your order from ${quotation.quotation_number} has been confirmed.`,
+        link: `#/portal/orders/${orderId}`,
+        actorName: admin.name || 'Sales',
+      });
+      for (const user of portalUsers) {
+        await sendEmailBestEffort({
+          to: user.email,
+          subject: `Your order ${orderNumber} is confirmed`,
+          text: `Dear ${quotation.customer_name},\n\nYour order ${orderNumber} (total ${quotation.total}) has been confirmed.\nTrack it from the customer portal.\n\nPrime ERP`,
+        });
+      }
+
+      await runQuery('COMMIT');
+    } catch (err) {
+      await runQuery('ROLLBACK');
+      throw err;
     }
 
     emitEntityChange('portal', { companyId, customerId: quotation.customer_id, docType: 'order', docId: orderId, status: 'Confirmed', orderNumber });
@@ -1086,8 +1479,8 @@ const portalLifecycleService = {
         [docId, customerId, companyId]
       );
       if (!doc) throw new Error('Order not found');
-      allowed = !['Draft', 'Cancelled'].includes(String(doc.status || ''));
-      docNumber = doc.id;
+      allowed = ![workflowEngine.SALES_ORDER_STATUS.DRAFT, workflowEngine.SALES_ORDER_STATUS.CANCELLED].includes(String(doc.status || ''));
+      docNumber = doc.order_number || doc.id;
     } else {
       throw new Error('Unsupported document type');
     }
@@ -1241,6 +1634,135 @@ const portalLifecycleService = {
       totalDownloads,
       uniqueDownloads: (uniqueDownloadDocs && uniqueDownloadDocs.count) || 0,
     };
+  },
+
+  // ─── Phase 3: Document version history ──────────────────────────────────────
+  listDocumentVersions(docType, docId, { companyId } = {}) {
+    return workflowEngine.listDocumentVersions(docType, docId, { companyId });
+  },
+
+  getDocumentVersion(docType, docId, version, { companyId } = {}) {
+    return workflowEngine.getDocumentVersion(docType, docId, version, { companyId });
+  },
+
+  // ─── Phase 3: Decision signatures (who accepted / rejected / requested) ─────
+  async getDocumentSignatures(docType, docId, { companyId, customerId } = {}) {
+    let query = 'SELECT * FROM document_signatures WHERE doc_type = ? AND doc_id = ?';
+    const params = [docType, docId];
+    if (companyId) { query += ' AND company_id = ?'; params.push(companyId); }
+    if (customerId) { query += ' AND customer_id = ?'; params.push(customerId); }
+    query += ' ORDER BY created_at ASC';
+    return getAll(query, params);
+  },
+
+  // ─── Phase 4: Document discussions (threaded comments) ──────────────────────
+  async getComments({ docType, docId, companyId, customerId, view = 'admin' } = {}) {
+    let query = 'SELECT * FROM document_comments WHERE doc_type = ? AND doc_id = ?';
+    const params = [docType, docId];
+    if (companyId) { query += ' AND company_id = ?'; params.push(companyId); }
+    if (customerId) { query += ' AND customer_id = ?'; params.push(customerId); }
+    if (view === 'customer') {
+      query += " AND visibility = 'customer'";
+    }
+    query += ' ORDER BY created_at ASC';
+    return getAll(query, params);
+  },
+
+  async addComment({ docType, docId, companyId, customerId, actor = {}, body, visibility = 'internal', context = {} }) {
+    const text = String(body || '').trim();
+    if (!text) throw new Error('Comment body is required');
+    const doc = await assertDocAccess(docType, docId, { companyId, customerId });
+    const isCustomer = actor.type === 'customer';
+    const effectiveVisibility = isCustomer ? 'customer' : (visibility === 'customer' ? 'customer' : 'internal');
+    const actorName = actor.name || (isCustomer ? 'Customer' : 'Staff');
+    const id = genId('cmt');
+
+    await runQuery(
+      `INSERT INTO document_comments
+         (id, company_id, customer_id, doc_type, doc_id, author_type, author_id, author_name, visibility, body)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, companyId, doc.customer_id, docType, docId, actor.type || 'admin', actor.id || null, actorName, effectiveVisibility, text]
+    );
+
+    await addTimeline(companyId, doc.customer_id, docType, docId, EVENT_TYPES.COMMENT_ADDED,
+      isCustomer ? 'Comment added by customer' : 'Note added by staff',
+      `${actorName}: ${text.slice(0, 120)}`,
+      { type: actor.type, id: actor.id, name: actorName },
+      { visibility: effectiveVisibility });
+
+    await logAudit({
+      actor: { id: actor.id, name: actorName, role: isCustomer ? 'portal_customer' : (actor.role || 'admin') },
+      companyId, action: isCustomer ? 'DOCUMENT_COMMENT_ADD' : 'DOCUMENT_NOTE_ADD',
+      entityType: docType, entityId: docId,
+      details: `${actorName} commented on ${docType} ${docId}${isCustomer ? '' : ` (${effectiveVisibility})`}`,
+      newValue: { visibility: effectiveVisibility, body: text.slice(0, 200) }, context,
+    });
+
+    if (isCustomer) {
+      await notifyAdmin({
+        companyId, type: NOTIFICATION_TYPES.DECISION, title: 'Customer comment added',
+        body: `${actorName} commented on a ${docType}: ${text.slice(0, 140)}`,
+        link: '#/sales-flow/requests', customerId: doc.customer_id, customerName: actorName,
+      });
+    } else if (effectiveVisibility === 'customer') {
+      await notifyCustomer({
+        companyId, customerId: doc.customer_id, type: NOTIFICATION_TYPES.DECISION,
+        title: 'Staff note added', body: text.slice(0, 140),
+        link: docPortalLink(docType, docId), actorName,
+      });
+    }
+
+    emitEntityChange('portal', { companyId, customerId: doc.customer_id, docType, docId, event: 'comment', visibility: effectiveVisibility });
+    emitEntityChange('admin', { companyId, customerId: doc.customer_id, docType, docId, event: 'comment', visibility: effectiveVisibility });
+    return this.getComments({ docType, docId, companyId, view: isCustomer ? 'customer' : 'admin' });
+  },
+
+  // ─── Phase 4: Sales order production progress ───────────────────────────────
+  async updateOrderStatus(orderId, { admin, companyId, toStatus, note, context = {} }) {
+    const order = await getOne(
+      'SELECT * FROM sales_orders WHERE id = ? AND company_id = ?',
+      [orderId, companyId]
+    );
+    if (!order) throw new Error('Order not found');
+    workflowEngine.assertSalesOrderTransition(order, toStatus);
+
+    const fromStatus = order.status;
+    const now = nowIso();
+    await runQuery(
+      `UPDATE sales_orders SET status = ?, notes = ?, updated_by = ?, updated_at = ? WHERE id = ?`,
+      [toStatus, note || order.notes || null, admin.id, now, orderId]
+    );
+
+    await addTimeline(companyId, order.customer_id, 'order', orderId, EVENT_TYPES.ORDER_STATUS_CHANGED,
+      'Order status changed', `${order.order_number} moved from ${fromStatus} to ${toStatus}.`,
+      { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
+      { from: fromStatus, to: toStatus, note: note || '' });
+
+    await logAudit({
+      actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
+      companyId, action: 'SALES_ORDER_STATUS_UPDATE', entityType: 'order', entityId: orderId,
+      details: `${order.order_number} ${fromStatus} → ${toStatus}`,
+      oldValue: { status: fromStatus }, newValue: { status: toStatus, note: note || null }, context,
+    });
+
+    const progressStatuses = [
+      workflowEngine.SALES_ORDER_STATUS.PROCESSING,
+      workflowEngine.SALES_ORDER_STATUS.SHIPPED,
+      workflowEngine.SALES_ORDER_STATUS.DELIVERED,
+      workflowEngine.SALES_ORDER_STATUS.FULFILLED,
+    ];
+    if (progressStatuses.includes(toStatus)) {
+      await notifyCustomer({
+        companyId, customerId: order.customer_id, type: NOTIFICATION_TYPES.ORDER,
+        title: `Order ${order.order_number} is ${toStatus.toLowerCase()}`,
+        body: `Your order ${order.order_number} moved to ${toStatus}.${note ? ` ${note}` : ''}`,
+        link: `#/portal/orders/${orderId}`, actorName: admin.name || 'Sales',
+      });
+    }
+
+    emitEntityChange('portal', { companyId, customerId: order.customer_id, docType: 'order', docId: orderId, status: toStatus, orderNumber: order.order_number });
+    emitEntityChange('admin', { companyId, customerId: order.customer_id, docType: 'order', docId: orderId, status: toStatus, orderNumber: order.order_number });
+    return { id: orderId, status: toStatus, orderNumber: order.order_number };
   },
 
 };

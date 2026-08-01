@@ -934,6 +934,14 @@ const initDb = () => {
       db.run(`CREATE TABLE IF NOT EXISTS sales_orders (
         id TEXT PRIMARY KEY,
         quotation_id TEXT,
+        order_number TEXT,
+        source_request_id TEXT,
+        source_request_number TEXT,
+        reorder_of TEXT,
+        reorder_of_number TEXT,
+        approved_by TEXT,
+        approved_at TEXT,
+        erp_order_id TEXT,
         customer_id TEXT,
         orderDate DATETIME NOT NULL,
         deliveryDate DATETIME,
@@ -951,6 +959,8 @@ const initDb = () => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
       )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_sales_orders_order_number ON sales_orders(order_number)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_sales_orders_source_request ON sales_orders(source_request_id)`);
 
       // -----------------------------------------------------------------------
       // Update existing tables if columns are missing
@@ -972,7 +982,22 @@ const initDb = () => {
         { table: 'invoices', column: 'sub_account_name', type: 'TEXT' },
         { table: 'inventory', column: 'conversion_rate', type: 'REAL DEFAULT 500' },
         { table: 'sales_orders', column: 'other_charges', type: 'REAL DEFAULT 0' },
-        { table: 'sales_orders', column: 'quotation_id', type: 'TEXT' },        { table: 'examination_batches', column: 'batch_number', type: 'TEXT' },
+        { table: 'sales_orders', column: 'quotation_id', type: 'TEXT' },
+        // Sales document chain (Phase: complete request architecture)
+        { table: 'sales_orders', column: 'order_number', type: 'TEXT' },
+        { table: 'sales_orders', column: 'source_request_id', type: 'TEXT' },
+        { table: 'sales_orders', column: 'source_request_number', type: 'TEXT' },
+        { table: 'sales_orders', column: 'reorder_of', type: 'TEXT' },
+        { table: 'sales_orders', column: 'reorder_of_number', type: 'TEXT' },
+        { table: 'sales_orders', column: 'approved_by', type: 'TEXT' },
+        { table: 'sales_orders', column: 'approved_at', type: 'TEXT' },
+        { table: 'sales_orders', column: 'erp_order_id', type: 'TEXT' },
+        // Phase 3 — Versioning & Expiry
+        { table: 'quotations', column: 'version', type: 'INTEGER DEFAULT 1' },
+        { table: 'quotations', column: 'expired_at', type: 'TEXT' },
+        { table: 'quotations', column: 'accepted_by', type: 'TEXT' },
+        { table: 'quotations', column: 'accepted_by_email', type: 'TEXT' },
+        { table: 'examination_batches', column: 'batch_number', type: 'TEXT' },
         { table: 'examination_batches', column: 'sub_account_name', type: 'TEXT' },
         { table: 'examination_batches', column: 'type', type: "TEXT DEFAULT 'Original'" },
         { table: 'examination_batches', column: 'parent_batch_id', type: 'TEXT' },
@@ -1126,7 +1151,12 @@ const initDb = () => {
         { table: 'quotation_requests', column: 'assigned_at', type: 'TEXT' },
         { table: 'quotation_requests', column: 'converted_at', type: 'TEXT' },
         { table: 'quotation_requests', column: 'converted_by', type: 'TEXT' },
-        { table: 'quotation_requests', column: 'quotation_number', type: 'TEXT' }
+        { table: 'quotation_requests', column: 'quotation_number', type: 'TEXT' },
+        // Order request → official sales order links (complete request architecture)
+        { table: 'quotation_requests', column: 'sales_order_id', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'sales_order_number', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'reorder_of', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'reorder_of_number', type: 'TEXT' }
       ];
 
       // Process migrations: add missing columns to existing tables
@@ -2315,6 +2345,10 @@ const initDb = () => {
         converted_at TEXT,
         converted_by TEXT,
         quotation_number TEXT,
+        sales_order_id TEXT,
+        sales_order_number TEXT,
+        reorder_of TEXT,
+        reorder_of_number TEXT,
         created_by TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
@@ -2345,9 +2379,13 @@ const initDb = () => {
         currency TEXT DEFAULT 'MWK',
         payment_terms TEXT DEFAULT 'Net 7',
         valid_until TEXT,
-        status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('ready', 'accepted', 'rejected', 'revision_requested', 'converted')),
+        status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('ready', 'accepted', 'rejected', 'revision_requested', 'converted', 'expired')),
+        version INTEGER DEFAULT 1,
+        expired_at TEXT,
         revision_note TEXT,
         rejection_reason TEXT,
+        accepted_by TEXT,
+        accepted_by_email TEXT,
         accepted_at TEXT,
         rejected_at TEXT,
         revision_requested_at TEXT,
@@ -2397,6 +2435,65 @@ const initDb = () => {
       )`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_portal_downloads_doc ON portal_downloads(doc_type, doc_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_portal_downloads_company ON portal_downloads(company_id)`);
+
+      // Portal document lifecycle — version snapshots (Phase 3: Versioning).
+      // Generic per-document history so any docType (quotation today, artwork
+      // files in later phases) records immutable point-in-time snapshots.
+      db.run(`CREATE TABLE IF NOT EXISTS document_versions (
+        id TEXT PRIMARY KEY,
+        company_id TEXT NOT NULL DEFAULT '',
+        customer_id TEXT,
+        doc_type TEXT NOT NULL,
+        doc_id TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        snapshot TEXT NOT NULL,
+        reason TEXT,
+        created_by TEXT,
+        created_by_name TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_versions_doc ON document_versions(doc_type, doc_id, version)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_versions_company ON document_versions(company_id)`);
+
+      // Portal document lifecycle — decision signatures (Phase 3: digital
+      // approval trail). Records who accepted/rejected/requested revision and
+      // when, so acceptance can never be forged or silently overwritten.
+      db.run(`CREATE TABLE IF NOT EXISTS document_signatures (
+        id TEXT PRIMARY KEY,
+        company_id TEXT NOT NULL DEFAULT '',
+        customer_id TEXT,
+        doc_type TEXT NOT NULL,
+        doc_id TEXT NOT NULL,
+        decision TEXT NOT NULL CHECK(decision IN ('accepted', 'rejected', 'revision')),
+        signed_by TEXT,
+        signer_name TEXT,
+        signer_email TEXT,
+        note TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_signatures_doc ON document_signatures(doc_type, doc_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_signatures_company ON document_signatures(company_id)`);
+
+      // Portal document lifecycle — threaded discussions (Phase 4: collaboration).
+      // 'customer' visibility = visible to the customer; 'internal' = staff-only
+      // notes. Comments are always attached to a document in the chain.
+      db.run(`CREATE TABLE IF NOT EXISTS document_comments (
+        id TEXT PRIMARY KEY,
+        company_id TEXT NOT NULL DEFAULT '',
+        customer_id TEXT,
+        doc_type TEXT NOT NULL,
+        doc_id TEXT NOT NULL,
+        author_type TEXT NOT NULL DEFAULT 'admin' CHECK(author_type IN ('customer', 'admin', 'system')),
+        author_id TEXT,
+        author_name TEXT,
+        visibility TEXT NOT NULL DEFAULT 'internal' CHECK(visibility IN ('customer', 'internal')),
+        body TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_comments_doc ON document_comments(doc_type, doc_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_comments_company ON document_comments(company_id)`);
 
       // Admin notifications — new quotation requests, customer decisions, downloads
       db.run(`CREATE TABLE IF NOT EXISTS admin_notifications (
@@ -2475,6 +2572,10 @@ const initDb = () => {
                   converted_at TEXT,
                   converted_by TEXT,
                   quotation_number TEXT,
+                  sales_order_id TEXT,
+                  sales_order_number TEXT,
+                  reorder_of TEXT,
+                  reorder_of_number TEXT,
                   created_by TEXT,
                   created_at TEXT DEFAULT (datetime('now')),
                   updated_at TEXT DEFAULT (datetime('now'))
@@ -2496,6 +2597,80 @@ const initDb = () => {
                       db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`);
                       db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_company ON quotation_requests(company_id)`);
                       db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_status ON quotation_requests(company_id, status)`);
+                      resolve();
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      }).then(() => {
+        // Migration: databases created before Phase 3 carry the quotations CHECK
+        // constraint without 'expired'. SQLite cannot alter CHECK constraints in
+        // place, so rebuild the table when the legacy constraint is detected.
+        return new Promise((resolve) => {
+          db.all(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'quotations'`, [], (mErr, mRows) => {
+            if (mErr) return resolve();
+            const legacySql = mRows && mRows[0] && mRows[0].sql ? String(mRows[0].sql) : '';
+            if (legacySql.includes("'expired'")) return resolve();
+            db.serialize(() => {
+              db.run(`ALTER TABLE quotations RENAME TO quotations_legacy`, (rErr) => {
+                if (rErr) return console.error('[DB] quotations rebuild rename failed:', rErr.message);
+                db.run(`CREATE TABLE quotations (
+                  id TEXT PRIMARY KEY,
+                  quotation_number TEXT UNIQUE NOT NULL,
+                  request_id TEXT,
+                  customer_id TEXT NOT NULL,
+                  customer_name TEXT,
+                  company_id TEXT NOT NULL DEFAULT '',
+                  items TEXT NOT NULL,
+                  subtotal REAL DEFAULT 0,
+                  discount REAL DEFAULT 0,
+                  tax_rate REAL DEFAULT 0,
+                  tax_amount REAL DEFAULT 0,
+                  delivery_fee REAL DEFAULT 0,
+                  total REAL DEFAULT 0,
+                  currency TEXT DEFAULT 'MWK',
+                  payment_terms TEXT DEFAULT 'Net 7',
+                  valid_until TEXT,
+                  status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('ready', 'accepted', 'rejected', 'revision_requested', 'converted', 'expired')),
+                  version INTEGER DEFAULT 1,
+                  expired_at TEXT,
+                  revision_note TEXT,
+                  rejection_reason TEXT,
+                  accepted_by TEXT,
+                  accepted_by_email TEXT,
+                  accepted_at TEXT,
+                  rejected_at TEXT,
+                  revision_requested_at TEXT,
+                  converted_at TEXT,
+                  order_id TEXT,
+                  created_by TEXT,
+                  source_request_number TEXT,
+                  erp_quotation_id TEXT,
+                  created_at TEXT DEFAULT (datetime('now')),
+                  updated_at TEXT DEFAULT (datetime('now'))
+                )`, (cErr) => {
+                  if (cErr) return console.error('[DB] quotations rebuild create failed:', cErr.message);
+                  db.run(`INSERT INTO quotations
+                     (id, quotation_number, request_id, customer_id, customer_name, company_id, items,
+                      subtotal, discount, tax_rate, tax_amount, delivery_fee, total, currency,
+                      payment_terms, valid_until, status, revision_note, rejection_reason,
+                      accepted_at, rejected_at, revision_requested_at, converted_at, order_id,
+                      created_by, source_request_number, erp_quotation_id, created_at, updated_at)
+                   SELECT id, quotation_number, request_id, customer_id, customer_name, company_id, items,
+                          subtotal, discount, tax_rate, tax_amount, delivery_fee, total, currency,
+                          payment_terms, valid_until, status, revision_note, rejection_reason,
+                          accepted_at, rejected_at, revision_requested_at, converted_at, order_id,
+                          created_by, source_request_number, erp_quotation_id, created_at, updated_at
+                   FROM quotations_legacy`, (iErr) => {
+                    if (iErr) return console.error('[DB] quotations rebuild copy failed:', iErr.message);
+                    db.run(`DROP TABLE quotations_legacy`, (dErr) => {
+                      if (dErr) console.error('[DB] quotations legacy drop failed:', dErr.message);
+                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_customer ON quotations(customer_id)`);
+                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_company ON quotations(company_id)`);
+                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_request ON quotations(request_id)`);
                       resolve();
                     });
                   });

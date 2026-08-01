@@ -145,11 +145,53 @@ export interface QuotationRequestRecord {
   reviewed_at: string | null;
   quotation_id: string | null;
   quotation_number: string | null;
+  sales_order_id: string | null;
+  sales_order_number: string | null;
+  reorder_of: string | null;
+  reorder_of_number: string | null;
   requested_delivery_date: string | null;
   attachments: PortalAttachment[];
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+export type SalesOrderStatus = 'Draft' | 'Confirmed' | 'Processing' | 'Pending' | 'Delivered' | 'Fulfilled' | 'Shipped' | 'Cancelled';
+
+export interface SalesOrderRecord {
+  id: string;
+  order_number: string | null;
+  orderDate: string;
+  deliveryDate: string | null;
+  customerName: string;
+  totalAmount: number;
+  status: SalesOrderStatus;
+  items: RequestLineItem[];
+  notes: string | null;
+  quotation_id: string | null;
+  source_request_id: string | null;
+  source_request_number: string | null;
+  reorder_of: string | null;
+  reorder_of_number: string | null;
+  approved_at: string | null;
+  created_at: string;
+}
+
+export interface DocumentChainEntry {
+  docType: 'request' | 'quotation' | 'order';
+  docId: string;
+  docNumber: string;
+  status: string;
+  title: string;
+  createdAt: string;
+}
+
+export interface DocumentChainResult {
+  chain: DocumentChainEntry[];
+  originOrder: DocumentChainEntry | null;
+  request: any | null;
+  quotation: any | null;
+  order: any | null;
 }
 
 export interface QuotationRecord {
@@ -169,7 +211,11 @@ export interface QuotationRecord {
   currency: string;
   payment_terms: string | null;
   valid_until: string | null;
-  status: 'ready' | 'accepted' | 'rejected' | 'revision_requested' | 'converted';
+  status: 'ready' | 'accepted' | 'rejected' | 'revision_requested' | 'converted' | 'expired';
+  version: number;
+  expired_at: string | null;
+  accepted_by: string | null;
+  accepted_by_email: string | null;
   revision_note: string | null;
   rejection_reason: string | null;
   accepted_at: string | null;
@@ -181,6 +227,51 @@ export interface QuotationRecord {
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface DocumentVersionRecord {
+  id: string;
+  version: number;
+  snapshot: {
+    items?: RequestLineItem[];
+    subtotal?: number;
+    discount?: number;
+    taxRate?: number;
+    taxAmount?: number;
+    deliveryFee?: number;
+    total?: number;
+    currency?: string;
+    paymentTerms?: string | null;
+    validUntil?: string | null;
+    status?: string;
+  };
+  reason: string | null;
+  created_by: string | null;
+  created_by_name: string | null;
+  created_at: string;
+}
+
+export interface DocumentSignatureRecord {
+  id: string;
+  decision: 'accepted' | 'rejected' | 'revision';
+  signed_by: string | null;
+  signer_name: string | null;
+  signer_email: string | null;
+  note: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface DocumentCommentRecord {
+  id: string;
+  doc_type: string;
+  doc_id: string;
+  author_type: 'customer' | 'admin' | 'system';
+  author_id: string | null;
+  author_name: string | null;
+  visibility: 'customer' | 'internal';
+  body: string;
+  created_at: string;
 }
 
 export interface TimelineEvent {
@@ -211,10 +302,94 @@ export interface CreateRequestPayload {
   attachments?: PortalAttachment[];
 }
 
+export interface ReorderResult {
+  id: string;
+  requestNumber: string;
+  status: string;
+  reorderOf: string;
+  reorderOfNumber: string;
+}
+
 export interface QuotationDecisionPayload {
   acceptedBy?: string;
   reason?: string;
   comments?: string;
+}
+
+export interface PortalNotification {
+  id: string;
+  portal_user_id: string;
+  type: string;
+  title: string;
+  body: string;
+  link: string;
+  is_read: boolean;
+  company_id: string;
+  created_at: string;
+}
+
+export interface PortalReferral {
+  id: string;
+  referredCustomerId: string;
+  referredCustomerName: string;
+  referredCustomerEmail: string | null;
+  status: string;
+  pendingInvoiceId: string | null;
+  pendingInvoiceAmount: number;
+  convertedInvoiceId: string | null;
+  convertedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PortalReferralReward {
+  id: string;
+  referralId: string;
+  referralCode: string;
+  referredCustomerId: string;
+  referredCustomerName: string;
+  invoiceId: string;
+  invoiceAmount: number;
+  amount: number;
+  status: string;
+  approvedAt: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  walletTransactionId: string | null;
+  createdAt: string;
+}
+
+export interface PortalReferralSettings {
+  enabled: boolean;
+  rewardType: string;
+  rewardValue: number;
+  rewardPercentage: number;
+  minimumPurchase: number;
+  maxRewardAmount: number;
+  expiryDays: number;
+  requireApproval: boolean;
+  shareMessage: string;
+}
+
+export interface PortalReferralTimelineEntry {
+  id: string;
+  referralId: string;
+  eventType: string;
+  title: string;
+  description: string;
+  amount: number | null;
+  actorId: string | null;
+  actorName: string | null;
+  metadata: string | null;
+  timestamp: string;
+}
+
+export interface PortalCustomerSearchResult {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
 }
 
 export const portalLifecycle = {
@@ -249,6 +424,37 @@ export const portalLifecycle = {
     requestRevision(id: string, payload?: QuotationDecisionPayload): Promise<QuotationRecord> {
       return portalApi.post<QuotationRecord>(`/quotations/${id}/revision`, payload);
     },
+    versions: {
+      list(id: string): Promise<DocumentVersionRecord[]> {
+        return portalApi.get<DocumentVersionRecord[]>(`/quotations/${id}/versions`);
+      },
+      get(id: string, version: number): Promise<DocumentVersionRecord> {
+        return portalApi.get<DocumentVersionRecord>(`/quotations/${id}/versions/${version}`);
+      },
+    },
+    signatures(id: string): Promise<DocumentSignatureRecord[]> {
+      return portalApi.get<DocumentSignatureRecord[]>(`/quotations/${id}/signatures`);
+    },
+  },
+
+  orders: {
+    list(): Promise<SalesOrderRecord[]> {
+      return portalApi.get<SalesOrderRecord[]>('/orders');
+    },
+    get(id: string): Promise<SalesOrderRecord> {
+      return portalApi.get<SalesOrderRecord>(`/orders/${id}`);
+    },
+    reorder(id: string): Promise<ReorderResult> {
+      return portalApi.post<ReorderResult>(`/orders/${id}/reorder`);
+    },
+  },
+
+  documentChain: {
+    get(docType: 'request' | 'quotation' | 'order', docId: string): Promise<DocumentChainResult> {
+      return portalApi.get<DocumentChainResult>(
+        `/document-chain?docType=${docType}&docId=${encodeURIComponent(docId)}`
+      );
+    },
   },
 
   downloads: {
@@ -260,6 +466,78 @@ export const portalLifecycle = {
   timeline: {
     get(docType: 'request' | 'quotation' | 'order', docId: string): Promise<TimelineEvent[]> {
       return portalApi.get<TimelineEvent[]>(`/timeline?docType=${docType}&docId=${encodeURIComponent(docId)}`);
+    },
+  },
+
+  comments: {
+    list(docType: 'request' | 'quotation' | 'order', docId: string): Promise<DocumentCommentRecord[]> {
+      return portalApi.get<DocumentCommentRecord[]>(`/comments?docType=${docType}&docId=${encodeURIComponent(docId)}`);
+    },
+    add(docType: 'request' | 'quotation' | 'order', docId: string, body: string): Promise<DocumentCommentRecord[]> {
+      return portalApi.post<DocumentCommentRecord[]>('/comments', { docType, docId, body });
+    },
+  },
+
+  notifications: {
+    list(): Promise<PortalNotification[]> {
+      return portalApi.get<PortalNotification[]>('/notifications');
+    },
+    unreadCount(): Promise<{ count: number }> {
+      return portalApi.get<{ count: number }>('/notifications/unread-count');
+    },
+    markRead(id: string): Promise<void> {
+      return portalApi.put<void>(`/notifications/${id}/read`, {});
+    },
+    markAllRead(): Promise<void> {
+      return portalApi.put<void>('/notifications/read-all', {});
+    },
+  },
+
+  referrals: {
+    list(params?: { page?: number; pageSize?: number; status?: string; search?: string; sort?: string }): Promise<{ referrals: PortalReferral[]; total: number; page: number; pageSize: number; totalPages: number }> {
+      const qs = new URLSearchParams();
+      if (params?.page) qs.set('page', String(params.page));
+      if (params?.pageSize) qs.set('pageSize', String(params.pageSize));
+      if (params?.status) qs.set('status', params.status);
+      if (params?.search) qs.set('search', params.search);
+      if (params?.sort) qs.set('sort', params.sort);
+      const q = qs.toString();
+      return portalApi.get(q ? `/referrals?${q}` : '/referrals');
+    },
+    get(id: string): Promise<PortalReferral | null> {
+      return portalApi.get<PortalReferral | null>(`/referrals/${id}`);
+    },
+    timeline(referralId: string): Promise<PortalReferralTimelineEntry[]> {
+      return portalApi.get<PortalReferralTimelineEntry[]>(`/referrals/${referralId}/timeline`);
+    },
+    rewards(params?: { page?: number; pageSize?: number; status?: string }): Promise<{ rewards: PortalReferralReward[]; total: number; page: number; pageSize: number; totalPages: number }> {
+      const qs = new URLSearchParams();
+      if (params?.page) qs.set('page', String(params.page));
+      if (params?.pageSize) qs.set('pageSize', String(params.pageSize));
+      if (params?.status) qs.set('status', params.status);
+      const q = qs.toString();
+      return portalApi.get(q ? `/referrals/rewards?${q}` : '/referrals/rewards');
+    },
+    settings(): Promise<PortalReferralSettings> {
+      return portalApi.get<PortalReferralSettings>('/referrals/settings');
+    },
+    create(payload: { referredCustomerId: string; notes?: string }): Promise<any> {
+      return portalApi.post('/referrals', payload);
+    },
+    searchCustomers(query: string): Promise<PortalCustomerSearchResult[]> {
+      return portalApi.get<PortalCustomerSearchResult[]>(`/referrals/customers/search?q=${encodeURIComponent(query)}`);
+    },
+    stats(): Promise<{
+      total: number;
+      signedUp: number;
+      qualified: number;
+      rewardApproved: number;
+      paid: number;
+      pendingRewardAmount: number;
+      totalEarned: number;
+      conversionRate: number;
+    }> {
+      return portalApi.get('/referrals/stats');
     },
   },
 

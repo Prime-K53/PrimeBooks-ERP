@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, FileText, Receipt, CreditCard,
   FileBarChart, FolderOpen, Gift, Wallet, Bell, MessageSquare,
-  User, LogOut, Globe, X, ClipboardList
+  User, LogOut, Globe, X, ClipboardList, Users
 } from 'lucide-react';
 import { useCustomerAuth } from '../../../context/CustomerAuthContext';
 
@@ -15,7 +15,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/portal/dashboard', icon: LayoutDashboard },
-  { label: 'New Quotation Request', path: '/portal/new-request', icon: ClipboardList },
   { label: 'Requests', path: '/portal/requests', icon: ClipboardList },
   { label: 'Orders', path: '/portal/orders', icon: ShoppingCart },
   { label: 'Quotations', path: '/portal/quotations', icon: FileText },
@@ -23,6 +22,7 @@ const navItems: NavItem[] = [
   { label: 'Payments', path: '/portal/payments', icon: CreditCard },
   { label: 'Statements', path: '/portal/statements', icon: FileBarChart },
   { label: 'Documents', path: '/portal/documents', icon: FolderOpen },
+  { label: 'Referrals', path: '/portal/referrals', icon: Users },
   { label: 'Loyalty', path: '/portal/loyalty', icon: Gift },
   { label: 'Wallet', path: '/portal/wallet', icon: Wallet },
   { label: 'Notifications', path: '/portal/notifications', icon: Bell },

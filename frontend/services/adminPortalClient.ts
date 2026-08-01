@@ -105,6 +105,10 @@ export interface AdminQuotationRequest {
   reviewed_at: string | null;
   quotation_id: string | null;
   quotation_number: string | null;
+  sales_order_id: string | null;
+  sales_order_number: string | null;
+  reorder_of: string | null;
+  reorder_of_number: string | null;
   requested_delivery_date: string | null;
   attachments: AdminAttachment[];
   assigned_to: string | null;
@@ -144,6 +148,51 @@ export interface QuotationPrefillPayload {
   } | null;
 }
 
+export interface OrderPrefillPayload {
+  id: string;
+  requestNumber: string;
+  requestType: string;
+  customer_id: string;
+  customer_name: string;
+  items: AdminRequestItem[];
+  subtotal: number;
+  notes: string | null;
+  deliveryDate: string | null;
+  reorderOf: string | null;
+  reorderOfNumber: string | null;
+  attachments: AdminAttachment[];
+  status: string;
+  assignedTo: string | null;
+  customer: {
+    id?: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    billingAddress: string;
+    shippingAddress: string;
+    city: string | null;
+    segment: string | null;
+    paymentTerms: string | null;
+    currency: string | null;
+  } | null;
+}
+
+export interface AdminSalesOrder {
+  id: string;
+  order_number: string | null;
+  status: string;
+  total: number;
+  orderDate: string;
+  deliveryDate: string | null;
+  source_request_id: string | null;
+  source_request_number: string | null;
+  reorder_of: string | null;
+  reorder_of_number: string | null;
+  customer_name: string | null;
+  created_at: string;
+}
+
 export interface AdminQuotation {
   id: string;
   quotation_number: string;
@@ -161,7 +210,11 @@ export interface AdminQuotation {
   currency: string;
   payment_terms: string | null;
   valid_until: string | null;
-  status: 'ready' | 'accepted' | 'rejected' | 'revision_requested' | 'converted';
+  status: 'ready' | 'accepted' | 'rejected' | 'revision_requested' | 'converted' | 'expired';
+  version: number;
+  expired_at: string | null;
+  accepted_by: string | null;
+  accepted_by_email: string | null;
   revision_note: string | null;
   rejection_reason: string | null;
   accepted_at: string | null;
@@ -174,6 +227,51 @@ export interface AdminQuotation {
   erp_quotation_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface AdminDocumentVersion {
+  id: string;
+  version: number;
+  snapshot: {
+    items?: AdminRequestItem[];
+    subtotal?: number;
+    discount?: number;
+    taxRate?: number;
+    taxAmount?: number;
+    deliveryFee?: number;
+    total?: number;
+    currency?: string;
+    paymentTerms?: string | null;
+    validUntil?: string | null;
+    status?: string;
+  };
+  reason: string | null;
+  created_by: string | null;
+  created_by_name: string | null;
+  created_at: string;
+}
+
+export interface AdminDocumentSignature {
+  id: string;
+  decision: 'accepted' | 'rejected' | 'revision';
+  signed_by: string | null;
+  signer_name: string | null;
+  signer_email: string | null;
+  note: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface AdminDocumentComment {
+  id: string;
+  doc_type: string;
+  doc_id: string;
+  author_type: 'customer' | 'admin' | 'system';
+  author_id: string | null;
+  author_name: string | null;
+  visibility: 'customer' | 'internal';
+  body: string;
+  created_at: string;
 }
 
 /** SSE realtime stream with a short-lived ticket (EventSource cannot send headers). */
@@ -255,6 +353,30 @@ export const adminLifecycle = {
     completeQuotation(id: string, body: { quotationNumber: string; erpQuotationId?: string; quotationSnapshot?: any }): Promise<AdminQuotation> {
       return adminPortalApi.post<AdminQuotation>(`/requests/${id}/complete-quotation`, body);
     },
+    /**
+     * Starts official sales order generation for an ORDER request. Does NOT
+     * create an order and does NOT reserve an order number — returns the prefill
+     * payload for the standard ERP sales order editor.
+     */
+    startOrder(id: string): Promise<OrderPrefillPayload> {
+      return adminPortalApi.post<OrderPrefillPayload>(`/requests/${id}/generate-order`, {});
+    },
+    /**
+     * Completes the conversion after the ERP sales order has been saved. Creates
+     * the official sales order (SO-YYYY-######), links it to the request
+     * (request becomes converted) and notifies the customer.
+     */
+    completeOrder(id: string, body: { erpOrderId?: string; orderSnapshot?: any }): Promise<{ id: string; orderNumber: string; status: string }> {
+      return adminPortalApi.post<{ id: string; orderNumber: string; status: string }>(`/requests/${id}/complete-order`, body);
+    },
+  },
+  orders: {
+    list(): Promise<AdminSalesOrder[]> {
+      return adminPortalApi.get<AdminSalesOrder[]>('/orders');
+    },
+    updateStatus(id: string, body: { status: string; note?: string }): Promise<{ id: string; status: string; orderNumber: string | null }> {
+      return adminPortalApi.post<{ id: string; status: string; orderNumber: string | null }>(`/orders/${id}/status`, body);
+    },
   },
   quotations: {
     list(): Promise<AdminQuotation[]> {
@@ -268,6 +390,25 @@ export const adminLifecycle = {
     },
     convertToOrder(id: string, body: { deliveryDate?: string; notes?: string }): Promise<any> {
       return adminPortalApi.post<any>(`/quotations/${id}/convert-to-order`, body);
+    },
+    versions: {
+      list(id: string): Promise<AdminDocumentVersion[]> {
+        return adminPortalApi.get<AdminDocumentVersion[]>(`/quotations/${id}/versions`);
+      },
+      get(id: string, version: number): Promise<AdminDocumentVersion> {
+        return adminPortalApi.get<AdminDocumentVersion>(`/quotations/${id}/versions/${version}`);
+      },
+    },
+    signatures(id: string): Promise<AdminDocumentSignature[]> {
+      return adminPortalApi.get<AdminDocumentSignature[]>(`/quotations/${id}/signatures`);
+    },
+  },
+  comments: {
+    list(docType: string, docId: string): Promise<AdminDocumentComment[]> {
+      return adminPortalApi.get<AdminDocumentComment[]>(`/comments?docType=${docType}&docId=${encodeURIComponent(docId)}`);
+    },
+    add(docType: string, docId: string, body: string, visibility: 'customer' | 'internal'): Promise<AdminDocumentComment[]> {
+      return adminPortalApi.post<AdminDocumentComment[]>('/comments', { docType, docId, body, visibility });
     },
   },
   notifications: {

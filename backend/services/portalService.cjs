@@ -2,6 +2,8 @@ const { db } = require('../db.cjs');
 const crypto = require('crypto');
 const portalAuthService = require('./portalAuthService.cjs');
 const portalLifecycleService = require('./portalLifecycleService.cjs');
+const ReferralService = require('./referralService.cjs');
+const referralService = new ReferralService();
 
 function getOne(query, params = []) {
   return new Promise((resolve, reject) => {
@@ -62,6 +64,24 @@ const portalService = {
       [customerId, companyId]
     );
 
+    // Dashboard widgets (complete request architecture)
+    const openQuotationRow = await getOne(
+      "SELECT COUNT(*) as count FROM quotations WHERE customer_id = ? AND company_id = ? AND status IN ('ready', 'accepted', 'revision_requested')",
+      [customerId, companyId]
+    );
+
+    const productionRow = await getOne(
+      "SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ? AND company_id = ? AND LOWER(COALESCE(status, '')) IN ('confirmed', 'processing', 'pending', 'shipped')",
+      [customerId, companyId]
+    );
+
+    const unreadRow = await getOne(
+      'SELECT COUNT(*) as count FROM portal_notifications WHERE portal_user_id = ? AND company_id = ? AND is_read = 0',
+      [portalUserId, companyId]
+    );
+
+    const recentDocs = await this.getRecentDocuments(customerId, companyId, 5);
+
     const recentSales = await getAll(
       `SELECT date, total_amount as amount, customer_name as description, 'sale' as type
        FROM sales WHERE customer_id = ? AND company_id = ? AND status != 'Voided'
@@ -87,13 +107,44 @@ const portalService = {
       activeInvoiceCount: (invoiceCount && invoiceCount.count) || 0,
       totalOrders: (ordersRow && ordersRow.count) || 0,
       activeRequestCount: (requestRow && requestRow.count) || 0,
+      openQuotationCount: (openQuotationRow && openQuotationRow.count) || 0,
+      productionOrderCount: (productionRow && productionRow.count) || 0,
+      unreadMessageCount: (unreadRow && unreadRow.count) || 0,
+      recentDocuments: recentDocs,
       recentTransactions: combined
     };
   },
 
+  // Latest documents across the whole chain (requests, quotations, orders)
+  async getRecentDocuments(customerId, companyId, limit = 5) {
+    const requests = await getAll(
+      `SELECT 'request' as docType, id, request_number as docNumber, status, request_type, created_at
+       FROM quotation_requests WHERE customer_id = ? AND company_id = ?
+       ORDER BY created_at DESC LIMIT ?`,
+      [customerId, companyId, limit]
+    );
+    const quotations = await getAll(
+      `SELECT 'quotation' as docType, id, quotation_number as docNumber, status, created_at
+       FROM quotations WHERE customer_id = ? AND company_id = ?
+       ORDER BY created_at DESC LIMIT ?`,
+      [customerId, companyId, limit]
+    );
+    const orders = await getAll(
+      `SELECT 'order' as docType, id, COALESCE(order_number, id) as docNumber, status, orderDate as created_at
+       FROM sales_orders WHERE customer_id = ? AND company_id = ?
+       ORDER BY orderDate DESC LIMIT ?`,
+      [customerId, companyId, limit]
+    );
+    return [...requests, ...quotations, ...orders]
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, limit);
+  },
+
   async getOrders(customerId, companyId) {
     return getAll(
-      `SELECT so.id, so.orderDate, c.name as customerName, so.total as totalAmount, so.status, so.items as items_json
+      `SELECT so.id, so.order_number, so.orderDate, c.name as customerName, so.total as totalAmount, so.status,
+              so.source_request_id, so.source_request_number, so.reorder_of, so.reorder_of_number,
+              so.deliveryDate, so.approved_at, so.items as items_json
        FROM sales_orders so
        LEFT JOIN customers c ON so.customer_id = c.id
        WHERE so.customer_id = ? AND so.company_id = ?
@@ -387,11 +438,297 @@ const portalService = {
     );
   },
 
+  async getUnreadNotificationCount(portalUserId, companyId) {
+    const row = await getOne(
+      'SELECT COUNT(*) as count FROM portal_notifications WHERE portal_user_id = ? AND company_id = ? AND is_read = 0',
+      [portalUserId, companyId]
+    );
+    return (row && row.count) || 0;
+  },
+
   async markNotificationRead(notificationId, portalUserId) {
     await runQuery(
       'UPDATE portal_notifications SET is_read = 1 WHERE id = ? AND portal_user_id = ?',
       [notificationId, portalUserId]
     );
+  },
+
+  async markAllNotificationsRead(portalUserId, companyId) {
+    await runQuery(
+      'UPDATE portal_notifications SET is_read = 1 WHERE portal_user_id = ? AND company_id = ? AND is_read = 0',
+      [portalUserId, companyId]
+    );
+  },
+
+  // ─── Referrals ──────────────────────────────────────────────────
+  async getReferrals(portalUserId, customerId, companyId, { page = 1, pageSize = 20, status, search, sort = 'date_desc' } = {}) {
+    const offset = (page - 1) * pageSize;
+    const conditions = ['r.referred_by_id = ?', 'r.company_id = ?', 'r.deleted_at IS NULL'];
+    const params = [customerId, companyId];
+
+    if (status) {
+      conditions.push('r.status = ?');
+      params.push(status);
+    }
+
+    if (search) {
+      conditions.push('c.name LIKE ?');
+      params.push(`%${search}%`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const allowedSorts = {
+      date_desc: 'r.created_at DESC',
+      date_asc: 'r.created_at ASC',
+      status: 'r.status ASC',
+    };
+    const orderBy = allowedSorts[sort] || allowedSorts.date_desc;
+
+    const countRow = await getOne(
+      `SELECT COUNT(*) as total FROM customer_referrals r
+       LEFT JOIN customers c ON c.id = r.customer_id
+       WHERE ${whereClause}`,
+      params
+    );
+    const total = countRow?.total || 0;
+
+    const referrals = await getAll(
+      `SELECT r.*, c.name as referred_customer_name, c.email as referred_customer_email
+       FROM customer_referrals r
+       LEFT JOIN customers c ON c.id = r.customer_id
+       WHERE ${whereClause}
+       ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    return {
+      referrals: referrals.map(r => ({
+        id: r.id,
+        referredCustomerId: r.customer_id,
+        referredCustomerName: r.referred_customer_name || r.customer_id,
+        referredCustomerEmail: r.referred_customer_email || null,
+        status: r.status,
+        pendingInvoiceId: r.pending_invoice_id,
+        pendingInvoiceAmount: r.pending_invoice_amount || 0,
+        convertedInvoiceId: r.converted_invoice_id,
+        convertedAt: r.converted_at,
+        notes: r.notes,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      })),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    };
+  },
+
+  async getReferralById(id, portalUserId, customerId, companyId) {
+    const referral = await getOne(
+      `SELECT r.*, c.name as referred_customer_name, c.email as referred_customer_email
+       FROM customer_referrals r
+       LEFT JOIN customers c ON c.id = r.customer_id
+       WHERE r.id = ? AND r.company_id = ? AND r.deleted_at IS NULL`,
+      [id, companyId]
+    );
+    if (!referral || referral.referred_by_id !== customerId) return null;
+    return {
+      id: referral.id,
+      referredCustomerId: referral.customer_id,
+      referredCustomerName: referral.referred_customer_name || referral.customer_id,
+      referredCustomerEmail: referral.referred_customer_email || null,
+      status: referral.status,
+      pendingInvoiceId: referral.pending_invoice_id,
+      pendingInvoiceAmount: referral.pending_invoice_amount || 0,
+      convertedInvoiceId: referral.converted_invoice_id,
+      convertedAt: referral.converted_at,
+      notes: referral.notes,
+      createdAt: referral.created_at,
+      updatedAt: referral.updated_at,
+    };
+  },
+
+  async getReferralTimeline(referralId, companyId) {
+    return getAll(
+      'SELECT * FROM referral_timeline WHERE referral_id = ? AND company_id = ? ORDER BY timestamp ASC',
+      [referralId, companyId]
+    );
+  },
+
+  async getReferralRewards(portalUserId, customerId, companyId, { page = 1, pageSize = 20, status } = {}) {
+    const offset = (page - 1) * pageSize;
+    const conditions = ['rr.customer_id = ?', 'rr.company_id = ?'];
+    const params = [customerId, companyId];
+
+    if (status) {
+      conditions.push('rr.status = ?');
+      params.push(status);
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const countRow = await getOne(
+      `SELECT COUNT(*) as total FROM referral_rewards rr WHERE ${whereClause}`,
+      params
+    );
+    const total = countRow?.total || 0;
+
+    const rewards = await getAll(
+      `SELECT rr.*, r.referral_code, r.customer_id as referred_customer_id,
+              c.name as referred_customer_name
+       FROM referral_rewards rr
+       JOIN customer_referrals r ON r.id = rr.referral_id
+       LEFT JOIN customers c ON c.id = r.customer_id
+       WHERE ${whereClause}
+       ORDER BY rr.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    return {
+      rewards: rewards.map(r => ({
+        id: r.id,
+        referralId: r.referral_id,
+        referralCode: r.referral_code,
+        referredCustomerId: r.referred_customer_id,
+        referredCustomerName: r.referred_customer_name || r.referred_customer_id,
+        invoiceId: r.invoice_id,
+        invoiceAmount: r.invoice_amount || 0,
+        amount: r.amount || 0,
+        status: r.status,
+        approvedAt: r.approved_at,
+        cancelledAt: r.cancelled_at,
+        cancelReason: r.cancel_reason,
+        walletTransactionId: r.wallet_transaction_id,
+        createdAt: r.created_at,
+      })),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    };
+  },
+
+  async getReferralSettings(companyId) {
+    const settings = await referralService.getSettings(companyId);
+    return {
+      enabled: settings.enabled ?? true,
+      rewardType: settings.rewardType || 'percentage',
+      rewardValue: settings.rewardValue || 0,
+      rewardPercentage: settings.rewardPercentage || 0,
+      minimumPurchase: settings.minPurchaseAmount || 0,
+      maxRewardAmount: settings.maxRewardAmount || 0,
+      expiryDays: settings.expiryDays || 365,
+      requireApproval: settings.requireApproval ?? true,
+      shareMessage: 'Invite friends and earn rewards.',
+    };
+  },
+
+  async createReferral(portalUserId, customerId, companyId, { referredCustomerId, notes }) {
+    if (!referredCustomerId) {
+      throw new Error('Referred customer is required');
+    }
+    if (referredCustomerId === customerId) {
+      throw new Error('You cannot refer yourself');
+    }
+
+    const customer = await getOne(
+      'SELECT id, name, email FROM customers WHERE id = ? AND company_id = ?',
+      [referredCustomerId, companyId]
+    );
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+
+    const existing = await getOne(
+      'SELECT id FROM customer_referrals WHERE customer_id = ? AND referred_by_id = ? AND company_id = ? AND deleted_at IS NULL AND status IN (\'active\', \'converted\')',
+      [referredCustomerId, customerId, companyId]
+    );
+    if (existing) {
+      throw new Error('This customer has already been referred by you');
+    }
+
+    return referralService.register(
+      {
+        customer_id: referredCustomerId,
+        referred_by_id: customerId,
+        referred_by_name: customer.name,
+        notes: notes || null,
+      },
+      companyId
+    );
+  },
+
+  async searchCustomersForReferral(companyId, query, excludeCustomerId) {
+    if (!query || query.trim().length < 2) return [];
+    const like = `%${query.trim()}%`;
+    return getAll(
+      `SELECT id, name, email, phone FROM customers
+       WHERE company_id = ? AND id != ? AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)
+       ORDER BY name ASC LIMIT 20`,
+      [companyId, excludeCustomerId, like, like, like]
+    );
+  },
+
+  async getReferralFunnelStats(customerId, companyId) {
+    const totalRow = await getOne(
+      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND company_id = ? AND deleted_at IS NULL`,
+      [customerId, companyId]
+    );
+    const total = totalRow?.count || 0;
+
+    const activeRow = await getOne(
+      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND company_id = ? AND status = 'active' AND deleted_at IS NULL`,
+      [customerId, companyId]
+    );
+    const signedUp = activeRow?.count || 0;
+
+    const qualifiedRow = await getOne(
+      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND company_id = ? AND status = 'active' AND pending_invoice_id IS NOT NULL AND deleted_at IS NULL`,
+      [customerId, companyId]
+    );
+    const qualified = qualifiedRow?.count || 0;
+
+    const approvedRow = await getOne(
+      `SELECT COUNT(*) as count FROM referral_rewards rr
+       JOIN customer_referrals r ON r.id = rr.referral_id
+       WHERE r.referred_by_id = ? AND rr.company_id = ? AND rr.status IN ('approved', 'paid')`,
+      [customerId, companyId]
+    );
+    const rewardApproved = approvedRow?.count || 0;
+
+    const paidRow = await getOne(
+      `SELECT COUNT(*) as count FROM referral_rewards rr
+       JOIN customer_referrals r ON r.id = rr.referral_id
+       WHERE r.referred_by_id = ? AND rr.company_id = ? AND rr.status = 'paid'`,
+      [customerId, companyId]
+    );
+    const paid = paidRow?.count || 0;
+
+    const pendingAmountRow = await getOne(
+      `SELECT COALESCE(SUM(rr.amount), 0) as amount FROM referral_rewards rr
+       JOIN customer_referrals r ON r.id = rr.referral_id
+       WHERE r.referred_by_id = ? AND rr.company_id = ? AND rr.status = 'pending'`,
+      [customerId, companyId]
+    );
+    const pendingRewardAmount = pendingAmountRow?.amount || 0;
+
+    const totalEarnedRow = await getOne(
+      `SELECT COALESCE(SUM(rr.amount), 0) as amount FROM referral_rewards rr
+       JOIN customer_referrals r ON r.id = rr.referral_id
+       WHERE r.referred_by_id = ? AND rr.company_id = ? AND rr.status IN ('approved', 'paid')`,
+      [customerId, companyId]
+    );
+    const totalEarned = totalEarnedRow?.amount || 0;
+
+    return {
+      total,
+      signedUp,
+      qualified,
+      rewardApproved,
+      paid,
+      pendingRewardAmount,
+      totalEarned,
+      conversionRate: total > 0 ? Math.round((paid / total) * 100) : 0,
+    };
   },
 
   async getSupportTickets(portalUserId, customerId, companyId) {

@@ -4,6 +4,8 @@ import { ArrowLeft, Loader2, MessageSquare, CheckCircle2, ArrowUpRight, FileText
 import { portalLifecycle, QuotationRequestRecord, TimelineEvent } from '../../services/portalApiClient';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import DocumentChain from './components/DocumentChain';
+import DocumentDiscussion from './components/DocumentDiscussion';
 
 const stageDefinitions = [
   { key: 'submitted', label: 'Submitted', description: 'Request received' },
@@ -107,6 +109,8 @@ const CustomerRequestDetail: React.FC = () => {
       <button onClick={() => navigate('/portal/requests')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
         <ArrowLeft size={14} /> Back to Requests
       </button>
+
+      <DocumentChain docType="request" docId={request.id} />
 
       <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -272,6 +276,10 @@ const CustomerRequestDetail: React.FC = () => {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mt-4">
+        <DocumentDiscussion docType="request" docId={request.id} />
       </div>
     </div>
   );

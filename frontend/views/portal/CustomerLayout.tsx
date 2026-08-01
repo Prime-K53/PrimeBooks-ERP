@@ -13,6 +13,7 @@ const pageTitles: Record<string, string> = {
   '/portal/payments': 'Payments',
   '/portal/statements': 'Statements',
   '/portal/documents': 'Documents',
+  '/portal/referrals': 'Referrals',
   '/portal/loyalty': 'Loyalty',
   '/portal/wallet': 'Wallet',
   '/portal/notifications': 'Notifications',

@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createElement } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, CheckCircle2, XCircle, RefreshCcw, FileText, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, CheckCircle2, XCircle, RefreshCcw, FileText, MessageSquare, History, Clock, BadgeCheck } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
-import { portalLifecycle, QuotationRecord, TimelineEvent } from '../../services/portalApiClient';
+import { portalLifecycle, QuotationRecord, TimelineEvent, DocumentVersionRecord, DocumentSignatureRecord } from '../../services/portalApiClient';
 import { mapToInvoiceData } from '../../utils/pdfMapper';
 import { attachDocumentSecurity } from '../../utils/documentSecurity';
 import { initializePrimePdfFonts } from '../shared/components/PDF/templateSettings';
@@ -11,6 +11,9 @@ import { PrimeDocument } from '../shared/components/PDF/PrimeDocument';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import DocumentChain from './components/DocumentChain';
+import DocumentDiscussion from './components/DocumentDiscussion';
+import VersionHistoryModal from './components/VersionHistoryModal';
 
 const stageDefinitions = [
   { key: 'submitted', label: 'Requested', description: 'Your request was received' },
@@ -26,6 +29,7 @@ function stageIndex(status: string): number {
     case 'accepted': return 4;
     case 'revision_requested': return 3;
     case 'rejected': return 3;
+    case 'expired': return 3;
     default: return 0;
   }
 }
@@ -44,6 +48,10 @@ const CustomerQuotationDetail: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [versions, setVersions] = useState<DocumentVersionRecord[]>([]);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [signatures, setSignatures] = useState<DocumentSignatureRecord[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -56,12 +64,29 @@ const CustomerQuotationDetail: React.FC = () => {
       setQuotation(q);
       setTimeline(events || []);
       setError(null);
+      if (q) {
+        portalLifecycle.quotations.signatures(id).then(setSignatures).catch(() => {});
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load quotation');
     } finally {
       setLoading(false);
     }
   }, [id]);
+
+  const openVersions = async () => {
+    if (!quotation) return;
+    setVersionsOpen(true);
+    setVersionsLoading(true);
+    try {
+      const data = await portalLifecycle.quotations.versions.list(quotation.id);
+      setVersions(data || []);
+    } catch {
+      setVersions([]);
+    } finally {
+      setVersionsLoading(false);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -164,6 +189,8 @@ const CustomerQuotationDetail: React.FC = () => {
         <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{actionError}</div>
       )}
 
+      <DocumentChain docType="quotation" docId={quotation.id} />
+
       <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -176,6 +203,15 @@ const CustomerQuotationDetail: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {Number(quotation.version || 1) > 1 && (
+              <button
+                onClick={openVersions}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <History size={14} /> V{quotation.version} <span className="text-slate-300 font-normal">• history</span>
+              </button>
+            )}
+            {Number(quotation.version || 1) > 1 && <span className="hidden sm:inline text-[10px] text-slate-400">Revision {quotation.version}</span>}
             <StatusBadge status={status} />
             {canDownload && (
               <button
@@ -188,6 +224,34 @@ const CustomerQuotationDetail: React.FC = () => {
             )}
           </div>
         </div>
+
+        {status === 'expired' && (
+          <div className="mb-5 bg-slate-100 border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+            <Clock size={16} className="text-slate-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-slate-700">This quotation has expired</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                It was valid until {quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString() : 'its expiry date'} and can no longer be
+                accepted. Please submit a new request or contact our team to prepare a fresh quotation.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {status === 'accepted' && quotation.accepted_by && (
+          <div className="mb-5 bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+            <BadgeCheck size={16} className="text-emerald-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-700">Accepted and digitally recorded</p>
+              <p className="text-xs text-emerald-600 mt-0.5">
+                Accepted by <span className="font-semibold">{quotation.accepted_by}</span>
+                {quotation.accepted_by_email ? ` (${quotation.accepted_by_email})` : ''} on{' '}
+                {quotation.accepted_at ? new Date(quotation.accepted_at).toLocaleString() : 'an unknown date'}.
+                {signatures.length > 1 && ` ${signatures.length - 1} earlier decision${signatures.length > 2 ? 's' : ''} recorded on this document.`}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Progress tracker */}
         <div className="flex items-center gap-2 mb-6">
@@ -346,7 +410,7 @@ const CustomerQuotationDetail: React.FC = () => {
       )}
 
       {/* Timeline */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5">
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5 mb-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
           <MessageSquare size={15} className="text-slate-400" /> Activity Timeline
         </h2>
@@ -369,6 +433,15 @@ const CustomerQuotationDetail: React.FC = () => {
           </div>
         )}
       </div>
+
+      <DocumentDiscussion docType="quotation" docId={quotation.id} />
+
+      <VersionHistoryModal
+        open={versionsOpen}
+        onClose={() => setVersionsOpen(false)}
+        versions={versions}
+        loading={versionsLoading}
+      />
     </div>
   );
 };

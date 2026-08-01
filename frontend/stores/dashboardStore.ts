@@ -27,6 +27,7 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'unpaid', label: 'Unpaid Invoices', visible: true, order: 3 },
   { id: 'chart', label: 'Financial Performance Chart', visible: true, order: 4 },
   { id: 'recent-activity', label: 'Recent Activity', visible: true, order: 5 },
+  { id: 'requests', label: 'Sales Request Pipeline', visible: true, order: 6 },
 ];
 
 function persist(widgets: DashboardWidget[]) {
@@ -49,7 +50,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   loadDefaults: () => {
     const saved = load();
     if (saved && saved.length > 0) {
-      set({ widgets: saved, initialized: true });
+      const merged = DEFAULT_WIDGETS.map((def) => saved.find((w) => w.id === def.id) || def);
+      set({ widgets: merged, initialized: true });
     } else {
       set({ widgets: [...DEFAULT_WIDGETS], initialized: true });
     }

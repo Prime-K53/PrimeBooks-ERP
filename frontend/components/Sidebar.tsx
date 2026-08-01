@@ -237,7 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, toggle, toggleCo
           subItems: [
             { label: 'Point of Sale', path: '/sales-flow/pos', icon: <Coins size={14} /> },
             { label: 'Payment Management', path: '/sales-flow/payments', icon: <Banknote size={14} /> },
-            { label: 'Quotation Requests', path: '/sales-flow/requests', icon: <Inbox size={14} /> },
+            { label: 'Customer Requests', path: '/sales-flow/requests', icon: <Inbox size={14} /> },
             { label: 'Quotations', path: '/sales-flow/quotations', icon: <FileText size={14} /> },
             { label: 'Orders', path: '/sales-flow/orders', icon: <CheckSquare size={14} /> },
             { label: 'Billing / Invoices', path: '/sales-flow/invoices', icon: <FileSpreadsheet size={14} /> },

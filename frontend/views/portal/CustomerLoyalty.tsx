@@ -17,14 +17,6 @@ interface LoyaltyData {
   pointsHistory: PointsHistory[];
 }
 
-const tierColors: Record<string, string> = {
-  bronze: 'bg-amber-600/20 text-amber-300 border-amber-500/30',
-  silver: 'bg-slate-400/20 text-slate-700 border-slate-400/30',
-  gold: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  platinum: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-  diamond: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-};
-
 const CustomerLoyalty: React.FC = () => {
   const [data, setData] = useState<LoyaltyData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,86 +29,150 @@ const CustomerLoyalty: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-6 max-w-7xl mx-auto"><PortalLoadingSkeleton type="card" count={3} /></div>;
-  if (error) return <div className="p-6 max-w-7xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={3} /></div>;
+  if (error) return <div className="p-8 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
   if (!data) return null;
 
-  const tierClass = tierColors[data.tier?.toLowerCase()] || tierColors.bronze;
-
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Loyalty Program</h1>
-        <p className="text-sm text-slate-500 mt-1">Your rewards and membership benefits</p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-gradient-to-br from-violet-500/20 to-violet-600/10 border border-violet-500/30 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
-              <Gift size={22} className="text-violet-400" />
-            </div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Points Balance</span>
+    <div style={{
+      background: paper,
+      borderRadius: 14,
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '22px 28px 18px',
+        borderBottom: `1px solid ${hairline}`,
+        background: paper
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
+          }}>
+            <Gift size={19} color="#fff" />
           </div>
-          <div className="text-3xl font-bold text-slate-900">{data.points?.toLocaleString() || 0}</div>
-        </div>
-
-        <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <Wallet size={22} className="text-emerald-600" />
-            </div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cashback Available</span>
-          </div>
-          <div className="text-3xl font-bold text-slate-900">K {Number(data.cashback || 0).toFixed(2)}</div>
-        </div>
-
-        <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-              <Star size={22} className="text-amber-400" />
-            </div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Membership Tier</span>
-          </div>
-          <div className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold border ${tierClass} mt-1 capitalize`}>
-            {data.tier || 'Bronze'}
+          <div>
+            <h1 style={{
+              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+              fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+            }}>
+              Loyalty Program
+            </h1>
+            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+              Your rewards and membership benefits
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200/60">
-          <h2 className="text-sm font-semibold text-slate-800">Points History</h2>
+      <div style={{ padding: '24px 30px 8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 18 }}>
+          <div style={{
+            background: paper, borderRadius: 14,
+            border: `1.4px solid ${hairline}`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
+            padding: '20px 24px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: teal[600] }}>
+                <Gift size={18} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Points Balance</span>
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>
+              {data.points?.toLocaleString() || 0}
+            </div>
+          </div>
+
+          <div style={{
+            background: paper, borderRadius: 14,
+            border: `1.4px solid ${hairline}`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
+            padding: '20px 24px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: teal[600] }}>
+                <Wallet size={18} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Cashback Available</span>
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>
+              K {Number(data.cashback || 0).toFixed(2)}
+            </div>
+          </div>
+
+          <div style={{
+            background: paper, borderRadius: 14,
+            border: `1.4px solid ${hairline}`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
+            padding: '20px 24px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: teal[600] }}>
+                <Star size={18} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Membership Tier</span>
+            </div>
+            <div style={{
+              display: 'inline-block', padding: '6px 14px', borderRadius: 20,
+              fontSize: 13, fontWeight: 700, border: `1.4px solid ${teal[200]}`, background: teal[50], color: teal[700]
+            }}>
+              {data.tier || 'Bronze'}
+            </div>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-            <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
-              <tr>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Date</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Description</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Points</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Balance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100/50">
-              {(data.pointsHistory || []).length === 0 ? (
+
+        <div style={{
+          background: paper, borderRadius: 14,
+          border: `1.4px solid ${hairline}`,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            padding: '14px 16px',
+            borderBottom: `1px solid ${hairline}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6
+          }}>
+            <h2 style={{
+              margin: 0, fontSize: 12, fontWeight: 600,
+              color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06
+            }}>
+              Points History
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+              <thead style={{ background: teal[50] }}>
                 <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-slate-400">No points history yet</td>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: inkSoft }}>Date</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: inkSoft }}>Description</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: inkSoft }}>Points</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: inkSoft }}>Balance</th>
                 </tr>
-              ) : (
-                (data.pointsHistory || []).map((h, i) => (
-                  <tr key={i} className="text-slate-700 hover:bg-blue-50/50 transition-colors border-l-4 border-l-transparent">
-                    <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(h.date).toLocaleDateString()}</td>
-                    <td className="px-5 py-3">{h.description}</td>
-                    <td className={`px-5 py-3 text-right font-mono ${Number(h.points) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {Number(h.points) >= 0 ? '+' : ''}{h.points}
-                    </td>
-                    <td className="px-5 py-3 text-right font-mono font-semibold">{h.balance?.toLocaleString() || 0}</td>
+              </thead>
+              <tbody className="divide-y divide-slate-100/50">
+                {(data.pointsHistory || []).length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-8 text-center" style={{ color: inkSoft }}>No points history yet</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  (data.pointsHistory || []).map((h, i) => (
+                    <tr key={i} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
+                      <td className="px-5 py-3 whitespace-nowrap" style={{ color: inkSoft }}>{new Date(h.date).toLocaleDateString()}</td>
+                      <td className="px-5 py-3">{h.description}</td>
+                      <td className={`px-5 py-3 text-right font-mono ${Number(h.points) >= 0 ? '' : ''}`} style={{ color: Number(h.points) >= 0 ? teal[600] : '#b5493f' }}>
+                        {Number(h.points) >= 0 ? '+' : ''}{h.points}
+                      </td>
+                      <td className="px-5 py-3 text-right font-mono font-semibold">{h.balance?.toLocaleString() || 0}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

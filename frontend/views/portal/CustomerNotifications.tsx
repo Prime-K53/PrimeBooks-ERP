@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, Info, AlertCircle, CheckCircle, CreditCard, ShoppingCart, FileText, MessageCircle } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
+import { portalApi, portalLifecycle, PortalNotification } from '../../services/portalApiClient';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import { useNavigate } from 'react-router-dom';
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  link: string;
-  is_read: boolean;
-  created_at: string;
-}
+const teal = {
+  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
+  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+  800: '#0b3e39', 900: '#082e2a'
+};
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
 
 const typeIcons: Record<string, React.ReactNode> = {
   info: <Info size={18} />,
@@ -24,23 +26,14 @@ const typeIcons: Record<string, React.ReactNode> = {
   message: <MessageCircle size={18} />,
 };
 
-const typeColors: Record<string, string> = {
-  info: 'bg-blue-500/20 text-blue-400',
-  alert: 'bg-amber-500/20 text-amber-400',
-  success: 'bg-emerald-500/20 text-emerald-600',
-  payment: 'bg-cyan-500/20 text-cyan-400',
-  order: 'bg-violet-500/20 text-violet-400',
-  invoice: 'bg-rose-500/20 text-rose-600',
-  message: 'bg-indigo-500/20 text-indigo-400',
-};
-
 const CustomerNotifications: React.FC = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState<PortalNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchNotifications = () => {
-    portalApi.get<Notification[]>('/notifications')
+    portalApi.get<PortalNotification[]>('/notifications')
       .then(setNotifications)
       .catch((err) => setError(err.message || 'Failed to load notifications'))
       .finally(() => setLoading(false));
@@ -48,6 +41,15 @@ const CustomerNotifications: React.FC = () => {
 
   useEffect(() => {
     fetchNotifications();
+  }, []);
+
+  useEffect(() => {
+    const unsub = portalLifecycle.subscribe({
+      onEvent: (type) => {
+        if (type === 'notification') fetchNotifications();
+      },
+    });
+    return unsub;
   }, []);
 
   const markAsRead = async (id: string) => {
@@ -61,62 +63,129 @@ const CustomerNotifications: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={6} /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  const markAllAsRead = async () => {
+    try {
+      await portalApi.put('/notifications/read-all', {});
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch {
+      // ignore errors
+    }
+  };
+
+  const handleNotificationClick = (notif: PortalNotification) => {
+    if (!notif.is_read) markAsRead(notif.id);
+    if (notif.link) {
+      const path = notif.link.startsWith('#') ? notif.link.slice(1) : notif.link;
+      navigate(path);
+    }
+  };
+
+  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={6} /></div>;
+  if (error) return <div className="p-8 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
 
   const unread = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Notifications</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {unread > 0 ? `You have ${unread} unread notification${unread > 1 ? 's' : ''}` : 'No unread notifications'}
-          </p>
+    <div style={{
+      background: paper,
+      borderRadius: 14,
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '22px 28px 18px',
+        borderBottom: `1px solid ${hairline}`,
+        background: paper
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
+          }}>
+            <Bell size={19} color="#fff" />
+          </div>
+          <div>
+            <h1 style={{
+              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+              fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
+            }}>
+              Notifications
+            </h1>
+            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+              {unread > 0 ? `You have ${unread} unread notification${unread > 1 ? 's' : ''}` : 'No unread notifications'}
+            </p>
+          </div>
         </div>
-        <div className="relative">
-          <Bell size={24} className="text-slate-500" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {unread > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-              {unread}
-            </span>
+            <button onClick={markAllAsRead} style={{ fontSize: 11.5, fontWeight: 700, color: teal[600], background: 'none', border: 'none', cursor: 'pointer', padding: '6px 10px', borderRadius: 8, transition: 'all .15s' }} onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+              Mark all read
+            </button>
           )}
+          <div style={{ position: 'relative' }}>
+            <Bell size={24} style={{ color: inkSoft }} />
+            {unread > 0 && (
+              <span style={{
+                position: 'absolute', top: -4, right: -4, width: 16, height: 16,
+                borderRadius: '50%', background: teal[500], color: '#fff',
+                fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                {unread}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {notifications.length === 0 ? (
-        <EmptyState icon={<Bell size={28} />} title="No notifications" description="You're all caught up! Notifications will appear here." />
-      ) : (
-        <div className="space-y-2">
-          {notifications.map((n) => {
-            const icon = typeIcons[n.type] || typeIcons.info;
-            const colorClass = typeColors[n.type] || typeColors.info;
+      <div style={{ padding: '24px 30px 8px' }}>
+        {notifications.length === 0 ? (
+          <EmptyState icon={<Bell size={28} />} title="No notifications" description="You're all caught up! Notifications will appear here." />
+        ) : (
+          <div className="space-y-2">
+            {notifications.map((n) => {
+              const icon = typeIcons[n.type] || typeIcons.info;
 
-            return (
-              <div
-                key={n.id}
-                onClick={() => !n.is_read && markAsRead(n.id)}
-                className={`bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4 flex items-start gap-3 transition-colors cursor-pointer ${
-                  n.is_read ? 'opacity-70' : 'hover:bg-slate-50'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
-                  {icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className={`text-sm font-medium ${n.is_read ? 'text-slate-500' : 'text-slate-900'}`}>{n.title}</p>
-                    {!n.is_read && <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />}
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => handleNotificationClick(n)}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 14,
+                    width: '100%', padding: '14px 20px', textAlign: 'left',
+                    background: paper, borderRadius: 14,
+                    border: `1.4px solid ${hairline}`,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
+                    cursor: 'pointer', transition: 'all .15s ease',
+                    opacity: n.is_read ? 0.7 : 1
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; }}
+                >
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 9,
+                    background: teal[50], color: teal[600],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                  }}>
+                    {icon}
                   </div>
-                  {n.body && <p className="text-xs text-slate-400 line-clamp-2">{n.body}</p>}
-                  <p className="text-[10px] text-slate-600 mt-1">{new Date(n.created_at).toLocaleDateString()} {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: n.is_read ? inkSoft : ink }}>{n.title}</p>
+                      {!n.is_read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal[400], flexShrink: 0 }} />}
+                    </div>
+                    {n.body && <p style={{ fontSize: 11, color: inkSoft, marginTop: 1, lineHeight: 1.4 }}>{n.body}</p>}
+                    <p style={{ fontSize: 10, color: inkSoft, marginTop: 2 }}>
+                      {new Date(n.created_at).toLocaleDateString()} {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

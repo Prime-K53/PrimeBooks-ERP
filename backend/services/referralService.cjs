@@ -395,6 +395,13 @@ class ReferralService extends BaseService {
       }
 
       await this.notificationService.sendRewardApprovedNotification(reward, referral, companyId);
+      await this._createPortalNotifications(
+        reward.customer_id, companyId,
+        'reward_approved',
+        'Reward Approved',
+        `Your referral reward of ${reward.amount} has been approved.`,
+        reward.referral_id, reward.id
+      );
 
       await this.addTimelineEntry({
         referralId: reward.referral_id,
@@ -438,6 +445,13 @@ class ReferralService extends BaseService {
       );
 
       await this.notificationService.sendRewardRejectedNotification(reward, referral, reason, companyId);
+      await this._createPortalNotifications(
+        reward.customer_id, companyId,
+        'reward_rejected',
+        'Reward Rejected',
+        `Your referral reward of ${reward.amount} was rejected. Reason: ${reason || 'No reason provided'}`,
+        reward.referral_id, reward.id
+      );
 
       await this.addTimelineEntry({
         referralId: reward.referral_id,
@@ -733,6 +747,13 @@ class ReferralService extends BaseService {
 
       if (reward) {
         await this.notificationService.sendReversalProcessedNotification(reversal, reward, companyId);
+        await this._createPortalNotifications(
+          reward.customer_id, companyId,
+          'reversal_processed',
+          'Reversal Processed',
+          `A reversal has been processed for your reward of ${reward.amount}.`,
+          reward.referral_id, reward.id
+        );
 
         await this.addTimelineEntry({
           referralId: reward.referral_id,
@@ -772,6 +793,20 @@ class ReferralService extends BaseService {
       `UPDATE referral_reversals SET status = 'rejected', rejected_by = ?, rejected_at = CURRENT_TIMESTAMP, reject_reason = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
       [rejectedBy, reason || null, notes || null, id, companyId]
     );
+
+    const reward = await this._get(
+      'SELECT * FROM referral_rewards WHERE id = ? AND company_id = ?',
+      [reversal.reward_id, companyId]
+    );
+    if (reward) {
+      await this._createPortalNotifications(
+        reward.customer_id, companyId,
+        'reversal_rejected',
+        'Reversal Rejected',
+        `Your reversal request for reward ${reward.amount} was rejected.`,
+        reward.referral_id, reward.id
+      );
+    }
 
     await this.addAuditLog({
       entityType: 'reversal',
@@ -954,7 +989,27 @@ class ReferralService extends BaseService {
 
   // ── Internal Helpers ───────────────────────────────────────────
 
-  async creditWalletForReward(reward, referral, companyId) {
+  async _getPortalUserIdsForCustomer(customerId, companyId) {
+    if (!customerId) return [];
+    const rows = await this._all(
+      'SELECT id FROM portal_users WHERE customer_id = ? AND company_id = ? AND status = ?',
+      [customerId, companyId, 'active']
+    );
+    return rows.map(r => r.id);
+  }
+
+  async _createPortalNotifications(recipientCustomerId, companyId, type, title, message, referralId, rewardId) {
+    const portalUserIds = await this._getPortalUserIdsForCustomer(recipientCustomerId, companyId);
+    if (portalUserIds.length === 0) return;
+    const now = new Date().toISOString();
+    for (const portalUserId of portalUserIds) {
+      await this._run(
+        `INSERT INTO portal_notifications (id, portal_user_id, type, title, body, link, company_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [randomUUID(), portalUserId, type, title, message, null, companyId, now]
+      );
+    }
+  }
     const walletTxId = randomUUID();
 
     const customer = await this._get(

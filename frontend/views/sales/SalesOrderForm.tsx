@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSales } from '../../context/SalesContext';
 import { useAuth } from '../../context/AuthContext';
 import type { SalesOrderItem, SalesOrder } from '../../types';
@@ -7,13 +7,15 @@ interface SalesOrderFormProps {
   initial?: SalesOrder;
   onDone?: () => void;
   onCreate?: (o: SalesOrder) => Promise<void>;
+  /** Fired with the saved order after a successful create/update. */
+  onSaved?: (saved: SalesOrder) => void;
 }
 
 interface OrderFormState extends SalesOrder {
   _creditWarning?: string;
 }
 
-const SalesOrderForm: React.FC<SalesOrderFormProps> = ({ initial, onDone, onCreate }) => {
+const SalesOrderForm: React.FC<SalesOrderFormProps> = ({ initial, onDone, onCreate, onSaved }) => {
   const { addSalesOrder, updateSalesOrder, customers } = useSales();
   const { companyConfig } = useAuth();
   const [order, setOrder] = React.useState<OrderFormState>({ 
@@ -28,6 +30,19 @@ const SalesOrderForm: React.FC<SalesOrderFormProps> = ({ initial, onDone, onCrea
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    if (initial) {
+      setOrder({
+        ...initial,
+        _creditWarning: undefined,
+        subtotal: initial.subtotal || 0,
+        total: initial.total || 0
+      });
+      const c = (customers || []).find((x: any) => x.id === initial.customerId);
+      setSearchTerm(c?.name || c?.id || initial.customerId || '');
+    }
+  }, [initial, customers]);
 
   // Item form state
   const [newItem, setNewItem] = useState<Partial<SalesOrderItem>>({
@@ -155,6 +170,7 @@ const SalesOrderForm: React.FC<SalesOrderFormProps> = ({ initial, onDone, onCrea
       await updateSalesOrder(orderToSave);
       alert('Sales order updated');
     }
+    if (typeof onSaved === 'function') onSaved(orderToSave);
     if (typeof onDone === 'function') onDone();
   };
 

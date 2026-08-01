@@ -16,6 +16,7 @@ import {
   Sparkles, Database, BarChart2, X, ArrowUp, ArrowDown, Building2,
   Star, Sun, Calendar, CalendarDays, Check } from 'lucide-react';
 import WhatsAppMarketingModal from '../components/WhatsAppMarketingModal';
+import { adminLifecycle } from '../services/adminPortalClient';
 
 import { useDashboardStore } from '../stores/dashboardStore';
 import { dbService } from '../services/db';
@@ -690,6 +691,15 @@ const DashboardContent: React.FC = () => {
   });
   const [chartData, setChartData]   = useState<any[]>([]);
   const [activePeriod, setActivePeriod] = useState<string>('Year');
+  const [requestAnalytics, setRequestAnalytics] = useState<any>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminLifecycle.analytics.get()
+      .then((data) => { if (!cancelled) setRequestAnalytics(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const finYearStart = companyConfig?.financialYearStart || 'January';
   const finYearStartMonth = new Date(`${finYearStart} 1, 2000`).getMonth();
@@ -1271,6 +1281,48 @@ const DashboardContent: React.FC = () => {
           )}
         </div>
       </div>
+
+      {widgets.find(w => w.id === 'requests')?.visible !== false && requestAnalytics && (
+        <div style={{
+          background: '#FEFDFB', border: '1px solid #e4ddd1', borderRadius: 14,
+          boxShadow: '0 1px 2px rgba(11,62,57,.04)', padding: isMobile ? '18px' : '22px 24px',
+          marginBottom: isMobile ? 16 : 24, overflow: 'hidden',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+            <div>
+              <h3 style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: '#0b3e39', margin: 0, letterSpacing: '-0.01em' }}>Sales Request Pipeline</h3>
+              <div style={{ fontSize: 12.5, color: '#5c6567', fontWeight: 500, marginTop: 2 }}>
+                Customer requests → official quotations → sales orders
+              </div>
+            </div>
+            <button onClick={() => navigate('/sales-flow/requests')} style={{
+              background: 'linear-gradient(160deg, #3fa294, #0f544c)', color: '#fff', padding: '8px 16px', borderRadius: 999, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(11,62,57,.15)', transition: 'all .2s ease', whiteSpace: 'nowrap',
+            }} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(11,62,57,.25)'; e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.15)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+              Open Requests <ArrowRight size={13} />
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isMobile ? 130 : 150}px, 1fr))`, gap: 12 }}>
+            {[
+              { label: 'Total Requests', value: requestAnalytics.totalRequests || 0, sub: 'all time', accent: '#0f544c', bg: 'rgba(15,84,76,.08)' },
+              { label: 'Pending Review', value: (requestAnalytics.requests?.submitted || 0) + (requestAnalytics.requests?.assigned || 0) + (requestAnalytics.requests?.under_review || 0) + (requestAnalytics.requests?.waiting_for_customer || 0) + (requestAnalytics.requests?.ready_for_conversion || 0), sub: 'in inbox', accent: '#b45309', bg: 'rgba(217,154,63,.12)' },
+              { label: 'Quotations Issued', value: requestAnalytics.totalQuotations || 0, sub: `${requestAnalytics.acceptedQuotations || 0} accepted`, accent: '#2563EB', bg: 'rgba(37,99,235,.08)' },
+              { label: 'Converted to Orders', value: requestAnalytics.convertedQuotations || 0, sub: `${requestAnalytics.conversionRate || 0}% conversion`, accent: '#059669', bg: 'rgba(5,150,105,.1)' },
+              { label: 'Downloads', value: requestAnalytics.totalDownloads || 0, sub: `${requestAnalytics.uniqueDownloads || 0} unique docs`, accent: '#7c3aed', bg: 'rgba(124,58,237,.08)' },
+            ].map((item) => (
+              <div key={item.label} style={{ background: item.bg, borderRadius: 12, padding: '14px 16px', minWidth: 0 }}>
+                <div style={{ fontSize: 9.5, fontWeight: 800, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{item.label}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: item.accent, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em' }}>{item.value}</div>
+                <div style={{ fontSize: 10.5, color: '#5c6567', fontWeight: 600, marginTop: 6 }}>{item.sub}</div>
+              </div>
+            ))}
+          </div>
+          {requestAnalytics.avgReviewMinutes > 0 && (
+            <div style={{ fontSize: 11.5, color: '#5c6567', marginTop: 12, fontWeight: 600 }}>
+              Average review time: <b style={{ color: '#0b3e39' }}>{requestAnalytics.avgReviewMinutes} min</b>
+            </div>
+          )}
+        </div>
+      )}
 
       <WhatsAppMarketingModal open={isWhatsAppModalOpen} onOpenChange={setIsWhatsAppModalOpen} companyName={companyConfig?.companyName || 'Prime ERP'} />
       <ConfirmDialog open={confirmState.open} onOpenChange={(open) => !open && setConfirmState(c => ({ ...c, open: false }))} onConfirm={() => { confirmState.onConfirm?.(); setConfirmState(c => ({ ...c, open: false })); }} onCancel={() => setConfirmState(c => ({ ...c, open: false }))} title={confirmState.title} message={confirmState.message} confirmText={confirmState.confirmText} type={confirmState.type || 'question'} />

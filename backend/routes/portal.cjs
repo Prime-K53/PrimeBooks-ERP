@@ -104,11 +104,13 @@ router.get('/quotations/:id', async (req, res) => {
 
 router.post('/quotations/:id/accept', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id, company_id, email, full_name } = req.portalUser;
     const result = await portalLifecycleService.acceptQuotation(req.params.id, {
       portalUserId: id,
       customerId: customer_id,
       companyId: company_id,
+      signerName: full_name || email || null,
+      signerEmail: email || null,
       context: requestContext(req),
     });
     res.json(result);
@@ -120,13 +122,15 @@ router.post('/quotations/:id/accept', async (req, res) => {
 
 router.post('/quotations/:id/reject', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id, company_id, email, full_name } = req.portalUser;
     const { reason } = req.body || {};
     const result = await portalLifecycleService.rejectQuotation(req.params.id, {
       portalUserId: id,
       customerId: customer_id,
       companyId: company_id,
       reason,
+      signerName: full_name || email || null,
+      signerEmail: email || null,
       context: requestContext(req),
     });
     res.json(result);
@@ -138,19 +142,101 @@ router.post('/quotations/:id/reject', async (req, res) => {
 
 router.post('/quotations/:id/revision', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id, company_id, email, full_name } = req.portalUser;
     const { comments } = req.body || {};
     const result = await portalLifecycleService.requestRevision(req.params.id, {
       portalUserId: id,
       customerId: customer_id,
       companyId: company_id,
       comments,
+      signerName: full_name || email || null,
+      signerEmail: email || null,
       context: requestContext(req),
     });
     res.json(result);
   } catch (err) {
     console.error('[Portal] Revision request error:', err);
     res.status(400).json({ error: err.message || 'Failed to request revision' });
+  }
+});
+
+// ─── Quotation version history (Phase 3) ─────────────────────────────────────
+router.get('/quotations/:id/versions', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id, companyId: company_id });
+    if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
+    const data = await portalLifecycleService.listDocumentVersions('quotation', req.params.id, { companyId: company_id });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Quotation versions error:', err);
+    res.status(500).json({ error: 'Failed to load quotation versions' });
+  }
+});
+
+router.get('/quotations/:id/versions/:version', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id, companyId: company_id });
+    if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
+    const data = await portalLifecycleService.getDocumentVersion('quotation', req.params.id, Number(req.params.version), { companyId: company_id });
+    if (!data) return res.status(404).json({ error: 'Version not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Quotation version detail error:', err);
+    res.status(500).json({ error: 'Failed to load quotation version' });
+  }
+});
+
+// ─── Quotation decision signatures (Phase 3) ─────────────────────────────────
+router.get('/quotations/:id/signatures', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id, companyId: company_id });
+    if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
+    const data = await portalLifecycleService.getDocumentSignatures('quotation', req.params.id, { companyId: company_id, customerId: customer_id });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Quotation signatures error:', err);
+    res.status(500).json({ error: 'Failed to load signatures' });
+  }
+});
+
+// ─── Document discussions (Phase 4) ──────────────────────────────────────────
+router.get('/comments', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const { docType, docId } = req.query;
+    if (!docType || !docId) {
+      return res.status(400).json({ error: 'docType and docId are required' });
+    }
+    const data = await portalLifecycleService.getComments({
+      docType, docId, companyId: company_id, customerId: customer_id, view: 'customer',
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Comments error:', err);
+    res.status(500).json({ error: 'Failed to load comments' });
+  }
+});
+
+router.post('/comments', async (req, res) => {
+  try {
+    const { id, customer_id, company_id, email, full_name } = req.portalUser;
+    const { docType, docId, body } = req.body || {};
+    if (!docType || !docId || !body) {
+      return res.status(400).json({ error: 'docType, docId and body are required' });
+    }
+    const data = await portalLifecycleService.addComment({
+      docType, docId, companyId: company_id, customerId: customer_id,
+      actor: { type: 'customer', id, name: full_name || email || 'Customer' },
+      body,
+      context: requestContext(req),
+    });
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('[Portal] Add comment error:', err);
+    res.status(400).json({ error: err.message || 'Failed to add comment' });
   }
 });
 
@@ -231,6 +317,45 @@ router.get('/orders/:id', async (req, res) => {
   } catch (err) {
     console.error('[Portal] Order detail error:', err);
     res.status(500).json({ error: 'Failed to load order' });
+  }
+});
+
+// Reorder an official sales order — creates a brand-new order request
+// (ODR-YYYY-######) so the order goes through sales review again.
+router.post('/orders/:id/reorder', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const result = await portalLifecycleService.reorderFromOrder(req.params.id, {
+      portalUserId: id,
+      customerId: customer_id,
+      companyId: company_id,
+      context: requestContext(req),
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    console.error('[Portal] Reorder error:', err);
+    res.status(400).json({ error: err.message || 'Failed to reorder' });
+  }
+});
+
+// ─── Document chain (request → quotation → sales order) ────────────────────
+router.get('/document-chain', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const { docType, docId } = req.query;
+    if (!docType || !docId) {
+      return res.status(400).json({ error: 'docType and docId are required' });
+    }
+    const data = await portalLifecycleService.getDocumentChain({
+      docType,
+      docId,
+      customerId: customer_id,
+      companyId: company_id,
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Document chain error:', err);
+    res.status(400).json({ error: err.message || 'Failed to load document chain' });
   }
 });
 
@@ -409,6 +534,141 @@ router.put('/notifications/:id/read', async (req, res) => {
   } catch (err) {
     console.error('[Portal] Mark notification read error:', err);
     res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+router.get('/notifications/unread-count', async (req, res) => {
+  try {
+    const { id, company_id } = req.portalUser;
+    const count = await portalService.getUnreadNotificationCount(id, company_id);
+    res.json({ count });
+  } catch (err) {
+    console.error('[Portal] Unread count error:', err);
+    res.status(500).json({ error: 'Failed to load unread count' });
+  }
+});
+
+router.put('/notifications/read-all', async (req, res) => {
+  try {
+    const { id, company_id } = req.portalUser;
+    await portalService.markAllNotificationsRead(id, company_id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Portal] Mark all read error:', err);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
+});
+
+// ─── Referrals ────────────────────────────────────────────────
+router.get('/referrals', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const { page, pageSize, status, search, sort } = req.query;
+    const data = await portalService.getReferrals(id, customer_id, company_id, {
+      page: page ? parseInt(page, 10) : 1,
+      pageSize: pageSize ? parseInt(pageSize, 10) : 20,
+      status: status || undefined,
+      search: search || undefined,
+      sort: sort || 'date_desc',
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Referrals error:', err);
+    res.status(500).json({ error: err.message || 'Failed to load referrals' });
+  }
+});
+
+router.get('/referrals/:id', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const data = await portalService.getReferralById(req.params.id, id, customer_id, company_id);
+    if (!data) return res.status(404).json({ error: 'Referral not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Referral detail error:', err);
+    res.status(500).json({ error: 'Failed to load referral' });
+  }
+});
+
+router.get('/referrals/:id/timeline', async (req, res) => {
+  try {
+    const { company_id } = req.portalUser;
+    const data = await portalService.getReferralTimeline(req.params.id, company_id);
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Referral timeline error:', err);
+    res.status(500).json({ error: 'Failed to load timeline' });
+  }
+});
+
+router.get('/referrals/rewards', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const { page, pageSize, status } = req.query;
+    const data = await portalService.getReferralRewards(id, customer_id, company_id, {
+      page: page ? parseInt(page, 10) : 1,
+      pageSize: pageSize ? parseInt(pageSize, 10) : 20,
+      status: status || undefined,
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Referral rewards error:', err);
+    res.status(500).json({ error: 'Failed to load rewards' });
+  }
+});
+
+router.get('/referrals/settings', async (req, res) => {
+  try {
+    const { company_id } = req.portalUser;
+    const data = await portalService.getReferralSettings(company_id);
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Referral settings error:', err);
+    res.status(500).json({ error: 'Failed to load referral settings' });
+  }
+});
+
+router.get('/referrals/stats', async (req, res) => {
+  try {
+    const { customer_id, company_id } = req.portalUser;
+    const data = await portalService.getReferralFunnelStats(customer_id, company_id);
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Referral stats error:', err);
+    res.status(500).json({ error: 'Failed to load referral stats' });
+  }
+});
+
+router.post('/referrals', async (req, res) => {
+  try {
+    const { id, customer_id, company_id } = req.portalUser;
+    const { referredCustomerId, notes } = req.body || {};
+    if (!referredCustomerId) {
+      return res.status(400).json({ error: 'Referred customer is required' });
+    }
+    const data = await portalService.createReferral(id, customer_id, company_id, {
+      referredCustomerId,
+      notes,
+    });
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('[Portal] Create referral error:', err);
+    res.status(400).json({ error: err.message || 'Failed to create referral' });
+  }
+});
+
+router.get('/referrals/customers/search', async (req, res) => {
+  try {
+    const { company_id, customer_id } = req.portalUser;
+    const { q } = req.query;
+    if (!q || String(q).trim().length < 2) {
+      return res.json([]);
+    }
+    const data = await portalService.searchCustomersForReferral(company_id, String(q), customer_id);
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Customer search error:', err);
+    res.status(500).json({ error: 'Failed to search customers' });
   }
 });
 

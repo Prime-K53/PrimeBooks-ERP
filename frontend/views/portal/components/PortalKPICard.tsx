@@ -6,7 +6,7 @@ interface Props {
   value: string | number;
   icon: React.ElementType;
   trend?: { value: number; positive: boolean };
-  color?: 'emerald' | 'blue' | 'amber' | 'rose' | 'violet';
+  color?: 'emerald' | 'blue' | 'amber' | 'rose' | 'violet' | 'teal' | 'slate';
   selected?: boolean;
   onClick?: () => void;
 }
@@ -17,6 +17,8 @@ const colorConfig: Record<string, { border: string; bg: string; iconBg: string; 
   amber: { border: '#d99a3f', bg: '#FEFDFB', iconBg: '#fbead0', iconColor: '#d99a3f' },
   rose: { border: '#b5493f', bg: '#FEFDFB', iconBg: '#fef2f2', iconColor: '#b5493f' },
   violet: { border: '#6366F1', bg: '#FEFDFB', iconBg: '#eef2ff', iconColor: '#6366F1' },
+  teal: { border: '#0f766e', bg: '#FEFDFB', iconBg: '#f0fdfa', iconColor: '#0f766e' },
+  slate: { border: '#475569', bg: '#FEFDFB', iconBg: '#f1f5f9', iconColor: '#475569' },
 };
 
 const PortalKPICard: React.FC<Props> = ({ label, value, icon: Icon, trend, color = 'emerald', selected = false, onClick }) => {

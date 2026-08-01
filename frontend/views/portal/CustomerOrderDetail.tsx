@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, MessageSquare, CheckCircle2, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, MessageSquare, CheckCircle2, ShoppingCart, RotateCcw } from 'lucide-react';
 import { createElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { api } from '../../services/api';
@@ -12,6 +12,8 @@ import { PrimeDocument } from '../shared/components/PDF/PrimeDocument';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import DocumentChain from './components/DocumentChain';
+import DocumentDiscussion from './components/DocumentDiscussion';
 
 interface OrderItem {
   name: string;
@@ -58,6 +60,8 @@ const CustomerOrderDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
+  const [reorderError, setReorderError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -173,6 +177,21 @@ const CustomerOrderDetail: React.FC = () => {
     }
   };
 
+  const handleReorder = async () => {
+    if (!order) return;
+    if (!window.confirm(`Create a new order request based on order ${order.orderNumber || order.id.slice(0, 8)}? This will be reviewed by our team.`)) return;
+    setReordering(true);
+    setReorderError(null);
+    try {
+      const result = await portalLifecycle.orders.reorder(order.id);
+      navigate(`/portal/requests/${result.id}`);
+    } catch (err: any) {
+      setReorderError(err.message || 'Failed to create reorder request');
+    } finally {
+      setReordering(false);
+    }
+  };
+
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
   if (error) return <div className="p-6 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
   if (!order) return null;
@@ -185,8 +204,13 @@ const CustomerOrderDetail: React.FC = () => {
         <ArrowLeft size={14} /> Back to Orders
       </button>
 
+      <DocumentChain docType="order" docId={order.id} />
+
       {downloadError && (
         <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{downloadError}</div>
+      )}
+      {reorderError && (
+        <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{reorderError}</div>
       )}
 
       <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
@@ -200,6 +224,15 @@ const CustomerOrderDetail: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <StatusBadge status={order.status} />
+            {order.status !== 'Draft' && order.status !== 'Cancelled' && (
+              <button
+                onClick={handleReorder}
+                disabled={reordering}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 disabled:cursor-not-allowed text-teal-700 text-xs font-semibold rounded-lg transition-colors"
+              >
+                {reordering ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />} {reordering ? 'Creating...' : 'Reorder'}
+              </button>
+            )}
             <button
               onClick={handleDownloadPdf}
               disabled={downloading}
@@ -303,6 +336,10 @@ const CustomerOrderDetail: React.FC = () => {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mt-4">
+        <DocumentDiscussion docType="order" docId={order.id} />
       </div>
     </div>
   );

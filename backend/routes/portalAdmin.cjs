@@ -270,6 +270,70 @@ router.post('/requests/:id/complete-quotation', async (req, res) => {
   }
 });
 
+// Start sales order generation for an ORDER request: does NOT create an order
+// and does NOT reserve a number. Records the event and returns the prefill
+// payload for the standard ERP sales order editor.
+router.post('/requests/:id/generate-order', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const data = await portalLifecycleService.startOrderGeneration(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Generate order error:', err);
+    res.status(400).json({ error: err.message || 'Failed to start sales order generation' });
+  }
+});
+
+// Complete the conversion after the ERP sales order has been saved. This is
+// the only point where the official sales order (SO-YYYY-######) is created,
+// linked to the request, and the customer is notified.
+router.post('/requests/:id/complete-order', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { erpOrderId, orderSnapshot } = req.body || {};
+    const data = await portalLifecycleService.completeSalesOrder(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      erpOrderId,
+      orderSnapshot,
+      context: requestContext(req),
+    });
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Complete order error:', err);
+    res.status(400).json({ error: err.message || 'Failed to complete sales order' });
+  }
+});
+
+// ─── Official Sales Orders (admin) ───────────────────────────────────────────
+router.get('/orders', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const rows = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT so.id, so.order_number, so.status, so.total, so.orderDate, so.deliveryDate,
+               so.source_request_id, so.source_request_number, so.reorder_of, so.reorder_of_number,
+               c.name AS customer_name, so.created_at
+        FROM sales_orders so
+        LEFT JOIN customers c ON c.id = so.customer_id
+        WHERE so.company_id = ?
+        ORDER BY so.orderDate DESC
+      `, [company_id], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      });
+    });
+    res.json(rows);
+  } catch (err) {
+    console.error('[PortalAdmin] List orders error:', err);
+    res.status(500).json({ error: 'Failed to load orders' });
+  }
+});
+
 // ─── Official Quotations (admin) ─────────────────────────────────────────────
 router.get('/quotations', async (req, res) => {
   try {
@@ -334,6 +398,108 @@ router.post('/quotations/:id/convert-to-order', async (req, res) => {
   } catch (err) {
     console.error('[PortalAdmin] Convert to order error:', err);
     res.status(400).json({ error: err.message || 'Failed to convert to order' });
+  }
+});
+
+// ─── Quotation version history (Phase 3) ─────────────────────────────────────
+router.get('/quotations/:id/versions', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { companyId: company_id });
+    if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
+    const data = await portalLifecycleService.listDocumentVersions('quotation', req.params.id, { companyId: company_id });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Quotation versions error:', err);
+    res.status(500).json({ error: 'Failed to load quotation versions' });
+  }
+});
+
+router.get('/quotations/:id/versions/:version', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { companyId: company_id });
+    if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
+    const data = await portalLifecycleService.getDocumentVersion('quotation', req.params.id, Number(req.params.version), { companyId: company_id });
+    if (!data) return res.status(404).json({ error: 'Version not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Quotation version detail error:', err);
+    res.status(500).json({ error: 'Failed to load quotation version' });
+  }
+});
+
+// ─── Quotation decision signatures (Phase 3) ─────────────────────────────────
+router.get('/quotations/:id/signatures', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { companyId: company_id });
+    if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
+    const data = await portalLifecycleService.getDocumentSignatures('quotation', req.params.id, { companyId: company_id });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Quotation signatures error:', err);
+    res.status(500).json({ error: 'Failed to load signatures' });
+  }
+});
+
+// ─── Sales order production status (Phase 4) ─────────────────────────────────
+router.post('/orders/:id/status', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { status, note } = req.body || {};
+    if (!status) return res.status(400).json({ error: 'status is required' });
+    const data = await portalLifecycleService.updateOrderStatus(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      toStatus: status,
+      note,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Update order status error:', err);
+    res.status(400).json({ error: err.message || 'Failed to update order status' });
+  }
+});
+
+// ─── Document discussions (Phase 4) ──────────────────────────────────────────
+router.get('/comments', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { docType, docId } = req.query;
+    if (!docType || !docId) {
+      return res.status(400).json({ error: 'docType and docId are required' });
+    }
+    const data = await portalLifecycleService.getComments({
+      docType, docId, companyId: company_id, view: 'admin',
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Comments error:', err);
+    res.status(500).json({ error: 'Failed to load comments' });
+  }
+});
+
+router.post('/comments', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { docType, docId, body, visibility } = req.body || {};
+    if (!docType || !docId || !body) {
+      return res.status(400).json({ error: 'docType, docId and body are required' });
+    }
+    const actor = adminActor(req);
+    const data = await portalLifecycleService.addComment({
+      docType, docId, companyId: company_id,
+      actor: { type: 'admin', id: actor.id, name: actor.name || 'Sales', role: actor.role },
+      body,
+      visibility: visibility === 'customer' ? 'customer' : 'internal',
+      context: requestContext(req),
+    });
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Add comment error:', err);
+    res.status(400).json({ error: err.message || 'Failed to add comment' });
   }
 });
 

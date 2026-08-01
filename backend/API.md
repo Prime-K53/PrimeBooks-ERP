@@ -123,6 +123,55 @@ Company context: `x-company-id` header.
 | All | `/api/whatsapp` | — | WhatsApp integration routes |
 | All | `/api/tasks` | — | Background task management |
 
+## Customer Portal Lifecycle (`/api/portal/*`, portal JWT)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/portal/requests` | List the customer's requests |
+| POST | `/portal/requests` | Submit a quotation/order request |
+| GET | `/portal/requests/:id` | Request detail |
+| POST | `/portal/requests/:id/cancel` | Cancel a draft/submitted request |
+| GET | `/portal/quotations` | List official quotations (expiry enforced lazily) |
+| GET | `/portal/quotations/:id` | Quotation detail (expiry enforced on read) |
+| POST | `/portal/quotations/:id/accept` | Accept quotation (records digital signature) |
+| POST | `/portal/quotations/:id/reject` | Reject quotation (records signature, requires `reason`) |
+| POST | `/portal/quotations/:id/revision` | Request revision (records signature, requires `comments`) |
+| GET | `/portal/quotations/:id/versions` | Quotation version history (immutable snapshots) |
+| GET | `/portal/quotations/:id/versions/:version` | Single version snapshot detail |
+| GET | `/portal/quotations/:id/signatures` | Decision signatures for a quotation |
+| GET | `/portal/orders` | List official sales orders |
+| GET | `/portal/orders/:id` | Order detail |
+| POST | `/portal/orders/:id/reorder` | Create a reorder request from an order |
+| GET | `/portal/document-chain?docType=&docId=` | Resolve request → quotation → order chain |
+| GET | `/portal/timeline?docType=&docId=` | Merged chronological history for a document |
+| POST | `/portal/downloads` | Record a gated+audited PDF download |
+| GET | `/portal/comments?docType=&docId=` | Discussion comments visible to the customer |
+| POST | `/portal/comments` | Post a customer comment on a document |
+| GET | `/portal/dashboard` | Customer dashboard metrics |
+| GET | `/portal/notifications` | Customer notifications |
+
+## Portal Admin (`/api/portal/admin/*`, admin JWT)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/portal/admin/requests` | List customer requests (optional `?status=`) |
+| POST | `/portal/admin/requests/:id/generate-quotation` | Start quotation flow (no number reserved) |
+| POST | `/portal/admin/requests/:id/complete-quotation` | Link saved ERP quotation (creates version 1 snapshot) |
+| POST | `/portal/admin/requests/:id/generate-order` | Start sales-order flow (no number reserved) |
+| POST | `/portal/admin/requests/:id/complete-order` | Link saved ERP sales order |
+| GET | `/portal/admin/quotations` | List official quotations (`?status=` filter) |
+| GET | `/portal/admin/quotations/:id` | Quotation detail |
+| POST | `/portal/admin/quotations/:id/regenerate` | Regenerate after revision (creates version snapshot) |
+| POST | `/portal/admin/quotations/:id/convert-to-order` | Convert accepted quotation into sales order |
+| GET | `/portal/admin/quotations/:id/versions` | Quotation version history |
+| GET | `/portal/admin/quotations/:id/versions/:version` | Single version snapshot detail |
+| GET | `/portal/admin/quotations/:id/signatures` | Decision signatures for a quotation |
+| GET | `/portal/admin/orders` | List official sales orders |
+| POST | `/portal/admin/orders/:id/status` | Advance sales-order status (validated transition, notifies customer) |
+| GET | `/portal/admin/comments?docType=&docId=` | All discussion comments incl. internal notes |
+| POST | `/portal/admin/comments` | Post comment (`visibility`: `customer` \| `internal`) |
+| GET | `/portal/admin/notifications` | Admin notifications |
+| GET | `/portal/admin/analytics` | Request/quotation/download analytics |
+| GET | `/portal/admin/activity` | Merged customer activity feed |
+
 ## Auth
 | Method | Path | Description |
 |--------|------|-------------|

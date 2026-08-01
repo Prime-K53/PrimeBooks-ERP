@@ -58,6 +58,7 @@ import CustomerWallet from './views/portal/CustomerWallet';
 import CustomerLoyalty from './views/portal/CustomerLoyalty';
 import CustomerDocuments from './views/portal/CustomerDocuments';
 import CustomerNotifications from './views/portal/CustomerNotifications';
+import CustomerReferrals from './views/portal/CustomerReferrals';
 import CustomerProfile from './views/portal/CustomerProfile';
 import CustomerSupport from './views/portal/CustomerSupport';
 import CustomerCreateRequest from './views/portal/CustomerCreateRequest';
@@ -1076,6 +1077,7 @@ const PortalRoutes = (
       <Route path="loyalty" element={<CustomerLoyalty />} />
       <Route path="documents" element={<CustomerDocuments />} />
       <Route path="notifications" element={<CustomerNotifications />} />
+      <Route path="referrals" element={<CustomerReferrals />} />
       <Route path="profile" element={<CustomerProfile />} />
       <Route path="support" element={<CustomerSupport />} />
     </Route>
