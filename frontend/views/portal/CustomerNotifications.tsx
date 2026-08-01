@@ -53,12 +53,12 @@ const CustomerNotifications: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const unsub = portalLifecycle.subscribe({
+    const sub = await portalLifecycle.subscribe({
       onEvent: (type) => {
         if (type === 'notification') fetchNotifications();
       },
     });
-    return unsub;
+    return sub;
   }, []);
 
   const markAsRead = async (id: string) => {

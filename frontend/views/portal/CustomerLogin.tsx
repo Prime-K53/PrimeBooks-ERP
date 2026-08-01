@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Fingerprint, Loader2, Lock, Mail } from 'lucide-react';
+import { User, Fingerprint, Loader2, Lock, Mail, KeyRound } from 'lucide-react';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 
 const CustomerLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { login, loginPassword } = useCustomerAuth();
-  const [mode, setMode] = useState<'id' | 'password'>('id');
+  const { login, loginPassword, activate } = useCustomerAuth();
+  const [mode, setMode] = useState<'id' | 'password' | 'activate'>('id');
   const [customerId, setCustomerId] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,8 +21,18 @@ const CustomerLogin: React.FC = () => {
     e.preventDefault();
     if (mode === 'id') {
       if (!customerId.trim() || !fullName.trim()) return;
-    } else {
+    } else if (mode === 'password') {
       if (!email.trim() || !password) return;
+    } else {
+      if (!customerId.trim() || !inviteCode.trim() || !newPassword) return;
+      if (newPassword !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+      if (newPassword.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
+      }
     }
     setSubmitting(true);
     setError(null);
@@ -27,7 +40,9 @@ const CustomerLogin: React.FC = () => {
     try {
       const result = mode === 'id'
         ? await login(customerId.trim(), fullName.trim())
-        : await loginPassword(email.trim(), password);
+        : mode === 'password'
+          ? await loginPassword(email.trim(), password)
+          : await activate(customerId.trim(), inviteCode.trim(), newPassword);
       if (result === 'SUCCESS') {
         navigate('/portal/dashboard', { replace: true });
         return;
@@ -35,7 +50,9 @@ const CustomerLogin: React.FC = () => {
       if (result === 'INVALID') {
         setError(mode === 'id'
           ? 'Customer ID and full name do not match our records.'
-          : 'Email and password do not match our records.');
+          : mode === 'password'
+            ? 'Email and password do not match our records.'
+            : 'Invalid customer ID or invite code. Codes expire after 30 minutes.');
       } else {
         setError('Login failed. Please try again.');
       }
@@ -45,6 +62,8 @@ const CustomerLogin: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  const inputClass = "w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all";
 
   return (
     <div className="fixed inset-0 overflow-y-auto bg-[var(--dashboard-bg)] font-sans">
@@ -72,7 +91,7 @@ const CustomerLogin: React.FC = () => {
           <p className="mt-2 text-sm leading-relaxed" style={{ color: '#5c6567' }}>Sign in to your account to view invoices, orders, and more.</p>
         </div>
 
-        <div className="mb-6 grid grid-cols-2 gap-1.5 p-1.5 bg-slate-100 rounded-xl">
+        <div className="mb-6 grid grid-cols-3 gap-1.5 p-1.5 bg-slate-100 rounded-xl">
           <button type="button" onClick={() => { setMode('id'); setError(null); }}
             className={`h-9 rounded-lg text-xs font-bold transition-all ${mode === 'id' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
             Customer ID
@@ -80,6 +99,10 @@ const CustomerLogin: React.FC = () => {
           <button type="button" onClick={() => { setMode('password'); setError(null); }}
             className={`h-9 rounded-lg text-xs font-bold transition-all ${mode === 'password' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
             Email & Password
+          </button>
+          <button type="button" onClick={() => { setMode('activate'); setError(null); }}
+            className={`h-9 rounded-lg text-xs font-bold transition-all ${mode === 'activate' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            Activate Account
           </button>
         </div>
 
@@ -89,7 +112,7 @@ const CustomerLogin: React.FC = () => {
           </div>
         )}
 
-        {mode === 'id' ? (
+        {mode === 'id' && (
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Customer ID</label>
@@ -100,7 +123,7 @@ const CustomerLogin: React.FC = () => {
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
                 placeholder="Enter your customer ID"
-                className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
+                className={inputClass}
               />
             </div>
           </div>
@@ -114,7 +137,7 @@ const CustomerLogin: React.FC = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name (exact match)"
-                className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
+                className={inputClass}
               />
             </div>
           </div>
@@ -131,7 +154,9 @@ const CustomerLogin: React.FC = () => {
             )}
           </button>
         </form>
-        ) : (
+        )}
+
+        {mode === 'password' && (
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Email</label>
@@ -142,7 +167,7 @@ const CustomerLogin: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
+                className={inputClass}
               />
             </div>
           </div>
@@ -156,7 +181,7 @@ const CustomerLogin: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
+                className={inputClass}
               />
             </div>
           </div>
@@ -170,6 +195,78 @@ const CustomerLogin: React.FC = () => {
               <Loader2 size={16} className="animate-spin" />
             ) : (
               'Sign In'
+            )}
+          </button>
+        </form>
+        )}
+
+        {mode === 'activate' && (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Customer ID</label>
+            <div className="relative">
+              <Fingerprint size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+                placeholder="Enter your customer ID"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Invite Code</label>
+            <div className="relative">
+              <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="6-digit code from your invite"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">New Password</label>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Confirm Password</label>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repeat your password"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting || !customerId.trim() || !inviteCode.trim() || !newPassword || !confirmPassword}
+            className="w-full h-11 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(90deg, #b97e2b, #d99a3f)', boxShadow: '0 8px 20px rgba(185,126,43,.25)' }}
+          >
+            {submitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              'Activate & Sign In'
             )}
           </button>
         </form>

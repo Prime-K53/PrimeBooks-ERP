@@ -72,12 +72,12 @@ const CustomerQuotations: React.FC = () => {
   }, [load]);
 
   useEffect(() => {
-    const unsubscribe = portalLifecycle.subscribe({
+    const sub = await portalLifecycle.subscribe({
       onEvent: (type, payload) => {
         if (type === 'entity_changed' && payload.docType === 'quotation') load();
       },
     });
-    return unsubscribe;
+    return sub;
   }, [load]);
 
   const sorted = useMemo(

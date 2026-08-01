@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { createElement } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Eye } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
-import { portalApi } from '../../services/portalApiClient';
+import { portalLifecycle } from '../../services/portalApiClient';
 import { mapToInvoiceData } from '../../utils/pdfMapper';
 import { attachDocumentSecurity } from '../../utils/documentSecurity';
 import { initializePrimePdfFonts } from '../shared/components/PDF/templateSettings';
 import { PrimeDocument } from '../shared/components/PDF/PrimeDocument';
 import { useAuth } from '../../context/AuthContext';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalButton from './components/PortalButton';
+import PortalCard from './components/PortalCard';
+import ErrorBanner from './components/ErrorBanner';
+import DocumentPreviewModal from './components/DocumentPreviewModal';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import { portalTheme, DEFAULT_PAGE_SIZE } from '../constants';
 
 interface LineItem {
   item_name: string;
@@ -40,10 +46,11 @@ const CustomerInvoiceDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    portalApi.get<InvoiceDetail>(`/invoices/${id}`)
+    portalLifecycle.invoices.get(id)
       .then(setInvoice)
       .catch((err) => setError(err.message || 'Failed to load invoice'))
       .finally(() => setLoading(false));
@@ -96,82 +103,119 @@ const CustomerInvoiceDetail: React.FC = () => {
   const remaining = Number(invoice.total_amount) - Number(invoice.paid_amount || 0);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <button onClick={() => navigate('/portal/invoices')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
-        <ArrowLeft size={14} /> Back to Invoices
-      </button>
+    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+      <PortalPageHeader
+        title={`Invoice ${invoice.invoice_number}`}
+        subtitle={`Issued: ${new Date(invoice.created_at).toLocaleDateString()} | Due: ${new Date(invoice.due_date).toLocaleDateString()}`}
+        icon={Eye}
+        action={{
+          label: downloading ? 'Generating...' : 'Download PDF',
+          onClick: handleDownloadPdf,
+          disabled: downloading,
+        }}
+      />
 
-      {downloadError && (
-        <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{downloadError}</div>
-      )}
+      {downloadError && <div style={{ padding: '0 28px 0' }}><ErrorBanner message={downloadError} onDismiss={() => setDownloadError(null)} /></div>}
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Invoice {invoice.invoice_number}</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Issued: {new Date(invoice.created_at).toLocaleDateString()} | Due: {new Date(invoice.due_date).toLocaleDateString()}
-            </p>
+      <div style={{ padding: '0 28px 28px' }}>
+        <PortalCard style={{ padding: '20px 24px', marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <p style={{ fontSize: 14, color: portalTheme.inkSoft }}>Customer: <strong style={{ color: portalTheme.ink }}>{invoice.customer_name}</strong></p>
+              <p style={{ fontSize: 13, color: portalTheme.inkSoft, marginTop: 4 }}>
+                Status: <StatusBadge status={invoice.status} />
+              </p>
+            </div>
+            <PortalButton variant="secondary" onClick={() => setPreviewOpen(true)} icon={Eye}>Preview</PortalButton>
           </div>
-          <div className="flex items-center gap-3">
-            <StatusBadge status={invoice.status} />
-            <button
-              onClick={handleDownloadPdf}
-              disabled={downloading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 text-xs font-semibold rounded-lg transition-colors"
-            >
-              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {downloading ? 'Generating...' : 'PDF'}
-            </button>
+        </PortalCard>
+
+        <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e4ddd1' }}>
+            <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Line Items</h2>
           </div>
-        </div>
-        <div className="text-sm text-slate-700">
-          <span className="text-slate-500">Customer:</span> {invoice.customer_name}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+              <thead>
+                <tr style={{ background: portalTheme.teal[50] }}>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Item</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Qty</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Unit Price</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100/50">
+                {(invoice.line_items || []).map((item, i) => (
+                  <tr key={i} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
+                    <td className="px-5 py-3 font-medium text-slate-900">{item.item_name}</td>
+                    <td className="px-5 py-3 text-right">{item.quantity}</td>
+                    <td className="px-5 py-3 text-right font-mono">K {Number(item.unit_price).toFixed(2)}</td>
+                    <td className="px-5 py-3 text-right font-mono">K {Number(item.line_total).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ padding: '14px 16px', borderTop: '1px solid #e4ddd1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ color: portalTheme.inkSoft }}>Subtotal</span>
+              <span className="font-mono" style={{ color: portalTheme.ink }}>K {subtotal.toFixed(2)}</span>
+            </div>
+            {Number(invoice.paid_amount) > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: portalTheme.teal[600] }}>Paid</span>
+                <span className="font-mono" style={{ color: portalTheme.teal[600] }}>K {Number(invoice.paid_amount).toFixed(2)}</span>
+              </div>
+            )}
+            {remaining > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: portalTheme.amber[600] }}>Remaining</span>
+                <span className="font-mono" style={{ color: portalTheme.amber[600] }}>K {remaining.toFixed(2)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, borderTop: '1px solid #e4ddd1', paddingTop: 8, marginTop: 4 }}>
+              <span style={{ color: portalTheme.ink }}>Total</span>
+              <span className="font-mono" style={{ color: portalTheme.ink }}>K {Number(invoice.total_amount).toFixed(2)}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200/60">
-          <h2 className="text-sm font-semibold text-slate-800">Line Items</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-            <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
-              <tr>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Item</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Qty</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Unit Price</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100/50">
-              {(invoice.line_items || []).map((item, i) => (
-                <tr key={i} className="text-slate-700">
-                  <td className="px-5 py-3 font-medium text-slate-900">{item.item_name}</td>
-                  <td className="px-5 py-3 text-right">{item.quantity}</td>
-                  <td className="px-5 py-3 text-right font-mono">K {Number(item.unit_price).toFixed(2)}</td>
-                  <td className="px-5 py-3 text-right font-mono">K {Number(item.line_total).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-5 py-4 border-t border-slate-200/60 space-y-1">
-          <div className="flex justify-between text-sm">
-            <span className="text-slate-500">Subtotal</span>
-            <span className="text-slate-700 font-mono">K {subtotal.toFixed(2)}</span>
+      <DocumentPreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        title={`Invoice ${invoice.invoice_number}`}
+        onDownload={handleDownloadPdf}
+        downloading={downloading}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span style={{ color: portalTheme.inkSoft }}>Invoice Number:</span>
+            <span style={{ color: portalTheme.ink, fontWeight: 600 }}>{invoice.invoice_number}</span>
           </div>
-          {Number(invoice.paid_amount) > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-emerald-600">Paid</span>
-              <span className="text-emerald-600 font-mono">K {Number(invoice.paid_amount).toFixed(2)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span style={{ color: portalTheme.inkSoft }}>Customer:</span>
+            <span style={{ color: portalTheme.ink }}>{invoice.customer_name}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span style={{ color: portalTheme.inkSoft }}>Status:</span>
+            <StatusBadge status={invoice.status} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span style={{ color: portalTheme.inkSoft }}>Total:</span>
+            <span style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(invoice.total_amount).toFixed(2)}</span>
+          </div>
+          {(invoice.line_items || []).map((item, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+              <span style={{ color: portalTheme.ink }}>{item.item_name} × {item.quantity}</span>
+              <span style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(item.line_total).toFixed(2)}</span>
             </div>
-          )}
-          {remaining > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-amber-600">Remaining</span>
-              <span className="text-amber-600 font-mono">K {remaining.toFixed(2)}</span>
-            </div>
-          )}
+          ))}
+        </div>
+      </DocumentPreviewModal>
+    </div>
+  );
+};
           <div className="flex justify-between text-base font-bold pt-2 border-t border-slate-200/60">
             <span className="text-slate-900">Total</span>
             <span className="text-slate-900 font-mono">K {Number(invoice.total_amount).toFixed(2)}</span>

@@ -541,23 +541,26 @@ export const portalLifecycle = {
     },
   },
 
-  /** SSE realtime stream (EventSource cannot send headers — token goes in query). */
-  subscribe(callbacks: { onEvent?: (type: string, payload: any) => void; onError?: (err: any) => void }): () => void {
-    const token = getPortalAccessToken();
-    if (!token) return () => {};
-    const url = `${API_BASE_URL}/portal/events?token=${encodeURIComponent(token)}`;
-    const source = new EventSource(url);
-    source.addEventListener('entity_changed', (e: MessageEvent) => {
-      try {
-        callbacks.onEvent?.('entity_changed', JSON.parse(e.data));
-      } catch { /* ignore malformed payloads */ }
-    });
-    source.addEventListener('notification', (e: MessageEvent) => {
-      try {
-        callbacks.onEvent?.('notification', JSON.parse(e.data));
-      } catch { /* ignore malformed payloads */ }
-    });
-    source.onerror = () => callbacks.onError?.(new Error('Realtime connection lost'));
-    return () => source.close();
+  /** SSE realtime stream with a short-lived ticket (EventSource cannot send headers). */
+  async subscribe(callbacks: { onEvent?: (type: string, payload: any) => void; onError?: (err: any) => void }): Promise<() => void> {
+    let source: EventSource | null = null;
+    try {
+      const { ticket } = await portalApi.post<{ ticket: string; expiresIn: number }>('/events-ticket', { purpose: 'portal-realtime' });
+      source = new EventSource(`${API_BASE_URL}/portal/events?token=${encodeURIComponent(ticket)}`);
+      source.addEventListener('entity_changed', (e: MessageEvent) => {
+        try {
+          callbacks.onEvent?.('entity_changed', JSON.parse(e.data));
+        } catch { /* ignore malformed payloads */ }
+      });
+      source.addEventListener('notification', (e: MessageEvent) => {
+        try {
+          callbacks.onEvent?.('notification', JSON.parse(e.data));
+        } catch { /* ignore malformed payloads */ }
+      });
+      source.onerror = () => callbacks.onError?.(new Error('Realtime connection lost'));
+    } catch {
+      callbacks.onError?.(new Error('Failed to establish realtime connection'));
+    }
+    return () => source?.close();
   },
 };

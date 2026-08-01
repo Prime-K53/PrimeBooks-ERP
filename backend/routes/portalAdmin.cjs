@@ -716,7 +716,7 @@ router.post('/users/:id/reset-password', async (req, res) => {
 
 router.post('/users/auto-create', async (req, res) => {
   try {
-    const { customer_id, name, email, phone, full_name } = req.body;
+    const { customer_id, name, email, phone, full_name, invite } = req.body;
     if (!customer_id) {
       return res.status(400).json({ error: 'customer_id is required' });
     }
@@ -724,7 +724,7 @@ router.post('/users/auto-create', async (req, res) => {
 
     const existing = await portalAuthService.getPortalUserByCustomerId(customer_id, company_id);
     if (existing) {
-      return res.json({ existing: true, user: existing, generated_password: null });
+      return res.json({ existing: true, user: existing, generated_password: null, invite_code: null });
     }
 
     // Upsert the customer into the backend customers table so the portal admin
@@ -750,8 +750,13 @@ router.post('/users/auto-create', async (req, res) => {
       password,
       full_name: full_name || name || '',
       phone: phone || '',
-      company_id
+      company_id,
+      status: invite ? 'invited' : 'active'
     });
+    if (invite) {
+      const { code, expires_at } = await portalAuthService.createInviteCode(user.id);
+      return res.status(201).json({ user, invite_code: code, invite_expires_at: expires_at });
+    }
     res.status(201).json({ user, generated_password: password });
   } catch (err) {
     if (err.message === 'Email already registered') {
@@ -776,6 +781,30 @@ router.post('/users/:id/regenerate-password', async (req, res) => {
   } catch (err) {
     console.error('[PortalAdmin] Regenerate password error:', err);
     res.status(500).json({ error: 'Failed to regenerate password' });
+  }
+});
+
+router.post('/users/:id/invite', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const user = await portalAuthService.getPortalUserById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Portal user not found' });
+    if (user.company_id !== company_id) return res.status(403).json({ error: 'Access denied' });
+    if (user.status === 'disabled') {
+      return res.status(400).json({ error: 'Cannot invite a disabled account' });
+    }
+
+    // Flipping an active account to 'invited' forces the customer to re-activate
+    // (new code, old sessions revoked) — used for resending invites.
+    if (user.status !== 'invited') {
+      await portalAuthService.setPortalUserStatus(user.id, 'invited');
+      await portalAuthService.revokeAllSessions(user.id);
+    }
+    const { code, expires_at } = await portalAuthService.createInviteCode(user.id);
+    res.json({ code, expires_at, user: { ...user, status: 'invited' } });
+  } catch (err) {
+    console.error('[PortalAdmin] Invite user error:', err);
+    res.status(500).json({ error: 'Failed to create invite' });
   }
 });
 

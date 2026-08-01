@@ -32,12 +32,12 @@ const DocumentDiscussion: React.FC<Props> = ({ docType, docId }) => {
 
   useEffect(() => {
     if (!docId) return;
-    const unsubscribe = portalLifecycle.subscribe({
+    const sub = await portalLifecycle.subscribe({
       onEvent: (type, payload) => {
         if (type === 'entity_changed' && payload.docType === docType && payload.docId === docId && payload.event === 'comment') load();
       },
     });
-    return unsubscribe;
+    return sub;
   }, [docType, docId, load]);
 
   const post = async () => {

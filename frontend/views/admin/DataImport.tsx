@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSales } from '../../context/SalesContext';
 import { useInventory } from '../../context/InventoryContext';
-import { Upload, FileText, CheckCircle, AlertTriangle, ArrowLeft, Users, Package, Download, Info, Loader2, Sparkles, FileSpreadsheet, Share } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertTriangle, ArrowLeft, Users, Package, Download, Info, Loader2, Sparkles, FileSpreadsheet, Share, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { parseCSV, exportToCSV } from '../../services/excelService';
 import { generateAccountNumber, generateNextId, generateSku } from '../../utils/helpers';
@@ -116,9 +116,16 @@ const processImport = async () => {
                  walletBalance: Number(row['Wallet Balance'] || row.WalletBalance || row.balance || 0),
                  loyaltyPoints: Number(row.LoyaltyPoints || row.points || 0)
                };
-               await addCustomer(customer);
+                 const credentials = await addCustomer(customer, { invite: true });
                currentCustomers.push(customer);
-               accepted.push({ ...row, status: 'Accepted', message: 'Successfully imported' });
+               accepted.push({
+                 ...row,
+                 status: 'Accepted',
+                 message: 'Successfully imported',
+                 customer_id: customer.id,
+                 portal_email: credentials?.email ?? '',
+                 invite_code: credentials?.inviteCode ?? '',
+               });
              } else {
                rejected.push({ ...row, status: 'Rejected', message: 'Missing Name field' });
              }
@@ -330,6 +337,22 @@ const processUpdate = async () => {
         notify("Inventory records exported to CSV", "success");
     };
 
+    const handleExportInvites = () => {
+        const portalUrl = `${window.location.origin}/portal/login`;
+        const data = (importResults?.accepted || [])
+            .filter((r: any) => r.customer_id && r.invite_code)
+            .map((r: any) => ({
+                'Customer ID': r.customer_id,
+                'Full name': r.Name || r.name || '',
+                'Email': r.portal_email || '',
+                'Portal URL': portalUrl,
+                'Invite code': r.invite_code,
+            }));
+        if (data.length === 0) { notify("No portal invites were generated for this import", "error"); return; }
+        exportToCSV(data, `portal_invites_${new Date().toISOString().split('T')[0]}`);
+        notify(`${data.length} portal invites exported to CSV`, "success");
+    };
+
     const inputStyle: React.CSSProperties = {
         width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
         color: ink, background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9,
@@ -452,6 +475,9 @@ const processUpdate = async () => {
                                             <td style={{ padding: '6px 12px' }}>
                                                 <div style={{ fontWeight: 700, color: ink }}>{row.Name || row.name || 'Unknown Item'}</div>
                                                 <div style={{ fontSize: 9, color: inkSoft, fontFamily: "'JetBrains Mono', monospace" }}>{row.SKU || row.AccountNumber || 'No Reference'}</div>
+                                                {row.invite_code && (
+                                                    <div style={{ fontSize: 9, color: amber[500], fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>Invite: {row.invite_code}</div>
+                                                )}
                                             </td>
                                             <td style={{ padding: '6px 12px' }}>
                                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontWeight: 700, fontSize: 9, background: activeResultsTab === 'accepted' ? t[100] : '#fef0ee', color: activeResultsTab === 'accepted' ? t[700] : danger }}>
@@ -466,6 +492,26 @@ const processUpdate = async () => {
                                 </tbody>
                             </table>
                         </div>
+                        {(importingType === 'Customers' && importResults.accepted.some((r: any) => r.invite_code)) && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: 16, padding: 14, background: t[50], border: `1px solid ${t[200]}`, borderRadius: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${amber[500]}18`, color: amber[500], flexShrink: 0 }}>
+                                        <Key size={16} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: 800, fontSize: 12, color: ink, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                            Customer Portal Invites
+                                        </div>
+                                        <div style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>
+                                            {importResults.accepted.filter((r: any) => r.invite_code).length} account(s) created with a setup code — share the code with each customer. They activate at the portal sign-in screen ("Activate Account" tab). Codes expire in 30 minutes.
+                                        </div>
+                                    </div>
+                                </div>
+                                <button className="prime-btn-secondary" onClick={handleExportInvites} style={{ padding: '8px 16px', borderRadius: 9, border: `1.4px solid ${amber[500]}`, background: paper, color: amber[500], fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
+                                    <Download size={13} /> Export Invites CSV
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

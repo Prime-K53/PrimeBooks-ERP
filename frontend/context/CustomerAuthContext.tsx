@@ -15,6 +15,7 @@ interface CustomerAuthContextType {
   loading: boolean;
   login: (customerId: string, fullName: string) => Promise<'SUCCESS' | 'INVALID' | 'ERROR'>;
   loginPassword: (email: string, password: string) => Promise<'SUCCESS' | 'INVALID' | 'ERROR'>;
+  activate: (customerId: string, code: string, password: string) => Promise<'SUCCESS' | 'INVALID' | 'ERROR'>;
   logout: () => void;
   refreshSession: () => Promise<boolean>;
 }
@@ -150,8 +151,34 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
     }
   }, [scheduleTokenRefresh]);
 
+  const activate = useCallback(async (customerId: string, code: string, password: string): Promise<'SUCCESS' | 'INVALID' | 'ERROR'> => {
+    try {
+      const result = await portalApi.post<{
+        message: string;
+        user: PortalUser;
+        access_token: string;
+        refresh_token: string;
+        expires_in: string;
+      }>('/auth/activate', { customer_id: customerId, code, password });
+
+      savePortalSession({
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+        expires_in: result.expires_in,
+        user: result.user,
+      });
+
+      setUser(result.user);
+      scheduleTokenRefresh(25 * 60 * 1000);
+      return 'SUCCESS';
+    } catch (err: any) {
+      if (err?.status === 400 || err?.status === 401 || err?.status === 409) return 'INVALID';
+      return 'ERROR';
+    }
+  }, [scheduleTokenRefresh]);
+
   return (
-    <CustomerAuthContext.Provider value={{ user, isAuthenticated, loading, login, loginPassword, logout, refreshSession }}>
+    <CustomerAuthContext.Provider value={{ user, isAuthenticated, loading, login, loginPassword, activate, logout, refreshSession }}>
       {children}
     </CustomerAuthContext.Provider>
   );

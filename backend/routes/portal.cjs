@@ -23,6 +23,16 @@ function requestContext(req) {
 }
 
 // ─── Realtime events (SSE) — no manual refresh needed ────────────────────────
+router.post('/events-ticket', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
+  try {
+    const { customer_id } = req.portalUser;
+    const ticket = portalAuthService.generateEventTicket(customer_id, 'portal');
+    res.json({ ticket, expiresIn: 300 });
+  } catch (err) {
+    console.error('[Portal] events-ticket error:', err);
+    res.status(500).json({ error: 'Failed to issue realtime ticket' });
+  }
+});
 router.get('/events', (req, res) => {
   const unsubscribe = portalLifecycleService.subscribePortal(req, res);
   res.on('close', unsubscribe);

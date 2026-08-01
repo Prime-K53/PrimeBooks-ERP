@@ -137,6 +137,47 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
+router.post('/activate', async (req, res) => {
+  try {
+    const { customer_id, code, password } = req.body;
+    if (!customer_id || !code || !password) {
+      return res.status(400).json({ error: 'Customer ID, invite code, and new password are required' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    const user = await portalAuthService.activatePortalUser({
+      customer_id,
+      code,
+      password,
+      company_id: req.body.company_id || ''
+    });
+    if (!user) return res.status(400).json({ error: 'Invalid or expired invite code' });
+    const token = generatePortalToken(user);
+    const refreshToken = crypto.randomBytes(48).toString('hex');
+    const session = await portalAuthService.createSession(user.id, user.company_id, refreshToken);
+    const ip = req.ip || req.connection?.remoteAddress;
+    const ua = req.headers['user-agent'];
+    portalAuthService.recordLoginHistory(user.id, ip, ua).catch(() => {});
+    res.json({
+      message: 'Account activated successfully',
+      user: {
+        id: user.id,
+        customer_id: user.customer_id,
+        email: user.email,
+        full_name: user.full_name,
+        phone: user.phone
+      },
+      access_token: token,
+      refresh_token: refreshToken,
+      expires_in: '30m'
+    });
+  } catch (err) {
+    console.error('[PortalAuth] Activate error:', err);
+    res.status(err.code === 'NOT_INVITED' ? 409 : 400).json({ error: err.message || 'Failed to activate account' });
+  }
+});
+
 router.post('/reset-password', async (req, res) => {
   try {
     const { email, code, password } = req.body;

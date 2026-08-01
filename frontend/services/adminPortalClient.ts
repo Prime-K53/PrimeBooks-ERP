@@ -318,7 +318,9 @@ export interface AdminUser {
 
 export interface PortalCredentials {
   email: string;
-  password: string;
+  password?: string | null;
+  inviteCode?: string | null;
+  userId?: string;
 }
 
 export interface AdminPortalAccount {
@@ -332,6 +334,7 @@ export interface AdminPortalAccount {
     status?: string;
   };
   generated_password: string | null;
+  invite_code?: string | null;
 }
 
 export const adminLifecycle = {
@@ -457,8 +460,11 @@ export const adminLifecycle = {
     list(): Promise<AdminUser[]> {
       return adminPortalApi.get<AdminUser[]>('/users');
     },
-    autoCreate(payload: { customer_id: string; name?: string; email?: string; phone?: string; full_name?: string }): Promise<AdminPortalAccount> {
+    autoCreate(payload: { customer_id: string; name?: string; email?: string; phone?: string; full_name?: string; invite?: boolean }): Promise<AdminPortalAccount> {
       return adminPortalApi.post<AdminPortalAccount>('/users/auto-create', payload);
+    },
+    invite(id: string): Promise<{ code: string; expires_at: string; user: AdminPortalAccount['user'] }> {
+      return adminPortalApi.post<{ code: string; expires_at: string; user: AdminPortalAccount['user'] }>(`/users/${id}/invite`);
     },
     regeneratePassword(id: string): Promise<{ generated_password: string }> {
       return adminPortalApi.post<{ generated_password: string }>(`/users/${id}/regenerate-password`);

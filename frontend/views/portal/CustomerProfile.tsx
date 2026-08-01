@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { User, Save, Lock, Loader2 } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
+import { portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalButton from './components/PortalButton';
+import PortalInput from './components/PortalInput';
+import ErrorBanner from './components/ErrorBanner';
+import PortalCard from './components/PortalCard';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import { useToast } from './hooks/useConfirmDialog';
+import { portalTheme } from '../constants';
 
 const teal = {
   50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
@@ -28,6 +35,7 @@ interface ProfileData {
 
 const CustomerProfile: React.FC = () => {
   const { user } = useCustomerAuth();
+  const { addToast } = useToast();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +50,7 @@ const CustomerProfile: React.FC = () => {
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   useEffect(() => {
-    portalApi.get<ProfileData>('/profile')
+    portalLifecycle.profile.get()
       .then((data) => {
         setProfile(data);
         setForm({
@@ -69,10 +77,12 @@ const CustomerProfile: React.FC = () => {
     setSaving(true);
     setSaveMsg(null);
     try {
-      await portalApi.put('/profile', form);
+      await portalLifecycle.profile.update(form);
       setSaveMsg('Profile updated successfully.');
+      addToast('success', 'Profile updated successfully');
     } catch (err: any) {
       setSaveMsg(err.message || 'Failed to update profile.');
+      addToast('error', err.message || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -94,12 +104,13 @@ const CustomerProfile: React.FC = () => {
 
     setChangingPassword(true);
     try {
-      await portalApi.put('/profile/password', {
+      await portalLifecycle.profile.changePassword({
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       });
       setPasswordMsg('Password changed successfully.');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      addToast('success', 'Password changed successfully');
     } catch (err: any) {
       setPasswordError(err.message || 'Failed to change password.');
     } finally {
@@ -108,376 +119,68 @@ const CustomerProfile: React.FC = () => {
   };
 
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-8 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  if (error) return <div className="p-8 max-w-4xl mx-auto"><ErrorBanner message={error} /></div>;
 
   return (
-    <div style={{
-      background: paper,
-      borderRadius: 14,
-      overflow: 'hidden'
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '22px 28px 18px',
-        borderBottom: `1px solid ${hairline}`,
-        background: paper
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 10,
-            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
-          }}>
-            <User size={19} color="#fff" />
-          </div>
-          <div>
-            <h1 style={{
-              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
-              fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
-            }}>
-              My Profile
-            </h1>
-            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
-              Manage your account information
-            </p>
-          </div>
-        </div>
-      </div>
+    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+      <PortalPageHeader title="My Profile" subtitle="Manage your account information" icon={User} />
 
-      <div style={{ padding: '24px 30px 8px' }}>
+      <div style={{ padding: '20px 28px 8px' }}>
         {saveMsg && (
           <div className={`mb-5 p-3.5 border rounded-xl text-sm ${saveMsg.includes('successfully') ? 'bg-teal-50 border-teal-200 text-teal-700' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
             {saveMsg}
           </div>
         )}
 
-        <form onSubmit={handleSave} style={{
-          background: paper, borderRadius: 14,
-          border: `1.4px solid ${hairline}`,
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
-          padding: '24px 30px', marginBottom: 18
-        }}>
-          <h2 style={{
-            margin: '0 0 18px', fontSize: 12, fontWeight: 600,
-            color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06
-          }}>
+        <form onSubmit={handleSave} style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', padding: '24px 30px', marginBottom: 18 }}>
+          <h2 style={{ margin: '0 0 18px', fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
             Personal Information
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                Full Name
-              </label>
-              <input
-                name="full_name"
-                value={form.full_name || ''}
-                onChange={handleChange}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                Email
-              </label>
-              <input
-                name="email"
-                value={form.email || ''}
-                readOnly
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: inkSoft, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none', cursor: 'not-allowed'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                Phone
-              </label>
-              <input
-                name="phone"
-                value={form.phone || ''}
-                onChange={handleChange}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                Address
-              </label>
-              <input
-                name="address"
-                value={form.address || ''}
-                onChange={handleChange}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                City
-              </label>
-              <input
-                name="city"
-                value={form.city || ''}
-                onChange={handleChange}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                State
-              </label>
-              <input
-                name="state"
-                value={form.state || ''}
-                onChange={handleChange}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                ZIP Code
-              </label>
-              <input
-                name="zip"
-                value={form.zip || ''}
-                onChange={handleChange}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                Country
-              </label>
-              <input
-                name="country"
-                value={form.country || ''}
-                onChange={handleChange}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
+            <PortalInput label="Full Name" value={form.full_name || ''} onChange={(v) => setForm((prev) => ({ ...prev, full_name: v }))} />
+            <PortalInput label="Email" value={form.email || ''} onChange={(v) => setForm((prev) => ({ ...prev, email: v }))} disabled />
+            <PortalInput label="Phone" value={form.phone || ''} onChange={(v) => setForm((prev) => ({ ...prev, phone: v }))} />
+            <PortalInput label="Address" value={form.address || ''} onChange={(v) => setForm((prev) => ({ ...prev, address: v }))} />
+            <PortalInput label="City" value={form.city || ''} onChange={(v) => setForm((prev) => ({ ...prev, city: v }))} />
+            <PortalInput label="State" value={form.state || ''} onChange={(v) => setForm((prev) => ({ ...prev, state: v }))} />
+            <PortalInput label="ZIP Code" value={form.zip || ''} onChange={(v) => setForm((prev) => ({ ...prev, zip: v }))} />
+            <PortalInput label="Country" value={form.country || ''} onChange={(v) => setForm((prev) => ({ ...prev, country: v }))} />
           </div>
           <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{
-                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-                padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
-                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-                color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
-                boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
-                opacity: saving ? 0.5 : 1
-              }}
-            >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            <PortalButton type="submit" disabled={saving} icon={saving ? Loader2 : Save}>
               {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </PortalButton>
           </div>
         </form>
 
-        <form onSubmit={handlePasswordChange} style={{
-          background: paper, borderRadius: 14,
-          border: `1.4px solid ${hairline}`,
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
-          padding: '24px 30px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-            <Lock size={18} style={{ color: inkSoft }} />
-            <h2 style={{
-              margin: 0, fontSize: 12, fontWeight: 600,
-              color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06
-            }}>
-              Change Password
-            </h2>
-          </div>
+        <PortalCard style={{ padding: '24px 30px', marginBottom: 18 }}>
+          <form onSubmit={handlePasswordChange}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+              <Lock size={18} style={{ color: portalTheme.inkSoft }} />
+              <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
+                Change Password
+              </h2>
+            </div>
 
-          {passwordMsg && (
-            <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg text-sm text-teal-700">{passwordMsg}</div>
-          )}
-          {passwordError && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-600">{passwordError}</div>
-          )}
+            {passwordMsg && (
+              <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg text-sm text-teal-700">{passwordMsg}</div>
+            )}
+            {passwordError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-600">{passwordError}</div>
+            )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                Current Password
-              </label>
-              <input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+              <PortalInput label="Current Password" type="password" value={passwordForm.currentPassword} onChange={(v) => setPasswordForm((p) => ({ ...p, currentPassword: v }))} />
+              <PortalInput label="New Password" type="password" value={passwordForm.newPassword} onChange={(v) => setPasswordForm((p) => ({ ...p, newPassword: v }))} />
+              <PortalInput label="Confirm Password" type="password" value={passwordForm.confirmPassword} onChange={(v) => setPasswordForm((p) => ({ ...p, confirmPassword: v }))} />
             </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                New Password
-              </label>
-              <input
-                type="password"
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
+            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+              <PortalButton type="submit" disabled={changingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword} icon={changingPassword ? Loader2 : Lock}>
+                {changingPassword ? 'Changing...' : 'Change Password'}
+              </PortalButton>
             </div>
-            <div>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, color: teal[800],
-                marginBottom: 6, letterSpacing: 0.01
-              }}>
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))}
-                style={{
-                  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 9,
-                  padding: '9px 12px', outline: 'none',
-                  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
-          </div>
-          <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              type="submit"
-              disabled={changingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
-              style={{
-                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-                padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
-                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-                color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
-                boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
-                opacity: (changingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) ? 0.5 : 1
-              }}
-            >
-              {changingPassword ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
-              {changingPassword ? 'Changing...' : 'Change Password'}
-            </button>
-          </div>
-        </form>
+          </form>
+        </PortalCard>
       </div>
     </div>
   );

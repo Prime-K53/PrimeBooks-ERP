@@ -713,6 +713,80 @@ a[href]:focus-visible {
   animation: spin 0.8s linear infinite;
 }
 
+/* ── Mobile card fallback for tables ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .table-fixed thead {
+    display: none;
+  }
+  .table-fixed tbody tr {
+    display: block;
+    border: 1.4px solid #e4ddd1;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: #FEFDFB;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .table-fixed tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+  .table-fixed tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04;
+    color: #5c6567;
+    text-align: left;
+    margin-right: 12px;
+  }
+  .table-fixed tbody td:last-child {
+    border-bottom: none;
+  }
+}
+
+/* ── Document preview modal ──────────────────────────────────────────── */
+.doc-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(4px);
+  padding: 24px;
+}
+.doc-preview-panel {
+  background: #FEFDFB;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 720px;
+  max-height: 85vh;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  border: 1px solid #e4ddd1;
+  display: flex;
+  flex-direction: column;
+  animation: modalIn .15s ease;
+}
+.doc-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e4ddd1;
+}
+.doc-preview-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
 /* ── Skip navigation link ──────────────────────────────────────────────── */
 .skip-nav {
   position: absolute;

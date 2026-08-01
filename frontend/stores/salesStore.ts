@@ -74,7 +74,7 @@ interface SalesState {
   updateShipment: (shipment: Shipment, deliveryNotePatch?: Partial<DeliveryNote>) => Promise<void>;
   deleteShipment: (id: string) => Promise<void>;
 
-  addCustomer: (customer: Customer) => Promise<PortalCredentials | null>;
+  addCustomer: (customer: Customer, options?: { invite?: boolean }) => Promise<PortalCredentials | null>;
   updateCustomer: (customer: Customer) => Promise<void>;
   deleteCustomer: (id: string) => Promise<void>;
 
@@ -327,7 +327,7 @@ addCustomerPayment: async (payment) => {
     }
   },
 
-  addCustomer: async (customer): Promise<PortalCredentials | null> => {
+  addCustomer: async (customer, options = {}): Promise<PortalCredentials | null> => {
     const newCustomer = { ...customer, id: customer.id || generateNextId('CUST', get().customers) };
     const prev = get().customers;
     set(state => ({ customers: [...state.customers, newCustomer] }));
@@ -351,17 +351,21 @@ addCustomerPayment: async (payment) => {
           name: newCustomer.name,
           email: newCustomer.email,
           phone: newCustomer.phone,
+          invite: options.invite,
         });
-        if (portalAccount?.user && portalAccount.generated_password) {
+        if (portalAccount?.user) {
+          const isInvite = options.invite && !!portalAccount.invite_code;
           credentials = {
             email: portalAccount.user.email,
-            password: portalAccount.generated_password,
+            password: isInvite ? null : portalAccount.generated_password,
+            inviteCode: portalAccount.invite_code ?? null,
+            userId: portalAccount.user.id,
           };
           const enriched = {
             ...newCustomer,
             portalUserId: portalAccount.user.id,
             portalEmail: portalAccount.user.email,
-            portalStatus: portalAccount.user.status || 'active',
+            portalStatus: portalAccount.user.status || (isInvite ? 'invited' : 'active'),
           };
           set(state => ({ customers: state.customers.map(c => c.id === enriched.id ? enriched : c) }));
           await api.customers.save(enriched).catch(() => {});

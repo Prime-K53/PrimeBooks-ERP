@@ -45,27 +45,28 @@ import CustomerLayout from './views/portal/CustomerLayout';
 import CustomerLogin from './views/portal/CustomerLogin';
 import CustomerForgotPassword from './views/portal/CustomerForgotPassword';
 import CustomerResetPassword from './views/portal/CustomerResetPassword';
-import CustomerDashboard from './views/portal/CustomerDashboard';
-import CustomerOrders from './views/portal/CustomerOrders';
-import CustomerOrderDetail from './views/portal/CustomerOrderDetail';
-import CustomerQuotations from './views/portal/CustomerQuotations';
-import CustomerInvoices from './views/portal/CustomerInvoices';
-import CustomerInvoiceDetail from './views/portal/CustomerInvoiceDetail';
-import CustomerPayments from './views/portal/CustomerPayments';
-import CustomerPaymentDetail from './views/portal/CustomerPaymentDetail';
-import CustomerStatements from './views/portal/CustomerStatements';
-import CustomerWallet from './views/portal/CustomerWallet';
-import CustomerLoyalty from './views/portal/CustomerLoyalty';
-import CustomerDocuments from './views/portal/CustomerDocuments';
-import CustomerNotifications from './views/portal/CustomerNotifications';
-import CustomerReferrals from './views/portal/CustomerReferrals';
-import CustomerProfile from './views/portal/CustomerProfile';
-import CustomerSupport from './views/portal/CustomerSupport';
-import CustomerCreateRequest from './views/portal/CustomerCreateRequest';
-import CustomerRequests from './views/portal/CustomerRequests';
-import CustomerRequestDetail from './views/portal/CustomerRequestDetail';
-import CustomerQuotationDetail from './views/portal/CustomerQuotationDetail';
-import PortalUserManagement from './views/portal/PortalUserManagement';
+
+const CustomerDashboard = lazy(() => import('./views/portal/CustomerDashboard').then(m => ({ default: m.CustomerDashboard })));
+const CustomerOrders = lazy(() => import('./views/portal/CustomerOrders').then(m => ({ default: m.CustomerOrders })));
+const CustomerOrderDetail = lazy(() => import('./views/portal/CustomerOrderDetail').then(m => ({ default: m.CustomerOrderDetail })));
+const CustomerQuotations = lazy(() => import('./views/portal/CustomerQuotations').then(m => ({ default: m.CustomerQuotations })));
+const CustomerInvoices = lazy(() => import('./views/portal/CustomerInvoices').then(m => ({ default: m.CustomerInvoices })));
+const CustomerInvoiceDetail = lazy(() => import('./views/portal/CustomerInvoiceDetail').then(m => ({ default: m.CustomerInvoiceDetail })));
+const CustomerPayments = lazy(() => import('./views/portal/CustomerPayments').then(m => ({ default: m.CustomerPayments })));
+const CustomerPaymentDetail = lazy(() => import('./views/portal/CustomerPaymentDetail').then(m => ({ default: m.CustomerPaymentDetail })));
+const CustomerStatements = lazy(() => import('./views/portal/CustomerStatements').then(m => ({ default: m.CustomerStatements })));
+const CustomerWallet = lazy(() => import('./views/portal/CustomerWallet').then(m => ({ default: m.CustomerWallet })));
+const CustomerLoyalty = lazy(() => import('./views/portal/CustomerLoyalty').then(m => ({ default: m.CustomerLoyalty })));
+const CustomerDocuments = lazy(() => import('./views/portal/CustomerDocuments').then(m => ({ default: m.CustomerDocuments })));
+const CustomerNotifications = lazy(() => import('./views/portal/CustomerNotifications').then(m => ({ default: m.CustomerNotifications })));
+const CustomerReferrals = lazy(() => import('./views/portal/CustomerReferrals').then(m => ({ default: m.CustomerReferrals })));
+const CustomerProfile = lazy(() => import('./views/portal/CustomerProfile').then(m => ({ default: m.CustomerProfile })));
+const CustomerSupport = lazy(() => import('./views/portal/CustomerSupport').then(m => ({ default: m.CustomerSupport })));
+const CustomerCreateRequest = lazy(() => import('./views/portal/CustomerCreateRequest').then(m => ({ default: m.CustomerCreateRequest })));
+const CustomerRequests = lazy(() => import('./views/portal/CustomerRequests').then(m => ({ default: m.CustomerRequests })));
+const CustomerRequestDetail = lazy(() => import('./views/portal/CustomerRequestDetail').then(m => ({ default: m.CustomerRequestDetail })));
+const CustomerQuotationDetail = lazy(() => import('./views/portal/CustomerQuotationDetail').then(m => ({ default: m.CustomerQuotationDetail })));
+const PortalUserManagement = lazy(() => import('./views/portal/PortalUserManagement').then(m => ({ default: m.PortalUserManagement })));
 
 import { isResponsiveDebugEnabled } from './utils/debugFlags';
 
@@ -1060,26 +1061,26 @@ const PortalRoutes = (
     <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
     <Route path="/portal" element={<CustomerLayout />}>
       <Route index element={<Navigate to="/portal/dashboard" replace />} />
-      <Route path="dashboard" element={<CustomerDashboard />} />
-      <Route path="requests" element={<CustomerRequests />} />
-      <Route path="requests/:id" element={<CustomerRequestDetail />} />
-      <Route path="orders" element={<CustomerOrders />} />
-      <Route path="orders/:id" element={<CustomerOrderDetail />} />
-      <Route path="quotations" element={<CustomerQuotations />} />
-      <Route path="quotations/:id" element={<CustomerQuotationDetail />} />
-      <Route path="new-request" element={<CustomerCreateRequest />} />
-      <Route path="invoices" element={<CustomerInvoices />} />
-      <Route path="invoices/:id" element={<CustomerInvoiceDetail />} />
-      <Route path="payments" element={<CustomerPayments />} />
-      <Route path="payments/:id" element={<CustomerPaymentDetail />} />
-      <Route path="statements" element={<CustomerStatements />} />
-      <Route path="wallet" element={<CustomerWallet />} />
-      <Route path="loyalty" element={<CustomerLoyalty />} />
-      <Route path="documents" element={<CustomerDocuments />} />
-      <Route path="notifications" element={<CustomerNotifications />} />
-      <Route path="referrals" element={<CustomerReferrals />} />
-      <Route path="profile" element={<CustomerProfile />} />
-      <Route path="support" element={<CustomerSupport />} />
+      <Route path="dashboard" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerDashboard /></Suspense>} />
+      <Route path="requests" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerRequests /></Suspense>} />
+      <Route path="requests/:id" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerRequestDetail /></Suspense>} />
+      <Route path="orders" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerOrders /></Suspense>} />
+      <Route path="orders/:id" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerOrderDetail /></Suspense>} />
+      <Route path="quotations" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerQuotations /></Suspense>} />
+      <Route path="quotations/:id" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerQuotationDetail /></Suspense>} />
+      <Route path="new-request" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerCreateRequest /></Suspense>} />
+      <Route path="invoices" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerInvoices /></Suspense>} />
+      <Route path="invoices/:id" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerInvoiceDetail /></Suspense>} />
+      <Route path="payments" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerPayments /></Suspense>} />
+      <Route path="payments/:id" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerPaymentDetail /></Suspense>} />
+      <Route path="statements" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerStatements /></Suspense>} />
+      <Route path="wallet" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerWallet /></Suspense>} />
+      <Route path="loyalty" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerLoyalty /></Suspense>} />
+      <Route path="documents" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerDocuments /></Suspense>} />
+      <Route path="notifications" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerNotifications /></Suspense>} />
+      <Route path="referrals" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerReferrals /></Suspense>} />
+      <Route path="profile" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerProfile /></Suspense>} />
+      <Route path="support" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerSupport /></Suspense>} />
     </Route>
   </React.Fragment>
 );

@@ -60,14 +60,14 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
   }, []);
 
   useEffect(() => {
-    const unsub = portalLifecycle.subscribe({
+    const sub = await portalLifecycle.subscribe({
       onEvent: (type, payload) => {
         if (type === 'notification') {
           loadNotifications();
         }
       },
     });
-    return unsub;
+    return sub;
   }, []);
 
   const handleLogout = () => {

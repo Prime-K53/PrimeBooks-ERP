@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Plus, Shield, ShieldOff, Key, Mail, Lock, Loader2,
-  Search, X, Check, AlertCircle, Clock
+  Search, X, Check, AlertCircle, Clock, Send, Copy
 } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
-import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import { portalApi } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import PortalPageHeader from './components/PortalPageHeader';
@@ -42,6 +40,7 @@ const PortalUserManagement: React.FC = () => {
   const [resetPw, setResetPw] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [inviteCode, setInviteCode] = useState<{ userId: string; code: string; customerName: string; customerId: string } | null>(null);
 
   // Styling constants (mirroring Add Customer modal)
   const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
@@ -130,6 +129,31 @@ const PortalUserManagement: React.FC = () => {
       setMessage({ type: 'error', text: 'Failed to reset password' });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleInvite = async (u: PortalUserRecord) => {
+    if (!u.portal_user_id) return;
+    setSubmitting(true);
+    try {
+      const res = await portalApi.post<{ code: string }>(`/admin/users/${u.portal_user_id}/invite`);
+      setInviteCode({ userId: u.portal_user_id, code: res.code, customerName: u.customer_name, customerId: u.customer_id });
+      setMessage({ type: 'success', text: 'Invite code generated' });
+      loadUsers();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to generate invite' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCopyInviteCode = async () => {
+    if (!inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(inviteCode.code);
+      setMessage({ type: 'success', text: 'Invite code copied to clipboard' });
+    } catch {
+      setMessage({ type: 'error', text: 'Could not copy — select and copy manually' });
     }
   };
 
@@ -300,6 +324,10 @@ const PortalUserManagement: React.FC = () => {
                         <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold">
                           Disabled
                         </span>
+                      ) : u.portal_status === 'invited' ? (
+                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold">
+                          Invited
+                        </span>
                       ) : (
                         <span className="text-slate-600 text-xs">—</span>
                       )}
@@ -317,6 +345,16 @@ const PortalUserManagement: React.FC = () => {
                     <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       {u.portal_user_id ? (
                         <div className="flex items-center justify-end gap-1">
+                          {u.portal_status === 'invited' && (
+                            <button
+                              onClick={() => handleInvite(u)}
+                              disabled={submitting}
+                              className="p-1.5 text-[#b97e2b] hover:text-amber-600 bg-amber-50 hover:bg-amber-100 border border-transparent hover:border-amber-200 rounded transition-all"
+                              title="Get / resend invite code"
+                            >
+                              {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                            </button>
+                          )}
                           <button
                             onClick={() => handleToggleStatus(u.portal_user_id!, u.portal_status || 'disabled')}
                             className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
@@ -356,6 +394,53 @@ const PortalUserManagement: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {inviteCode && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(15, 23, 42, 0.6)', padding: '20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink
+        }} onClick={() => setInviteCode(null)}>
+          <div style={{
+            width: '100%', maxWidth: '26rem', background: paper, borderRadius: 14,
+            border: `1px solid ${hairline}`, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)',
+            overflow: 'hidden', position: 'relative'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ height: 4, background: `linear-gradient(90deg, ${amber[500]}, ${amber[300]})` }} />
+            <div style={{ padding: '24px 28px', textAlign: 'center' }}>
+              <div style={{ width: 44, height: 44, margin: '0 auto 12px', borderRadius: 12, background: '#fbead0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: amber[600] }}>
+                <Key size={20} />
+              </div>
+              <h2 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 20, margin: '0 0 4px', color: teal[800] }}>
+                Portal Invite Code
+              </h2>
+              <p style={{ margin: '0 0 18px', fontSize: 12, color: inkSoft, lineHeight: 1.5 }}>
+                Share this code with <strong style={{ color: ink }}>{inviteCode.customerName}</strong> (Customer ID: <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{inviteCode.customerId}</span>). They enter it under <strong style={{ color: ink }}>Activate Account</strong> at the portal sign-in screen to choose their own password. Expires in 30 minutes.
+              </p>
+              <div style={{
+                padding: '16px', background: '#fbead0', borderRadius: 12, border: `1.5px dashed ${amber[500]}`,
+                fontSize: 30, fontWeight: 800, letterSpacing: 8, fontFamily: "'JetBrains Mono', monospace", color: amber[600]
+              }}>
+                {inviteCode.code}
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button onClick={handleCopyInviteCode} style={btnGhostStyle}>
+                  <Copy size={14} /> Copy Code
+                </button>
+                <button
+                  onClick={() => setInviteCode(null)}
+                  style={{
+                    flex: 1, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                    padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                    background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7
+                  }}>
+                  <Check size={14} /> Done
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

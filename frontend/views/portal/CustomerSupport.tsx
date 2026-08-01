@@ -2,9 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Plus, Send, Loader2 } from 'lucide-react';
 import { portalApi } from '../../services/portalApiClient';
-import StatusBadge from './components/StatusBadge';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalButton from './components/PortalButton';
+import PortalInput from './components/PortalInput';
+import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import StatusBadge from './components/StatusBadge';
+import { useToast } from './hooks/useConfirmDialog';
+import { portalTheme } from '../constants';
 
 const teal = {
   50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
@@ -36,6 +42,7 @@ interface Ticket {
 
 const CustomerSupport: React.FC = () => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<'tickets' | 'new'>('tickets');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,8 +77,8 @@ const CustomerSupport: React.FC = () => {
       try {
         const detail = await portalApi.get<Ticket>(`/support/tickets/${ticket.id}`);
         setTickets((prev) => prev.map((t) => (t.id === ticket.id ? { ...t, messages: detail.messages || [] } : t)));
-      } catch {
-        // ignore
+      } catch (err: any) {
+        addToast('error', err.message || 'Failed to load ticket details');
       }
     }
   };
@@ -84,8 +91,9 @@ const CustomerSupport: React.FC = () => {
       setReplyText('');
       const detail = await portalApi.get<Ticket>(`/support/tickets/${ticketId}`);
       setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, messages: detail.messages || [] } : t)));
-    } catch {
-      // ignore
+      addToast('success', 'Reply sent');
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to send reply');
     } finally {
       setSendingReply(false);
     }
@@ -98,12 +106,12 @@ const CustomerSupport: React.FC = () => {
     setCreateMsg(null);
     try {
       await portalApi.post('/support/tickets', newTicket);
-      setCreateMsg('Ticket created successfully.');
+      addToast('success', 'Support ticket created successfully');
       setNewTicket({ subject: '', message: '', priority: 'normal' });
       fetchTickets();
       setActiveTab('tickets');
     } catch (err: any) {
-      setCreateMsg(err.message || 'Failed to create ticket.');
+      addToast('error', err.message || 'Failed to create ticket');
     } finally {
       setCreating(false);
     }
@@ -191,15 +199,23 @@ const CustomerSupport: React.FC = () => {
                     boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
                     overflow: 'hidden'
                   }}>
-                    <div
+                    <button
+                      type="button"
                       onClick={() => handleExpand(ticket)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleExpand(ticket); } }}
                       style={{
-                        padding: '14px 20px', cursor: 'pointer',
+                        width: '100%', padding: '14px 20px', cursor: 'pointer',
                         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
-                        transition: 'background .15s ease'
+                        background: portalTheme.paper, borderRadius: 14,
+                        border: `1.4px solid ${portalTheme.hairline}`,
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                        transition: 'all .15s ease',
+                        textAlign: 'left',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = paper; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = portalTheme.teal[50]; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = portalTheme.paper; }}
+                      aria-expanded={expandedId === ticket.id}
+                      aria-label={`Ticket: ${ticket.subject}`}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: 500, color: ink }}>{ticket.subject}</p>

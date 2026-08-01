@@ -57,16 +57,15 @@ const CustomerQuotationDetail: React.FC = () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [q, events] = await Promise.all([
+      const [q, events, sigs] = await Promise.all([
         portalLifecycle.quotations.get(id),
         portalLifecycle.timeline.get('quotation', id),
+        portalLifecycle.quotations.signatures(id).catch(() => [] as DocumentSignatureRecord[]),
       ]);
       setQuotation(q);
       setTimeline(events || []);
+      setSignatures(sigs);
       setError(null);
-      if (q) {
-        portalLifecycle.quotations.signatures(id).then(setSignatures).catch(() => {});
-      }
     } catch (err: any) {
       setError(err.message || 'Failed to load quotation');
     } finally {
@@ -94,12 +93,12 @@ const CustomerQuotationDetail: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-    const unsubscribe = portalLifecycle.subscribe({
+    const sub = await portalLifecycle.subscribe({
       onEvent: (type, payload) => {
         if (type === 'entity_changed' && payload.docType === 'quotation' && payload.docId === id) load();
       },
     });
-    return unsubscribe;
+    return sub;
   }, [id, load]);
 
   const runAction = async (actionName: string, payload?: any) => {
@@ -433,6 +432,43 @@ const CustomerQuotationDetail: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Decision Records / Signatures */}
+      {signatures.length > 0 && (
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden mb-6">
+          <div className="px-5 py-4 border-b border-slate-200/60">
+            <h2 className="text-sm font-semibold text-slate-800">Decision Records</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+              <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Decision</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Signed By</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Email</th>
+                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Timestamp</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100/50">
+                {signatures.map((sig) => (
+                  <tr key={sig.id} className="text-slate-700">
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${
+                        sig.decision === 'accepted' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                        sig.decision === 'rejected' ? 'bg-rose-100 text-rose-700 border-rose-200' :
+                        'bg-violet-100 text-violet-700 border-violet-200'
+                      }`}>{sig.decision}</span>
+                    </td>
+                    <td className="px-5 py-3 font-medium text-slate-900">{sig.signer_name || '—'}</td>
+                    <td className="px-5 py-3 text-slate-500">{sig.signer_email || '—'}</td>
+                    <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{sig.signed_at ? new Date(sig.signed_at).toLocaleString() : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <DocumentDiscussion docType="quotation" docId={quotation.id} />
 

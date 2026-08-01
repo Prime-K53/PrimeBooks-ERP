@@ -116,7 +116,7 @@ interface SalesContextType {
     updateCustomerPayment: (payment: CustomerPayment, reason?: string) => Promise<void>;
     deleteCustomerPayment: (id: string, reason?: string) => Promise<void>;
 
-    addCustomer: (customer: Customer) => Promise<PortalCredentials | null>;
+    addCustomer: (customer: Customer, options?: { invite?: boolean }) => Promise<PortalCredentials | null>;
     updateCustomer: (customer: Customer) => Promise<void>;
     deleteCustomer: (id: string) => Promise<void>;
 
@@ -993,7 +993,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     };
 
-    const addCustomer = async (customer: Customer): Promise<PortalCredentials | null> => {
+    const addCustomer = async (customer: Customer, options?: { invite?: boolean }): Promise<PortalCredentials | null> => {
         try {
             const id = customer.id || generateNextId('CUST', salesStore.customers, companyConfig);
             const finalCustomer = normalizeCustomerPaymentTerms({ ...customer, id });
@@ -1014,17 +1014,21 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     name: finalCustomer.name,
                     email: finalCustomer.email,
                     phone: finalCustomer.phone,
+                    invite: options?.invite,
                 });
-                if (portalAccount?.user && portalAccount.generated_password) {
+                if (portalAccount?.user) {
+                    const isInvite = options?.invite && !!portalAccount.invite_code;
                     credentials = {
                         email: portalAccount.user.email,
-                        password: portalAccount.generated_password,
+                        password: isInvite ? null : portalAccount.generated_password,
+                        inviteCode: portalAccount.invite_code ?? null,
+                        userId: portalAccount.user.id,
                     };
                     const enriched = {
                         ...finalCustomer,
                         portalUserId: portalAccount.user.id,
                         portalEmail: portalAccount.user.email,
-                        portalStatus: portalAccount.user.status || 'active',
+                        portalStatus: portalAccount.user.status || (isInvite ? 'invited' : 'active'),
                     };
                     await transactionService.saveCustomer(enriched);
                     await salesStore.fetchSalesData();
@@ -1446,9 +1450,9 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             },
             parkOrder: (o: HeldOrder) => salesStore.addHeldOrder(o), retrieveOrder: (id: string) => salesStore.deleteHeldOrder(id),
             generateZReport,
-            addCustomer: async (c: Customer) => {
+            addCustomer: async (c: Customer, options?: { invite?: boolean }) => {
                 try {
-                    const credentials = await salesStore.addCustomer(c);
+                    const credentials = await salesStore.addCustomer(c, options);
                     addAuditLog({
                         action: 'CREATE',
                         entityType: 'Customer',

@@ -29,8 +29,6 @@ const verifyPortalToken = (req, res, next) => {
   }
 
   const authHeader = req.headers['authorization'];
-  // EventSource (SSE) cannot send Authorization headers — allow token via query
-  // for the realtime stream endpoint only; every other endpoint requires the header.
   const token = req.path === '/events'
     ? (authHeader && authHeader.split(' ')[1]) || req.query.token
     : (authHeader && authHeader.split(' ')[1]);
@@ -44,13 +42,19 @@ const verifyPortalToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.role !== 'portal_customer') {
+    if (decoded.role && decoded.role !== 'portal_customer') {
       return res.status(403).json({
         error: 'Invalid token role',
         message: 'This token is not valid for portal access'
       });
     }
-    req.portalUser = decoded;
+    req.portalUser = {
+      customer_id: decoded.customer_id,
+      company_id: decoded.company_id || '',
+      email: decoded.email,
+      role: decoded.role || 'portal_customer',
+      id: decoded.id,
+    };
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
@@ -59,9 +63,9 @@ const verifyPortalToken = (req, res, next) => {
         message: 'Your session has expired. Please login again.'
       });
     }
-    return res.status(403).json({
+    return res.status(401).json({
       error: 'Invalid token',
-      message: 'Authentication failed'
+      message: 'The provided authentication token is invalid'
     });
   }
 };

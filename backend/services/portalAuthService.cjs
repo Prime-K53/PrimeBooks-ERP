@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const { db } = require('../db.cjs');
 
 const SALT_ROUNDS = 10;
@@ -20,6 +21,15 @@ function hashToken(token) {
 
 function generateRefreshToken() {
   return crypto.randomBytes(48).toString('hex');
+}
+
+function generateEventTicket(customerId, purpose = 'portal') {
+  const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET || 'prime-erp-portal-secret';
+  return jwt.sign(
+    { customer_id: customerId, purpose, sse: true },
+    JWT_SECRET,
+    { expiresIn: '5m' }
+  );
 }
 
 const ensurePortalSchema = () => {
@@ -45,20 +55,20 @@ const ensurePortalSchema = () => {
   });
 };
 
-const registerPortalUser = async ({ customer_id, email, password, full_name, phone, company_id }) => {
+const registerPortalUser = async ({ customer_id, email, password, full_name, phone, company_id, status = 'active' }) => {
   const id = genId('pusr');
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO portal_users (id, customer_id, email, password_hash, full_name, phone, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, customer_id, email.toLowerCase().trim(), password_hash, full_name || null, phone || null, company_id || ''],
+      `INSERT INTO portal_users (id, customer_id, email, password_hash, full_name, phone, company_id, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, customer_id, email.toLowerCase().trim(), password_hash, full_name || null, phone || null, company_id || '', status],
       function (err) {
         if (err) {
           if (err.message.includes('UNIQUE')) return reject(new Error('Email already registered'));
           return reject(err);
         }
-        resolve({ id, customer_id, email, full_name, phone, company_id });
+        resolve({ id, customer_id, email, full_name, phone, company_id, status });
       }
     );
   });
@@ -292,6 +302,52 @@ const revokeUserPasswordResets = (portalUserId) => {
   });
 };
 
+const createInviteCode = async (portalUserId) => {
+  const code = crypto.randomInt(100000, 1000000).toString();
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  await revokeUserPasswordResets(portalUserId);
+  await createPasswordReset(portalUserId, code, expiresAt);
+  return { code, expires_at: expiresAt };
+};
+
+const setPortalUserStatus = (id, status) => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE portal_users SET status = ?, updated_at = datetime('now') WHERE id = ?`,
+      [status, id],
+      (err) => {
+        if (err) return reject(err);
+        resolve();
+      }
+    );
+  });
+};
+
+const activatePortalUser = async ({ customer_id, code, password, company_id }) => {
+  const user = await getPortalUserByCustomerId(customer_id, company_id || '');
+  if (!user) {
+    const err = new Error('Invalid customer ID or invite code');
+    err.code = 'INVALID_INVITE';
+    throw err;
+  }
+  if (user.status !== 'invited') {
+    const err = new Error('This account has no pending invite. Please sign in or use forgot password.');
+    err.code = 'NOT_INVITED';
+    throw err;
+  }
+  const reset = await findValidPasswordReset(user.id, String(code).trim());
+  if (!reset) {
+    const err = new Error('Invalid or expired invite code');
+    err.code = 'INVALID_CODE';
+    throw err;
+  }
+  await updatePassword(user.id, password);
+  await markPasswordResetUsed(reset.id);
+  await setPortalUserStatus(user.id, 'active');
+  await revokeAllSessions(user.id);
+  return getPortalUserById(user.id);
+};
+
 const updatePortalUser = (id, fields) => {
   const allowed = ['full_name', 'phone', 'email'];
   const sets = [];
@@ -427,11 +483,15 @@ module.exports = {
   updatePortalUser,
   changePassword,
   updatePassword,
+  createInviteCode,
+  setPortalUserStatus,
+  activatePortalUser,
   createSession,
   findSessionByRefreshToken,
   revokeSession,
   revokeAllSessions,
   recordLoginHistory,
   ACCESS_TOKEN_EXPIRY,
-  REFRESH_TOKEN_EXPIRY_DAYS
+  REFRESH_TOKEN_EXPIRY_DAYS,
+  generateEventTicket
 };
