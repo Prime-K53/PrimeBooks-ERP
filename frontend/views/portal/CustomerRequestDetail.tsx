@@ -4,8 +4,11 @@ import { ArrowLeft, Loader2, MessageSquare, CheckCircle2, ArrowUpRight, FileText
 import { portalLifecycle, QuotationRequestRecord, TimelineEvent } from '../../services/portalApiClient';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import PortalButton from './components/PortalButton';
 import DocumentChain from './components/DocumentChain';
 import DocumentDiscussion from './components/DocumentDiscussion';
+import { useToast } from './hooks/useConfirmDialog';
+import { REQUEST_STATUS_META, FRIENDLY_STATUS_MAP } from '../constants';
 
 const stageDefinitions = [
   { key: 'submitted', label: 'Submitted', description: 'Request received' },
@@ -30,26 +33,16 @@ function stageIndex(status: string): number {
   }
 }
 
-const requestStatusLabel: Record<string, string> = {
-  draft: 'Draft',
-  submitted: 'Submitted',
-  assigned: 'Assigned',
-  under_review: 'Under Review',
-  waiting_for_customer: 'Waiting for Customer',
-  ready_for_conversion: 'Quotation Being Prepared',
-  converted: 'Quotation Issued',
-  rejected: 'Rejected',
-  cancelled: 'Cancelled',
-};
-
 const CustomerRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [request, setRequest] = useState<QuotationRequestRecord | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -83,15 +76,22 @@ const CustomerRequestDetail: React.FC = () => {
     return unsubscribe;
   }, [id, load]);
 
-  const handleCancel = async () => {
+  const handleCancelClick = () => {
+    setConfirmCancel(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    setConfirmCancel(false);
     if (!request) return;
     setCancelling(true);
     setError(null);
     try {
       await portalLifecycle.requests.cancel(request.id);
+      addToast('success', 'Request cancelled successfully');
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to cancel request');
+      addToast('error', err.message || 'Failed to cancel request');
     } finally {
       setCancelling(false);
     }
@@ -122,15 +122,17 @@ const CustomerRequestDetail: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <StatusBadge status={requestStatusLabel[request.status] || request.status} />
+            <StatusBadge status={FRIENDLY_STATUS_MAP[request.status] || request.status} />
             {(request.status === 'submitted' || request.status === 'assigned' || request.status === 'under_review' || request.status === 'waiting_for_customer') && (
-              <button
-                onClick={handleCancel}
+              <PortalButton
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelClick}
                 disabled={cancelling}
-                className="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors disabled:opacity-50"
+                style={{ color: '#dc2626', border: '1.4px solid #fecaca' }}
               >
                 {cancelling ? <Loader2 size={12} className="animate-spin" /> : 'Cancel Request'}
-              </button>
+              </PortalButton>
             )}
           </div>
         </div>
@@ -281,6 +283,24 @@ const CustomerRequestDetail: React.FC = () => {
       <div className="mt-4">
         <DocumentDiscussion docType="request" docId={request.id} />
       </div>
+
+      {confirmCancel && (
+        <div className="confirm-dialog-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmCancel(false); }}>
+          <div className="confirm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="cancel-request-detail-title">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid #e4ddd1' }}>
+              <h2 id="cancel-request-detail-title" style={{ fontSize: 16, fontWeight: 700, color: '#23282A', margin: 0 }}>Cancel Request</h2>
+              <button onClick={() => setConfirmCancel(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8, color: '#5c6567' }} aria-label="Close dialog"><XCircle size={18} /></button>
+            </div>
+            <div style={{ padding: '18px 22px', fontSize: 14, color: '#5c6567', lineHeight: 1.5 }}>
+              Are you sure you want to cancel request <strong>{request?.request_number}</strong>? This action cannot be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 22px', borderTop: '1px solid #e4ddd1' }}>
+              <button onClick={() => setConfirmCancel(false)} style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid #e4ddd1', background: '#FEFDFB', color: '#5c6567', fontSize: 13, fontWeight: 600 }}>Keep Request</button>
+              <button onClick={handleCancelConfirm} style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #dc2626, #b91c1c)', color: '#fff', fontSize: 13, fontWeight: 600, boxShadow: '0 6px 16px -6px rgba(185,28,28,.55)' }}>Cancel Request</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

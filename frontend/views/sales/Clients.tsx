@@ -310,7 +310,7 @@ export const Clients: React.FC = () => {
        <ClientModal
           isOpen={isModalOpen}
           onClose={() => { setIsModalOpen(false); setPendingSegment(undefined); }}
-          onSave={selectedCustomer ? updateCustomer : addCustomer}
+          onSave={selectedCustomer ? (c) => updateCustomer(c).then(() => null) : addCustomer}
           customer={selectedCustomer}
           initialSegment={pendingSegment}
         />
@@ -776,13 +776,16 @@ export const Clients: React.FC = () => {
               window.open(`https://wa.me/${c.phone.replace(/[^0-9]/g, '')}`, '_blank');
             }
           }}
+          onPortalUpdate={(c) => {
+            updateCustomer(c).catch(() => {});
+          }}
         />
       )}
 
         <ClientModal
           isOpen={isModalOpen}
           onClose={() => { setIsModalOpen(false); setPendingSegment(undefined); }}
-          onSave={selectedCustomer ? updateCustomer : addCustomer}
+          onSave={selectedCustomer ? (c) => updateCustomer(c).then(() => null) : addCustomer}
           customer={selectedCustomer}
           initialSegment={pendingSegment}
         />

@@ -2232,11 +2232,12 @@ const Payments: React.FC = () => {
                 isOpen={isClientModalOpen}
                 onClose={() => setIsClientModalOpen(false)}
                 onSave={async (customer) => {
-                    await addCustomer(customer);
+                    const credentials = await addCustomer(customer);
                     setFormData(prev => ({ ...prev, customerName: customer.name, customerId: customer.id }));
                     setIsClientModalOpen(false);
                     setCustomerSearchTerm('');
                     notify('Customer created successfully', 'success');
+                    return credentials;
                 }}
             />
 

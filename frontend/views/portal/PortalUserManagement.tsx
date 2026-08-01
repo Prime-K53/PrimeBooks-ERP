@@ -3,6 +3,17 @@ import {
   Users, Plus, Shield, ShieldOff, Key, Mail, Lock, Loader2,
   Search, X, Check, AlertCircle, Clock
 } from 'lucide-react';
+import { portalApi } from '../../services/portalApiClient';
+import { useCustomerAuth } from '../../context/CustomerAuthContext';
+import { portalApi } from '../../services/portalApiClient';
+import { useCustomerAuth } from '../../context/CustomerAuthContext';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalInput from './components/PortalInput';
+import PortalButton from './components/PortalButton';
+import ErrorBanner from './components/ErrorBanner';
+import EmptyState from './components/EmptyState';
+import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import { portalTheme } from '../constants';
 
 interface PortalUserRecord {
   customer_id: string;
@@ -19,64 +30,11 @@ interface PortalUserRecord {
   portal_created_at: string | null;
 }
 
-function getSessionUser(): Record<string, any> | null {
-  try {
-    const raw = sessionStorage.getItem('nexus_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const user = getSessionUser();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  };
-  const token = user?.accessToken || user?.token;
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else if (user?.id) {
-    headers['x-user-id'] = user.id;
-    headers['x-user-role'] = user.role || 'Admin';
-    if (user.email) headers['x-user-email'] = user.email;
-    if (user.isSuperAdmin) headers['x-user-is-super-admin'] = 'true';
-  }
-  const res = await fetch(`/api${path}`, { ...options, headers });
-
-  const contentType = res.headers.get('content-type') || '';
-  const text = await res.text();
-
-  if (!res.ok) {
-    let body: any = {};
-    try {
-      if (contentType.includes('application/json') && text.trim()) {
-        body = JSON.parse(text);
-      }
-    } catch { /* ignore parse errors */ }
-    const err: any = new Error(body.error || body.message || `Request failed (${res.status})`);
-    err.status = res.status;
-    err.body = body;
-    throw err;
-  }
-
-  if (!text.trim()) {
-    return {} as T;
-  }
-
-  if (contentType.includes('application/json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
-    try {
-      return JSON.parse(text) as T;
-    } catch (parseError) {
-      throw new Error('Invalid JSON response from server');
-    }
-  }
-
-  throw new Error('Expected JSON response but received non-JSON content');
-}
-
 const PortalUserManagement: React.FC = () => {
+  const { user } = useCustomerAuth();
   const [users, setUsers] = useState<PortalUserRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showResetPw, setShowResetPw] = useState<string | null>(null);
@@ -116,7 +74,7 @@ const PortalUserManagement: React.FC = () => {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<PortalUserRecord[]>('/portal/admin/users');
+      const data = await portalApi.get<PortalUserRecord[]>('/admin/users');
       setUsers(data);
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Failed to load' });
@@ -137,16 +95,13 @@ const PortalUserManagement: React.FC = () => {
     setSubmitting(true);
     setMessage(null);
     try {
-      await apiFetch('/portal/admin/users', {
-        method: 'POST',
-        body: JSON.stringify(createForm),
-      });
+      await portalApi.post('/admin/users', createForm);
       setMessage({ type: 'success', text: 'Portal account created' });
       setShowCreate(false);
       setCreateForm({ customer_id: '', email: '', password: '', full_name: '', phone: '' });
       loadUsers();
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.body?.error || err.message || 'Failed to create' });
+      setMessage({ type: 'error', text: err.message || 'Failed to create' });
     } finally {
       setSubmitting(false);
     }
@@ -155,10 +110,7 @@ const PortalUserManagement: React.FC = () => {
   const handleToggleStatus = async (userId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
     try {
-      await apiFetch(`/portal/admin/users/${userId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await portalApi.put(`/admin/users/${userId}`, { status: newStatus });
       setMessage({ type: 'success', text: `Account ${newStatus === 'active' ? 'enabled' : 'disabled'}` });
       loadUsers();
     } catch (err: any) {
@@ -170,10 +122,7 @@ const PortalUserManagement: React.FC = () => {
     if (!resetPw || resetPw.length < 6) return;
     setSubmitting(true);
     try {
-      await apiFetch(`/portal/admin/users/${userId}/reset-password`, {
-        method: 'POST',
-        body: JSON.stringify({ new_password: resetPw }),
-      });
+      await portalApi.post(`/admin/users/${userId}/reset-password`, { new_password: resetPw });
       setMessage({ type: 'success', text: 'Password reset successfully' });
       setShowResetPw(null);
       setResetPw('');

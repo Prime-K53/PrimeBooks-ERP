@@ -198,30 +198,9 @@ const CustomerDashboard: React.FC = () => {
                 <div className="space-y-2">
                   {recentTransactions.map((t, i) => (
                     <div
-                      key={i}
-                      style={{
-                        borderRadius: 10,
-                        padding: '12px 14px',
-                        background: '#FEFDFB',
-                        border: '1.4px solid #e4ddd1',
-                        borderLeft: `4px solid ${getTransactionBorderColor(t)}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                        transition: 'transform .15s ease, box-shadow .15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
-                      }}
+                      key={`${t.description}-${t.date}-${t.amount}-${i}`}
+                      className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 cursor-pointer text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                      style={{ borderLeftColor: getTransactionBorderColor(t) }}
                     >
                       <div style={{
                         width: 34, height: 34, borderRadius: 8,
@@ -288,31 +267,9 @@ const CustomerDashboard: React.FC = () => {
                 <div className="space-y-2">
                   {recentDocuments.map((doc, i) => (
                     <button
-                      key={`${doc.docType}-${doc.id}`}
+                      key={`${doc.docType}-${doc.id}-${i}`}
                       onClick={() => navigate(docRoute(doc))}
-                      style={{
-                        borderRadius: 10,
-                        padding: '10px 12px',
-                        background: '#FEFDFB',
-                        border: '1.4px solid #e4ddd1',
-                        borderLeft: '4px solid #1f8577',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                        transition: 'transform .15s ease, box-shadow .15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
-                      }}
+                      className="rounded-[10px] p-[10px_12px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] border-l-[#1f8577] flex items-center gap-3 cursor-pointer text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                     >
                       <div style={{
                         width: 30, height: 30, borderRadius: 8,

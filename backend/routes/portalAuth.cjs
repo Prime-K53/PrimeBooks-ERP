@@ -39,6 +39,41 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/login-password', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const user = await portalAuthService.authenticatePortalUser(email, password);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials', message: 'Email and password do not match our records' });
+    }
+    const token = generatePortalToken(user);
+    const refreshToken = crypto.randomBytes(48).toString('hex');
+    const session = await portalAuthService.createSession(user.id, user.company_id, refreshToken);
+    const ip = req.ip || req.connection?.remoteAddress;
+    const ua = req.headers['user-agent'];
+    portalAuthService.recordLoginHistory(user.id, ip, ua).catch(() => {});
+    res.json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        customer_id: user.customer_id,
+        email: user.email,
+        full_name: user.full_name,
+        phone: user.phone
+      },
+      access_token: token,
+      refresh_token: refreshToken,
+      expires_in: '30m'
+    });
+  } catch (err) {
+    console.error('[PortalAuth] Password login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
 router.post('/refresh', async (req, res) => {
   try {
     const { refresh_token } = req.body;

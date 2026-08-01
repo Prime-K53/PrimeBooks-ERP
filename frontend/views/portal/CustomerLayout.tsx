@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import PortalSidebar from './components/PortalSidebar';
 import PortalHeader from './components/PortalHeader';
+import { ToastProvider } from './components/Toast';
 
 const pageTitles: Record<string, string> = {
   '/portal/dashboard': 'Dashboard',
@@ -28,6 +29,18 @@ const CustomerLayout: React.FC = () => {
 
   const currentTitle = pageTitles[location.pathname] || 'Customer Portal';
 
+  const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--dashboard-bg)] flex items-center justify-center">
@@ -41,18 +54,21 @@ const CustomerLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--dashboard-bg)]">
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-      <PortalSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <PortalHeader title={currentTitle} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-      <main className="fixed top-16 bottom-0 left-0 right-0 md:left-64 overflow-x-auto overflow-y-auto custom-scrollbar">
-        <div className="p-4 md:p-6 min-w-0">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+    <ToastProvider>
+      <div className="min-h-screen bg-[var(--dashboard-bg)]">
+        <a href="#main-content" className="skip-nav">Skip to main content</a>
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 md:hidden" onClick={closeSidebar} />
+        )}
+        <PortalSidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <PortalHeader title={currentTitle} onMenuToggle={toggleSidebar} />
+        <main id="main-content" className="fixed top-16 bottom-0 left-0 right-0 md:left-64 overflow-x-auto overflow-y-auto custom-scrollbar">
+          <div className="p-4 md:p-6 min-w-0">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </ToastProvider>
   );
 };
 

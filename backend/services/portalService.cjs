@@ -136,8 +136,47 @@ const portalService = {
       [customerId, companyId, limit]
     );
     return [...requests, ...quotations, ...orders]
-      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
       .slice(0, limit);
+  },
+
+  async getRequestsPaginated(customerId, companyId, { page = 1, pageSize = 20, status, search } = {}) {
+    const offset = (page - 1) * pageSize;
+    const conditions = ['q.customer_id = ?', 'q.company_id = ?'];
+    const params = [customerId, companyId];
+
+    if (status) {
+      conditions.push('LOWER(q.status) = ?');
+      params.push(String(status).toLowerCase());
+    }
+    if (search) {
+      conditions.push('(q.request_number LIKE ? OR q.customer_name LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const countRow = await getOne(`SELECT COUNT(*) as total FROM quotation_requests q WHERE ${whereClause}`, params);
+    const total = countRow?.total || 0;
+
+    const rows = await getAll(
+      `SELECT q.*, c.name AS resolved_customer_name
+       FROM quotation_requests q
+       LEFT JOIN customers c ON c.id = q.customer_id
+       WHERE ${whereClause}
+       ORDER BY q.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    return {
+      requests: rows.map((r) => ({
+        ...r,
+        status: r.quotation_id ? (r.status === 'quotation_ready' ? 'converted' : r.status) : r.status,
+        customer_name: r.resolved_customer_name || r.customer_name,
+        items: parseJson(r.items, []),
+        attachments: parseJson(r.attachments, []),
+      })),
+      total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1,
+    };
   },
 
   async getOrders(customerId, companyId) {
@@ -151,6 +190,46 @@ const portalService = {
        ORDER BY so.orderDate DESC`,
       [customerId, companyId]
     );
+  },
+
+  async getOrdersPaginated(customerId, companyId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
+    const offset = (page - 1) * pageSize;
+    const conditions = ['so.customer_id = ?', 'so.company_id = ?'];
+    const params = [customerId, companyId];
+
+    if (status) {
+      conditions.push('LOWER(so.status) = ?');
+      params.push(String(status).toLowerCase());
+    }
+    if (search) {
+      conditions.push('(so.order_number LIKE ? OR c.name LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    if (dateFrom) {
+      conditions.push('so.orderDate >= ?');
+      params.push(dateFrom);
+    }
+    if (dateTo) {
+      conditions.push('so.orderDate <= ?');
+      params.push(dateTo);
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const countRow = await getOne(`SELECT COUNT(*) as total FROM sales_orders so LEFT JOIN customers c ON so.customer_id = c.id WHERE ${whereClause}`, params);
+    const total = countRow?.total || 0;
+
+    const rows = await getAll(
+      `SELECT so.id, so.order_number, so.orderDate, c.name as customerName, so.total as totalAmount, so.status,
+              so.source_request_id, so.source_request_number, so.reorder_of, so.reorder_of_number,
+              so.deliveryDate, so.approved_at, so.items as items_json
+       FROM sales_orders so
+       LEFT JOIN customers c ON so.customer_id = c.id
+       WHERE ${whereClause}
+       ORDER BY so.orderDate DESC LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    return { orders: rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1 };
   },
 
   async getOrderById(orderId, customerId, companyId) {
@@ -180,6 +259,43 @@ const portalService = {
     return portalLifecycleService.getQuotations({ customerId, companyId });
   },
 
+  async getQuotationsPaginated(customerId, companyId, { page = 1, pageSize = 20, status, search } = {}) {
+    const offset = (page - 1) * pageSize;
+    const conditions = ['q.customer_id = ?', 'q.company_id = ?'];
+    const params = [customerId, companyId];
+
+    if (status) {
+      conditions.push('LOWER(q.status) = ?');
+      params.push(String(status).toLowerCase());
+    }
+    if (search) {
+      conditions.push('(q.quotation_number LIKE ? OR q.customer_name LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const countRow = await getOne(`SELECT COUNT(*) as total FROM quotations q WHERE ${whereClause}`, params);
+    const total = countRow?.total || 0;
+
+    const rows = await getAll(
+      `SELECT q.*, c.name AS resolved_customer_name
+       FROM quotations q
+       LEFT JOIN customers c ON c.id = q.customer_id
+       WHERE ${whereClause}
+       ORDER BY q.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    return {
+      quotations: rows.map((r) => ({
+        ...r,
+        customer_name: r.resolved_customer_name || r.customer_name,
+        items: parseJson(r.items, []),
+      })),
+      total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1,
+    };
+  },
+
   async getInvoices(customerId, companyId) {
     return getAll(
       `SELECT id, invoice_number, customer_name, total_amount, COALESCE(paid_amount, 0) as paid_amount, status, due_date, created_at
@@ -188,6 +304,43 @@ const portalService = {
        ORDER BY created_at DESC`,
       [customerId, companyId]
     );
+  },
+
+  async getInvoicesPaginated(customerId, companyId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
+    const offset = (page - 1) * pageSize;
+    const conditions = ['i.customer_id = ?', 'i.company_id = ?'];
+    const params = [customerId, companyId];
+
+    if (status) {
+      conditions.push('LOWER(i.status) = ?');
+      params.push(String(status).toLowerCase());
+    }
+    if (search) {
+      conditions.push('(i.invoice_number LIKE ? OR i.customer_name LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    if (dateFrom) {
+      conditions.push('i.created_at >= ?');
+      params.push(dateFrom);
+    }
+    if (dateTo) {
+      conditions.push('i.created_at <= ?');
+      params.push(dateTo);
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const countRow = await getOne(`SELECT COUNT(*) as total FROM invoices i WHERE ${whereClause}`, params);
+    const total = countRow?.total || 0;
+
+    const rows = await getAll(
+      `SELECT id, invoice_number, customer_name, total_amount, COALESCE(paid_amount, 0) as paid_amount, status, due_date, created_at
+       FROM invoices i
+       WHERE ${whereClause}
+       ORDER BY i.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    return { invoices: rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1 };
   },
 
   async getInvoiceById(invoiceId, customerId, companyId) {
@@ -209,6 +362,39 @@ const portalService = {
        ORDER BY date DESC`,
       [customerId, companyId]
     );
+  },
+
+  async getPaymentsPaginated(customerId, companyId, { page = 1, pageSize = 20, search, dateFrom, dateTo } = {}) {
+    const offset = (page - 1) * pageSize;
+    const conditions = ['cp.customer_id = ?', 'cp.company_id = ?'];
+    const params = [customerId, companyId];
+
+    if (search) {
+      conditions.push('(cp.reference LIKE ? OR cp.method LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    if (dateFrom) {
+      conditions.push('cp.date >= ?');
+      params.push(dateFrom);
+    }
+    if (dateTo) {
+      conditions.push('cp.date <= ?');
+      params.push(dateTo);
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const countRow = await getOne(`SELECT COUNT(*) as total FROM customer_payments cp WHERE ${whereClause}`, params);
+    const total = countRow?.total || 0;
+
+    const rows = await getAll(
+      `SELECT id, amount, method as payment_method, date, reference
+       FROM customer_payments cp
+       WHERE ${whereClause}
+       ORDER BY cp.date DESC LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    return { payments: rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1 };
   },
 
   async getPaymentById(paymentId, customerId, companyId) {

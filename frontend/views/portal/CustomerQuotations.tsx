@@ -25,23 +25,47 @@ const quotationStatusLabel: Record<string, string> = {
   converted: 'Converted to Order',
 };
 
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FileText, Plus, ArrowUpRight, Search } from 'lucide-react';
+import { portalLifecycle, QuotationRecord } from '../../services/portalApiClient';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalInput from './components/PortalInput';
+import EmptyState from './components/EmptyState';
+import StatusBadge from './components/StatusBadge';
+import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import { portalTheme, QUOTATION_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from '../constants';
+
 const CustomerQuotations: React.FC = () => {
   const navigate = useNavigate();
   const [quotations, setQuotations] = useState<QuotationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const all = await portalLifecycle.quotations.list();
-      setQuotations(all || []);
-      setError(null);
+      const data = await portalLifecycle.quotations.list({ page, pageSize: DEFAULT_PAGE_SIZE, search: search || undefined });
+      if ('quotations' in data) {
+        setQuotations((data as any).quotations);
+        setTotalPages((data as any).totalPages);
+        setTotal((data as any).total);
+      } else {
+        setQuotations(data as QuotationRecord[]);
+        setTotalPages(1);
+        setTotal((data as QuotationRecord[]).length);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load quotations');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, search]);
 
   useEffect(() => {
     load();
@@ -61,112 +85,73 @@ const CustomerQuotations: React.FC = () => {
     [quotations]
   );
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
+  if (loading && page === 1) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
 
   return (
-    <div>
-      <div style={{
-        background: paper,
-        borderRadius: 14,
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '22px 28px 18px',
-          borderBottom: `1px solid ${hairline}`,
-          background: paper
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 10,
-              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
-            }}>
-              <FileText size={19} color="#fff" />
-            </div>
-            <div>
-              <h1 style={{
-                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
-                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
-              }}>
-                Quotations
-              </h1>
-              <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
-                Official quotations prepared for you
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/portal/new-request?type=quotation')}
-            style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-              padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
-              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-              color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
-              boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
-              transition: 'all .15s ease'
-            }}
-          >
-            <Plus size={14} /> Request Quotation
-          </button>
-        </div>
+    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+      <PortalPageHeader
+        title="Quotations"
+        subtitle="View your quotations"
+        icon={FileText}
+        action={{ label: 'New Quotation', onClick: () => navigate('/portal/new-request?type=quotation'), icon: Plus }}
+      />
 
-        <div style={{ padding: '24px 30px 8px' }}>
-          {error && (
-            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{error}</div>
-          )}
-
-          {sorted.length === 0 ? (
-            <EmptyState
-              icon={FileText}
-              title="No quotations"
-              description="Official quotations created for you by our team will appear here."
-            />
-          ) : (
-            <div className="space-y-2">
-              {sorted.map((q) => (
-                <button
-                  key={q.id}
-                  onClick={() => navigate(`/portal/quotations/${q.id}`)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-                    width: '100%', padding: '16px 20px', textAlign: 'left',
-                    background: paper, borderRadius: 14,
-                    border: `1.4px solid ${hairline}`,
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
-                    cursor: 'pointer', transition: 'all .15s ease',
-                    borderLeft: `4px solid ${teal[400]}`
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: 1 }}>
-                    <div style={{
-                      padding: 8, borderRadius: 10,
-                      background: teal[50], color: teal[600], flexShrink: 0
-                    }}>
-                      <FileText size={18} />
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontWeight: 500, fontSize: 13, color: ink }}>{q.quotation_number}</p>
-                      <p style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>
-                        {new Date(q.created_at).toLocaleDateString()}
-                        {q.valid_until ? ` • Valid until ${new Date(q.valid_until).toLocaleDateString()}` : ''}
-                        {q.payment_terms ? ` • ${q.payment_terms}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(q.total).toFixed(2)}</span>
-                    <StatusBadge status={quotationStatusLabel[q.status] || q.status} />
-                    <ArrowUpRight size={16} style={{ color: inkSoft }} />
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+      <div style={{ padding: '20px 28px 8px' }}>
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 12, padding: '12px 16px', fontSize: 13, marginBottom: 12 }}>{error}</div>
+        )}
+        <div style={{ position: 'relative', flex: '1 1 240px' }}>
+          <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: portalTheme.inkSoft }} />
+          <PortalInput label="" placeholder="Search quotations..." value={search} onChange={(v) => { setPage(1); setSearch(v); }} onFocus={() => {}} onBlur={() => {}} style={{ paddingLeft: 32 }} />
         </div>
+      </div>
+
+      <div style={{ padding: '16px 28px 28px' }}>
+        {sorted.length === 0 ? (
+          <EmptyState icon={<FileText size={28} />} title="No quotations yet" description="Your quotations will appear here once created." />
+        ) : (
+          <>
+            <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginBottom: 8 }}>
+              Showing {quotations.length} of {total} quotation{total !== 1 ? 's' : ''}
+            </div>
+            <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+                  <thead>
+                    <tr style={{ background: portalTheme.teal[50] }}>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Quotation #</th>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Total</th>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center" style={{ color: portalTheme.inkSoft }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100/50">
+                    {sorted.map((q) => {
+                      const friendlyStatus = FRIENDLY_STATUS_MAP[q.status] || q.status;
+                      return (
+                        <tr key={q.id} onClick={() => navigate(`/portal/quotations/${q.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
+                          <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate">{q.quotation_number || q.id.slice(0, 8)}</td>
+                          <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(q.created_at).toLocaleDateString()}</td>
+                          <td className="px-5 py-3 text-right font-medium">K {Number(q.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          <td className="px-5 py-3 text-center"><StatusBadge status={friendlyStatus} /></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 12, color: portalTheme.inkSoft }}>
+                <span>Page {page} of {totalPages}</span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ padding: '6px 12px', borderRadius: 8, border: `1.4px solid ${portalTheme.hairline}`, background: portalTheme.paper, cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.5 : 1, fontSize: 12, color: portalTheme.ink }}>Previous</button>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} style={{ padding: '6px 12px', borderRadius: 8, border: `1.4px solid ${portalTheme.hairline}`, background: portalTheme.paper, cursor: page >= totalPages ? 'not-allowed' : 'pointer', opacity: page >= totalPages ? 0.5 : 1, fontSize: 12, color: portalTheme.ink }}>Next</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, MapPin, CreditCard, FileText, Building, Plus, Trash2, AlertTriangle, Search, User, ChevronRight } from 'lucide-react';
+import { X, MapPin, CreditCard, FileText, Building, Plus, Trash2, AlertTriangle, Search, User, ChevronRight, KeyRound, Copy, Check } from 'lucide-react';
 import { Customer } from '../../../types';
 import { getDefaultPaymentTermsForSegment } from '../../../utils/helpers';
 import { useAuth } from '../../../context/AuthContext';
@@ -7,11 +7,12 @@ import { useFinance } from '../../../context/FinanceContext';
 import { useSales } from '../../../context/SalesContext';
 import { getPlaceholder } from '../../../constants/placeholders';
 import { currencyService } from '../../../services/currencyService';
+import type { PortalCredentials } from '../../../services/adminPortalClient';
 
 interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (customer: Customer) => Promise<void>;
+  onSave: (customer: Customer) => Promise<PortalCredentials | null>;
   customer?: Customer;
   initialSegment?: string;
 }
@@ -53,6 +54,17 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
   const [referrerDropdownOpen, setReferrerDropdownOpen] = useState(false);
   const [referrerHoveredIdx, setReferrerHoveredIdx] = useState(-1);
   const referrerRef = useRef<HTMLDivElement>(null);
+  const [portalCredentials, setPortalCredentials] = useState<PortalCredentials | null>(null);
+  const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
+
+  const copyCredential = async (field: 'email' | 'password') => {
+    if (!portalCredentials) return;
+    try {
+      await navigator.clipboard.writeText(portalCredentials[field]);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1500);
+    } catch { /* clipboard unavailable */ }
+  };
 
   const { invoices } = useFinance();
   const { companyConfig } = useAuth();
@@ -140,8 +152,12 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
     if (!dataToSave.paymentTerms) {
       dataToSave.paymentTerms = getDefaultPaymentTermsForSegment(dataToSave.segment || 'Individual');
     }
-    await onSave(dataToSave as Customer);
+    const credentials = await onSave(dataToSave as Customer);
     onClose();
+    if (credentials) {
+      setPortalCredentials(credentials);
+      setCopiedField(null);
+    }
   };
 
   const handleAddSubAccount = () => {
@@ -780,6 +796,66 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSav
           </div>
         </div>
       </div>
+
+      {portalCredentials && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(15, 23, 42, 0.6)', padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink
+        }}>
+          <div style={{
+            width: '100%', maxWidth: 440, background: paper, borderRadius: 14,
+            border: `1px solid ${hairline}`,
+            boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
+            overflow: 'hidden', position: 'relative'
+          }}>
+            <div style={{ height: 4, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 24px 14px' }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10,
+                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <KeyRound size={16} color="#fff" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: teal[800] }}>Customer Portal Account Created</h3>
+                <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft }}>
+                  Share these credentials with the customer. The password is shown only once.
+                </p>
+              </div>
+            </div>
+            <div style={{ padding: '6px 24px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', background: teal[50], border: `1px solid ${teal[100]}`, borderRadius: 9 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', color: inkSoft }}>Portal Email</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis' }}>{portalCredentials.email}</div>
+                </div>
+                <button onClick={() => copyCredential('email')} style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 8, border: `1px solid ${teal[200]}`, background: paper, color: teal[700], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {copiedField === 'email' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', background: amber[100], border: `1px solid ${amber[300]}`, borderRadius: 9 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', color: '#8a5a1a' }}>Temporary Password</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis' }}>{portalCredentials.password}</div>
+                </div>
+                <button onClick={() => copyCredential('password')} style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 8, border: `1px solid ${amber[300]}`, background: paper, color: amber[600], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {copiedField === 'password' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+              <p style={{ margin: 0, fontSize: 11, color: inkSoft, lineHeight: 1.5 }}>
+                The customer signs in at <b>#/portal/login</b> with the Email &amp; Password method. You can regenerate the password anytime from the customer's card in the Clients module.
+              </p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 24px', borderTop: `1px solid ${hairline}`, background: paper }}>
+              <button onClick={() => setPortalCredentials(null)}
+                style={btnGhostStyle}>
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

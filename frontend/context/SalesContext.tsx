@@ -20,6 +20,7 @@ import { aggregateMarketAdjustmentSnapshots, attachPricingBreakdown, summarizePr
 import { customerNotificationService, type NotificationActivityType } from '../services/customerNotificationService';
 import { workflowService as autoWorkflowService } from '../services/automatedWorkflowService';
 import { isSupabaseConfigured } from '../services/cloudMode';
+import { adminLifecycle, type PortalCredentials } from '../services/adminPortalClient';
 
 type ApprovedQuotationResult = {
     batchId?: string;
@@ -115,7 +116,7 @@ interface SalesContextType {
     updateCustomerPayment: (payment: CustomerPayment, reason?: string) => Promise<void>;
     deleteCustomerPayment: (id: string, reason?: string) => Promise<void>;
 
-    addCustomer: (customer: Customer) => Promise<void>;
+    addCustomer: (customer: Customer) => Promise<PortalCredentials | null>;
     updateCustomer: (customer: Customer) => Promise<void>;
     deleteCustomer: (id: string) => Promise<void>;
 
@@ -992,7 +993,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     };
 
-    const addCustomer = async (customer: Customer) => {
+    const addCustomer = async (customer: Customer): Promise<PortalCredentials | null> => {
         try {
             const id = customer.id || generateNextId('CUST', salesStore.customers, companyConfig);
             const finalCustomer = normalizeCustomerPaymentTerms({ ...customer, id });
@@ -1006,8 +1007,35 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 details: `Added client: ${customer.name}`,
                 newValue: finalCustomer
             });
+            let credentials: PortalCredentials | null = null;
+            try {
+                const portalAccount = await adminLifecycle.users.autoCreate({
+                    customer_id: id,
+                    name: finalCustomer.name,
+                    email: finalCustomer.email,
+                    phone: finalCustomer.phone,
+                });
+                if (portalAccount?.user && portalAccount.generated_password) {
+                    credentials = {
+                        email: portalAccount.user.email,
+                        password: portalAccount.generated_password,
+                    };
+                    const enriched = {
+                        ...finalCustomer,
+                        portalUserId: portalAccount.user.id,
+                        portalEmail: portalAccount.user.email,
+                        portalStatus: portalAccount.user.status || 'active',
+                    };
+                    await transactionService.saveCustomer(enriched);
+                    await salesStore.fetchSalesData();
+                }
+            } catch (portalErr: any) {
+                console.warn(`Portal provisioning skipped for ${id}:`, portalErr?.message || portalErr);
+            }
+            return credentials;
         } catch (err: any) {
             notify(`Failed to add client: ${err.message}`, "error");
+            return null;
         }
     };
 
@@ -1420,7 +1448,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             generateZReport,
             addCustomer: async (c: Customer) => {
                 try {
-                    await salesStore.addCustomer(c);
+                    const credentials = await salesStore.addCustomer(c);
                     addAuditLog({
                         action: 'CREATE',
                         entityType: 'Customer',
@@ -1428,8 +1456,10 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                         details: `Created new customer profile: ${c.name}`,
                         newValue: c
                     });
+                    return credentials;
                 } catch (err: any) {
                     notify(`Failed to add customer: ${err.message}`, 'error');
+                    return null;
                 }
             },
             updateCustomer: async (c: Customer) => {

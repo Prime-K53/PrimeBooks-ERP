@@ -4,8 +4,13 @@ const { verifyPortalToken } = require('../middleware/portalAuth.cjs');
 const portalService = require('../services/portalService.cjs');
 const portalAuthService = require('../services/portalAuthService.cjs');
 const portalLifecycleService = require('../services/portalLifecycleService.cjs');
+const { sensitiveLimiter, apiLimiter } = require('../middleware/rateLimiter.cjs');
+
+const GLOBAL_PORTAL_LIMIT = apiLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 200 });
+const SENSITIVE_PORTAL_LIMIT = sensitiveLimiter({ windowMs: 60 * 60 * 1000, maxRequests: 30 });
 
 router.use(verifyPortalToken);
+router.use(GLOBAL_PORTAL_LIMIT);
 
 function requestContext(req) {
   return {
@@ -27,6 +32,17 @@ router.get('/events', (req, res) => {
 router.get('/requests', async (req, res) => {
   try {
     const { customer_id, company_id } = req.portalUser;
+    const { page, pageSize, status, search } = req.query;
+    const hasPagination = page || pageSize;
+    if (hasPagination) {
+      const data = await portalService.getRequestsPaginated(customer_id, company_id, {
+        page: page ? parseInt(page, 10) : 1,
+        pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
+        status: status || undefined,
+        search: search || undefined,
+      });
+      return res.json(data);
+    }
     const data = await portalLifecycleService.getRequests({ customerId: customer_id, companyId: company_id });
     res.json(data);
   } catch (err) {
@@ -241,7 +257,7 @@ router.post('/comments', async (req, res) => {
 });
 
 // ─── Downloads (gated + audited) ─────────────────────────────────────────────
-router.post('/downloads', async (req, res) => {
+router.post('/downloads', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
   try {
     const { id, customer_id, company_id } = req.portalUser;
     const { docType, docId } = req.body || {};
@@ -300,6 +316,19 @@ router.get('/dashboard', async (req, res) => {
 router.get('/orders', async (req, res) => {
   try {
     const { customer_id, company_id } = req.portalUser;
+    const { page, pageSize, status, search, dateFrom, dateTo } = req.query;
+    const hasPagination = page || pageSize;
+    if (hasPagination) {
+      const data = await portalService.getOrdersPaginated(customer_id, company_id, {
+        page: page ? parseInt(page, 10) : 1,
+        pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
+        status: status || undefined,
+        search: search || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
+      return res.json(data);
+    }
     const data = await portalService.getOrders(customer_id, company_id);
     res.json(data);
   } catch (err) {
@@ -363,6 +392,17 @@ router.get('/document-chain', async (req, res) => {
 router.get('/quotations', async (req, res) => {
   try {
     const { customer_id, company_id } = req.portalUser;
+    const { page, pageSize, status, search } = req.query;
+    const hasPagination = page || pageSize;
+    if (hasPagination) {
+      const data = await portalService.getQuotationsPaginated(customer_id, company_id, {
+        page: page ? parseInt(page, 10) : 1,
+        pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
+        status: status || undefined,
+        search: search || undefined,
+      });
+      return res.json(data);
+    }
     const data = await portalService.getQuotations(customer_id, company_id);
     res.json(data);
   } catch (err) {
@@ -375,6 +415,19 @@ router.get('/quotations', async (req, res) => {
 router.get('/invoices', async (req, res) => {
   try {
     const { customer_id, company_id } = req.portalUser;
+    const { page, pageSize, status, search, dateFrom, dateTo } = req.query;
+    const hasPagination = page || pageSize;
+    if (hasPagination) {
+      const data = await portalService.getInvoicesPaginated(customer_id, company_id, {
+        page: page ? parseInt(page, 10) : 1,
+        pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
+        status: status || undefined,
+        search: search || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
+      return res.json(data);
+    }
     const data = await portalService.getInvoices(customer_id, company_id);
     res.json(data);
   } catch (err) {
@@ -399,6 +452,18 @@ router.get('/invoices/:id', async (req, res) => {
 router.get('/payments', async (req, res) => {
   try {
     const { customer_id, company_id } = req.portalUser;
+    const { page, pageSize, search, dateFrom, dateTo } = req.query;
+    const hasPagination = page || pageSize;
+    if (hasPagination) {
+      const data = await portalService.getPaymentsPaginated(customer_id, company_id, {
+        page: page ? parseInt(page, 10) : 1,
+        pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
+        search: search || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
+      return res.json(data);
+    }
     const data = await portalService.getPayments(customer_id, company_id);
     res.json(data);
   } catch (err) {
@@ -481,7 +546,7 @@ router.put('/profile', async (req, res) => {
   }
 });
 
-router.put('/profile/password', async (req, res) => {
+router.put('/profile/password', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
   try {
     const { id } = req.portalUser;
     const { currentPassword, newPassword } = req.body;
@@ -684,7 +749,7 @@ router.get('/support/tickets', async (req, res) => {
   }
 });
 
-router.post('/support/tickets', async (req, res) => {
+router.post('/support/tickets', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
   try {
     const { id, customer_id, company_id } = req.portalUser;
     const { subject, message, priority } = req.body;

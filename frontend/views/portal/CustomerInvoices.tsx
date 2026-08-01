@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, ChevronRight, Download, Edit2, DollarSign, Plus, MoreVertical } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
+import { Eye, ChevronRight, Download, DollarSign, Search } from 'lucide-react';
+import { portalLifecycle } from '../../services/portalApiClient';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalInput from './components/PortalInput';
+import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import StatusBadge from './components/StatusBadge';
+import { portalTheme, DEFAULT_PAGE_SIZE } from '../constants';
 
 const teal = {
   50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
@@ -35,13 +40,35 @@ const CustomerInvoices: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('All');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await portalLifecycle.invoices.list({ page, pageSize: DEFAULT_PAGE_SIZE, search: search || undefined, status: filter === 'All' ? undefined : filter });
+      if ('invoices' in data) {
+        setInvoices((data as any).invoices);
+        setTotalPages((data as any).totalPages);
+        setTotal((data as any).total);
+      } else {
+        setInvoices(data as Invoice[]);
+        setTotalPages(1);
+        setTotal((data as Invoice[]).length);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load invoices');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, filter]);
 
   useEffect(() => {
-    portalApi.get<Invoice[]>('/invoices')
-      .then(setInvoices)
-      .catch((err) => setError(err.message || 'Failed to load invoices'))
-      .finally(() => setLoading(false));
-  }, []);
+    load();
+  }, [load]);
 
   const filtered = filter === 'All' ? invoices : invoices.filter((inv) => {
     const key = inv.status?.toLowerCase().replace(/\s+/g, '_');
@@ -49,100 +76,58 @@ const CustomerInvoices: React.FC = () => {
     return key === filterKey || key === filterKey.replace('_', '');
   });
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={8} /></div>;
-  if (error) return <div className="p-8 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  if (loading && page === 1) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={8} /></div>;
 
   return (
-    <div>
-      <div style={{
-        background: paper,
-        borderRadius: 14,
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '22px 28px 18px',
-          borderBottom: `1px solid ${hairline}`,
-          background: paper
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 10,
-              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
-            }}>
-              <Eye size={19} color="#fff" />
-            </div>
-            <div>
-              <h1 style={{
-                fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
-                fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
-              }}>
-                Invoices
-              </h1>
-              <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
-                View and manage your invoices
-              </p>
-            </div>
+    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+      <PortalPageHeader title="Invoices" subtitle="View and manage your invoices" icon={Eye} />
+
+      <div style={{ padding: '20px 28px 8px' }}>
+        {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '1 1 240px' }}>
+            <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: portalTheme.inkSoft }} />
+            <PortalInput label="" placeholder="Search invoices..." value={search} onChange={(v) => { setPage(1); setSearch(v); }} onFocus={() => {}} onBlur={() => {}} style={{ paddingLeft: 32 }} />
           </div>
-          <button
-            onClick={() => navigate('/portal/new-request')}
+          <select
+            value={filter}
+            onChange={(e) => { setPage(1); setFilter(e.target.value); }}
+            aria-label="Filter by status"
             style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-              padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
-              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-              color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
-              boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
-              transition: 'all .15s ease'
+              fontFamily: "'Inter', sans-serif", fontSize: 13, padding: '10px 32px 10px 12px',
+              border: '1.4px solid #e4ddd1', borderRadius: 9, background: portalTheme.paper, color: portalTheme.ink,
+              appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', cursor: 'pointer',
             }}
           >
-            <Plus size={14} /> New Invoice
-          </button>
+            <option value="All">All Statuses</option>
+            <option value="Paid">Paid</option>
+            <option value="Unpaid">Unpaid</option>
+            <option value="Overdue">Overdue</option>
+            <option value="Partially Paid">Partially Paid</option>
+          </select>
         </div>
+      </div>
 
-        <div style={{ padding: '24px 30px 8px' }}>
-          {error && (
-            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{error}</div>
-          )}
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-            {statuses.map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilter(s)}
-                style={{
-                  padding: '8px 14px', fontSize: 12, fontWeight: 600,
-                  borderRadius: 8, border: 'none', cursor: 'pointer',
-                  background: filter === s ? teal[50] : `rgba(217,154,63,.08)`,
-                  color: filter === s ? teal[700] : inkSoft,
-                  transition: 'all .15s ease'
-                }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          {filtered.length === 0 ? (
-            <EmptyState icon={<Eye size={28} />} title="No invoices found" description={filter === 'All' ? 'You have no invoices yet.' : `No invoices with status "${filter}".`} />
-          ) : (
-            <div style={{
-              background: paper, borderRadius: 14,
-              border: `1.4px solid ${hairline}`,
-              boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
-              overflow: 'hidden'
-            }}>
+      <div style={{ padding: '16px 28px 28px' }}>
+        {filtered.length === 0 ? (
+          <EmptyState icon={<Eye size={28} />} title="No invoices found" description={filter === 'All' ? 'You have no invoices yet.' : `No invoices with status "${filter}".`} />
+        ) : (
+          <>
+            <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginBottom: 8 }}>
+              Showing {invoices.length} of {total} invoice{total !== 1 ? 's' : ''}
+            </div>
+            <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                  <thead style={{ background: teal[50] }}>
-                    <tr>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: inkSoft }}>Invoice #</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: inkSoft }}>Date</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: inkSoft }}>Amount</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center" style={{ color: inkSoft }}>Status</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: inkSoft }}>Due Date</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: inkSoft }}>Actions</th>
+                  <thead>
+                    <tr style={{ background: portalTheme.teal[50] }}>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Invoice #</th>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Total</th>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Paid</th>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center" style={{ color: portalTheme.inkSoft }}>Status</th>
+                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100/50">
@@ -151,47 +136,17 @@ const CustomerInvoices: React.FC = () => {
                       const isCancelled = inv.status === 'Cancelled';
                       const balanceDue = isCancelled ? 0 : ((inv.total_amount || 0) - (inv.paid_amount || 0));
                       const totalAmount = isCancelled ? 0 : (inv.total_amount || 0);
-
                       return (
-                        <tr
-                          key={inv.id}
-                          onClick={() => navigate(`/portal/invoices/${inv.id}`)}
-                          className="transition-colors cursor-pointer group hover:bg-[#eef7f6]"
-                        >
+                        <tr key={inv.id} onClick={() => navigate(`/portal/invoices/${inv.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
                           <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate">{inv.invoice_number}</td>
                           <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(inv.created_at).toLocaleDateString()}</td>
                           <td className="px-5 py-3 text-right font-medium">K {totalAmount.toLocaleString()}</td>
-                          <td className="px-5 py-3 text-center">
-                            <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${inv.status === 'Paid' ? 'bg-teal-100 text-teal-700 border-teal-200' :
-                              inv.status === 'Partial' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                                inv.status === 'Overdue' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                                  inv.status === 'Cancelled' ? 'bg-slate-100 text-[#5c6567] border-slate-200 line-through' :
-                                    'bg-slate-100 text-[#5c6567] border-slate-200'
-                              }`}>{inv.status}</span>
-                          </td>
-                          <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(inv.due_date).toLocaleDateString()}</td>
-                          <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex justify-center gap-1 items-center shrink-0">
-                              <button className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail">
-                                <ChevronRight size={14} />
-                              </button>
-                              <button className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
-                                <Eye size={14} />
-                              </button>
-                              <button className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download PDF">
-                                <Download size={14} />
-                              </button>
-                              {!isPaid && !isCancelled && (
-                                <button className="p-1.5 text-[#5c6567] hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit">
-                                  <Edit2 size={14} />
-                                </button>
-                              )}
-                              {!isPaid && (
-                                <button className="p-1.5 text-blue-600 hover:text-blue-700 transition-all" title="Receive Payment">
-                                  <DollarSign size={16} />
-                                </button>
-                              )}
-                              <button className="p-1.5 text-[#5c6567] hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
+                          <td className="px-5 py-3 text-right font-medium">K {Number(inv.paid_amount).toFixed(2)}</td>
+                          <td className="px-5 py-3 text-center"><StatusBadge status={inv.status} /></td>
+                          <td className="px-5 py-3 text-right">
+                            <div className="flex justify-center gap-1 items-center shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <button className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail" aria-label={`View invoice ${inv.invoice_number}`}><Eye size={14} /></button>
+                              <button className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all" title="Download PDF" aria-label={`Download invoice ${inv.invoice_number}`}><Download size={14} /></button>
                             </div>
                           </td>
                         </tr>
@@ -201,8 +156,17 @@ const CustomerInvoices: React.FC = () => {
                 </table>
               </div>
             </div>
-          )}
-        </div>
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 12, color: portalTheme.inkSoft }}>
+                <span>Page {page} of {totalPages}</span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ padding: '6px 12px', borderRadius: 8, border: `1.4px solid ${portalTheme.hairline}`, background: portalTheme.paper, cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.5 : 1, fontSize: 12, color: portalTheme.ink }}>Previous</button>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} style={{ padding: '6px 12px', borderRadius: 8, border: `1.4px solid ${portalTheme.hairline}`, background: portalTheme.paper, cursor: page >= totalPages ? 'not-allowed' : 'pointer', opacity: page >= totalPages ? 0.5 : 1, fontSize: 12, color: portalTheme.ink }}>Next</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

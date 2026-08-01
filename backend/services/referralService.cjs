@@ -1010,6 +1010,8 @@ class ReferralService extends BaseService {
       );
     }
   }
+
+  async creditWalletForReward(reward, referral, companyId) {
     const walletTxId = randomUUID();
 
     const customer = await this._get(

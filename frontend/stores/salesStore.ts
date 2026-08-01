@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { transactionService } from '../services/transactionService';
 import { generateNextId } from '../utils/helpers';
 import { customerNotificationService } from '../services/customerNotificationService';
+import { adminLifecycle, type PortalCredentials } from '../services/adminPortalClient';
 
 const buildDeliveryNotePatchFromShipment = (shipment: Shipment): Partial<DeliveryNote> | undefined => {
   if (!shipment.orderId) return undefined;
@@ -73,7 +74,7 @@ interface SalesState {
   updateShipment: (shipment: Shipment, deliveryNotePatch?: Partial<DeliveryNote>) => Promise<void>;
   deleteShipment: (id: string) => Promise<void>;
 
-  addCustomer: (customer: Customer) => Promise<void>;
+  addCustomer: (customer: Customer) => Promise<PortalCredentials | null>;
   updateCustomer: (customer: Customer) => Promise<void>;
   deleteCustomer: (id: string) => Promise<void>;
 
@@ -326,7 +327,7 @@ addCustomerPayment: async (payment) => {
     }
   },
 
-  addCustomer: async (customer) => {
+  addCustomer: async (customer): Promise<PortalCredentials | null> => {
     const newCustomer = { ...customer, id: customer.id || generateNextId('CUST', get().customers) };
     const prev = get().customers;
     set(state => ({ customers: [...state.customers, newCustomer] }));
@@ -343,6 +344,32 @@ addCustomerPayment: async (payment) => {
           console.error('Engagement customer.created processing failed:', err)
         )
       );
+      let credentials: PortalCredentials | null = null;
+      try {
+        const portalAccount = await adminLifecycle.users.autoCreate({
+          customer_id: newCustomer.id,
+          name: newCustomer.name,
+          email: newCustomer.email,
+          phone: newCustomer.phone,
+        });
+        if (portalAccount?.user && portalAccount.generated_password) {
+          credentials = {
+            email: portalAccount.user.email,
+            password: portalAccount.generated_password,
+          };
+          const enriched = {
+            ...newCustomer,
+            portalUserId: portalAccount.user.id,
+            portalEmail: portalAccount.user.email,
+            portalStatus: portalAccount.user.status || 'active',
+          };
+          set(state => ({ customers: state.customers.map(c => c.id === enriched.id ? enriched : c) }));
+          await api.customers.save(enriched).catch(() => {});
+        }
+      } catch (portalErr: any) {
+        console.warn(`Portal provisioning skipped for ${newCustomer.id}:`, portalErr?.message || portalErr);
+      }
+      return credentials;
     } catch (error) {
       set({ customers: prev });
       throw error;

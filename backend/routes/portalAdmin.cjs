@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const { db } = require('../db.cjs');
 const portalAuthService = require('../services/portalAuthService.cjs');
@@ -710,6 +711,71 @@ router.post('/users/:id/reset-password', async (req, res) => {
   } catch (err) {
     console.error('[PortalAdmin] Reset password error:', err);
     res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+router.post('/users/auto-create', async (req, res) => {
+  try {
+    const { customer_id, name, email, phone, full_name } = req.body;
+    if (!customer_id) {
+      return res.status(400).json({ error: 'customer_id is required' });
+    }
+    const company_id = req.user.company_id || '';
+
+    const existing = await portalAuthService.getPortalUserByCustomerId(customer_id, company_id);
+    if (existing) {
+      return res.json({ existing: true, user: existing, generated_password: null });
+    }
+
+    // Upsert the customer into the backend customers table so the portal admin
+    // user list and customer login resolution work for local-first customers.
+    await new Promise((resolve, reject) => {
+      db.run(
+        `INSERT INTO customers (id, name, email, phone, company_id)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           name = COALESCE(NULLIF(EXCLUDED.name, ''), customers.name),
+           email = COALESCE(NULLIF(EXCLUDED.email, ''), customers.email),
+           phone = COALESCE(NULLIF(EXCLUDED.phone, ''), customers.phone),
+           company_id = EXCLUDED.company_id`,
+        [customer_id, name || '', email || '', phone || '', company_id],
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
+
+    const password = crypto.randomBytes(9).toString('base64url');
+    const user = await portalAuthService.registerPortalUser({
+      customer_id,
+      email: email || `${customer_id.toLowerCase()}.portal@prime.local`,
+      password,
+      full_name: full_name || name || '',
+      phone: phone || '',
+      company_id
+    });
+    res.status(201).json({ user, generated_password: password });
+  } catch (err) {
+    if (err.message === 'Email already registered') {
+      return res.status(409).json({ error: err.message });
+    }
+    console.error('[PortalAdmin] Auto-create user error:', err);
+    res.status(500).json({ error: 'Failed to create portal user', detail: err.message });
+  }
+});
+
+router.post('/users/:id/regenerate-password', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const user = await portalAuthService.getPortalUserById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Portal user not found' });
+    if (user.company_id !== company_id) return res.status(403).json({ error: 'Access denied' });
+
+    const new_password = crypto.randomBytes(9).toString('base64url');
+    await portalAuthService.updatePassword(req.params.id, new_password);
+    await portalAuthService.revokeAllSessions(req.params.id);
+    res.json({ generated_password: new_password });
+  } catch (err) {
+    console.error('[PortalAdmin] Regenerate password error:', err);
+    res.status(500).json({ error: 'Failed to regenerate password' });
   }
 });
 

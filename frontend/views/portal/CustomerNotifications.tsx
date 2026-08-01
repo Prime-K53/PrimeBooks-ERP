@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, Info, AlertCircle, CheckCircle, CreditCard, ShoppingCart, FileText, MessageCircle } from 'lucide-react';
 import { portalApi, portalLifecycle, PortalNotification } from '../../services/portalApiClient';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalButton from './components/PortalButton';
+import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import { useToast } from './hooks/useConfirmDialog';
 import { useNavigate } from 'react-router-dom';
+import { portalTheme } from '../constants';
 
 const teal = {
   50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
@@ -28,6 +33,7 @@ const typeIcons: Record<string, React.ReactNode> = {
 
 const CustomerNotifications: React.FC = () => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [notifications, setNotifications] = useState<PortalNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +41,10 @@ const CustomerNotifications: React.FC = () => {
   const fetchNotifications = () => {
     portalApi.get<PortalNotification[]>('/notifications')
       .then(setNotifications)
-      .catch((err) => setError(err.message || 'Failed to load notifications'))
+      .catch((err) => {
+        setError(err.message || 'Failed to load notifications');
+        addToast('error', err.message || 'Failed to load notifications');
+      })
       .finally(() => setLoading(false));
   };
 
@@ -58,8 +67,8 @@ const CustomerNotifications: React.FC = () => {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );
-    } catch {
-      // ignore errors
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to mark as read');
     }
   };
 
@@ -67,8 +76,9 @@ const CustomerNotifications: React.FC = () => {
     try {
       await portalApi.put('/notifications/read-all', {});
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    } catch {
-      // ignore errors
+      addToast('success', 'All notifications marked as read');
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to mark all as read');
     }
   };
 

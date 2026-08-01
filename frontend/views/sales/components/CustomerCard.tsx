@@ -1,6 +1,7 @@
-import React from 'react';
-import { X, User, Phone, MapPin, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, User, Phone, MapPin, ChevronRight, KeyRound, RefreshCw, Copy, Check, Globe, Loader2 } from 'lucide-react';
 import { Customer } from '../../../types';
+import { adminLifecycle, type PortalCredentials } from '../../../services/adminPortalClient';
 
 interface CustomerCardProps {
   customer: Customer;
@@ -11,6 +12,7 @@ interface CustomerCardProps {
   onCreateQuote?: (customer: Customer) => void;
   onStatement?: (customer: Customer) => void;
   onWhatsApp?: (customer: Customer) => void;
+  onPortalUpdate?: (customer: Customer) => void;
 }
 
 const teal: Record<string, string> = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
@@ -30,8 +32,74 @@ const btnStyle: React.CSSProperties = {
 
 export const CustomerCard: React.FC<CustomerCardProps> = ({
   customer, onClose, onViewProfile, onEdit,
-  onCreateInvoice, onCreateQuote, onStatement, onWhatsApp,
+  onCreateInvoice, onCreateQuote, onStatement, onWhatsApp, onPortalUpdate,
 }) => {
+  const [portalCreds, setPortalCreds] = useState<PortalCredentials | null>(null);
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
+
+  const copyCredential = async (field: 'email' | 'password') => {
+    if (!portalCreds) return;
+    try {
+      await navigator.clipboard.writeText(portalCreds[field]);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1500);
+    } catch { /* clipboard unavailable */ }
+  };
+
+  const applyPortalAccount = (account: { id: string; email: string; status?: string }, creds: PortalCredentials | null) => {
+    if (creds) setPortalCreds(creds);
+    onPortalUpdate?.({
+      ...customer,
+      portalUserId: account.id,
+      portalEmail: account.email,
+      portalStatus: account.status || 'active',
+    });
+  };
+
+  const handleCreatePortal = async () => {
+    if (portalBusy) return;
+    setPortalBusy(true);
+    setPortalError(null);
+    try {
+      const result = await adminLifecycle.users.autoCreate({
+        customer_id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      });
+      if (result?.user) {
+        applyPortalAccount(
+          { id: result.user.id, email: result.user.email, status: result.user.status },
+          result.generated_password
+            ? { email: result.user.email, password: result.generated_password }
+            : null
+        );
+      }
+    } catch (err: any) {
+      setPortalError(err?.body?.error || err?.message || 'Failed to create portal account');
+    } finally {
+      setPortalBusy(false);
+    }
+  };
+
+  const handleRegeneratePassword = async () => {
+    if (portalBusy || !customer.portalUserId) return;
+    setPortalBusy(true);
+    setPortalError(null);
+    try {
+      const result = await adminLifecycle.users.regeneratePassword(customer.portalUserId as string);
+      setPortalCreds({ email: customer.portalEmail || '', password: result.generated_password });
+    } catch (err: any) {
+      setPortalError(err?.body?.error || err?.message || 'Failed to regenerate password');
+    } finally {
+      setPortalBusy(false);
+    }
+  };
+
+  const portalActive = Boolean(customer.portalUserId) && customer.portalStatus !== 'disabled';
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
@@ -138,6 +206,58 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
             </>
           )}
 
+          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 0.1, textTransform: 'uppercase', color: inkSoft, marginBottom: 8 }}>Customer Portal</div>
+          <div style={{ padding: 12, borderRadius: 10, background: teal[50], border: `1px solid ${teal[100]}`, marginBottom: 18 }}>
+            {portalActive ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ADE80', flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#15803d' }}>Active</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {customer.portalEmail}
+                    </span>
+                  </div>
+                  <button onClick={handleRegeneratePassword} disabled={portalBusy}
+                    style={{
+                      flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+                      fontSize: 10.5, fontWeight: 600, padding: '5px 10px', borderRadius: 8, cursor: 'pointer',
+                      background: paper, border: `1px solid ${teal[200]}`, color: teal[700],
+                      transition: 'all .15s ease', opacity: portalBusy ? 0.6 : 1
+                    }}>
+                    {portalBusy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    New Password
+                  </button>
+                </div>
+                <p style={{ margin: 0, fontSize: 10.5, color: inkSoft, lineHeight: 1.5 }}>
+                  The generated password is shown once. Use &ldquo;New Password&rdquo; to rotate it (old sessions are revoked).
+                </p>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <Globe size={14} color={inkSoft} />
+                    <span style={{ fontSize: 12, color: inkSoft, fontWeight: 500 }}>No portal account yet</span>
+                  </div>
+                  <button onClick={handleCreatePortal} disabled={portalBusy}
+                    style={{
+                      flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+                      fontSize: 10.5, fontWeight: 700, padding: '5px 10px', borderRadius: 8, cursor: 'pointer',
+                      background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, border: 'none', color: '#fff',
+                      boxShadow: `0 4px 10px -3px rgba(15,84,76,.55)`, transition: 'all .15s ease', opacity: portalBusy ? 0.6 : 1
+                    }}>
+                    {portalBusy ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
+                    Create Portal Account
+                  </button>
+                </div>
+                {portalError && (
+                  <p style={{ margin: '8px 0 0', fontSize: 10.5, color: danger, lineHeight: 1.5 }}>{portalError}</p>
+                )}
+              </>
+            )}
+          </div>
+
           <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 0.1, textTransform: 'uppercase', color: inkSoft, marginBottom: 8 }}>Quick Actions</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             <button style={btnStyle} onClick={() => onCreateInvoice?.(customer)}>
@@ -179,6 +299,77 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           </div>
         </div>
       </div>
+
+      {portalCreds && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(15, 23, 42, 0.6)', padding: '40px 20px', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink,
+        }}>
+          <div style={{
+            width: '100%', maxWidth: 440, background: paper, borderRadius: 14,
+            border: `1px solid ${hairline}`,
+            boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
+            overflow: 'hidden', position: 'relative'
+          }}>
+            <div style={{ height: 4, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 24px 14px' }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10,
+                background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <KeyRound size={16} color="#fff" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: teal[800] }}>
+                  {customer.portalUserId ? 'Password Updated' : 'Portal Credentials'}
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft }}>
+                  {customer.portalUserId
+                    ? 'A new password was generated. The old one no longer works.'
+                    : 'Share these credentials with the customer. The password is shown only once.'}
+                </p>
+              </div>
+            </div>
+            <div style={{ padding: '6px 24px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', background: teal[50], border: `1px solid ${teal[100]}`, borderRadius: 9 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', color: inkSoft }}>Portal Email</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis' }}>{portalCreds.email}</div>
+                </div>
+                <button onClick={() => copyCredential('email')} style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 8, border: `1px solid ${teal[200]}`, background: paper, color: teal[700], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {copiedField === 'email' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', background: amber[100], border: `1px solid ${amber[300]}`, borderRadius: 9 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', color: '#8a5a1a' }}>
+                    {customer.portalUserId ? 'New Password' : 'Temporary Password'}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: ink, fontFamily: "'JetBrains Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis' }}>{portalCreds.password}</div>
+                </div>
+                <button onClick={() => copyCredential('password')} style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 8, border: `1px solid ${amber[300]}`, background: paper, color: amber[600], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {copiedField === 'password' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+              <p style={{ margin: 0, fontSize: 11, color: inkSoft, lineHeight: 1.5 }}>
+                The customer signs in at <b>#/portal/login</b> with the Email &amp; Password method.
+              </p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 24px', borderTop: `1px solid ${hairline}`, background: paper }}>
+              <button onClick={() => setPortalCreds(null)}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+                  background: paper, border: `1.4px solid ${hairline}`, color: inkSoft,
+                  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+                }}>
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

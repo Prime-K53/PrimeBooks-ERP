@@ -316,6 +316,24 @@ export interface AdminUser {
   portal_created_at?: string;
 }
 
+export interface PortalCredentials {
+  email: string;
+  password: string;
+}
+
+export interface AdminPortalAccount {
+  existing?: boolean;
+  user: {
+    id: string;
+    customer_id: string;
+    email: string;
+    full_name?: string;
+    phone?: string;
+    status?: string;
+  };
+  generated_password: string | null;
+}
+
 export const adminLifecycle = {
   requests: {
     list(status?: string): Promise<AdminQuotationRequest[]> {
@@ -438,6 +456,12 @@ export const adminLifecycle = {
   users: {
     list(): Promise<AdminUser[]> {
       return adminPortalApi.get<AdminUser[]>('/users');
+    },
+    autoCreate(payload: { customer_id: string; name?: string; email?: string; phone?: string; full_name?: string }): Promise<AdminPortalAccount> {
+      return adminPortalApi.post<AdminPortalAccount>('/users/auto-create', payload);
+    },
+    regeneratePassword(id: string): Promise<{ generated_password: string }> {
+      return adminPortalApi.post<{ generated_password: string }>(`/users/${id}/regenerate-password`);
     },
   },
   staff: {

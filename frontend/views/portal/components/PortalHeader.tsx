@@ -110,13 +110,13 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
     }}>
       <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
       <div className="flex items-center gap-3">
-        <button
-          onClick={onMenuToggle}
-          className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-          aria-label="Toggle menu"
-        >
-          <Menu size={20} />
-        </button>
+          <button
+            onClick={onMenuToggle}
+            className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={20} />
+          </button>
         <h1 className="text-lg font-bold text-slate-900 tracking-tight">{title}</h1>
       </div>
 
@@ -125,6 +125,7 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
           <button
             onClick={() => { setShowNotifDropdown((v) => !v); setShowDropdown(false); }}
             className="relative p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
           >
             <Bell size={20} />
             {unreadCount > 0 && (
