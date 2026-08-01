@@ -21,7 +21,7 @@ const VersionHistoryModal: React.FC<Props> = ({ open, onClose, versions, loading
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <History size={16} className="text-slate-500" /> Revision History
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Close">
             <X size={16} />
           </button>
         </div>

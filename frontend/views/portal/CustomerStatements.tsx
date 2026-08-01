@@ -110,11 +110,11 @@ const CustomerStatements: React.FC = () => {
                 <tbody className="divide-y divide-slate-100/50">
                   {data.transactions.map((t, i) => (
                     <tr key={`${t.date}-${t.description}-${i}`} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
-                      <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
-                      <td className="px-5 py-3">{t.description}</td>
-                      <td className="px-5 py-3 text-right font-mono" style={{ color: portalTheme.danger }}>{t.debit ? `K ${Number(t.debit).toFixed(2)}` : '-'}</td>
-                      <td className="px-5 py-3 text-right font-mono" style={{ color: portalTheme.teal[600] }}>{t.credit ? `K ${Number(t.credit).toFixed(2)}` : '-'}</td>
-                      <td className="px-5 py-3 text-right font-mono font-semibold">K {Number(t.balance).toFixed(2)}</td>
+<td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(t.date).toLocaleDateString()}</td>
+                       <td className="px-5 py-3" data-label="Description">{t.description}</td>
+                       <td className="px-5 py-3 text-right font-mono" style={{ color: portalTheme.danger }} data-label="Debit">{t.debit ? `K ${Number(t.debit).toFixed(2)}` : '-'}</td>
+                       <td className="px-5 py-3 text-right font-mono" style={{ color: portalTheme.teal[600] }} data-label="Credit">{t.credit ? `K ${Number(t.credit).toFixed(2)}` : '-'}</td>
+                       <td className="px-5 py-3 text-right font-mono font-semibold" data-label="Balance">K {Number(t.balance).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -96,7 +96,7 @@ const CustomerInvoiceDetail: React.FC = () => {
   };
 
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!invoice) return null;
 
   const subtotal = (invoice.line_items || []).reduce((sum, item) => sum + Number(item.line_total), 0);
@@ -147,10 +147,10 @@ const CustomerInvoiceDetail: React.FC = () => {
               <tbody className="divide-y divide-slate-100/50">
                 {(invoice.line_items || []).map((item, i) => (
                   <tr key={i} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
-                    <td className="px-5 py-3 font-medium text-slate-900">{item.item_name}</td>
-                    <td className="px-5 py-3 text-right">{item.quantity}</td>
-                    <td className="px-5 py-3 text-right font-mono">K {Number(item.unit_price).toFixed(2)}</td>
-                    <td className="px-5 py-3 text-right font-mono">K {Number(item.line_total).toFixed(2)}</td>
+<td className="px-5 py-3 font-medium text-slate-900" data-label="Item">{item.item_name}</td>
+                     <td className="px-5 py-3 text-right" data-label="Qty">{item.quantity}</td>
+                     <td className="px-5 py-3 text-right font-mono" data-label="Unit Price">K {Number(item.unit_price).toFixed(2)}</td>
+                     <td className="px-5 py-3 text-right font-mono" data-label="Total">K {Number(item.line_total).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -212,18 +212,9 @@ const CustomerInvoiceDetail: React.FC = () => {
             </div>
           ))}
         </div>
-      </DocumentPreviewModal>
-    </div>
-  );
-};
-          <div className="flex justify-between text-base font-bold pt-2 border-t border-slate-200/60">
-            <span className="text-slate-900">Total</span>
-            <span className="text-slate-900 font-mono">K {Number(invoice.total_amount).toFixed(2)}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+       </DocumentPreviewModal>
+     </div>
+   );
+ };
 
 export default CustomerInvoiceDetail;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Fingerprint, Loader2, Lock, Mail, KeyRound } from 'lucide-react';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
+import ErrorBanner from './components/ErrorBanner';
 
 const CustomerLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -106,11 +107,7 @@ const CustomerLogin: React.FC = () => {
           </button>
         </div>
 
-        {error && (
-          <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl">
-            <p className="text-xs text-rose-600 leading-relaxed">{error}</p>
-          </div>
-        )}
+        {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
         {mode === 'id' && (
         <form onSubmit={handleSubmit} className="space-y-5">

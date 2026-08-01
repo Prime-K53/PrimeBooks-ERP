@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { Mail, ArrowLeft } from 'lucide-react';
+import { useToast } from './hooks/useConfirmDialog';
+import ErrorBanner from './components/ErrorBanner';
 
 const CustomerForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,13 +24,17 @@ const CustomerForgotPassword: React.FC = () => {
       });
       if (response.ok) {
         setSent(true);
+        addToast('success', 'Password reset link sent to your email.');
       } else {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || 'Failed to send reset email.');
+        const msg = data.error || 'Failed to send reset email.';
+        setError(msg);
+        addToast('error', msg);
       }
-    } catch {
-      setError('Network error. Please try again.');
-    } finally {
+} catch {
+       setError('Network error. Please try again.');
+       addToast('error', 'Network error. Please try again.');
+     } finally {
       setSubmitting(false);
     }
   };
@@ -73,11 +80,7 @@ const CustomerForgotPassword: React.FC = () => {
               <p className="mt-2 text-sm leading-relaxed" style={{ color: '#5c6567' }}>Enter your email and we'll send you a reset link.</p>
             </div>
 
-            {error && (
-              <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl">
-                <p className="text-xs text-rose-600 leading-relaxed">{error}</p>
-              </div>
-            )}
+            {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>

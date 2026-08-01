@@ -53,12 +53,16 @@ const CustomerNotifications: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const sub = await portalLifecycle.subscribe({
-      onEvent: (type) => {
-        if (type === 'notification') fetchNotifications();
-      },
-    });
-    return sub;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type) => {
+          if (type === 'notification' && !cancelled) fetchNotifications();
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const markAsRead = async (id: string) => {
@@ -91,7 +95,7 @@ const CustomerNotifications: React.FC = () => {
   };
 
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={6} /></div>;
-  if (error) return <div className="p-8 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  if (error) return <div className="p-8 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
 
   const unread = notifications.filter((n) => !n.is_read).length;
 

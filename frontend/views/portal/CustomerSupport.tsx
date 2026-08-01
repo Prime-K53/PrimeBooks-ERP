@@ -187,7 +187,7 @@ const CustomerSupport: React.FC = () => {
             {loading ? (
               <PortalLoadingSkeleton type="list" count={5} />
             ) : error ? (
-              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div>
+              <ErrorBanner message={error} onDismiss={() => setError(null)} />
             ) : tickets.length === 0 ? (
               <EmptyState icon={<MessageCircle size={28} />} title="No support tickets" description="You haven't created any support tickets yet." action={{ label: 'Create Ticket', onClick: () => setActiveTab('new') }} />
             ) : (
@@ -225,7 +225,7 @@ const CustomerSupport: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <StatusBadge status={ticket.status} size="sm" />
                       </div>
-                    </div>
+                    </button>
 
                     {expandedId === ticket.id && (
                       <div style={{ borderTop: `1px solid ${hairline}`, padding: '14px 20px' }}>

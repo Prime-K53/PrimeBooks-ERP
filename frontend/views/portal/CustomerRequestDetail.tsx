@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, MessageSquare, CheckCircle2, ArrowUpRight, FileText, XCircle } from 'lucide-react';
 import { portalLifecycle, QuotationRequestRecord, TimelineEvent } from '../../services/portalApiClient';
+import ErrorBanner from './components/ErrorBanner';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import PortalButton from './components/PortalButton';
@@ -68,12 +69,16 @@ const CustomerRequestDetail: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-    const sub = await portalLifecycle.subscribe({
-      onEvent: (type, payload) => {
-        if (type === 'entity_changed' && payload.docType === 'request' && payload.docId === id) load();
-      },
-    });
-    return sub;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload.docType === 'request' && payload.docId === id && !cancelled) load();
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, [id, load]);
 
   const handleCancelClick = () => {
@@ -98,7 +103,7 @@ const CustomerRequestDetail: React.FC = () => {
   };
 
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!request) return null;
 
   const currentStage = stageIndex(request.status);
@@ -200,10 +205,10 @@ const CustomerRequestDetail: React.FC = () => {
             <tbody className="divide-y divide-slate-100/50">
               {(request.items || []).map((item, i) => (
                 <tr key={i} className="text-slate-700">
-                  <td className="px-5 py-3 font-medium text-slate-900">{item.name}</td>
-                  <td className="px-5 py-3 text-right">{item.quantity}</td>
-                  <td className="px-5 py-3 text-right font-mono">K {Number(item.unitPrice || 0).toFixed(2)}</td>
-                  <td className="px-5 py-3 text-right font-mono">K {Number(item.lineTotal ?? item.quantity * item.unitPrice).toFixed(2)}</td>
+<td className="px-5 py-3 font-medium text-slate-900" data-label="Item">{item.name}</td>
+                   <td className="px-5 py-3 text-right" data-label="Qty">{item.quantity}</td>
+                   <td className="px-5 py-3 text-right font-mono" data-label="Unit Price">K {Number(item.unitPrice || 0).toFixed(2)}</td>
+                   <td className="px-5 py-3 text-right font-mono" data-label="Total">K {Number(item.lineTotal ?? item.quantity * item.unitPrice).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

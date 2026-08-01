@@ -38,6 +38,7 @@ import { AICopilot } from './components/ai';
 import { NotificationCenter } from './components/ui';
 import Login from './views/auth/Login';
 import SetupWizard from './views/auth/SetupWizard';
+import Gateway from './views/auth/Gateway';
 import ForgotPassword from './views/auth/ForgotPassword';
 import ResetPassword from './views/auth/ResetPassword';
 import { CustomerAuthProvider } from './context/CustomerAuthContext';
@@ -1149,13 +1150,14 @@ const RootNavigator: React.FC = () => {
       <PwaInstallProvider>
         <Suspense fallback={<PageLoader />}>
           <Routes>
+          <Route path="/" element={<Gateway />} />
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<SetupWizard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/install" element={<PwaInstallPage />} />
           {PortalRoutes}
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </PwaInstallProvider>

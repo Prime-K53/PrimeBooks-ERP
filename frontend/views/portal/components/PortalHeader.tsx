@@ -60,14 +60,18 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
   }, []);
 
   useEffect(() => {
-    const sub = await portalLifecycle.subscribe({
-      onEvent: (type, payload) => {
-        if (type === 'notification') {
-          loadNotifications();
-        }
-      },
-    });
-    return sub;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'notification') {
+            loadNotifications();
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const handleLogout = () => {
@@ -173,7 +177,7 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => { setShowDropdown(!showDropdown); setShowNotifDropdown(false); }}
-            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
               {(user?.full_name || user?.email || 'C').charAt(0).toUpperCase()}

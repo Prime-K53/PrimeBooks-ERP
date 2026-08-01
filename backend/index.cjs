@@ -229,9 +229,12 @@ app.use(sanitizeInput);
 
 app.use('/api/auth', auditAuthMiddleware, authLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 }), authRoutes);
 
-// Portal Auth Routes — no JWT needed for login/register
+// Portal Auth Routes — no JWT needed for login/register.
+// Throttled so the public credential endpoints (login, login-password, activate,
+// forgot/reset-password) can't be brute-forced from a single IP.
 const portalAuthRoutes = require('./routes/portalAuth.cjs');
-app.use('/api/portal/auth', portalAuthRoutes);
+const portalAuthLimiter = sensitiveLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 30 });
+app.use('/api/portal/auth', portalAuthLimiter, portalAuthRoutes);
 
 // Portal admin routes — registered before global verifyToken to avoid Supabase JWT collisions
 app.use('/api/portal/admin', portalAdminRoutes);

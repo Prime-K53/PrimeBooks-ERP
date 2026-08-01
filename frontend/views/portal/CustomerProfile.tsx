@@ -165,9 +165,7 @@ const CustomerProfile: React.FC = () => {
             {passwordMsg && (
               <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg text-sm text-teal-700">{passwordMsg}</div>
             )}
-            {passwordError && (
-              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-600">{passwordError}</div>
-            )}
+            {passwordError && <ErrorBanner message={passwordError} onDismiss={() => setPasswordError(null)} />}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
               <PortalInput label="Current Password" type="password" value={passwordForm.currentPassword} onChange={(v) => setPasswordForm((p) => ({ ...p, currentPassword: v }))} />

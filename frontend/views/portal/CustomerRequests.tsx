@@ -54,12 +54,16 @@ const CustomerRequests: React.FC = () => {
   }, [load]);
 
   useEffect(() => {
-    const sub = await portalLifecycle.subscribe({
-      onEvent: (type, payload) => {
-        if (type === 'entity_changed' && payload.docType === 'request') load();
-      },
-    });
-    return sub;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload.docType === 'request' && !cancelled) load();
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, [load]);
 
   const handleCancelClick = (id: string) => {

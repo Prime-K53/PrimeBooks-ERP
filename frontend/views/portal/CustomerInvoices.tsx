@@ -138,12 +138,12 @@ const CustomerInvoices: React.FC = () => {
                       const totalAmount = isCancelled ? 0 : (inv.total_amount || 0);
                       return (
                         <tr key={inv.id} onClick={() => navigate(`/portal/invoices/${inv.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
-                          <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate">{inv.invoice_number}</td>
-                          <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(inv.created_at).toLocaleDateString()}</td>
-                          <td className="px-5 py-3 text-right font-medium">K {totalAmount.toLocaleString()}</td>
-                          <td className="px-5 py-3 text-right font-medium">K {Number(inv.paid_amount).toFixed(2)}</td>
-                          <td className="px-5 py-3 text-center"><StatusBadge status={inv.status} /></td>
-                          <td className="px-5 py-3 text-right">
+                          <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Invoice #">{inv.invoice_number}</td>
+                          <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(inv.created_at).toLocaleDateString()}</td>
+                          <td className="px-5 py-3 text-right font-medium" data-label="Total">K {totalAmount.toLocaleString()}</td>
+                          <td className="px-5 py-3 text-right font-medium" data-label="Paid">K {Number(inv.paid_amount).toFixed(2)}</td>
+                          <td className="px-5 py-3 text-center" data-label="Status"><StatusBadge status={inv.status} /></td>
+                          <td className="px-5 py-3 text-right" data-label="Actions">
                             <div className="flex justify-center gap-1 items-center shrink-0" onClick={(e) => e.stopPropagation()}>
                               <button className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail" aria-label={`View invoice ${inv.invoice_number}`}><Eye size={14} /></button>
                               <button className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all" title="Download PDF" aria-label={`Download invoice ${inv.invoice_number}`}><Download size={14} /></button>

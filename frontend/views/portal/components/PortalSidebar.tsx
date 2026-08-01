@@ -134,7 +134,7 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose }) => {
                   </span>
                 </div>
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <button onClick={onClose} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors" aria-label="Close sidebar">
                 <X size={18} />
               </button>
             </div>

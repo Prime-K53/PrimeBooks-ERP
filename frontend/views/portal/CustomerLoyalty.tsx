@@ -113,12 +113,12 @@ const CustomerLoyalty: React.FC = () => {
                   ) : (
                     (data.pointsHistory || []).map((h, i) => (
                       <tr key={`${h.date}-${h.description}-${i}`} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
-                        <td className="px-5 py-3 whitespace-nowrap" style={{ color: portalTheme.inkSoft }}>{new Date(h.date).toLocaleDateString()}</td>
-                        <td className="px-5 py-3">{h.description}</td>
-                        <td className="px-5 py-3 text-right font-mono" style={{ color: Number(h.points) >= 0 ? portalTheme.teal[600] : portalTheme.danger }}>
-                          {Number(h.points) >= 0 ? '+' : ''}{h.points}
-                        </td>
-                        <td className="px-5 py-3 text-right font-mono font-semibold">{h.balance?.toLocaleString() || 0}</td>
+<td className="px-5 py-3 whitespace-nowrap" style={{ color: portalTheme.inkSoft }} data-label="Date">{new Date(h.date).toLocaleDateString()}</td>
+                         <td className="px-5 py-3" data-label="Description">{h.description}</td>
+                         <td className="px-5 py-3 text-right font-mono" style={{ color: Number(h.points) >= 0 ? portalTheme.teal[600] : portalTheme.danger }} data-label="Points">
+                           {Number(h.points) >= 0 ? '+' : ''}{h.points}
+                         </td>
+                         <td className="px-5 py-3 text-right font-mono font-semibold" data-label="Balance">{h.balance?.toLocaleString() || 0}</td>
                       </tr>
                     ))
                   )}

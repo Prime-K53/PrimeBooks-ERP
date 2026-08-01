@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, MessageSquare, CheckCircle2, ShoppingCart, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Download, MessageSquare, CheckCircle2, ShoppingCart, RotateCcw } from 'lucide-react';
 import { createElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { api } from '../../services/api';
 import { portalApi, portalLifecycle, TimelineEvent } from '../../services/portalApiClient';
 import { mapToInvoiceData } from '../../utils/pdfMapper';
 import { attachDocumentSecurity } from '../../utils/documentSecurity';
@@ -14,6 +13,9 @@ import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import DocumentChain from './components/DocumentChain';
 import DocumentDiscussion from './components/DocumentDiscussion';
+import ConfirmDialog from './components/ConfirmDialog';
+import ErrorBanner from './components/ErrorBanner';
+import PortalButton from './components/PortalButton';
 
 interface OrderItem {
   name: string;
@@ -60,65 +62,35 @@ const CustomerOrderDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [reordering, setReordering] = useState(false);
-  const [reorderError, setReorderError] = useState<string | null>(null);
+  const [confirmReorder, setConfirmReorder] = useState<{ open: boolean; order: OrderDetail | null }>({ open: false, order: null });
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      let o: any = null;
-      try {
-        o = await portalApi.get<any>(`/orders/${id}`);
-      } catch {
-        o = null;
-      }
-      if (o) {
-        setOrder({
-          id: o.id,
-          orderNumber: o.order_number || o.orderNumber,
-          orderDate: o.orderDate || o.order_date || o.created_at || '',
-          customerName: o.customerName || o.customer_name || '',
-          totalAmount: Number(o.total ?? o.subtotal ?? 0),
-          status: o.status || 'Draft',
-          items: (o.items || []).map((item: any) => {
-            const quantity = Number(item.quantity ?? 1);
-            const unitPrice = Number(item.unitPrice ?? item.price ?? 0);
-            return {
-              name: item.description || item.name || item.productName || 'Item',
-              quantity,
-              unitPrice,
-              lineTotal: Number(item.lineTotal ?? (quantity * unitPrice)),
-            };
-          }),
-          notes: o.notes || '',
-          quotation_id: o.quotation_id || null,
-        });
-        const events = await portalLifecycle.timeline.get('order', id);
-        setTimeline(events || []);
-      } else {
-        const legacy = (await api.sales.getSalesOrderById(id)) as any;
-        if (!legacy) throw new Error('Order not found');
-        setOrder({
-          id: legacy.id,
-          orderNumber: legacy.order_number || legacy.id,
-          orderDate: legacy.orderDate || legacy.created_at || '',
-          customerName: legacy.customerName || '',
-          totalAmount: Number(legacy.total ?? legacy.subtotal ?? 0),
-          status: legacy.status || 'Draft',
-          items: (legacy.items || []).map((item: any) => {
-            const quantity = Number(item.quantity ?? 1);
-            const unitPrice = Number(item.unitPrice ?? item.price ?? 0);
-            return {
-              name: item.description || item.name || item.productName || 'Item',
-              quantity,
-              unitPrice,
-              lineTotal: Number(item.lineTotal ?? (quantity * unitPrice)),
-            };
-          }),
-          notes: legacy.notes || '',
-        });
-      }
+      const o = await portalApi.get<any>(`/orders/${id}`);
+      setOrder({
+        id: o.id,
+        orderNumber: o.order_number || o.orderNumber,
+        orderDate: o.orderDate || o.order_date || o.created_at || '',
+        customerName: o.customerName || o.customer_name || '',
+        totalAmount: Number(o.total ?? o.subtotal ?? 0),
+        status: o.status || 'Draft',
+        items: (o.items || []).map((item: any) => {
+          const quantity = Number(item.quantity ?? 1);
+          const unitPrice = Number(item.unitPrice ?? item.price ?? 0);
+          return {
+            name: item.description || item.name || item.productName || 'Item',
+            quantity,
+            unitPrice,
+            lineTotal: Number(item.lineTotal ?? (quantity * unitPrice)),
+          };
+        }),
+        notes: o.notes || '',
+        quotation_id: o.quotation_id || null,
+      });
+      const events = await portalLifecycle.timeline.get('order', id);
+      setTimeline(events || []);
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to load order');
@@ -133,12 +105,16 @@ const CustomerOrderDetail: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-    const sub = await portalLifecycle.subscribe({
-      onEvent: (type, payload) => {
-        if (type === 'entity_changed' && payload.docType === 'order' && payload.docId === id) load();
-      },
-    });
-    return sub;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload.docType === 'order' && payload.docId === id && !cancelled) load();
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, [id, load]);
 
   const handleDownloadPdf = async () => {
@@ -177,41 +153,48 @@ const CustomerOrderDetail: React.FC = () => {
     }
   };
 
-  const handleReorder = async () => {
+  const handleReorderRequest = () => {
     if (!order) return;
-    if (!window.confirm(`Create a new order request based on order ${order.orderNumber || order.id.slice(0, 8)}? This will be reviewed by our team.`)) return;
-    setReordering(true);
-    setReorderError(null);
+    setConfirmReorder({ open: true, order });
+  };
+
+  const handleReorderConfirm = async () => {
+    if (!order) return;
+    setConfirmReorder({ open: false, order: null });
+    setLoading(true);
     try {
       const result = await portalLifecycle.orders.reorder(order.id);
       navigate(`/portal/requests/${result.id}`);
     } catch (err: any) {
-      setReorderError(err.message || 'Failed to create reorder request');
+      setError(err.message || 'Failed to create reorder request');
     } finally {
-      setReordering(false);
+      setLoading(false);
     }
   };
 
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!order) return null;
 
   const currentStage = stageIndex(order.status);
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <button onClick={() => navigate('/portal/orders')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
-        <ArrowLeft size={14} /> Back to Orders
-      </button>
+      <PortalButton variant="ghost" onClick={() => navigate('/portal/orders')} icon={ArrowLeft}>Back to Orders</PortalButton>
 
       <DocumentChain docType="order" docId={order.id} />
 
-      {downloadError && (
-        <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{downloadError}</div>
-      )}
-      {reorderError && (
-        <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{reorderError}</div>
-      )}
+      {downloadError && <ErrorBanner message={downloadError} onDismiss={() => setDownloadError(null)} />}
+
+      <ConfirmDialog
+        open={confirmReorder.open}
+        title="Reorder"
+        message={`Create a new order request based on order ${order.orderNumber || order.id.slice(0, 8)}? This will be reviewed by our team.`}
+        confirmLabel="Create Reorder"
+        cancelLabel="Cancel"
+        onConfirm={handleReorderConfirm}
+        onCancel={() => setConfirmReorder({ open: false, order: null })}
+      />
 
       <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -225,21 +208,9 @@ const CustomerOrderDetail: React.FC = () => {
           <div className="flex items-center gap-3">
             <StatusBadge status={order.status} />
             {order.status !== 'Draft' && order.status !== 'Cancelled' && (
-              <button
-                onClick={handleReorder}
-                disabled={reordering}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 disabled:cursor-not-allowed text-teal-700 text-xs font-semibold rounded-lg transition-colors"
-              >
-                {reordering ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />} {reordering ? 'Creating...' : 'Reorder'}
-              </button>
+              <PortalButton variant="secondary" onClick={handleReorderRequest} icon={RotateCcw}>Reorder</PortalButton>
             )}
-            <button
-              onClick={handleDownloadPdf}
-              disabled={downloading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 text-xs font-semibold rounded-lg transition-colors"
-            >
-              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {downloading ? 'Generating...' : 'PDF'}
-            </button>
+            <PortalButton variant="secondary" onClick={handleDownloadPdf} icon={Download} loading={downloading}>{downloading ? 'Generating...' : 'PDF'}</PortalButton>
           </div>
         </div>
 
@@ -292,10 +263,10 @@ const CustomerOrderDetail: React.FC = () => {
             <tbody className="divide-y divide-slate-100/50">
               {(order.items || []).map((item, i) => (
                 <tr key={i} className="text-slate-700">
-                  <td className="px-5 py-3 font-medium text-slate-900">{item.name}</td>
-                  <td className="px-5 py-3 text-right">{item.quantity}</td>
-                  <td className="px-5 py-3 text-right font-mono">K {Number(item.unitPrice).toFixed(2)}</td>
-                  <td className="px-5 py-3 text-right font-mono">K {Number(item.lineTotal).toFixed(2)}</td>
+<td className="px-5 py-3 font-medium text-slate-900" data-label="Item">{item.name}</td>
+                   <td className="px-5 py-3 text-right" data-label="Qty">{item.quantity}</td>
+                   <td className="px-5 py-3 text-right font-mono" data-label="Unit Price">K {Number(item.unitPrice).toFixed(2)}</td>
+                   <td className="px-5 py-3 text-right font-mono" data-label="Total">K {Number(item.lineTotal).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Loader2, CheckCircle2, XCircle, RefreshCcw, FileText, MessageSquare, History, Clock, BadgeCheck } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { portalLifecycle, QuotationRecord, TimelineEvent, DocumentVersionRecord, DocumentSignatureRecord } from '../../services/portalApiClient';
+import ErrorBanner from './components/ErrorBanner';
 import { mapToInvoiceData } from '../../utils/pdfMapper';
 import { attachDocumentSecurity } from '../../utils/documentSecurity';
 import { initializePrimePdfFonts } from '../shared/components/PDF/templateSettings';
@@ -93,12 +94,16 @@ const CustomerQuotationDetail: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-    const sub = await portalLifecycle.subscribe({
-      onEvent: (type, payload) => {
-        if (type === 'entity_changed' && payload.docType === 'quotation' && payload.docId === id) load();
-      },
-    });
-    return sub;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload.docType === 'quotation' && payload.docId === id && !cancelled) load();
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, [id, load]);
 
   const runAction = async (actionName: string, payload?: any) => {
@@ -167,7 +172,7 @@ const CustomerQuotationDetail: React.FC = () => {
   };
 
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div></div>;
+  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!quotation) return null;
 
   const status = quotation.status;
@@ -181,12 +186,8 @@ const CustomerQuotationDetail: React.FC = () => {
         <ArrowLeft size={14} /> Back to Quotations
       </button>
 
-      {downloadError && (
-        <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{downloadError}</div>
-      )}
-      {actionError && (
-        <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{actionError}</div>
-      )}
+{downloadError && <ErrorBanner message={downloadError} onDismiss={() => setDownloadError(null)} />}
+       {actionError && <ErrorBanner message={actionError} onDismiss={() => setActionError(null)} />}
 
       <DocumentChain docType="quotation" docId={quotation.id} />
 
@@ -374,10 +375,10 @@ const CustomerQuotationDetail: React.FC = () => {
             <tbody className="divide-y divide-slate-100/50">
               {(quotation.items || []).map((item, i) => (
                 <tr key={i} className="text-slate-700">
-                  <td className="px-5 py-3 font-medium text-slate-900">{item.name}</td>
-                  <td className="px-5 py-3 text-right">{item.quantity}</td>
-                  <td className="px-5 py-3 text-right font-mono">K {Number(item.unitPrice || 0).toFixed(2)}</td>
-                  <td className="px-5 py-3 text-right font-mono">K {Number(item.lineTotal ?? item.quantity * item.unitPrice).toFixed(2)}</td>
+<td className="px-5 py-3 font-medium text-slate-900" data-label="Item">{item.name}</td>
+                   <td className="px-5 py-3 text-right" data-label="Qty">{item.quantity}</td>
+                   <td className="px-5 py-3 text-right font-mono" data-label="Unit Price">K {Number(item.unitPrice || 0).toFixed(2)}</td>
+                   <td className="px-5 py-3 text-right font-mono" data-label="Total">K {Number(item.lineTotal ?? item.quantity * item.unitPrice).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -452,16 +453,16 @@ const CustomerQuotationDetail: React.FC = () => {
               <tbody className="divide-y divide-slate-100/50">
                 {signatures.map((sig) => (
                   <tr key={sig.id} className="text-slate-700">
-                    <td className="px-5 py-3">
-                      <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${
-                        sig.decision === 'accepted' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                        sig.decision === 'rejected' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                        'bg-violet-100 text-violet-700 border-violet-200'
-                      }`}>{sig.decision}</span>
-                    </td>
-                    <td className="px-5 py-3 font-medium text-slate-900">{sig.signer_name || '—'}</td>
-                    <td className="px-5 py-3 text-slate-500">{sig.signer_email || '—'}</td>
-                    <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{sig.signed_at ? new Date(sig.signed_at).toLocaleString() : '—'}</td>
+<td className="px-5 py-3" data-label="Decision">
+                       <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${
+                         sig.decision === 'accepted' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                         sig.decision === 'rejected' ? 'bg-rose-100 text-rose-700 border-rose-200' :
+                         'bg-violet-100 text-violet-700 border-violet-200'
+                       }`}>{sig.decision}</span>
+                     </td>
+                     <td className="px-5 py-3 font-medium text-slate-900" data-label="Signed By">{sig.signer_name || '—'}</td>
+                     <td className="px-5 py-3 text-slate-500" data-label="Email">{sig.signer_email || '—'}</td>
+                     <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Timestamp">{sig.signed_at ? new Date(sig.signed_at).toLocaleString() : '—'}</td>
                   </tr>
                 ))}
               </tbody>

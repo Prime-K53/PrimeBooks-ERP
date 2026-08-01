@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { portalLifecycle, DocumentCommentRecord } from '../../../services/portalApiClient';
+import ErrorBanner from './ErrorBanner';
 
 interface Props {
   docType: 'request' | 'quotation' | 'order';
@@ -32,12 +33,16 @@ const DocumentDiscussion: React.FC<Props> = ({ docType, docId }) => {
 
   useEffect(() => {
     if (!docId) return;
-    const sub = await portalLifecycle.subscribe({
-      onEvent: (type, payload) => {
-        if (type === 'entity_changed' && payload.docType === docType && payload.docId === docId && payload.event === 'comment') load();
-      },
-    });
-    return sub;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload.docType === docType && payload.docId === docId && payload.event === 'comment') load();
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, [docType, docId, load]);
 
   const post = async () => {
@@ -62,7 +67,7 @@ const DocumentDiscussion: React.FC<Props> = ({ docType, docId }) => {
         <MessageSquare size={15} className="text-slate-400" /> Discussion
       </h2>
 
-      {error && <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-600">{error}</div>}
+      {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-slate-400 py-2">

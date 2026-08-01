@@ -3,6 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Search, Plus, Trash2, ShoppingCart, FileText, Loader2, CheckCircle2, User, ChevronRight } from 'lucide-react';
 import { api } from '../../services/api';
 import { portalLifecycle } from '../../services/portalApiClient';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalCard from './components/PortalCard';
+import PortalButton from './components/PortalButton';
+import PortalInput from './components/PortalInput';
+import ErrorBanner from './components/ErrorBanner';
+import { portalTheme, DEFAULT_PAGE_SIZE } from '../constants';
+import { validateRequired, validateEmail, validatePassword, validateConfirmPassword } from './utils/validation';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 
 type RequestType = 'order' | 'quotation';
@@ -149,7 +156,29 @@ const CustomerCreateRequest: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (lines.length === 0) return;
+    if (lines.length === 0) {
+      setError('Please add at least one line item.');
+      return;
+    }
+    for (const l of lines) {
+      if (!l.name || !l.quantity || l.quantity <= 0) {
+        setError(`Invalid quantity for "${l.name || 'unknown item'}". Quantity must be a positive number.`);
+        return;
+      }
+      if (!l.unitPrice || l.unitPrice <= 0) {
+        setError(`Invalid unit price for "${l.name || 'unknown item'}". Unit price must be a positive number.`);
+        return;
+      }
+    }
+    if (deliveryDate) {
+      const selected = new Date(deliveryDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selected < today) {
+        setError('Requested delivery date cannot be in the past.');
+        return;
+      }
+    }
     setSaving(true);
     setError(null);
     try {
@@ -338,9 +367,7 @@ const CustomerCreateRequest: React.FC = () => {
 
         {/* Body */}
         <div style={{ padding: '24px 30px 8px' }}>
-          {error && (
-            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600">{error}</div>
-          )}
+          {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
           <div style={{ marginBottom: 18 }}>
             <label style={labelStyle}>
@@ -457,7 +484,7 @@ const CustomerCreateRequest: React.FC = () => {
                         </td>
                         <td className="px-5 py-3 text-right font-mono">K {(l.quantity * l.unitPrice).toFixed(2)}</td>
                         <td className="px-5 py-3 text-right">
-                          <button onClick={() => removeLine(l.id)} className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors">
+                          <button onClick={() => removeLine(l.id)} className="p-2 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors" aria-label="Remove line item">
                             <Trash2 size={15} />
                           </button>
                         </td>

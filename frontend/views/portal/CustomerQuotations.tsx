@@ -72,12 +72,16 @@ const CustomerQuotations: React.FC = () => {
   }, [load]);
 
   useEffect(() => {
-    const sub = await portalLifecycle.subscribe({
-      onEvent: (type, payload) => {
-        if (type === 'entity_changed' && payload.docType === 'quotation') load();
-      },
-    });
-    return sub;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload.docType === 'quotation' && !cancelled) load();
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, [load]);
 
   const sorted = useMemo(
@@ -130,10 +134,10 @@ const CustomerQuotations: React.FC = () => {
                       const friendlyStatus = FRIENDLY_STATUS_MAP[q.status] || q.status;
                       return (
                         <tr key={q.id} onClick={() => navigate(`/portal/quotations/${q.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
-                          <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate">{q.quotation_number || q.id.slice(0, 8)}</td>
-                          <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(q.created_at).toLocaleDateString()}</td>
-                          <td className="px-5 py-3 text-right font-medium">K {Number(q.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                          <td className="px-5 py-3 text-center"><StatusBadge status={friendlyStatus} /></td>
+<td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Quotation #">{q.quotation_number || q.id.slice(0, 8)}</td>
+                           <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(q.created_at).toLocaleDateString()}</td>
+                           <td className="px-5 py-3 text-right font-medium" data-label="Total">K {Number(q.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                           <td className="px-5 py-3 text-center" data-label="Status"><StatusBadge status={friendlyStatus} /></td>
                         </tr>
                       );
                     })}

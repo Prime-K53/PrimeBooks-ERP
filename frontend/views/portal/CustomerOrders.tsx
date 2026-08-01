@@ -162,10 +162,10 @@ const CustomerOrders: React.FC = () => {
                           onClick={() => navigate(`/portal/orders/${order.id}`)}
                           className="transition-colors cursor-pointer group hover:bg-[#eef7f6]"
                         >
-                          <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate">#{order.orderNumber || order.id.slice(0, 8)}</td>
-                          <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{order.orderDate ? new Date(order.orderDate).toLocaleDateString() : ''}</td>
-                          <td className="px-5 py-3 text-right font-medium">K {Number(order.totalAmount).toFixed(2)}</td>
-                          <td className="px-5 py-3 text-center">
+<td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Order #">#{order.orderNumber || order.id.slice(0, 8)}</td>
+                           <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{order.orderDate ? new Date(order.orderDate).toLocaleDateString() : ''}</td>
+                           <td className="px-5 py-3 text-right font-medium" data-label="Total">K {Number(order.totalAmount).toFixed(2)}</td>
+                           <td className="px-5 py-3 text-center" data-label="Status">
                             <StatusBadge status={FRIENDLY_STATUS_MAP[order.status.toLowerCase()] || order.status} />
                           </td>
                           <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>

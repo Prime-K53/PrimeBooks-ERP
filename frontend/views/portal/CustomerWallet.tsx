@@ -79,12 +79,12 @@ const CustomerWallet: React.FC = () => {
                 <tbody className="divide-y divide-slate-100/50">
                   {data.transactions.map((t, i) => (
                     <tr key={`${t.date}-${t.reference}-${i}`} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
-                      <td className="px-5 py-3 whitespace-nowrap" style={{ color: portalTheme.inkSoft }}>{new Date(t.date).toLocaleDateString()}</td>
-                      <td className="px-5 py-3">{t.type}</td>
-                      <td className="px-5 py-3 text-right font-mono" style={{ color: Number(t.amount) >= 0 ? portalTheme.teal[600] : portalTheme.danger }}>
-                        {Number(t.amount) >= 0 ? '+' : ''}K {Number(t.amount).toFixed(2)}
-                      </td>
-                      <td className="px-5 py-3" style={{ color: portalTheme.inkSoft }}>{t.reference}</td>
+<td className="px-5 py-3 whitespace-nowrap" style={{ color: portalTheme.inkSoft }} data-label="Date">{new Date(t.date).toLocaleDateString()}</td>
+                       <td className="px-5 py-3" data-label="Description">{t.type}</td>
+                       <td className="px-5 py-3 text-right font-mono" style={{ color: Number(t.amount) >= 0 ? portalTheme.teal[600] : portalTheme.danger }} data-label="Amount">
+                         {Number(t.amount) >= 0 ? '+' : ''}K {Number(t.amount).toFixed(2)}
+                       </td>
+                       <td className="px-5 py-3" style={{ color: portalTheme.inkSoft }} data-label="Reference">{t.reference}</td>
                     </tr>
                   ))}
                 </tbody>

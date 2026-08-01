@@ -1,29 +1,3 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CreditCard, Plus } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
-import EmptyState from './components/EmptyState';
-import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-
-const teal = {
-  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
-  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
-  800: '#0b3e39', 900: '#082e2a'
-};
-const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
-const paper = '#FEFDFB';
-const ink = '#23282A';
-const inkSoft = '#5c6567';
-const hairline = '#e4ddd1';
-
-interface Payment {
-  id: string;
-  amount: number;
-  payment_method: string;
-  date: string;
-  reference: string;
-}
-
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, Search } from 'lucide-react';
@@ -114,10 +88,10 @@ const CustomerPayments: React.FC = () => {
                   <tbody className="divide-y divide-slate-100/50">
                     {payments.map((p) => (
                       <tr key={p.id} onClick={() => navigate(`/portal/payments/${p.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
-                        <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate">{p.reference || p.id.slice(0, 8)}</td>
-                        <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(p.date).toLocaleDateString()}</td>
-                        <td className="px-5 py-3 text-right font-medium">K {Number(p.amount).toFixed(2)}</td>
-                        <td className="px-5 py-3 text-slate-500">{p.payment_method || '-'}</td>
+<td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Reference">{p.reference || p.id.slice(0, 8)}</td>
+                         <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(p.date).toLocaleDateString()}</td>
+                         <td className="px-5 py-3 text-right font-medium" data-label="Amount">K {Number(p.amount).toFixed(2)}</td>
+                         <td className="px-5 py-3 text-slate-500" data-label="Method">{p.payment_method || '-'}</td>
                       </tr>
                     ))}
                   </tbody>

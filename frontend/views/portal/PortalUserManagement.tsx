@@ -304,18 +304,18 @@ const PortalUserManagement: React.FC = () => {
               <tbody className="divide-y divide-slate-100/50">
                 {filtered.map((u) => (
                   <tr key={u.customer_id} className="text-slate-700 hover:bg-blue-50/50 transition-colors border-l-4 border-l-transparent">
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3" data-label="Customer">
                       <div className="font-medium text-slate-900">{u.customer_name}</div>
                       <div className="text-xs text-slate-400">{u.customer_email}</div>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3" data-label="Portal Email">
                       {u.portal_email ? (
                         <span className="text-slate-700">{u.portal_email}</span>
                       ) : (
                         <span className="text-slate-600 italic">No portal account</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-center">
+                    <td className="px-5 py-3 text-center" data-label="Status">
                       {u.portal_status === 'active' ? (
                         <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
                           Active
@@ -332,7 +332,7 @@ const PortalUserManagement: React.FC = () => {
                         <span className="text-slate-600 text-xs">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3" data-label="Last Login">
                       {u.last_login_at ? (
                         <span className="text-xs text-slate-500 flex items-center gap-1.5">
                           <Clock size={12} />
@@ -342,14 +342,14 @@ const PortalUserManagement: React.FC = () => {
                         <span className="text-slate-600 text-xs">Never</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()} data-label="Actions">
                       {u.portal_user_id ? (
                         <div className="flex items-center justify-end gap-1">
                           {u.portal_status === 'invited' && (
                             <button
                               onClick={() => handleInvite(u)}
                               disabled={submitting}
-                              className="p-1.5 text-[#b97e2b] hover:text-amber-600 bg-amber-50 hover:bg-amber-100 border border-transparent hover:border-amber-200 rounded transition-all"
+                              className="p-2 text-[#b97e2b] hover:text-amber-600 bg-amber-50 hover:bg-amber-100 border border-transparent hover:border-amber-200 rounded transition-all"
                               title="Get / resend invite code"
                             >
                               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
@@ -357,14 +357,14 @@ const PortalUserManagement: React.FC = () => {
                           )}
                           <button
                             onClick={() => handleToggleStatus(u.portal_user_id!, u.portal_status || 'disabled')}
-                            className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
+                            className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
                             title={u.portal_status === 'active' ? 'Disable' : 'Enable'}
                           >
                             {u.portal_status === 'active' ? <ShieldOff size={14} /> : <Shield size={14} />}
                           </button>
                           <button
                             onClick={() => { setShowResetPw(u.portal_user_id); setResetPw(''); }}
-                            className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
+                            className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
                             title="Reset Password"
                           >
                             <Key size={14} />

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DollarSign, Wallet, FileText, ShoppingCart, ArrowRight, ChevronRight, TrendingUp, TrendingDown, Activity, ClipboardList, FileCheck2, Package, Factory, Users, Gift, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { portalApi, portalLifecycle } from '../../services/portalApiClient';
+import ErrorBanner from './components/ErrorBanner';
 import PortalKPICard from './components/PortalKPICard';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 
@@ -97,7 +98,7 @@ const CustomerDashboard: React.FC = () => {
   if (error) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-600 text-sm">{error}</div>
+        <ErrorBanner message={error} onDismiss={() => setError(null)} />
       </div>
     );
   }
