@@ -8,7 +8,7 @@ import PortalCard from './components/PortalCard';
 import PortalButton from './components/PortalButton';
 import PortalInput from './components/PortalInput';
 import ErrorBanner from './components/ErrorBanner';
-import { portalTheme, DEFAULT_PAGE_SIZE } from '../constants';
+import { portalTheme, DEFAULT_PAGE_SIZE } from './constants';
 import { validateRequired, validateEmail, validatePassword, validateConfirmPassword } from './utils/validation';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 

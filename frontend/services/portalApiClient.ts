@@ -493,6 +493,12 @@ export const portalLifecycle = {
     },
   },
 
+  loyalty: {
+    get(): Promise<{ points: number; cashback: number; tier: string; pointsHistory: { date: string; description: string; points: number; balance: number }[] }> {
+      return portalApi.get('/loyalty');
+    },
+  },
+
   referrals: {
     list(params?: { page?: number; pageSize?: number; status?: string; search?: string; sort?: string }): Promise<{ referrals: PortalReferral[]; total: number; page: number; pageSize: number; totalPages: number }> {
       const qs = new URLSearchParams();

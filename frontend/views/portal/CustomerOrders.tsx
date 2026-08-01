@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Eye, Plus, MoreVertical, RotateCcw, Loader2, Search } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
-import { useToast } from './hooks/useConfirmDialog';
+import { useToast } from './components/Toast';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalCard from './components/PortalCard';
 import PortalButton from './components/PortalButton';
@@ -12,7 +12,7 @@ import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, ORDER_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from '../constants';
+import { portalTheme, ORDER_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from './constants';
 
 interface Order {
   id: string;

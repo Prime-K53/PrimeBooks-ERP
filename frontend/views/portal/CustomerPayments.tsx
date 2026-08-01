@@ -7,7 +7,7 @@ import PortalInput from './components/PortalInput';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, DEFAULT_PAGE_SIZE } from '../constants';
+import { portalTheme, DEFAULT_PAGE_SIZE } from './constants';
 
 interface Payment {
   id: string;

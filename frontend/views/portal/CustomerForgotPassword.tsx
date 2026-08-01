@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft } from 'lucide-react';
-import { useToast } from './hooks/useConfirmDialog';
+import { useToast } from './components/Toast';
 import ErrorBanner from './components/ErrorBanner';
 
 const CustomerForgotPassword: React.FC = () => {

@@ -56,6 +56,7 @@ ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 
 -- ── financial_years RLS ──
 -- Users can see financial years for their company
+DROP POLICY IF EXISTS financial_years_select ON financial_years;
 CREATE POLICY financial_years_select ON financial_years
     FOR SELECT
     USING (
@@ -65,6 +66,7 @@ CREATE POLICY financial_years_select ON financial_years
     );
 
 -- Only admins can insert/update/delete financial years
+DROP POLICY IF EXISTS financial_years_insert ON financial_years;
 CREATE POLICY financial_years_insert ON financial_years
     FOR INSERT
     WITH CHECK (
@@ -74,6 +76,7 @@ CREATE POLICY financial_years_insert ON financial_years
         )
     );
 
+DROP POLICY IF EXISTS financial_years_update ON financial_years;
 CREATE POLICY financial_years_update ON financial_years
     FOR UPDATE
     USING (
@@ -83,6 +86,7 @@ CREATE POLICY financial_years_update ON financial_years
         )
     );
 
+DROP POLICY IF EXISTS financial_years_delete ON financial_years;
 CREATE POLICY financial_years_delete ON financial_years
     FOR DELETE
     USING (
@@ -95,18 +99,22 @@ CREATE POLICY financial_years_delete ON financial_years
 -- ── user_preferences RLS ──
 -- Users can only read/write their own preferences
 -- Cast auth.uid() (uuid) to TEXT because user_id is stored as TEXT
+DROP POLICY IF EXISTS user_preferences_select ON user_preferences;
 CREATE POLICY user_preferences_select ON user_preferences
     FOR SELECT
     USING (user_id = auth.uid()::TEXT);
 
+DROP POLICY IF EXISTS user_preferences_insert ON user_preferences;
 CREATE POLICY user_preferences_insert ON user_preferences
     FOR INSERT
     WITH CHECK (user_id = auth.uid()::TEXT);
 
+DROP POLICY IF EXISTS user_preferences_update ON user_preferences;
 CREATE POLICY user_preferences_update ON user_preferences
     FOR UPDATE
     USING (user_id = auth.uid()::TEXT);
 
+DROP POLICY IF EXISTS user_preferences_delete ON user_preferences;
 CREATE POLICY user_preferences_delete ON user_preferences
     FOR DELETE
     USING (user_id = auth.uid()::TEXT);

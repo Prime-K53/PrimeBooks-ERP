@@ -8,8 +8,8 @@ import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import PortalButton from './components/PortalButton';
 import DocumentChain from './components/DocumentChain';
 import DocumentDiscussion from './components/DocumentDiscussion';
-import { useToast } from './hooks/useConfirmDialog';
-import { REQUEST_STATUS_META, FRIENDLY_STATUS_MAP } from '../constants';
+import { useToast } from './components/Toast';
+import { REQUEST_STATUS_META, FRIENDLY_STATUS_MAP } from './constants';
 
 const stageDefinitions = [
   { key: 'submitted', label: 'Submitted', description: 'Request received' },

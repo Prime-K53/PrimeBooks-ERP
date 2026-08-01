@@ -6,9 +6,9 @@ import PortalButton from './components/PortalButton';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { useToast } from './hooks/useConfirmDialog';
+import { useToast } from './components/Toast';
 import { useNavigate } from 'react-router-dom';
-import { portalTheme } from '../constants';
+import { portalTheme } from './constants';
 
 const teal = {
   50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',

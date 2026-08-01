@@ -34,7 +34,7 @@ import PortalInput from './components/PortalInput';
 import EmptyState from './components/EmptyState';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, QUOTATION_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from '../constants';
+import { portalTheme, QUOTATION_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from './constants';
 
 const CustomerQuotations: React.FC = () => {
   const navigate = useNavigate();

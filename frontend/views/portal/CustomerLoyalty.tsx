@@ -6,7 +6,7 @@ import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme } from '../constants';
+import { portalTheme } from './constants';
 
 interface PointsHistory {
   date: string;

@@ -9,8 +9,8 @@ import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import StatusBadge from './components/StatusBadge';
-import { useToast } from './hooks/useConfirmDialog';
-import { portalTheme } from '../constants';
+import { useToast } from './components/Toast';
+import { portalTheme } from './constants';
 
 const teal = {
   50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',

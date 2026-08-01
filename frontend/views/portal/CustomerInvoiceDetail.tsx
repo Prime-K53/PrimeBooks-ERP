@@ -16,7 +16,7 @@ import ErrorBanner from './components/ErrorBanner';
 import DocumentPreviewModal from './components/DocumentPreviewModal';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, DEFAULT_PAGE_SIZE } from '../constants';
+import { portalTheme, DEFAULT_PAGE_SIZE } from './constants';
 
 interface LineItem {
   item_name: string;

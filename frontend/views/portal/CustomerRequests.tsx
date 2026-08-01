@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ClipboardList, Plus, Loader2, ArrowUpRight, Search } from 'lucide-react';
 import { portalLifecycle, QuotationRequestRecord } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
-import { useToast } from './hooks/useConfirmDialog';
+import { useToast } from './components/Toast';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalCard from './components/PortalCard';
 import PortalButton from './components/PortalButton';
@@ -11,7 +11,7 @@ import PortalInput from './components/PortalInput';
 import EmptyState from './components/EmptyState';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, REQUEST_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from '../constants';
+import { portalTheme, REQUEST_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from './constants';
 
 const CustomerRequests: React.FC = () => {
   const navigate = useNavigate();

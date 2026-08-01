@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Mail, KeyRound, Lock, ArrowLeft, Loader2 } from 'lucide-react';
-import { useToast } from './hooks/useConfirmDialog';
+import { useToast } from './components/Toast';
 import ErrorBanner from './components/ErrorBanner';
 
 const CustomerResetPassword: React.FC = () => {

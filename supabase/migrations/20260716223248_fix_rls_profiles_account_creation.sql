@@ -9,6 +9,7 @@
 --    cross-account data leaking and account takeover.
 -- ============================================================================
 DROP POLICY IF EXISTS "Authenticated users can insert profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 
 CREATE POLICY "Users can insert own profile"
   ON public.profiles
