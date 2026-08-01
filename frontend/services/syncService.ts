@@ -328,7 +328,8 @@ export async function pushLocalChanges(): Promise<{ pushed: number; errors: stri
         const cleanPayload = { ...entry.payload };
         delete cleanPayload._updatedAt;
         delete cleanPayload._cloudSource;
-        const companyId = cleanPayload.company_id;
+        const companyId = cleanPayload._companyId;
+        delete cleanPayload._companyId;
         const { id, ...domainData } = cleanPayload;
         const record: Record<string, unknown> = {
           id: id || entry.entityId,
