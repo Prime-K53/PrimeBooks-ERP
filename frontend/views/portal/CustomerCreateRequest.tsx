@@ -110,7 +110,7 @@ const CustomerCreateRequest: React.FC = () => {
     const term = search.trim().toLowerCase();
     const available = (catalog || []).filter(
       (item: any) =>
-        item.status !== 'Deleted' &&
+        String(item.status || '').toLowerCase() !== 'deleted' &&
         Number(item.price) > 0 &&
         (Number(item.stock) || 0) > 0
     );
