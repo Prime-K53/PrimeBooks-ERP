@@ -44,6 +44,7 @@ import ResetPassword from './views/auth/ResetPassword';
 import { CustomerAuthProvider } from './context/CustomerAuthContext';
 import CustomerLayout from './views/portal/CustomerLayout';
 import CustomerLogin from './views/portal/CustomerLogin';
+import CustomerActivate from './views/portal/CustomerActivate';
 import CustomerForgotPassword from './views/portal/CustomerForgotPassword';
 import CustomerResetPassword from './views/portal/CustomerResetPassword';
 
@@ -727,6 +728,7 @@ const AppLayout: React.FC = () => {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<ErrorBoundary name="Dashboard"><Dashboard /></ErrorBoundary>} />
+                <Route path="/dashboard" element={<ErrorBoundary name="Dashboard"><Dashboard /></ErrorBoundary>} />
                 <Route path="/install" element={<PwaInstallPage />} />
                 <Route path="/search" element={<ErrorBoundary name="Search"><GlobalSearch /></ErrorBoundary>} />
 
@@ -1058,6 +1060,7 @@ const AppLayout: React.FC = () => {
 const PortalRoutes = (
   <React.Fragment>
     <Route path="/portal/login" element={<CustomerLogin />} />
+    <Route path="/portal/activate" element={<CustomerActivate />} />
     <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
     <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
     <Route path="/portal" element={<CustomerLayout />}>
@@ -1085,6 +1088,20 @@ const PortalRoutes = (
     </Route>
   </React.Fragment>
 );
+
+// Portal-aware landing: admin.primeerp.com defaults to the admin login and
+// portal.primeerp.com defaults to the customer portal login. Any other host
+// falls back to the chooser (Gateway).
+function getLandingPath(): string {
+  const host = String(window.location.hostname || '').toLowerCase();
+  if (host === 'portal.primeerp.com' || host.endsWith('.portal.primeerp.com')) {
+    return '/portal/login';
+  }
+  if (host === 'admin.primeerp.com' || host.endsWith('.admin.primeerp.com')) {
+    return '/login';
+  }
+  return '/';
+}
 
 const RootNavigator: React.FC = () => {
   const { user, isInitialized, requiresSetup } = useAuth();
@@ -1150,14 +1167,14 @@ const RootNavigator: React.FC = () => {
       <PwaInstallProvider>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-          <Route path="/" element={<Gateway />} />
+          <Route path="/" element={getLandingPath() === '/' ? <Gateway /> : <Navigate to={getLandingPath()} replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<SetupWizard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/install" element={<PwaInstallPage />} />
           {PortalRoutes}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to={getLandingPath()} replace />} />
           </Routes>
         </Suspense>
       </PwaInstallProvider>

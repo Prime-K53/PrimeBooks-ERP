@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CreditCard, CheckCircle2 } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
+import { portalApi, portalLifecycle } from '../../services/portalApiClient';
 import ErrorBanner from './components/ErrorBanner';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 
@@ -38,6 +38,25 @@ const CustomerPaymentDetail: React.FC = () => {
       .then(setPayment)
       .catch((err) => setError(err.message || 'Failed to load payment'))
       .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload?.event === 'payment_allocated' && !cancelled) {
+            portalApi.get<PaymentDetail>(`/payments/${id}`)
+              .then(setPayment)
+              .catch(() => {})
+              .finally(() => setLoading(false));
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
   }, [id]);
 
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;

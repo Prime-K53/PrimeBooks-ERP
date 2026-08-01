@@ -20,6 +20,7 @@ console.log('Requiring db...');
 const { db } = require('./db.cjs');
 console.log('Requiring bootstrap...');
 const bootstrap = require('./bootstrap.cjs');
+const portalLifecycleService = require('./services/portalLifecycleService.cjs');
 console.log('Imports done.');
 
 const TONER_MG_PER_SHEET = 20; 
@@ -151,6 +152,22 @@ const authRoutes = require('./routes/auth.cjs');
 const portalAdminRoutes = require('./routes/portalAdmin.cjs');
 app.use(auditContextMiddleware);
 
+// ---------------------------------------------------------------------------
+// CORS configuration
+// ---------------------------------------------------------------------------
+// Production frontend domains. Local/LAN origins are allowed separately by
+// isDesktopLocalOrigin(), and additional origins can be listed in the
+// CORS_ORIGIN env var (comma-separated). In production (NODE_ENV=production)
+// we do NOT echo arbitrary origins back — only the explicit allowlist below.
+const PRODUCTION_ALLOWED_ORIGINS = [
+  'https://primeerp.com',
+  'https://www.primeerp.com',
+  'https://admin.primeerp.com',
+  'https://portal.primeerp.com',
+  'https://prime-books-erp.vercel.app',
+  'https://prime-erp.vercel.app',
+];
+
 // CORS configuration - accepts all local/LAN origins for browser-based access
 const corsOptions = {
   origin: function (origin, callback) {
@@ -169,6 +186,28 @@ const corsOptions = {
     if (isDesktopLocalOrigin(normalizedOrigin)) {
       return callback(null, true);
     }
+
+    // Accept any *.vercel.app or *.netlify.app preview/deploy origin (lower risk,
+    // no credentials are exchanged cross-origin beyond what the allowlist permits).
+    try {
+      const parsed = new URL(normalizedOrigin);
+      const hostname = parsed.hostname;
+      if (/\.vercel\.app$/i.test(hostname) || /\.netlify\.app$/i.test(hostname) ||
+          hostname === 'primeerp.com' || hostname === 'www.primeerp.com' ||
+          hostname === 'admin.primeerp.com' || hostname === 'portal.primeerp.com' ||
+          /\.primeerp\.com$/i.test(hostname)) {
+        return callback(null, true);
+      }
+    } catch {
+      // Fall through to strict production check
+    }
+
+    // Explicit allowlist (also covers direct IP / custom DNS setups)
+    if (PRODUCTION_ALLOWED_ORIGINS.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    // Local/LAN private-network origins (desktop / on-premise use)
     try {
       const parsed = new URL(normalizedOrigin);
       const hostname = parsed.hostname;
@@ -181,9 +220,17 @@ const corsOptions = {
         return callback(null, true);
       }
     } catch {
-      // Fall through to permissive echo
+      // fall through
     }
-    // Permissive fallback: echo back the origin so CORS works for any production domain
+
+    // Strict production mode: reject unknown origins. Dev mode keeps the
+    // permissive echo behaviour for convenience (LAN Vite dev servers, etc).
+    if (process.env.NODE_ENV === 'production') {
+      console.warn(`[CORS] Rejected origin: ${origin}`);
+      return callback(new Error('Origin not allowed by CORS'));
+    }
+    // Permissive dev fallback: echo back the origin so CORS works from any
+    // local/development origin.
     return callback(null, origin);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -204,8 +251,41 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     const origin = req.headers['origin'];
-    // Echo back the origin for any valid request (permissive CORS)
-    res.header('Access-Control-Allow-Origin', origin || '*');
+    // In production, only echo back allowlisted origins (the cors() middleware
+    // above already validates the request; this handler adds the headers for
+    // the preflight response). Unlisted origins get no CORS headers so the
+    // browser blocks the actual request.
+    let allowed = !origin; // non-browser clients (curl, native, etc.)
+    if (origin) {
+      try {
+        const normalized = normalizeCorsOrigin(origin);
+        if (isDesktopLocalOrigin(normalized)) { allowed = true; }
+        else {
+          const parsed = new URL(normalized);
+          const hostname = parsed.hostname;
+          if (/\.vercel\.app$/i.test(hostname) || /\.netlify\.app$/i.test(hostname) ||
+              hostname === 'primeerp.com' || hostname === 'www.primeerp.com' ||
+              hostname === 'admin.primeerp.com' || hostname === 'portal.primeerp.com' ||
+              /\.primeerp\.com$/i.test(hostname)) { allowed = true; }
+          else if (PRODUCTION_ALLOWED_ORIGINS.includes(normalized)) { allowed = true; }
+          else if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+                   /^10\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+                   /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+                   hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') { allowed = true; }
+          else if (process.env.CORS_ORIGIN) {
+            const envOrigins = process.env.CORS_ORIGIN.split(',').map(s => s.trim()).filter(Boolean);
+            if (envOrigins.includes(normalized) || envOrigins.includes(origin)) { allowed = true; }
+          }
+        }
+      } catch {
+        allowed = false;
+      }
+      if (!allowed && process.env.NODE_ENV === 'production') {
+        console.warn(`[CORS] Preflight rejected origin: ${origin}`);
+        return res.sendStatus(204); // No CORS headers -> browser blocks request
+      }
+    }
+    res.header('Access-Control-Allow-Origin', allowed ? (origin || '*') : '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-auth-mode, x-user-id, x-user-role, x-user-email, x-correlation-id, x-dev-bypass, x-company-id, x-idempotency-key, x-financial-year-id, x-user-is-super-admin');
     res.header('Access-Control-Allow-Credentials', 'true');
@@ -1861,10 +1941,11 @@ async function startServer() {
          body.payment_method || null, body.due_date || null, body.invoice_number || null,
          body.other_charges || 0, JSON.stringify(body.line_items || []), body.notes || null, body.document_title || null,
          req.companyId || '', req.user?.id || null],
-        function (err) {
-          if (err) { return handleInsertConstraintError(res, err, 'Create invoice'); }
-          res.status(201).json({ id, ...body });
-        }
+         function (err) {
+           if (err) { return handleInsertConstraintError(res, err, 'Create invoice'); }
+           res.status(201).json({ id, ...body });
+           portalLifecycleService.emitEntityChange('portal', { companyId: req.companyId, customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status || 'unpaid', invoiceNumber: body.invoice_number });
+         }
       );
     } catch (err) {
       console.error('[Invoices] POST error:', err?.message || err);
@@ -1887,11 +1968,17 @@ async function startServer() {
       }
       if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
       params.push(id, req.companyId || '');
-      db.run(`UPDATE invoices SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`, params, function (err) {
-        if (err) { console.error('[Invoices] PUT error:', err); return res.status(500).json({ error: 'Failed to update invoice' }); }
-        if (this.changes === 0) return res.status(404).json({ error: 'Invoice not found' });
-        res.json({ success: true, id });
-      });
+db.run(`UPDATE invoices SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`, params, function (err) {
+         if (err) { console.error('[Invoices] PUT error:', err); return res.status(500).json({ error: 'Failed to update invoice' }); }
+         if (this.changes === 0) return res.status(404).json({ error: 'Invoice not found' });
+         const updatedFields = {};
+         for (let i = 0; i < allowed.length; i++) {
+           if (body[allowed[i]] !== undefined) updatedFields[allowed[i]] = body[allowed[i]];
+         }
+         portalLifecycleService.emitEntityChange('portal', { companyId: req.companyId, customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status, invoiceNumber: body.invoice_number, updatedFields });
+         portalLifecycleService.emitEntityChange('admin', { companyId: req.companyId, customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status, invoiceNumber: body.invoice_number, updatedFields });
+         res.json({ success: true, id });
+       });
     } catch (err) {
       console.error('[Invoices] PUT error:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Failed to update invoice' });
@@ -1901,19 +1988,21 @@ async function startServer() {
   app.delete('/api/invoices/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       const { id } = req.params;
-      db.get('SELECT status FROM invoices WHERE id = ? AND company_id = ?', [id, req.companyId || ''], (err, row) => {
+      db.get('SELECT status, customer_id, invoice_number FROM invoices WHERE id = ? AND company_id = ?', [id, req.companyId || ''], (err, row) => {
         if (err) { console.error('[Invoices] DELETE error:', err); return res.status(500).json({ error: 'Failed to void invoice' }); }
         if (!row) return res.status(404).json({ error: 'Invoice not found' });
-        db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?', ['Voided', id, req.companyId || ''], (err) => {
-          if (err) { console.error('[Invoices] DELETE error:', err); return res.status(500).json({ error: 'Failed to void invoice' }); }
-          // Reverse ledger entries if present
-          try {
-            finance.reverseLedgerEntriesByReference('invoice', id, req.companyId || '');
-          } catch (reversalErr) {
-            console.warn('[Invoices] Ledger reversal skipped:', reversalErr?.message);
-          }
-          res.json({ success: true, status: 'Voided' });
-        });
+db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?', ['Voided', id, req.companyId || ''], (err) => {
+           if (err) { console.error('[Invoices] DELETE error:', err); return res.status(500).json({ error: 'Failed to void invoice' }); }
+           portalLifecycleService.emitEntityChange('portal', { companyId: req.companyId, customerId: row.customer_id, docType: 'invoice', docId: id, status: 'Voided', invoiceNumber: row.invoice_number });
+           portalLifecycleService.emitEntityChange('admin', { companyId: req.companyId, customerId: row.customer_id, docType: 'invoice', docId: id, status: 'Voided', invoiceNumber: row.invoice_number });
+           // Reverse ledger entries if present
+           try {
+             finance.reverseLedgerEntriesByReference('invoice', id, req.companyId || '');
+           } catch (reversalErr) {
+             console.warn('[Invoices] Ledger reversal skipped:', reversalErr?.message);
+           }
+           res.json({ success: true, status: 'Voided' });
+         });
       });
     } catch (err) {
       console.error('[Invoices] DELETE error:', err?.message || err);
@@ -1981,8 +2070,12 @@ async function startServer() {
         return res.status(404).json({ error: 'Payment not found' });
       }
 
-      const result = await paymentAllocation.allocatePayment(payment, allocations, companyId);
-      res.status(201).json(result);
+const result = await paymentAllocation.allocatePayment(payment, allocations, companyId);
+       for (const alloc of allocations) {
+         portalLifecycleService.emitEntityChange('portal', { companyId, customerId: payment.customer_id, docType: 'invoice', docId: alloc.invoiceId, event: 'payment_allocated', paymentId, amount: alloc.amount });
+         portalLifecycleService.emitEntityChange('admin', { companyId, customerId: payment.customer_id, docType: 'invoice', docId: alloc.invoiceId, event: 'payment_allocated', paymentId, amount: alloc.amount });
+       }
+       res.status(201).json(result);
     } catch (err) {
       console.error('[PaymentAllocation] allocate error:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Failed to allocate payment' });
@@ -3971,8 +4064,32 @@ app.use((err, req, res, next) => {
   });
   const origin = req.headers && req.headers['origin'];
   if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
+    // Only echo back allowlisted origins in production (same policy as the
+    // preflight + corsOptions handlers above).
+    let allowed = false;
+    try {
+      const normalized = normalizeCorsOrigin(origin);
+      if (isDesktopLocalOrigin(normalized)) { allowed = true; }
+      else {
+        const parsed = new URL(normalized);
+        const hostname = parsed.hostname;
+        if (/\.vercel\.app$/i.test(hostname) || /\.netlify\.app$/i.test(hostname) ||
+            hostname === 'primeerp.com' || hostname === 'www.primeerp.com' ||
+            hostname === 'admin.primeerp.com' || hostname === 'portal.primeerp.com' ||
+            /\.primeerp\.com$/i.test(hostname)) { allowed = true; }
+        else if (PRODUCTION_ALLOWED_ORIGINS.includes(normalized)) { allowed = true; }
+        else if (process.env.CORS_ORIGIN) {
+          const envOrigins = process.env.CORS_ORIGIN.split(',').map(s => s.trim()).filter(Boolean);
+          if (envOrigins.includes(normalized) || envOrigins.includes(origin)) { allowed = true; }
+        }
+      }
+    } catch {
+      allowed = false;
+    }
+    if (allowed || process.env.NODE_ENV !== 'production') {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    }
   }
   res.status(500).json({ error: 'Internal Server Error', message: 'An unexpected error occurred. Please try again later.' });
 });

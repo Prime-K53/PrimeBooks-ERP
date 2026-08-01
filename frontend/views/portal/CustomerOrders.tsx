@@ -72,6 +72,19 @@ const CustomerOrders: React.FC = () => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload?.docType === 'order' && !cancelled) load();
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, [load]);
+
   const handleReorderClick = (order: Order) => {
     setConfirmReorder({ open: true, order });
   };

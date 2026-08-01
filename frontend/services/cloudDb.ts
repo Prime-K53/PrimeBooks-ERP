@@ -123,6 +123,13 @@ export const setActiveCompanyId = (companyId: string | null | undefined) => {
   activeCompanyId = companyId || null;
 };
 
+export const clearActiveCompanyId = () => {
+  activeCompanyId = null;
+  try {
+    localStorage.removeItem('nexus_company_config');
+  } catch { /* ignore */ }
+};
+
 const getStoredCompanyId = (): string | null => {
   try {
     const raw = localStorage.getItem('nexus_company_config');
@@ -226,6 +233,7 @@ async function withSession<T>(fn: () => Promise<T>): Promise<T> {
 export const cloudDb = {
   isConfigured: () => SUPABASE_ENABLED,
   setActiveCompanyId,
+  clearActiveCompanyId,
 
   async getActiveCompanyId(): Promise<string | null> {
     return getCompanyId();

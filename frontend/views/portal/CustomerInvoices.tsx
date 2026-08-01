@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, ChevronRight, Download, DollarSign, Search } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
@@ -36,10 +36,20 @@ const statuses = ['All', 'Paid', 'Unpaid', 'Overdue', 'Partially Paid'];
 
 const CustomerInvoices: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState('All');
+  const [filter, setFilter] = useState(searchParams.get('status') || 'All');
+
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status !== filter) {
+      setFilter(status || 'All');
+      setPage(1);
+    }
+  }, [searchParams]);
+
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -70,6 +80,21 @@ const CustomerInvoices: React.FC = () => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload?.docType === 'invoice' && !cancelled) {
+            load();
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, [load]);
+
   const filtered = filter === 'All' ? invoices : invoices.filter((inv) => {
     const key = inv.status?.toLowerCase().replace(/\s+/g, '_');
     const filterKey = filter.toLowerCase().replace(/\s+/g, '_');
@@ -91,7 +116,7 @@ const CustomerInvoices: React.FC = () => {
           </div>
           <select
             value={filter}
-            onChange={(e) => { setPage(1); setFilter(e.target.value); }}
+            onChange={(e) => { setPage(1); const val = e.target.value; setFilter(val); setSearchParams(prev => { const next = new URLSearchParams(prev); if (val === 'All') { next.delete('status'); } else { next.set('status', val); } return next; }); }}
             aria-label="Filter by status"
             style={{
               fontFamily: "'Inter', sans-serif", fontSize: 13, padding: '10px 32px 10px 12px',

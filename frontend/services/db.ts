@@ -170,6 +170,15 @@ export function setCurrentCompanyId(id: string) {
   cloudDb.setActiveCompanyId(currentCompanyId || null);
 }
 
+export function clearCurrentCompanyId() {
+  currentCompanyId = '';
+  cloudDb.clearActiveCompanyId();
+}
+
+export function getCachedCompanyId(): string {
+  return currentCompanyId;
+}
+
 function stampCompanyId<T>(item: T): T {
   if (currentCompanyId && typeof item === 'object' && item !== null) {
     (item as Record<string, unknown>)._companyId = currentCompanyId;
@@ -957,6 +966,8 @@ export const dbService = {
     initDB,
 
     setCurrentCompanyId,
+    clearCurrentCompanyId,
+    getCachedCompanyId,
     stampAllRecordsWithCompany,
     getCurrentCompanyId,
     get source() { return DB_SOURCE; },
@@ -1079,8 +1090,10 @@ export const dbService = {
 
         const itemId = String(raw.id ?? '');
 
+        const stamped = stampCompanyId(item);
+
         // Local-first: always write to IndexedDB, return immediately
-        const localResultId = await putToLegacyStore(storeName, item);
+        const localResultId = await putToLegacyStore(storeName, stamped);
 
         // Background sync: fire-and-forget queue to cloud
         const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
@@ -1091,11 +1104,15 @@ export const dbService = {
                     table,
                     recordId: itemId,
                     operation: 'upsert',
-                    payload: item,
+                    payload: stamped,
                     companyId: currentCompanyId || null,
-                }).catch(() => {});
+                }).catch((enqueueErr) => {
+                    console.warn(`[Sync] Enqueue failed for ${storeName}/${itemId}:`, enqueueErr);
+                });
                 backgroundSyncService.trigger();
-            } catch { /* background sync best-effort */ }
+            } catch (syncErr) {
+                console.warn(`[Sync] Background sync trigger failed for ${storeName}/${itemId}:`, syncErr);
+            }
         }
 
         this.triggerSync();
@@ -1229,9 +1246,13 @@ export const dbService = {
                     operation: 'delete',
                     payload: { id },
                     companyId: currentCompanyId || null,
-                }).catch(() => {});
+                }).catch((enqueueErr) => {
+                    console.warn(`[Sync] Delete enqueue failed for ${storeName}/${id}:`, enqueueErr);
+                });
                 backgroundSyncService.trigger();
-            } catch { /* background sync best-effort */ }
+            } catch (syncErr) {
+                console.warn(`[Sync] Background sync trigger failed for delete ${storeName}/${id}:`, syncErr);
+            }
         }
 
         this.triggerSync();

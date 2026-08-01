@@ -7,6 +7,30 @@
     <meta name="description" content="Prime ERP - Professional Business Dashboard" />
     <title>Prime ERP System</title>
     <link rel="icon" href="./favicon.ico" />
+    <script>
+      /* Clean-URL → hash-router compatibility shim.
+         The app uses HashRouter (e.g. #/login, #/portal/login) so it works
+         from file:// and static hosts. On Vercel/Netlify the SPA rewrites make
+         /login and /portal/login serve index.html — this script translates the
+         clean path into a hash so direct links, bookmarks and refreshes route
+         correctly. It also hides the hash in the address bar for a clean URL. */
+      (function () {
+        var hasHash = window.location.hash && window.location.hash.length > 1;
+        if (!hasHash) {
+          var path = window.location.pathname || '/';
+          var target = path.replace(/\/+$/, '') || '/';
+          if (target !== '/') {
+            window.location.replace(window.location.origin + window.location.search + '#' + target + window.location.hash);
+          }
+        } else {
+          var clean = window.location.pathname + window.location.search;
+          if (clean !== '/') {
+            // Keep the hash route but keep the address bar clean
+            window.history.replaceState(null, '', clean);
+          }
+        }
+      })();
+    </script>
     <script>window.global = window;</script>
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/pwa-icon-192x192.png" />

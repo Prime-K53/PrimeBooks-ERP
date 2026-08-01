@@ -277,6 +277,7 @@ export interface AdminDocumentComment {
 /** SSE realtime stream with a short-lived ticket (EventSource cannot send headers). */
 export async function subscribeAdminEvents(callbacks: {
   onNotification?: (n: any) => void;
+  onSystemAlert?: (n: any) => void;
   onEntityChange?: (payload: any) => void;
   onError?: (err: any) => void;
 }): Promise<() => void> {
@@ -287,6 +288,11 @@ export async function subscribeAdminEvents(callbacks: {
     source.addEventListener('notification', (e: MessageEvent) => {
       try {
         callbacks.onNotification?.(JSON.parse(e.data));
+      } catch { /* ignore malformed payloads */ }
+    });
+    source.addEventListener('system_alert', (e: MessageEvent) => {
+      try {
+        callbacks.onSystemAlert?.(JSON.parse(e.data));
       } catch { /* ignore malformed payloads */ }
     });
     source.addEventListener('entity_changed', (e: MessageEvent) => {

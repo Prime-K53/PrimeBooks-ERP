@@ -34,6 +34,23 @@ const CustomerLoyalty: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && (payload?.docType === 'invoice' || payload?.event === 'payment_allocated') && !cancelled) {
+            portalLifecycle.loyalty.get()
+              .then(setData)
+              .catch(() => {});
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={3} /></div>;
 
   return (

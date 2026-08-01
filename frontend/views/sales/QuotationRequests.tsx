@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Bell, CheckCircle2, XCircle, FileText, RefreshCw, Loader2, MessageSquare,
+  CheckCircle2, XCircle, FileText, RefreshCw, Loader2, MessageSquare,
   PackageCheck, Inbox, History, ChevronDown, ArrowUpRight, History as HistoryIcon,
   BadgeCheck, Send,
 } from 'lucide-react';
 import {
   adminLifecycle, subscribeAdminEvents,
-  AdminQuotationRequest, AdminQuotation, AdminNotification, AdminRequestStatus,
+  AdminQuotationRequest, AdminQuotation, AdminRequestStatus,
   AdminSalesOrder, AdminDocumentVersion,
 } from '../../services/adminPortalClient';
 
@@ -165,26 +165,21 @@ const QuotationRequests: React.FC = () => {
   const [requests, setRequests] = useState<AdminQuotationRequest[]>([]);
   const [quotations, setQuotations] = useState<AdminQuotation[]>([]);
   const [orders, setOrders] = useState<AdminSalesOrder[]>([]);
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [bellOpen, setBellOpen] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
   const [customerNameMap, setCustomerNameMap] = useState<Record<string, string>>({});
   const [staff, setStaff] = useState<{ id: string; username: string; email: string | null }[]>([]);
   const [staffNameMap, setStaffNameMap] = useState<Record<string, string>>({});
 
-  const bellRef = useRef<HTMLDivElement | null>(null);
-
   const loadAll = useCallback(async () => {
     try {
-      const [reqs, quotes, orderList, notifs, analyticsData, users, staffList] = await Promise.all([
+      const [reqs, quotes, orderList, analyticsData, users, staffList] = await Promise.all([
         adminLifecycle.requests.list(),
         adminLifecycle.quotations.list(),
         adminLifecycle.orders.list().catch(() => []),
-        adminLifecycle.notifications.list(),
         adminLifecycle.analytics.get(),
         adminLifecycle.users.list().catch(() => []),
         adminLifecycle.staff.list().catch(() => []),
@@ -192,7 +187,6 @@ const QuotationRequests: React.FC = () => {
       setRequests(reqs || []);
       setQuotations(quotes || []);
       setOrders(orderList || []);
-      setNotifications(notifs || []);
       setAnalytics(analyticsData);
       const nameMap: Record<string, string> = {};
       for (const u of (users as any[]) || []) {
@@ -221,7 +215,12 @@ const QuotationRequests: React.FC = () => {
 
   useEffect(() => {
     const unsubscribePromise = subscribeAdminEvents({
-      onNotification: () => loadAll(),
+      onNotification: (n) => {
+        loadAll();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('primeerp:admin-notification', { detail: n }));
+        }
+      },
       onEntityChange: (payload) => {
         if (payload.docType === 'request' || payload.docType === 'quotation') loadAll();
       },
@@ -230,16 +229,6 @@ const QuotationRequests: React.FC = () => {
       unsubscribePromise.then((unsub) => unsub());
     };
   }, [loadAll]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (bellRef.current && !bellRef.current.contains(e.target as Node)) setBellOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const unread = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications]);
   const inboxCount = useMemo(
     () => requests.filter((r) => INBOX_STATUSES.includes(r.status)).length,
     [requests]
@@ -249,11 +238,6 @@ const QuotationRequests: React.FC = () => {
     if (tab === 'history') return requests.filter((r) => r.status === 'rejected' || r.status === 'cancelled' || r.status === 'converted');
     return requests.filter((r) => INBOX_STATUSES.includes(r.status));
   }, [requests, tab]);
-
-  const markAllRead = async () => {
-    await adminLifecycle.notifications.markAllRead();
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
-  };
 
   const action = async (key: string, fn: () => Promise<any>) => {
     setBusy(key);
@@ -382,61 +366,13 @@ const QuotationRequests: React.FC = () => {
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }} ref={bellRef}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
           {analytics && (
             <span style={{ fontSize: 12, color: inkSoft }}>
               <b style={{ color: ink }}>{analytics.totalRequests || 0}</b> requests •{' '}
               <b style={{ color: ink }}>{analytics.convertedQuotations || 0}</b> converted •{' '}
               <b style={{ color: ink }}>{analytics.totalDownloads || 0}</b> downloads
             </span>
-          )}
-          <button
-            onClick={() => setBellOpen((v) => !v)}
-            style={{ position: 'relative', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 9, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all .15s ease' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.color = teal[700]; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = inkSoft; }}
-          >
-            <Bell size={17} style={{ color: inkSoft }} />
-            {unread > 0 && (
-              <span style={{ position: 'absolute', top: -6, right: -6, background: '#e11d48', color: '#fff', fontSize: 10, fontWeight: 800, minWidth: 18, height: 18, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {unread}
-              </span>
-            )}
-          </button>
-          {bellOpen && (
-            <div style={{ position: 'absolute', top: 46, right: 0, width: 340, maxHeight: 420, overflowY: 'auto', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 14, boxShadow: '0 12px 40px rgba(15,23,42,.14)', zIndex: 60 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${hairline}` }}>
-                <b style={{ fontSize: 13, color: ink }}>Notifications</b>
-                <button onClick={markAllRead} style={{ fontSize: 11, fontWeight: 700, color: teal[600], background: 'none', border: 'none', cursor: 'pointer' }}>
-                  Mark all read
-                </button>
-              </div>
-              {notifications.length === 0 ? (
-                <p style={{ padding: 20, textAlign: 'center', fontSize: 12, color: inkSoft }}>No notifications yet.</p>
-              ) : (
-                notifications.slice(0, 30).map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => {
-                      adminLifecycle.notifications.markRead(n.id).catch(() => {});
-                      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: 1 } : x)));
-                      if (n.link) navigate(n.link.startsWith('#') ? n.link.slice(1) : n.link);
-                      setBellOpen(false);
-                    }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px',
-                      borderBottom: `1px solid ${hairline}`, background: n.is_read ? paper : teal[50], cursor: 'pointer', borderLeft: `3px solid ${n.is_read ? 'transparent' : teal[400]}`, transition: 'background .15s'
-                    }}
-                    onMouseEnter={e => { if (!n.is_read) e.currentTarget.style.background = teal[100]; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = n.is_read ? paper : teal[50]; }}
-                  >
-                    <p style={{ fontSize: 12.5, fontWeight: 700, color: ink, margin: 0 }}>{n.title}</p>
-                    <p style={{ fontSize: 11.5, color: inkSoft, margin: '2px 0 0' }}>{n.body}</p>
-                    <p style={{ fontSize: 10, color: inkSoft, margin: '4px 0 0' }}>{new Date(n.created_at).toLocaleString()}</p>
-                  </button>
-                ))
-              )}
-            </div>
           )}
         </div>
       </div>

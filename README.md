@@ -159,6 +159,109 @@ cd backend && npx jest tests/profitMargin.integration.test.js
 
 ---
 
+## Production Deployment (Frontend + Domain)
+
+### Architecture
+
+- **Frontend:** React/Vite SPA — deployed to **Vercel** (or Netlify).
+- **Backend API:** Node.js/Express — deployed separately (e.g. Render).
+- **Database:** SQLite locally, Supabase for multi-tenant cloud sync.
+- **Routing:** The app is a single React build that serves both the **ERP** and the **Customer Portal**:
+
+  | URL (new) | URL (hash legacy) | App |
+  |---|---|---|
+  | `https://primeerp.com/login` | `https://primeerp.com/#/login` | ERP Admin Login |
+  | `https://primeerp.com/portal/login` | `https://primeerp.com/#/portal/login` | Customer Portal Login |
+  | `https://primeerp.com/dashboard` | `https://primeerp.com/#/dashboard` | ERP Dashboard |
+
+- Clean URLs (`/login`, `/portal/login`) are translated to hash routes by a small
+  shim in `frontend/index.html`, so refreshes, bookmarks and direct links all work.
+
+### Vercel Deployment
+
+The root `vercel.json` is configured for the monorepo:
+
+- **Framework:** Vite
+- **Root directory:** `frontend`
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+- **Rewrites:** `/api/*` → backend, `/*` → `/index.html` (SPA)
+
+Required env vars in Vercel (Project → Settings → Environment Variables):
+
+```env
+VITE_API_URL=https://primebooks-erp.onrender.com
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_EXAM_BACKEND_URL=https://primebooks-erp.onrender.com
+```
+
+See `frontend/.env.example` for all supported variables.
+
+### DNS Setup
+
+> ⚠️ The current `primeerp.com`, `admin.primeerp.com` and `portal.primeerp.com`
+> records point to an unrelated IIS server at `124.111.128.152`. They serve
+> directory listings, **not** this application. Remove those A records.
+
+**Initial deployment (single domain):**
+
+1. Connect the repo to Vercel and deploy (config above).
+2. In Vercel → Project → Settings → Domains, add `primeerp.com` (and `www`).
+3. Follow Vercel's DNS instructions at your registrar:
+   - Point `A` / `ALIAS` / `CNAME` records to `cname.vercel-dns.com` (or the
+     IP Vercel provides).
+
+**Optional subdomains (ERP vs Portal split):**
+
+After the main deployment works, add in Vercel:
+
+| Domain | Routes to |
+|---|---|
+| `admin.primeerp.com` | `/#/login` (ERP) |
+| `portal.primeerp.com` | `/#/portal/login` (Portal) |
+
+The app detects the hostname automatically:
+
+- `portal.primeerp.com` → customer portal login
+- `admin.primeerp.com` → ERP login
+- anything else → Gateway chooser (`primeerp.com/`)
+
+### Backend CORS
+
+The backend now has a strict production CORS allowlist:
+
+- `https://primeerp.com`
+- `https://www.primeerp.com`
+- `https://admin.primeerp.com`
+- `https://portal.primeerp.com`
+- `*.vercel.app`, `*.netlify.app`, localhost/LAN origins (dev)
+
+In production (`NODE_ENV=production`) unknown origins are **rejected** (no
+origin echo). Additional origins can be added via the `CORS_ORIGIN`
+environment variable (comma-separated) — see `backend/.env.example`.
+
+### Authentication Separation
+
+- **ERP** (`AuthContext`): stores session in `sessionStorage['nexus_user']`.
+- **Customer Portal** (`CustomerAuthContext`): stores session in
+  `sessionStorage['portal_session']`, calls `/api/portal/*`.
+
+The backend rejects logins from the wrong portal with HTTP 403
+(e.g. staff account → portal, customer account → admin). A portal customer
+can never access ERP routes and vice-versa.
+
+### Final Verification Checklist
+
+- [ ] DNS: `primeerp.com` points to Vercel (no IIS server response)
+- [ ] DNS: old A records to `124.111.128.152` removed
+- [ ] HTTPS works (Vercel issues certs automatically)
+- [ ] `https://primeerp.com/login` loads ERP login
+- [ ] `https://primeerp.com/portal/login` loads customer login
+- [ ] Refreshing `/login`, `/portal/login`, `/dashboard` works (no 404)
+- [ ] `VITE_API_URL` env var set → API requests reach the backend
+- [ ] Portal and ERP sessions stay separate (no company-context leakage)
+
 ## License
 
 Proprietary — Prime K53 / Prime ERP. All rights reserved.

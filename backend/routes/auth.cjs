@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/authService.cjs');
+const portalAuthService = require('../services/portalAuthService.cjs');
 const { generateToken, verifyToken } = require('../middleware/auth.cjs');
 const { validateBody, userSchemas } = require('../middleware/validation.cjs');
 
@@ -23,34 +24,94 @@ router.post('/register', validateBody(userSchemas.createUser), async (req, res) 
 
 router.post('/login', validateBody(userSchemas.login), async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = await authService.authenticateUser(username, password);
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials', message: 'Username or password is incorrect' });
+    const { email, username, password, portal } = req.body;
+    const requestedPortal = portal === 'customer' ? 'customer' : 'admin';
+    const identifier = String(email || username || '').trim();
+
+    // Same API serves both portals. Detect the account type (staff vs customer)
+    // and enforce that the account is used from its own portal only.
+    const staff = await authService.authenticateUser(identifier, password);
+    const portalUser = await portalAuthService.authenticatePortalUser(identifier, password);
+
+    if (!staff && !portalUser) {
+      return res.status(401).json({ error: 'Invalid credentials', message: 'Email or password is incorrect' });
     }
-    const { db } = require('../db.cjs');
-    const userCompanies = await new Promise((resolve, reject) => {
-      db.all('SELECT company_id, role, is_default FROM user_companies WHERE user_id = ?', [user.id], (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows || []);
-      });
-    });
-    const token = generateToken({ ...user, companies: userCompanies.map(c => c.company_id) });
-    res.json({
-      message: 'Login successful',
-      user: {
-        id: user.id, username: user.username, email: user.email,
-        role: user.role, permissions: user.permissions,
-        company_id: user.company_id || '',
-        companies: userCompanies
-      },
-      token
-    });
+
+    if (requestedPortal === 'customer') {
+      if (portalUser) return loginCustomer(res, portalUser);
+      if (staff) {
+        return res.status(403).json({
+          error: 'Wrong portal',
+          code: 'ACCOUNT_BELONGS_TO_ADMIN',
+          message: 'This account is an administrator account. Please sign in through the ERP.',
+          role: 'admin'
+        });
+      }
+    } else {
+      if (staff) return loginStaff(res, staff);
+      if (portalUser) {
+        return res.status(403).json({
+          error: 'Wrong portal',
+          code: 'ACCOUNT_BELONGS_TO_CUSTOMER',
+          message: 'This account belongs to the Customer Portal. Please sign in at portal.primeerp.com.',
+          role: 'customer'
+        });
+      }
+    }
   } catch (err) {
     console.error('[Auth] Login error:', err);
     res.status(500).json({ error: 'Login failed' });
   }
 });
+
+async function loginStaff(res, user) {
+  const { db } = require('../db.cjs');
+  const userCompanies = await new Promise((resolve, reject) => {
+    db.all('SELECT company_id, role, is_default FROM user_companies WHERE user_id = ?', [user.id], (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows || []);
+    });
+  });
+  const token = generateToken({ ...user, companies: userCompanies.map(c => c.company_id) });
+  res.json({
+    message: 'Login successful',
+    userId: user.id,
+    role: 'admin',
+    user: {
+      id: user.id, username: user.username, email: user.email,
+      role: user.role, permissions: user.permissions,
+      company_id: user.company_id || '',
+      companies: userCompanies
+    },
+    token
+  });
+}
+
+async function loginCustomer(res, user) {
+  const crypto = require('crypto');
+  const { generatePortalToken } = require('../middleware/portalAuth.cjs');
+  const token = generatePortalToken(user);
+  const refreshToken = crypto.randomBytes(48).toString('hex');
+  await portalAuthService.createSession(user.id, user.company_id, refreshToken);
+  const ip = res.req.ip || res.req.connection?.remoteAddress;
+  const ua = res.req.headers['user-agent'];
+  portalAuthService.recordLoginHistory(user.id, ip, ua).catch(() => {});
+  res.json({
+    message: 'Login successful',
+    userId: user.id,
+    role: 'customer',
+    user: {
+      id: user.id,
+      customer_id: user.customer_id,
+      email: user.email,
+      full_name: user.full_name,
+      phone: user.phone
+    },
+    access_token: token,
+    refresh_token: refreshToken,
+    expires_in: '30m'
+  });
+}
 
 router.post('/request-verification', async (req, res) => {
   try {

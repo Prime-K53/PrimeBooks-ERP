@@ -41,6 +41,29 @@ export function getPortalAccessToken(): string | null {
   return getPortalSession()?.access_token || null;
 }
 
+async function refreshAccessToken(): Promise<string | null> {
+  const session = getPortalSession();
+  if (!session?.refresh_token) return null;
+  try {
+    const res = await fetch(`${API_BASE_URL}/portal/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: session.refresh_token }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    savePortalSession({
+      ...session,
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_in: data.expires_in,
+    });
+    return data.access_token;
+  } catch {
+    return null;
+  }
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -56,10 +79,21 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     ...options,
     headers,
   });
+
+  if (response.status === 401 && !options.headers?.['X-Refresh-Attempt']) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      headers['Authorization'] = `Bearer ${newToken}`;
+      headers['X-Refresh-Attempt'] = 'true';
+      response = await fetch(url, { ...options, headers });
+    } else {
+      clearPortalSession();
+    }
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -71,6 +105,9 @@ async function request<T>(
 
   return response.json();
 }
+
+let cachedTicket: string | null = null;
+let cachedTicketExpiry: number = 0;
 
 export const portalApi = {
   get<T>(endpoint: string): Promise<T> {
@@ -547,12 +584,80 @@ export const portalLifecycle = {
     },
   },
 
+  invoices: {
+    list(params?: { page?: number; pageSize?: number; search?: string; status?: string }): Promise<any> {
+      const qs = new URLSearchParams();
+      if (params?.page) qs.set('page', String(params.page));
+      if (params?.pageSize) qs.set('pageSize', String(params.pageSize));
+      if (params?.search) qs.set('search', params.search);
+      if (params?.status) qs.set('status', params.status);
+      const q = qs.toString();
+      return portalApi.get(q ? `/invoices?${q}` : '/invoices');
+    },
+    get(id: string): Promise<any> {
+      return portalApi.get(`/invoices/${id}`);
+    },
+  },
+
+  payments: {
+    list(params?: { page?: number; pageSize?: number; search?: string }): Promise<any> {
+      const qs = new URLSearchParams();
+      if (params?.page) qs.set('page', String(params.page));
+      if (params?.pageSize) qs.set('pageSize', String(params.pageSize));
+      if (params?.search) qs.set('search', params.search);
+      const q = qs.toString();
+      return portalApi.get(q ? `/payments?${q}` : '/payments');
+    },
+    get(id: string): Promise<any> {
+      return portalApi.get(`/payments/${id}`);
+    },
+  },
+
+  statements: {
+    list(params?: { startDate?: string; endDate?: string }): Promise<any> {
+      const qs = new URLSearchParams();
+      if (params?.startDate) qs.set('startDate', params.startDate);
+      if (params?.endDate) qs.set('endDate', params.endDate);
+      const q = qs.toString();
+      return portalApi.get(q ? `/statements?${q}` : '/statements');
+    },
+  },
+
+  documents: {
+    list(): Promise<any> {
+      return portalApi.get('/documents');
+    },
+  },
+
+  wallet: {
+    get(): Promise<any> {
+      return portalApi.get('/wallet');
+    },
+  },
+
+  profile: {
+    get(): Promise<any> {
+      return portalApi.get('/profile');
+    },
+    update(payload: any): Promise<any> {
+      return portalApi.put('/profile', payload);
+    },
+    changePassword(payload: { currentPassword: string; newPassword: string }): Promise<any> {
+      return portalApi.post('/profile/password', payload);
+    },
+  },
+
   /** SSE realtime stream with a short-lived ticket (EventSource cannot send headers). */
   async subscribe(callbacks: { onEvent?: (type: string, payload: any) => void; onError?: (err: any) => void }): Promise<() => void> {
     let source: EventSource | null = null;
     try {
-      const { ticket } = await portalApi.post<{ ticket: string; expiresIn: number }>('/events-ticket', { purpose: 'portal-realtime' });
-      source = new EventSource(`${API_BASE_URL}/portal/events?token=${encodeURIComponent(ticket)}`);
+      const now = Date.now();
+      if (!cachedTicket || cachedTicketExpiry <= now) {
+        const { ticket, expiresIn } = await portalApi.post<{ ticket: string; expiresIn: number }>('/events-ticket', { purpose: 'portal-realtime' });
+        cachedTicket = ticket;
+        cachedTicketExpiry = now + expiresIn * 1000;
+      }
+      source = new EventSource(`${API_BASE_URL}/portal/events?token=${encodeURIComponent(cachedTicket)}`);
       source.addEventListener('entity_changed', (e: MessageEvent) => {
         try {
           callbacks.onEvent?.('entity_changed', JSON.parse(e.data));

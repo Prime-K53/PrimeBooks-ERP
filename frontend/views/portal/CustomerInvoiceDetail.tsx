@@ -56,6 +56,25 @@ const CustomerInvoiceDetail: React.FC = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && payload?.docType === 'invoice' && payload?.docId === id && !cancelled) {
+            portalLifecycle.invoices.get(id)
+              .then(setInvoice)
+              .catch(() => {})
+              .finally(() => setLoading(false));
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
   const handleDownloadPdf = async () => {
     if (!invoice) return;
     setDownloading(true);

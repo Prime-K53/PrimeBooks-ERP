@@ -4,6 +4,7 @@ import { ExaminationBatchNotification } from '../types';
 import { examinationNotificationService } from '../services/examinationNotificationService';
 import { dbService } from '../services/db';
 import { NOTIFICATION_SYNC_KEY, NOTIFICATION_UPDATE_EVENT, publishSystemAlert } from '../services/systemAlertService';
+import { subscribeAdminEvents } from '../services/adminPortalClient';
 
 interface NotificationContextType {
   // State
@@ -225,6 +226,65 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const getNotificationById = useCallback((id: string) => {
     return notifications.find(n => n.id === id);
   }, [notifications]);
+
+  // Listen for admin portal SSE system_alert events (works even when
+  // QuotationRequests page is not active) and surface them as system alerts.
+  useEffect(() => {
+    let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
+    (async () => {
+      try {
+        const unsub = await subscribeAdminEvents({
+          onSystemAlert: (n) => {
+            if (cancelled) return;
+            const title = n.title || 'Customer Request Update';
+            const message = n.body || (n.customer_name ? `${n.customer_name} — ${n.title}` : n.title);
+            publishSystemAlert({
+              type: 'INFO',
+              title,
+              message,
+              module: 'Sales',
+              priority: 'Medium',
+              actionUrl: n.link && n.link.startsWith('#') ? n.link.slice(1) : (n.link || '/sales-flow/requests'),
+            }).catch(() => {});
+          },
+          onError: () => { /* silent — QuotationRequests handles its own reload */ },
+        });
+        if (!cancelled) unsubscribe = unsub;
+      } catch {
+        // Ticket issuance failed — admin page will fall back to polling.
+      }
+    })();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, []);
+
+  // Listen for admin portal notifications (relayed from QuotationRequests SSE handler)
+  // and surface them as system alerts in the unified notification centre.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      const title = detail.title || 'Customer Request Update';
+      const message = detail.body || detail.customer_name
+        ? `${detail.customer_name || 'A customer'} — ${detail.title}`
+        : detail.title;
+      publishSystemAlert({
+        type: 'INFO',
+        title,
+        message,
+        module: 'Sales',
+        priority: 'Medium',
+        actionUrl: detail.link && detail.link.startsWith('#')
+          ? detail.link.slice(1)
+          : (detail.link || '/sales-flow/requests'),
+      }).catch(() => {});
+    };
+    window.addEventListener('primeerp:admin-notification', handler as EventListener);
+    return () => window.removeEventListener('primeerp:admin-notification', handler as EventListener);
+  }, []);
 
   // Initial load
   useEffect(() => {

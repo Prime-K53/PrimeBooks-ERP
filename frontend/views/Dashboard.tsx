@@ -14,7 +14,7 @@ import {
   Briefcase, Users, ChevronDown, User,
   MessageSquare, Calculator, FileText, Zap, ArrowRight, ChevronRight,
   Sparkles, Database, BarChart2, X, ArrowUp, ArrowDown, Building2,
-  Star, Sun, Calendar, CalendarDays, Check } from 'lucide-react';
+  Star, Sun, Calendar, CalendarDays, Check, Download } from 'lucide-react';
 import WhatsAppMarketingModal from '../components/WhatsAppMarketingModal';
 import { adminLifecycle } from '../services/adminPortalClient';
 
@@ -1149,7 +1149,7 @@ const DashboardContent: React.FC = () => {
         </div>
 
         <div style={{
-          display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1.6fr' : '1fr', gap: isDesktop ? 24 : 20, marginBottom: isMobile ? 16 : 24, padding: isMobile ? '0 0 24px' : isTablet ? '0 0 32px' : '0 0 40px',
+          display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1.6fr' : '1fr', gap: isDesktop ? 24 : 20, marginBottom: isMobile ? 10 : 16, padding: isMobile ? '0 0 24px' : isTablet ? '0 0 32px' : '0 0 40px',
         }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: isMobile ? 12 : 24, minWidth: 0 }}>
             {!hasTransactions && (
@@ -1301,18 +1301,21 @@ const DashboardContent: React.FC = () => {
               Open Requests <ArrowRight size={13} />
             </button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isMobile ? 130 : 150}px, 1fr))`, gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(auto-fit, minmax(130px, 1fr))' : 'repeat(5, 1fr)', gap: 14 }}>
             {[
-              { label: 'Total Requests', value: requestAnalytics.totalRequests || 0, sub: 'all time', accent: '#0f544c', bg: 'rgba(15,84,76,.08)' },
-              { label: 'Pending Review', value: (requestAnalytics.requests?.submitted || 0) + (requestAnalytics.requests?.assigned || 0) + (requestAnalytics.requests?.under_review || 0) + (requestAnalytics.requests?.waiting_for_customer || 0) + (requestAnalytics.requests?.ready_for_conversion || 0), sub: 'in inbox', accent: '#b45309', bg: 'rgba(217,154,63,.12)' },
-              { label: 'Quotations Issued', value: requestAnalytics.totalQuotations || 0, sub: `${requestAnalytics.acceptedQuotations || 0} accepted`, accent: '#2563EB', bg: 'rgba(37,99,235,.08)' },
-              { label: 'Converted to Orders', value: requestAnalytics.convertedQuotations || 0, sub: `${requestAnalytics.conversionRate || 0}% conversion`, accent: '#059669', bg: 'rgba(5,150,105,.1)' },
-              { label: 'Downloads', value: requestAnalytics.totalDownloads || 0, sub: `${requestAnalytics.uniqueDownloads || 0} unique docs`, accent: '#7c3aed', bg: 'rgba(124,58,237,.08)' },
+              { label: 'Total Requests', value: requestAnalytics.totalRequests || 0, sub: 'all time', accent: '#0f544c', icon: FileText, iconBg: '#eef7f6' },
+              { label: 'Pending Review', value: (requestAnalytics.requests?.submitted || 0) + (requestAnalytics.requests?.assigned || 0) + (requestAnalytics.requests?.under_review || 0) + (requestAnalytics.requests?.waiting_for_customer || 0) + (requestAnalytics.requests?.ready_for_conversion || 0), sub: 'in inbox', accent: '#b45309', icon: Clock, iconBg: '#fbead0' },
+              { label: 'Quotations Issued', value: requestAnalytics.totalQuotations || 0, sub: `${requestAnalytics.acceptedQuotations || 0} accepted`, accent: '#2563EB', icon: FileText, iconBg: '#eff6ff' },
+              { label: 'Converted to Orders', value: requestAnalytics.convertedQuotations || 0, sub: `${requestAnalytics.conversionRate || 0}% conversion`, accent: '#059669', icon: Check, iconBg: '#ecfdf5' },
+              { label: 'Downloads', value: requestAnalytics.totalDownloads || 0, sub: `${requestAnalytics.uniqueDownloads || 0} unique docs`, accent: '#7c3aed', icon: Download, iconBg: '#f5f3ff' },
             ].map((item) => (
-              <div key={item.label} style={{ background: item.bg, borderRadius: 12, padding: '14px 16px', minWidth: 0 }}>
-                <div style={{ fontSize: 9.5, fontWeight: 800, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{item.label}</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: item.accent, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em' }}>{item.value}</div>
-                <div style={{ fontSize: 10.5, color: '#5c6567', fontWeight: 600, marginTop: 6 }}>{item.sub}</div>
+              <div key={item.label} style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: `4px solid ${item.accent}`, boxShadow: '0 1px 3px rgba(0,0,0,.04)', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 14, minWidth: 0 }}>
+                <div style={{ padding: 10, borderRadius: 10, background: item.iconBg, color: item.accent, display: 'inline-flex', flexShrink: 0 }}><item.icon size={18} /></div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>{item.label}</p>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: item.accent, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>{item.value}</p>
+                  <p style={{ fontSize: 10.5, fontWeight: 600, color: '#5c6567', marginTop: 4 }}>{item.sub}</p>
+                </div>
               </div>
             ))}
           </div>

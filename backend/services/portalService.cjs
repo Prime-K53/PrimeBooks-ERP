@@ -49,10 +49,10 @@ const portalService = {
       [customerId, companyId]
     );
 
-    const invoiceCount = await getOne(
-      "SELECT COUNT(*) as count FROM invoices WHERE customer_id = ? AND company_id = ? AND LOWER(COALESCE(status, '')) NOT IN ('paid', 'voided', 'cancelled')",
-      [customerId, companyId]
-    );
+const unpaidInvoiceCount = await getOne(
+       "SELECT COUNT(*) as count FROM invoices WHERE customer_id = ? AND company_id = ? AND LOWER(COALESCE(status, '')) = 'unpaid'",
+       [customerId, companyId]
+     );
 
     const ordersRow = await getOne(
       'SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ? AND company_id = ?',
@@ -104,7 +104,7 @@ const portalService = {
       balance: (customer && customer.balance) || 0,
       walletBalance: (customer && customer.walletBalance) || 0,
       outstandingBalance: (customer && customer.outstandingBalance) || 0,
-      activeInvoiceCount: (invoiceCount && invoiceCount.count) || 0,
+      unpaidInvoiceCount: (unpaidInvoiceCount && unpaidInvoiceCount.count) || 0,
       totalOrders: (ordersRow && ordersRow.count) || 0,
       activeRequestCount: (requestRow && requestRow.count) || 0,
       openQuotationCount: (openQuotationRow && openQuotationRow.count) || 0,
@@ -298,7 +298,9 @@ const portalService = {
 
   async getInvoices(customerId, companyId) {
     return getAll(
-      `SELECT id, invoice_number, customer_name, total_amount, COALESCE(paid_amount, 0) as paid_amount, status, due_date, created_at
+      `SELECT id, invoice_number, customer_name, total_amount,
+        COALESCE((SELECT SUM(pal.amount) FROM payment_allocation_lines pal JOIN payment_allocations pa ON pa.id = pal.allocation_id WHERE pal.invoice_id = invoices.id AND pa.reversed = 0), 0) as paid_amount,
+        status, due_date, created_at
        FROM invoices
        WHERE customer_id = ? AND company_id = ?
        ORDER BY created_at DESC`,
@@ -333,7 +335,9 @@ const portalService = {
     const total = countRow?.total || 0;
 
     const rows = await getAll(
-      `SELECT id, invoice_number, customer_name, total_amount, COALESCE(paid_amount, 0) as paid_amount, status, due_date, created_at
+      `SELECT id, invoice_number, customer_name, total_amount,
+        COALESCE((SELECT SUM(pal.amount) FROM payment_allocation_lines pal JOIN payment_allocations pa ON pa.id = pal.allocation_id WHERE pal.invoice_id = i.id AND pa.reversed = 0), 0) as paid_amount,
+        status, due_date, created_at
        FROM invoices i
        WHERE ${whereClause}
        ORDER BY i.created_at DESC LIMIT ? OFFSET ?`,
@@ -405,7 +409,7 @@ const portalService = {
     if (!payment) return null;
 
     const allocations = await getAll(
-      `SELECT pal.*, i.invoice_number, i.total_amount, COALESCE(i.paid_amount, 0) as paid_amount
+      `SELECT pal.*, i.invoice_number, i.total_amount
        FROM payment_allocations pa
        JOIN payment_allocation_lines pal ON pal.allocation_id = pa.id
        LEFT JOIN invoices i ON pal.invoice_id = i.id

@@ -744,9 +744,23 @@ router.post('/users/auto-create', async (req, res) => {
     });
 
     const password = crypto.randomBytes(9).toString('base64url');
+    const generatedEmail = email || await (async () => {
+      if (name) {
+        const words = name.split(/\s+/).filter(Boolean);
+        for (const word of words) {
+          const sanitized = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (sanitized) {
+            const candidate = `${sanitized}@prime.erp`;
+            const existing = await portalAuthService.getPortalUserByEmail(candidate, company_id);
+            if (!existing) return candidate;
+          }
+        }
+      }
+      return `${customer_id.toLowerCase()}@prime.erp`;
+    })();
     const user = await portalAuthService.registerPortalUser({
       customer_id,
-      email: email || `${customer_id.toLowerCase()}.portal@prime.local`,
+      email: generatedEmail,
       password,
       full_name: full_name || name || '',
       phone: phone || '',

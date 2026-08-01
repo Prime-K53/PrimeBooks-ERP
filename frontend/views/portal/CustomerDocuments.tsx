@@ -39,6 +39,23 @@ const CustomerDocuments: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && !cancelled) {
+            portalLifecycle.documents.list()
+              .then(setDocuments)
+              .catch(() => {});
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const filtered = documents.filter((doc) =>
     doc.title?.toLowerCase().includes(search.toLowerCase()) ||
     doc.type?.toLowerCase().includes(search.toLowerCase())

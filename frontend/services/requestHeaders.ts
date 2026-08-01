@@ -1,4 +1,5 @@
 import { ensureSessionAuthState, getStoredUserSession } from './authSession';
+import { getCachedCompanyId } from './db';
 
 type HeaderMap = Record<string, string>;
 
@@ -32,16 +33,7 @@ const applyIdentityHeaders = (headers: HeaderMap): HeaderMap => {
   if (user?.email) nextHeaders['x-user-email'] = String(user.email);
   nextHeaders['x-user-is-super-admin'] = user?.isSuperAdmin === true ? 'true' : 'false';
   nextHeaders['x-auth-mode'] = authState.authMode;
-  const companyId = (() => {
-    try {
-      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('nexus_company_config') : null;
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return parsed?.companyId || null;
-      }
-    } catch {}
-    return null;
-  })();
+  const companyId = getCachedCompanyId();
   if (companyId) nextHeaders['x-company-id'] = String(companyId);
   if (authState.accessToken) {
     nextHeaders.Authorization = `Bearer ${authState.accessToken}`;

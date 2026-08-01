@@ -269,15 +269,11 @@ const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSaveItem = useCallback(async (savedItem: Item) => {
     try {
-      // Always use addItem/updateItem based on whether the item has an ID
-      // The store methods handle ID generation and deduplication correctly
-      if (savedItem.id) {
-        // Item has an ID - treat as update
-        // addItem/updateItem in the store will handle this correctly
+      const isUpdate = !!savedItem.id;
+      if (isUpdate) {
         await updateItem(savedItem);
         notify?.('Item updated successfully', 'success');
       } else {
-        // No ID - treat as new item
         await addItem(savedItem);
         notify?.('Item created successfully', 'success');
       }

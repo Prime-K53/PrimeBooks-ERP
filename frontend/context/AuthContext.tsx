@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { User, UserRole, UserGroup, PasswordPolicy, CompanyConfig, AuditLogEntry, SystemAlert, Reminder } from '../types';
 import { INITIAL_USER_GROUPS, AVAILABLE_PERMISSIONS, SEED_ITEMS } from '../constants';
 import { generateNextId } from '../utils/helpers';
-import { dbService } from '../services/db';
+import { dbService, clearCurrentCompanyId } from '../services/db';
 import { DEFAULT_PRICING_SETTINGS } from '../services/pricingRoundingService';
 import { syncDocumentNumberSeriesConfig } from '../services/documentNumberService';
 import { publishSystemAlert } from '../services/systemAlertService';
@@ -68,6 +68,7 @@ interface AuthContextType {
   notify: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   clearNotification: () => void;
   login: (username: string, password?: string, mfaCode?: string) => Promise<'SUCCESS' | 'INVALID' | 'MFA_REQUIRED' | 'EXPIRED'>;
+  loginWithApi: (user: User, token: string, tokenExpiry: string) => void;
   logout: () => void;
   checkPermission: (permissionId: string) => boolean;
   validatePasswordStrength: (password: string) => { valid: boolean; errors: string[] };
@@ -715,7 +716,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setAllUsers([]);
         setRequiresSetup(false);
-        cloudDb.setActiveCompanyId(null);
+        clearCurrentCompanyId();
       }
     });
 
@@ -789,6 +790,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (username: string, password?: string, mfaCode?: string): Promise<'SUCCESS' | 'INVALID' | 'MFA_REQUIRED' | 'EXPIRED'> => {
     try {
+        // Clear any cached company context from a previous session before
+        // resolving the new user's company. Without this, a previous
+        // user's company can leak into the new session.
+        clearCurrentCompanyId();
+
         if (requiresSetup && !SUPABASE_ENABLED) {
             return 'INVALID';
         }
@@ -1041,6 +1047,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [addAuditLog, companyConfig, requiresSetup, SUPABASE_ENABLED, syncSupabaseUserToLocal, updateLoginDiagnostic]);
 
+  const loginWithApi = useCallback((apiUser: User, token: string, tokenExpiry: string) => {
+    clearCurrentCompanyId();
+    setRequiresSetup(false);
+    const companyId = apiUser.companyId || apiUser.company_id || null;
+    if (companyId) {
+      dbService.setCurrentCompanyId(companyId);
+    }
+    setUser(apiUser);
+    sessionStorage.setItem('nexus_user', JSON.stringify({
+      ...apiUser,
+      authMode: 'api',
+      accessToken: token,
+      tokenExpiry,
+    }));
+  }, []);
+
   const logout = useCallback(() => {
     if (user) {
         addAuditLog({
@@ -1052,6 +1074,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (SUPABASE_ENABLED) {
           supabase.auth.signOut();
         }
+        clearCurrentCompanyId();
         setUser(null);
         sessionStorage.removeItem('nexus_user');
     }
@@ -1534,7 +1557,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     user, allUsers, userGroups, passwordPolicy, companyConfig, requiresSetup, notification, auditLogs, alerts, isInitialized, activeFinancialYear, reminders, isOnline, dbSyncStatus, lastSyncTime,
     loginDiagnostic,
-    notify, clearNotification, login, logout, checkPermission, validatePasswordStrength,
+    notify, clearNotification, login, loginWithApi, logout, checkPermission, validatePasswordStrength,
     manageUser, deleteUser, manageUserGroup, deleteUserGroup, updatePasswordPolicy, updateCompanyConfig,
     addAuditLog, addAlert, dismissAlert, clearAlerts, resetSystem, completeSetup, setFinancialYear,
     addReminder, toggleReminder, deleteReminder, connectDbSync, manualDownloadBackup,

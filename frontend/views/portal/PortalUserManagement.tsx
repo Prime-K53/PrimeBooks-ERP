@@ -3,7 +3,7 @@ import {
   Users, Plus, Shield, ShieldOff, Key, Mail, Lock, Loader2,
   Search, X, Check, AlertCircle, Clock, Send, Copy
 } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
+import { adminPortalApi } from '../../services/adminPortalClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalInput from './components/PortalInput';
@@ -73,7 +73,7 @@ const PortalUserManagement: React.FC = () => {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const data = await portalApi.get<PortalUserRecord[]>('/admin/users');
+      const data = await adminPortalApi.get<PortalUserRecord[]>('/users');
       setUsers(data);
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Failed to load' });
@@ -94,7 +94,7 @@ const PortalUserManagement: React.FC = () => {
     setSubmitting(true);
     setMessage(null);
     try {
-      await portalApi.post('/admin/users', createForm);
+      await adminPortalApi.post('/users', createForm);
       setMessage({ type: 'success', text: 'Portal account created' });
       setShowCreate(false);
       setCreateForm({ customer_id: '', email: '', password: '', full_name: '', phone: '' });
@@ -109,7 +109,7 @@ const PortalUserManagement: React.FC = () => {
   const handleToggleStatus = async (userId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
     try {
-      await portalApi.put(`/admin/users/${userId}`, { status: newStatus });
+      await adminPortalApi.put(`/users/${userId}`, { status: newStatus });
       setMessage({ type: 'success', text: `Account ${newStatus === 'active' ? 'enabled' : 'disabled'}` });
       loadUsers();
     } catch (err: any) {
@@ -121,7 +121,7 @@ const PortalUserManagement: React.FC = () => {
     if (!resetPw || resetPw.length < 6) return;
     setSubmitting(true);
     try {
-      await portalApi.post(`/admin/users/${userId}/reset-password`, { new_password: resetPw });
+      await adminPortalApi.post(`/users/${userId}/reset-password`, { new_password: resetPw });
       setMessage({ type: 'success', text: 'Password reset successfully' });
       setShowResetPw(null);
       setResetPw('');
@@ -136,7 +136,7 @@ const PortalUserManagement: React.FC = () => {
     if (!u.portal_user_id) return;
     setSubmitting(true);
     try {
-      const res = await portalApi.post<{ code: string }>(`/admin/users/${u.portal_user_id}/invite`);
+      const res = await adminPortalApi.post<{ code: string }>(`/users/${u.portal_user_id}/invite`);
       setInviteCode({ userId: u.portal_user_id, code: res.code, customerName: u.customer_name, customerId: u.customer_id });
       setMessage({ type: 'success', text: 'Invite code generated' });
       loadUsers();

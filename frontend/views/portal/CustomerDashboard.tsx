@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { DollarSign, Wallet, FileText, ShoppingCart, ArrowRight, ChevronRight, TrendingUp, TrendingDown, Activity, ClipboardList, FileCheck2, Package, Factory, Users, Gift, UserPlus } from 'lucide-react';
+import { DollarSign, Wallet, FileText, ShoppingCart, ArrowRight, ChevronRight, TrendingUp, TrendingDown, Activity, ClipboardList, FileCheck2, Users, Gift, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { portalApi, portalLifecycle } from '../../services/portalApiClient';
 import ErrorBanner from './components/ErrorBanner';
@@ -24,13 +24,9 @@ interface RecentDocument {
 
 interface DashboardData {
   balance: number;
-  walletBalance: number;
   outstandingBalance: number;
-  activeInvoiceCount: number;
+  unpaidInvoiceCount: number;
   totalOrders: number;
-  activeRequestCount: number;
-  openQuotationCount: number;
-  productionOrderCount: number;
   unreadMessageCount: number;
   recentDocuments: RecentDocument[];
   recentTransactions: Transaction[];
@@ -86,6 +82,23 @@ const CustomerDashboard: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && (payload?.docType === 'invoice' || payload?.event === 'payment_allocated') && !cancelled) {
+            portalApi.get<DashboardData>('/dashboard')
+              .then(setData)
+              .catch(() => {});
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, []);
+ 
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -140,12 +153,8 @@ const CustomerDashboard: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 18 }}>
         <PortalKPICard label="Outstanding Balance" value={`K ${(data.outstandingBalance || 0).toFixed(2)}`} icon={DollarSign} color="emerald" />
-        <PortalKPICard label="Wallet Balance" value={`K ${(data.walletBalance || 0).toFixed(2)}`} icon={Wallet} color="blue" />
-        <PortalKPICard label="Active Invoices" value={data.activeInvoiceCount ?? 0} icon={FileText} color="amber" />
-        <PortalKPICard label="Pending Requests" value={data.activeRequestCount ?? 0} icon={ClipboardList} color="teal" onClick={() => navigate('/portal/requests')} />
-        <PortalKPICard label="Open Quotations" value={data.openQuotationCount ?? 0} icon={FileCheck2} color="violet" onClick={() => navigate('/portal/quotations')} />
+        <PortalKPICard label="Unpaid Invoices" value={data.unpaidInvoiceCount ?? 0} icon={FileText} color="amber" onClick={() => navigate('/portal/invoices?status=Unpaid')} />
         <PortalKPICard label="Total Orders" value={data.totalOrders ?? 0} icon={ShoppingCart} color="slate" onClick={() => navigate('/portal/orders')} />
-        <PortalKPICard label="In Production" value={data.productionOrderCount ?? 0} icon={Factory} color="blue" onClick={() => navigate('/portal/orders')} />
       </div>
 
       {referralSettings?.enabled && !referralLoading && referralFunnel && (

@@ -1,32 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Plus, ArrowUpRight } from 'lucide-react';
-import { portalLifecycle, QuotationRecord } from '../../services/portalApiClient';
-import EmptyState from './components/EmptyState';
-import StatusBadge from './components/StatusBadge';
-import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-
-const teal = {
-  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
-  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
-  800: '#0b3e39', 900: '#082e2a'
-};
-const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
-const paper = '#FEFDFB';
-const ink = '#23282A';
-const inkSoft = '#5c6567';
-const hairline = '#e4ddd1';
-
-const quotationStatusLabel: Record<string, string> = {
-  ready: 'Ready',
-  accepted: 'Accepted',
-  rejected: 'Rejected',
-  revision_requested: 'Revision Requested',
-  converted: 'Converted to Order',
-};
-
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FileText, Plus, ArrowUpRight, Search } from 'lucide-react';
 import { portalLifecycle, QuotationRecord } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';

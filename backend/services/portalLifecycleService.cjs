@@ -62,6 +62,28 @@ const EVENT_TYPES = Object.freeze({
   ORDER_STATUS_CHANGED: 'order_status_changed',
   REQUEST_REORDERED: 'request_reordered',
   COMMENT_ADDED: 'comment_added',
+  INVOICE_POSTED: 'invoice_posted',
+  INVOICE_UPDATED: 'invoice_updated',
+  INVOICE_VOIDED: 'invoice_voided',
+  INVOICE_PAID: 'invoice_paid',
+  INVOICE_OVERDUE: 'invoice_overdue',
+  PAYMENT_RECEIVED: 'payment_received',
+  PAYMENT_ALLOCATED: 'payment_allocated',
+  RECEIPT_CREATED: 'receipt_created',
+  CREDIT_NOTE_CREATED: 'credit_note_created',
+  PRODUCTION_STARTED: 'production_started',
+  PRODUCTION_COMPLETED: 'production_completed',
+  PRINTING_STARTED: 'printing_started',
+  FINISHING_COMPLETED: 'finishing_completed',
+  PACKAGING_COMPLETED: 'packaging_completed',
+  ORDER_READY: 'order_ready',
+  ORDER_DELIVERED: 'order_delivered',
+  PDF_GENERATED: 'pdf_generated',
+  PROOF_UPLOADED: 'proof_uploaded',
+  DELIVERY_NOTE_CREATED: 'delivery_note_created',
+  MESSAGE_RECEIVED: 'message_received',
+  ARTWORK_APPROVED: 'artwork_approved',
+  PROOF_APPROVED: 'proof_approved',
 });
 
 const NOTIFICATION_TYPES = Object.freeze({
@@ -253,8 +275,13 @@ async function notifyAdmin({ companyId, type, title, body, link, customerId, cus
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [genId('ant'), companyId, type, title, body || null, link || null, customerId || null, customerName || null]
   );
-  broadcast('admin', 'notification', {
-    companyId, type, title, body, link, customerId, customerName, createdAt: nowIso(),
+  const notificationPayload = { companyId, type, title, body, link, customerId, customerName, createdAt: nowIso() };
+  broadcast('admin', 'notification', notificationPayload);
+  broadcast('admin', 'system_alert', {
+    ...notificationPayload,
+    module: 'Sales',
+    priority: 'Medium',
+    actionUrl: link && link.startsWith('#') ? link.slice(1) : (link || '/sales-flow/requests'),
   });
 }
 

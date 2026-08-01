@@ -51,11 +51,11 @@ const registerUser = async ({ username, email, password, role = 'Clerk', permiss
   });
 };
 
-const authenticateUser = (username, password) => {
+const authenticateUser = (usernameOrEmail, password) => {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, username, email, password_hash, role, permissions, is_active, company_id FROM users WHERE username = ?`,
-      [username],
+      `SELECT id, username, email, password_hash, role, permissions, is_active, company_id FROM users WHERE username = ? OR email = ?`,
+      [usernameOrEmail, usernameOrEmail],
       async (err, row) => {
         if (err) return reject(err);
         if (!row) return resolve(null);
