@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import {
   adminLifecycle, subscribeAdminEvents,
-  AdminQuotationRequest, AdminQuotation, AdminNotification,
+  AdminQuotationRequest, AdminQuotation, AdminNotification, AdminRequestStatus,
 } from '../../services/adminPortalClient';
 
 const teal = {
@@ -22,15 +22,21 @@ const hairline = '#e4ddd1';
 const danger = '#b5493f';
 
 const REQUEST_TABS = [
-  { key: 'inbox', label: 'Inbox', icon: Inbox, statuses: ['submitted', 'under_review'] },
+  { key: 'inbox', label: 'Inbox', icon: Inbox, statuses: ['submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion'] },
   { key: 'quotations', label: 'Quotations', icon: FileText, statuses: [] },
-  { key: 'history', label: 'History', icon: History, statuses: ['rejected', 'cancelled'] },
+  { key: 'history', label: 'History', icon: History, statuses: ['rejected', 'cancelled', 'converted'] },
 ] as const;
 
+const INBOX_STATUSES: AdminRequestStatus[] = ['submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion'];
+
 const requestStatusMeta: Record<string, { label: string; color: string; bg: string }> = {
+  draft: { label: 'Draft', color: '#64748b', bg: '#f1f5f9' },
   submitted: { label: 'Submitted', color: '#1d4ed8', bg: '#eff6ff' },
+  assigned: { label: 'Assigned', color: '#0f766e', bg: '#f0fdfa' },
   under_review: { label: 'Under Review', color: '#b45309', bg: '#fffbeb' },
-  quotation_ready: { label: 'Quotation Ready', color: '#047857', bg: '#ecfdf5' },
+  waiting_for_customer: { label: 'Waiting for Customer', color: '#7c3aed', bg: '#f5f3ff' },
+  ready_for_conversion: { label: 'Ready for Conversion', color: '#047857', bg: '#ecfdf5' },
+  converted: { label: 'Converted', color: '#0f766e', bg: '#f0fdfa' },
   rejected: { label: 'Rejected', color: '#b91c1c', bg: '#fef2f2' },
   cancelled: { label: 'Cancelled', color: '#64748b', bg: '#f1f5f9' },
 };
@@ -96,17 +102,20 @@ const QuotationRequests: React.FC = () => {
   const [bellOpen, setBellOpen] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
   const [customerNameMap, setCustomerNameMap] = useState<Record<string, string>>({});
+  const [staff, setStaff] = useState<{ id: string; username: string; email: string | null }[]>([]);
+  const [staffNameMap, setStaffNameMap] = useState<Record<string, string>>({});
 
   const bellRef = useRef<HTMLDivElement | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
-      const [reqs, quotes, notifs, analyticsData, users] = await Promise.all([
+      const [reqs, quotes, notifs, analyticsData, users, staffList] = await Promise.all([
         adminLifecycle.requests.list(),
         adminLifecycle.quotations.list(),
         adminLifecycle.notifications.list(),
         adminLifecycle.analytics.get(),
         adminLifecycle.users.list().catch(() => []),
+        adminLifecycle.staff.list().catch(() => []),
       ]);
       setRequests(reqs || []);
       setQuotations(quotes || []);
@@ -119,6 +128,12 @@ const QuotationRequests: React.FC = () => {
         }
       }
       setCustomerNameMap(nameMap);
+      const sMap: Record<string, string> = {};
+      for (const s of staffList || []) {
+        sMap[s.id] = s.username;
+      }
+      setStaff(staffList || []);
+      setStaffNameMap(sMap);
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to load requests');
@@ -152,11 +167,14 @@ const QuotationRequests: React.FC = () => {
   }, []);
 
   const unread = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications]);
-  const inboxCount = useMemo(() => requests.filter((r) => r.status === 'submitted' || r.status === 'under_review').length, [requests]);
+  const inboxCount = useMemo(
+    () => requests.filter((r) => INBOX_STATUSES.includes(r.status)).length,
+    [requests]
+  );
 
   const activeRequests = useMemo(() => {
-    if (tab === 'history') return requests.filter((r) => r.status === 'rejected' || r.status === 'cancelled');
-    return requests.filter((r) => r.status === 'submitted' || r.status === 'under_review');
+    if (tab === 'history') return requests.filter((r) => r.status === 'rejected' || r.status === 'cancelled' || r.status === 'converted');
+    return requests.filter((r) => INBOX_STATUSES.includes(r.status));
   }, [requests, tab]);
 
   const markAllRead = async () => {
@@ -172,6 +190,24 @@ const QuotationRequests: React.FC = () => {
       await loadAll();
     } catch (err: any) {
       setError(err.message || 'Action failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /**
+   * "Generate Quotation" does not create a quotation and does not reserve a
+   * number. It marks the request ready for conversion and opens the STANDARD
+   * ERP quotation editor pre-filled with the request.
+   */
+  const startQuoteFlow = async (r: AdminQuotationRequest) => {
+    setBusy(`quote_${r.id}`);
+    setError(null);
+    try {
+      const prefill = await adminLifecycle.requests.startQuotation(r.id);
+      navigate('/sales-flow/quotations', { state: { action: 'create', quotationPrefill: prefill } });
+    } catch (err: any) {
+      setError(err.message || 'Failed to start quotation generation');
     } finally {
       setBusy(null);
     }
@@ -323,7 +359,7 @@ const QuotationRequests: React.FC = () => {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {REQUEST_TABS.map((t) => {
-          const count = t.key === 'inbox' ? inboxCount : t.key === 'quotations' ? quotations.length : requests.filter((r) => r.status === 'rejected' || r.status === 'cancelled').length;
+          const count = t.key === 'inbox' ? inboxCount : t.key === 'quotations' ? quotations.length : requests.filter((r) => r.status === 'rejected' || r.status === 'cancelled' || r.status === 'converted').length;
           return (
             <button key={t.key} onClick={() => setTab(t.key)} style={chipStyle(tab === t.key)}>
               <t.icon size={15} /> {t.label}
@@ -333,19 +369,25 @@ const QuotationRequests: React.FC = () => {
         })}
       </div>
 
-      {tab === 'inbox' && <RequestInbox requests={activeRequests} busy={busy} onAction={action} cardStyle={cardStyle} inputStyle={inputStyle} btnPrimary={btnPrimary} btnGhost={btnGhost} setExpanded={setExpandedId} expandedId={expandedId} customerNameMap={customerNameMap} />}
+      {tab === 'inbox' && <RequestInbox requests={activeRequests} busy={busy} onAction={action} cardStyle={cardStyle} inputStyle={inputStyle} btnPrimary={btnPrimary} btnGhost={btnGhost} setExpanded={setExpandedId} expandedId={expandedId} customerNameMap={customerNameMap} staff={staff} staffNameMap={staffNameMap} onGenerateQuote={startQuoteFlow} />}
       {tab === 'quotations' && <QuotationPanel quotations={quotations} busy={busy} onAction={action} cardStyle={cardStyle} inputStyle={inputStyle} btnPrimary={btnPrimary} btnGhost={btnGhost} customerNameMap={customerNameMap} />}
       {tab === 'history' && (
         <div style={cardStyle}>
           {activeRequests.length === 0 ? (
-            <p style={{ padding: 40, textAlign: 'center', fontSize: 13, color: inkSoft }}>No rejected or cancelled requests.</p>
+            <p style={{ padding: 40, textAlign: 'center', fontSize: 13, color: inkSoft }}>No rejected, cancelled or converted requests.</p>
           ) : (
             activeRequests.map((r) => (
               <div key={r.id} style={{ padding: 16, borderBottom: `1px solid ${hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div>
-                  <b style={{ fontSize: 13.5, color: ink }}>{customerNameMap[r.customer_id] || r.customer_name || 'Unknown Customer'}</b>
+                  <b style={{ fontSize: 13.5, color: ink }}>{r.request_number}</b>
+                  <span style={{ fontSize: 12, color: inkSoft, marginLeft: 10 }}>{customerNameMap[r.customer_id] || r.customer_name || 'Unknown Customer'}</span>
                   <span style={{ fontSize: 12, color: inkSoft, marginLeft: 10 }}>{new Date(r.created_at).toLocaleDateString()}</span>
                   {r.review_note && <p style={{ fontSize: 12, color: inkSoft, margin: '4px 0 0' }}>Reason: {r.review_note}</p>}
+                  {r.status === 'converted' && r.quotation_number && (
+                    <p style={{ fontSize: 12, color: teal[700], margin: '4px 0 0' }}>
+                      Official quotation: <b>{r.quotation_number}</b>
+                    </p>
+                  )}
                 </div>
                 <StatusPill meta={requestStatusMeta} status={r.status} />
               </div>
@@ -370,13 +412,17 @@ interface PanelProps {
   setExpanded: (id: string | null) => void;
   expandedId: string | null;
   customerNameMap: Record<string, string>;
+  staff: { id: string; username: string }[];
+  staffNameMap: Record<string, string>;
+  onGenerateQuote: (r: AdminQuotationRequest) => void;
 }
 
-const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyle, inputStyle, btnPrimary, btnGhost, setExpanded, expandedId, customerNameMap }) => {
+const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyle, inputStyle, btnPrimary, btnGhost, setExpanded, expandedId, customerNameMap, staff, staffNameMap, onGenerateQuote }) => {
   const [reviewState, setReviewState] = useState<Record<string, { items: any[]; notes: string }>>({});
-  const [quoteForm, setQuoteForm] = useState<Record<string, any>>({});
   const [clarifyNote, setClarifyNote] = useState<Record<string, string>>({});
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
+  const [assignTo, setAssignTo] = useState<Record<string, string>>({});
+  const [assignName, setAssignName] = useState<Record<string, string>>({});
 
   const stateFor = (r: AdminQuotationRequest) =>
     reviewState[r.id] || { items: r.items.map((i) => ({ ...i })), notes: r.notes || '' };
@@ -399,18 +445,12 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
     );
   };
 
-  const generateQuote = (r: AdminQuotationRequest) => {
-    const f = quoteForm[r.id] || { discount: 0, taxRate: 0, deliveryFee: 0, paymentTerms: 'Net 7', validUntil: '' };
-    const state = stateFor(r);
-    onAction(`quote_${r.id}`, () =>
-      adminLifecycle.requests.generateQuotation(r.id, {
-        items: state.items.map((i) => ({ name: i.name, quantity: Number(i.quantity) || 1, unitPrice: Number(i.unitPrice) || 0 })),
-        discount: Number(f.discount) || 0,
-        taxRate: Number(f.taxRate) || 0,
-        deliveryFee: Number(f.deliveryFee) || 0,
-        paymentTerms: f.paymentTerms || 'Net 7',
-        validUntil: f.validUntil || null,
-      })
+  const assignSales = (r: AdminQuotationRequest) => {
+    const salesId = assignTo[r.id] || r.assigned_to || '';
+    if (!salesId) return;
+    const salesName = assignName[r.id] || staff.find((s) => s.id === salesId)?.username || salesId;
+    onAction(`assign_${r.id}`, () =>
+      adminLifecycle.requests.assign(r.id, { assignTo: salesId, assignToName: salesName })
     );
   };
 
@@ -428,6 +468,8 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
         const expanded = expandedId === r.id;
         const state = stateFor(r);
         const subtotal = state.items.reduce((sum, i) => sum + (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0), 0);
+        const assignedName = staffNameMap[r.assigned_to || ''] || r.assigned_to || '';
+        const canEdit = r.status !== 'ready_for_conversion' && r.status !== 'converted';
         return (
           <div key={r.id} style={{ ...cardStyle, overflow: 'hidden' }}>
             <div
@@ -442,9 +484,13 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <b style={{ fontSize: 14, color: ink }}>{r.request_number}</b>
                     <StatusPill meta={requestStatusMeta} status={r.status} />
+                    {r.status === 'converted' && r.quotation_number && (
+                      <span style={{ fontSize: 12, color: teal[700], fontWeight: 700 }}>→ {r.quotation_number}</span>
+                    )}
                   </div>
                   <p style={{ fontSize: 12.5, color: inkSoft, margin: '3px 0 0' }}>
                     {customerNameMap[r.customer_id] || r.customer_name || 'Unknown Customer'} • {new Date(r.created_at).toLocaleDateString()} • {r.request_type || 'quotation'}
+                    {assignedName ? ` • Assigned: ${assignedName}` : ''}
                     {r.review_note ? ` • Reason: ${r.review_note}` : ''}
                   </p>
                 </div>
@@ -471,35 +517,47 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                       {state.items.map((item, idx) => (
                         <tr key={idx} style={{ borderTop: `1px solid ${hairline}` }}>
                           <td style={{ padding: '8px 12px' }}>
-                            <input
-                              value={item.name}
-                              onChange={(e) => updateItem(r, idx, { name: e.target.value })}
-                              style={{ ...inputStyle, minWidth: 180 }}
-                              onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-                            />
+                            {canEdit ? (
+                              <input
+                                value={item.name}
+                                onChange={(e) => updateItem(r, idx, { name: e.target.value })}
+                                style={{ ...inputStyle, minWidth: 180 }}
+                                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
+                              />
+                            ) : (
+                              <span style={{ fontWeight: 600, color: ink }}>{item.name}</span>
+                            )}
                           </td>
                           <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                            <input
-                              type="number"
-                              min={1}
-                              value={item.quantity}
-                              onChange={(e) => updateItem(r, idx, { quantity: parseInt(e.target.value, 10) || 1 })}
-                              style={{ ...inputStyle, width: 76, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
-                              onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-                            />
+                            {canEdit ? (
+                              <input
+                                type="number"
+                                min={1}
+                                value={item.quantity}
+                                onChange={(e) => updateItem(r, idx, { quantity: parseInt(e.target.value, 10) || 1 })}
+                                style={{ ...inputStyle, width: 76, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
+                                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
+                              />
+                            ) : (
+                              <span>{item.quantity}</span>
+                            )}
                           </td>
                           <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                            <input
-                              type="number"
-                              min={0}
-                              value={item.unitPrice}
-                              onChange={(e) => updateItem(r, idx, { unitPrice: parseFloat(e.target.value) || 0 })}
-                              style={{ ...inputStyle, width: 100, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
-                              onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
-                              onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
-                            />
+                            {canEdit ? (
+                              <input
+                                type="number"
+                                min={0}
+                                value={item.unitPrice}
+                                onChange={(e) => updateItem(r, idx, { unitPrice: parseFloat(e.target.value) || 0 })}
+                                style={{ ...inputStyle, width: 100, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
+                                onFocus={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = `0 0 0 3px ${teal[50]}`; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = 'none'; }}
+                              />
+                            ) : (
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{Number(item.unitPrice).toFixed(2)}</span>
+                            )}
                           </td>
                           <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" }}>
                             K {((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -510,126 +568,140 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                   </table>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginTop: 12 }}>
-                  <textarea
-                    value={state.notes}
-                    onChange={(e) => setReviewState((prev) => ({ ...prev, [r.id]: { ...state, notes: e.target.value } }))}
-                    rows={2}
-                    placeholder="Internal note for this request..."
-                    style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit', minHeight: 66, lineHeight: 1.5 }}
-                  />
-                </div>
+                {canEdit && (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginTop: 12 }}>
+                      <textarea
+                        value={state.notes}
+                        onChange={(e) => setReviewState((prev) => ({ ...prev, [r.id]: { ...state, notes: e.target.value } }))}
+                        rows={2}
+                        placeholder="Internal note for this request..."
+                        style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit', minHeight: 66, lineHeight: 1.5 }}
+                      />
+                    </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 13, color: inkSoft }}>
-                    Subtotal:{' '}
-                    <b style={{ color: ink, fontSize: 15, fontFamily: "'JetBrains Mono', monospace" }}>K {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => saveReview(r)}
-                      disabled={busy === `save_${r.id}`}
-                      style={{ ...btnGhost, opacity: busy === `save_${r.id}` ? .5 : 1 }}
-                      onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
-                    >
-                      {busy === `save_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <PackageCheck size={14} />} Save Review
-                    </button>
-                    <button
-                      onClick={() => {
-                        const reason = (rejectReason[r.id] || '').trim();
-                        if (!reason) { setRejectReason((prev) => ({ ...prev, [r.id]: ' ' })); return; }
-                        onAction(`reject_${r.id}`, () => adminLifecycle.requests.reject(r.id, reason));
-                      }}
-                      disabled={busy === `reject_${r.id}`}
-                      style={{ ...btnGhost, color: danger, borderColor: '#fecaca', background: '#fff7f7', opacity: busy === `reject_${r.id}` ? .5 : 1 }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fca5a5'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#fff7f7'; e.currentTarget.style.borderColor = '#fecaca'; }}
-                    >
-                      {busy === `reject_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Reject
-                    </button>
-                  </div>
-                </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: 13, color: inkSoft }}>
+                        Subtotal:{' '}
+                        <b style={{ color: ink, fontSize: 15, fontFamily: "'JetBrains Mono', monospace" }}>K {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => saveReview(r)}
+                          disabled={busy === `save_${r.id}`}
+                          style={{ ...btnGhost, opacity: busy === `save_${r.id}` ? .5 : 1 }}
+                          onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                        >
+                          {busy === `save_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <PackageCheck size={14} />} Save Review
+                        </button>
+                        <button
+                          onClick={() => {
+                            const reason = (rejectReason[r.id] || '').trim();
+                            if (!reason) { setRejectReason((prev) => ({ ...prev, [r.id]: ' ' })); return; }
+                            onAction(`reject_${r.id}`, () => adminLifecycle.requests.reject(r.id, reason));
+                          }}
+                          disabled={busy === `reject_${r.id}`}
+                          style={{ ...btnGhost, color: danger, borderColor: '#fecaca', background: '#fff7f7', opacity: busy === `reject_${r.id}` ? .5 : 1 }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#fff7f7'; e.currentTarget.style.borderColor = '#fecaca'; }}
+                        >
+                          {busy === `reject_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Reject
+                        </button>
+                      </div>
+                    </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, marginTop: 10 }}>
-                  <div>
-                    <input
-                      value={rejectReason[r.id] || ''}
-                      onChange={(e) => setRejectReason((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                      placeholder="Rejection reason (required to reject)"
-                      style={{ ...inputStyle, borderColor: rejectReason[r.id] === ' ' ? '#f87171' : hairline }}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      value={clarifyNote[r.id] || ''}
-                      onChange={(e) => setClarifyNote((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                      placeholder="Clarification note to send to the customer..."
-                      style={inputStyle}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => {
-                      const note = (clarifyNote[r.id] || '').trim();
-                      if (!note) return;
-                      onAction(`clarify_${r.id}`, () => adminLifecycle.requests.clarify(r.id, note));
-                    }}
-                    disabled={busy === `clarify_${r.id}`}
-                    style={{ ...btnGhost, opacity: busy === `clarify_${r.id}` ? .5 : 1 }}
-                    onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
-                  >
-                    {busy === `clarify_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />} Ask Customer
-                  </button>
-                </div>
-
-                {/* Generate quotation */}
-                <div style={{ background: '#f8fafc', border: `1px solid ${hairline}`, borderRadius: 12, padding: 14, marginTop: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <FileText size={15} style={{ color: teal[600] }} />
-                    <b style={{ fontSize: 13, color: ink }}>Generate Official Quotation</b>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
-                    {(['discount', 'taxRate', 'deliveryFee'] as const).map((field) => (
-                      <div key={field}>
-                        <label style={{ ...labelStyle, marginBottom: 4 }}>{field === 'taxRate' ? 'Tax Rate %' : field}</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, marginTop: 10 }}>
+                      <div>
                         <input
-                          type="number"
-                          min={0}
-                          value={(quoteForm[r.id] || {})[field] ?? 0}
-                          onChange={(e) => setQuoteForm((prev) => ({ ...prev, [r.id]: { ...(prev[r.id] || {}), [field]: e.target.value } }))}
+                          value={rejectReason[r.id] || ''}
+                          onChange={(e) => setRejectReason((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                          placeholder="Rejection reason (required to reject)"
+                          style={{ ...inputStyle, borderColor: rejectReason[r.id] === ' ' ? '#f87171' : hairline }}
+                        />
+                      </div>
+                      <div>
+                        <input
+                          value={clarifyNote[r.id] || ''}
+                          onChange={(e) => setClarifyNote((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                          placeholder="Clarification note to send to the customer..."
                           style={inputStyle}
                         />
                       </div>
-                    ))}
-                    <div>
-                      <label style={{ ...labelStyle, marginBottom: 4 }}>Payment Terms</label>
-                      <input
-                        value={(quoteForm[r.id] || {}).paymentTerms || 'Net 7'}
-                        onChange={(e) => setQuoteForm((prev) => ({ ...prev, [r.id]: { ...(prev[r.id] || {}), paymentTerms: e.target.value } }))}
-                        style={inputStyle}
-                      />
                     </div>
-                    <div>
-                      <label style={{ ...labelStyle, marginBottom: 4 }}>Valid Until</label>
-                      <input
-                        type="date"
-                        value={(quoteForm[r.id] || {}).validUntil || ''}
-                        onChange={(e) => setQuoteForm((prev) => ({ ...prev, [r.id]: { ...(prev[r.id] || {}), validUntil: e.target.value } }))}
-                        style={inputStyle}
-                      />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          const note = (clarifyNote[r.id] || '').trim();
+                          if (!note) return;
+                          onAction(`clarify_${r.id}`, () => adminLifecycle.requests.clarify(r.id, note));
+                        }}
+                        disabled={busy === `clarify_${r.id}`}
+                        style={{ ...btnGhost, opacity: busy === `clarify_${r.id}` ? .5 : 1 }}
+                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                      >
+                        {busy === `clarify_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />} Ask Customer
+                      </button>
                     </div>
+                  </>
+                )}
+
+                {/* Assign salesperson */}
+                <div style={{ background: '#f8fafc', border: `1px solid ${hairline}`, borderRadius: 12, padding: 14, marginTop: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <PackageCheck size={15} style={{ color: teal[600] }} />
+                    <b style={{ fontSize: 13, color: ink }}>Assign Salesperson</b>
+                    {assignedName && <span style={{ fontSize: 12, color: teal[700], fontWeight: 600 }}>Current: {assignedName}</span>}
                   </div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <select
+                      value={assignTo[r.id] || r.assigned_to || ''}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setAssignTo((prev) => ({ ...prev, [r.id]: id }));
+                        setAssignName((prev) => ({ ...prev, [r.id]: staff.find((s) => s.id === id)?.username || '' }));
+                      }}
+                      style={{ ...selectStyle, flex: 1, minWidth: 220 }}
+                    >
+                      <option value="">Select salesperson...</option>
+                      {staff.map((s) => (
+                        <option key={s.id} value={s.id}>{s.username}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => assignSales(r)}
+                      disabled={busy === `assign_${r.id}` || !(assignTo[r.id] || r.assigned_to)}
+                      style={{ ...btnGhost, opacity: busy === `assign_${r.id}` ? .5 : 1 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[800]; e.currentTarget.style.borderColor = teal[200]; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                    >
+                      {busy === `assign_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <PackageCheck size={14} />} Assign
+                    </button>
+                  </div>
+                </div>
+
+                {/* Generate quotation → standard ERP quotation editor */}
+                <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 12, padding: 14, marginTop: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <FileText size={15} style={{ color: teal[600] }} />
+                    <b style={{ fontSize: 13, color: ink }}>
+                      {r.status === 'ready_for_conversion' ? 'Quotation Editor' : 'Generate Official Quotation'}
+                    </b>
+                  </div>
+                  <p style={{ fontSize: 12, color: inkSoft, margin: 0, lineHeight: 1.5 }}>
+                    Opens the standard quotation editor pre-filled with this request. No quotation number is reserved until you save — the
+                    official quotation is linked to <b>{r.request_number}</b> on save, and the customer is notified automatically.
+                  </p>
                   <button
-                    onClick={() => generateQuote(r)}
+                    onClick={() => onGenerateQuote(r)}
                     disabled={busy === `quote_${r.id}`}
                     style={{ ...btnPrimary, marginTop: 12, opacity: busy === `quote_${r.id}` ? .6 : 1 }}
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(15,84,76,.65)'; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(15,84,76,.55)'; }}
                   >
-                    {busy === `quote_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Generate Quotation
+                    {busy === `quote_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+                    {r.status === 'ready_for_conversion' ? 'Open Quotation Editor' : 'Generate Quotation'}
                   </button>
                 </div>
               </div>

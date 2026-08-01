@@ -172,6 +172,7 @@ const CustomerQuotationDetail: React.FC = () => {
               Issued: {new Date(quotation.created_at).toLocaleDateString()}
               {quotation.valid_until ? ` • Valid until ${new Date(quotation.valid_until).toLocaleDateString()}` : ''}
               {quotation.payment_terms ? ` • ${quotation.payment_terms}` : ''}
+              {quotation.source_request_number ? ` • From request ${quotation.source_request_number}` : ''}
             </p>
           </div>
           <div className="flex items-center gap-3">

@@ -17,9 +17,13 @@ const emailService = require('./emailService.cjs');
 
 // ─── Centralized status enums ────────────────────────────────────────────────
 const REQUEST_STATUS = Object.freeze({
+  DRAFT: 'draft',
   SUBMITTED: 'submitted',
+  ASSIGNED: 'assigned',
   UNDER_REVIEW: 'under_review',
-  QUOTATION_READY: 'quotation_ready',
+  WAITING_FOR_CUSTOMER: 'waiting_for_customer',
+  READY_FOR_CONVERSION: 'ready_for_conversion',
+  CONVERTED: 'converted',
   REJECTED: 'rejected',
   CANCELLED: 'cancelled',
 });
@@ -36,9 +40,14 @@ const EVENT_TYPES = Object.freeze({
   REQUEST_SUBMITTED: 'request_submitted',
   REQUEST_CANCELLED: 'request_cancelled',
   REQUEST_REVIEWED: 'request_reviewed',
+  REQUEST_OPENED: 'request_opened',
+  REQUEST_ASSIGNED: 'request_assigned',
   REQUEST_CLARIFICATION: 'request_clarification',
   REQUEST_REJECTED: 'request_rejected',
+  QUOTATION_GENERATION_STARTED: 'quotation_generation_started',
   QUOTATION_GENERATED: 'quotation_generated',
+  QUOTATION_SAVED: 'quotation_saved',
+  QUOTATION_NUMBER_ASSIGNED: 'quotation_number_assigned',
   QUOTATION_DOWNLOADED: 'document_downloaded',
   QUOTATION_ACCEPTED: 'quotation_accepted',
   QUOTATION_REJECTED: 'quotation_rejected',
@@ -138,6 +147,28 @@ async function nextSequentialNumber(table, column, prefix) {
     if (Number.isFinite(num) && num > maxSeq) maxSeq = num;
   }
   return `${prefix}-${String(maxSeq + 1).padStart(4, '0')}`;
+}
+
+// Year-scoped sequence for quotation requests (QTR-2026-000001). Each calendar
+// year restarts at 000001. Quotation requests never consume official quotation
+// numbers — the two sequences are fully independent.
+async function nextRequestNumber(table, column, prefix) {
+  const year = new Date().getFullYear();
+  const rows = await getAll(`SELECT ${column} FROM ${table} WHERE ${column} LIKE ?`, [`${prefix}-${year}-%`]);
+  let maxSeq = 0;
+  for (const row of rows) {
+    const suffix = String(row[column] || '').slice(prefix.length + 1 + String(year).length + 1);
+    const num = parseInt(suffix, 10);
+    if (Number.isFinite(num) && num > maxSeq) maxSeq = num;
+  }
+  return `${prefix}-${year}-${String(maxSeq + 1).padStart(6, '0')}`;
+}
+
+// Normalizes request statuses from older database generations so the rest of the
+// system only ever sees the current status vocabulary.
+function normalizeRequestStatus(status) {
+  if (status === 'quotation_ready') return REQUEST_STATUS.READY_FOR_CONVERSION;
+  return status;
 }
 
 // ─── Realtime (SSE) hub ──────────────────────────────────────────────────────
@@ -263,9 +294,13 @@ function emitEntityChange(channel, payload) {
 // ─── Lifecycle state machine ─────────────────────────────────────────────────
 function assertRequestTransition(request, toStatus) {
   const allowed = {
-    [REQUEST_STATUS.SUBMITTED]: [REQUEST_STATUS.UNDER_REVIEW, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED],
-    [REQUEST_STATUS.UNDER_REVIEW]: [REQUEST_STATUS.QUOTATION_READY, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED],
-    [REQUEST_STATUS.QUOTATION_READY]: [],
+    [REQUEST_STATUS.DRAFT]: [REQUEST_STATUS.SUBMITTED, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED],
+    [REQUEST_STATUS.SUBMITTED]: [REQUEST_STATUS.ASSIGNED, REQUEST_STATUS.UNDER_REVIEW, REQUEST_STATUS.READY_FOR_CONVERSION, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED],
+    [REQUEST_STATUS.ASSIGNED]: [REQUEST_STATUS.UNDER_REVIEW, REQUEST_STATUS.READY_FOR_CONVERSION, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED],
+    [REQUEST_STATUS.UNDER_REVIEW]: [REQUEST_STATUS.WAITING_FOR_CUSTOMER, REQUEST_STATUS.READY_FOR_CONVERSION, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED],
+    [REQUEST_STATUS.WAITING_FOR_CUSTOMER]: [REQUEST_STATUS.UNDER_REVIEW, REQUEST_STATUS.READY_FOR_CONVERSION, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED],
+    [REQUEST_STATUS.READY_FOR_CONVERSION]: [REQUEST_STATUS.CONVERTED, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED],
+    [REQUEST_STATUS.CONVERTED]: [],
     [REQUEST_STATUS.REJECTED]: [],
     [REQUEST_STATUS.CANCELLED]: [],
   };
@@ -298,26 +333,35 @@ const portalLifecycleService = {
   subscribePortal(req, res) { return subscribe('portal', res, req); },
   subscribeAdmin(req, res) { return subscribe('admin', res, req); },
 
-  async createQuotationRequest({ portalUserId, customerId, customerName, companyId, requestType, items, notes, context = {} }) {
+  async createQuotationRequest({ portalUserId, customerId, customerName, companyId, requestType, items, notes, requestedDeliveryDate, attachments, context = {} }) {
     const normalized = normalizeItems(items);
     if (normalized.length === 0) throw new Error('At least one line item is required');
     const requestTypeValue = requestType === 'order' ? 'order' : 'quotation';
     const { subtotal } = computeTotals(normalized);
+    const normalizedAttachments = Array.isArray(attachments) ? attachments.slice(0, 20).map((a) => ({
+      name: String(a.name || a.fileName || 'Attachment'),
+      url: String(a.url || ''),
+      type: String(a.type || ''),
+    })) : [];
 
     const id = genId('req');
-    const requestNumber = await nextSequentialNumber('quotation_requests', 'request_number', 'REQ');
+    const requestNumber = await nextRequestNumber('quotation_requests', 'request_number', 'QTR');
     await runQuery(
       `INSERT INTO quotation_requests
-         (id, request_number, customer_id, customer_name, company_id, request_type, items, subtotal, notes, status, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, request_number, customer_id, customer_name, company_id, request_type, items, subtotal,
+          notes, status, requested_delivery_date, attachments, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, requestNumber, customerId, customerName, companyId, requestTypeValue,
-        JSON.stringify(normalized), subtotal, notes || null, REQUEST_STATUS.SUBMITTED, portalUserId]
+        JSON.stringify(normalized), subtotal, notes || null, REQUEST_STATUS.SUBMITTED,
+        requestedDeliveryDate || null,
+        normalizedAttachments.length ? JSON.stringify(normalizedAttachments) : null,
+        portalUserId]
     );
 
     await addTimeline(companyId, customerId, 'request', id, EVENT_TYPES.REQUEST_SUBMITTED,
       'Request submitted', `${customerName} submitted a ${requestTypeValue} request (${requestNumber}).`,
       { type: 'customer', id: portalUserId, name: customerName },
-      { requestNumber, itemCount: normalized.length, subtotal });
+      { requestNumber, itemCount: normalized.length, subtotal, requestedDeliveryDate: requestedDeliveryDate || null });
 
     await logAudit({
       actor: { id: portalUserId, name: customerName, role: 'portal_customer' },
@@ -326,7 +370,7 @@ const portalLifecycleService = {
       entityType: 'quotation_request',
       entityId: id,
       details: `${requestNumber} created via customer portal`,
-      newValue: { requestNumber, requestType: requestTypeValue, items: normalized, subtotal },
+      newValue: { requestNumber, requestType: requestTypeValue, items: normalized, subtotal, requestedDeliveryDate: requestedDeliveryDate || null },
       context,
     });
 
@@ -360,8 +404,10 @@ const portalLifecycleService = {
     const rows = await getAll(query, params);
     return rows.map((r) => ({
       ...r,
+      status: r.quotation_id ? (r.status === 'quotation_ready' ? REQUEST_STATUS.CONVERTED : r.status) : normalizeRequestStatus(r.status),
       customer_name: r.resolved_customer_name || r.customer_name,
       items: parseJson(r.items, []),
+      attachments: parseJson(r.attachments, []),
     }));
   },
 
@@ -376,8 +422,10 @@ const portalLifecycleService = {
     if (!request) return null;
     if (companyId && request.company_id !== companyId) return null;
     if (customerId && request.customer_id !== customerId) return null;
+    request.status = request.quotation_id ? (request.status === 'quotation_ready' ? REQUEST_STATUS.CONVERTED : request.status) : normalizeRequestStatus(request.status);
     request.customer_name = request.resolved_customer_name || request.customer_name;
     request.items = parseJson(request.items, []);
+    request.attachments = parseJson(request.attachments, []);
     return request;
   },
 
@@ -424,7 +472,7 @@ const portalLifecycleService = {
   async updateRequest(id, { admin, companyId, items, notes, context = {} }) {
     const request = await this.adminGetRequest(id, companyId);
     if (!request) throw new Error('Request not found');
-    if ([REQUEST_STATUS.QUOTATION_READY, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
+    if ([REQUEST_STATUS.READY_FOR_CONVERSION, REQUEST_STATUS.CONVERTED, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
       throw new Error('Request can no longer be edited');
     }
 
@@ -432,7 +480,11 @@ const portalLifecycleService = {
     if (normalized.length === 0) throw new Error('At least one line item is required');
     const { subtotal } = computeTotals(normalized);
 
-    const nextStatus = request.status === REQUEST_STATUS.SUBMITTED ? REQUEST_STATUS.UNDER_REVIEW : request.status;
+    const nextStatus = request.status === REQUEST_STATUS.SUBMITTED
+      ? REQUEST_STATUS.UNDER_REVIEW
+      : request.status === REQUEST_STATUS.WAITING_FOR_CUSTOMER
+        ? REQUEST_STATUS.UNDER_REVIEW
+        : request.status;
     await runQuery(
       `UPDATE quotation_requests SET items = ?, subtotal = ?, notes = ?, status = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ?
        WHERE id = ?`,
@@ -501,25 +553,26 @@ const portalLifecycleService = {
   async requestClarification(id, { admin, companyId, note, context = {} }) {
     const request = await this.adminGetRequest(id, companyId);
     if (!request) throw new Error('Request not found');
-    if ([REQUEST_STATUS.QUOTATION_READY, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
+    if ([REQUEST_STATUS.READY_FOR_CONVERSION, REQUEST_STATUS.CONVERTED, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
       throw new Error('Request can no longer be updated');
     }
 
     await runQuery(
-      `UPDATE quotation_requests SET review_note = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ?
+      `UPDATE quotation_requests SET review_note = ?, reviewed_by = ?, reviewed_at = ?, status = ?, updated_at = ?
        WHERE id = ?`,
-      [note || null, admin.id, nowIso(), nowIso(), id]
+      [note || null, admin.id, nowIso(), REQUEST_STATUS.WAITING_FOR_CUSTOMER, nowIso(), id]
     );
 
     await addTimeline(companyId, request.customer_id, 'request', id, EVENT_TYPES.REQUEST_CLARIFICATION,
       'Clarification requested', `${admin.name || 'Sales'} asked for clarification on ${request.request_number}.`,
       { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
-      { note: note || '' });
+      { note: note || '', status: REQUEST_STATUS.WAITING_FOR_CUSTOMER });
 
     await logAudit({
       actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
       companyId, action: 'PORTAL_REQUEST_CLARIFY', entityType: 'quotation_request', entityId: id,
-      details: `Clarification requested for ${request.request_number}`, context,
+      details: `Clarification requested for ${request.request_number}`,
+      oldValue: { status: request.status }, newValue: { status: REQUEST_STATUS.WAITING_FOR_CUSTOMER, note }, context,
     });
 
     await notifyCustomer({
@@ -530,87 +583,232 @@ const portalLifecycleService = {
       actorName: admin.name || 'Sales',
     });
 
-    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'request', docId: id, status: request.status });
+    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'request', docId: id, status: REQUEST_STATUS.WAITING_FOR_CUSTOMER });
+    return { id, status: REQUEST_STATUS.WAITING_FOR_CUSTOMER };
+  },
+
+  // ─── Admin: assign salesperson ──────────────────────────────────────────────
+  async assignRequest(id, { admin, companyId, assignTo, assignToName, context = {} }) {
+    const request = await this.adminGetRequest(id, companyId);
+    if (!request) throw new Error('Request not found');
+    if ([REQUEST_STATUS.CONVERTED, REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
+      throw new Error('Request is closed and cannot be assigned');
+    }
+
+    const nextStatus = request.status === REQUEST_STATUS.SUBMITTED
+      ? REQUEST_STATUS.ASSIGNED
+      : request.status;
+
+    await runQuery(
+      `UPDATE quotation_requests SET assigned_to = ?, assigned_by = ?, assigned_at = ?, status = ?, updated_at = ?
+       WHERE id = ?`,
+      [assignTo || null, admin.id || null, nowIso(), nextStatus, nowIso(), id]
+    );
+
+    await addTimeline(companyId, request.customer_id, 'request', id, EVENT_TYPES.REQUEST_ASSIGNED,
+      'Sales assigned', `${assignToName || assignTo || 'Sales'} was assigned to ${request.request_number}.`,
+      { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
+      { assignTo: assignTo || null, assignToName: assignToName || null });
+
+    await logAudit({
+      actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
+      companyId, action: 'PORTAL_REQUEST_ASSIGN', entityType: 'quotation_request', entityId: id,
+      details: `${request.request_number} assigned to ${assignToName || assignTo || 'unassigned'}`,
+      oldValue: { assignedTo: request.assigned_to }, newValue: { assignedTo: assignTo || null }, context,
+    });
+
+    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'request', docId: id, status: nextStatus });
+    return this.adminGetRequest(id, companyId);
+  },
+
+  // ─── Admin: sales opened the request (audit + timeline only) ───────────────
+  async markRequestOpened(id, { admin, companyId, context = {} }) {
+    const request = await this.adminGetRequest(id, companyId);
+    if (!request) throw new Error('Request not found');
+
+    await addTimeline(companyId, request.customer_id, 'request', id, EVENT_TYPES.REQUEST_OPENED,
+      'Sales opened request', `${admin.name || 'Sales'} opened ${request.request_number}.`,
+      { type: 'admin', id: admin.id, name: admin.name || 'Sales' });
+
+    await logAudit({
+      actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
+      companyId, action: 'PORTAL_REQUEST_OPEN', entityType: 'quotation_request', entityId: id,
+      details: `${request.request_number} opened by sales`, context,
+    });
     return { id, status: request.status };
   },
 
-  // ─── Admin: generate official quotation ────────────────────────────────────
-  async generateQuotation(requestId, { admin, companyId, items, discount, taxRate, deliveryFee, paymentTerms, validUntil, context = {} }) {
+  // ─── Admin: start quotation generation ─────────────────────────────────────
+  // Per business rules, clicking "Generate Quotation" does NOT create a
+  // quotation and does NOT reserve a quotation number. It records the event,
+  // moves the request to "Ready for Conversion" and returns a prefill payload
+  // for the STANDARD ERP quotation editor.
+  async startQuotationGeneration(requestId, { admin, companyId, context = {} }) {
     const request = await this.adminGetRequest(requestId, companyId);
     if (!request) throw new Error('Request not found');
-    if (request.status === REQUEST_STATUS.REJECTED || request.status === REQUEST_STATUS.CANCELLED) {
+    if ([REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
       throw new Error('Request is closed and cannot be converted');
     }
     if (request.quotation_id) throw new Error('A quotation has already been generated for this request');
 
-    const normalized = normalizeItems(items);
-    if (normalized.length === 0) throw new Error('At least one line item is required');
-    const { subtotal, taxAmount, total } = computeTotals(normalized, discount, taxRate, deliveryFee);
-
-    const id = genId('qt');
-    const quotationNumber = await nextSequentialNumber('quotations', 'quotation_number', 'QT');
-
     await runQuery(
-      `INSERT INTO quotations
-         (id, quotation_number, request_id, customer_id, customer_name, company_id, items,
-          subtotal, discount, tax_rate, tax_amount, delivery_fee, total, currency,
-          payment_terms, valid_until, status, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'MWK', ?, ?, ?, ?)`,
-      [id, quotationNumber, requestId, request.customer_id, request.customer_name, companyId,
-        JSON.stringify(normalized), subtotal, round2(discount), Number(taxRate) || 0, taxAmount,
-        round2(deliveryFee), total, paymentTerms || 'Net 7', validUntil || null,
-        QUOTATION_STATUS.READY, admin.id]
-    );
-
-    await runQuery(
-      `UPDATE quotation_requests SET status = ?, quotation_id = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ?
+      `UPDATE quotation_requests SET status = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ?
        WHERE id = ?`,
-      [REQUEST_STATUS.QUOTATION_READY, id, admin.id, nowIso(), nowIso(), requestId]
+      [REQUEST_STATUS.READY_FOR_CONVERSION, admin.id, nowIso(), nowIso(), requestId]
     );
 
-    await addTimeline(companyId, request.customer_id, 'request', requestId, EVENT_TYPES.QUOTATION_GENERATED,
-      'Quotation generated', `${quotationNumber} was generated from ${request.request_number}.`,
+    await addTimeline(companyId, request.customer_id, 'request', requestId, EVENT_TYPES.QUOTATION_GENERATION_STARTED,
+      'Quotation generation started', `${admin.name || 'Sales'} opened the quotation editor from ${request.request_number}.`,
       { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
-      { quotationNumber, total });
-
-    await addTimeline(companyId, request.customer_id, 'quotation', id, EVENT_TYPES.QUOTATION_GENERATED,
-      'Quotation ready', `Official quotation ${quotationNumber} is ready for review.`,
-      { type: 'system' }, { total });
-
-    await addTimeline(companyId, request.customer_id, 'quotation', id, EVENT_TYPES.QUOTATION_GENERATED,
-      'Customer notified', `Customer was notified that ${quotationNumber} is ready.`,
-      { type: 'system' });
+      { status: REQUEST_STATUS.READY_FOR_CONVERSION });
 
     await logAudit({
       actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
-      companyId, action: 'QUOTATION_GENERATE', entityType: 'quotation', entityId: id,
-      details: `${quotationNumber} generated from request ${request.request_number}`,
-      oldValue: { status: request.status },
-      newValue: { status: QUOTATION_STATUS.READY, items: normalized, subtotal, taxAmount, total }, context,
+      companyId, action: 'QUOTATION_GENERATION_START', entityType: 'quotation_request', entityId: requestId,
+      details: `Quotation generation started from ${request.request_number}`,
+      oldValue: { status: request.status }, newValue: { status: REQUEST_STATUS.READY_FOR_CONVERSION }, context,
     });
 
-    const portalUsers = await getAll(
-      'SELECT id, email FROM portal_users WHERE customer_id = ? AND company_id = ? AND status = ?',
-      [request.customer_id, companyId, 'active']
+    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.READY_FOR_CONVERSION });
+
+    // Prefill payload for the ERP quotation editor. No quotation exists yet.
+    const customer = await getOne(
+      `SELECT id, name, email, phone, address, billingAddress, shippingAddress, city,
+              segment, paymentTerms, currency, balance
+         FROM customers WHERE id = ?`,
+      [request.customer_id]
     );
-    await notifyCustomer({
-      companyId, customerId: request.customer_id, type: NOTIFICATION_TYPES.QUOTATION,
-      title: `Your quotation ${quotationNumber} is ready`,
-      body: 'Your quotation is available for review. You can accept, reject or request changes.',
-      link: `#/portal/quotations/${id}`,
-      actorName: admin.name || 'Sales',
-    });
-    for (const user of portalUsers) {
-      await sendEmailBestEffort({
-        to: user.email,
-        subject: `Your quotation ${quotationNumber} is ready for review`,
-        text: `Dear ${request.customer_name},\n\nYour quotation ${quotationNumber} (total ${total}) is ready.\nSign in to the customer portal to preview, download or respond.\n\nPrime ERP`,
+
+    return {
+      id: request.id,
+      requestNumber: request.request_number,
+      requestType: request.request_type,
+      customer_id: request.customer_id,
+      customer_name: request.customer_name,
+      items: request.items,
+      subtotal: request.subtotal,
+      notes: request.notes,
+      requestedDeliveryDate: request.requested_delivery_date || null,
+      attachments: request.attachments || [],
+      status: REQUEST_STATUS.READY_FOR_CONVERSION,
+      assignedTo: request.assigned_to || null,
+      customer: customer ? {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        address: customer.address,
+        billingAddress: customer.billingAddress || customer.address || '',
+        shippingAddress: customer.shippingAddress || customer.billingAddress || customer.address || '',
+        city: customer.city,
+        segment: customer.segment,
+        paymentTerms: customer.paymentTerms || 'Net 7',
+        currency: customer.currency || 'MWK',
+      } : null,
+    };
+  },
+
+  // ─── Admin: complete the conversion after the ERP quotation is saved ───────
+  // Called by the ERP quotation editor after the official quotation has been
+  // saved with its number. This is the ONLY place a request becomes "converted":
+  //  1. Creates the backend quotation record mirroring the ERP quotation
+  //  2. Links the request ↔ quotation (permanent bidirectional reference)
+  //  3. Records audit + timeline events
+  //  4. Notifies the customer
+  async completeQuotation(requestId, { admin, companyId, quotationNumber, erpQuotationId, quotationSnapshot = {}, context = {} }) {
+    if (!quotationNumber) throw new Error('quotationNumber is required to complete the conversion');
+    const request = await this.adminGetRequest(requestId, companyId);
+    if (!request) throw new Error('Request not found');
+    if ([REQUEST_STATUS.REJECTED, REQUEST_STATUS.CANCELLED].includes(request.status)) {
+      throw new Error('Request is closed and cannot be converted');
+    }
+    if (request.quotation_id) throw new Error('A quotation has already been linked to this request');
+
+    const snapshotItems = Array.isArray(quotationSnapshot.items) ? quotationSnapshot.items : request.items;
+    const normalizedItems = normalizeItems(snapshotItems);
+    if (normalizedItems.length === 0) throw new Error('At least one line item is required');
+    const discount = round2(Number(quotationSnapshot.discountAmount ?? quotationSnapshot.discount) || 0);
+    const taxRate = Number(quotationSnapshot.taxRate ?? quotationSnapshot.tax_rate) || 0;
+    const deliveryFee = round2(Number(quotationSnapshot.otherCharges ?? quotationSnapshot.deliveryFee ?? quotationSnapshot.delivery_fee) || 0);
+    const { subtotal, taxAmount, total } = computeTotals(normalizedItems, discount, taxRate, deliveryFee);
+
+    const id = genId('qt');
+    const now = nowIso();
+
+    await runQuery('BEGIN TRANSACTION');
+    try {
+      await runQuery(
+        `INSERT INTO quotations
+           (id, quotation_number, request_id, customer_id, customer_name, company_id, items,
+            subtotal, discount, tax_rate, tax_amount, delivery_fee, total, currency,
+            payment_terms, valid_until, status, created_by, source_request_number, erp_quotation_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, quotationNumber, requestId, request.customer_id, request.customer_name, companyId,
+          JSON.stringify(normalizedItems), subtotal, discount, taxRate, taxAmount,
+          deliveryFee, total,
+          quotationSnapshot.currency || 'MWK',
+          quotationSnapshot.paymentTerms || 'Net 7',
+          quotationSnapshot.validUntil || null,
+          QUOTATION_STATUS.READY, admin.id,
+          request.request_number, erpQuotationId || null]
+      );
+
+      await runQuery(
+        `UPDATE quotation_requests SET status = ?, quotation_id = ?, quotation_number = ?,
+           converted_at = ?, converted_by = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ?
+         WHERE id = ?`,
+        [REQUEST_STATUS.CONVERTED, id, quotationNumber, now, admin.id, admin.id, now, now, requestId]
+      );
+
+      await addTimeline(companyId, request.customer_id, 'request', requestId, EVENT_TYPES.QUOTATION_SAVED,
+        'Quotation saved', `${quotationNumber} was saved for ${request.request_number}.`,
+        { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
+        { quotationNumber, total });
+
+      await addTimeline(companyId, request.customer_id, 'request', requestId, EVENT_TYPES.QUOTATION_NUMBER_ASSIGNED,
+        'Quotation number assigned', `${quotationNumber} was assigned to ${request.request_number}.`,
+        { type: 'system' }, { quotationNumber });
+
+      await addTimeline(companyId, request.customer_id, 'quotation', id, EVENT_TYPES.QUOTATION_GENERATED,
+        'Quotation ready', `Official quotation ${quotationNumber} is ready for review.`,
+        { type: 'system' }, { total, sourceRequest: request.request_number });
+
+      await logAudit({
+        actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' },
+        companyId, action: 'QUOTATION_SAVED', entityType: 'quotation', entityId: id,
+        details: `${quotationNumber} created from request ${request.request_number}`,
+        oldValue: { status: request.status },
+        newValue: { status: REQUEST_STATUS.CONVERTED, quotationNumber, items: normalizedItems, subtotal, taxAmount, total }, context,
       });
+
+      await notifyCustomer({
+        companyId, customerId: request.customer_id, type: NOTIFICATION_TYPES.QUOTATION,
+        title: `Your quotation ${quotationNumber} is ready`,
+        body: `Your official quotation (from request ${request.request_number}) is available for review.`,
+        link: `#/portal/quotations/${id}`,
+        actorName: admin.name || 'Sales',
+      });
+      const portalUsers = await getAll(
+        'SELECT id, email FROM portal_users WHERE customer_id = ? AND company_id = ? AND status = ?',
+        [request.customer_id, companyId, 'active']
+      );
+      for (const user of portalUsers) {
+        await sendEmailBestEffort({
+          to: user.email,
+          subject: `Your quotation ${quotationNumber} is ready for review`,
+          text: `Dear ${request.customer_name},\n\nYour official quotation ${quotationNumber} (total ${total}) prepared from request ${request.request_number} is ready.\nSign in to the customer portal to preview, download or respond.\n\nPrime ERP`,
+        });
+      }
+
+      await runQuery('COMMIT');
+    } catch (err) {
+      await runQuery('ROLLBACK');
+      throw err;
     }
 
     emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'quotation', docId: id, status: QUOTATION_STATUS.READY, quotationNumber });
-    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.QUOTATION_READY });
+    emitEntityChange('portal', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.CONVERTED, quotationNumber });
     emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'quotation', docId: id, status: QUOTATION_STATUS.READY, quotationNumber });
+    emitEntityChange('admin', { companyId, customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.CONVERTED, quotationNumber });
 
     return this.getQuotationById(id, { companyId });
   },

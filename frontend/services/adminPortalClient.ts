@@ -72,6 +72,23 @@ export interface AdminRequestItem {
   lineTotal: number;
 }
 
+export type AdminRequestStatus =
+  | 'draft'
+  | 'submitted'
+  | 'assigned'
+  | 'under_review'
+  | 'waiting_for_customer'
+  | 'ready_for_conversion'
+  | 'converted'
+  | 'rejected'
+  | 'cancelled';
+
+export interface AdminAttachment {
+  name: string;
+  url: string;
+  type: string;
+}
+
 export interface AdminQuotationRequest {
   id: string;
   request_number: string;
@@ -82,14 +99,49 @@ export interface AdminQuotationRequest {
   items: AdminRequestItem[];
   subtotal: number;
   notes: string | null;
-  status: 'submitted' | 'under_review' | 'quotation_ready' | 'rejected' | 'cancelled';
+  status: AdminRequestStatus;
   review_note: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
   quotation_id: string | null;
+  quotation_number: string | null;
+  requested_delivery_date: string | null;
+  attachments: AdminAttachment[];
+  assigned_to: string | null;
+  assigned_by: string | null;
+  assigned_at: string | null;
+  converted_at: string | null;
+  converted_by: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface QuotationPrefillPayload {
+  id: string;
+  requestNumber: string;
+  requestType: string;
+  customer_id: string;
+  customer_name: string;
+  items: AdminRequestItem[];
+  subtotal: number;
+  notes: string | null;
+  requestedDeliveryDate: string | null;
+  attachments: AdminAttachment[];
+  status: string;
+  assignedTo: string | null;
+  customer: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    billingAddress: string;
+    shippingAddress: string;
+    city: string | null;
+    segment: string | null;
+    paymentTerms: string | null;
+    currency: string | null;
+  } | null;
 }
 
 export interface AdminQuotation {
@@ -118,6 +170,8 @@ export interface AdminQuotation {
   converted_at: string | null;
   order_id: string | null;
   created_by: string;
+  source_request_number: string | null;
+  erp_quotation_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -181,8 +235,25 @@ export const adminLifecycle = {
     clarify(id: string, note: string): Promise<AdminQuotationRequest> {
       return adminPortalApi.post<AdminQuotationRequest>(`/requests/${id}/clarify`, { note });
     },
-    generateQuotation(id: string, body: any): Promise<AdminQuotation> {
-      return adminPortalApi.post<AdminQuotation>(`/requests/${id}/generate-quotation`, body);
+    open(id: string): Promise<AdminQuotationRequest> {
+      return adminPortalApi.post<AdminQuotationRequest>(`/requests/${id}/open`, {});
+    },
+    assign(id: string, body: { assignTo?: string; assignToName?: string }): Promise<AdminQuotationRequest> {
+      return adminPortalApi.post<AdminQuotationRequest>(`/requests/${id}/assign`, body);
+    },
+    /**
+     * Starts quotation generation. Does NOT create a quotation and does NOT
+     * reserve a quotation number — returns the prefill payload for the standard
+     * ERP quotation editor.
+     */
+    startQuotation(id: string): Promise<QuotationPrefillPayload> {
+      return adminPortalApi.post<QuotationPrefillPayload>(`/requests/${id}/generate-quotation`, {});
+    },
+    /**
+     * Links the saved ERP quotation to the request (request becomes converted).
+     */
+    completeQuotation(id: string, body: { quotationNumber: string; erpQuotationId?: string; quotationSnapshot?: any }): Promise<AdminQuotation> {
+      return adminPortalApi.post<AdminQuotation>(`/requests/${id}/complete-quotation`, body);
     },
   },
   quotations: {
@@ -226,6 +297,11 @@ export const adminLifecycle = {
   users: {
     list(): Promise<AdminUser[]> {
       return adminPortalApi.get<AdminUser[]>('/users');
+    },
+  },
+  staff: {
+    list(): Promise<{ id: string; username: string; email: string | null; role: string }[]> {
+      return adminPortalApi.get<{ id: string; username: string; email: string | null; role: string }[]>('/staff');
     },
   },
 };

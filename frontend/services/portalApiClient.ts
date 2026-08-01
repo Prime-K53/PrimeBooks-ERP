@@ -112,6 +112,23 @@ export interface RequestLineItem {
   lineTotal: number;
 }
 
+export interface PortalAttachment {
+  name: string;
+  url: string;
+  type: string;
+}
+
+export type PortalRequestStatus =
+  | 'draft'
+  | 'submitted'
+  | 'assigned'
+  | 'under_review'
+  | 'waiting_for_customer'
+  | 'ready_for_conversion'
+  | 'converted'
+  | 'rejected'
+  | 'cancelled';
+
 export interface QuotationRequestRecord {
   id: string;
   request_number: string;
@@ -122,11 +139,14 @@ export interface QuotationRequestRecord {
   items: RequestLineItem[];
   subtotal: number;
   notes: string | null;
-  status: 'submitted' | 'under_review' | 'quotation_ready' | 'rejected' | 'cancelled';
+  status: PortalRequestStatus;
   review_note: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
   quotation_id: string | null;
+  quotation_number: string | null;
+  requested_delivery_date: string | null;
+  attachments: PortalAttachment[];
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -157,6 +177,7 @@ export interface QuotationRecord {
   revision_requested_at: string | null;
   converted_at: string | null;
   order_id: string | null;
+  source_request_number: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -186,6 +207,8 @@ export interface CreateRequestPayload {
   requestType?: string;
   items: { name: string; productId?: string | null; quantity: number; unitPrice: number }[];
   notes?: string;
+  requestedDeliveryDate?: string | null;
+  attachments?: PortalAttachment[];
 }
 
 export interface QuotationDecisionPayload {

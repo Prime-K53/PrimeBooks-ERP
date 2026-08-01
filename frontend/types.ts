@@ -1122,6 +1122,9 @@ export interface Quotation {
   roundingDifference?: number;
   roundingMethod?: string;
   currency?: string;
+  sourceRequestNumber?: string;
+  sourceRequestId?: string;
+  erpQuotationId?: string;
   [key: string]: any;
 }
 

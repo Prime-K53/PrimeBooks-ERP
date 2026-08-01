@@ -54,7 +54,7 @@ interface SalesState {
   addSale: (sale: Sale) => Promise<void>;
   updateSale: (sale: Sale) => Promise<void>;
   
-  addQuotation: (quotation: Quotation) => Promise<void>;
+  addQuotation: (quotation: Quotation) => Promise<Quotation>;
   updateQuotation: (quotation: Quotation) => Promise<void>;
   deleteQuotation: (id: string) => Promise<void>;
   
@@ -182,6 +182,7 @@ export const useSalesStore = create<SalesState>((set, get) => ({
         amount: newQuotation.total ? `${newQuotation.currency || 'KES'} ${Number(newQuotation.total).toLocaleString()}` : '',
       });
     }
+    return newQuotation;
   },
   updateQuotation: async (quotation) => {
     const prev = get().quotations;

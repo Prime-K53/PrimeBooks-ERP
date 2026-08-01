@@ -58,7 +58,7 @@ const portalService = {
     );
 
     const requestRow = await getOne(
-      "SELECT COUNT(*) as count FROM quotation_requests WHERE customer_id = ? AND company_id = ? AND status IN ('submitted', 'under_review')",
+      "SELECT COUNT(*) as count FROM quotation_requests WHERE customer_id = ? AND company_id = ? AND status IN ('submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion')",
       [customerId, companyId]
     );
 

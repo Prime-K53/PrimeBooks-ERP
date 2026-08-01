@@ -162,6 +162,7 @@ const CustomerCreateRequest: React.FC = () => {
           unitPrice: l.unitPrice,
         })),
         notes: notes || undefined,
+        requestedDeliveryDate: deliveryDate || null,
       });
       setSuccessId(created.request_number || created.id);
     } catch (err: any) {

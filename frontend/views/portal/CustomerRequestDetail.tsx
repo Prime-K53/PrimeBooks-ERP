@@ -7,16 +7,21 @@ import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 
 const stageDefinitions = [
   { key: 'submitted', label: 'Submitted', description: 'Request received' },
+  { key: 'assigned', label: 'Assigned', description: 'Sales assigned' },
   { key: 'under_review', label: 'Under Review', description: 'Team is reviewing' },
-  { key: 'quotation_ready', label: 'Quotation Ready', description: 'Official quotation issued' },
-  { key: 'done', label: 'Completed', description: 'Order confirmed' },
+  { key: 'ready_for_conversion', label: 'Quotation Being Prepared', description: 'Official quotation being drafted' },
+  { key: 'converted', label: 'Quotation Issued', description: 'Official quotation available' },
 ];
 
 function stageIndex(status: string): number {
   switch (status) {
+    case 'draft': return 1;
     case 'submitted': return 1;
-    case 'under_review': return 2;
-    case 'quotation_ready': return 3;
+    case 'assigned': return 2;
+    case 'under_review': return 3;
+    case 'waiting_for_customer': return 3;
+    case 'ready_for_conversion': return 4;
+    case 'converted': return 5;
     case 'rejected': return -1;
     case 'cancelled': return -1;
     default: return 1;
@@ -24,9 +29,13 @@ function stageIndex(status: string): number {
 }
 
 const requestStatusLabel: Record<string, string> = {
+  draft: 'Draft',
   submitted: 'Submitted',
+  assigned: 'Assigned',
   under_review: 'Under Review',
-  quotation_ready: 'Quotation Ready',
+  waiting_for_customer: 'Waiting for Customer',
+  ready_for_conversion: 'Quotation Being Prepared',
+  converted: 'Quotation Issued',
   rejected: 'Rejected',
   cancelled: 'Cancelled',
 };
@@ -110,7 +119,7 @@ const CustomerRequestDetail: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <StatusBadge status={requestStatusLabel[request.status] || request.status} />
-            {(request.status === 'submitted' || request.status === 'under_review') && (
+            {(request.status === 'submitted' || request.status === 'assigned' || request.status === 'under_review' || request.status === 'waiting_for_customer') && (
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
@@ -158,12 +167,12 @@ const CustomerRequestDetail: React.FC = () => {
           </div>
         )}
 
-        {request.status === 'quotation_ready' && request.quotation_id && (
+        {request.status === 'converted' && request.quotation_id && (
           <button
             onClick={() => navigate(`/portal/quotations/${request.quotation_id}`)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-all"
           >
-            <FileText size={15} /> View Quotation <ArrowUpRight size={14} />
+            <FileText size={15} /> View Quotation {request.quotation_number ? `(${request.quotation_number})` : ''} <ArrowUpRight size={14} />
           </button>
         )}
       </div>
@@ -200,10 +209,44 @@ const CustomerRequestDetail: React.FC = () => {
         </div>
       </div>
 
+      {request.status === 'waiting_for_customer' && (
+        <div className="mb-6 bg-violet-50 border border-violet-200 rounded-xl p-4">
+          <p className="text-sm text-violet-700 font-medium">
+            Our team is waiting on additional information from you. Please contact us or submit a new request with more detail.
+          </p>
+        </div>
+      )}
+
       {request.notes && (
         <div className="mb-6 bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Your Notes</p>
           <p className="text-sm text-slate-700">{request.notes}</p>
+        </div>
+      )}
+
+      {request.requested_delivery_date && (
+        <div className="mb-6 bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Requested Delivery Date</p>
+          <p className="text-sm text-slate-700">{new Date(request.requested_delivery_date).toLocaleDateString()}</p>
+        </div>
+      )}
+
+      {request.attachments && request.attachments.length > 0 && (
+        <div className="mb-6 bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Attachments</p>
+          <div className="flex flex-wrap gap-2">
+            {request.attachments.map((a, i) => (
+              <a
+                key={i}
+                href={a.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+              >
+                <FileText size={12} /> {a.name}
+              </a>
+            ))}
+          </div>
         </div>
       )}
 

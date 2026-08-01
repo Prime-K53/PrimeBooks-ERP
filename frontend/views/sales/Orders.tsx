@@ -46,6 +46,7 @@ import { attachDocumentSecurity } from '../../utils/documentSecurity';
 import { initializePrimePdfFonts } from '../shared/components/PDF/templateSettings';
 import { currencyService } from '../../services/currencyService';
 import { useConfirmDialog, ConfirmDialog, ConfirmDialogType } from '../../components/ConfirmDialog';
+import { adminLifecycle } from '../../services/adminPortalClient';
 
 const SUBSCRIPTION_STATUSES = ['Draft', 'Active', 'Paused', 'Cancelled', 'Expired'] as const;
 
@@ -334,6 +335,30 @@ const Orders: React.FC = () => {
             setEditingItem(null);
             if (location.state.recurringDraft) setEditingItem(location.state.recurringDraft);
             else if (location.state.invoiceData) setEditingItem(location.state.invoiceData);
+            else if (location.state.quotationPrefill) {
+                // Prefill from a customer quotation request (QTR-...). The
+                // official quotation is linked back to the request on save.
+                const p = location.state.quotationPrefill;
+                setActiveTab('Quotations');
+                setEditingItem({
+                    customerName: p.customer_name || '',
+                    customerId: p.customer_id || '',
+                    items: (p.items || []).map((i: any, idx: number) => ({
+                        id: i.productId || `prefill_${idx}`,
+                        name: i.name || 'Item',
+                        quantity: Number(i.quantity) || 1,
+                        price: Number(i.unitPrice) || 0,
+                        type: 'Service',
+                    })),
+                    notes: p.notes || '',
+                    billingAddress: p.customer?.billingAddress || '',
+                    shippingAddress: p.customer?.shippingAddress || '',
+                    paymentTerms: p.customer?.paymentTerms || 'Net 7',
+                    currency: p.customer?.currency || '',
+                    sourceRequestNumber: p.requestNumber || '',
+                    sourceRequestId: p.id || '',
+                });
+            }
             else if (location.state.customer) setEditingItem({ customerName: location.state.customer });
             else setEditingItem(null);
             setIsFormOpen(true);
@@ -419,7 +444,24 @@ const Orders: React.FC = () => {
         try {
             if (activeView === 'Quotations') {
                 if (editingItem) await updateQuotation(data, reason);
-                else await addQuotation(data);
+                else {
+                    await addQuotation(data);
+                    // If this quotation was created from a customer request
+                    // (QTR-...), link it back: the request becomes "converted",
+                    // the customer is notified, and the backend quotation is created.
+                    if (data?.sourceRequestId && data?.id) {
+                        try {
+                            await adminLifecycle.requests.completeQuotation(data.sourceRequestId, {
+                                quotationNumber: data.id,
+                                erpQuotationId: data.id,
+                                quotationSnapshot: data,
+                            });
+                            notify(`Linked ${data.id} to ${data.sourceRequestNumber || data.sourceRequestId}`, "success");
+                        } catch (err: any) {
+                            notify(`Quotation saved, but linking to the request failed: ${err.message || 'unknown error'}`, "error");
+                        }
+                    }
+                }
             } else if (activeView === 'Invoices') {
                 if (editingItem) await updateInvoice(data);
                 else await addInvoice(data);

@@ -15,7 +15,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/portal/dashboard', icon: LayoutDashboard },
-  { label: 'New Request', path: '/portal/new-request', icon: ClipboardList },
+  { label: 'New Quotation Request', path: '/portal/new-request', icon: ClipboardList },
   { label: 'Requests', path: '/portal/requests', icon: ClipboardList },
   { label: 'Orders', path: '/portal/orders', icon: ShoppingCart },
   { label: 'Quotations', path: '/portal/quotations', icon: FileText },

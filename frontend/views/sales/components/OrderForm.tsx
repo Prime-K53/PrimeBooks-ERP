@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { logger } from '@/services/logger';
 // PRICING RULE: Raw prices from engine. Display rounding via pricingDisplayService only.
 //   No rounding, no markup, no market adjustments in persistence layer.
-import { X, Save, Plus, Trash2, Calculator, Info, ShieldCheck, Building2, Package, Tag, Clock, Search, ChevronDown, Coins, UserPlus, Calendar, RefreshCw, Wallet, Mail, Layers, ExternalLink, FileText, Printer, FileDown, Eye, TrendingUp, Truck, Scale, Copy, Sparkles, AlertTriangle, Lightbulb, Image, History, AlertCircle, Check, FolderOpen } from 'lucide-react';
+import { X, Save, Plus, Trash2, Calculator, Info, ShieldCheck, Building2, Package, Tag, Clock, Search, ChevronDown, Coins, UserPlus, Calendar, RefreshCw, Wallet, Mail, Layers, ExternalLink, FileText, Printer, FileDown, Eye, TrendingUp, Truck, Scale, Copy, Sparkles, AlertTriangle, Lightbulb, Image, History, AlertCircle, Check, FolderOpen, Link2 } from 'lucide-react';
 import { useOrders } from '../../../context/OrdersContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useFinance } from '../../../context/FinanceContext';
@@ -1951,6 +1951,12 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                     <div className="text-[10.5px] font-bold tracking-[1.6px] uppercase text-[#666F6C] mb-[4px]">Sales Flow</div>
                     <div className="font-['DM_Serif_Display',serif] text-[27px] leading-[1.15] text-[#23282A] mb-[2px]">{type}</div>
                     <div className="font-['JetBrains_Mono',monospace] text-[13px] text-[#666F6C] tracking-[0.5px] mb-[12px]">#{formData.id}</div>
+
+                    {formData.sourceRequestNumber && (
+                        <div className="self-start border border-[#99f6e4] bg-[#f0fdfa] text-[#0f766e] text-[11px] font-bold tracking-[0.5px] px-[10px] py-[4px] rounded-[6px] mb-[12px] flex items-center gap-1.5">
+                            <Link2 size={12} /> From {formData.sourceRequestNumber}
+                        </div>
+                    )}
 
                     {formData.status && (
                         <div className="self-start border-[2.5px] border-[#B8863B] text-[#B8863B] text-[12.5px] font-bold tracking-[2px] uppercase px-[14px] py-[6px] rounded-[6px] -rotate-6 mb-[12px] bg-[rgba(184,134,59,0.08)]">

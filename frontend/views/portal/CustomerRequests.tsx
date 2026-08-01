@@ -8,9 +8,13 @@ import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 
 const requestStatusLabel: Record<string, string> = {
+  draft: 'Draft',
   submitted: 'Submitted',
+  assigned: 'Assigned',
   under_review: 'Under Review',
-  quotation_ready: 'Quotation Ready',
+  waiting_for_customer: 'Waiting for Customer',
+  ready_for_conversion: 'Quotation Being Prepared',
+  converted: 'Quotation Issued',
   rejected: 'Rejected',
   cancelled: 'Cancelled',
 };
@@ -115,7 +119,12 @@ const CustomerRequests: React.FC = () => {
                       {new Date(r.created_at).toLocaleDateString()} • {itemCount} item{itemCount === 1 ? '' : 's'}{' '}
                       • K {Number(r.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
-                    {r.quotation_id && (
+                    {r.quotation_number && (
+                      <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-emerald-600">
+                        Quotation {r.quotation_number} issued <ArrowUpRight size={12} />
+                      </span>
+                    )}
+                    {!r.quotation_number && r.quotation_id && (
                       <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-emerald-600">
                         Quotation ready <ArrowUpRight size={12} />
                       </span>
@@ -124,7 +133,7 @@ const CustomerRequests: React.FC = () => {
                 </button>
                 <div className="flex items-center gap-3 shrink-0">
                   <StatusBadge status={requestStatusLabel[r.status] || r.status} />
-                  {(r.status === 'submitted' || r.status === 'under_review') && (
+                  {(r.status === 'submitted' || r.status === 'assigned' || r.status === 'under_review' || r.status === 'waiting_for_customer') && (
                     <button
                       onClick={() => handleCancel(r.id)}
                       disabled={cancellingId === r.id}

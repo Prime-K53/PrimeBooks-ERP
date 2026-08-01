@@ -1071,6 +1071,7 @@ const initDb = () => {
         { table: 'bank_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'budgets', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'chart_of_accounts', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'chart_of_accounts', column: 'balance', type: 'REAL DEFAULT 0' },
 
         { table: 'customer_payments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'customer_referrals', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
@@ -1115,7 +1116,17 @@ const initDb = () => {
         { table: 'engagement_customer_rewards', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'engagement_timeline', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
         { table: 'engagement_audit', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_analytics', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' }
+        { table: 'engagement_analytics', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
+        { table: 'quotations', column: 'source_request_number', type: 'TEXT' },
+        { table: 'quotations', column: 'erp_quotation_id', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'requested_delivery_date', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'attachments', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'assigned_to', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'assigned_by', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'assigned_at', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'converted_at', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'converted_by', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'quotation_number', type: 'TEXT' }
       ];
 
       // Process migrations: add missing columns to existing tables
@@ -2291,11 +2302,19 @@ const initDb = () => {
         items TEXT NOT NULL,
         subtotal REAL DEFAULT 0,
         notes TEXT,
-        status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('submitted', 'under_review', 'quotation_ready', 'rejected', 'cancelled')),
+        status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('draft', 'submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion', 'converted', 'rejected', 'cancelled')),
         review_note TEXT,
         reviewed_by TEXT,
         reviewed_at TEXT,
         quotation_id TEXT,
+        requested_delivery_date TEXT,
+        attachments TEXT,
+        assigned_to TEXT,
+        assigned_by TEXT,
+        assigned_at TEXT,
+        converted_at TEXT,
+        converted_by TEXT,
+        quotation_number TEXT,
         created_by TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
@@ -2303,6 +2322,10 @@ const initDb = () => {
       db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_company ON quotation_requests(company_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_status ON quotation_requests(company_id, status)`);
+
+      // NOTE: the legacy quotation_requests rebuild migration runs below, after
+      // the column migrations — SQLite re-prepares every trigger when a table is
+      // renamed, so all columns referenced by triggers must exist first.
 
       // Portal document lifecycle — official quotations (backend-authoritative, customer read-only)
       db.run(`CREATE TABLE IF NOT EXISTS quotations (
@@ -2331,6 +2354,8 @@ const initDb = () => {
         converted_at TEXT,
         order_id TEXT,
         created_by TEXT,
+        source_request_number TEXT,
+        erp_quotation_id TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       )`);
@@ -2414,6 +2439,72 @@ const initDb = () => {
         return new Promise(res => db.run(sql, () => res()));
       }
       Promise.all(migrationPromises).then(() => {
+        // Migration: databases created before the request-status expansion carry the
+        // old CHECK constraint (5 statuses) and lack the newer columns. SQLite cannot
+        // alter CHECK constraints in place, so rebuild the table when the legacy
+        // constraint is detected. Legacy 'quotation_ready' rows map to 'ready_for_conversion'.
+        // NOTE: must run after the column migrations — RENAME re-prepares all triggers.
+        return new Promise((resolve) => {
+          db.all(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'quotation_requests'`, [], (mErr, mRows) => {
+            if (mErr) return resolve();
+            const legacySql = mRows && mRows[0] && mRows[0].sql ? String(mRows[0].sql) : '';
+            if (!legacySql.includes("'submitted', 'under_review', 'quotation_ready', 'rejected', 'cancelled'")) return resolve();
+            db.serialize(() => {
+              db.run(`ALTER TABLE quotation_requests RENAME TO quotation_requests_legacy`, (rErr) => {
+                if (rErr) return console.error('[DB] quotation_requests rebuild rename failed:', rErr.message);
+                db.run(`CREATE TABLE quotation_requests (
+                  id TEXT PRIMARY KEY,
+                  request_number TEXT UNIQUE NOT NULL,
+                  customer_id TEXT NOT NULL,
+                  customer_name TEXT,
+                  company_id TEXT NOT NULL DEFAULT '',
+                  request_type TEXT NOT NULL DEFAULT 'quotation' CHECK(request_type IN ('quotation', 'order')),
+                  items TEXT NOT NULL,
+                  subtotal REAL DEFAULT 0,
+                  notes TEXT,
+                  status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('draft', 'submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion', 'converted', 'rejected', 'cancelled')),
+                  review_note TEXT,
+                  reviewed_by TEXT,
+                  reviewed_at TEXT,
+                  quotation_id TEXT,
+                  requested_delivery_date TEXT,
+                  attachments TEXT,
+                  assigned_to TEXT,
+                  assigned_by TEXT,
+                  assigned_at TEXT,
+                  converted_at TEXT,
+                  converted_by TEXT,
+                  quotation_number TEXT,
+                  created_by TEXT,
+                  created_at TEXT DEFAULT (datetime('now')),
+                  updated_at TEXT DEFAULT (datetime('now'))
+                )`, (cErr) => {
+                  if (cErr) return console.error('[DB] quotation_requests rebuild create failed:', cErr.message);
+                  db.run(`INSERT INTO quotation_requests
+                     (id, request_number, customer_id, customer_name, company_id, request_type,
+                      items, subtotal, notes, status, review_note, reviewed_by, reviewed_at,
+                      quotation_id, created_by, created_at, updated_at)
+                   SELECT id, request_number, customer_id, customer_name, company_id, request_type,
+                          items, subtotal, notes,
+                          CASE WHEN status = 'quotation_ready' THEN 'ready_for_conversion' ELSE status END,
+                          review_note, reviewed_by, reviewed_at,
+                          quotation_id, created_by, created_at, updated_at
+                   FROM quotation_requests_legacy`, (iErr) => {
+                    if (iErr) return console.error('[DB] quotation_requests rebuild copy failed:', iErr.message);
+                    db.run(`DROP TABLE quotation_requests_legacy`, (dErr) => {
+                      if (dErr) console.error('[DB] quotation_requests legacy drop failed:', dErr.message);
+                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`);
+                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_company ON quotation_requests(company_id)`);
+                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_status ON quotation_requests(company_id, status)`);
+                      resolve();
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      }).then(() => {
         Promise.all([
           runIndex(`CREATE INDEX IF NOT EXISTS idx_invoices_company_id ON invoices(company_id)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`),

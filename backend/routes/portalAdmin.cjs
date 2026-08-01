@@ -195,26 +195,78 @@ router.post('/requests/:id/clarify', async (req, res) => {
   }
 });
 
-// Generate official quotation (approve request → official document)
+// Sales opened the request (audit + timeline only)
+router.post('/requests/:id/open', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const data = await portalLifecycleService.markRequestOpened(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Open request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to record request open' });
+  }
+});
+
+// Assign a salesperson to the request
+router.post('/requests/:id/assign', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { assignTo, assignToName } = req.body || {};
+    const data = await portalLifecycleService.assignRequest(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      assignTo,
+      assignToName,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Assign request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to assign request' });
+  }
+});
+
+// Start quotation generation: does NOT create a quotation and does NOT reserve
+// a number. Records the event and returns the prefill payload for the standard
+// ERP quotation editor.
 router.post('/requests/:id/generate-quotation', async (req, res) => {
   try {
     const company_id = req.user.company_id || '';
-    const { items, discount, taxRate, deliveryFee, paymentTerms, validUntil } = req.body || {};
-    const data = await portalLifecycleService.generateQuotation(req.params.id, {
+    const data = await portalLifecycleService.startQuotationGeneration(req.params.id, {
       admin: adminActor(req),
       companyId: company_id,
-      items,
-      discount,
-      taxRate,
-      deliveryFee,
-      paymentTerms,
-      validUntil,
+      context: requestContext(req),
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Generate quotation error:', err);
+    res.status(400).json({ error: err.message || 'Failed to start quotation generation' });
+  }
+});
+
+// Complete the conversion after the ERP quotation has been saved. This is the
+// only point where the official quotation is linked to the request and the
+// customer is notified.
+router.post('/requests/:id/complete-quotation', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const { quotationNumber, erpQuotationId, quotationSnapshot } = req.body || {};
+    const data = await portalLifecycleService.completeQuotation(req.params.id, {
+      admin: adminActor(req),
+      companyId: company_id,
+      quotationNumber,
+      erpQuotationId,
+      quotationSnapshot,
       context: requestContext(req),
     });
     res.status(201).json(data);
   } catch (err) {
-    console.error('[PortalAdmin] Generate quotation error:', err);
-    res.status(400).json({ error: err.message || 'Failed to generate quotation' });
+    console.error('[PortalAdmin] Complete quotation error:', err);
+    res.status(400).json({ error: err.message || 'Failed to complete quotation' });
   }
 });
 
@@ -492,6 +544,28 @@ router.post('/users/:id/reset-password', async (req, res) => {
   } catch (err) {
     console.error('[PortalAdmin] Reset password error:', err);
     res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Staff (sales users) available for request assignment
+router.get('/staff', async (req, res) => {
+  try {
+    const company_id = req.user.company_id || '';
+    const rows = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT id, username, email, role, company_id, is_active
+        FROM users
+        WHERE is_active = 1
+        ORDER BY username ASC
+      `, [], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      });
+    });
+    res.json(rows);
+  } catch (err) {
+    console.error('[PortalAdmin] List staff error:', err);
+    res.status(500).json({ error: 'Failed to load staff' });
   }
 });
 

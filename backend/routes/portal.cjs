@@ -38,7 +38,7 @@ router.get('/requests', async (req, res) => {
 router.post('/requests', async (req, res) => {
   try {
     const { id, customer_id, company_id, email, full_name } = req.portalUser;
-    const { requestType, items, notes } = req.body;
+    const { requestType, items, notes, requestedDeliveryDate, attachments } = req.body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'At least one line item is required' });
     }
@@ -50,6 +50,8 @@ router.post('/requests', async (req, res) => {
       requestType,
       items,
       notes,
+      requestedDeliveryDate,
+      attachments,
       context: requestContext(req),
     });
     res.status(201).json(result);
