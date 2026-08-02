@@ -598,7 +598,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const { startPeriodicSync } = await import('../services/syncService');
             const { restoreLocalMarginsFromSync, migrateLocalMarginsToIndexedDB } = await import('../services/offlineProfitMargins');
-            // startPeriodicSync fires fullSync() internally once — avoids duplicate pull
+            // startPeriodicSync fires an initial pull on start — avoids duplicate
             startPeriodicSync(undefined, (result) => {
               if (result.pulled > 0 || result.pushed > 0) {
               }

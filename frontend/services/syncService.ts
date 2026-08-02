@@ -34,6 +34,7 @@ const STORE_TO_TABLE: Record<string, string> = {
   salesOrders: 'sales_orders',
   userGroups: 'user_groups',
   bomTemplates: 'bom_templates',
+  boms: 'boms',
   bankAccounts: 'bank_accounts',
   customerPayments: 'customer_payments',
   examinationBatches: 'examination_batches',
@@ -44,6 +45,7 @@ const STORE_TO_TABLE: Record<string, string> = {
   profitMarginSettings: 'profit_margin_settings',
   marketAdjustments: 'market_adjustments',
   materialCategories: 'material_categories',
+  taxRates: 'tax_rates',
   warehouseInventory: 'warehouse_inventory',
   materialBatches: 'material_batches',
   inventoryTransactions: 'inventory_transactions',
@@ -116,7 +118,7 @@ const TABLES_TO_SYNC = [
   'settings', 'reminders',
   'workCenters', 'workOrders', 'batches', 'resources',
   'salesOrders', 'quotations', 'orders',
-  'jobOrders', 'examJobs', 'salesExchanges', 'reprintJobs',
+  'jobOrders', 'salesExchanges', 'reprintJobs',
   'examinationBatches', 'examinationJobs',
   'bomTemplates', 'boms', 'profitMarginSettings', 'marketAdjustments',
   'bankAccounts', 'bankTransactions', 'bankStatements',
@@ -143,6 +145,8 @@ const TABLES_TO_SYNC = [
   'smsCampaigns', 'smsTemplates',
   'marketAdjustmentTransactions', 'notificationAuditLogs',
   'whatsappChats', 'whatsappTemplates', 'whatsappCampaigns', 'whatsappAutomations',
+  'taxRates',
+  'customerNotificationLogs',
 ];
 
 const getTable = (storeName: string): string => STORE_TO_TABLE[storeName] || storeName;
@@ -282,80 +286,6 @@ export async function pullRemoteChanges(
   }
 
   return { pulled, errors };
-}
-
-/**
- * Push offline-queued mutations from IndexedDB syncOutbox to Supabase.
- * Called when coming back online and periodically.
- */
-export async function pushLocalChanges(): Promise<{ pushed: number; errors: string[] }> {
-  if (!SUPABASE_ENABLED) return { pushed: 0, errors: [] };
-
-  const session = await ensureSession();
-  if (!session) return { pushed: 0, errors: ['Not authenticated'] };
-
-  const errors: string[] = [];
-  let pushed = 0;
-
-  const outbox = await dbService.getAll<any>('syncOutbox');
-  if (outbox.length === 0) return { pushed: 0, errors: [] };
-
-  for (const entry of outbox) {
-    try {
-      const [storeName, operation] = entry.type.split(':');
-      const table = getTable(storeName);
-
-      if (operation === 'delete') {
-        const { error } = await supabase
-          .from(table)
-          .delete()
-          .eq('id', entry.entityId);
-        if (error) throw error;
-      } else {
-        const cleanPayload = { ...entry.payload };
-        delete cleanPayload._updatedAt;
-        delete cleanPayload._cloudSource;
-        const { id, ...domainData } = cleanPayload;
-        const record: Record<string, unknown> = {
-          id: id || entry.entityId,
-          data: domainData,
-          updated_at: new Date().toISOString(),
-        };
-        const { error } = await supabase
-          .from(table)
-          .upsert(record, {
-            onConflict: 'id',
-            ignoreDuplicates: false,
-          });
-        if (error) throw error;
-      }
-
-      await dbService.delete('syncOutbox', entry.id);
-      pushed++;
-    } catch (err) {
-      errors.push(`${entry.type}/${entry.entityId}: ${err instanceof Error ? err.message : 'Unknown'}`);
-    }
-  }
-
-  if (pushed > 0) {
-    localStorage.setItem('nexus_last_sync', new Date().toISOString());
-  }
-
-  return { pushed, errors };
-}
-
-export async function fullSync(
-  onProgress?: (progress: SyncProgress) => void
-): Promise<{ pulled: number; pushed: number; errors: string[] }> {
-  onProgress?.({ totalStores: 0, completedStores: 0, currentStore: '', phase: 'push' });
-  const pushResult = await pushLocalChanges();
-  const pullResult = await pullRemoteChanges(onProgress);
-  onProgress?.({ totalStores: 0, completedStores: 0, currentStore: '', phase: 'done' });
-  return {
-    pulled: pullResult.pulled,
-    pushed: pushResult.pushed,
-    errors: [...pushResult.errors, ...pullResult.errors],
-  };
 }
 
 /**

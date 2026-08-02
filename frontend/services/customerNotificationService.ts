@@ -210,7 +210,7 @@ export const customerNotificationService = {
     } else {
       try {
         await durableSyncQueue.enqueue({
-          table: 'notifications',
+          table: 'customerNotificationLogs',
           recordId: data.id,
           operation: 'insert',
           payload: { type, data, message, phoneNumber: sanitizePhoneNumber(data.phoneNumber || '') },

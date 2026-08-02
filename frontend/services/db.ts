@@ -464,6 +464,7 @@ const CLOUD_TABLE_MAP: Record<string, string> = {
   quotations: 'quotations',
   orders: 'orders',
   boms: 'boms',
+  taxRates: 'tax_rates',
   referrals: 'customer_referrals',
   referralRewards: 'referral_rewards',
   referralTimeline: 'referral_timeline',
