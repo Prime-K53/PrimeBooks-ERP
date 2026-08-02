@@ -27,6 +27,7 @@ interface RecentDocument {
 interface DashboardData {
   balance: number;
   outstandingBalance: number;
+  walletBalance: number;
   unpaidInvoiceCount: number;
   totalOrders: number;
   unreadMessageCount: number;
@@ -183,6 +184,7 @@ const CustomerDashboard: React.FC = () => {
         <PortalKPICard label="Outstanding Balance" value={`K ${(data.outstandingBalance || 0).toFixed(2)}`} icon={DollarSign} color="emerald" onClick={() => navigate('/portal/statements')} />
         <PortalKPICard label="Unpaid Invoices" value={data.unpaidInvoiceCount ?? 0} icon={FileText} color="amber" onClick={() => navigate('/portal/invoices?status=Unpaid')} />
         <PortalKPICard label="Total Orders" value={data.totalOrders ?? 0} icon={ShoppingCart} color="slate" onClick={() => navigate('/portal/orders')} />
+        <PortalKPICard label="Wallet Balance" value={`K ${(data.walletBalance || 0).toFixed(2)}`} icon={Wallet} color="blue" onClick={() => navigate('/portal/wallet')} />
       </div>
 
       {referralSettings?.enabled && !referralLoading && referralFunnel && (
