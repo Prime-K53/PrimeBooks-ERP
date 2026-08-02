@@ -56,8 +56,7 @@ const JobHoverCard: React.FC<{
 
     return (
         <div
-            style={{ position: 'fixed', pointerEvents: 'none', transitionDuration: '200ms' }}
-            style={{ top: pos.y + 10, left: pos.x + 10 }}
+            style={{ position: 'fixed', pointerEvents: 'none', transitionDuration: '200ms', top: pos.y + 10, left: pos.x + 10 }}
         >
             <div style={{ background: 'rgba(11,62,57,.9)', backdropFilter: 'blur(12px)', border: '1.4px solid #e4ddd1', borderColor: 'rgba(255,255,255,.2)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderStyle: 'solid', borderColor: 'rgba(255,255,255,.1)', paddingBottom: '12px' }}>

@@ -174,8 +174,7 @@ const Scheduler: React.FC = () => {
                         {Array.from({ length: totalHours }).map((_, i) => (
                             <div 
                                 key={i} 
-                                style={{ position: 'absolute', borderStyle: 'solid', borderColor: '#e4ddd1', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '4px', fontWeight: 500, color: '#5c6567' }}
-                                style={{ left: i * pixelsPerHour, width: pixelsPerHour }}
+                                style={{ position: 'absolute', borderStyle: 'solid', borderColor: '#e4ddd1', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '4px', fontWeight: 500, color: '#5c6567', left: i * pixelsPerHour, width: pixelsPerHour }}
                             >
                                 {startHour + i}:00
                             </div>
@@ -210,8 +209,7 @@ const Scheduler: React.FC = () => {
                                     {Array.from({ length: totalHours }).map((_, i) => (
                                         <div 
                                             key={i} 
-                                            style={{ position: 'absolute', borderStyle: 'solid', borderColor: '#e4ddd1', height: '100%', pointerEvents: 'none' }}
-                                            style={{ left: i * pixelsPerHour }}
+                                            style={{ position: 'absolute', borderStyle: 'solid', borderColor: '#e4ddd1', height: '100%', pointerEvents: 'none', left: i * pixelsPerHour }}
                                         ></div>
                                     ))}
 

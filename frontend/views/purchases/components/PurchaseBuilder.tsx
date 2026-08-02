@@ -360,9 +360,9 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
                             </div>
                             <div style={{position:'relative'}}>
                                 <input type="text" placeholder="e.g. ABC Suppliers" value={supplierSearch}
-                                    onChange={e=>{setSupplierSearch(e.target.value);setIsSupplierDropdownOpen(true)}} onFocus={()=>setIsSupplierDropdownOpen(true)}
+                                    onChange={e=>{setSupplierSearch(e.target.value);setIsSupplierDropdownOpen(true)}}
                                     style={{...inputStyle,borderRadius:9,fontWeight:700,fontFamily:"'Inter','DM Sans',sans-serif"}}
-                                    onFocus={e=>{e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}}
+                                    onFocus={e=>{setIsSupplierDropdownOpen(true);e.currentTarget.style.borderColor=teal[400];e.currentTarget.style.boxShadow='0 0 0 3px rgba(31,133,119,.1)'}}
                                     onBlur={e=>{e.currentTarget.style.borderColor=hairline;e.currentTarget.style.boxShadow='none'}}
                                 />
                                 <ChevronDown size={14} style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',color:inkSoft,pointerEvents:'none'}} />
@@ -400,7 +400,7 @@ export const PurchaseBuilder: React.FC<PurchaseBuilderProps> = ({ inventory, sup
                                             })}
                                             {supplierSearch && !filteredSuppliers.some(s=>(s.name||'').toLowerCase().includes(supplierSearch.toLowerCase())) && (
                                                 <button onClick={()=>{setIsSupplierModalOpen(true);setIsSupplierDropdownOpen(false)}}
-                                                    style={{width:'100%',padding:'11px 16px',background:teal[50],color:teal[600],borderTop:`1px solid ${hairline}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:"'Inter','DM Sans',sans-serif",fontSize:12,fontWeight:600,transition:'all .15s ease',border:'none',width:'100%'}}
+                                                    style={{width:'100%',padding:'11px 16px',background:teal[50],color:teal[600],borderTop:`1px solid ${hairline}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:"'Inter','DM Sans',sans-serif",fontSize:12,fontWeight:600,transition:'all .15s ease',border:'none'}}
                                                     onMouseEnter={e=>e.currentTarget.style.background=teal[100]} onMouseLeave={e=>e.currentTarget.style.background=teal[50]}>
                                                     <Plus size={14}/><span style={{fontWeight:700}}>Add "{supplierSearch}" as New Supplier</span>
                                                 </button>

@@ -1,10 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { createElement } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, Eye, CreditCard, Lock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Eye, CreditCard, CheckCircle } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { portalLifecycle } from '../../services/portalApiClient';
 import { mapToInvoiceData } from '../../utils/pdfMapper';
 import { attachDocumentSecurity } from '../../utils/documentSecurity';
@@ -21,6 +19,8 @@ import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import { useToast } from './components/Toast';
 import { portalTheme, DEFAULT_PAGE_SIZE } from './constants';
+
+const StripePaymentForm = React.lazy(() => import('./StripePaymentForm'));
 
 interface LineItem {
   item_name: string;
@@ -43,83 +43,6 @@ interface InvoiceDetail {
   document_title?: string;
 }
 
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-
-const CheckoutForm: React.FC<{
-  clientSecret: string;
-  invoice: InvoiceDetail;
-  onSuccess: () => void;
-  onCancel: () => void;
-}> = ({ clientSecret, invoice, onSuccess, onCancel }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-  const [cardError, setCardError] = useState<string | null>(null);
-  const { addToast } = useToast();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements || !invoice) return;
-    setSubmitting(true);
-    setCardError(null);
-    try {
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement)!,
-          billing_details: { name: invoice.customer_name },
-        },
-      });
-      if (error) {
-        setCardError(error.message || 'Payment failed');
-        return;
-      }
-      if (paymentIntent && paymentIntent.status === 'succeeded') {
-        const amountToRecord = Number(invoice.total_amount) - Number(invoice.paid_amount || 0);
-        await portalLifecycle.payments.recordPayment(invoice.id, amountToRecord, {
-          paymentMethod: 'Card',
-          currency: invoice.currency || 'USD',
-          transactionId: paymentIntent.id,
-        });
-        addToast('success', 'Payment successful!');
-        onSuccess();
-      }
-    } catch (err: any) {
-      setCardError(err.message || 'Payment failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {cardError && <ErrorBanner message={cardError} onDismiss={() => setCardError(null)} />}
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Card Details</label>
-        <div className="relative">
-          <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <div className="w-full h-11 px-3.5 py-2.5 border border-slate-200 rounded-xl flex items-center bg-white">
-            <CardElement
-              options={{
-                style: {
-                  base: { fontSize: '13px', color: '#23282A', '::placeholder': { color: '#9ca3af' } },
-                },
-              }}
-            />
-          </div>
-        </div>
-      </div>
-      <div className="flex gap-3">
-        <PortalButton type="submit" disabled={submitting || !stripe} icon={submitting ? Loader2 : CreditCard}>
-          {submitting ? 'Processing...' : 'Pay Securely'}
-        </PortalButton>
-        <PortalButton type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
-        </PortalButton>
-      </div>
-    </form>
-  );
-};
-
 const CustomerInvoiceDetail: React.FC = () => {
   const { id } = useParams() as { id?: string };
   const navigate = useNavigate();
@@ -135,7 +58,7 @@ const CustomerInvoiceDetail: React.FC = () => {
 
   // Payment state
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
+  const [showStripeForm, setShowStripeForm] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
@@ -221,11 +144,11 @@ const CustomerInvoiceDetail: React.FC = () => {
     try {
       const data = await portalLifecycle.payments.createIntent(invoice.id, amount, 'usd');
       setClientSecret(data.clientSecret);
-      if (data.mode === 'stripe' && stripePublicKey) {
-        setStripePromise(loadStripe(stripePublicKey));
+      if (data.mode === 'stripe') {
+        setShowStripeForm(true);
       } else {
         // Mock mode — simulate successful payment
-        setStripePromise(null);
+        setShowStripeForm(false);
         await portalLifecycle.payments.recordPayment(invoice.id, amount, { paymentMethod: 'Card', currency: 'USD' });
         setPaySuccess(true);
         setClientSecret(null);
@@ -243,7 +166,7 @@ const CustomerInvoiceDetail: React.FC = () => {
   const handlePaymentSuccess = useCallback(() => {
     setPaySuccess(true);
     setClientSecret(null);
-    setStripePromise(null);
+    setShowStripeForm(false);
     setPaymentAmount('');
     if (invoice) {
       portalLifecycle.invoices.get(invoice.id).then(setInvoice).catch(() => {});
@@ -252,7 +175,7 @@ const CustomerInvoiceDetail: React.FC = () => {
 
   const handlePaymentCancel = useCallback(() => {
     setClientSecret(null);
-    setStripePromise(null);
+    setShowStripeForm(false);
     setPaymentAmount('');
     setPayError(null);
   }, []);
@@ -379,15 +302,15 @@ const CustomerInvoiceDetail: React.FC = () => {
                   {paying ? 'Processing...' : `Pay K ${remaining.toFixed(2)}`}
                 </PortalButton>
               </div>
-            ) : clientSecret && stripePromise ? (
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <CheckoutForm
+            ) : clientSecret && showStripeForm ? (
+              <Suspense fallback={<div className="flex items-center gap-2 text-sm text-slate-500"><Loader2 size={16} className="animate-spin" /> Loading payment form...</div>}>
+                <StripePaymentForm
                   clientSecret={clientSecret}
                   invoice={invoice}
                   onSuccess={handlePaymentSuccess}
                   onCancel={handlePaymentCancel}
                 />
-              </Elements>
+              </Suspense>
             ) : null}
 
             <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 12 }}>

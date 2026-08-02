@@ -77,7 +77,7 @@ const CashFlowForecaster: React.FC = () => {
             </div>
             <div style={{ background: '#FEFDFB', padding: 12, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1.4px solid #e4ddd1', display: 'flex', alignItems: 'center', gap: 16, borderLeft: '4px solid #1f8577' }}>
               <div style={{ padding: 10, background: '#eef7f6', color: '#1f8577', borderRadius: 8, flexShrink: 0 }}><AlertTriangle size={20} /></div>
-              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0', textTransform: 'capitalize' }}>Risk: {result.summary.riskLevel}</p><p style={{ fontSize: 18, fontWeight: 600, color: result.summary.riskLevel === 'low' ? '#1f8577' : result.summary.riskLevel === 'medium' ? '#d99a3f' : '#b5493f', margin: 0, textTransform: 'capitalize' }}>{result.summary.riskLevel}</p></div>
+              <div style={{ minWidth: 0 }}><p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '-0.3px', lineHeight: 1, margin: '0 0 6px 0' }}>Risk: {result.summary.riskLevel}</p><p style={{ fontSize: 18, fontWeight: 600, color: result.summary.riskLevel === 'low' ? '#1f8577' : result.summary.riskLevel === 'medium' ? '#d99a3f' : '#b5493f', margin: 0, textTransform: 'capitalize' }}>{result.summary.riskLevel}</p></div>
             </div>
           </div>
 

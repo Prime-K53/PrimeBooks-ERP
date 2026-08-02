@@ -433,7 +433,7 @@ const processUpdate = async () => {
                         <button className="prime-btn" onClick={() => card.isExport ? (card.type === 'Customers' ? handleExportCustomers() : handleExportProducts()) : handleFileClick(card.type)}
                             disabled={isProcessing}
                             style={{
-                                padding: '10px 20px', borderRadius: 9, border: 'none', fontSize: 10, fontWeight: 800,
+                                padding: '10px 20px', borderRadius: 9, fontSize: 10, fontWeight: 800,
                                 textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                                 background: card.isExport ? paper : card.color, color: card.isExport ? ink : '#fff',
                                 border: card.isExport ? `1.4px solid ${hairline}` : 'none', transition: 'all .15s ease'

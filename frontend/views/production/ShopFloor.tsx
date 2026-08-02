@@ -215,7 +215,7 @@ const ShopFloor: React.FC = () => {
                         <h4 style={{ fontWeight: 700, color: '#23282A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wo.productName}</h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
                           <div style={{ flex: 1, height: '4px', background: '#eef7f6', borderRadius: '9999px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', background: '#eef7f6' }} style={{width: `${Math.min(100, (wo.quantityCompleted/wo.quantityPlanned)*100)}%`}} />
+                            <div style={{ height: '100%', background: '#eef7f6', width: `${Math.min(100, (wo.quantityCompleted/wo.quantityPlanned)*100)}%` }} />
                           </div>
                           <span style={{ fontWeight: 700, color: '#5c6567' }}>{wo.quantityCompleted}/{wo.quantityPlanned}</span>
                         </div>

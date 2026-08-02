@@ -180,8 +180,7 @@ const GangRunEstimator: React.FC = () => {
                         <h3 style={{ fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', marginBottom: '40px' }}>Imposition Preview Matrix</h3>
                         
                         <div 
-                            style={{ background: '#eef7f6', borderWidth: '2px', borderColor: '#e4ddd1', borderRadius: '6px', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', position: 'relative', transition: 'all .15s ease', transitionDuration: '500ms' }}
-                            style={{ 
+                            style={{ background: '#eef7f6', borderWidth: '2px', borderColor: '#e4ddd1', borderRadius: '6px', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', position: 'relative', transition: 'all .15s ease', transitionDuration: '500ms', 
                                 width: '400px', 
                                 height: `${(parentSize.h / parentSize.w) * 400}px`,
                                 padding: `${(margin / parentSize.w) * 400}px`
@@ -191,8 +190,7 @@ const GangRunEstimator: React.FC = () => {
                                 {Array.from({ length: result.bestYield }).map((_, i) => (
                                     <div 
                                         key={i} 
-                                        style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', borderRadius: '4px', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)', transitionDuration: '500ms' }}
-                                        style={{ 
+                                        style={{ background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderColor: '#a6d9d3', borderRadius: '4px', boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,.06)', transitionDuration: '500ms', 
                                             width: `${((finalSize.w + bleed*2) / parentSize.w) * 400}px`,
                                             height: `${((finalSize.h + bleed*2) / parentSize.h) * ((parentSize.h / parentSize.w) * 400)}px`
                                         }}

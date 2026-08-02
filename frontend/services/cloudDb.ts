@@ -404,20 +404,8 @@ export const cloudDb = {
       const { data, error } = await query.maybeSingle();
       if (error) throw error;
       if (!data) return null;
-      const {
-        id: _id,
-        created_at,
-        updated_at,
-        data: domainData,
-        ...rest
-      } = data as Record<string, unknown>;
-      return {
-        ...(domainData as Record<string, unknown> | undefined),
-        ...rest,
-        id: _id,
-        created_at,
-        updated_at,
-      } as T;
+      const { data: jsonData, updated_at, ...rest } = data;
+      return { id: data.id, ...rest, ...(jsonData || {}) } as T;
     });
   },
 
