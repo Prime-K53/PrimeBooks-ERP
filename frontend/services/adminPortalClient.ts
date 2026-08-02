@@ -16,8 +16,27 @@ function getAdminUser(): AdminUserInfo | null {
   }
 }
 
+/** Read the Supabase access_token from the session stored by AuthContext. */
+function getAccessToken(): string | null {
+  try {
+    const raw = sessionStorage.getItem('nexus_user');
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    return session.accessToken || null;
+  } catch {
+    return null;
+  }
+}
+
 async function adminRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+  // Send the Supabase JWT so the backend verifyAdminAuth middleware can decode it.
+  const token = getAccessToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const user = getAdminUser();
   if (user) {
     headers['x-user-id'] = user.id;
@@ -280,7 +299,7 @@ export async function subscribeAdminEvents(callbacks: {
 }): Promise<() => void> {
   let source: EventSource | null = null;
   try {
-    const { ticket } = await adminPortalApi.post<{ ticket: string; expiresIn: number }>('/events-ticket', { purpose: 'notifications' });
+    const { ticket } = await adminPortalApi.get<{ ticket: string; expiresIn: number }>('/events-ticket');
     source = new EventSource(`${API_BASE}/portal/admin/events?token=${encodeURIComponent(ticket)}`);
     source.addEventListener('notification', (e: MessageEvent) => {
       try {
