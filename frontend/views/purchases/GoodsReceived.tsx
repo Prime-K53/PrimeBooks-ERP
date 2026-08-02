@@ -334,14 +334,14 @@ const GoodsReceived: React.FC = () => {
                                         value={item.quantityRejected || 0} onChange={e => updateLineItem(idx, 'quantityRejected', parseFloat(e.target.value) || 0)} className="prime-input"/>
                                   </div>
                                   <div>
-                                      <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4, letterSpacing: -0.01 }}>
+                                      <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4, letterSpacing: -0.01 }}>
                                           <Barcode size={10}/> Batch / Lot #
                                       </label>
                                       <input type="text" disabled={editingGrn.status === 'Verified'}
                                         style={input} placeholder="Optional" value={item.batchNumber || ''} onChange={e => updateLineItem(idx, 'batchNumber', e.target.value)} className="prime-input"/>
                                   </div>
                                   <div>
-                                      <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4, letterSpacing: -0.01 }}>
+                                      <label style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4, letterSpacing: -0.01 }}>
                                           <Calendar size={10}/> Expiry
                                       </label>
                                       <input type="date" disabled={editingGrn.status === 'Verified'}

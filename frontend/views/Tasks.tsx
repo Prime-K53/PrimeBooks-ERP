@@ -420,8 +420,7 @@ const Tasks: React.FC = () => {
     return (
       <div
         ref={menuRef}
-        style={{ position: 'fixed', width: '208px', background: 'rgba(254,253,251,.95)', backdropFilter: 'blur(20px)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', transitionDuration: '100ms', display: 'flex', flexDirection: 'column', paddingTop: '6px', paddingBottom: '6px' }}
-        style={{ top: menuPos.y, left: menuPos.x }}
+        style={{ position: 'fixed', width: '208px', background: 'rgba(254,253,251,.95)', backdropFilter: 'blur(20px)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,.12)', border: '1.4px solid #e4ddd1', borderColor: '#e4ddd1', transitionDuration: '100ms', display: 'flex', flexDirection: 'column', paddingTop: '6px', paddingBottom: '6px', top: menuPos.y, left: menuPos.x }}
       >
         <div style={{ paddingLeft: '12px', paddingTop: '4px', marginBottom: '4px', borderStyle: 'solid', borderColor: '#e4ddd1', paddingRight: '12px', paddingBottom: '4px' }}>
           <p style={{ fontWeight: 900, color: '#5c6567', textTransform: 'uppercase', letterSpacing: '.1em' }}>Task Options</p>

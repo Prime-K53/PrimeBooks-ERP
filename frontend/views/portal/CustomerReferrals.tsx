@@ -230,7 +230,7 @@ const CustomerReferrals: React.FC = () => {
               onClick={handleCopyReferralLink}
               style={{
                 fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-                padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
                 background: 'transparent',
                 color: inkSoft, display: 'inline-flex', alignItems: 'center', gap: 7,
                 border: `1.4px solid ${hairline}`, transition: 'all .15s ease'

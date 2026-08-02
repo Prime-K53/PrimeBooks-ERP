@@ -264,13 +264,11 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ data, onEdit, onVie
                                             key={sub.id}
                                             onClick={() => onEdit(sub)}
                                             onContextMenu={(e) => handleContextMenu(e, sub.id)}
-                                            onMouseEnter={(e) => onMouseEnter(sub.id, e)}
                                             onMouseMove={onMouseMove}
-                                            onMouseLeave={onMouseLeave}
                                             className="cursor-pointer group flex flex-col relative overflow-hidden transition-all"
                                             style={{ background: paper, borderRadius: 14, border: `1px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}
-                                            onMouseEnter={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,84,76,.08)'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,.04)'; }}
+                                            onMouseEnter={e => { onMouseEnter(sub.id, e); e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,84,76,.08)'; }}
+                                            onMouseLeave={e => { onMouseLeave(e); e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,.04)'; }}
                                         >
                                             <div className="absolute top-0 left-0 w-full h-1" style={{ background: sub.status === 'Active' ? `linear-gradient(90deg, ${teal[500]}, ${teal[400]})` : hairline }}></div>
 
@@ -409,13 +407,11 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ data, onEdit, onVie
                                                         key={sub.id}
                                                         onClick={(e) => { e.stopPropagation(); onEdit(sub); }}
                                                         onContextMenu={(e) => handleContextMenu(e, sub.id)}
-                                                        onMouseEnter={(e) => onMouseEnter(sub.id, e)}
                                                         onMouseMove={onMouseMove}
-                                                        onMouseLeave={onMouseLeave}
                                                         className="text-[9px] p-2 rounded-xl font-semibold truncate cursor-pointer transition-colors flex flex-col gap-1"
                                                         style={{ background: teal[50], border: `1px solid ${teal[100]}`, color: teal[800] }}
-                                                        onMouseEnter={e => { e.currentTarget.style.background = teal[100]; }}
-                                                        onMouseLeave={e => { e.currentTarget.style.background = teal[50]; }}
+                                                        onMouseEnter={e => { onMouseEnter(sub.id, e); e.currentTarget.style.background = teal[100]; }}
+                                                        onMouseLeave={e => { onMouseLeave(e); e.currentTarget.style.background = teal[50]; }}
                                                     >
                                                         <div className="flex justify-between">
                                                             <span className="truncate">{sub.customerName}</span>

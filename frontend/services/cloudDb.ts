@@ -397,18 +397,6 @@ export const cloudDb = {
     });
   },
 
-  async get<T = Record<string, unknown>>(storeName: string, id: string): Promise<T | null> {
-    return withSession(async () => {
-      const table = getTable(storeName);
-      const query = supabase.from(table).select('*').eq('id', id);
-      const { data, error } = await query.maybeSingle();
-      if (error) throw error;
-      if (!data) return null;
-      const { data: jsonData, updated_at, ...rest } = data;
-      return { id: data.id, ...rest, ...(jsonData || {}) } as T;
-    });
-  },
-
   async delete(storeName: string, id: string, operationId?: string): Promise<boolean | null> {
     return withSession(async () => {
       // Idempotency check
