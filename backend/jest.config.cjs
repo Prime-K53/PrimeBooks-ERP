@@ -12,10 +12,10 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
-    'tenant_isolation_security.test.js',
-    'multiTenantCompanyResolution.test.js',
+    'referral.test.cjs',
     'profitMargin.integration.test.js',
-    'referral.test.cjs'
+    'tenant_isolation_security.test.js',
+    'multiTenantCompanyResolution.test.js'
   ],
   collectCoverageFrom: [
     'services/**/*.cjs',
