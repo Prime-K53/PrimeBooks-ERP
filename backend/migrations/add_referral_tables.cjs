@@ -13,7 +13,6 @@ function migrate_add_referral_tables() {
       const createRefTable = `CREATE TABLE IF NOT EXISTS customer_referrals (
         id TEXT PRIMARY KEY,
         data TEXT NOT NULL DEFAULT '{}',
-        company_id TEXT,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`;
@@ -26,18 +25,10 @@ function migrate_add_referral_tables() {
         }
       });
 
-      const createRefIndex = `CREATE INDEX IF NOT EXISTS idx_customer_referrals_company_id ON customer_referrals(company_id)`;
-      db.run(createRefIndex, (err) => {
-        if (err && !err.message.includes('already exists')) {
-          console.error('[Migration] Failed to create index on customer_referrals:', err);
-        }
-      });
-
       // Referral Rewards Table
       const createRewardTable = `CREATE TABLE IF NOT EXISTS referral_rewards (
         id TEXT PRIMARY KEY,
         data TEXT NOT NULL DEFAULT '{}',
-        company_id TEXT,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`;
@@ -47,13 +38,6 @@ function migrate_add_referral_tables() {
           console.error('[Migration] Failed to create referral_rewards:', err);
         } else {
           console.log('[Migration] referral_rewards table ready.');
-        }
-      });
-
-      const createRewardIndex = `CREATE INDEX IF NOT EXISTS idx_referral_rewards_company_id ON referral_rewards(company_id)`;
-      db.run(createRewardIndex, (err) => {
-        if (err && !err.message.includes('already exists')) {
-          console.error('[Migration] Failed to create index on referral_rewards:', err);
         }
       });
 

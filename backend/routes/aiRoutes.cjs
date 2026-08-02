@@ -27,7 +27,7 @@ const bomGen = new BOMGenerator();
 // Gang Run Optimizer
 router.post('/gang-run/optimize', async (req, res) => {
   try {
-    const result = await gangRun.optimize(req.companyId || '', req.body);
+    const result = await gangRun.optimize(req.body);
     res.json(result);
   } catch (err) {
     console.error('[AI] GangRun error:', err.message);
@@ -38,7 +38,7 @@ router.post('/gang-run/optimize', async (req, res) => {
 // Cash Flow Forecaster
 router.post('/cash-flow/forecast', async (req, res) => {
   try {
-    const result = await cashFlow.forecast(req.companyId || '', req.body);
+    const result = await cashFlow.forecast(req.body);
     res.json(result);
   } catch (err) {
     console.error('[AI] CashFlow error:', err.message);
@@ -49,7 +49,7 @@ router.post('/cash-flow/forecast', async (req, res) => {
 // Anomaly Detector
 router.post('/anomalies/detect', async (req, res) => {
   try {
-    const result = await anomalies.detect(req.companyId || '', req.body);
+    const result = await anomalies.detect(req.body);
     res.json(result);
   } catch (err) {
     console.error('[AI] AnomalyDetect error:', err.message);
@@ -60,7 +60,7 @@ router.post('/anomalies/detect', async (req, res) => {
 // Churn Predictor
 router.post('/churn/predict', async (req, res) => {
   try {
-    const result = await churn.predict(req.companyId || '');
+    const result = await churn.predict();
     res.json(result);
   } catch (err) {
     console.error('[AI] Churn error:', err.message);
@@ -71,7 +71,7 @@ router.post('/churn/predict', async (req, res) => {
 // Reorder Point Optimizer
 router.post('/reorder-points', async (req, res) => {
   try {
-    const result = await reorder.optimize(req.companyId || '');
+    const result = await reorder.optimize();
     res.json(result);
   } catch (err) {
     console.error('[AI] Reorder error:', err.message);
@@ -82,7 +82,7 @@ router.post('/reorder-points', async (req, res) => {
 // PO Matcher
 router.post('/po-match', async (req, res) => {
   try {
-    const result = await poMatch.matchAll(req.companyId || '');
+    const result = await poMatch.matchAll();
     res.json(result);
   } catch (err) {
     console.error('[AI] POMatch error:', err.message);
@@ -93,7 +93,7 @@ router.post('/po-match', async (req, res) => {
 // Production Schedule Optimizer
 router.post('/schedule/optimize', async (req, res) => {
   try {
-    const result = await scheduler.optimize(req.companyId || '', req.body);
+    const result = await scheduler.optimize(req.body);
     res.json(result);
   } catch (err) {
     console.error('[AI] Schedule error:', err.message);
@@ -106,7 +106,7 @@ router.post('/query', async (req, res) => {
   try {
     const { question } = req.body;
     if (!question) return sendSafeError(res, 400, 'VALIDATION_ERROR');
-    const result = await analyzer.query(req.companyId || '', question, req.body);
+    const result = await analyzer.query(question, req.body);
     res.json(result);
   } catch (err) {
     console.error('[AI] Query error:', err.message);
@@ -117,7 +117,7 @@ router.post('/query', async (req, res) => {
 // Audit Investigator
 router.post('/audit/investigate', async (req, res) => {
   try {
-    const result = await auditor.investigate(req.companyId || '', req.body.query, req.body);
+    const result = await auditor.investigate(req.body.query, req.body);
     res.json(result);
   } catch (err) {
     console.error('[AI] AuditInvestigate error:', err.message);
@@ -128,7 +128,7 @@ router.post('/audit/investigate', async (req, res) => {
 // BOM Generator
 router.post('/bom/generate', async (req, res) => {
   try {
-    const result = await bomGen.generate(req.companyId || '', req.body);
+    const result = await bomGen.generate(req.body);
     res.json(result);
   } catch (err) {
     console.error('[AI] BOMGen error:', err.message);

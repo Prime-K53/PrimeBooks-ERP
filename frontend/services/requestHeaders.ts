@@ -1,5 +1,4 @@
 import { ensureSessionAuthState, getStoredUserSession } from './authSession';
-import { getCachedCompanyId } from './db';
 
 type HeaderMap = Record<string, string>;
 
@@ -33,8 +32,6 @@ const applyIdentityHeaders = (headers: HeaderMap): HeaderMap => {
   if (user?.email) nextHeaders['x-user-email'] = String(user.email);
   nextHeaders['x-user-is-super-admin'] = user?.isSuperAdmin === true ? 'true' : 'false';
   nextHeaders['x-auth-mode'] = authState.authMode;
-  const companyId = getCachedCompanyId();
-  if (companyId) nextHeaders['x-company-id'] = String(companyId);
   if (authState.accessToken) {
     nextHeaders.Authorization = `Bearer ${authState.accessToken}`;
   }

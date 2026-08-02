@@ -52,7 +52,6 @@ export const adminPortalApi = {
 
 export interface AdminNotification {
   id: string;
-  company_id: string;
   type: string;
   title: string;
   body: string | null;
@@ -94,7 +93,6 @@ export interface AdminQuotationRequest {
   request_number: string;
   customer_id: string;
   customer_name: string;
-  company_id: string;
   request_type: string;
   items: AdminRequestItem[];
   subtotal: number;
@@ -199,7 +197,6 @@ export interface AdminQuotation {
   request_id: string | null;
   customer_id: string;
   customer_name: string;
-  company_id: string;
   items: AdminRequestItem[];
   subtotal: number;
   discount: number;

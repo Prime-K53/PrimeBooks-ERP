@@ -1,23 +1,23 @@
 const BaseAIService = require('./baseService.cjs');
 
 class AnomalyDetector extends BaseAIService {
-  async detect(companyId, options = {}) {
+  async detect( options = {}) {
     const anomalies = [];
     const lookbackDays = options.lookbackDays || 90;
 
-    const txAnomalies = await this._detectTransactionAnomalies(companyId, lookbackDays);
+    const txAnomalies = await this._detectTransactionAnomalies( lookbackDays);
     anomalies.push(...txAnomalies);
 
-    const pricingAnomalies = await this._detectPricingAnomalies(companyId);
+    const pricingAnomalies = await this._detectPricingAnomalies();
     anomalies.push(...pricingAnomalies);
 
-    const inventoryAnomalies = await this._detectInventoryAnomalies(companyId);
+    const inventoryAnomalies = await this._detectInventoryAnomalies();
     anomalies.push(...inventoryAnomalies);
 
-    const authAnomalies = await this._detectAuthAnomalies(companyId, lookbackDays);
+    const authAnomalies = await this._detectAuthAnomalies( lookbackDays);
     anomalies.push(...authAnomalies);
 
-    const auditAnomalies = await this._detectAuditAnomalies(companyId, lookbackDays);
+    const auditAnomalies = await this._detectAuditAnomalies( lookbackDays);
     anomalies.push(...auditAnomalies);
 
     anomalies.sort((a, b) => (b.risk_score || 0) - (a.risk_score || 0));
@@ -33,14 +33,13 @@ class AnomalyDetector extends BaseAIService {
     };
   }
 
-  async _detectTransactionAnomalies(companyId, lookbackDays) {
+  async _detectTransactionAnomalies( lookbackDays) {
     const anomalies = [];
     const entries = await this._all(
       `SELECT le.*, ac.name as account_name, ac.code as account_code
        FROM ledger_entries le
-       LEFT JOIN chart_of_accounts ac ON le.account_id = ac.id
-       WHERE le.company_id = ? AND le.entry_date >= date('now', ? || ' days')`,
-      [companyId, String(-lookbackDays)]
+       LEFT JOIN chart_of_accounts ac ON le.account_id = ac.idle.entry_date >= date('now', ? || ' days')`,
+      [String(-lookbackDays)]
     );
 
     const amounts = entries.map(e => this._safeNumber(e.amount)).filter(a => a > 0);
@@ -105,14 +104,13 @@ class AnomalyDetector extends BaseAIService {
     return anomalies;
   }
 
-  async _detectPricingAnomalies(companyId) {
+  async _detectPricingAnomalies() {
     const anomalies = [];
 
     const auditData = await this._all(
       `SELECT * FROM examination_pricing_audit
-       WHERE company_id = ? OR company_id IS NULL
        ORDER BY created_at DESC LIMIT 200`,
-      [companyId]
+      []
     );
 
     const overrideAudits = auditData.filter(a =>
@@ -137,8 +135,9 @@ class AnomalyDetector extends BaseAIService {
     }
 
     const marginSettings = await this._all(
-      `SELECT * FROM profit_margin_settings WHERE company_id = ? AND is_active = 1 AND margin_type = 'percentage'`,
-      [companyId]
+      `SELECT * FROM profit_margin_settings WHERE is_active = 1 AND margin_type = 
+'percentage'`,
+      []
     );
 
     for (const ms of marginSettings) {
@@ -161,12 +160,12 @@ class AnomalyDetector extends BaseAIService {
     return anomalies;
   }
 
-  async _detectInventoryAnomalies(companyId) {
+  async _detectInventoryAnomalies() {
     const anomalies = [];
 
     const items = await this._all(
-      `SELECT * FROM inventory WHERE company_id = ?`,
-      [companyId]
+      `SELECT * FROM inventory`,
+      []
     );
 
     for (const item of items) {
@@ -204,14 +203,13 @@ class AnomalyDetector extends BaseAIService {
     return anomalies;
   }
 
-  async _detectAuthAnomalies(companyId, lookbackDays) {
+  async _detectAuthAnomalies( lookbackDays) {
     const anomalies = [];
 
     const auditLogs = await this._all(
-      `SELECT * FROM audit_logs
-       WHERE company_id = ? AND created_at >= datetime('now', ? || ' days')
+      `SELECT * FROM audit_logs WHERE created_at >= datetime('now', ? || ' days')
        ORDER BY created_at DESC`,
-      [companyId, String(-lookbackDays)]
+      [String(-lookbackDays)]
     );
 
     const userActions = {};
@@ -241,13 +239,12 @@ class AnomalyDetector extends BaseAIService {
     return anomalies;
   }
 
-  async _detectAuditAnomalies(companyId, lookbackDays) {
+  async _detectAuditAnomalies( lookbackDays) {
     const anomalies = [];
     const auditLogs = await this._all(
-      `SELECT * FROM audit_logs
-       WHERE company_id = ? AND created_at >= datetime('now', ? || ' days')
+      `SELECT * FROM audit_logs WHERE created_at >= datetime('now', ? || ' days')
        ORDER BY created_at DESC`,
-      [companyId, String(-lookbackDays)]
+      [String(-lookbackDays)]
     );
 
     const deletePatterns = auditLogs.filter(l => l.action === 'DELETE' || l.action?.includes('delete'));

@@ -38,7 +38,6 @@ import { AICopilot } from './components/ai';
 import { NotificationCenter } from './components/ui';
 import Login from './views/auth/Login';
 import SetupWizard from './views/auth/SetupWizard';
-import Gateway from './views/auth/Gateway';
 import ForgotPassword from './views/auth/ForgotPassword';
 import ResetPassword from './views/auth/ResetPassword';
 import { CustomerAuthProvider } from './context/CustomerAuthContext';
@@ -1093,18 +1092,15 @@ const PortalRoutes = (
   </React.Fragment>
 );
 
-// Portal-aware landing: admin.primeerp.com defaults to the admin login and
-// portal.primeerp.com defaults to the customer portal login. Any other host
-// falls back to the chooser (Gateway).
+// Portal-aware landing: portal.primeerp.com defaults to the customer portal
+// login. Every other host goes straight to the admin login — there is no
+// longer a chooser / Gateway page.
 function getLandingPath(): string {
   const host = String(window.location.hostname || '').toLowerCase();
   if (host === 'portal.primeerp.com' || host.endsWith('.portal.primeerp.com')) {
     return '/portal/login';
   }
-  if (host === 'admin.primeerp.com' || host.endsWith('.admin.primeerp.com')) {
-    return '/login';
-  }
-  return '/';
+  return '/login';
 }
 
 const RootNavigator: React.FC = () => {
@@ -1171,7 +1167,7 @@ const RootNavigator: React.FC = () => {
       <PwaInstallProvider>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-          <Route path="/" element={getLandingPath() === '/' ? <Gateway /> : <Navigate to={getLandingPath()} replace />} />
+          <Route path="/" element={<Navigate to={getLandingPath()} replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<SetupWizard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

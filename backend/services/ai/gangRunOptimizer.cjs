@@ -1,32 +1,30 @@
 const BaseAIService = require('./baseService.cjs');
 
 class GangRunOptimizer extends BaseAIService {
-  async optimize(companyId, options = {}) {
+  async optimize( options = {}) {
     const workOrders = await this._all(
       `SELECT wo.*, wc.name as work_center_name, wc.hourly_rate
        FROM work_orders wo
-       LEFT JOIN work_centers wc ON wo.work_center_id = wc.id
-       WHERE wo.company_id = ? AND wo.status NOT IN ('completed','cancelled')
+       LEFT JOIN work_centers wc ON wo.work_center_id = wc.idwo.status NOT IN ('completed','cancelled')
        ORDER BY wo.due_date ASC`,
-      [companyId]
+      []
     );
 
     const productionBatches = await this._all(
       `SELECT pb.*, wo.product_name, wo.quantity_planned
        FROM production_batches pb
-       JOIN work_orders wo ON pb.work_order_id = wo.id
-       WHERE pb.company_id = ? AND pb.status NOT IN ('completed','cancelled')`,
-      [companyId]
+       JOIN work_orders wo ON pb.work_order_id = wo.idpb.status NOT IN ('completed','cancelled')`,
+      []
     );
 
     const boms = await this._all(
-      `SELECT * FROM bill_of_materials WHERE company_id = ?`,
-      [companyId]
+      `SELECT * FROM bill_of_materials`,
+      []
     );
 
     const workCenters = await this._all(
-      `SELECT * FROM work_centers WHERE company_id = ?`,
-      [companyId]
+      `SELECT * FROM work_centers`,
+      []
     );
 
     const groups = this._groupJobs(workOrders, productionBatches, boms, workCenters, options);

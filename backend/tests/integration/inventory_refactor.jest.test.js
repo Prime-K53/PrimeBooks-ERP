@@ -3,54 +3,52 @@
  * 
  * Verifies:
  * 1. Backend/Database primary key UUID generation (client IDs are ignored)
- * 2. Strict tenant company_id and created_by lockdown
- * 3. Business SKU uniqueness per tenant with HTTP 409 Conflict
- * 4. Multi-tenant SKU isolation (same SKU allowed across different companies)
+ * 2. Server-side audit metadata lockdown (created_by; company_id ignored)
+ * 3. Business SKU uniqueness with HTTP 409 Conflict
+ * 4. Input validation (400 Bad Request for missing name)
  * 5. Concurrent creation safety without lost updates or duplicate IDs
- * 6. Input validation (400 Bad Request for missing name)
  */
 
 const request = require('supertest');
 
 process.env.NODE_ENV = 'test';
+process.env.ALLOW_HEADER_AUTH = 'true';
 
 let app;
 let db;
 
-const TENANT_A = 'tenant-company-alpha';
-const TENANT_B = 'tenant-company-beta';
 const USER_A = 'user-admin-alpha';
 
-const tenantAHeaders = {
-  'x-company-id': TENANT_A,
+const adminHeaders = {
   'x-user-id': USER_A,
   'x-user-role': 'Admin',
   'Content-Type': 'application/json'
 };
 
-const tenantBHeaders = {
-  'x-company-id': TENANT_B,
-  'x-user-id': 'user-admin-beta',
-  'x-user-role': 'Admin',
-  'Content-Type': 'application/json'
-};
+const SKUS_TO_CLEAN = ['SKU-STEEL-12MM', 'SKU-COPPER-2MM', 'SKU-MOD-001', 'SKU-MOD-002'];
 
 beforeAll(async () => {
+  jest.setTimeout(120000);
   const { db: testDb, initDb } = require('../../db.cjs');
   db = testDb;
   await initDb();
   app = require('../../index.cjs');
-  await new Promise(r => setTimeout(r, 300));
-});
+  const t0 = Date.now();
+  while (!(app.router && app.router.stack.length > 50)) {
+    if (Date.now() - t0 > 60000) throw new Error('Server routes did not register in time');
+    await new Promise(r => setTimeout(r, 250));
+  }
+}, 120000);
 
 afterAll(async () => {
   await new Promise((resolve) => {
-    db.run('DELETE FROM inventory WHERE company_id IN (?, ?)', [TENANT_A, TENANT_B], resolve);
+    const placeholders = SKUS_TO_CLEAN.map(() => '?').join(', ');
+    db.run(`DELETE FROM inventory WHERE sku IN (${placeholders}) OR sku LIKE 'SKU-CONCURRENT-%'`, SKUS_TO_CLEAN, resolve);
   });
-});
+}, 120000);
 
 describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
-  test('1. Backend generates UUID primary key and sets tenant metadata (client IDs are ignored)', async () => {
+  test('1. Backend generates UUID primary key and sets audit metadata (client IDs ignored)', async () => {
     const payload = {
       id: 'CLIENT-LOCAL-ID-TO-BE-IGNORED',
       name: 'Steel Rod 12mm',
@@ -59,12 +57,12 @@ describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
       cost_per_unit: 25.5,
       selling_price: 35.0,
       unit: 'kg',
-      company_id: 'HACKED-COMPANY-OVERRIDE'
+      company_id: 'CLIENT-SUPPLIED-COMPANY-IGNORED'
     };
 
     const res = await request(app)
       .post('/api/inventory')
-      .set(tenantAHeaders)
+      .set(adminHeaders)
       .send(payload);
 
     expect(res.status).toBe(201);
@@ -72,7 +70,7 @@ describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
     expect(res.body.id).not.toBe('CLIENT-LOCAL-ID-TO-BE-IGNORED');
     // Verify valid UUID format (36 characters with hyphens)
     expect(res.body.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-    expect(res.body.company_id).toBe(TENANT_A);
+    expect(res.body.company_id).toBeUndefined();
     expect(res.body.created_by).toBe(USER_A);
     expect(res.body.name).toBe('Steel Rod 12mm');
     expect(res.body.sku).toBe('SKU-STEEL-12MM');
@@ -81,14 +79,14 @@ describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
   test('2. Missing name returns 400 Bad Request', async () => {
     const res = await request(app)
       .post('/api/inventory')
-      .set(tenantAHeaders)
+      .set(adminHeaders)
       .send({ name: '   ', quantity: 10 });
 
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error');
   });
 
-  test('3. Duplicate SKU within same tenant returns HTTP 409 Conflict (no overwrites)', async () => {
+  test('3. Duplicate SKU returns HTTP 409 Conflict (no overwrites)', async () => {
     const payload1 = {
       name: 'Copper Wire 2mm',
       sku: 'SKU-COPPER-2MM',
@@ -97,12 +95,12 @@ describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
 
     const res1 = await request(app)
       .post('/api/inventory')
-      .set(tenantAHeaders)
+      .set(adminHeaders)
       .send(payload1);
 
     expect(res1.status).toBe(201);
 
-    // Try creating duplicate SKU in same tenant
+    // Try creating duplicate SKU
     const payload2 = {
       name: 'Copper Wire Duplicate',
       sku: 'SKU-COPPER-2MM',
@@ -111,7 +109,7 @@ describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
 
     const res2 = await request(app)
       .post('/api/inventory')
-      .set(tenantAHeaders)
+      .set(adminHeaders)
       .send(payload2);
 
     expect(res2.status).toBe(409);
@@ -119,33 +117,32 @@ describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
     expect(res2.body.code).toBe('SKU_ALREADY_EXISTS');
   });
 
-  test('4. Multi-Tenant SKU Isolation (identical SKU allowed in different tenant)', async () => {
-    const payloadTenantB = {
-      name: 'Copper Wire Tenant B',
-      sku: 'SKU-COPPER-2MM', // Same SKU as Tenant A
+  test('4. Duplicate SKU rejected globally (no tenant isolation)', async () => {
+    const payloadDuplicate = {
+      name: 'Copper Wire Second Request',
+      sku: 'SKU-COPPER-2MM', // Same SKU as previous test
       quantity: 200
     };
 
     const res = await request(app)
       .post('/api/inventory')
-      .set(tenantBHeaders)
-      .send(payloadTenantB);
+      .set(adminHeaders)
+      .send(payloadDuplicate);
 
-    expect(res.status).toBe(201);
-    expect(res.body.company_id).toBe(TENANT_B);
-    expect(res.body.sku).toBe('SKU-COPPER-2MM');
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('SKU_ALREADY_EXISTS');
   });
 
   test('5. PUT /api/inventory/:id SKU conflict detection & update lockdown', async () => {
     // Create item 1
-    const item1 = (await request(app).post('/api/inventory').set(tenantAHeaders).send({ name: 'Item 1', sku: 'SKU-MOD-001' })).body;
+    const item1 = (await request(app).post('/api/inventory').set(adminHeaders).send({ name: 'Item 1', sku: 'SKU-MOD-001' })).body;
     // Create item 2
-    const item2 = (await request(app).post('/api/inventory').set(tenantAHeaders).send({ name: 'Item 2', sku: 'SKU-MOD-002' })).body;
+    const item2 = (await request(app).post('/api/inventory').set(adminHeaders).send({ name: 'Item 2', sku: 'SKU-MOD-002' })).body;
 
     // Try updating item2 SKU to item1 SKU -> expect 409 Conflict
     const updateRes = await request(app)
       .put(`/api/inventory/${item2.id}`)
-      .set(tenantAHeaders)
+      .set(adminHeaders)
       .send({ sku: 'SKU-MOD-001' });
 
     expect(updateRes.status).toBe(409);
@@ -153,7 +150,7 @@ describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
     // Valid update to item2 name -> expect success
     const validUpdate = await request(app)
       .put(`/api/inventory/${item2.id}`)
-      .set(tenantAHeaders)
+      .set(adminHeaders)
       .send({ name: 'Item 2 Updated' });
 
     expect(validUpdate.status).toBe(200);
@@ -164,7 +161,7 @@ describe('Cloud-Native Inventory Creation Architecture & ID Lockdown', () => {
     const requests = Array.from({ length: 10 }).map((_, idx) =>
       request(app)
         .post('/api/inventory')
-        .set(tenantAHeaders)
+        .set(adminHeaders)
         .send({
           name: `Concurrent Item ${idx}`,
           sku: `SKU-CONCURRENT-${idx}-${Date.now()}`,

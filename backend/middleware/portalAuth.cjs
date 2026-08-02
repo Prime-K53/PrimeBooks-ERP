@@ -12,8 +12,7 @@ function generatePortalToken(user) {
     id: user.id,
     customer_id: user.customer_id,
     email: user.email,
-    role: 'portal_customer',
-    company_id: user.company_id || ''
+    role: 'portal_customer'
   };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: portalAuthService.ACCESS_TOKEN_EXPIRY });
 }
@@ -50,7 +49,6 @@ const verifyPortalToken = (req, res, next) => {
     }
     req.portalUser = {
       customer_id: decoded.customer_id,
-      company_id: decoded.company_id || '',
       email: decoded.email,
       role: decoded.role || 'portal_customer',
       id: decoded.id,

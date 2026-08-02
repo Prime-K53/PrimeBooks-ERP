@@ -16,8 +16,7 @@ function createTestSchema(db) {
       id TEXT PRIMARY KEY, code TEXT NOT NULL, name TEXT NOT NULL,
       type TEXT NOT NULL, category TEXT, subtype TEXT, parent_id TEXT,
       balance REAL DEFAULT 0, is_active INTEGER DEFAULT 1, description TEXT,
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS ledger_entries (
       id TEXT PRIMARY KEY, account_id TEXT NOT NULL,
@@ -25,21 +24,21 @@ function createTestSchema(db) {
       entry_type TEXT NOT NULL, amount REAL NOT NULL,
       currency TEXT DEFAULT 'USD', description TEXT,
       reference_type TEXT, reference_id TEXT, journal_id TEXT,
-      entry_date TEXT NOT NULL, company_id TEXT NOT NULL, created_by TEXT,
+      entry_date TEXT NOT NULL, created_by TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS budgets (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, account_id TEXT,
       fiscal_year TEXT NOT NULL, period TEXT NOT NULL,
       amount REAL NOT NULL, spent REAL DEFAULT 0,
-      company_id TEXT NOT NULL, notes TEXT,
+      notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS transfers (
       id TEXT PRIMARY KEY, from_account_id TEXT NOT NULL, to_account_id TEXT NOT NULL,
       amount REAL NOT NULL, currency TEXT DEFAULT 'USD',
       description TEXT, status TEXT DEFAULT 'completed',
-      reference TEXT, company_id TEXT NOT NULL, created_by TEXT,
+      reference TEXT, created_by TEXT,
       executed_at DATETIME, ledger_journal_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -48,27 +47,25 @@ function createTestSchema(db) {
       amount REAL NOT NULL, currency TEXT DEFAULT 'USD',
       description TEXT, expense_date TEXT NOT NULL, account_id TEXT,
       payment_method TEXT, status TEXT DEFAULT 'pending',
-      receipt_url TEXT, company_id TEXT NOT NULL, created_by TEXT,
+      receipt_url TEXT, created_by TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS income (
       id TEXT PRIMARY KEY, source TEXT NOT NULL,
       amount REAL NOT NULL, currency TEXT DEFAULT 'USD',
       description TEXT, income_date TEXT NOT NULL, account_id TEXT,
-      payment_method TEXT, reference TEXT, company_id TEXT NOT NULL,
-      created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      payment_method TEXT, reference TEXT,       created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS suppliers (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT,
       address TEXT, city TEXT, status TEXT DEFAULT 'Active',
-      category TEXT, payment_terms TEXT, company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      category TEXT, payment_terms TEXT,       created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS purchase_orders (
       id TEXT PRIMARY KEY, supplier_id TEXT NOT NULL,
       order_date TEXT NOT NULL, expected_date TEXT,
       status TEXT DEFAULT 'Draft', currency TEXT DEFAULT 'USD',
-      notes TEXT, company_id TEXT NOT NULL, created_by TEXT,
+      notes TEXT, created_by TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS purchase_order_items (
@@ -79,7 +76,6 @@ function createTestSchema(db) {
       quantity REAL NOT NULL,
       unit_price REAL NOT NULL,
       total_price REAL NOT NULL,
-      company_id TEXT NOT NULL DEFAULT '',
       FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE
     )`,
     `CREATE TABLE IF NOT EXISTS goods_receipts (
@@ -88,8 +84,7 @@ function createTestSchema(db) {
       received_date TEXT NOT NULL,
       status TEXT DEFAULT 'Received',
       notes TEXT,
-      company_id TEXT NOT NULL,
-      created_by TEXT,
+            created_by TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE SET NULL
     )`,
@@ -102,29 +97,25 @@ function createTestSchema(db) {
       role TEXT,
       status TEXT DEFAULT 'Active',
       salary REAL DEFAULT 0,
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS departments (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS attendance (
       id TEXT PRIMARY KEY, employee_id TEXT NOT NULL,
       date TEXT NOT NULL, status TEXT DEFAULT 'present',
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS payroll (
       id TEXT PRIMARY KEY, employee_id TEXT NOT NULL,
       period TEXT NOT NULL, amount REAL NOT NULL,
       currency TEXT DEFAULT 'USD', status TEXT DEFAULT 'pending',
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS work_centers (
       id TEXT PRIMARY KEY,
@@ -134,8 +125,7 @@ function createTestSchema(db) {
       capacity_per_day REAL DEFAULT 0,
       status TEXT DEFAULT 'Active',
       location TEXT,
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS production_resources (
       id TEXT PRIMARY KEY,
@@ -145,8 +135,7 @@ function createTestSchema(db) {
       resource_type TEXT,
       description TEXT,
       cost_per_unit REAL DEFAULT 0,
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS work_orders (
       id TEXT PRIMARY KEY,
@@ -170,8 +159,7 @@ function createTestSchema(db) {
       linked_batch_id TEXT,
       logs_json TEXT,
       attributes_json TEXT,
-      company_id TEXT NOT NULL,
-      created_by TEXT,
+            created_by TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (work_center_id) REFERENCES work_centers(id) ON DELETE SET NULL
@@ -191,8 +179,7 @@ function createTestSchema(db) {
       total_material_cost REAL DEFAULT 0,
       components_json TEXT,
       attributes_json TEXT,
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (work_order_id) REFERENCES work_orders(id) ON DELETE SET NULL
     )`,
@@ -200,15 +187,13 @@ function createTestSchema(db) {
       id TEXT PRIMARY KEY, name TEXT, period_start TEXT, period_end TEXT,
       status TEXT DEFAULT 'draft', total_gross REAL DEFAULT 0,
       total_deductions REAL DEFAULT 0, total_net REAL DEFAULT 0,
-      employee_count INTEGER DEFAULT 0, company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      employee_count INTEGER DEFAULT 0,       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS payslips (
       id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, payroll_run_id TEXT,
       gross_pay REAL DEFAULT 0, deductions REAL DEFAULT 0,
       net_pay REAL DEFAULT 0, pay_period TEXT, status TEXT DEFAULT 'pending',
-      company_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 

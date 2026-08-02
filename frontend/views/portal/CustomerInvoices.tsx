@@ -104,7 +104,7 @@ const CustomerInvoices: React.FC = () => {
   if (loading && page === 1) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={8} /></div>;
 
   return (
-    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+    <div>
       <PortalPageHeader title="Invoices" subtitle="View and manage your invoices" icon={Eye} />
 
       <div style={{ padding: '20px 28px 8px' }}>

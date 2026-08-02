@@ -1,5 +1,25 @@
 # Root Cause Analysis: Missing Inventory (Company ID Mismatch)
 
+> **STATUS: RESOLVED BY ARCHITECTURE CHANGE (single-company)**
+>
+> This document is a historical analysis of the multi-tenant (multi-company)
+> design flaws that caused "missing" data. The resolution was not to patch
+> tenant isolation further, but to **remove multi-tenancy entirely**:
+>
+> - Backend (SQLite): `backend/db.cjs` `migrateSingleOrganization()` drops
+>   `company_id` columns, the `companies` table, and company-scoped queries.
+> - Supabase (PostgreSQL): run `supabase-migrate-to-single-company.sql` in the
+>   SQL Editor — drops `companies`/`company_users`/`company_config`, all
+>   company_id columns, triggers, RLS policies and the `get_user_company_id()`
+>   helper; replaces them with permissive policies for a single tenant.
+> - Frontend: all `company_id`/`companyId`/`_companyId` references removed;
+>   sync no longer tags records by company; Realtime channel is
+>   `primeerp-data` (no company filter).
+> - Edge Functions: `referral-analytics` no longer accepts `companyId`.
+>
+> After the migration, the failure modes described below (NULL company_id,
+> RLS returning 0 rows, localStorage company context loss) cannot occur.
+
 ## Executive Summary
 
 Inventory items are missing because the system has **no database-level enforcement** of company_id consistency. The entire tenant isolation relies on application-level code in both the frontend and backend, but:

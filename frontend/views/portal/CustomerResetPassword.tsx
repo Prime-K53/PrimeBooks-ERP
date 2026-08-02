@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Mail, KeyRound, Lock, ArrowLeft, Loader2 } from 'lucide-react';
 import { useToast } from './components/Toast';
 import ErrorBanner from './components/ErrorBanner';
+import { portalApi } from '../../services/portalApiClient';
 
 const CustomerResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -29,24 +30,14 @@ const CustomerResetPassword: React.FC = () => {
     setSubmitting(true);
     setError(null);
     try {
-      const response = await fetch(`/api/portal/auth/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), code: code.trim(), password }),
-      });
-      if (response.ok) {
-        setDone(true);
-        addToast('success', 'Password reset successfully. You can now log in.');
-      } else {
-        const data = await response.json().catch(() => ({}));
-        const msg = data.error || 'Failed to reset password.';
-        setError(msg);
-        addToast('error', msg);
-      }
-} catch {
-       setError('Network error. Please try again.');
-       addToast('error', 'Network error. Please try again.');
-     } finally {
+      await portalApi.post('/auth/reset-password', { email: email.trim(), code: code.trim(), password });
+      setDone(true);
+      addToast('success', 'Password reset successfully. You can now log in.');
+    } catch (err: any) {
+      const msg = err?.body?.error || 'Failed to reset password.';
+      setError(msg);
+      addToast('error', msg);
+    } finally {
       setSubmitting(false);
     }
   };

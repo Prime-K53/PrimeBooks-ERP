@@ -162,74 +162,6 @@ const DB_VERSION = 50;
 
 let dbPromise: Promise<IDBPDatabase<NexusDB>> | null = null;
 
-/* ───────── Multi-tenant company isolation ───────── */
-let currentCompanyId = '';
-
-export function setCurrentCompanyId(id: string) {
-  currentCompanyId = id || '';
-  cloudDb.setActiveCompanyId(currentCompanyId || null);
-}
-
-export function clearCurrentCompanyId() {
-  currentCompanyId = '';
-  cloudDb.clearActiveCompanyId();
-}
-
-export function getCachedCompanyId(): string {
-  return currentCompanyId;
-}
-
-function stampCompanyId<T>(item: T): T {
-  if (currentCompanyId && typeof item === 'object' && item !== null) {
-    (item as Record<string, unknown>)._companyId = currentCompanyId;
-  }
-  return item;
-}
-
-async function stampAllRecordsWithCompany(companyId: string): Promise<void> {
-  if (!companyId) return;
-  const companyStores = STORE_NAMES.filter(s => s !== 'settings' && s !== 'syncOutbox' && s !== 'idempotencyKeys');
-  const db = await initDB();
-  const existingStores = [...db.objectStoreNames].filter(s => companyStores.includes(s as any)) as (keyof NexusDB)[];
-  if (existingStores.length === 0) return;
-        const tx = db.transaction(existingStores as any, 'readwrite');
-  let totalStamped = 0;
-  for (const store of existingStores) {
-    try {
-      const objectStore = tx.objectStore(store);
-      let cursor = await objectStore.openCursor();
-      while (cursor) {
-        const record = cursor.value as Record<string, unknown>;
-        if (record._companyId !== companyId) {
-          record._companyId = companyId;
-          await cursor.update(record);
-          totalStamped++;
-        }
-        cursor = await cursor.continue();
-      }
-    } catch {
-      // skip stores that fail mid-iteration
-    }
-  }
-  await tx.done;
-  logger.debug(`Stamped ${totalStamped} items`);
-}
-
-export async function getCurrentCompanyId(): Promise<string> {
-  if (currentCompanyId) return currentCompanyId;
-  try {
-    const raw = localStorage.getItem('nexus_company_config');
-    if (raw) {
-      const cfg = JSON.parse(raw);
-      if (cfg.companyId) {
-        currentCompanyId = cfg.companyId;
-      }
-    }
-  } catch { /* ignore */ }
-  return currentCompanyId;
-}
-/* ───────── End multi-tenant ───────── */
-
 const isRecoverableDbConnectionError = (error: unknown): boolean => {
     if (!(error instanceof Error)) return false;
     if (error.name === 'VersionError' || error.name === 'InvalidStateError') return true;
@@ -388,14 +320,7 @@ const getAllFromLegacyStore = async <T>(storeName: keyof NexusDB): Promise<T[]> 
         const item = await db.get(storeName as any, key);
         if (item !== undefined) items.push(item);
     }
-    const cid = await getCurrentCompanyId();
-    if (LOCAL_ONLY_STORES.has(String(storeName))) return items;
-    if (!cid) return items.filter((item: any) => !item?._companyId);
-    const filtered = items.filter((item: any) => {
-        const recordCompany = item?._companyId;
-        return !recordCompany || recordCompany === cid;
-    });
-    return filtered;
+    return items;
 });
 
 const getFromLegacyStore = async <T>(storeName: keyof NexusDB, id: string): Promise<T | undefined> => withDbRecovery(async (db) => {
@@ -405,13 +330,6 @@ const getFromLegacyStore = async <T>(storeName: keyof NexusDB, id: string): Prom
     }
     const record = await db.get(storeName as any, id) as T | undefined;
     if (!record) return undefined;
-    const cid = await getCurrentCompanyId();
-    if (LOCAL_ONLY_STORES.has(String(storeName))) return record;
-    if (!cid) return (record as any)?._companyId ? undefined : record;
-    const recordCompany = (record as Record<string, unknown>)?._companyId;
-    if (recordCompany && recordCompany !== cid) {
-        return undefined;
-    }
     return record;
 });
 
@@ -421,7 +339,6 @@ const putToLegacyStore = async <T>(storeName: keyof NexusDB, item: T): Promise<s
     const key = String(storeName);
     const prev = writeQueues.get(key) ?? Promise.resolve();
     const next = prev.then(() => withDbRecovery(async (db) => {
-        stampCompanyId(item);
         const result = await db.put(storeName as any, item);
         return result as string;
     }));
@@ -965,11 +882,6 @@ async function migrateToVersion41(_transaction: any) {
 export const dbService = {
     initDB,
 
-    setCurrentCompanyId,
-    clearCurrentCompanyId,
-    getCachedCompanyId,
-    stampAllRecordsWithCompany,
-    getCurrentCompanyId,
     get source() { return DB_SOURCE; },
     set source(value: string) { DB_SOURCE = value; },
 
@@ -1090,10 +1002,8 @@ export const dbService = {
 
         const itemId = String(raw.id ?? '');
 
-        const stamped = stampCompanyId(item);
-
         // Local-first: always write to IndexedDB, return immediately
-        const localResultId = await putToLegacyStore(storeName, stamped);
+        const localResultId = await putToLegacyStore(storeName, item);
 
         // Background sync: fire-and-forget queue to cloud
         const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
@@ -1104,8 +1014,7 @@ export const dbService = {
                     table,
                     recordId: itemId,
                     operation: 'upsert',
-                    payload: stamped,
-                    companyId: currentCompanyId || null,
+                    payload: item,
                 }).catch((enqueueErr) => {
                     console.warn(`[Sync] Enqueue failed for ${storeName}/${itemId}:`, enqueueErr);
                 });
@@ -1128,7 +1037,6 @@ export const dbService = {
         const tx = db.transaction(storeName as any, 'readwrite');
         const store = tx.objectStore(storeName as any);
         for (const item of items) {
-          stampCompanyId(item);
           (item as Record<string, unknown>)._updatedAt = new Date().toISOString();
           store.put(item);
         }
@@ -1245,7 +1153,6 @@ export const dbService = {
                     recordId: id,
                     operation: 'delete',
                     payload: { id },
-                    companyId: currentCompanyId || null,
                 }).catch((enqueueErr) => {
                     console.warn(`[Sync] Delete enqueue failed for ${storeName}/${id}:`, enqueueErr);
                 });
@@ -1301,7 +1208,6 @@ export const dbService = {
                 recordId: id,
                 operation: 'upsert',
                 payload: { id, name: file.name, type: file.type },
-                companyId: currentCompanyId || null,
                 fileRef: id,
             });
             backgroundSyncService.trigger();
@@ -1415,7 +1321,6 @@ export const dbService = {
 
         const db = await initDB();
         const parsed = JSON.parse(jsonData);
-        const currentCompanyId = await getCurrentCompanyId();
 
         const tx = db.transaction(db.objectStoreNames as any, 'readwrite');
         for (const store of STORE_NAMES) {
@@ -1425,18 +1330,13 @@ export const dbService = {
             const items = parsed.data[store];
             if (Array.isArray(items)) {
                 for (const item of items) {
-                    // Re-stamp with current company ID to prevent cross-company data injection
-                    if (currentCompanyId && !LOCAL_ONLY_STORES.has(store)) {
-                        item._companyId = currentCompanyId;
-                    }
                     await objectStore.put(item);
                 }
             }
         }
         await tx.done;
 
-        // Preserve current company config before clearing localStorage
-        const currentConfig = localStorage.getItem('nexus_company_config');
+        // Preserve current auth state before clearing localStorage
         const currentAuth = localStorage.getItem('prime-erp-supabase-auth');
         const currentUserId = localStorage.getItem('prime_user_id');
 
@@ -1447,7 +1347,6 @@ export const dbService = {
         }
 
         // Restore critical identity keys that must not be overwritten by backup
-        if (currentConfig) localStorage.setItem('nexus_company_config', currentConfig);
         if (currentAuth) localStorage.setItem('prime-erp-supabase-auth', currentAuth);
         if (currentUserId) localStorage.setItem('prime_user_id', currentUserId);
 
@@ -1455,7 +1354,7 @@ export const dbService = {
             Object.entries(parsed.settings).forEach(([key, value]) => {
                 if (typeof value === 'string') {
                     // Skip identity keys that must not be overwritten
-                    if (['nexus_company_config', 'prime-erp-supabase-auth', 'prime_user_id'].includes(key)) return;
+                    if (['prime-erp-supabase-auth', 'prime_user_id'].includes(key)) return;
                     localStorage.setItem(key, value);
                 }
             });

@@ -1,34 +1,30 @@
 const BaseAIService = require('./baseService.cjs');
 
 class ReorderOptimizer extends BaseAIService {
-  async optimize(companyId) {
+  async optimize() {
     const items = await this._all(
       `SELECT i.*, COALESCE(SUM(it.quantity), 0) as total_consumed
        FROM inventory i
        LEFT JOIN inventory_transactions it ON i.id = it.item_id AND it.type = 'out'
-       WHERE i.company_id = ?
        GROUP BY i.id`,
-      [companyId]
+      []
     );
 
     const transactions = await this._all(
-      `SELECT item_id, type, quantity, created_at FROM inventory_transactions
-       WHERE company_id = ? AND created_at >= datetime('now', '-180 days')
+      `SELECT item_id, type, quantity, created_at FROM inventory_transactionscreated_at >= datetime('now', '-180 days')
        ORDER BY created_at`,
-      [companyId]
+      []
     );
 
     const sales = await this._all(
-      `SELECT id, created_at FROM sales
-       WHERE company_id = ? AND created_at >= datetime('now', '-180 days')
+      `SELECT id, created_at FROM salescreated_at >= datetime('now', '-180 days')
        ORDER BY created_at`,
-      [companyId]
+      []
     );
 
     const examinationBatches = await this._all(
-      `SELECT id, created_at FROM examination_batches
-       WHERE company_id = ? AND created_at >= datetime('now', '-180 days')`,
-      [companyId]
+      `SELECT id, created_at FROM examination_batchescreated_at >= datetime('now', '-180 days')`,
+      []
     );
 
     const results = [];

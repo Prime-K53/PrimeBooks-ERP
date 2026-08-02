@@ -1,5 +1,4 @@
 const { createTestDb, createTestApp, createTestSchema, generateTestId } = require('../setup.cjs');
-const { TEST_COMPANY_ID } = require('../helpers.cjs');
 
 describe('Finance API Integration', () => {
   let db, finance;
@@ -21,13 +20,13 @@ describe('Finance API Integration', () => {
         type: 'asset',
         category: 'Current Asset'
       };
-      const acct = await finance.createAccount(data, TEST_COMPANY_ID);
+      const acct = await finance.createAccount(data);
       expect(acct).toBeDefined();
       expect(acct.code).toBe('1000');
       expect(acct.name).toBe('Cash');
       expect(acct.type).toBe('asset');
 
-      const fetched = await finance.getAccountById(acct.id, TEST_COMPANY_ID);
+      const fetched = await finance.getAccountById(acct.id);
       expect(fetched).toBeDefined();
       expect(fetched.id).toBe(acct.id);
     });
@@ -35,24 +34,24 @@ describe('Finance API Integration', () => {
     test('update an account', async () => {
       const acct = await finance.createAccount({
         code: '2000', name: 'Old Name', type: 'liability'
-      }, TEST_COMPANY_ID);
+      });
 
-      const updated = await finance.updateAccount(acct.id, { name: 'New Name' }, TEST_COMPANY_ID);
+      const updated = await finance.updateAccount(acct.id, { name: 'New Name' });
       expect(updated.name).toBe('New Name');
     });
 
     test('delete an account', async () => {
       const acct = await finance.createAccount({
         code: '3000', name: 'To Delete', type: 'equity'
-      }, TEST_COMPANY_ID);
+      });
 
-      await finance.deleteAccount(acct.id, TEST_COMPANY_ID);
-      const fetched = await finance.getAccountById(acct.id, TEST_COMPANY_ID);
+      await finance.deleteAccount(acct.id);
+      const fetched = await finance.getAccountById(acct.id);
       expect(fetched).toBeUndefined();
     });
 
     test('list all accounts', async () => {
-      const accounts = await finance.getAccounts(TEST_COMPANY_ID);
+      const accounts = await finance.getAccounts();
       expect(Array.isArray(accounts)).toBe(true);
     });
   });
@@ -66,11 +65,11 @@ describe('Finance API Integration', () => {
         entry_date: new Date().toISOString(),
         description: 'Test entry'
       };
-      const saved = await finance.saveLedgerEntry(entry, TEST_COMPANY_ID);
+      const saved = await finance.saveLedgerEntry(entry);
       expect(saved).toBeDefined();
       expect(saved.amount).toBe(500);
 
-      const entries = await finance.getLedger(TEST_COMPANY_ID);
+      const entries = await finance.getLedger();
       expect(entries.length).toBeGreaterThanOrEqual(1);
     });
   });
@@ -81,14 +80,14 @@ describe('Finance API Integration', () => {
         category: 'Office Supplies',
         amount: 250,
         expense_date: new Date().toISOString()
-      }, TEST_COMPANY_ID);
+      });
       expect(expense).toBeDefined();
       expect(expense.amount).toBe(250);
 
-      const updated = await finance.updateExpense(expense.id, { amount: 300 }, TEST_COMPANY_ID);
+      const updated = await finance.updateExpense(expense.id, { amount: 300 });
       expect(updated.amount).toBe(300);
 
-      const expenses = await finance.getExpenses(TEST_COMPANY_ID);
+      const expenses = await finance.getExpenses();
       expect(expenses.length).toBeGreaterThanOrEqual(1);
       expect(expenses.find(e => e.id === expense.id)).toBeDefined();
     });
@@ -100,14 +99,14 @@ describe('Finance API Integration', () => {
         source: 'Sales Revenue',
         amount: 5000,
         income_date: new Date().toISOString()
-      }, TEST_COMPANY_ID);
+      });
       expect(income).toBeDefined();
       expect(income.amount).toBe(5000);
 
-      const incomes = await finance.getIncome(TEST_COMPANY_ID);
+      const incomes = await finance.getIncome();
       expect(incomes.length).toBeGreaterThanOrEqual(1);
 
-      await finance.deleteIncome(income.id, TEST_COMPANY_ID);
+      await finance.deleteIncome(income.id);
     });
   });
 
@@ -118,16 +117,16 @@ describe('Finance API Integration', () => {
         fiscal_year: '2026',
         period: 'yearly',
         amount: 100000
-      }, TEST_COMPANY_ID);
+      });
       expect(budget).toBeDefined();
 
-      const updated = await finance.updateBudget(budget.id, { amount: 120000 }, TEST_COMPANY_ID);
+      const updated = await finance.updateBudget(budget.id, { amount: 120000 });
       expect(updated.amount).toBe(120000);
 
-      const budgets = await finance.getBudgets(TEST_COMPANY_ID);
+      const budgets = await finance.getBudgets();
       expect(budgets.length).toBeGreaterThanOrEqual(1);
 
-      await finance.deleteBudget(budget.id, TEST_COMPANY_ID);
+      await finance.deleteBudget(budget.id);
     });
   });
 
@@ -135,10 +134,10 @@ describe('Finance API Integration', () => {
     test('create transfer between accounts', async () => {
       const fromAcct = await finance.createAccount({
         code: '4000', name: 'Checking', type: 'asset'
-      }, TEST_COMPANY_ID);
+      });
       const toAcct = await finance.createAccount({
         code: '5000', name: 'Savings', type: 'asset'
-      }, TEST_COMPANY_ID);
+      });
 
       await new Promise((resolve, reject) => {
         db.run('UPDATE chart_of_accounts SET balance = 5000 WHERE id = ?', [fromAcct.id], (err) => {
@@ -151,13 +150,13 @@ describe('Finance API Integration', () => {
         to_account_id: toAcct.id,
         amount: 1000,
         description: 'Monthly savings transfer'
-      }, TEST_COMPANY_ID, 'test-user');
+      }, 'test-user');
 
       expect(transfer).toBeDefined();
       expect(transfer.amount).toBe(1000);
       expect(transfer.status).toBe('completed');
 
-      const transfers = await finance.getTransfers(TEST_COMPANY_ID);
+      const transfers = await finance.getTransfers();
       expect(transfers.length).toBeGreaterThanOrEqual(1);
     });
   });

@@ -11,7 +11,6 @@ export interface QueuedOperation {
   operation: QueueOperation;
   payload: unknown;
   userId: string | null;
-  companyId: string | null;
   createdAt: string;
   retryCount: number;
   lastAttempt: string | null;
@@ -166,7 +165,6 @@ export const durableSyncQueue = {
     operation: QueueOperation;
     payload: T;
     userId?: string | null;
-    companyId?: string | null;
     dependsOn?: string[];
     fileRef?: string | null;
   }): Promise<QueuedOperation> {
@@ -192,7 +190,6 @@ export const durableSyncQueue = {
       operation: input.operation,
       payload: input.payload,
       userId: input.userId || null,
-      companyId: input.companyId || null,
       createdAt: now,
       retryCount: 0,
       lastAttempt: null,
@@ -213,7 +210,6 @@ export const durableSyncQueue = {
     operation: QueueOperation;
     payload: T;
     userId?: string | null;
-    companyId?: string | null;
     dependsOn?: string[];
     fileRef?: string | null;
   }, cacheWrite: () => Promise<void>): Promise<QueuedOperation> {

@@ -143,7 +143,6 @@ app.use((req, res, next) => {
 const { auditContextMiddleware, auditAuthMiddleware, auditCrudMiddleware } = require('./auditMiddleware.cjs');
 const { validateTransactionPrice, calculateSellingPrice } = require('./services/pricingEngine.cjs');
 const { verifyToken, requireRole, requirePermission } = require('./middleware/auth.cjs');
-const { tenantContext } = require('./middleware/tenantContext.cjs');
 const { injectFinancialYear, addFyDateFilter, requireFyNotClosed } = require('./middleware/financialYearMiddleware.cjs');
 const { validateBody, sanitizeInput, inventorySchemas, salesSchemas, userSchemas, financialSchemas, productionSchemas, documentSchemas, exchangeSchemas, orderSchemas, classSchemas, subjectSchemas, notificationSchemas, accountSchemas, expenseSchemas, incomeSchemas, budgetSchemas, transferSchemas } = require('./middleware/validation.cjs');
 const CurrencyMiddleware = require('./middleware/currencyMiddleware.cjs');
@@ -234,7 +233,7 @@ const corsOptions = {
     return callback(null, origin);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-mode', 'x-correlation-id', 'x-company-id', 'x-idempotency-key', 'x-user-id', 'x-user-role', 'x-user-email', 'x-user-is-super-admin', 'x-dev-bypass'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-mode', 'x-correlation-id', 'x-idempotency-key', 'x-user-id', 'x-user-role', 'x-user-email', 'x-user-is-super-admin', 'x-dev-bypass'],
   credentials: true
 };
 
@@ -287,7 +286,7 @@ app.use((req, res, next) => {
     }
     res.header('Access-Control-Allow-Origin', allowed ? (origin || '*') : '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-auth-mode, x-user-id, x-user-role, x-user-email, x-correlation-id, x-dev-bypass, x-company-id, x-idempotency-key, x-financial-year-id, x-user-is-super-admin');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-auth-mode, x-user-id, x-user-role, x-user-email, x-correlation-id, x-dev-bypass, x-idempotency-key, x-financial-year-id, x-user-is-super-admin');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Max-Age', '86400');
     return res.sendStatus(204);
@@ -319,19 +318,15 @@ app.use('/api/portal/auth', portalAuthLimiter, portalAuthRoutes);
 // Portal admin routes — registered before global verifyToken to avoid Supabase JWT collisions
 app.use('/api/portal/admin', portalAdminRoutes);
 
-// Customer portal data routes — registered before the global admin verifyToken /
-// tenantContext chain. Portal requests authenticate with portal JWTs and are
-// company-scoped by the portal token itself, so they must not require the
-// admin x-company-id header.
+// Customer portal data routes — registered before the global admin verifyToken
+// chain. Portal requests authenticate with portal JWTs.
 const portalRoutes = require('./routes/portal.cjs');
 const { verifyPortalToken } = require('./middleware/portalAuth.cjs');
 app.use('/api/portal', verifyPortalToken, portalRoutes);
 
 // Apply JWT verification to all /api routes (auth routes are skipped by verifyToken internally)
 app.use('/api', verifyToken);
-// Attach tenant context from x-company-id header to all /api routes
-app.use('/api', tenantContext);
-// Inject company currency into requests
+// Inject currency into requests
 const CurrencyService = require('./services/currencyService.cjs');
 const currencyService = new CurrencyService();
 const currencyMiddleware = new CurrencyMiddleware(currencyService);
@@ -479,15 +474,15 @@ function validateEnv() {
 }
 
 // Helper function to post ledger entries for a sale
-async function postSaleLedgerEntries(saleId, totalAmount, materialTotal, customerId, customerName, companyId, userId) {
+async function postSaleLedgerEntries(saleId, totalAmount, materialTotal, customerId, customerName, userId) {
   try {
     const FinanceService = require('./services/financeService.cjs');
     const finance = new FinanceService();
     
     // Find AR and Revenue accounts
-    const arAccount = await finance.getAccounts(companyId).then(accounts => accounts.find(a => a.code === '1200' || a.name.toLowerCase().includes('accounts receivable')));
-    const revenueAccount = await finance.getAccounts(companyId).then(accounts => accounts.find(a => a.code === '4000' || a.name.toLowerCase().includes('sales')));
-    const cogsAccount = await finance.getAccounts(companyId).then(accounts => accounts.find(a => a.code === '5000' || a.name.toLowerCase().includes('cost of goods')));
+    const arAccount = await finance.getAccounts().then(accounts => accounts.find(a => a.code === '1200' || a.name.toLowerCase().includes('accounts receivable')));
+    const revenueAccount = await finance.getAccounts().then(accounts => accounts.find(a => a.code === '4000' || a.name.toLowerCase().includes('sales')));
+    const cogsAccount = await finance.getAccounts().then(accounts => accounts.find(a => a.code === '5000' || a.name.toLowerCase().includes('cost of goods')));
     
     if (!arAccount || !revenueAccount) {
       console.warn('[Ledger] AR or Revenue account not found, skipping ledger posting for sale', saleId);
@@ -509,7 +504,7 @@ async function postSaleLedgerEntries(saleId, totalAmount, materialTotal, custome
       journal_id: journalId,
       entry_date: now,
       created_by: userId
-    }, companyId);
+    });
     
     // Post Revenue credit
     await finance.saveLedgerEntry({
@@ -523,7 +518,7 @@ async function postSaleLedgerEntries(saleId, totalAmount, materialTotal, custome
       journal_id: journalId,
       entry_date: now,
       created_by: userId
-    }, companyId);
+    });
     
     // Post COGS if we have material cost
     if (materialTotal > 0 && cogsAccount) {
@@ -538,7 +533,7 @@ async function postSaleLedgerEntries(saleId, totalAmount, materialTotal, custome
         journal_id: journalId,
         entry_date: now,
         created_by: userId
-      }, companyId);
+      });
     }
     
     console.log(`[Ledger] Posted entries for sale #${saleId}`);
@@ -549,7 +544,7 @@ async function postSaleLedgerEntries(saleId, totalAmount, materialTotal, custome
 }
 
 // Helper function to update customer balance
-async function updateCustomerBalance(customerId, amount, companyId) {
+async function updateCustomerBalance(customerId, amount) {
   try {
     if (!customerId || customerId === 'walk-in') return;
     
@@ -559,8 +554,8 @@ async function updateCustomerBalance(customerId, amount, companyId) {
           balance = COALESCE(balance, 0) + ?,
           outstandingBalance = COALESCE(outstandingBalance, 0) + ?,
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND company_id = ?`,
-        [amount, amount, customerId, companyId],
+        WHERE id = ?`,
+        [amount, amount, customerId],
         (err) => {
           if (err) reject(err);
           else resolve();
@@ -576,19 +571,10 @@ async function updateCustomerBalance(customerId, amount, companyId) {
 }
 
 // Helper function to deduct inventory for a sale
-async function deductInventoryForSale(items, saleId, companyId) {
+async function deductInventoryForSale(items, saleId) {
   try {
-    // Get default warehouse for company or use 'WH-MAIN' as fallback
-    const warehouseId = await new Promise((resolve, reject) => {
-      db.get(
-        "SELECT warehouse_id FROM warehouse_inventory WHERE company_id = ? LIMIT 1",
-        [companyId],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row?.warehouse_id || 'WH-MAIN');
-        }
-      );
-    });
+    // Use 'WH-MAIN' as the default warehouse
+    const warehouseId = 'WH-MAIN';
     
     for (const item of items) {
       if (item.type === 'service') continue;
@@ -600,7 +586,7 @@ async function deductInventoryForSale(items, saleId, companyId) {
       
       // Check if inventory exists
       const inventory = await new Promise((resolve, reject) => {
-        db.get("SELECT * FROM inventory WHERE id = ? AND company_id = ?", [itemId, companyId], (err, row) => {
+        db.get("SELECT * FROM inventory WHERE id = ?", [itemId], (err, row) => {
           if (err) reject(err);
           else resolve(row);
         });
@@ -620,13 +606,13 @@ async function deductInventoryForSale(items, saleId, companyId) {
         db.run(
           `INSERT INTO inventory_transactions 
             (id, item_id, warehouse_id, type, quantity, previous_quantity, new_quantity, 
-              unit_cost, total_cost, reason, reference, reference_id, performed_by, timestamp, company_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              unit_cost, total_cost, reason, reference, reference_id, performed_by, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
           [
             transactionId, itemId, warehouseId, 'OUT', -quantity, 
             currentQuantity, newQuantity, inventory.cost_per_unit || 0, 
             quantity * (inventory.cost_per_unit || 0),
-            `POS Sale #${saleId}`, 'sale', saleId, 'system', new Date().toISOString(), companyId
+            `POS Sale #${saleId}`, 'sale', saleId, 'system', new Date().toISOString()
           ],
           (err) => {
             if (err) reject(err);
@@ -638,8 +624,8 @@ async function deductInventoryForSale(items, saleId, companyId) {
       // Update inventory quantity
       await new Promise((resolve, reject) => {
         db.run(
-          "UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?",
-          [newQuantity, itemId, companyId],
+          "UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?",
+          [newQuantity, itemId],
           (err) => {
             if (err) reject(err);
             else resolve();
@@ -680,10 +666,10 @@ async function startServer() {
   const licenseService = require('./services/licenseService.cjs');
 
   // ── Financial Year validation helper ──────────────────────────────────
-  const validateFyDate = async (dateField, body, companyId) => {
+  const validateFyDate = async (dateField, body) => {
     if (!body[dateField]) return;
     const fySvc = new (require('./services/financialYearService.cjs'))();
-    const fy = await fySvc.getFinancialYearByDate(body[dateField], companyId);
+    const fy = await fySvc.getFinancialYearByDate(body[dateField]);
     if (!fy) {
       throw new Error(`Selected date (${body[dateField]}) does not belong to any active Financial Year. Please switch Financial Year or choose a valid date.`);
     }
@@ -713,14 +699,13 @@ async function startServer() {
 
     try {
       const offset = `-${days - 1} days`;
-      const companyId = req.companyId || '';
 
       let fyDateFilter = '';
       let fyParams = [];
       if (financialYearId) {
         const fy = await new Promise((resolve) => {
-          db.get('SELECT start_date, end_date FROM financial_years WHERE id = ? AND company_id = ?',
-            [financialYearId, companyId], (err, row) => resolve(row || null));
+          db.get('SELECT start_date, end_date FROM financial_years WHERE id = ?',
+            [financialYearId], (err, row) => resolve(row || null));
         });
         if (fy) {
           fyDateFilter = ' AND date(date) >= date(?) AND date(date) <= date(?)';
@@ -729,32 +714,30 @@ async function startServer() {
       }
 
       const [revenueRow, todayRow, outstandingRow, chartRows, salesRows, invoiceRows] = await Promise.all([
-        getOne(`SELECT SUM(total_amount) as revenue FROM sales WHERE company_id = ?${fyDateFilter}`, [companyId, ...fyParams]),
-        getOne(`SELECT SUM(total_amount) as todaySales FROM sales WHERE date(date) = date('now') AND company_id = ?${fyDateFilter.replace(/AND date\(date\) >= date\(\?\) AND date\(date\) <= date\(\?\)/g, '')}`, [companyId, ...(fyParams.length ? [] : [])]),
-        getOne(`SELECT COUNT(*) as outstandingInvoices FROM invoices WHERE lower(COALESCE(status, '')) != 'paid' AND company_id = ?`, [companyId]),
+        getOne(`SELECT SUM(total_amount) as revenue FROM sales${fyDateFilter}`, fyParams),
+        getOne(`SELECT SUM(total_amount) as todaySales FROM sales WHERE date(date) = date('now')${fyDateFilter}`, fyParams),
+        getOne(`SELECT COUNT(*) as outstandingInvoices FROM invoices WHERE lower(COALESCE(status, '')) != 'paid'`),
         getAll(
           `SELECT date(date) as day, SUM(total_amount) as total
            FROM sales
-           WHERE date(date) >= date('now', ?) AND company_id = ?${fyDateFilter}
+           WHERE date(date) >= date('now', ?)${fyDateFilter}
            GROUP BY date(date)
            ORDER BY day`,
-          [offset, companyId, ...fyParams]
+          [offset, ...fyParams]
         ),
         getAll(
           `SELECT id, customer_id as customerId, customer_name as customerName, total_amount as totalAmount, date
-           FROM sales
-           WHERE company_id = ?${fyDateFilter}
+           FROM sales${fyDateFilter}
            ORDER BY date DESC
            LIMIT 200`,
-          [companyId, ...fyParams]
+          fyParams
         ),
         getAll(
           `SELECT id, customer_id as customerId, customer_name as customerName, total_amount as totalAmount, status, created_at as createdAt
-           FROM invoices
-           WHERE company_id = ?${fyDateFilter}
+           FROM invoices${fyDateFilter}
            ORDER BY created_at DESC
            LIMIT 50`,
-          [companyId, ...fyParams]
+          fyParams
         )
       ]);
 
@@ -786,7 +769,6 @@ async function startServer() {
 
   app.get('/api/sales', requireRole('Admin', 'Manager', 'Cashier', 'Accountant', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
       let sql = `SELECT 
         id, date, customer_id as customerId, customer_name as customerName, sub_account_name as subAccountName,
         total_amount as totalAmount, material_total as materialTotal, adjustment_total as adjustmentTotal,
@@ -795,8 +777,8 @@ async function startServer() {
         status, payment_method as paymentMethod, source, items_json, payments_json,
         created_by, updated_by, void_reason, voided_at
        FROM sales
-       WHERE company_id = ?`;
-      const params = [companyId];
+       WHERE 1 = 1`;
+      const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'date');
       sql = filtered.sql + ' ORDER BY date DESC';
       const rows = await new Promise((resolve, reject) => {
@@ -836,7 +818,7 @@ async function startServer() {
     
     // Idempotency check
     if (payload.idempotencyKey) {
-      db.get(`SELECT id FROM sales WHERE idempotency_key = ? AND company_id = ?`, [payload.idempotencyKey, req.companyId || ''], (err, row) => {
+      db.get(`SELECT id FROM sales WHERE idempotency_key = ?`, [payload.idempotencyKey], (err, row) => {
         if (err) {
           console.error('[Backend] Idempotency check error:', err);
           return res.status(500).json({ error: 'Idempotency check failed' });
@@ -849,7 +831,7 @@ async function startServer() {
     }
     
     try {
-      await validateFyDate('date', payload, req.companyId || '');
+      await validateFyDate('date', payload);
     } catch (fyError) {
       return res.status(400).json({ error: fyError.message });
     }
@@ -895,14 +877,13 @@ async function startServer() {
         `INSERT INTO sales (
           id, date, customer_id, customer_name, sub_account_name, 
           total_amount, material_total, adjustment_total, profit_margin_total, rounding_total, other_charges,
-          adjustment_snapshots_json, status, payment_method, source, items_json, payments_json, 
-          company_id, created_by, updated_by, idempotency_key
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          adjustment_snapshots_json, status, payment_method, source, items_json, payments_json,
+          created_by, updated_by, idempotency_key
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, date, customerId, customerName, subAccountName,
           totalAmount, materialTotal, adjustmentTotal, profitMarginTotal, roundingTotal, otherCharges,
-          snapshotsJson, status, paymentMethod, source, itemsJson, paymentsJson, 
-          req.companyId || '', req.user?.id || 'system', req.user?.id || 'system', idempotencyKey
+          snapshotsJson, status, paymentMethod, source, itemsJson, paymentsJson, req.user?.id || 'system', req.user?.id || 'system', idempotencyKey
         ],
         (error) => {
           if (error) {
@@ -917,17 +898,17 @@ async function startServer() {
               // All items inserted, now post ledger entries and update inventory
               try {
                 // Post ledger entries for the sale
-                postSaleLedgerEntries(id, totalAmount, materialTotal, customerId, customerName, req.companyId || '', req.user?.id || 'system');
+                postSaleLedgerEntries(id, totalAmount, materialTotal, customerId, customerName, req.user?.id || 'system');
                 
                 // Update customer balance if not walk-in
                 if (customerId && customerId !== 'walk-in') {
-                  updateCustomerBalance(customerId, totalAmount, req.companyId || '');
+                  updateCustomerBalance(customerId, totalAmount);
                 }
                 
                 // Deduct inventory for physical products
                 const inventoryItems = payload.items.filter(item => item.type !== 'service');
                 if (inventoryItems.length > 0) {
-                  deductInventoryForSale(inventoryItems, id, req.companyId || '');
+                  deductInventoryForSale(inventoryItems, id);
                 }
               } catch (ledgerError) {
                 console.error('[BACKEND] Error posting ledger/inventory for sale #${id}:', ledgerError);
@@ -979,12 +960,12 @@ async function startServer() {
             db.run(
               `INSERT INTO sale_items (
                 id, sale_id, item_id, variant_id, item_name, quantity, unit_price, unit_cost, 
-                line_total, discount, tax_rate, tax_amount, item_type, company_id
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                line_total, discount, tax_rate, tax_amount, item_type
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
               [
                 `${id}-item-${index}`, id, itemId, item.variantId || null, itemName, 
                 quantity, unitPrice, unitCost, lineTotal, discount, taxRate, taxAmount, 
-                itemType, req.companyId || ''
+                itemType
               ],
               (itemErr) => {
                 if (itemErr) {
@@ -1009,7 +990,7 @@ async function startServer() {
     const { id } = req.params;
     const payload = req.body || {};
     try {
-      await validateFyDate('date', payload, req.companyId || '');
+      await validateFyDate('date', payload);
     } catch (err) {
       return res.status(400).json({ error: err.message });
     }
@@ -1028,7 +1009,7 @@ async function startServer() {
         date = ?, customer_id = ?, customer_name = ?, sub_account_name = ?,
         total_amount = ?, material_total = ?, adjustment_total = ?, profit_margin_total = ?, rounding_total = ?, other_charges = ?,
         adjustment_snapshots_json = ?, status = ?, payment_method = ?, source = ?, items_json = ?, payments_json = ?
-      WHERE id = ? AND company_id = ?`,
+      WHERE id = ?`,
       [
         payload.date || new Date().toISOString(),
         payload.customerId || payload.customer_id || 'walk-in',
@@ -1036,7 +1017,7 @@ async function startServer() {
         payload.subAccountName || payload.sub_account_name || 'Main',
         totalAmount, materialTotal, adjustmentTotal, profitMarginTotal, roundingTotal, otherCharges,
         snapshotsJson, payload.status || 'Paid', payload.paymentMethod || null, payload.source || null,
-        itemsJson, paymentsJson, id, req.companyId || ''
+        itemsJson, paymentsJson, id
       ],
       (error) => {
         if (error) {
@@ -1052,16 +1033,16 @@ async function startServer() {
     const { id } = req.params;
     try {
       const row = await new Promise((resolve, reject) => {
-        db.get(`SELECT id, date FROM sales WHERE id = ? AND company_id = ?`, [id, req.companyId || ''], (err, row) => {
+        db.get(`SELECT id, date FROM sales WHERE id = ?`, [id], (err, row) => {
           if (err) reject(err);
           else resolve(row);
         });
       });
       if (!row) return res.status(404).json({ error: 'Sale not found' });
       const fySvc = new (require('./services/financialYearService.cjs'))();
-      await fySvc.validateTransactionDate(row.date, req.companyId || '');
+      await fySvc.validateTransactionDate(row.date);
       await new Promise((resolve, reject) => {
-        db.run(`UPDATE sales SET status = 'Voided' WHERE id = ? AND company_id = ?`, [id, req.companyId || ''], (error) => {
+        db.run(`UPDATE sales SET status = 'Voided' WHERE id = ?`, [id], (error) => {
           if (error) reject(error);
           else resolve(null);
         });
@@ -1142,7 +1123,7 @@ async function startServer() {
   // Chart of Accounts
   app.get('/api/accounts', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const rows = await finance.getAccounts(req.companyId || '');
+      const rows = await finance.getAccounts();
       res.json(rows);
     } catch (err) {
       console.error('[Finance] getAccounts error:', err?.message || err);
@@ -1152,7 +1133,7 @@ async function startServer() {
 
   app.get('/api/accounts/:id', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const row = await finance.getAccountById(req.params.id, req.companyId || '');
+      const row = await finance.getAccountById(req.params.id);
       if (!row) return res.status(404).json({ error: 'Account not found' });
       res.json(row);
     } catch (err) {
@@ -1163,7 +1144,7 @@ async function startServer() {
 
   app.post('/api/accounts', requireRole('Admin', 'Accountant', 'Manager'), validateBody(accountSchemas.create), async (req, res) => {
     try {
-      const row = await finance.createAccount(req.body, req.companyId || '');
+      const row = await finance.createAccount(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Finance] createAccount error:', err?.message || err);
@@ -1173,7 +1154,7 @@ async function startServer() {
 
   app.put('/api/accounts/:id', requireRole('Admin', 'Accountant', 'Manager'), validateBody(accountSchemas.update), async (req, res) => {
     try {
-      const row = await finance.updateAccount(req.params.id, req.body, req.companyId || '');
+      const row = await finance.updateAccount(req.params.id, req.body);
       if (!row) return res.status(404).json({ error: 'Account not found' });
       res.json(row);
     } catch (err) {
@@ -1184,7 +1165,7 @@ async function startServer() {
 
   app.delete('/api/accounts/:id', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await finance.deleteAccount(req.params.id, req.companyId || '');
+      await finance.deleteAccount(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[Finance] deleteAccount error:', err?.message || err);
@@ -1196,8 +1177,7 @@ async function startServer() {
   app.get('/api/ledger', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
       const accountId = req.query.account_id;
-      const companyId = req.companyId || '';
-      let { sql, params } = addFyDateFilter('SELECT * FROM ledger_entries WHERE company_id = ?', [companyId], req, 'entry_date');
+      let { sql, params } = addFyDateFilter('SELECT * FROM ledger_entries', [], req, 'entry_date');
       if (accountId) {
         sql += ' AND account_id = ?';
         params.push(accountId);
@@ -1215,14 +1195,13 @@ async function startServer() {
 
   app.post('/api/ledger', requireRole('Admin', 'Accountant', 'Manager'), validateBody(financialSchemas.journalEntry), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      await validateFyDate('date', req.body, req.companyId || '');
+      await validateFyDate('date', req.body);
       const { lines, ...meta } = req.body;
       const totalDebit = lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
       const totalCredit = lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0);
       if (Math.abs(totalDebit - totalCredit) > 0.01) {
         return res.status(400).json({ error: 'Unbalanced journal entry', totalDebit, totalCredit });
       }
-      const companyId = req.companyId || '';
       const results = [];
       for (const line of lines) {
         const entry = await finance.saveLedgerEntry({
@@ -1231,7 +1210,7 @@ async function startServer() {
           entry_type: line.debit > 0 ? 'debit' : 'credit',
           amount: line.debit > 0 ? line.debit : line.credit,
           entry_date: meta.date || new Date().toISOString()
-        }, companyId);
+        });
         results.push(entry);
       }
       res.status(201).json(results);
@@ -1244,8 +1223,7 @@ async function startServer() {
   // Expenses
   app.get('/api/expenses', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let { sql, params } = addFyDateFilter('SELECT * FROM expenses WHERE company_id = ?', [companyId], req, 'expense_date');
+      let { sql, params } = addFyDateFilter('SELECT * FROM expenses', [], req, 'expense_date');
       sql += ' ORDER BY expense_date DESC';
       db.all(sql, params, (err, rows) => {
         if (err) { console.error('[Finance] getExpenses error:', err); return res.status(500).json({ error: 'Failed to fetch expenses' }); }
@@ -1259,8 +1237,8 @@ async function startServer() {
 
   app.post('/api/expenses', requireRole('Admin', 'Accountant', 'Manager'), validateBody(expenseSchemas.create), async (req, res) => {
     try {
-      await validateFyDate('expense_date', req.body, req.companyId || '');
-      const row = await finance.createExpense({ ...req.body, created_by: req.user?.id }, req.companyId || '');
+      await validateFyDate('expense_date', req.body);
+      const row = await finance.createExpense({ ...req.body, created_by: req.user?.id });
       res.status(201).json(row);
     } catch (err) {
       console.error('[Finance] createExpense error:', err?.message || err);
@@ -1270,7 +1248,7 @@ async function startServer() {
 
   app.put('/api/expenses/:id', requireRole('Admin', 'Accountant', 'Manager'), validateBody(expenseSchemas.update), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      const row = await finance.updateExpense(req.params.id, req.body, req.companyId || '');
+      const row = await finance.updateExpense(req.params.id, req.body);
       if (!row) return res.status(404).json({ error: 'Expense not found' });
       res.json(row);
     } catch (err) {
@@ -1281,7 +1259,7 @@ async function startServer() {
   
   app.delete('/api/expenses/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      await finance.deleteExpense(req.params.id, req.companyId || '');
+      await finance.deleteExpense(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[Finance] deleteExpense error:', err?.message || err);
@@ -1292,8 +1270,7 @@ async function startServer() {
   // Income
   app.get('/api/income', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let { sql, params } = addFyDateFilter('SELECT * FROM income WHERE company_id = ?', [companyId], req, 'income_date');
+      let { sql, params } = addFyDateFilter('SELECT * FROM income WHERE', [], req, 'income_date');
       sql += ' ORDER BY income_date DESC';
       db.all(sql, params, (err, rows) => {
         if (err) { console.error('[Finance] getIncome error:', err); return res.status(500).json({ error: 'Failed to fetch income' }); }
@@ -1307,8 +1284,8 @@ async function startServer() {
 
   app.post('/api/income', requireRole('Admin', 'Accountant', 'Manager'), validateBody(incomeSchemas.create), async (req, res) => {
     try {
-      await validateFyDate('income_date', req.body, req.companyId || '');
-      const row = await finance.createIncome({ ...req.body, created_by: req.user?.id }, req.companyId || '');
+      await validateFyDate('income_date', req.body);
+      const row = await finance.createIncome({ ...req.body, created_by: req.user?.id });
       res.status(201).json(row);
     } catch (err) {
       console.error('[Finance] createIncome error:', err?.message || err);
@@ -1318,7 +1295,7 @@ async function startServer() {
 
   app.delete('/api/income/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      await finance.deleteIncome(req.params.id, req.companyId || '');
+      await finance.deleteIncome(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[Finance] deleteIncome error:', err?.message || err);
@@ -1329,7 +1306,7 @@ async function startServer() {
   // Budgets
   app.get('/api/budgets', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const rows = await finance.getBudgets(req.companyId || '');
+      const rows = await finance.getBudgets();
       res.json(rows);
     } catch (err) {
       console.error('[Finance] getBudgets error:', err?.message || err);
@@ -1339,7 +1316,7 @@ async function startServer() {
 
   app.post('/api/budgets', requireRole('Admin', 'Accountant', 'Manager'), validateBody(budgetSchemas.create), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      const row = await finance.createBudget(req.body, req.companyId || '');
+      const row = await finance.createBudget(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Finance] createBudget error:', err?.message || err);
@@ -1349,7 +1326,7 @@ async function startServer() {
   
   app.put('/api/budgets/:id', requireRole('Admin', 'Accountant', 'Manager'), validateBody(budgetSchemas.update), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      const row = await finance.updateBudget(req.params.id, req.body, req.companyId || '');
+      const row = await finance.updateBudget(req.params.id, req.body);
       if (!row) return res.status(404).json({ error: 'Budget not found' });
       res.json(row);
     } catch (err) {
@@ -1360,7 +1337,7 @@ async function startServer() {
   
   app.delete('/api/budgets/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      await finance.deleteBudget(req.params.id, req.companyId || '');
+      await finance.deleteBudget(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[Finance] deleteBudget error:', err?.message || err);
@@ -1374,12 +1351,11 @@ async function startServer() {
   app.get('/api/user/preferences/:key', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
       const userId = req.user?.id || req.headers['x-user-id'] || '';
-      const companyId = req.companyId || '';
       if (!userId) return res.status(200).json({ value: null });
       // Try the local SQLite preference store first, then fallback to no value
       const row = await db.get(
         `SELECT pref_value FROM user_preferences WHERE id = ?`,
-        [`${userId}:${companyId}:${req.params.key}`]
+        [`${userId}:${req.params.key}`]
       );
       res.json({ value: row?.pref_value || null });
     } catch (err) {
@@ -1391,15 +1367,14 @@ async function startServer() {
   app.put('/api/user/preferences/:key', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
       const userId = req.user?.id || req.headers['x-user-id'] || '';
-      const companyId = req.companyId || '';
       const { value } = req.body || {};
       if (!userId) return res.status(400).json({ error: 'User ID required' });
-      const prefId = `${userId}:${companyId}:${req.params.key}`;
+      const prefId = `${userId}:${req.params.key}`;
       await db.run(
-        `INSERT INTO user_preferences (id, user_id, company_id, pref_key, pref_value, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        `INSERT INTO user_preferences (id, user_id, pref_key, pref_value, created_at, updated_at)
+         VALUES (?, ? , ?, ?, datetime('now'), datetime('now'))
          ON CONFLICT(id) DO UPDATE SET pref_value = excluded.pref_value, updated_at = datetime('now')`,
-        [prefId, userId, companyId, req.params.key, value || '']
+        [prefId, userId, req.params.key, value || '']
       );
       res.json({ success: true });
     } catch (err) {
@@ -1411,7 +1386,7 @@ async function startServer() {
   // --- Financial Year Endpoints ---
   app.get('/api/financial-years', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const rows = await financialYear.getFinancialYears(req.companyId || '');
+      const rows = await financialYear.getFinancialYears();
       res.json(rows);
     } catch (err) {
       console.error('[FY] list error:', err?.message || err);
@@ -1421,9 +1396,9 @@ async function startServer() {
 
   app.get('/api/financial-years/default', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      let fy = await financialYear.getDefaultFinancialYear(req.companyId || '');
+      let fy = await financialYear.getDefaultFinancialYear();
       if (!fy) {
-        fy = await financialYear.getOrCreateDefaultFinancialYear(req.companyId || '', req.user?.id);
+        fy = await financialYear.getOrCreateDefaultFinancialYear(req.user?.id);
       }
       res.json(fy || {});
     } catch (err) {
@@ -1435,9 +1410,9 @@ async function startServer() {
   app.get('/api/financial-years/current', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
       const today = new Date().toISOString().slice(0, 10);
-      let fy = await financialYear.getFinancialYearByDate(today, req.companyId || '');
+      let fy = await financialYear.getFinancialYearByDate(today);
       if (!fy) {
-        fy = await financialYear.getDefaultFinancialYear(req.companyId || '');
+        fy = await financialYear.getDefaultFinancialYear();
       }
       res.json(fy || {});
     } catch (err) {
@@ -1449,7 +1424,7 @@ async function startServer() {
   app.get('/api/financial-years/by-date', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
       const date = req.query.date || new Date().toISOString().slice(0, 10);
-      const fy = await financialYear.getFinancialYearByDate(date, req.companyId || '');
+      const fy = await financialYear.getFinancialYearByDate(date);
       res.json(fy || {});
     } catch (err) {
       console.error('[FY] by-date error:', err?.message || err);
@@ -1459,7 +1434,7 @@ async function startServer() {
 
   app.get('/api/financial-years/:id', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const row = await financialYear.getFinancialYearById(req.params.id, req.companyId || '');
+      const row = await financialYear.getFinancialYearById(req.params.id);
       if (!row) return res.status(404).json({ error: 'Financial year not found' });
       res.json(row);
     } catch (err) {
@@ -1470,7 +1445,7 @@ async function startServer() {
 
   app.post('/api/financial-years', requireRole('Admin'), async (req, res) => {
     try {
-      const row = await financialYear.createFinancialYear(req.body, req.companyId || '', req.user?.id);
+      const row = await financialYear.createFinancialYear(req.body, req.user?.id);
       res.status(201).json(row);
     } catch (err) {
       console.error('[FY] create error:', err?.message || err);
@@ -1480,7 +1455,7 @@ async function startServer() {
 
   app.put('/api/financial-years/:id', requireRole('Admin'), async (req, res) => {
     try {
-      const row = await financialYear.updateFinancialYear(req.params.id, req.body, req.companyId || '');
+      const row = await financialYear.updateFinancialYear(req.params.id, req.body);
       if (!row) return res.status(404).json({ error: 'Financial year not found' });
       res.json(row);
     } catch (err) {
@@ -1491,7 +1466,7 @@ async function startServer() {
 
   app.post('/api/financial-years/:id/close', requireRole('Admin'), async (req, res) => {
     try {
-      const row = await financialYear.closeFinancialYear(req.params.id, req.companyId || '');
+      const row = await financialYear.closeFinancialYear(req.params.id);
       res.json(row);
     } catch (err) {
       console.error('[FY] close error:', err?.message || err);
@@ -1501,7 +1476,7 @@ async function startServer() {
 
   app.delete('/api/financial-years/:id', requireRole('Admin'), async (req, res) => {
     try {
-      await financialYear.deleteFinancialYear(req.params.id, req.companyId || '');
+      await financialYear.deleteFinancialYear(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[FY] delete error:', err?.message || err);
@@ -1512,9 +1487,8 @@ async function startServer() {
   // Transfers
   app.get('/api/transfers', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let sql = 'SELECT * FROM transfers WHERE company_id = ?';
-      const params = [companyId];
+      let sql = 'SELECT * FROM transfers';
+      const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'transfer_date');
       const rows = await new Promise((resolve, reject) => {
         db.all(filtered.sql, filtered.params, (err, rows) => {
@@ -1531,8 +1505,8 @@ async function startServer() {
 
   app.post('/api/transfers', requireRole('Admin', 'Accountant', 'Manager'), validateBody(transferSchemas.create), async (req, res) => {
     try {
-      await validateFyDate('transfer_date', req.body, req.companyId || '');
-      const row = await finance.createTransfer(req.body, req.companyId || '', req.user?.id);
+      await validateFyDate('transfer_date', req.body);
+      const row = await finance.createTransfer(req.body, req.user?.id);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Finance] createTransfer error:', err?.message || err);
@@ -1543,7 +1517,7 @@ async function startServer() {
   // --- Banking Endpoints ---
   app.get('/api/bank-accounts', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const rows = await banking.getAccounts(req.companyId || '');
+      const rows = await banking.getAccounts();
       res.json(rows);
     } catch (err) {
       console.error('[Banking] getAccounts error:', err?.message || err);
@@ -1553,7 +1527,7 @@ async function startServer() {
 
   app.post('/api/bank-accounts', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const row = await banking.createAccount(req.body, req.companyId || '');
+      const row = await banking.createAccount(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Banking] createAccount error:', err?.message || err);
@@ -1563,7 +1537,7 @@ async function startServer() {
 
   app.put('/api/bank-accounts/:id', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const row = await banking.updateAccount(req.params.id, req.body, req.companyId || '');
+      const row = await banking.updateAccount(req.params.id, req.body);
       if (!row) return res.status(404).json({ error: 'Bank account not found' });
       res.json(row);
     } catch (err) {
@@ -1574,7 +1548,7 @@ async function startServer() {
 
   app.delete('/api/bank-accounts/:id', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await banking.deleteAccount(req.params.id, req.companyId || '');
+      await banking.deleteAccount(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[Banking] deleteAccount error:', err?.message || err);
@@ -1591,7 +1565,7 @@ async function startServer() {
         startDate: req.fyStartDate || req.query.start_date,
         endDate: req.query.end_date
       };
-      const rows = await banking.getTransactions(req.companyId || '', filters);
+      const rows = await banking.getTransactions(filters);
       res.json(rows);
     } catch (err) {
       console.error('[Banking] getTransactions error:', err?.message || err);
@@ -1601,8 +1575,8 @@ async function startServer() {
 
   app.post('/api/bank-transactions', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      await validateFyDate('date', req.body, req.companyId || '');
-      const row = await banking.createTransaction(req.body, req.companyId || '');
+      await validateFyDate('date', req.body);
+      const row = await banking.createTransaction(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Banking] createTransaction error:', err?.message || err);
@@ -1612,8 +1586,8 @@ async function startServer() {
   
   app.post('/api/bank-transfers', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      await validateFyDate('date', req.body, req.companyId || '');
-      const row = await banking.transferFunds(req.body, req.companyId || '');
+      await validateFyDate('date', req.body);
+      const row = await banking.transferFunds(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Banking] transferFunds error:', err?.message || err);
@@ -1624,7 +1598,7 @@ async function startServer() {
   app.get('/api/bank-accounts/:id/balance', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
       const asOfDate = req.query.as_of_date || null;
-      const balance = await banking.getAccountBalance(req.params.id, req.companyId || '', asOfDate);
+      const balance = await banking.getAccountBalance(req.params.id, asOfDate);
       res.json({ accountId: req.params.id, balance, asOfDate });
     } catch (err) {
       console.error('[Banking] getBalance error:', err?.message || err);
@@ -1639,7 +1613,7 @@ async function startServer() {
       if (!startDate || !endDate) {
         return res.status(400).json({ error: 'start_date and end_date are required' });
       }
-      const summary = await banking.getReconciliationSummary(req.params.id, req.companyId || '', startDate, endDate);
+      const summary = await banking.getReconciliationSummary(req.params.id, startDate, endDate);
       res.json(summary);
     } catch (err) {
       console.error('[Banking] reconciliation error:', err?.message || err);
@@ -1655,7 +1629,7 @@ async function startServer() {
       if (!startDate || !endDate) {
         return res.status(400).json({ error: 'start_date and end_date are required. Select a Financial Year or provide date range.' });
       }
-      const report = await reporting.getProfitAndLoss(req.companyId || '', startDate, endDate);
+      const report = await reporting.getProfitAndLoss(startDate, endDate);
       res.json(report);
     } catch (err) {
       console.error('[Reports] P&L error:', err?.message || err);
@@ -1666,7 +1640,7 @@ async function startServer() {
   app.get('/api/reports/balance-sheet', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, async (req, res) => {
     try {
       const asOfDate = req.query.as_of_date || req.fyEndDate;
-      const report = await reporting.getBalanceSheet(req.companyId || '', asOfDate);
+      const report = await reporting.getBalanceSheet(asOfDate);
       res.json(report);
     } catch (err) {
       console.error('[Reports] Balance Sheet error:', err?.message || err);
@@ -1681,7 +1655,7 @@ async function startServer() {
       if (!startDate || !endDate) {
         return res.status(400).json({ error: 'start_date and end_date are required. Select a Financial Year or provide date range.' });
       }
-      const report = await reporting.getCashFlowStatement(req.companyId || '', startDate, endDate);
+      const report = await reporting.getCashFlowStatement(startDate, endDate);
       res.json(report);
     } catch (err) {
       console.error('[Reports] Cash Flow error:', err?.message || err);
@@ -1692,7 +1666,7 @@ async function startServer() {
   app.get('/api/reports/ar-aging', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, async (req, res) => {
     try {
       const asOfDate = req.query.as_of_date || req.fyEndDate;
-      const report = await reporting.getARAging(req.companyId || '', asOfDate);
+      const report = await reporting.getARAging(asOfDate);
       res.json(report);
     } catch (err) {
       console.error('[Reports] AR Aging error:', err?.message || err);
@@ -1703,7 +1677,7 @@ async function startServer() {
   app.get('/api/reports/ap-aging', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, async (req, res) => {
     try {
       const asOfDate = req.query.as_of_date || req.fyEndDate;
-      const report = await reporting.getAPAging(req.companyId || '', asOfDate);
+      const report = await reporting.getAPAging(asOfDate);
       res.json(report);
     } catch (err) {
       console.error('[Reports] AP Aging error:', err?.message || err);
@@ -1714,7 +1688,7 @@ async function startServer() {
   app.get('/api/reports/trial-balance', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, async (req, res) => {
     try {
       const asOfDate = req.query.as_of_date || req.fyEndDate;
-      const report = await reporting.getTrialBalance(req.companyId || '', asOfDate);
+      const report = await reporting.getTrialBalance(asOfDate);
       res.json(report);
     } catch (err) {
       console.error('[Reports] Trial Balance error:', err?.message || err);
@@ -1729,7 +1703,7 @@ async function startServer() {
       if (!fiscalYear || !period) {
         return res.status(400).json({ error: 'fiscal_year and period are required' });
       }
-      const report = await reporting.getBudgetVsActual(req.companyId || '', fiscalYear, period);
+      const report = await reporting.getBudgetVsActual(fiscalYear, period);
       res.json(report);
     } catch (err) {
       console.error('[Reports] Budget vs Actual error:', err?.message || err);
@@ -1743,7 +1717,7 @@ async function startServer() {
       if (!period) {
         return res.status(400).json({ error: 'period is required (format: YYYY-MM)' });
       }
-      const report = await reporting.getVATReport(req.companyId || '', period);
+      const report = await reporting.getVATReport(period);
       res.json(report);
     } catch (err) {
       console.error('[Reports] VAT error:', err?.message || err);
@@ -1754,9 +1728,8 @@ async function startServer() {
   // --- VAT Management Endpoints ---
   app.get('/api/vat/transactions', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let sql = 'SELECT * FROM vat_transactions WHERE company_id = ?';
-      const params = [companyId];
+      let sql = 'SELECT * FROM vat_transactions WHERE';
+      const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'created_at');
       sql = filtered.sql + ' ORDER BY created_at DESC';
       const rows = await new Promise((resolve, reject) => {
@@ -1774,7 +1747,7 @@ async function startServer() {
 
   app.post('/api/vat/transactions', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      const transaction = await vatManagement.recordVATTransaction(req.body, req.companyId || '');
+      const transaction = await vatManagement.recordVATTransaction(req.body);
       res.status(201).json(transaction);
     } catch (err) {
       console.error('[VAT] recordTransaction error:', err?.message || err);
@@ -1785,7 +1758,7 @@ async function startServer() {
   app.put('/api/vat/transactions/:id/status', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       const { status } = req.body;
-      const result = await vatManagement.updateVATStatus(req.params.id, status, req.companyId || '');
+      const result = await vatManagement.updateVATStatus(req.params.id, status);
       if (!result) return res.status(404).json({ error: 'VAT transaction not found' });
       res.json(result);
     } catch (err) {
@@ -1800,7 +1773,7 @@ async function startServer() {
       if (!period) {
         return res.status(400).json({ error: 'period is required (format: YYYY-MM)' });
       }
-      const summary = await vatManagement.getVATSummary(req.companyId || '', period);
+      const summary = await vatManagement.getVATSummary(period);
       res.json(summary);
     } catch (err) {
       console.error('[VAT] getSummary error:', err?.message || err);
@@ -1810,7 +1783,7 @@ async function startServer() {
 
   app.get('/api/vat/periods', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const periods = await vatManagement.getVATPeriods(req.companyId || '');
+      const periods = await vatManagement.getVATPeriods();
       res.json(periods);
     } catch (err) {
       console.error('[VAT] getPeriods error:', err?.message || err);
@@ -1821,7 +1794,7 @@ async function startServer() {
   app.post('/api/vat/transactions/:id/reverse', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       const { reason } = req.body;
-      const result = await vatManagement.reverseVATTransaction(req.params.id, req.companyId || '', reason);
+      const result = await vatManagement.reverseVATTransaction(req.params.id, reason);
       res.json(result);
     } catch (err) {
       console.error('[VAT] reverse error:', err?.message || err);
@@ -1835,7 +1808,7 @@ async function startServer() {
       if (!period) {
         return res.status(400).json({ error: 'period is required (format: YYYY-MM)' });
       }
-      const result = await vatManagement.importFromInvoices(req.companyId || '', period);
+      const result = await vatManagement.importFromInvoices(period);
       res.json(result);
     } catch (err) {
       console.error('[VAT] import error:', err?.message || err);
@@ -1897,13 +1870,13 @@ async function startServer() {
     }
   });
 
-  app.get('/api/companies/currency', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
+  app.get('/api/currency', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const companyCurrency = await currency.getCompanyCurrency(req.companyId || '');
-      res.json({ currency: companyCurrency });
+      const defaultCurrency = await currency.getCurrency();
+      res.json({ currency: defaultCurrency });
     } catch (err) {
-      console.error('[Currency] getCompanyCurrency error:', err?.message || err);
-      res.status(500).json({ error: err?.message || 'Failed to fetch company currency' });
+      console.error('[Currency] getCurrency error:', err?.message || err);
+      res.status(500).json({ error: err?.message || 'Failed to fetch currency' });
     }
   });
 
@@ -1911,8 +1884,7 @@ async function startServer() {
   app.get('/api/invoices', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
       const status = req.query.status;
-      const companyId = req.companyId || '';
-      let { sql, params } = addFyDateFilter('SELECT i.*, c.name as customer_name FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id WHERE i.company_id = ?', [companyId], req, 'i.created_at');
+      let { sql, params } = addFyDateFilter('SELECT i.*, c.name as customer_name FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id', [], req, 'i.created_at');
       if (status) {
         sql += ` AND LOWER(i.status) = ?`;
         params.push(status.toLowerCase());
@@ -1930,21 +1902,21 @@ async function startServer() {
 
   app.post('/api/invoices', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await validateFyDate('invoice_date', req.body, req.companyId || '');
+      await validateFyDate('invoice_date', req.body);
       const { body } = req;
       const id = body.id || randomUUID();
       db.run(
-        `INSERT INTO invoices (id, customer_id, customer_name, subtotal, total_amount, currency, status, payment_method, due_date, invoice_number, other_charges, line_items_json, notes, document_title, company_id, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO invoices (id, customer_id, customer_name, subtotal, total_amount, currency, status, payment_method, due_date, invoice_number, other_charges, line_items_json, notes, document_title, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [id, body.customer_id || null, body.customer_name || null, body.subtotal || 0,
          body.total_amount || 0, body.currency || 'MWK', body.status || 'unpaid',
          body.payment_method || null, body.due_date || null, body.invoice_number || null,
          body.other_charges || 0, JSON.stringify(body.line_items || []), body.notes || null, body.document_title || null,
-         req.companyId || '', req.user?.id || null],
+         req.user?.id || null],
          function (err) {
            if (err) { return handleInsertConstraintError(res, err, 'Create invoice'); }
            res.status(201).json({ id, ...body });
-           portalLifecycleService.emitEntityChange('portal', { companyId: req.companyId, customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status || 'unpaid', invoiceNumber: body.invoice_number });
+           portalLifecycleService.emitEntityChange('portal', { customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status || 'unpaid', invoiceNumber: body.invoice_number });
          }
       );
     } catch (err) {
@@ -1967,16 +1939,16 @@ async function startServer() {
         }
       }
       if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
-      params.push(id, req.companyId || '');
-db.run(`UPDATE invoices SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`, params, function (err) {
+      params.push(id);
+db.run(`UPDATE invoices SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, params, function (err) {
          if (err) { console.error('[Invoices] PUT error:', err); return res.status(500).json({ error: 'Failed to update invoice' }); }
          if (this.changes === 0) return res.status(404).json({ error: 'Invoice not found' });
          const updatedFields = {};
          for (let i = 0; i < allowed.length; i++) {
            if (body[allowed[i]] !== undefined) updatedFields[allowed[i]] = body[allowed[i]];
          }
-         portalLifecycleService.emitEntityChange('portal', { companyId: req.companyId, customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status, invoiceNumber: body.invoice_number, updatedFields });
-         portalLifecycleService.emitEntityChange('admin', { companyId: req.companyId, customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status, invoiceNumber: body.invoice_number, updatedFields });
+         portalLifecycleService.emitEntityChange('portal', { customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status, invoiceNumber: body.invoice_number, updatedFields });
+         portalLifecycleService.emitEntityChange('admin', { customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status, invoiceNumber: body.invoice_number, updatedFields });
          res.json({ success: true, id });
        });
     } catch (err) {
@@ -1988,16 +1960,16 @@ db.run(`UPDATE invoices SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP
   app.delete('/api/invoices/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       const { id } = req.params;
-      db.get('SELECT status, customer_id, invoice_number FROM invoices WHERE id = ? AND company_id = ?', [id, req.companyId || ''], (err, row) => {
+      db.get('SELECT status, customer_id, invoice_number FROM invoices WHERE id = ?', [id], (err, row) => {
         if (err) { console.error('[Invoices] DELETE error:', err); return res.status(500).json({ error: 'Failed to void invoice' }); }
         if (!row) return res.status(404).json({ error: 'Invoice not found' });
-db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?', ['Voided', id, req.companyId || ''], (err) => {
+db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['Voided', id], (err) => {
            if (err) { console.error('[Invoices] DELETE error:', err); return res.status(500).json({ error: 'Failed to void invoice' }); }
-           portalLifecycleService.emitEntityChange('portal', { companyId: req.companyId, customerId: row.customer_id, docType: 'invoice', docId: id, status: 'Voided', invoiceNumber: row.invoice_number });
-           portalLifecycleService.emitEntityChange('admin', { companyId: req.companyId, customerId: row.customer_id, docType: 'invoice', docId: id, status: 'Voided', invoiceNumber: row.invoice_number });
+           portalLifecycleService.emitEntityChange('portal', { customerId: row.customer_id, docType: 'invoice', docId: id, status: 'Voided', invoiceNumber: row.invoice_number });
+           portalLifecycleService.emitEntityChange('admin', { customerId: row.customer_id, docType: 'invoice', docId: id, status: 'Voided', invoiceNumber: row.invoice_number });
            // Reverse ledger entries if present
            try {
-             finance.reverseLedgerEntriesByReference('invoice', id, req.companyId || '');
+             finance.reverseLedgerEntriesByReference('invoice', id);
            } catch (reversalErr) {
              console.warn('[Invoices] Ledger reversal skipped:', reversalErr?.message);
            }
@@ -2013,8 +1985,7 @@ db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
   // --- Customer Payment Endpoints ---
   app.get('/api/customer-payments', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let { sql, params } = addFyDateFilter('SELECT * FROM customer_payments WHERE company_id = ?', [companyId], req, 'date');
+      let { sql, params } = addFyDateFilter('SELECT * FROM customer_payments', [], req, 'date');
       sql += ' ORDER BY date DESC LIMIT 500';
       db.all(sql, params, (err, rows) => {
         if (err) { console.error('[CustomerPayments] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve payments' }); }
@@ -2028,17 +1999,16 @@ db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
 
   app.post('/api/customer-payments', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await validateFyDate('date', req.body, req.companyId || '');
+      await validateFyDate('date', req.body);
       const { body } = req;
       const id = body.id || randomUUID();
-      const companyId = req.companyId || '';
       db.run(
-        `INSERT INTO customer_payments (id, date, customer_id, customer_name, amount, payment_method, account_id, reference, notes, status, company_id, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO customer_payments (id, date, customer_id, customer_name, amount, payment_method, account_id, reference, notes, status, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [id, body.date || new Date().toISOString(), body.customer_id || body.customerId || null,
          body.customer_name || body.customerName || null, body.amount || 0,
          body.payment_method || body.paymentMethod || 'Cash', body.account_id || body.accountId || null,
-         body.reference || null, body.notes || null, body.status || 'Cleared', companyId, req.user?.id || null],
+         body.reference || null, body.notes || null, body.status || 'Cleared', req.user?.id || null],
         function (err) {
           if (err) { return handleInsertConstraintError(res, err, 'Create customer payment'); }
           res.status(201).json({ id, ...body });
@@ -2056,11 +2026,10 @@ db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
   app.post('/api/payments/allocate', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       const { paymentId, allocations } = req.body;
-      const companyId = req.companyId || '';
       
       // Get payment details
       const payment = await new Promise((resolve, reject) => {
-        db.get('SELECT * FROM customer_payments WHERE id = ? AND company_id = ?', [paymentId, companyId], (err, row) => {
+        db.get('SELECT * FROM customer_payments WHERE id = ?', [paymentId], (err, row) => {
           if (err) reject(err);
           else resolve(row);
         });
@@ -2070,10 +2039,10 @@ db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
         return res.status(404).json({ error: 'Payment not found' });
       }
 
-const result = await paymentAllocation.allocatePayment(payment, allocations, companyId);
+const result = await paymentAllocation.allocatePayment(payment, allocations);
        for (const alloc of allocations) {
-         portalLifecycleService.emitEntityChange('portal', { companyId, customerId: payment.customer_id, docType: 'invoice', docId: alloc.invoiceId, event: 'payment_allocated', paymentId, amount: alloc.amount });
-         portalLifecycleService.emitEntityChange('admin', { companyId, customerId: payment.customer_id, docType: 'invoice', docId: alloc.invoiceId, event: 'payment_allocated', paymentId, amount: alloc.amount });
+         portalLifecycleService.emitEntityChange('portal', { customerId: payment.customer_id, docType: 'invoice', docId: alloc.invoiceId, event: 'payment_allocated', paymentId, amount: alloc.amount });
+         portalLifecycleService.emitEntityChange('admin', { customerId: payment.customer_id, docType: 'invoice', docId: alloc.invoiceId, event: 'payment_allocated', paymentId, amount: alloc.amount });
        }
        res.status(201).json(result);
     } catch (err) {
@@ -2084,7 +2053,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/payments/:paymentId/allocations', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const allocations = await paymentAllocation.getPaymentAllocations(req.params.paymentId, req.companyId || '');
+      const allocations = await paymentAllocation.getPaymentAllocations(req.params.paymentId);
       res.json(allocations);
     } catch (err) {
       console.error('[PaymentAllocation] get error:', err?.message || err);
@@ -2094,7 +2063,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/customers/:customerId/outstanding-invoices', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const invoices = await paymentAllocation.getOutstandingInvoices(req.params.customerId, req.companyId || '');
+      const invoices = await paymentAllocation.getOutstandingInvoices(req.params.customerId);
       res.json(invoices);
     } catch (err) {
       console.error('[PaymentAllocation] outstanding error:', err?.message || err);
@@ -2105,7 +2074,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   app.post('/api/payments/suggest-allocation', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
       const { customerId, amount } = req.body;
-      const suggestion = await paymentAllocation.suggestAllocation(customerId, amount, req.companyId || '');
+      const suggestion = await paymentAllocation.suggestAllocation(customerId, amount);
       res.json(suggestion);
     } catch (err) {
       console.error('[PaymentAllocation] suggest error:', err?.message || err);
@@ -2115,7 +2084,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/payments/allocations/:allocationId/reverse', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      const result = await paymentAllocation.reverseAllocation(req.params.allocationId, req.companyId || '');
+      const result = await paymentAllocation.reverseAllocation(req.params.allocationId);
       res.json(result);
     } catch (err) {
       console.error('[PaymentAllocation] reverse error:', err?.message || err);
@@ -2129,7 +2098,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   // Suppliers
   app.get('/api/suppliers', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const rows = await procurement.getSuppliers(req.companyId || '');
+      const rows = await procurement.getSuppliers();
       res.json(rows);
     } catch (err) {
       console.error('[Procurement] getSuppliers error:', err?.message || err);
@@ -2139,7 +2108,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/suppliers/:id', async (req, res) => {
     try {
-      const row = await procurement.getSupplierById(req.params.id, req.companyId || '');
+      const row = await procurement.getSupplierById(req.params.id);
       if (!row) return res.status(404).json({ error: 'Supplier not found' });
       res.json(row);
     } catch (err) {
@@ -2150,7 +2119,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/suppliers', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const row = await procurement.createSupplier(req.body, req.companyId || '');
+      const row = await procurement.createSupplier(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Procurement] createSupplier error:', err?.message || err);
@@ -2160,7 +2129,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.put('/api/suppliers/:id', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const row = await procurement.updateSupplier(req.params.id, req.body, req.companyId || '');
+      const row = await procurement.updateSupplier(req.params.id, req.body);
       if (!row) return res.status(404).json({ error: 'Supplier not found' });
       res.json(row);
     } catch (err) {
@@ -2171,7 +2140,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.delete('/api/suppliers/:id', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await procurement.deleteSupplier(req.params.id, req.companyId || '');
+      await procurement.deleteSupplier(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[Procurement] deleteSupplier error:', err?.message || err);
@@ -2182,8 +2151,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   // Purchase Orders
   app.get('/api/purchases', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let { sql, params } = addFyDateFilter(`SELECT po.*, s.name as supplier_name FROM purchase_orders po LEFT JOIN suppliers s ON po.supplier_id = s.id WHERE po.company_id = ?`, [companyId], req, 'po.order_date');
+      let { sql, params } = addFyDateFilter(`SELECT po.*, s.name as supplier_name FROM purchase_orders po LEFT JOIN suppliers s ON po.supplier_id = s.id`, [], req, 'po.order_date');
       sql += ' ORDER BY po.created_at DESC';
       db.all(sql, params, (err, rows) => {
         if (err) { console.error('[Procurement] getPurchases error:', err); return res.status(500).json({ error: 'Failed to fetch purchases' }); }
@@ -2197,9 +2165,9 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/purchases/:id', async (req, res) => {
     try {
-      const po = await procurement.getPurchaseById(req.params.id, req.companyId || '');
+      const po = await procurement.getPurchaseById(req.params.id);
       if (!po) return res.status(404).json({ error: 'Purchase order not found' });
-      const items = await procurement.getPurchaseItems(req.params.id, req.companyId || '');
+      const items = await procurement.getPurchaseItems(req.params.id);
       res.json({ ...po, items });
     } catch (err) {
       console.error('[Procurement] getPurchase error:', err?.message || err);
@@ -2209,8 +2177,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/purchases', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await validateFyDate('order_date', req.body, req.companyId || '');
-      const row = await procurement.createPurchase(req.body, req.companyId || '', req.user?.id);
+      await validateFyDate('order_date', req.body);
+      const row = await procurement.createPurchase(req.body, req.user?.id);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Procurement] createPurchase error:', err?.message || err);
@@ -2220,7 +2188,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.put('/api/purchases/:id/status', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      const row = await procurement.updatePurchaseStatus(req.params.id, req.body.status, req.companyId || '');
+      const row = await procurement.updatePurchaseStatus(req.params.id, req.body.status);
       if (!row) return res.status(404).json({ error: 'Purchase order not found' });
       res.json(row);
     } catch (err) {
@@ -2232,8 +2200,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   // Goods Receipts
   app.get('/api/grn', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let { sql, params } = addFyDateFilter(`SELECT gr.*, po.supplier_id, s.name as supplier_name FROM goods_receipts gr LEFT JOIN purchase_orders po ON gr.purchase_order_id = po.id LEFT JOIN suppliers s ON po.supplier_id = s.id WHERE gr.company_id = ?`, [companyId], req, 'gr.received_date');
+      let { sql, params } = addFyDateFilter(`SELECT gr.*, po.supplier_id, s.name as supplier_name FROM goods_receipts gr LEFT JOIN purchase_orders po ON gr.purchase_order_id = po.id LEFT JOIN suppliers s ON po.supplier_id = s.id`, [], req, 'gr.received_date');
       sql += ' ORDER BY gr.created_at DESC';
       db.all(sql, params, (err, rows) => {
         if (err) { console.error('[Procurement] getGRNs error:', err); return res.status(500).json({ error: 'Failed to fetch goods receipts' }); }
@@ -2247,8 +2214,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/grn', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await validateFyDate('received_date', req.body, req.companyId || '');
-      const row = await procurement.createGoodsReceipt(req.body, req.companyId || '', req.user?.id);
+      await validateFyDate('received_date', req.body);
+      const row = await procurement.createGoodsReceipt(req.body, req.user?.id);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Procurement] createGRN error:', err?.message || err);
@@ -2289,9 +2256,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   // Production: fetch real work centers from database
   app.get('/api/production/work-centers', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const companyId = req.companyId || '';
       const rows = await new Promise((resolve, reject) => {
-        db.all('SELECT id, name, description, hourly_rate as hourlyRate, capacity_per_day as capacityPerDay, status FROM work_centers WHERE status = ? AND company_id = ? ORDER BY name', ['Active', companyId], (err, rows) => {
+        db.all('SELECT id, name, description, hourly_rate as hourlyRate, capacity_per_day as capacityPerDay, status FROM work_centers WHERE status = ? ORDER BY name', ['Active'], (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -2310,9 +2276,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   // Production: fetch real resources from database
   app.get('/api/production/resources', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const companyId = req.companyId || '';
       const rows = await new Promise((resolve, reject) => {
-        db.all('SELECT id, name, work_center_id as workCenterId, status FROM production_resources WHERE status = ? AND company_id = ? ORDER BY name', ['Active', companyId], (err, rows) => {
+        db.all('SELECT id, name, work_center_id as workCenterId, status FROM production_resources WHERE status = ? ORDER BY name', ['Active'], (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -2334,7 +2299,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/production/work-centers', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const row = await production.createWorkCenter(req.body, req.companyId || '');
+      const row = await production.createWorkCenter(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Production] createWorkCenter error:', err?.message || err);
@@ -2344,7 +2309,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/production/resources', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const row = await production.createResource(req.body, req.companyId || '');
+      const row = await production.createResource(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Production] createResource error:', err?.message || err);
@@ -2354,9 +2319,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/production/work-orders', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let sql = 'SELECT * FROM work_orders WHERE company_id = ?';
-      const params = [companyId];
+      let sql = 'SELECT * FROM work_orders';
+      const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'date');
       const rows = await new Promise((resolve, reject) => {
         db.all(filtered.sql, filtered.params, (err, rows) => {
@@ -2373,7 +2337,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/production/work-orders/:id', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const row = await production.getWorkOrderById(req.params.id, req.companyId || '');
+      const row = await production.getWorkOrderById(req.params.id);
       if (!row) return res.status(404).json({ error: 'Work order not found' });
       res.json(row);
     } catch (err) {
@@ -2384,8 +2348,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/production/work-orders', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await validateFyDate('start_date', req.body, req.companyId || '');
-      const row = await production.createWorkOrder(req.body, req.companyId || '', req.user?.id);
+      await validateFyDate('start_date', req.body);
+      const row = await production.createWorkOrder(req.body, req.user?.id);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Production] createWorkOrder error:', err?.message || err);
@@ -2395,7 +2359,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.put('/api/production/work-orders/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      const row = await production.updateWorkOrder(req.params.id, req.body, req.companyId || '');
+      const row = await production.updateWorkOrder(req.params.id, req.body);
       if (!row) return res.status(404).json({ error: 'Work order not found' });
       res.json(row);
     } catch (err) {
@@ -2406,7 +2370,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   
   app.delete('/api/production/work-orders/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      await production.deleteWorkOrder(req.params.id, req.companyId || '');
+      await production.deleteWorkOrder(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[Production] deleteWorkOrder error:', err?.message || err);
@@ -2416,9 +2380,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/production/batches', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let sql = 'SELECT * FROM production_batches WHERE company_id = ?';
-      const params = [companyId];
+      let sql = 'SELECT * FROM production_batches';
+      const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'created_at');
       const rows = await new Promise((resolve, reject) => {
         db.all(filtered.sql, filtered.params, (err, rows) => {
@@ -2436,8 +2399,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   app.post('/api/production/batches', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
       const fyService = new (require('./services/financialYearService.cjs'))();
-      await fyService.validateTransactionDate(new Date().toISOString().slice(0, 10), req.companyId || '');
-      const row = await production.createBatch(req.body, req.companyId || '');
+      await fyService.validateTransactionDate(new Date().toISOString().slice(0, 10));
+      const row = await production.createBatch(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[Production] createBatch error:', err?.message || err);
@@ -2450,7 +2413,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/employees', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
-      const rows = await hr.getEmployees(req.companyId || '');
+      const rows = await hr.getEmployees();
       res.json(rows);
     } catch (err) {
       console.error('[HR] getEmployees error:', err?.message || err);
@@ -2460,7 +2423,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/employees', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const row = await hr.createEmployee(req.body, req.companyId || '');
+      const row = await hr.createEmployee(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[HR] createEmployee error:', err?.message || err);
@@ -2473,13 +2436,13 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       if (req.body.salary !== undefined && (Number(req.body.salary) < 0)) {
         return res.status(400).json({ error: 'Salary cannot be negative' });
       }
-      const existing = await hr._get('SELECT id, salary FROM employees WHERE id = ?', [req.params.id], req.companyId || '');
+      const existing = await hr._get('SELECT id, salary FROM employees WHERE id = ?', [req.params.id]);
       if (!existing) return res.status(404).json({ error: 'Employee not found' });
-      const row = await hr.updateEmployee(req.params.id, req.body, req.companyId || '');
+      const row = await hr.updateEmployee(req.params.id, req.body);
       if (req.body.salary !== undefined && Number(req.body.salary) !== Number(existing.salary)) {
         const { randomUUID } = require('crypto');
         db.run(
-          `INSERT INTO audit_logs (id, timestamp, correlation_id, user_id, user_role, action, entity_type, entity_id, details, old_value, new_value, delta, integrity_hash, company_id)
+          `INSERT INTO audit_logs (id, timestamp, correlation_id, user_id, user_role, action, entity_type, entity_id, details, old_value, new_value, delta, integrity_hash)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             randomUUID(), new Date().toISOString(), req.headers['x-correlation-id'] || '',
@@ -2489,8 +2452,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
             JSON.stringify({ salary: existing.salary }),
             JSON.stringify({ salary: req.body.salary }),
             JSON.stringify({ from: existing.salary, to: req.body.salary }),
-            '',
-            req.companyId || ''
+            ''
           ]
         );
       }
@@ -2503,7 +2465,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.delete('/api/employees/:id', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await hr.deleteEmployee(req.params.id, req.companyId || '');
+      await hr.deleteEmployee(req.params.id);
       res.json({ success: true });
     } catch (err) {
       console.error('[HR] deleteEmployee error:', err?.message || err);
@@ -2513,9 +2475,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/payroll-runs', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let sql = 'SELECT * FROM payroll_runs WHERE company_id = ?';
-      const params = [companyId];
+      let sql = 'SELECT * FROM payroll_runs WHERE';
+      const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'period_start');
       const rows = await new Promise((resolve, reject) => {
         db.all(filtered.sql, filtered.params, (err, rows) => {
@@ -2532,8 +2493,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/payroll-runs', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      await validateFyDate('period_start', req.body, req.companyId || '');
-      const row = await hr.createPayrollRun(req.body, req.companyId || '');
+      await validateFyDate('period_start', req.body);
+      const row = await hr.createPayrollRun(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[HR] createPayrollRun error:', err?.message || err);
@@ -2543,9 +2504,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/payslips', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      let sql = 'SELECT * FROM payslips WHERE company_id = ?';
-      const params = [companyId];
+      let sql = 'SELECT * FROM payslips';
+      const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'created_at');
       const rows = await new Promise((resolve, reject) => {
         db.all(filtered.sql, filtered.params, (err, rows) => {
@@ -2562,7 +2522,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/payslips', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      const row = await hr.createPayslip(req.body, req.companyId || '');
+      const row = await hr.createPayslip(req.body);
       res.status(201).json(row);
     } catch (err) {
       console.error('[HR] createPayslip error:', err?.message || err);
@@ -2662,10 +2622,9 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       if (!type || !payload) {
         return sendError(res, 400, 'Document type and payload are required', 'MISSING_FIELDS');
       }
-      const companyId = req.companyId || '';
-      const result = await documentService.registerDocument(type, payload, req.userId, companyId, id);
+      const result = await documentService.registerDocument(type, payload, req.userId, id);
       try {
-        await documentService.logAudit(req.userId, result.isNew ? 'CREATE' : 'UPDATE', 'document', result.id, { type, auto_registered: true }, companyId);
+        await documentService.logAudit(req.userId, result.isNew ? 'CREATE' : 'UPDATE', 'document', result.id, { type, auto_registered: true });
       } catch (auditErr) {
         console.error('[Documents] Audit log failed (non-fatal):', auditErr);
       }
@@ -2678,9 +2637,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   app.post('/api/documents', checkPermission('create_document'), validateBody(documentSchemas.create), auditCrudMiddleware('document'), async (req, res) => {
     try {
       const { type, payload } = req.body;
-      const companyId = req.companyId || '';
-      const result = await documentService.createDocument(type, payload, req.userId, companyId);
-      await documentService.logAudit(req.userId, 'CREATE', 'document', result.id, { type }, companyId);
+      const result = await documentService.createDocument(type, payload, req.userId);
+      await documentService.logAudit(req.userId, 'CREATE', 'document', result.id, { type });
       res.status(201).json(result);
     } catch (err) {
       sendError(res, 500, err.message, 'CREATE_FAILED');
@@ -2690,9 +2648,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   app.put('/api/documents/:id', checkPermission('edit_document'), validateBody(documentSchemas.update), async (req, res) => {
     try {
       const { payload } = req.body;
-      const companyId = req.companyId || '';
-      const result = await documentService.updateDocument(req.params.id, payload, req.userId, companyId);
-      await documentService.logAudit(req.userId, 'UPDATE', 'document', req.params.id, { payload_updated: true }, companyId);
+      const result = await documentService.updateDocument(req.params.id, payload, req.userId);
+      await documentService.logAudit(req.userId, 'UPDATE', 'document', req.params.id, { payload_updated: true });
       res.json(result);
     } catch (err) {
       sendError(res, 400, err.message, 'UPDATE_FAILED');
@@ -2708,10 +2665,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       if (!blueprint) {
         return sendError(res, 400, 'Layout blueprint is required for finalization', 'MISSING_BLUEPRINT');
       }
-      
-      const companyId = req.companyId || '';
-      const result = await documentService.finalizeDocument(req.params.id, blueprint, req.userId, companyId);
-      await documentService.logAudit(req.userId, 'FINALIZE', 'document', req.params.id, { fingerprint: result.fingerprint }, companyId);
+      const result = await documentService.finalizeDocument(req.params.id, blueprint, req.userId);
+      await documentService.logAudit(req.userId, 'FINALIZE', 'document', req.params.id, { fingerprint: result.fingerprint });
       res.json(result);
     } catch (err) {
       sendError(res, 422, err.message, 'FINALIZE_FAILED');
@@ -2720,9 +2675,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/documents/:id/void', checkPermission('void_document'), async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      const result = await documentService.voidDocument(req.params.id, req.userId, companyId);
-      await documentService.logAudit(req.userId, 'VOID', 'document', req.params.id, {}, companyId);
+      const result = await documentService.voidDocument(req.params.id, req.userId);
+      await documentService.logAudit(req.userId, 'VOID', 'document', req.params.id, {});
       res.json(result);
     } catch (err) {
       sendError(res, 500, err.message, 'VOID_FAILED');
@@ -2741,9 +2695,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       // For GET previews, we primarily resolve. If it fails, we check if we can register.
       // However, the PreviewButton now handles the 'register-then-preview' flow via POST /register.
       // We still keep this robust by ensuring the resolver is context-aware.
-      
-      const companyId = req.companyId || '';
-      const renderModel = await documentService.getPreview(identifier, { purpose }, companyId);
+      const renderModel = await documentService.getPreview(identifier, { purpose });
       res.json(renderModel);
     } catch (err) {
       if (err.name === 'ResolutionError') {
@@ -2761,8 +2713,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/documents/:id/export', checkPermission('export_document'), async (req, res) => {
     try {
-      const companyId = req.companyId || '';
-      const doc = await documentService.resolveDocument(req.params.id, companyId);
+      const doc = await documentService.resolveDocument(req.params.id);
       if (!doc) return sendError(res, 404, 'Document not found', 'NOT_FOUND');
 
       const pdfBytes = await documentService.exportPdf(req.params.id);
@@ -2814,7 +2765,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
         filename,
         streamed: isStream,
         savedToDisk: !isStream
-      }, req.companyId || '');
+      });
     } catch (err) {
       sendError(res, 500, err.message, 'EXPORT_FAILED');
     }
@@ -2829,9 +2780,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       if (!Array.isArray(ids) || !blueprint) {
         return sendError(res, 400, 'IDs array and blueprint are required', 'INVALID_BATCH_REQUEST');
       }
-      const companyId = req.companyId || '';
-      const results = await documentService.batchFinalize(ids, blueprint, req.userId, companyId);
-      await documentService.logAudit(req.userId, 'BATCH_FINALIZE', 'document_batch', null, { count: ids.length }, companyId);
+      const results = await documentService.batchFinalize(ids, blueprint, req.userId);
+      await documentService.logAudit(req.userId, 'BATCH_FINALIZE', 'document_batch', null, { count: ids.length });
       res.json(results);
     } catch (err) {
       sendError(res, 500, err.message, 'BATCH_FINALIZE_FAILED');
@@ -2853,7 +2803,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
         pdfBase64: Buffer.from(p.pdfBytes).toString('base64')
       }));
       
-      await documentService.logAudit(req.userId, 'BATCH_EXPORT', 'document_batch', null, { count: ids.length }, req.companyId || '');
+      await documentService.logAudit(req.userId, 'BATCH_EXPORT', 'document_batch', null, { count: ids.length });
       res.json(results);
     } catch (err) {
       sendError(res, 500, err.message, 'BATCH_EXPORT_FAILED');
@@ -2864,8 +2814,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
    * Sales Exchange Module Endpoints
    */
   app.get('/api/sales-exchanges', checkPermission('view_exchanges'), injectFinancialYear, (req, res) => {
-    const companyId = req.companyId || '';
-    let { sql, params } = addFyDateFilter('SELECT * FROM sales_exchanges WHERE company_id = ?', [companyId], req, 'exchange_date');
+      let { sql, params } = addFyDateFilter('SELECT * FROM sales_exchanges', [], req, 'exchange_date');
     sql += ' ORDER BY exchange_date DESC';
     db.all(sql, params, (err, rows) => {
       if (err) return sendError(res, 500, err.message, 'FETCH_EXCHANGES_FAILED');
@@ -2876,9 +2825,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   app.get('/api/sales-exchanges/:id', checkPermission('view_exchanges'), async (req, res) => {
     try {
       const exchangeId = req.params.id;
-      const companyId = req.companyId || '';
       const exchange = await new Promise((resolve, reject) => {
-        db.get('SELECT * FROM sales_exchanges WHERE id = ? AND company_id = ?', [exchangeId, companyId], (err, row) => {
+        db.get('SELECT * FROM sales_exchanges WHERE id = ?', [exchangeId], (err, row) => {
           if (err) return reject(err);
           resolve(row);
         });
@@ -2887,19 +2835,19 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
       const [items, reprints, approvals] = await Promise.all([
         new Promise((resolve, reject) => {
-          db.all('SELECT * FROM sales_exchange_items WHERE exchange_id = ? AND company_id = ?', [exchangeId, companyId], (err, rows) => {
+          db.all('SELECT * FROM sales_exchange_items WHERE exchange_id = ?', [exchangeId], (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
           });
         }),
         new Promise((resolve, reject) => {
-          db.all('SELECT * FROM reprint_jobs WHERE exchange_id = ? AND company_id = ?', [exchangeId, companyId], (err, rows) => {
+          db.all('SELECT * FROM reprint_jobs WHERE exchange_id = ?', [exchangeId], (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
           });
         }),
         new Promise((resolve, reject) => {
-          db.all('SELECT * FROM sales_exchange_approvals WHERE exchange_id = ? AND company_id = ?', [exchangeId, companyId], (err, rows) => {
+          db.all('SELECT * FROM sales_exchange_approvals WHERE exchange_id = ?', [exchangeId], (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
           });
@@ -2919,7 +2867,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/sales-exchanges', checkPermission('create_exchange'), validateBody(exchangeSchemas.create), async (req, res) => {
     try {
-      await validateFyDate('exchange_date', req.body, req.companyId || '');
+      await validateFyDate('exchange_date', req.body);
       const { 
         invoice_id, customer_id, customer_name, reason, remarks, items 
       } = req.body;
@@ -2935,9 +2883,9 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
           if (err) return reject(err);
 
           db.run(
-            `INSERT INTO sales_exchanges (exchange_number, invoice_id, customer_id, customer_name, reason, remarks, created_by, company_id) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [exchange_number, invoice_id, customer_id, customer_name, reason, remarks, req.userId, req.companyId || ''],
+            `INSERT INTO sales_exchanges (exchange_number, invoice_id, customer_id, customer_name, reason, remarks, created_by) 
+              VALUES (?, ?, ?, ?, ?, ?, ? )`,
+            [exchange_number, invoice_id, customer_id, customer_name, reason, remarks, req.userId],
             function(err) {
               if (err) {
                 db.run("ROLLBACK");
@@ -2945,15 +2893,15 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
               }
               const newId = this.lastID;
               const itemStmt = db.prepare(
-                `INSERT INTO sales_exchange_items (exchange_id, product_id, product_name, qty_returned, qty_replaced, price_difference, item_condition, company_id) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+                `INSERT INTO sales_exchange_items (exchange_id, product_id, product_name, qty_returned, qty_replaced, price_difference, item_condition) 
+                  VALUES (?, ?, ?, ?, ?, ?, ? )`
               );
 
               let itemError = null;
               for (const item of items) {
                 itemStmt.run([
                   newId, item.product_id, item.product_name, item.qty_returned, 
-                  item.qty_replaced, item.price_difference || 0, item.condition, req.companyId || ''
+                  item.qty_replaced, item.price_difference || 0, item.condition
                 ], (err) => {
                   if (err) itemError = err;
                 });
@@ -2977,7 +2925,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
         });
       });
 
-      await documentService.logAudit(req.userId, 'CREATE', 'sales_exchange', exchangeId, { exchange_number }, req.companyId || '');
+      await documentService.logAudit(req.userId, 'CREATE', 'sales_exchange', exchangeId, { exchange_number });
 
       res.status(201).json({ id: exchangeId, exchange_number });
     } catch (err) {
@@ -2988,11 +2936,10 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       const exchangeId = req.params.id;
       const { comments } = req.body;
 
-      const companyId = req.companyId || '';
       await new Promise((resolve, reject) => {
         db.run(
-          "UPDATE sales_exchanges SET status = 'approved' WHERE id = ? AND company_id = ?",
-          [exchangeId, companyId],
+          "UPDATE sales_exchanges SET status = 'approved' WHERE id = ?",
+          [exchangeId],
           function(err) {
             if (err) return reject(err);
             resolve();
@@ -3002,8 +2949,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
       await new Promise((resolve, reject) => {
         db.run(
-          "INSERT INTO sales_exchange_approvals (exchange_id, approved_by, comments, status, company_id) VALUES (?, ?, ?, ?, ?)",
-          [exchangeId, req.userId, comments, 'approved', companyId],
+          "INSERT INTO sales_exchange_approvals (exchange_id, approved_by, comments, status) VALUES (?, ?, ?, ?)",
+          [exchangeId, req.userId, comments, 'approved'],
           (err) => {
             if (err) return reject(err);
             resolve();
@@ -3013,7 +2960,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
       // Auto-generate reprint job
       const exchangeRow = await new Promise((resolve, reject) => {
-        db.get("SELECT * FROM sales_exchanges WHERE id = ? AND company_id = ?", [exchangeId, companyId], (err, row) => {
+        db.get("SELECT * FROM sales_exchanges WHERE id = ?", [exchangeId], (err, row) => {
           if (err) return reject(err);
           resolve(row);
         });
@@ -3022,8 +2969,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       if (exchangeRow) {
         await new Promise((resolve, reject) => {
           db.run(
-            "INSERT INTO reprint_jobs (exchange_id, job_description, company_id) VALUES (?, ?, ?)",
-            [exchangeId, `Reprint for Exchange ${exchangeRow.exchange_number}: ${exchangeRow.reason}`, companyId],
+            "INSERT INTO reprint_jobs (exchange_id, job_description) VALUES (?, ?)",
+            [exchangeId, `Reprint for Exchange ${exchangeRow.exchange_number}: ${exchangeRow.reason}`],
             (err) => {
               if (err) return reject(err);
               resolve();
@@ -3042,8 +2989,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
    * Sales Orders Endpoints
    */
   app.get('/api/sales-orders', checkPermission('view_sales_orders'), injectFinancialYear, (req, res) => {
-    const companyId = req.companyId || '';
-    let { sql, params } = addFyDateFilter('SELECT * FROM sales_orders WHERE company_id = ?', [companyId], req, 'orderDate');
+      let { sql, params } = addFyDateFilter('SELECT * FROM sales_orders', [], req, 'orderDate');
     sql += ' ORDER BY orderDate DESC';
     db.all(sql, params, (err, rows) => {
       if (err) return sendError(res, 500, err.message, 'FETCH_SALES_ORDERS_FAILED');
@@ -3053,7 +2999,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/sales-orders/:id', checkPermission('view_sales_orders'), (req, res) => {
     const id = req.params.id;
-    db.get('SELECT * FROM sales_orders WHERE id = ? AND company_id = ?', [id, req.companyId || ''], (err, row) => {
+    db.get('SELECT * FROM sales_orders WHERE id = ?', [id], (err, row) => {
       if (err) return sendError(res, 500, err.message, 'FETCH_SALES_ORDER_FAILED');
       if (!row) return sendError(res, 404, 'Sales order not found', 'NOT_FOUND');
       res.json(row);
@@ -3062,7 +3008,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/sales-orders', checkPermission('create_sales_order'), validateBody(orderSchemas.create), async (req, res) => {
     try {
-      await validateFyDate('orderDate', req.body, req.companyId || '');
+      await validateFyDate('orderDate', req.body);
       const o = req.body || {};
       if (!o.id || !o.items || !Array.isArray(o.items) || o.items.length === 0) {
         return sendError(res, 400, 'Order id and items are required', 'MISSING_FIELDS');
@@ -3078,16 +3024,16 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       const now = new Date().toISOString();
       await new Promise((resolve, reject) => {
         db.run(
-          `INSERT INTO sales_orders (id, quotation_id, customer_id, orderDate, deliveryDate, status, items, subtotal, discounts, tax, other_charges, total, notes, created_by, created_at, company_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [o.id, o.quotationId || null, o.customerId || null, o.orderDate || now, o.deliveryDate || null, o.status || 'Draft', JSON.stringify(o.items), o.subtotal || 0, o.discounts || 0, o.tax || 0, o.otherCharges || 0, o.total || 0, o.notes || '', req.userId, now, req.companyId || ''],
+          `INSERT INTO sales_orders (id, quotation_id, customer_id, orderDate, deliveryDate, status, items, subtotal, discounts, tax, other_charges, total, notes, created_by, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+          [o.id, o.quotationId || null, o.customerId || null, o.orderDate || now, o.deliveryDate || null, o.status || 'Draft', JSON.stringify(o.items), o.subtotal || 0, o.discounts || 0, o.tax || 0, o.otherCharges || 0, o.total || 0, o.notes || '', req.userId, now],
           function(err) {
             if (err) return reject(err);
             resolve();
           }
         );
       });
-      await documentService.logAudit(req.userId, 'CREATE', 'sales_order', o.id, { created: true }, req.companyId || '');
+      await documentService.logAudit(req.userId, 'CREATE', 'sales_order', o.id, { created: true });
       res.status(201).json({ id: o.id });
     } catch (err) {
       sendError(res, 500, err.message, 'CREATE_SALES_ORDER_FAILED');
@@ -3098,11 +3044,11 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
     try {
       const id = req.params.id;
       const o = req.body || {};
-      await validateFyDate('orderDate', o, req.companyId || '');
+      await validateFyDate('orderDate', o);
       await new Promise((resolve, reject) => {
         db.run(
-          `UPDATE sales_orders SET quotation_id = ?, customer_id = ?, orderDate = ?, deliveryDate = ?, status = ?, items = ?, subtotal = ?, discounts = ?, tax = ?, other_charges = ?, total = ?, notes = ?, updated_by = ?, updated_at = ? WHERE id = ? AND company_id = ?`,
-          [o.quotationId || null, o.customerId || null, o.orderDate || null, o.deliveryDate || null, o.status || 'Draft', JSON.stringify(o.items || []), o.subtotal || 0, o.discounts || 0, o.tax || 0, o.otherCharges || 0, o.total || 0, o.notes || '', req.userId, new Date().toISOString(), id, req.companyId || ''],
+          `UPDATE sales_orders SET quotation_id = ?, customer_id = ?, orderDate = ?, deliveryDate = ?, status = ?, items = ?, subtotal = ?, discounts = ?, tax = ?, other_charges = ?, total = ?, notes = ?, updated_by = ?, updated_at = ? WHERE id = ?`,
+          [o.quotationId || null, o.customerId || null, o.orderDate || null, o.deliveryDate || null, o.status || 'Draft', JSON.stringify(o.items || []), o.subtotal || 0, o.discounts || 0, o.tax || 0, o.otherCharges || 0, o.total || 0, o.notes || '', req.userId, new Date().toISOString(), id],
           function(err) {
             if (err) reject(err);
             else resolve();
@@ -3119,7 +3065,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
     try {
       const id = req.params.id;
       await new Promise((resolve, reject) => {
-        db.run('DELETE FROM sales_orders WHERE id = ? AND company_id = ?', [id, req.companyId || ''], function(err) {
+        db.run('DELETE FROM sales_orders WHERE id = ?', [id], function(err) {
           if (err) reject(err);
           else resolve();
         });
@@ -3131,7 +3077,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   });
 
   app.get('/api/reprint-jobs', checkPermission('view_reprints'), (req, res) => {
-    db.all('SELECT * FROM reprint_jobs WHERE company_id = ? ORDER BY created_at DESC', [req.companyId || ''], (err, rows) => {
+    db.all('SELECT * FROM reprint_jobs ORDER BY created_at DESC', [], (err, rows) => {
       if (err) return sendError(res, 500, err.message, 'FETCH_REPRINTS_FAILED');
       res.json(rows);
     });
@@ -3144,8 +3090,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
     db.run(
       `UPDATE reprint_jobs 
        SET status = ?, paper_used = ?, ink_used = ?, finishing_cost = ?, total_reprint_cost = ?, completed_at = ?
-       WHERE id = ? AND company_id = ?`,
-      [status, paper_used, ink_used, finishing_cost, total_reprint_cost, completed_at, req.params.id, req.companyId || ''],
+       WHERE id = ?`,
+      [status, paper_used, ink_used, finishing_cost, total_reprint_cost, completed_at, req.params.id],
       function(err) {
         if (err) return sendError(res, 500, err.message, 'UPDATE_REPRINT_FAILED');
         res.json({ status: 'updated' });
@@ -3155,7 +3101,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.get('/api/documents/:id/verify', checkPermission('verify_document'), async (req, res) => {
     try {
-      const result = await documentService.verifySignature(req.params.id, req.companyId || '');
+      const result = await documentService.verifySignature(req.params.id);
       res.json(result);
     } catch (err) {
       sendError(res, 404, err.message, 'VERIFICATION_FAILED');
@@ -3163,7 +3109,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   });
 
   app.get('/api/documents/:id/audit', checkPermission('view_audit'), (req, res) => {
-    db.all("SELECT * FROM audit_logs WHERE entity_id = ? AND company_id = ? ORDER BY timestamp DESC", [req.params.id, req.companyId || ''], (err, rows) => {
+    db.all("SELECT * FROM audit_logs WHERE entity_id = ? ORDER BY timestamp DESC", [req.params.id], (err, rows) => {
       if (err) return sendError(res, 500, err.message, 'AUDIT_FETCH_FAILED');
       res.json(rows);
     });
@@ -3210,7 +3156,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
       // If an ID is provided, resolve the document first
       if (id) {
-        const doc = await documentService.resolveDocument(id, req.companyId || '');
+        const doc = await documentService.resolveDocument(id);
         if (!doc) return sendError(res, 404, 'Document not found', 'NOT_FOUND');
         finalData = JSON.parse(doc.payload);
         finalType = doc.type || finalType;
@@ -3249,7 +3195,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   // --- End of Document Engine Endpoints ---
   app.get('/api/classes', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), (req, res) => {
-    db.all("SELECT * FROM classes WHERE company_id = ? ORDER BY name", [req.companyId || ''], (err, rows) => {
+    db.all("SELECT * FROM classes ORDER BY name", [], (err, rows) => {
       if (err) { console.error('[Classes] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve classes' }); }
       res.json(rows);
     });
@@ -3257,14 +3203,14 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/classes', requireRole('Admin', 'Accountant', 'Manager'), validateBody(classSchemas.create), (req, res) => {
     const { name } = req.body;
-    db.run("INSERT INTO classes (name, company_id) VALUES (?, ?)", [name, req.companyId || ''], function(err) {
+    db.run("INSERT INTO classes (name) VALUES (?)", [name], function(err) {
       if (err) { console.error('[Classes] POST error:', err); return res.status(500).json({ error: 'Failed to create class' }); }
       res.json({ id: this.lastID, name });
     });
   });
 
   app.delete('/api/classes/:id', requireRole('Admin', 'Accountant', 'Manager'), (req, res) => {
-    db.run("DELETE FROM classes WHERE id = ? AND company_id = ?", [req.params.id, req.companyId || ''], (err) => {
+    db.run("DELETE FROM classes WHERE id = ?", [req.params.id], (err) => {
       if (err) { console.error('[Classes] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete class' }); }
       res.json({ success: true });
     });
@@ -3272,7 +3218,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   // --- Subjects Endpoints ---
   app.get('/api/subjects', (req, res) => {
-    db.all("SELECT * FROM subjects WHERE company_id = ? ORDER BY name", [req.companyId || ''], (err, rows) => {
+    db.all("SELECT * FROM subjects ORDER BY name", [], (err, rows) => {
       if (err) { console.error('[Subjects] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve subjects' }); }
       res.json(rows);
     });
@@ -3280,14 +3226,14 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   app.post('/api/subjects', requireRole('Admin', 'Accountant', 'Manager'), validateBody(subjectSchemas.create), (req, res) => {
     const { name, code } = req.body;
-    db.run("INSERT INTO subjects (name, code, company_id) VALUES (?, ?, ?)", [name, code, req.companyId || ''], function(err) {
+    db.run("INSERT INTO subjects (name, code) VALUES (?, ?)", [name, code], function(err) {
       if (err) { console.error('[Subjects] POST error:', err); return res.status(500).json({ error: 'Failed to create subject' }); }
       res.json({ id: this.lastID, name, code });
     });
   });
 
   app.delete('/api/subjects/:id', requireRole('Admin', 'Accountant', 'Manager'), (req, res) => {
-    db.run("DELETE FROM subjects WHERE id = ? AND company_id = ?", [req.params.id, req.companyId || ''], (err) => {
+    db.run("DELETE FROM subjects WHERE id = ?", [req.params.id], (err) => {
       if (err) { console.error('[Subjects] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete subject' }); }
       res.json({ success: true });
     });
@@ -3295,7 +3241,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
   // 1. GET Schools
   app.get('/api/schools', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), checkPermission('view_schools'), (req, res) => {
-    db.all("SELECT * FROM schools WHERE company_id = ?", [req.companyId || ''], (err, rows) => {
+    db.all("SELECT * FROM schools", [], (err, rows) => {
     if (err) { console.error('[Schools] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve schools' }); }
     res.json(rows);
   });
@@ -3304,12 +3250,11 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   // 2. GET Inventory
   app.get('/api/inventory', checkPermission('view_inventory'), async (req, res) => {
     try {
-      const companyId = req.companyId || '';
       const includeDeleted = ['1', 'true', 'yes'].includes(
         String(req.query?.include_deleted ?? req.query?.includeDeleted ?? '').trim().toLowerCase()
       );
-      let sql = 'SELECT * FROM inventory WHERE company_id = ?';
-      const params = [companyId];
+      let sql = 'SELECT * FROM inventory';
+      const params = [];
       if (!includeDeleted) {
         sql += ' AND (status IS NULL OR status != ?)';
         params.push('Deleted');
@@ -3335,10 +3280,9 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
         return res.status(400).json({ error: 'Item name is required' });
       }
 
-      // Enterprise SaaS Best Practice: Backend generates primary key and controls tenant metadata
-      // Ignore any client-supplied id, company_id, created_by, created_at, updated_at
+      // Backend generates primary key and controls audit metadata
+      // Ignore any client-supplied id, created_by, created_at, updated_at
       const id = randomUUID();
-      const companyId = req.companyId || '';
       const createdBy = req.user?.id || req.user?.username || 'system';
 
       const name = String(body.name).trim();
@@ -3358,18 +3302,18 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       const isProtected = body.is_protected ? 1 : 0;
       const now = new Date().toISOString();
 
-      // Business Uniqueness Check: SKU must be unique per company
+      // Business Uniqueness Check: SKU must be unique
       if (sku) {
         const existing = await new Promise((resolve, reject) => {
           db.get(
-            'SELECT id FROM inventory WHERE company_id = ? AND sku = ? LIMIT 1',
-            [companyId, sku],
+            'SELECT id FROM inventory WHERE sku = ? LIMIT 1',
+            [sku],
             (err, row) => (err ? reject(err) : resolve(row))
           );
         });
         if (existing) {
           return res.status(409).json({ 
-            error: `Inventory item with SKU '${sku}' already exists in this company.`,
+            error: `Inventory item with SKU '${sku}' already exists.`,
             code: 'SKU_ALREADY_EXISTS',
             sku 
           });
@@ -3379,20 +3323,20 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
       // Perform clean INSERT
       db.run(
         `INSERT INTO inventory (
-          id, company_id, name, sku, material, type, quantity, cost_per_unit, selling_price, 
+          id, name, sku, material, type, quantity, cost_per_unit, selling_price, 
           unit, category_id, min_stock_level, max_stock_level, reorder_point, warehouse_id, 
           reserved, is_protected, created_by, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (? , ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          id, companyId, name, sku, material, type, quantity, costPerUnit, sellingPrice,
+          id, name, sku, material, type, quantity, costPerUnit, sellingPrice,
           unit, category_id, minStockLevel, maxStockLevel, reorderPoint, warehouseId,
           reserved, isProtected, createdBy, now, now
         ],
         function (err) {
           if (err) {
-            if (err.message && (err.message.includes('UNIQUE constraint failed') || err.message.includes('idx_inventory_company_sku'))) {
+            if (err.message && (err.message.includes('UNIQUE constraint failed') || err.message.includes('idx_inventory_sku'))) {
               return res.status(409).json({ 
-                error: `Inventory item with SKU '${sku}' already exists in this company.`,
+                error: `Inventory item with SKU '${sku}' already exists.`,
                 code: 'SKU_ALREADY_EXISTS',
                 sku 
               });
@@ -3402,7 +3346,6 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
           // Return complete created record
           res.status(201).json({
             id,
-            company_id: companyId,
             name,
             sku,
             material,
@@ -3435,7 +3378,6 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
     try {
       const { id } = req.params;
       const { body } = req;
-      const companyId = req.companyId || '';
       const fields = [];
       const params = [];
       const allowed = ['name', 'sku', 'material', 'type', 'quantity', 'cost_per_unit', 'selling_price', 'unit', 'category_id', 'min_stock_level', 'max_stock_level', 'reorder_point', 'warehouse_id', 'reserved', 'is_protected'];
@@ -3453,14 +3395,14 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
         const skuTrimmed = String(body.sku).trim();
         const existing = await new Promise((resolve, reject) => {
           db.get(
-            'SELECT id FROM inventory WHERE company_id = ? AND sku = ? AND id != ? LIMIT 1',
-            [companyId, skuTrimmed, id],
+            'SELECT id FROM inventory WHERE sku = ? AND id != ? LIMIT 1',
+            [skuTrimmed, id],
             (err, row) => (err ? reject(err) : resolve(row))
           );
         });
         if (existing) {
           return res.status(409).json({
-            error: `Inventory item with SKU '${skuTrimmed}' already exists in this company.`,
+            error: `Inventory item with SKU '${skuTrimmed}' already exists.`,
             code: 'SKU_ALREADY_EXISTS',
             sku: skuTrimmed
           });
@@ -3469,12 +3411,12 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
 
       fields.push('updated_at = CURRENT_TIMESTAMP');
       fields.push('last_updated = CURRENT_TIMESTAMP');
-      params.push(id, companyId);
+      params.push(id);
 
-      db.run(`UPDATE inventory SET ${fields.join(', ')} WHERE id = ? AND company_id = ?`, params, function (err) {
+      db.run(`UPDATE inventory SET ${fields.join(', ')} WHERE id = ?`, params, function (err) {
         if (err) { 
-          if (err.message && (err.message.includes('UNIQUE constraint failed') || err.message.includes('idx_inventory_company_sku'))) {
-            return res.status(409).json({ error: `Inventory item with SKU '${body.sku}' already exists in this company.`, code: 'SKU_ALREADY_EXISTS' });
+          if (err.message && (err.message.includes('UNIQUE constraint failed') || err.message.includes('idx_inventory_sku'))) {
+            return res.status(409).json({ error: `Inventory item with SKU '${body.sku}' already exists.`, code: 'SKU_ALREADY_EXISTS' });
           }
           console.error('[Inventory] PUT error:', err); 
           return res.status(500).json({ error: 'Failed to update inventory item' }); 
@@ -3492,13 +3434,12 @@ const result = await paymentAllocation.allocatePayment(payment, allocations, com
   app.delete('/api/inventory/:id', requireRole('Admin'), async (req, res) => {
     try {
       const { id } = req.params;
-      const companyId = req.companyId || '';
-      db.get('SELECT * FROM inventory WHERE id = ? AND company_id = ?', [id, companyId], (err, row) => {
+      db.get('SELECT * FROM inventory WHERE id = ?', [id], (err, row) => {
         if (err) { console.error('[Inventory] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete inventory item' }); }
         if (!row) return res.status(404).json({ error: 'Inventory item not found' });
         if (row.is_protected) return res.status(403).json({ error: 'Cannot delete protected item' });
         const voidedBy = req.user?.id || req.user?.username || 'system';
-        db.run("UPDATE inventory SET status = 'Deleted', deleted_at = CURRENT_TIMESTAMP, void_reason = 'Manually deleted', voided_by = ?, updated_at = CURRENT_TIMESTAMP, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?", [voidedBy, id, companyId], (err) => {
+        db.run("UPDATE inventory SET status = 'Deleted', deleted_at = CURRENT_TIMESTAMP, void_reason = 'Manually deleted', voided_by = ?, updated_at = CURRENT_TIMESTAMP, last_updated = CURRENT_TIMESTAMP WHERE id = ?", [voidedBy, id], (err) => {
           if (err) { console.error('[Inventory] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete inventory item' }); }
           res.json({ success: true, id, status: 'Deleted' });
         });
@@ -3514,16 +3455,16 @@ app.delete('/api/examinations/batch/:batch_id', (req, res) => {
   const { batch_id } = req.params;
   db.serialize(() => {
     db.run("BEGIN TRANSACTION");
-    db.run("DELETE FROM examination_bom_calculations WHERE batch_id = ? AND company_id = ?", [batch_id, req.companyId || '']);
-    db.run("DELETE FROM examination_subjects WHERE batch_id = ? AND company_id = ?", [batch_id, req.companyId || '']);
-    db.run("DELETE FROM examination_classes WHERE batch_id = ? AND company_id = ?", [batch_id, req.companyId || '']);
-    db.run("DELETE FROM examinations WHERE batch_id = ? AND company_id = ?", [batch_id, req.companyId || ''], (err) => {
+    db.run("DELETE FROM examination_bom_calculations WHERE batch_id = ?", [batch_id]);
+    db.run("DELETE FROM examination_subjects WHERE batch_id = ?", [batch_id]);
+    db.run("DELETE FROM examination_classes WHERE batch_id = ?", [batch_id]);
+    db.run("DELETE FROM examinations WHERE batch_id = ?", [batch_id], (err) => {
       if (err) {
         console.error('[Examination] delete batch error:', err);
         db.run("ROLLBACK");
         return res.status(500).json({ error: 'Failed to delete batch' });
       }
-      db.run("DELETE FROM examination_batches WHERE id = ? AND company_id = ?", [batch_id, req.companyId || ''], (err) => {
+      db.run("DELETE FROM examination_batches WHERE id = ?", [batch_id], (err) => {
         if (err) {
           console.error('[Examination] delete batch error:', err);
           db.run("ROLLBACK");
@@ -3540,7 +3481,7 @@ app.delete('/api/examinations/batch/:batch_id', (req, res) => {
 app.post('/api/examinations/batch/:batch_id/recurring', (req, res) => {
   const { batch_id } = req.params;
   const { is_recurring } = req.body;
-  db.run("UPDATE examinations SET is_recurring = ? WHERE batch_id = ? AND company_id = ?", [is_recurring ? 1 : 0, batch_id, req.companyId || ''], (err) => {
+  db.run("UPDATE examinations SET is_recurring = ? WHERE batch_id = ?", [is_recurring ? 1 : 0, batch_id], (err) => {
     if (err) { console.error('[Examination] toggle recurring error:', err); return res.status(500).json({ error: 'Failed to update recurring status' }); }
     res.json({ success: true });
   });
@@ -3551,8 +3492,8 @@ app.get('/api/invoices/:id/details', (req, res) => {
   const { id } = req.params;
   db.all(`SELECT class, SUM(candidates) as learner_count, AVG(charge_per_learner) as charge_per_learner, SUM(selling_price) as total
           FROM examinations 
-          WHERE invoice_id = ? AND company_id = ?
-          GROUP BY class`, [id, req.companyId || ''], (err, rows) => {
+          WHERE invoice_id = ?
+          GROUP BY class`, [id], (err, rows) => {
     if (err) { console.error('[Invoices] details error:', err); return res.status(500).json({ error: 'Failed to retrieve invoice details' }); }
     res.json(rows);
   });
@@ -3560,28 +3501,27 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
   // 10. Get Examination Stats
   app.get('/api/stats/examination', checkPermission('view_stats'), injectFinancialYear, (req, res) => {
-    const companyId = req.companyId || '';
     const fyStart = req.fyStartDate;
     const fyEnd = req.fyEndDate;
     const stats = {};
     
-    db.get("SELECT COUNT(*) as count FROM examinations WHERE status = 'pending' AND company_id = ? AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [companyId, fyStart, fyEnd], (err, row) => {
+    db.get("SELECT COUNT(*) as count FROM examinations WHERE status = 'pending' AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
       if (err) { console.error('[Stats] pending count error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
       stats.pending_jobs = row?.count || 0;
       
-      db.get("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE LOWER(status) = 'paid' AND company_id = ? AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [companyId, fyStart, fyEnd], (err, row) => {
+      db.get("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE LOWER(status) = 'paid' AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
         if (err) { console.error('[Stats] revenue error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
         stats.total_revenue = row?.total || 0;
         
-        db.get("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE LOWER(status) = 'unpaid' AND company_id = ? AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [companyId, fyStart, fyEnd], (err, row) => {
+        db.get("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE LOWER(status) = 'unpaid' AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
           if (err) { console.error('[Stats] outstanding error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
           stats.outstanding_amount = row?.total || 0;
           
-          db.get("SELECT SUM(actual_waste_sheets) as waste FROM examinations WHERE company_id = ? AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [companyId, fyStart, fyEnd], (err, row) => {
+          db.get("SELECT SUM(actual_waste_sheets) as waste FROM examinations WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
             if (err) { console.error('[Stats] waste error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
             stats.total_waste = row?.waste || 0;
             
-            db.get("SELECT SUM(total_sheets_used) as total, SUM(internal_cost) as cost FROM examinations WHERE company_id = ? AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [companyId, fyStart, fyEnd], (err, row) => {
+            db.get("SELECT SUM(total_sheets_used) as total, SUM(internal_cost) as cost FROM examinations WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
               if (err) { console.error('[Stats] sheets/cost error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
               stats.total_sheets = row?.total || 0;
               stats.total_cost = row?.cost || 0;
@@ -3595,7 +3535,6 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
   // 14. Get Monthly Examination Data for Dashboard
   app.get('/api/stats/monthly-data', checkPermission('view_stats'), injectFinancialYear, (req, res) => {
-    const companyId = req.companyId || '';
     const fyStart = req.fyStartDate;
     const fyEnd = req.fyEndDate;
     
@@ -3612,19 +3551,19 @@ app.get('/api/invoices/:id/details', (req, res) => {
       LEFT JOIN (
         SELECT strftime('%m', created_at) as month, SUM(total_amount) as revenue
         FROM invoices 
-        WHERE date(created_at) >= date(?) AND date(created_at) <= date(?) AND status != 'cancelled' AND company_id = ?
+        WHERE date(created_at) >= date(?) AND date(created_at) <= date(?) AND status != 'cancelled'
         GROUP BY month
       ) i ON m.month = i.month
       LEFT JOIN (
         SELECT strftime('%m', created_at) as month, SUM(internal_cost) as month_cost
         FROM examinations
-        WHERE date(created_at) >= date(?) AND date(created_at) <= date(?) AND company_id = ?
+        WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)
         GROUP BY month
       ) e ON m.month = e.month
       ORDER BY m.month
     `;
 
-    db.all(query, [fyStart, fyEnd, companyId, fyStart, fyEnd, companyId], (err, rows) => {
+    db.all(query, [fyStart, fyEnd, fyStart, fyEnd], (err, rows) => {
       if (err) { console.error('[Stats] monthly-data error:', err); return res.status(500).json({ error: 'Failed to load monthly data' }); }
       res.json(rows);
     });
@@ -3636,7 +3575,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
   // Create inventory transaction (deduction)
   app.post('/api/inventory/transactions', checkPermission('create_transaction'), validateBody(inventorySchemas.stockAdjustment), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
-      await validateFyDate('transaction_date', req.body, req.companyId || '');
+      await validateFyDate('transaction_date', req.body);
       const { itemId, warehouseId, quantity, batchId, reason, reference, referenceId, performedBy, type } = req.body;
       const transactionDate = req.body.transaction_date;
 
@@ -3649,7 +3588,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
       // Get current inventory
       const item = await new Promise((resolve, reject) => {
-        db.get("SELECT * FROM inventory WHERE id = ? AND company_id = ?", [itemId, req.companyId || ''], (err, row) => {
+        db.get("SELECT * FROM inventory WHERE id = ?", [itemId], (err, row) => {
           if (err) return reject(err);
           resolve(row);
         });
@@ -3682,11 +3621,11 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
           db.run(`INSERT INTO inventory_transactions 
             (id, item_id, warehouse_id, batch_id, type, quantity, previous_quantity, new_quantity, 
-              unit_cost, total_cost, reason, reference, reference_id, performed_by, ip_address, user_agent, timestamp, company_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+              unit_cost, total_cost, reason, reference, reference_id, performed_by, ip_address, user_agent, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`, 
             [transactionId, itemId, warehouseId || null, batchId || null, transactionType,
               quantity, currentQuantity, newQuantity, unitCost, totalCost,
-              reason, reference || null, referenceId || null, resolvedPerformer, ipAddress, userAgent, transactionDate, req.companyId || ''],
+              reason, reference || null, referenceId || null, resolvedPerformer, ipAddress, userAgent, transactionDate],
             (err) => {
             if (err) {
               db.run("ROLLBACK");
@@ -3694,7 +3633,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
             }
 
             // Update inventory
-            db.run("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?", [newQuantity, itemId, req.companyId || ''], (err) => {
+            db.run("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?", [newQuantity, itemId], (err) => {
               if (err) {
                 db.run("ROLLBACK");
                 return reject(err);
@@ -3729,9 +3668,8 @@ app.get('/api/invoices/:id/details', (req, res) => {
     try {
       const { itemId } = req.params;
       const limit = parseInt(req.query.limit) || 50;
-      const companyId = req.companyId || '';
-      let sql = 'SELECT * FROM inventory_transactions WHERE item_id = ? AND company_id = ?';
-      const params = [itemId, companyId];
+      let sql = 'SELECT * FROM inventory_transactions WHERE item_id = ?';
+      const params = [itemId];
       const filtered = addFyDateFilter(sql, params, req, 'timestamp');
       sql = filtered.sql + ' ORDER BY timestamp DESC LIMIT ?';
       filtered.params.push(limit);
@@ -3751,12 +3689,11 @@ app.get('/api/invoices/:id/details', (req, res) => {
   // Get warehouse inventory
   app.get('/api/inventory/warehouse/:warehouseId', checkPermission('view_inventory'), (req, res) => {
     const { warehouseId } = req.params;
-    const companyId = req.companyId || '';
     
     db.all(`SELECT wi.*, i.name as item_name, i.material, i.cost_per_unit, i.unit
             FROM warehouse_inventory wi
             LEFT JOIN inventory i ON wi.item_id = i.id
-            WHERE wi.warehouse_id = ? AND wi.company_id = ? AND i.company_id = ?`, [warehouseId, companyId, companyId], (err, rows) => {
+            WHERE wi.warehouse_id = ?`, [warehouseId], (err, rows) => {
       if (err) { console.error('[Inventory] warehouse error:', err); return res.status(500).json({ error: 'Failed to load warehouse inventory' }); }
       res.json(rows || []);
     });
@@ -3764,16 +3701,14 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
   // Get all warehouses (distinct warehouse IDs with aggregated stock)
   app.get('/api/warehouses', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), (req, res) => {
-    const companyId = req.companyId || '';
     db.all(`SELECT wi.warehouse_id,
                    COALESCE(SUM(wi.quantity), 0) as total_stock,
                    COALESCE(SUM(wi.reserved), 0) as total_reserved,
                    COUNT(DISTINCT wi.item_id) as item_count,
                    MAX(wi.last_updated) as last_updated
             FROM warehouse_inventory wi
-            WHERE wi.company_id = ?
             GROUP BY wi.warehouse_id
-            ORDER BY wi.warehouse_id`, [companyId], (err, rows) => {
+            ORDER BY wi.warehouse_id`, [], (err, rows) => {
       if (err) { console.error('[Warehouses] GET error:', err); return res.status(500).json({ error: 'Failed to load warehouses' }); }
       res.json(rows || []);
     });
@@ -3784,10 +3719,9 @@ app.get('/api/invoices/:id/details', (req, res) => {
     try {
       const { id, snapshot_data, snapshot_type, notes, created_by } = req.body;
       const snapshotId = id || `SNAP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const companyId = req.companyId || '';
-      db.run(`INSERT INTO warehouse_snapshots (id, snapshot_data, snapshot_type, notes, created_by, company_id, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [snapshotId, JSON.stringify(snapshot_data), snapshot_type || 'manual', notes || '', created_by || req.user?.id || '', companyId, new Date().toISOString()],
+      db.run(`INSERT INTO warehouse_snapshots (id, snapshot_data, snapshot_type, notes, created_by, created_at)
+              VALUES (?, ?, ?, ?, ? , ?)`,
+        [snapshotId, JSON.stringify(snapshot_data), snapshot_type || 'manual', notes || '', created_by || req.user?.id || '', new Date().toISOString()],
         (err) => {
           if (err) { return handleInsertConstraintError(res, err, 'Save warehouse snapshot'); }
           res.status(201).json({ success: true, id: snapshotId });
@@ -3800,10 +3734,9 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
   // Fetch warehouse snapshots
   app.get('/api/warehouses/snapshot', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), (req, res) => {
-    const companyId = req.companyId || '';
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-    db.all(`SELECT * FROM warehouse_snapshots WHERE company_id = ? ORDER BY created_at DESC LIMIT ?`,
-      [companyId, limit], (err, rows) => {
+    db.all(`SELECT * FROM warehouse_snapshots ORDER BY created_at DESC LIMIT ?`,
+      [limit], (err, rows) => {
         if (err) { console.error('[Warehouses] snapshot get error:', err); return res.status(500).json({ error: 'Failed to load snapshots' }); }
         res.json((rows || []).map(r => ({ ...r, snapshot_data: typeof r.snapshot_data === 'string' ? JSON.parse(r.snapshot_data) : r.snapshot_data })));
       });
@@ -3811,22 +3744,21 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
   // Sync master inventory from warehouse totals
   app.post('/api/warehouses/sync-master', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
-    const companyId = req.companyId || '';
     const { itemId } = req.body;
     try {
       if (itemId) {
         // Sync single item
         const whItems = await new Promise((resolve, reject) => {
           db.all(`SELECT item_id, SUM(quantity) as total_qty, SUM(reserved) as total_reserved
-                  FROM warehouse_inventory WHERE item_id = ? AND company_id = ? GROUP BY item_id`,
-            [itemId, companyId], (err, rows) => {
+                  FROM warehouse_inventory WHERE item_id = ? GROUP BY item_id`,
+            [itemId], (err, rows) => {
               if (err) reject(err); else resolve(rows || []);
             });
         });
         if (whItems.length > 0) {
           const row = whItems[0];
-          db.run('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?',
-            [row.total_qty, row.total_reserved, itemId, companyId], (err) => {
+          db.run('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?',
+            [row.total_qty, row.total_reserved, itemId], (err) => {
               if (err) return res.status(500).json({ error: 'Failed to sync item' });
               res.json({ success: true, itemId, syncedQuantity: row.total_qty, syncedReserved: row.total_reserved });
             });
@@ -3837,15 +3769,15 @@ app.get('/api/invoices/:id/details', (req, res) => {
         // Sync all items
         const updated = await new Promise((resolve, reject) => {
           db.all(`SELECT wi.item_id, SUM(wi.quantity) as total_qty, SUM(wi.reserved) as total_reserved
-                  FROM warehouse_inventory wi WHERE wi.company_id = ? GROUP BY wi.item_id`,
-            [companyId], (err, rows) => {
+                  FROM warehouse_inventory wi GROUP BY wi.item_id`,
+            [], (err, rows) => {
               if (err) reject(err); else resolve(rows || []);
             });
         });
         let count = 0;
-        const stmt = db.prepare('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?');
+        const stmt = db.prepare('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?');
         for (const row of updated) {
-          stmt.run([row.total_qty, row.total_reserved, row.item_id, companyId]);
+          stmt.run([row.total_qty, row.total_reserved, row.item_id]);
           count++;
         }
         stmt.finalize();
@@ -3862,8 +3794,8 @@ app.get('/api/invoices/:id/details', (req, res) => {
     const { itemId } = req.params;
     
     db.all(`SELECT * FROM material_batches 
-            WHERE item_id = ? AND status = 'active' AND remaining_quantity > 0 AND company_id = ?
-            ORDER BY received_date ASC`, [itemId, req.companyId || ''], (err, rows) => {
+            WHERE item_id = ? AND status = 'active' AND remaining_quantity > 0
+            ORDER BY received_date ASC`, [itemId], (err, rows) => {
       if (err) { console.error('[Inventory] item batches error:', err); return res.status(500).json({ error: 'Failed to load batches' }); }
       res.json(rows || []);
     });
@@ -3884,27 +3816,6 @@ app.get('/api/invoices/:id/details', (req, res) => {
     return ALLOWED_FILE_DIRS.some(allowed => realPath.startsWith(allowed));
   };
 
-  const getTenantFileDir = (companyId) => {
-    const cid = String(companyId || '').trim();
-    if (!cid) return null;
-    return path.resolve(storageDir, 'company', cid);
-  };
-
-  const isPathTenantIsolated = (filePath, companyId) => {
-    if (!companyId) return false;
-    const tenantDir = getTenantFileDir(companyId);
-    if (!tenantDir) return false;
-    const resolved = path.resolve(filePath);
-    const realPath = fs.realpathSync(resolved);
-    return realPath.startsWith(tenantDir);
-  };
-
-  const validateFileOwnership = (filePath, companyId) => {
-    if (!companyId) return false;
-    if (isPathTenantIsolated(filePath, companyId)) return true;
-    return false;
-  };
-
   app.get('/api/read-file', (req, res) => {
     const filePath = req.query.path;
     if (!filePath || typeof filePath !== 'string') {
@@ -3912,10 +3823,6 @@ app.get('/api/invoices/:id/details', (req, res) => {
     }
     if (!isPathAllowed(filePath)) {
       return res.status(403).json({ success: false, error: 'Access denied' });
-    }
-    const companyId = req.companyId || '';
-    if (!validateFileOwnership(filePath, companyId)) {
-      return res.status(403).json({ success: false, error: 'Access denied: file does not belong to your company' });
     }
     try {
       if (!fs.existsSync(filePath)) {
@@ -3947,9 +3854,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
       if (buffer.length > 0 && buffer[0] !== 0x25 && buffer[1] !== 0x50) {
         console.warn('[File] write-temp-pdf: data does not start with PDF magic bytes');
       }
-      const companyId = req.companyId || '';
-      const tenantDir = getTenantFileDir(companyId);
-      const targetDir = tenantDir ? path.join(tenantDir, 'temp') : tempDir;
+      const targetDir = tempDir;
       if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
       }
@@ -3969,10 +3874,6 @@ app.get('/api/invoices/:id/details', (req, res) => {
     }
     if (!isPathAllowed(filePath)) {
       return res.status(403).json({ success: false, error: 'Access denied' });
-    }
-    const companyId = req.companyId || '';
-    if (!validateFileOwnership(filePath, companyId)) {
-      return res.status(403).json({ success: false, error: 'Access denied: file does not belong to your company' });
     }
     try {
       if (!fs.existsSync(filePath)) {

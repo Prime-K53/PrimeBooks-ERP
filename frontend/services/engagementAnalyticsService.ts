@@ -3,7 +3,7 @@ import { dbService } from './db'
 import { logger } from './logger'
 
 export const engagementAnalyticsService = {
-  async computeAnalytics(companyId?: string): Promise<EngagementAnalytics> {
+  async computeAnalytics(): Promise<EngagementAnalytics> {
     try {
       const now = new Date()
       const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)

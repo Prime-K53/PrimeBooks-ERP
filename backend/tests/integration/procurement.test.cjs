@@ -1,5 +1,5 @@
 const { createTestDb, createTestApp, createTestSchema } = require('../setup.cjs');
-const { TEST_COMPANY_ID, TEST_USER_ID } = require('../helpers.cjs');
+const { TEST_USER_ID } = require('../helpers.cjs');
 
 describe('Procurement API Integration', () => {
   let db, procurement;
@@ -18,18 +18,18 @@ describe('Procurement API Integration', () => {
         name: 'Acme Corp',
         email: 'orders@acme.com',
         category: 'Raw Materials'
-      }, TEST_COMPANY_ID);
+      });
       expect(supplier).toBeDefined();
       expect(supplier.name).toBe('Acme Corp');
 
-      const updated = await procurement.updateSupplier(supplier.id, { email: 'new@acme.com' }, TEST_COMPANY_ID);
+      const updated = await procurement.updateSupplier(supplier.id, { email: 'new@acme.com' });
       expect(updated.email).toBe('new@acme.com');
 
-      const suppliers = await procurement.getSuppliers(TEST_COMPANY_ID);
+      const suppliers = await procurement.getSuppliers();
       expect(suppliers.length).toBeGreaterThanOrEqual(1);
 
-      await procurement.deleteSupplier(supplier.id, TEST_COMPANY_ID);
-      const afterDelete = await procurement.getSuppliers(TEST_COMPANY_ID);
+      await procurement.deleteSupplier(supplier.id);
+      const afterDelete = await procurement.getSuppliers();
       expect(afterDelete.find(s => s.id === supplier.id)).toBeUndefined();
     });
 
@@ -38,15 +38,15 @@ describe('Procurement API Integration', () => {
         id: 'SUP-DUPLICATE',
         name: 'Original Supplier',
         email: 'original@example.com'
-      }, TEST_COMPANY_ID);
+      });
 
       await expect(procurement.createSupplier({
         id: 'SUP-DUPLICATE',
         name: 'Replacement Supplier',
         email: 'replacement@example.com'
-      }, TEST_COMPANY_ID)).rejects.toThrow();
+      })).rejects.toThrow();
 
-      const supplier = await procurement.getSupplierById('SUP-DUPLICATE', TEST_COMPANY_ID);
+      const supplier = await procurement.getSupplierById('SUP-DUPLICATE');
       expect(supplier.name).toBe('Original Supplier');
       expect(supplier.email).toBe('original@example.com');
     });
@@ -57,24 +57,24 @@ describe('Procurement API Integration', () => {
       const supplier = await procurement.createSupplier({
         name: 'Supply Co',
         category: 'Equipment'
-      }, TEST_COMPANY_ID);
+      });
 
       const po = await procurement.createPurchase({
         supplier_id: supplier.id,
         order_date: new Date().toISOString(),
         status: 'Draft',
         items: [{ item_name: 'Test Item', quantity: 10, unit_price: 50 }]
-      }, TEST_COMPANY_ID, TEST_USER_ID);
+      }, TEST_USER_ID);
       expect(po).toBeDefined();
 
-      const fetched = await procurement.getPurchaseById(po.id, TEST_COMPANY_ID);
+      const fetched = await procurement.getPurchaseById(po.id);
       expect(fetched).toBeDefined();
       expect(fetched.supplier_name).toBe('Supply Co');
 
-      const updated = await procurement.updatePurchaseStatus(po.id, 'Approved', TEST_COMPANY_ID);
+      const updated = await procurement.updatePurchaseStatus(po.id, 'Approved');
       expect(updated.status).toBe('Approved');
 
-      const purchases = await procurement.getPurchases(TEST_COMPANY_ID);
+      const purchases = await procurement.getPurchases();
       expect(purchases.length).toBeGreaterThanOrEqual(1);
     });
   });
@@ -83,22 +83,22 @@ describe('Procurement API Integration', () => {
     test('create goods receipt', async () => {
       const supplier = await procurement.createSupplier({
         name: 'Goods Supplier', category: 'Materials'
-      }, TEST_COMPANY_ID);
+      });
       const po = await procurement.createPurchase({
         supplier_id: supplier.id,
         order_date: new Date().toISOString(),
         items: [{ item_name: 'Widget', quantity: 100, unit_price: 5 }]
-      }, TEST_COMPANY_ID, TEST_USER_ID);
+      }, TEST_USER_ID);
 
       const grn = await procurement.createGoodsReceipt({
         purchase_order_id: po.id,
         received_date: new Date().toISOString(),
         notes: 'All items received in good condition'
-      }, TEST_COMPANY_ID, TEST_USER_ID);
+      }, TEST_USER_ID);
       expect(grn).toBeDefined();
       expect(grn.status).toBe('Received');
 
-      const receipts = await procurement.getGoodsReceipts(TEST_COMPANY_ID);
+      const receipts = await procurement.getGoodsReceipts();
       expect(receipts.length).toBeGreaterThanOrEqual(1);
     });
   });

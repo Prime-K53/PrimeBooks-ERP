@@ -302,7 +302,7 @@ const examinationSchemas = {
 // Workspace validation schemas
 const workspaceSchemas = {
   initialize: z.object({
-    companyName: z.string().min(1, 'Company name is required').max(200)
+    companyName: z.string().min(1, 'Company name is required').max(200).default('Prime ERP')
   }),
   sync: z.object({
     filename: z.string().min(1, 'Filename is required').max(255),
@@ -671,24 +671,23 @@ const referralSchemas = {
 };
 
 /**
- * Validate that a resource belongs to the requesting company.
+ * Validate that a resource exists.
  * Works with both singleton (getDatabase) and direct db patterns.
  * @param {string} tableName - Database table to query
  * @param {string} idField - Column name for the record ID (e.g., 'id')
  * @param {string} recordId - The record's ID value
- * @param {string} companyId - The requesting company's ID
  * @param {object} [db] - Optional database instance (uses getDatabase singleton if omitted)
- * @returns {Promise<object|null>} The record if owned by company, or null
+ * @returns {Promise<object|null>} The record, or null
  */
-const validateCompanyOwnership = async (tableName, idField, recordId, companyId, db) => {
-  if (!recordId || !companyId) return null;
+const validateResourceExists = async (tableName, idField, recordId, db) => {
+  if (!recordId) return null;
   try {
     const { getDatabase } = require('../db.cjs');
     const targetDb = db || getDatabase();
     const row = await new Promise((resolve, reject) => {
       targetDb.get(
-        `SELECT * FROM ${tableName} WHERE ${idField} = ? AND company_id = ?`,
-        [recordId, companyId],
+        `SELECT * FROM ${tableName} WHERE ${idField} = ?`,
+        [recordId],
         (err, row) => {
           if (err) reject(err);
           else resolve(row);
@@ -702,25 +701,23 @@ const validateCompanyOwnership = async (tableName, idField, recordId, companyId,
 };
 
 /**
- * Express middleware factory: validates that a resource in req.params
- * belongs to the requesting company.
+ * Express middleware factory: validates that a resource in req.params exists.
  * @param {string} tableName - Database table to query
  * @param {string} [paramName='id'] - Route param name for the record ID
  * @param {string} [idField='id'] - Column name for the record ID
  * @returns {Function} Express middleware
  */
-const requireCompanyOwnership = (tableName, paramName = 'id', idField = 'id') => {
+const requireResourceExists = (tableName, paramName = 'id', idField = 'id') => {
   return async (req, res, next) => {
     try {
       const recordId = req.params[paramName];
-      const companyId = req.companyId || '';
-      if (!recordId || !companyId) {
+      if (!recordId) {
         return res.status(403).json({
           error: 'Access denied',
           message: 'Resource not found or access denied'
         });
       }
-      const record = await validateCompanyOwnership(tableName, idField, recordId, companyId);
+      const record = await validateResourceExists(tableName, idField, recordId);
       if (!record) {
         return res.status(404).json({
           error: 'Not found',
@@ -741,8 +738,8 @@ module.exports = {
   validateQuery,
   validateParams,
   sanitizeInput,
-  validateCompanyOwnership,
-  requireCompanyOwnership,
+  validateResourceExists,
+  requireResourceExists,
   commonSchemas,
   financialSchemas,
   accountSchemas,

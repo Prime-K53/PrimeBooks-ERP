@@ -167,13 +167,11 @@ export class BaseRepository<T extends Record<string, any>> {
 
   private async enqueueSync(record: any, operation: QueueOperation): Promise<void> {
     try {
-      const companyId = record.companyId || record.company_id || null;
       await durableSyncQueue.enqueue({
         table: this.syncTable,
         recordId: record.id,
         operation,
         payload: record,
-        companyId,
       });
     } catch (err) {
       logger.warn(`[${this.storeName}] Failed to enqueue sync:`, err);

@@ -88,7 +88,6 @@ router.get('/events-ticket', (req, res) => {
         id: req.user.id,
         username: req.user.username || 'sales',
         role: req.user.role || 'admin',
-        company_id: req.user.company_id || '',
         sse: true
       },
       process.env.JWT_SECRET,
@@ -105,8 +104,7 @@ function adminActor(req) {
   return {
     id: req.user.id,
     name: req.user.username || req.user.email || 'Sales',
-    role: req.user.role || 'admin',
-  };
+    role: req.user.role || 'admin'};
 }
 
 function requestContext(req) {
@@ -115,8 +113,7 @@ function requestContext(req) {
     userAgent: req.headers['user-agent'] || null,
     method: req.method,
     path: req.originalUrl,
-    correlationId: req.correlationId,
-  };
+    correlationId: req.correlationId};
 }
 
 // ─── Realtime events (SSE) — staff dashboard updates instantly ──────────────
@@ -128,9 +125,8 @@ router.get('/events', (req, res) => {
 // ─── Quotation Requests (review workspace) ───────────────────────────────────
 router.get('/requests', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { status } = req.query;
-    const data = await portalLifecycleService.adminListRequests({ companyId: company_id, status });
+    const data = await portalLifecycleService.adminListRequests({ status });
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] List requests error:', err);
@@ -140,8 +136,7 @@ router.get('/requests', async (req, res) => {
 
 router.get('/requests/:id', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    const data = await portalLifecycleService.adminGetRequest(req.params.id, company_id);
+    const data = await portalLifecycleService.adminGetRequest(req.params.id);
     if (!data) return res.status(404).json({ error: 'Request not found' });
     res.json(data);
   } catch (err) {
@@ -152,15 +147,12 @@ router.get('/requests/:id', async (req, res) => {
 
 router.put('/requests/:id', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { items, notes } = req.body;
     const data = await portalLifecycleService.updateRequest(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       items,
       notes,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Update request error:', err);
@@ -170,14 +162,11 @@ router.put('/requests/:id', async (req, res) => {
 
 router.post('/requests/:id/reject', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { reason } = req.body || {};
     const data = await portalLifecycleService.rejectRequest(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       reason,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Reject request error:', err);
@@ -187,14 +176,11 @@ router.post('/requests/:id/reject', async (req, res) => {
 
 router.post('/requests/:id/clarify', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { note } = req.body || {};
     const data = await portalLifecycleService.requestClarification(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       note,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Clarify request error:', err);
@@ -205,12 +191,9 @@ router.post('/requests/:id/clarify', async (req, res) => {
 // Sales opened the request (audit + timeline only)
 router.post('/requests/:id/open', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const data = await portalLifecycleService.markRequestOpened(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Open request error:', err);
@@ -221,15 +204,12 @@ router.post('/requests/:id/open', async (req, res) => {
 // Assign a salesperson to the request
 router.post('/requests/:id/assign', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { assignTo, assignToName } = req.body || {};
     const data = await portalLifecycleService.assignRequest(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       assignTo,
       assignToName,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Assign request error:', err);
@@ -242,12 +222,9 @@ router.post('/requests/:id/assign', async (req, res) => {
 // ERP quotation editor.
 router.post('/requests/:id/generate-quotation', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const data = await portalLifecycleService.startQuotationGeneration(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Generate quotation error:', err);
@@ -260,16 +237,13 @@ router.post('/requests/:id/generate-quotation', async (req, res) => {
 // customer is notified.
 router.post('/requests/:id/complete-quotation', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { quotationNumber, erpQuotationId, quotationSnapshot } = req.body || {};
     const data = await portalLifecycleService.completeQuotation(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       quotationNumber,
       erpQuotationId,
       quotationSnapshot,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.status(201).json(data);
   } catch (err) {
     console.error('[PortalAdmin] Complete quotation error:', err);
@@ -282,12 +256,9 @@ router.post('/requests/:id/complete-quotation', async (req, res) => {
 // payload for the standard ERP sales order editor.
 router.post('/requests/:id/generate-order', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const data = await portalLifecycleService.startOrderGeneration(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Generate order error:', err);
@@ -300,15 +271,12 @@ router.post('/requests/:id/generate-order', async (req, res) => {
 // linked to the request, and the customer is notified.
 router.post('/requests/:id/complete-order', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { erpOrderId, orderSnapshot } = req.body || {};
     const data = await portalLifecycleService.completeSalesOrder(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       erpOrderId,
       orderSnapshot,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.status(201).json(data);
   } catch (err) {
     console.error('[PortalAdmin] Complete order error:', err);
@@ -319,7 +287,6 @@ router.post('/requests/:id/complete-order', async (req, res) => {
 // ─── Official Sales Orders (admin) ───────────────────────────────────────────
 router.get('/orders', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const rows = await new Promise((resolve, reject) => {
       db.all(`
         SELECT so.id, so.order_number, so.status, so.total, so.orderDate, so.deliveryDate,
@@ -327,9 +294,8 @@ router.get('/orders', async (req, res) => {
                c.name AS customer_name, so.created_at
         FROM sales_orders so
         LEFT JOIN customers c ON c.id = so.customer_id
-        WHERE so.company_id = ?
         ORDER BY so.orderDate DESC
-      `, [company_id], (err, rows) => {
+      `, [], (err, rows) => {
         if (err) return reject(err);
         resolve(rows || []);
       });
@@ -344,9 +310,8 @@ router.get('/orders', async (req, res) => {
 // ─── Official Quotations (admin) ─────────────────────────────────────────────
 router.get('/quotations', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { status } = req.query;
-    const data = await portalLifecycleService.getQuotations({ companyId: company_id, status });
+    const data = await portalLifecycleService.getQuotations({ status });
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] List quotations error:', err);
@@ -356,8 +321,7 @@ router.get('/quotations', async (req, res) => {
 
 router.get('/quotations/:id', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    const data = await portalLifecycleService.getQuotationById(req.params.id, { companyId: company_id });
+    const data = await portalLifecycleService.getQuotationById(req.params.id, {});
     if (!data) return res.status(404).json({ error: 'Quotation not found' });
     res.json(data);
   } catch (err) {
@@ -369,19 +333,16 @@ router.get('/quotations/:id', async (req, res) => {
 // Regenerate a quotation after a customer revision request
 router.post('/quotations/:id/regenerate', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { items, discount, taxRate, deliveryFee, paymentTerms, validUntil } = req.body || {};
     const data = await portalLifecycleService.regenerateQuotation(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       items,
       discount,
       taxRate,
       deliveryFee,
       paymentTerms,
       validUntil,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Regenerate quotation error:', err);
@@ -392,15 +353,12 @@ router.post('/quotations/:id/regenerate', async (req, res) => {
 // Convert an accepted quotation into an official sales order
 router.post('/quotations/:id/convert-to-order', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { deliveryDate, notes } = req.body || {};
     const data = await portalLifecycleService.convertToOrder(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       deliveryDate,
       notes,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.status(201).json(data);
   } catch (err) {
     console.error('[PortalAdmin] Convert to order error:', err);
@@ -411,10 +369,9 @@ router.post('/quotations/:id/convert-to-order', async (req, res) => {
 // ─── Quotation version history (Phase 3) ─────────────────────────────────────
 router.get('/quotations/:id/versions', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { companyId: company_id });
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, {});
     if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
-    const data = await portalLifecycleService.listDocumentVersions('quotation', req.params.id, { companyId: company_id });
+    const data = await portalLifecycleService.listDocumentVersions('quotation', req.params.id, {});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Quotation versions error:', err);
@@ -424,10 +381,9 @@ router.get('/quotations/:id/versions', async (req, res) => {
 
 router.get('/quotations/:id/versions/:version', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { companyId: company_id });
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, {});
     if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
-    const data = await portalLifecycleService.getDocumentVersion('quotation', req.params.id, Number(req.params.version), { companyId: company_id });
+    const data = await portalLifecycleService.getDocumentVersion('quotation', req.params.id, Number(req.params.version), {});
     if (!data) return res.status(404).json({ error: 'Version not found' });
     res.json(data);
   } catch (err) {
@@ -439,10 +395,9 @@ router.get('/quotations/:id/versions/:version', async (req, res) => {
 // ─── Quotation decision signatures (Phase 3) ─────────────────────────────────
 router.get('/quotations/:id/signatures', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { companyId: company_id });
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, {});
     if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
-    const data = await portalLifecycleService.getDocumentSignatures('quotation', req.params.id, { companyId: company_id });
+    const data = await portalLifecycleService.getDocumentSignatures('quotation', req.params.id, {});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Quotation signatures error:', err);
@@ -453,16 +408,13 @@ router.get('/quotations/:id/signatures', async (req, res) => {
 // ─── Sales order production status (Phase 4) ─────────────────────────────────
 router.post('/orders/:id/status', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { status, note } = req.body || {};
     if (!status) return res.status(400).json({ error: 'status is required' });
     const data = await portalLifecycleService.updateOrderStatus(req.params.id, {
       admin: adminActor(req),
-      companyId: company_id,
       toStatus: status,
       note,
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Update order status error:', err);
@@ -473,14 +425,12 @@ router.post('/orders/:id/status', async (req, res) => {
 // ─── Document discussions (Phase 4) ──────────────────────────────────────────
 router.get('/comments', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { docType, docId } = req.query;
     if (!docType || !docId) {
       return res.status(400).json({ error: 'docType and docId are required' });
     }
     const data = await portalLifecycleService.getComments({
-      docType, docId, companyId: company_id, view: 'admin',
-    });
+      docType, docId, view: 'admin'});
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Comments error:', err);
@@ -490,19 +440,17 @@ router.get('/comments', async (req, res) => {
 
 router.post('/comments', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const { docType, docId, body, visibility } = req.body || {};
     if (!docType || !docId || !body) {
       return res.status(400).json({ error: 'docType, docId and body are required' });
     }
     const actor = adminActor(req);
     const data = await portalLifecycleService.addComment({
-      docType, docId, companyId: company_id,
+      docType, docId,
       actor: { type: 'admin', id: actor.id, name: actor.name || 'Sales', role: actor.role },
       body,
       visibility: visibility === 'customer' ? 'customer' : 'internal',
-      context: requestContext(req),
-    });
+      context: requestContext(req)});
     res.status(201).json(data);
   } catch (err) {
     console.error('[PortalAdmin] Add comment error:', err);
@@ -513,9 +461,8 @@ router.post('/comments', async (req, res) => {
 // ─── Admin notifications ─────────────────────────────────────────────────────
 router.get('/notifications', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
-    const data = await portalLifecycleService.getAdminNotifications(company_id, { limit });
+    const data = await portalLifecycleService.getAdminNotifications({ limit });
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Notifications error:', err);
@@ -525,8 +472,7 @@ router.get('/notifications', async (req, res) => {
 
 router.get('/notifications/unread-count', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    const count = await portalLifecycleService.getAdminUnreadCount(company_id);
+    const count = await portalLifecycleService.getAdminUnreadCount();
     res.json({ count });
   } catch (err) {
     console.error('[PortalAdmin] Unread count error:', err);
@@ -536,8 +482,7 @@ router.get('/notifications/unread-count', async (req, res) => {
 
 router.put('/notifications/:id/read', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    await portalLifecycleService.markAdminNotificationRead(req.params.id, company_id);
+    await portalLifecycleService.markAdminNotificationRead(req.params.id);
     res.json({ success: true });
   } catch (err) {
     console.error('[PortalAdmin] Mark notification read error:', err);
@@ -547,8 +492,7 @@ router.put('/notifications/:id/read', async (req, res) => {
 
 router.put('/notifications/read-all', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    await portalLifecycleService.markAllAdminNotificationsRead(company_id);
+    await portalLifecycleService.markAllAdminNotificationsRead();
     res.json({ success: true });
   } catch (err) {
     console.error('[PortalAdmin] Mark all read error:', err);
@@ -559,9 +503,8 @@ router.put('/notifications/read-all', async (req, res) => {
 // ─── Activity feed + analytics ───────────────────────────────────────────────
 router.get('/activity', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const limit = Math.min(parseInt(req.query.limit, 10) || 25, 100);
-    const data = await portalLifecycleService.getActivity(company_id, { limit });
+    const data = await portalLifecycleService.getActivity({ limit });
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Activity error:', err);
@@ -571,8 +514,7 @@ router.get('/activity', async (req, res) => {
 
 router.get('/analytics', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
-    const data = await portalLifecycleService.getAnalytics(company_id);
+    const data = await portalLifecycleService.getAnalytics();
     res.json(data);
   } catch (err) {
     console.error('[PortalAdmin] Analytics error:', err);
@@ -582,7 +524,6 @@ router.get('/analytics', async (req, res) => {
 
 router.get('/users', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const rows = await new Promise((resolve, reject) => {
       db.all(`
         SELECT
@@ -599,10 +540,9 @@ router.get('/users', async (req, res) => {
           pu.last_login_at,
           pu.created_at AS portal_created_at
         FROM customers c
-        LEFT JOIN portal_users pu ON pu.customer_id = c.id AND pu.company_id = ?
-        WHERE c.company_id = ? OR (c.company_id IS NULL AND ? = '')
+        LEFT JOIN portal_users pu ON pu.customer_id = c.id
         ORDER BY c.name ASC
-      `, [company_id, company_id, company_id], (err, rows) => {
+      `, [], (err, rows) => {
         if (err) return reject(err);
         resolve(rows || []);
       });
@@ -623,8 +563,7 @@ router.post('/users', async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
-    const company_id = req.user.company_id || '';
-    const existing = await portalAuthService.getPortalUserByEmail(email, company_id);
+    const existing = await portalAuthService.getPortalUserByEmail(email);
     if (existing) {
       return res.status(409).json({ error: 'A portal account with this email already exists' });
     }
@@ -633,8 +572,7 @@ router.post('/users', async (req, res) => {
       email,
       password,
       full_name: full_name || '',
-      phone: phone || '',
-      company_id
+      phone: phone || ''
     });
     res.status(201).json({ message: 'Portal user created', user });
     } catch (err) {
@@ -649,10 +587,8 @@ router.post('/users', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
   try {
     const { status, full_name, phone, email } = req.body;
-    const company_id = req.user.company_id || '';
     const user = await portalAuthService.getPortalUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'Portal user not found' });
-    if (user.company_id !== company_id) return res.status(403).json({ error: 'Access denied' });
 
     if (status && !['active', 'disabled'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
@@ -681,10 +617,8 @@ router.put('/users/:id', async (req, res) => {
 
 router.delete('/users/:id', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const user = await portalAuthService.getPortalUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'Portal user not found' });
-    if (user.company_id !== company_id) return res.status(403).json({ error: 'Access denied' });
 
     await new Promise((resolve, reject) => {
       db.run(`UPDATE portal_users SET status = 'disabled', updated_at = datetime('now') WHERE id = ?`, [req.params.id], (err) => {
@@ -706,10 +640,8 @@ router.post('/users/:id/reset-password', async (req, res) => {
     if (!new_password || new_password.length < 6) {
       return res.status(400).json({ error: 'New password must be at least 6 characters' });
     }
-    const company_id = req.user.company_id || '';
     const user = await portalAuthService.getPortalUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'Portal user not found' });
-    if (user.company_id !== company_id) return res.status(403).json({ error: 'Access denied' });
 
     await portalAuthService.updatePassword(req.params.id, new_password);
     await portalAuthService.revokeAllSessions(req.params.id);
@@ -726,9 +658,8 @@ router.post('/users/auto-create', async (req, res) => {
     if (!customer_id) {
       return res.status(400).json({ error: 'customer_id is required' });
     }
-    const company_id = req.user.company_id || '';
 
-    const existing = await portalAuthService.getPortalUserByCustomerId(customer_id, company_id);
+    const existing = await portalAuthService.getPortalUserByCustomerId(customer_id);
     if (existing) {
       return res.json({ existing: true, user: existing, generated_password: null, invite_code: null });
     }
@@ -737,14 +668,13 @@ router.post('/users/auto-create', async (req, res) => {
     // user list and customer login resolution work for local-first customers.
     await new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO customers (id, name, email, phone, company_id)
-         VALUES (?, ?, ?, ?, ?)
+        `INSERT INTO customers (id, name, email, phone)
+         VALUES (?, ?, ?, ? )
          ON CONFLICT(id) DO UPDATE SET
            name = COALESCE(NULLIF(EXCLUDED.name, ''), customers.name),
            email = COALESCE(NULLIF(EXCLUDED.email, ''), customers.email),
-           phone = COALESCE(NULLIF(EXCLUDED.phone, ''), customers.phone),
-           company_id = EXCLUDED.company_id`,
-        [customer_id, name || '', email || '', phone || '', company_id],
+           phone = COALESCE(NULLIF(EXCLUDED.phone, ''), customers.phone)`,
+        [customer_id, name || '', email || '', phone || ''],
         (err) => (err ? reject(err) : resolve())
       );
     });
@@ -757,7 +687,7 @@ router.post('/users/auto-create', async (req, res) => {
           const sanitized = word.toLowerCase().replace(/[^a-z0-9]/g, '');
           if (sanitized) {
             const candidate = `${sanitized}@prime.erp`;
-            const existing = await portalAuthService.getPortalUserByEmail(candidate, company_id);
+            const existing = await portalAuthService.getPortalUserByEmail(candidate);
             if (!existing) return candidate;
           }
         }
@@ -770,7 +700,6 @@ router.post('/users/auto-create', async (req, res) => {
       password,
       full_name: full_name || name || '',
       phone: phone || '',
-      company_id,
       status: invite ? 'invited' : 'active'
     });
     if (invite) {
@@ -789,10 +718,8 @@ router.post('/users/auto-create', async (req, res) => {
 
 router.post('/users/:id/regenerate-password', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const user = await portalAuthService.getPortalUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'Portal user not found' });
-    if (user.company_id !== company_id) return res.status(403).json({ error: 'Access denied' });
 
     const new_password = crypto.randomBytes(9).toString('base64url');
     await portalAuthService.updatePassword(req.params.id, new_password);
@@ -806,10 +733,8 @@ router.post('/users/:id/regenerate-password', async (req, res) => {
 
 router.post('/users/:id/invite', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const user = await portalAuthService.getPortalUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'Portal user not found' });
-    if (user.company_id !== company_id) return res.status(403).json({ error: 'Access denied' });
     if (user.status === 'disabled') {
       return res.status(400).json({ error: 'Cannot invite a disabled account' });
     }
@@ -831,10 +756,9 @@ router.post('/users/:id/invite', async (req, res) => {
 // Staff (sales users) available for request assignment
 router.get('/staff', async (req, res) => {
   try {
-    const company_id = req.user.company_id || '';
     const rows = await new Promise((resolve, reject) => {
       db.all(`
-        SELECT id, username, email, role, company_id, is_active
+        SELECT id, username, email, role, is_active
         FROM users
         WHERE is_active = 1
         ORDER BY username ASC

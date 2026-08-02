@@ -87,8 +87,6 @@ describe('dbService routing', () => {
         }))
       }))
     });
-
-    mocks.localStorage.setItem('nexus_company_config', JSON.stringify({ companyId: 'test-company' }));
   });
 
   it('reads from legacy store for dual-read collections', async () => {

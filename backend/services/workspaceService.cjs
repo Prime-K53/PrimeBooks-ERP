@@ -9,10 +9,10 @@ class WorkspaceService {
     this.workspaceConfigPath = workspaceConfigPath;
   }
 
-  async initializeWorkspace(companyName, userId = null) {
+  async initializeWorkspace(organizationName, userId = null) {
     const documentsPath = path.join(os.homedir(), 'Documents');
-    const safeCompanyName = companyName.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const userDir = userId ? `${safeCompanyName}_${userId.replace(/[^a-zA-Z0-9_-]/g, '')}` : safeCompanyName;
+    const safeOrgName = organizationName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const userDir = userId ? `${safeOrgName}_${userId.replace(/[^a-zA-Z0-9_-]/g, '')}` : safeOrgName;
     const workspacePath = path.join(documentsPath, userDir);
 
     if (!fs.existsSync(workspacePath)) {
@@ -29,7 +29,7 @@ class WorkspaceService {
     const config = {
       workspacePath,
       dbPath: syncDbPath,
-      companyName,
+      organizationName,
       userId,
       initializedAt: new Date().toISOString()
     };

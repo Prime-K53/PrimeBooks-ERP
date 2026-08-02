@@ -54,7 +54,7 @@ const CustomerLoyalty: React.FC = () => {
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={3} /></div>;
 
   return (
-    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+    <div>
       <PortalPageHeader title="Loyalty Program" subtitle="Your rewards and membership benefits" icon={Gift} />
 
       <div style={{ padding: '20px 28px 8px' }}>

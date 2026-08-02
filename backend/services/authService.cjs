@@ -14,30 +14,26 @@ const ensureAuthSchema = () => {
         role TEXT NOT NULL DEFAULT 'Clerk',
         permissions TEXT DEFAULT '[]',
         is_active INTEGER DEFAULT 1,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       )
     `, (err) => {
       if (err) return reject(err);
-      db.run(`ALTER TABLE users ADD COLUMN company_id TEXT NOT NULL DEFAULT ''`, () => {
-        resolve();
-      });
       resolve();
     });
   });
 };
 
-const registerUser = async ({ username, email, password, role = 'Clerk', permissions = [], companyId }) => {
+const registerUser = async ({ username, email, password, role = 'Clerk', permissions = []}) => {
   const id = `usr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
   const permissionsJson = JSON.stringify(permissions);
 
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO users (id, username, email, password_hash, role, permissions, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, username, email || null, password_hash, role, permissionsJson, companyId || ''],
+      `INSERT INTO users (id, username, email, password_hash, role, permissions)
+       VALUES (?, ?, ?, ?, ?, ? )`,
+      [id, username, email || null, password_hash, role, permissionsJson],
       function (err) {
         if (err) {
           if (err.message.includes('UNIQUE')) {
@@ -54,7 +50,7 @@ const registerUser = async ({ username, email, password, role = 'Clerk', permiss
 const authenticateUser = (usernameOrEmail, password) => {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, username, email, password_hash, role, permissions, is_active, company_id FROM users WHERE username = ? OR email = ?`,
+      `SELECT id, username, email, password_hash, role, permissions, is_active FROM users WHERE username = ? OR email = ?`,
       [usernameOrEmail, usernameOrEmail],
       async (err, row) => {
         if (err) return reject(err);
@@ -69,8 +65,7 @@ const authenticateUser = (usernameOrEmail, password) => {
           username: row.username,
           email: row.email,
           role: row.role,
-          permissions: JSON.parse(row.permissions || '[]'),
-          company_id: row.company_id || ''
+          permissions: JSON.parse(row.permissions || '[]')
         });
       }
     );
@@ -80,7 +75,7 @@ const authenticateUser = (usernameOrEmail, password) => {
 const getUserById = (id) => {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, username, email, role, permissions, is_active, company_id, created_at FROM users WHERE id = ?`,
+      `SELECT id, username, email, role, permissions, is_active, created_at FROM users WHERE id = ?`,
       [id],
       (err, row) => {
         if (err) return reject(err);

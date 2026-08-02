@@ -21,7 +21,6 @@ class AuditEvent {
     this.userId = data.userId || 'anonymous';
     this.userRole = data.userRole || 'unknown';
     this.sessionId = data.sessionId || null;
-    this.companyId = data.companyId || null;
 
     // Action classification
     this.action = data.action;
@@ -99,7 +98,6 @@ class AuditEvent {
       user_id: this.userId,
       user_role: this.userRole,
       session_id: this.sessionId,
-      company_id: this.companyId,
       action: this.action,
       entity_type: this.entityType,
       entity_id: this.entityId,
@@ -143,7 +141,6 @@ class AuditService {
           user_id TEXT NOT NULL,
           user_role TEXT NOT NULL,
           session_id TEXT,
-          company_id TEXT,
           action TEXT NOT NULL,
           entity_type TEXT NOT NULL,
           entity_id TEXT NOT NULL,
@@ -167,7 +164,6 @@ class AuditService {
             getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id)`);
             getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id)`);
             getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_integrity ON audit_logs(integrity_hash)`);
-            getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_company ON audit_logs(company_id)`);
             resolve();
           }
         });
@@ -183,19 +179,11 @@ class AuditService {
       await new Promise((resolve, reject) => {
         getDb().run(
           `INSERT INTO audit_logs (
-            id, timestamp, correlation_id, user_id, user_role, session_id,
-            company_id, action, entity_type, entity_id, details, old_value,
+            id, timestamp, correlation_id, user_id, user_role, session_id, action, entity_type, entity_id, details, old_value,
             new_value, delta, integrity_hash, ip_address, user_agent,
             http_method, http_path, reason, approval_chain
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            dbObj.id, dbObj.timestamp, dbObj.correlation_id, dbObj.user_id,
-            dbObj.user_role, dbObj.session_id, dbObj.company_id, dbObj.action,
-            dbObj.entity_type, dbObj.entity_id, dbObj.details, dbObj.old_value,
-            dbObj.new_value, dbObj.delta, dbObj.integrity_hash, dbObj.ip_address,
-            dbObj.user_agent, dbObj.http_method, dbObj.http_path, dbObj.reason,
-            dbObj.approval_chain
-          ],
+          ) VALUES (?, ?, ?, ?, ?, ? , ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [dbObj.id, dbObj.timestamp, dbObj.correlation_id, dbObj.user_id, dbObj.user_role, dbObj.session_id, dbObj.action, dbObj.entity_type, dbObj.entity_id, dbObj.details, dbObj.old_value, dbObj.new_value, dbObj.delta, dbObj.integrity_hash, dbObj.ip_address, dbObj.user_agent, dbObj.http_method, dbObj.http_path, dbObj.reason, dbObj.approval_chain],
           (err) => {
             if (err) reject(err);
             else resolve(dbObj.id);
@@ -211,11 +199,10 @@ class AuditService {
   }
 
   // Convenience methods for common operations
-  async logCreate(userId, userRole, entityType, entityId, newValue, details = '', companyId = null, context = {}) {
+  async logCreate(userId, userRole, entityType, entityId, newValue, details = '', context = {}) {
     return this.logEvent({
       userId,
       userRole,
-      companyId,
       action: 'CREATE',
       entityType,
       entityId,
@@ -225,11 +212,10 @@ class AuditService {
     });
   }
 
-  async logUpdate(userId, userRole, entityType, entityId, oldValue, newValue, details = '', companyId = null, context = {}) {
+  async logUpdate(userId, userRole, entityType, entityId, oldValue, newValue, details = '', context = {}) {
     return this.logEvent({
       userId,
       userRole,
-      companyId,
       action: 'UPDATE',
       entityType,
       entityId,
@@ -240,11 +226,10 @@ class AuditService {
     });
   }
 
-  async logDelete(userId, userRole, entityType, entityId, oldValue, details = '', companyId = null, context = {}) {
+  async logDelete(userId, userRole, entityType, entityId, oldValue, details = '', context = {}) {
     return this.logEvent({
       userId,
       userRole,
-      companyId,
       action: 'DELETE',
       entityType,
       entityId,
@@ -254,11 +239,10 @@ class AuditService {
     });
   }
 
-  async logAuthEvent(userId, userRole, action, details = '', companyId = null, context = {}) {
+  async logAuthEvent(userId, userRole, action, details = '', context = {}) {
     return this.logEvent({
       userId,
       userRole,
-      companyId,
       action,
       entityType: 'AUTH',
       entityId: userId,
@@ -278,9 +262,7 @@ class AuditService {
       action,
       startDate,
       endDate,
-      correlationId,
-      companyId
-    } = options;
+      correlationId} = options;
 
     let query = 'SELECT * FROM audit_logs WHERE 1=1';
     const params = [];
@@ -296,10 +278,6 @@ class AuditService {
     if (userId) {
       query += ' AND user_id = ?';
       params.push(userId);
-    }
-    if (companyId) {
-      query += ' AND company_id = ?';
-      params.push(companyId);
     }
     if (action) {
       query += ' AND action = ?';
@@ -367,7 +345,7 @@ class AuditService {
   }
 
   // Statistics
-  async getStats(startDate = null, endDate = null, companyId = null) {
+  async getStats(startDate = null, endDate = null) {
     let query = `
       SELECT 
         COUNT(*) as total_events,
@@ -387,10 +365,6 @@ class AuditService {
     if (endDate) {
       query += ' AND timestamp <= ?';
       params.push(endDate);
-    }
-    if (companyId) {
-      query += ' AND company_id = ?';
-      params.push(companyId);
     }
 
     return new Promise((resolve, reject) => {

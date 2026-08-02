@@ -23,28 +23,23 @@ class DocumentService {
     this.layoutEngine = new LayoutEngine();
     this.consistencyService = new ConsistencyService();
     this.memoryRepository = new Map();
-    this._memKey = (id, companyId) => `${companyId || ''}:${id}`;
+    this._memKey = (id) => `${id}`;
   }
 
   /**
    * Resolves a document from either the persistent store or the in-memory repository.
    * Supports both internal UUIDs and display IDs with context-aware rules.
    */
-  async resolveDocument(id, companyId, options = {}) {
+  async resolveDocument(id, options = {}) {
     const defaultOptions = { includeInMemory: true, allowLogicalFallback: true, purpose: 'general' };
     const mergedOptions = { ...defaultOptions, ...options };
     const identifierType = detectIdentifierType(id);
-    const cid = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
     console.log(`[DocumentService] Resolving document ${id}...`, { identifierType, options: mergedOptions });
 
-    const memKey = this._memKey(id, cid);
+    const memKey = this._memKey(id);
 
     if (mergedOptions.includeInMemory && this.memoryRepository.has(memKey)) {
       const doc = this.memoryRepository.get(memKey);
-
-      if (doc.company_id && doc.company_id !== cid) {
-        throw new ResolutionError(`Access denied - document belongs to different company`, id, identifierType, `[ID: ${id}] [Stage: Memory_Resolution] Company mismatch`, "ACCESS_DENIED");
-      }
 
       if (doc.status === 'voided') {
         const diag = `[ID: ${id}] [Stage: Resolution] [Lifecycle: voided] Cannot resolve a voided document.`;
@@ -60,15 +55,12 @@ class DocumentService {
       let query;
       let params;
 
-      const companyFilter = cid ? " AND company_id = ?" : " AND (company_id = ? OR company_id IS NULL OR company_id = '')";
-      const queryCid = cid || '';
-
       if (identifierType === 'internalId') {
-        query = "SELECT * FROM documents WHERE id = ?" + companyFilter;
-        params = [id, queryCid];
+        query = "SELECT * FROM documents WHERE id = ?";
+        params = [id];
       } else if (identifierType === 'logicalNumber' && mergedOptions.allowLogicalFallback) {
-        query = "SELECT * FROM documents WHERE logical_number = ?" + companyFilter;
-        params = [id, queryCid];
+        query = "SELECT * FROM documents WHERE logical_number = ?";
+        params = [id];
       } else {
         console.warn(`[DocumentService] Invalid identifier format or fallback disabled: ${id}`);
         return resolve(null);
@@ -127,25 +119,25 @@ class DocumentService {
    * Register or Upsert a document.
    * Ensures the document exists in the repository before further operations (like preview).
    */
-  async registerDocument(type, payload, userId, companyId, existingId = null) {
+  async registerDocument(type, payload, userId, existingId = null) {
     if (existingId) {
       const identifierType = detectIdentifierType(existingId);
       
       // If it's a logical number, we need to find the internal ID first
       let internalId = existingId;
       if (identifierType === 'logicalNumber') {
-        const doc = await this.resolveDocument(existingId, companyId, { allowLogicalFallback: true, purpose: 'general' });
+        const doc = await this.resolveDocument(existingId, { allowLogicalFallback: true, purpose: 'general' });
         if (doc) {
           internalId = doc.id;
         } else {
           // If logical number doesn't exist, treat as new creation with that type
-          return this.createDocument(type, payload, userId, companyId);
+          return this.createDocument(type, payload, userId);
         }
       }
 
       try {
-        await this.updateDocument(internalId, payload, userId, companyId);
-        const doc = await this.resolveDocument(internalId, companyId);
+        await this.updateDocument(internalId, payload, userId);
+        const doc = await this.resolveDocument(internalId);
         return { 
           id: doc.id, 
           logicalNumber: doc.logical_number, 
@@ -155,12 +147,12 @@ class DocumentService {
         };
       } catch (err) {
         if (err.message === 'Document not found') {
-          return this.createDocument(type, payload, userId, companyId);
+          return this.createDocument(type, payload, userId);
         }
         throw err;
       }
     } else {
-      const result = await this.createDocument(type, payload, userId, companyId);
+      const result = await this.createDocument(type, payload, userId);
       return { ...result, isNew: true };
     }
   }
@@ -168,19 +160,18 @@ class DocumentService {
   /**
    * Create a new document in draft status.
    */
-  async createDocument(type, payload, userId, companyId) {
+  async createDocument(type, payload, userId) {
     // Generate a proper UUID for internal tracking, alongside the display ID
     const uuid = require('crypto').randomUUID();
     const displayId = `${type.toUpperCase()}-${Date.now()}`;
-    const cid = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
     
     const query = `
-      INSERT INTO documents (id, logical_number, type, status, payload, created_by${cid ? ', company_id' : ''})
-      VALUES (?, ?, ?, 'draft', ?, ?${cid ? ', ?' : ''})
+      INSERT INTO documents (id, logical_number, type, status, payload, created_by)
+      VALUES (?, ?, ?, 'draft', ?, ?)
     `;
     
     return new Promise((resolve, reject) => {
-      const params = cid ? [uuid, displayId, type, JSON.stringify(payload), userId, cid] : [uuid, displayId, type, JSON.stringify(payload), userId];
+      const params = [uuid, displayId, type, JSON.stringify(payload), userId];
       getDb().run(query, params, function(err) {
         if (err) return reject(err);
         resolve({ id: uuid, logicalNumber: displayId, type, status: 'draft' });
@@ -191,11 +182,10 @@ class DocumentService {
   /**
    * Update an existing draft document.
    */
-  async updateDocument(id, payload, userId, companyId) {
-    const cid = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  async updateDocument(id, payload, userId) {
     return new Promise((resolve, reject) => {
       // 1. Check if document exists and is in draft status
-      getDb().get("SELECT status FROM documents WHERE id = ?" + (cid ? " AND company_id = ?" : ""), cid ? [id, cid] : [id], (err, doc) => {
+      getDb().get("SELECT status FROM documents WHERE id = ?", [id], (err, doc) => {
         if (err) return reject(err);
         if (!doc) return reject(new Error('Document not found'));
         if (doc.status !== 'draft') {
@@ -206,8 +196,8 @@ class DocumentService {
         const query = `
           UPDATE documents 
           SET payload = ?, updated_at = CURRENT_TIMESTAMP 
-          WHERE id = ?` + (cid ? " AND company_id = ?" : "");
-        getDb().run(query, cid ? [JSON.stringify(payload), id, cid] : [JSON.stringify(payload), id], (err) => {
+          WHERE id = ?`;
+        getDb().run(query, [JSON.stringify(payload), id], (err) => {
           if (err) return reject(err);
           resolve({ id, success: true });
         });
@@ -218,10 +208,9 @@ class DocumentService {
   /**
    * Finalize a document: Generate layout, lock it, and transition to 'finalized'.
    */
-  async finalizeDocument(id, layoutBlueprint, userId, companyId) {
-    const cid = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  async finalizeDocument(id, layoutBlueprint, userId) {
     return new Promise((resolve, reject) => {
-      getDb().get("SELECT * FROM documents WHERE id = ?" + (cid ? " AND company_id = ?" : ""), cid ? [id, cid] : [id], async (err, doc) => {
+      getDb().get("SELECT * FROM documents WHERE id = ?", [id], async (err, doc) => {
         if (err) return reject(err);
         if (!doc) return reject(new Error('Document not found'));
         if (doc.status !== 'draft') {
@@ -259,8 +248,8 @@ class DocumentService {
                 render_model = ?, 
                 fingerprint = ?, 
                 finalized_at = CURRENT_TIMESTAMP 
-            WHERE id = ?` + (cid ? " AND company_id = ?" : "");
-          getDb().run(query, cid ? [JSON.stringify(renderModel), validation.fingerprint, id, cid] : [JSON.stringify(renderModel), validation.fingerprint, id], (err) => {
+            WHERE id = ?`;
+          getDb().run(query, [JSON.stringify(renderModel), validation.fingerprint, id], (err) => {
             if (err) return reject(err);
             resolve({ id, status: 'finalized', fingerprint: validation.fingerprint });
           });
@@ -274,11 +263,11 @@ class DocumentService {
   /**
    * Batch Process: Finalize multiple documents at once.
    */
-  async batchFinalize(ids, blueprint, userId, companyId) {
+  async batchFinalize(ids, blueprint, userId) {
     const results = [];
     for (const id of ids) {
       try {
-        const result = await this.finalizeDocument(id, blueprint, userId, companyId);
+        const result = await this.finalizeDocument(id, blueprint, userId);
         results.push({ id, success: true, fingerprint: result.fingerprint });
       } catch (err) {
         results.push({ id, success: false, error: err.message });
@@ -290,11 +279,11 @@ class DocumentService {
   /**
    * Batch Export: Exports multiple documents.
    */
-  async batchExport(ids, companyId = '') {
+  async batchExport(ids) {
     const results = [];
     for (const id of ids) {
       try {
-        const exportResult = await this.exportPdf(id, companyId);
+        const exportResult = await this.exportPdf(id);
         results.push({
           id,
           success: true,
@@ -314,10 +303,9 @@ class DocumentService {
   /**
    * Verify the digital signature of a document.
    */
-  async verifySignature(id, companyId) {
-    const cid = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  async verifySignature(id) {
     return new Promise((resolve, reject) => {
-      getDb().get("SELECT render_model, fingerprint FROM documents WHERE id = ?" + (cid ? " AND company_id = ?" : ""), cid ? [id, cid] : [id], (err, doc) => {
+      getDb().get("SELECT render_model, fingerprint FROM documents WHERE id = ?", [id], (err, doc) => {
         if (err) return reject(err);
         if (!doc) return reject(new Error('Document not found'));
         if (!doc.fingerprint) return reject(new Error('Document is not finalized/signed'));
@@ -341,10 +329,9 @@ class DocumentService {
       });
     });
   }
-  async voidDocument(id, userId, companyId) {
-    const cid = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  async voidDocument(id, userId) {
     return new Promise((resolve, reject) => {
-      getDb().run("UPDATE documents SET status = 'voided' WHERE id = ?" + (cid ? " AND company_id = ?" : ""), cid ? [id, cid] : [id], (err) => {
+      getDb().run("UPDATE documents SET status = 'voided' WHERE id = ?", [id], (err) => {
         if (err) return reject(err);
         resolve({ id, status: 'voided' });
       });
@@ -354,11 +341,11 @@ class DocumentService {
   /**
    * Get the render model for preview with a guarded flow.
    */
-  async getPreview(id, options = { purpose: 'preview', templateId: null }, companyId) {
+  async getPreview(id, options = { purpose: 'preview', templateId: null }) {
     const identifierType = detectIdentifierType(id);
     try {
       // 0. Resolve the document using the shared resolution logic with purpose
-      const doc = await this.resolveDocument(id, companyId, { 
+      const doc = await this.resolveDocument(id, { 
         includeInMemory: true, 
         allowLogicalFallback: true,
         purpose: options.purpose 
@@ -522,11 +509,10 @@ class DocumentService {
   /**
    * Export PDF: Generates a PDF from the document's render model using Puppeteer.
    */
-  async exportPdf(id, companyId = '') {
-    const cid = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  async exportPdf(id) {
     
     // Resolve the document
-    const doc = await this.resolveDocument(id, cid);
+    const doc = await this.resolveDocument(id);
     if (!doc) {
       throw new Error('Document not found');
     }
@@ -642,14 +628,13 @@ class DocumentService {
   /**
    * Log an audit action.
    */
-  async logAudit(userId, action, entityType, entityId, details, companyId) {
-    const cid = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  async logAudit(userId, action, entityType, entityId, details) {
     const query = `
-      INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details${cid ? ', company_id' : ''})
-      VALUES (?, ?, ?, ?, ?${cid ? ', ?' : ''})
+      INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
+      VALUES (?, ?, ?, ?, ?)
     `;
     return new Promise((resolve, reject) => {
-      const params = cid ? [userId, action, entityType, entityId, JSON.stringify(details), cid] : [userId, action, entityType, entityId, JSON.stringify(details)];
+      const params = [userId, action, entityType, entityId, JSON.stringify(details)];
       getDb().run(query, params, function(err) {
         if (err) {
           console.error('[DocumentService] Audit log insert failed:', err);

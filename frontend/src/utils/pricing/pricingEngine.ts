@@ -32,16 +32,6 @@ const validatePricingInput = (input: any): void => {
   }
 };
 
-const getCompanyConfig = (): any | null => {
-  if (typeof window === 'undefined' || !window.localStorage) return null;
-  try {
-    const raw = localStorage.getItem('nexus_company_config');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
 const resolveMargin = async (
   itemId?: string | null,
   categoryId?: string | null
@@ -150,7 +140,7 @@ export async function calculateSellingPrice(
   let volumeDiscountPct = 0;
   if ((context as string) !== 'EXAMINATION') {
     const pageCount = Number(pages) || 0;
-    const discountTiers = getVolumeDiscountTiers(getCompanyConfig());
+    const discountTiers = getVolumeDiscountTiers(undefined);
     volumeDiscountPct = resolveVolumeMarginValue(pageCount, discountTiers);
   }
 

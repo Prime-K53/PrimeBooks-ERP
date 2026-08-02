@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { useToast } from './components/Toast';
 import ErrorBanner from './components/ErrorBanner';
+import { portalApi } from '../../services/portalApiClient';
 
 const CustomerForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -17,24 +18,14 @@ const CustomerForgotPassword: React.FC = () => {
     setSubmitting(true);
     setError(null);
     try {
-      const response = await fetch(`/api/portal/auth/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      if (response.ok) {
-        setSent(true);
-        addToast('success', 'Password reset link sent to your email.');
-      } else {
-        const data = await response.json().catch(() => ({}));
-        const msg = data.error || 'Failed to send reset email.';
-        setError(msg);
-        addToast('error', msg);
-      }
-} catch {
-       setError('Network error. Please try again.');
-       addToast('error', 'Network error. Please try again.');
-     } finally {
+      await portalApi.post('/auth/forgot-password', { email: email.trim() });
+      setSent(true);
+      addToast('success', 'Password reset link sent to your email.');
+    } catch (err: any) {
+      const msg = err?.body?.error || 'Failed to send reset email.';
+      setError(msg);
+      addToast('error', msg);
+    } finally {
       setSubmitting(false);
     }
   };

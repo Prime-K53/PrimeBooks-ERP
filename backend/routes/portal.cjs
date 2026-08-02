@@ -1,10 +1,59 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { verifyPortalToken } = require('../middleware/portalAuth.cjs');
 const portalService = require('../services/portalService.cjs');
 const portalAuthService = require('../services/portalAuthService.cjs');
 const portalLifecycleService = require('../services/portalLifecycleService.cjs');
 const { sensitiveLimiter, apiLimiter } = require('../middleware/rateLimiter.cjs');
+
+// Ensure ticket attachments upload directory exists
+const TICKET_ATTACHMENTS_DIR = path.join(__dirname, '..', 'storage', 'ticket-attachments');
+fs.mkdirSync(TICKET_ATTACHMENTS_DIR, { recursive: true });
+
+// Multer storage configuration for ticket attachments
+const ticketAttachmentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, TICKET_ATTACHMENTS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const uniqueName = `${crypto.randomUUID()}${ext}`;
+    cb(null, uniqueName);
+  },
+});
+
+const uploadTicketAttachment = multer({
+  storage: ticketAttachmentStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf', 'text/plain', 'text/csv',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip', 'application/x-zip-compressed',
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('File type not allowed'), false);
+    }
+  },
+});
+
+let stripe = null;
+try {
+  const Stripe = require('stripe');
+  if (process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
+  }
+} catch { /* stripe not installed or no key — payment will use mock mode */ }
 
 const GLOBAL_PORTAL_LIMIT = apiLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 200 });
 const SENSITIVE_PORTAL_LIMIT = sensitiveLimiter({ windowMs: 60 * 60 * 1000, maxRequests: 30 });
@@ -25,8 +74,8 @@ function requestContext(req) {
 // ─── Realtime events (SSE) — no manual refresh needed ────────────────────────
 router.post('/events-ticket', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
   try {
-    const { id, customer_id, company_id, email } = req.portalUser;
-    const ticket = portalAuthService.generateEventTicket({ id, customer_id, company_id, email }, 'portal');
+    const { id, customer_id, email } = req.portalUser;
+    const ticket = portalAuthService.generateEventTicket({ id, customer_id, email }, 'portal');
     res.json({ ticket, expiresIn: 300 });
   } catch (err) {
     console.error('[Portal] events-ticket error:', err);
@@ -38,14 +87,24 @@ router.get('/events', (req, res) => {
   res.on('close', unsubscribe);
 });
 
+router.get('/catalog', async (req, res) => {
+  try {
+    const data = await portalService.getCatalog();
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Catalog error:', err);
+    res.status(500).json({ error: 'Failed to load catalog' });
+  }
+});
+
 // ─── Quotation Requests (customer-submitted, NOT official documents) ────────
 router.get('/requests', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { page, pageSize, status, search } = req.query;
     const hasPagination = page || pageSize;
     if (hasPagination) {
-      const data = await portalService.getRequestsPaginated(customer_id, company_id, {
+      const data = await portalService.getRequestsPaginated(customer_id, {
         page: page ? parseInt(page, 10) : 1,
         pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
         status: status || undefined,
@@ -53,7 +112,7 @@ router.get('/requests', async (req, res) => {
       });
       return res.json(data);
     }
-    const data = await portalLifecycleService.getRequests({ customerId: customer_id, companyId: company_id });
+    const data = await portalLifecycleService.getRequests({ customerId: customer_id });
     res.json(data);
   } catch (err) {
     console.error('[Portal] Requests error:', err);
@@ -63,7 +122,7 @@ router.get('/requests', async (req, res) => {
 
 router.post('/requests', async (req, res) => {
   try {
-    const { id, customer_id, company_id, email, full_name } = req.portalUser;
+    const { id, customer_id, email, full_name } = req.portalUser;
     const { requestType, items, notes, requestedDeliveryDate, attachments } = req.body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'At least one line item is required' });
@@ -72,7 +131,6 @@ router.post('/requests', async (req, res) => {
       portalUserId: id,
       customerId: customer_id,
       customerName: full_name || email || 'Customer',
-      companyId: company_id,
       requestType,
       items,
       notes,
@@ -89,8 +147,8 @@ router.post('/requests', async (req, res) => {
 
 router.get('/requests/:id', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalLifecycleService.getRequestById(req.params.id, { customerId: customer_id, companyId: company_id });
+    const { customer_id } = req.portalUser;
+    const data = await portalLifecycleService.getRequestById(req.params.id, { customerId: customer_id });
     if (!data) return res.status(404).json({ error: 'Request not found' });
     res.json(data);
   } catch (err) {
@@ -101,11 +159,10 @@ router.get('/requests/:id', async (req, res) => {
 
 router.post('/requests/:id/cancel', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id} = req.portalUser;
     const result = await portalLifecycleService.cancelRequest(req.params.id, {
       portalUserId: id,
       customerId: customer_id,
-      companyId: company_id,
       context: requestContext(req),
     });
     res.json(result);
@@ -118,8 +175,8 @@ router.post('/requests/:id/cancel', async (req, res) => {
 // ─── Quotations (official documents — read-only for customers) ──────────────
 router.get('/quotations/:id', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id, companyId: company_id });
+    const { customer_id } = req.portalUser;
+    const data = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id });
     if (!data) return res.status(404).json({ error: 'Quotation not found' });
     res.json(data);
   } catch (err) {
@@ -130,11 +187,10 @@ router.get('/quotations/:id', async (req, res) => {
 
 router.post('/quotations/:id/accept', async (req, res) => {
   try {
-    const { id, customer_id, company_id, email, full_name } = req.portalUser;
+    const { id, customer_id, email, full_name } = req.portalUser;
     const result = await portalLifecycleService.acceptQuotation(req.params.id, {
       portalUserId: id,
       customerId: customer_id,
-      companyId: company_id,
       signerName: full_name || email || null,
       signerEmail: email || null,
       context: requestContext(req),
@@ -148,12 +204,11 @@ router.post('/quotations/:id/accept', async (req, res) => {
 
 router.post('/quotations/:id/reject', async (req, res) => {
   try {
-    const { id, customer_id, company_id, email, full_name } = req.portalUser;
+    const { id, customer_id, email, full_name } = req.portalUser;
     const { reason } = req.body || {};
     const result = await portalLifecycleService.rejectQuotation(req.params.id, {
       portalUserId: id,
       customerId: customer_id,
-      companyId: company_id,
       reason,
       signerName: full_name || email || null,
       signerEmail: email || null,
@@ -168,12 +223,11 @@ router.post('/quotations/:id/reject', async (req, res) => {
 
 router.post('/quotations/:id/revision', async (req, res) => {
   try {
-    const { id, customer_id, company_id, email, full_name } = req.portalUser;
+    const { id, customer_id, email, full_name } = req.portalUser;
     const { comments } = req.body || {};
     const result = await portalLifecycleService.requestRevision(req.params.id, {
       portalUserId: id,
       customerId: customer_id,
-      companyId: company_id,
       comments,
       signerName: full_name || email || null,
       signerEmail: email || null,
@@ -189,10 +243,10 @@ router.post('/quotations/:id/revision', async (req, res) => {
 // ─── Quotation version history (Phase 3) ─────────────────────────────────────
 router.get('/quotations/:id/versions', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id, companyId: company_id });
+    const { customer_id } = req.portalUser;
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id });
     if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
-    const data = await portalLifecycleService.listDocumentVersions('quotation', req.params.id, { companyId: company_id });
+    const data = await portalLifecycleService.listDocumentVersions('quotation', req.params.id, { });
     res.json(data);
   } catch (err) {
     console.error('[Portal] Quotation versions error:', err);
@@ -202,10 +256,10 @@ router.get('/quotations/:id/versions', async (req, res) => {
 
 router.get('/quotations/:id/versions/:version', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id, companyId: company_id });
+    const { customer_id } = req.portalUser;
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id });
     if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
-    const data = await portalLifecycleService.getDocumentVersion('quotation', req.params.id, Number(req.params.version), { companyId: company_id });
+    const data = await portalLifecycleService.getDocumentVersion('quotation', req.params.id, Number(req.params.version), { });
     if (!data) return res.status(404).json({ error: 'Version not found' });
     res.json(data);
   } catch (err) {
@@ -217,10 +271,10 @@ router.get('/quotations/:id/versions/:version', async (req, res) => {
 // ─── Quotation decision signatures (Phase 3) ─────────────────────────────────
 router.get('/quotations/:id/signatures', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id, companyId: company_id });
+    const { customer_id } = req.portalUser;
+    const quotation = await portalLifecycleService.getQuotationById(req.params.id, { customerId: customer_id });
     if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
-    const data = await portalLifecycleService.getDocumentSignatures('quotation', req.params.id, { companyId: company_id, customerId: customer_id });
+    const data = await portalLifecycleService.getDocumentSignatures('quotation', req.params.id, { customerId: customer_id });
     res.json(data);
   } catch (err) {
     console.error('[Portal] Quotation signatures error:', err);
@@ -231,13 +285,13 @@ router.get('/quotations/:id/signatures', async (req, res) => {
 // ─── Document discussions (Phase 4) ──────────────────────────────────────────
 router.get('/comments', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { docType, docId } = req.query;
     if (!docType || !docId) {
       return res.status(400).json({ error: 'docType and docId are required' });
     }
     const data = await portalLifecycleService.getComments({
-      docType, docId, companyId: company_id, customerId: customer_id, view: 'customer',
+      docType, docId, customerId: customer_id, view: 'customer',
     });
     res.json(data);
   } catch (err) {
@@ -248,13 +302,13 @@ router.get('/comments', async (req, res) => {
 
 router.post('/comments', async (req, res) => {
   try {
-    const { id, customer_id, company_id, email, full_name } = req.portalUser;
+    const { id, customer_id, email, full_name } = req.portalUser;
     const { docType, docId, body } = req.body || {};
     if (!docType || !docId || !body) {
       return res.status(400).json({ error: 'docType, docId and body are required' });
     }
     const data = await portalLifecycleService.addComment({
-      docType, docId, companyId: company_id, customerId: customer_id,
+      docType, docId, customerId: customer_id,
       actor: { type: 'customer', id, name: full_name || email || 'Customer' },
       body,
       context: requestContext(req),
@@ -269,7 +323,7 @@ router.post('/comments', async (req, res) => {
 // ─── Downloads (gated + audited) ─────────────────────────────────────────────
 router.post('/downloads', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id} = req.portalUser;
     const { docType, docId } = req.body || {};
     if (!docType || !docId) {
       return res.status(400).json({ error: 'docType and docId are required' });
@@ -279,7 +333,6 @@ router.post('/downloads', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
       docId,
       portalUserId: id,
       customerId: customer_id,
-      companyId: company_id,
       context: requestContext(req),
     });
     res.json(result);
@@ -292,7 +345,7 @@ router.post('/downloads', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
 // ─── Timeline (merged chronological history per document) ────────────────────
 router.get('/timeline', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { docType, docId } = req.query;
     if (!docType || !docId) {
       return res.status(400).json({ error: 'docType and docId are required' });
@@ -301,7 +354,6 @@ router.get('/timeline', async (req, res) => {
       docType,
       docId,
       customerId: customer_id,
-      companyId: company_id,
     });
     res.json(data);
   } catch (err) {
@@ -313,8 +365,8 @@ router.get('/timeline', async (req, res) => {
 // ─── Dashboard ────────────────────────────────────────────────
 router.get('/dashboard', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
-    const data = await portalService.getDashboard(id, customer_id, company_id);
+    const { id, customer_id} = req.portalUser;
+    const data = await portalService.getDashboard(id, customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Dashboard error:', err);
@@ -325,11 +377,11 @@ router.get('/dashboard', async (req, res) => {
 // ─── Orders ───────────────────────────────────────────────────
 router.get('/orders', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { page, pageSize, status, search, dateFrom, dateTo } = req.query;
     const hasPagination = page || pageSize;
     if (hasPagination) {
-      const data = await portalService.getOrdersPaginated(customer_id, company_id, {
+      const data = await portalService.getOrdersPaginated(customer_id, {
         page: page ? parseInt(page, 10) : 1,
         pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
         status: status || undefined,
@@ -339,7 +391,7 @@ router.get('/orders', async (req, res) => {
       });
       return res.json(data);
     }
-    const data = await portalService.getOrders(customer_id, company_id);
+    const data = await portalService.getOrders(customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Orders error:', err);
@@ -349,8 +401,8 @@ router.get('/orders', async (req, res) => {
 
 router.get('/orders/:id', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalService.getOrderById(req.params.id, customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const data = await portalService.getOrderById(req.params.id, customer_id );
     if (!data) return res.status(404).json({ error: 'Order not found' });
     res.json(data);
   } catch (err) {
@@ -363,11 +415,10 @@ router.get('/orders/:id', async (req, res) => {
 // (ODR-YYYY-######) so the order goes through sales review again.
 router.post('/orders/:id/reorder', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id} = req.portalUser;
     const result = await portalLifecycleService.reorderFromOrder(req.params.id, {
       portalUserId: id,
       customerId: customer_id,
-      companyId: company_id,
       context: requestContext(req),
     });
     res.status(201).json(result);
@@ -380,7 +431,7 @@ router.post('/orders/:id/reorder', async (req, res) => {
 // ─── Document chain (request → quotation → sales order) ────────────────────
 router.get('/document-chain', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { docType, docId } = req.query;
     if (!docType || !docId) {
       return res.status(400).json({ error: 'docType and docId are required' });
@@ -389,7 +440,6 @@ router.get('/document-chain', async (req, res) => {
       docType,
       docId,
       customerId: customer_id,
-      companyId: company_id,
     });
     res.json(data);
   } catch (err) {
@@ -401,11 +451,11 @@ router.get('/document-chain', async (req, res) => {
 // ─── Quotations ───────────────────────────────────────────────
 router.get('/quotations', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { page, pageSize, status, search } = req.query;
     const hasPagination = page || pageSize;
     if (hasPagination) {
-      const data = await portalService.getQuotationsPaginated(customer_id, company_id, {
+      const data = await portalService.getQuotationsPaginated(customer_id, {
         page: page ? parseInt(page, 10) : 1,
         pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
         status: status || undefined,
@@ -413,7 +463,7 @@ router.get('/quotations', async (req, res) => {
       });
       return res.json(data);
     }
-    const data = await portalService.getQuotations(customer_id, company_id);
+    const data = await portalService.getQuotations(customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Quotations error:', err);
@@ -424,11 +474,11 @@ router.get('/quotations', async (req, res) => {
 // ─── Invoices ─────────────────────────────────────────────────
 router.get('/invoices', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { page, pageSize, status, search, dateFrom, dateTo } = req.query;
     const hasPagination = page || pageSize;
     if (hasPagination) {
-      const data = await portalService.getInvoicesPaginated(customer_id, company_id, {
+      const data = await portalService.getInvoicesPaginated(customer_id, {
         page: page ? parseInt(page, 10) : 1,
         pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
         status: status || undefined,
@@ -438,7 +488,7 @@ router.get('/invoices', async (req, res) => {
       });
       return res.json(data);
     }
-    const data = await portalService.getInvoices(customer_id, company_id);
+    const data = await portalService.getInvoices(customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Invoices error:', err);
@@ -448,8 +498,8 @@ router.get('/invoices', async (req, res) => {
 
 router.get('/invoices/:id', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalService.getInvoiceById(req.params.id, customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const data = await portalService.getInvoiceById(req.params.id, customer_id );
     if (!data) return res.status(404).json({ error: 'Invoice not found' });
     res.json(data);
   } catch (err) {
@@ -461,11 +511,11 @@ router.get('/invoices/:id', async (req, res) => {
 // ─── Payments ─────────────────────────────────────────────────
 router.get('/payments', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { page, pageSize, search, dateFrom, dateTo } = req.query;
     const hasPagination = page || pageSize;
     if (hasPagination) {
-      const data = await portalService.getPaymentsPaginated(customer_id, company_id, {
+      const data = await portalService.getPaymentsPaginated(customer_id, {
         page: page ? parseInt(page, 10) : 1,
         pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20)),
         search: search || undefined,
@@ -474,7 +524,7 @@ router.get('/payments', async (req, res) => {
       });
       return res.json(data);
     }
-    const data = await portalService.getPayments(customer_id, company_id);
+    const data = await portalService.getPayments(customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Payments error:', err);
@@ -484,8 +534,8 @@ router.get('/payments', async (req, res) => {
 
 router.get('/payments/:id', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalService.getPaymentById(req.params.id, customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const data = await portalService.getPaymentById(req.params.id, customer_id );
     if (!data) return res.status(404).json({ error: 'Payment not found' });
     res.json(data);
   } catch (err) {
@@ -497,9 +547,9 @@ router.get('/payments/:id', async (req, res) => {
 // ─── Statements ───────────────────────────────────────────────
 router.get('/statements', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { startDate, endDate } = req.query;
-    const data = await portalService.getStatements(customer_id, company_id, startDate, endDate);
+    const data = await portalService.getStatements(customer_id, startDate, endDate);
     res.json(data);
   } catch (err) {
     console.error('[Portal] Statements error:', err);
@@ -510,8 +560,8 @@ router.get('/statements', async (req, res) => {
 // ─── Loyalty ──────────────────────────────────────────────────
 router.get('/loyalty', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalService.getLoyalty(customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const data = await portalService.getLoyalty(customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Loyalty error:', err);
@@ -522,8 +572,8 @@ router.get('/loyalty', async (req, res) => {
 // ─── Wallet ───────────────────────────────────────────────────
 router.get('/wallet', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalService.getWallet(customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const data = await portalService.getWallet(customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Wallet error:', err);
@@ -534,8 +584,8 @@ router.get('/wallet', async (req, res) => {
 // ─── Profile ──────────────────────────────────────────────────
 router.get('/profile', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalService.getProfile(customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const data = await portalService.getProfile(customer_id );
     if (!data) return res.status(404).json({ error: 'Profile not found' });
     res.json(data);
   } catch (err) {
@@ -547,8 +597,8 @@ router.get('/profile', async (req, res) => {
 router.put('/profile', async (req, res) => {
   try {
     const { id } = req.portalUser;
-    const { full_name, phone, email } = req.body;
-    await portalAuthService.updatePortalUser(id, { full_name, phone, email });
+    const { full_name, phone, email, address, city, state, zip, country } = req.body;
+    await portalAuthService.updatePortalUser(id, { full_name, phone, email, address, city, state, zip, country });
     res.json({ message: 'Profile updated successfully' });
   } catch (err) {
     console.error('[Portal] Profile update error:', err);
@@ -580,8 +630,8 @@ router.put('/profile/password', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
 // ─── Documents ────────────────────────────────────────────────
 router.get('/documents', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalService.getDocuments(customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const data = await portalService.getDocuments(customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Documents error:', err);
@@ -592,8 +642,8 @@ router.get('/documents', async (req, res) => {
 // ─── Notifications ────────────────────────────────────────────
 router.get('/notifications', async (req, res) => {
   try {
-    const { id, company_id } = req.portalUser;
-    const data = await portalService.getNotifications(id, company_id);
+    const { id } = req.portalUser;
+    const data = await portalService.getNotifications(id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Notifications error:', err);
@@ -614,8 +664,8 @@ router.put('/notifications/:id/read', async (req, res) => {
 
 router.get('/notifications/unread-count', async (req, res) => {
   try {
-    const { id, company_id } = req.portalUser;
-    const count = await portalService.getUnreadNotificationCount(id, company_id);
+    const { id } = req.portalUser;
+    const count = await portalService.getUnreadNotificationCount(id );
     res.json({ count });
   } catch (err) {
     console.error('[Portal] Unread count error:', err);
@@ -625,8 +675,8 @@ router.get('/notifications/unread-count', async (req, res) => {
 
 router.put('/notifications/read-all', async (req, res) => {
   try {
-    const { id, company_id } = req.portalUser;
-    await portalService.markAllNotificationsRead(id, company_id);
+    const { id } = req.portalUser;
+    await portalService.markAllNotificationsRead(id );
     res.json({ success: true });
   } catch (err) {
     console.error('[Portal] Mark all read error:', err);
@@ -637,9 +687,9 @@ router.put('/notifications/read-all', async (req, res) => {
 // ─── Referrals ────────────────────────────────────────────────
 router.get('/referrals', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id} = req.portalUser;
     const { page, pageSize, status, search, sort } = req.query;
-    const data = await portalService.getReferrals(id, customer_id, company_id, {
+    const data = await portalService.getReferrals(id, customer_id, {
       page: page ? parseInt(page, 10) : 1,
       pageSize: pageSize ? parseInt(pageSize, 10) : 20,
       status: status || undefined,
@@ -655,8 +705,8 @@ router.get('/referrals', async (req, res) => {
 
 router.get('/referrals/:id', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
-    const data = await portalService.getReferralById(req.params.id, id, customer_id, company_id);
+    const { id, customer_id} = req.portalUser;
+    const data = await portalService.getReferralById(req.params.id, id, customer_id );
     if (!data) return res.status(404).json({ error: 'Referral not found' });
     res.json(data);
   } catch (err) {
@@ -667,8 +717,7 @@ router.get('/referrals/:id', async (req, res) => {
 
 router.get('/referrals/:id/timeline', async (req, res) => {
   try {
-    const { company_id } = req.portalUser;
-    const data = await portalService.getReferralTimeline(req.params.id, company_id);
+    const data = await portalService.getReferralTimeline(req.params.id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Referral timeline error:', err);
@@ -678,9 +727,9 @@ router.get('/referrals/:id/timeline', async (req, res) => {
 
 router.get('/referrals/rewards', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id} = req.portalUser;
     const { page, pageSize, status } = req.query;
-    const data = await portalService.getReferralRewards(id, customer_id, company_id, {
+    const data = await portalService.getReferralRewards(id, customer_id, {
       page: page ? parseInt(page, 10) : 1,
       pageSize: pageSize ? parseInt(pageSize, 10) : 20,
       status: status || undefined,
@@ -694,8 +743,7 @@ router.get('/referrals/rewards', async (req, res) => {
 
 router.get('/referrals/settings', async (req, res) => {
   try {
-    const { company_id } = req.portalUser;
-    const data = await portalService.getReferralSettings(company_id);
+    const data = await portalService.getReferralSettings();
     res.json(data);
   } catch (err) {
     console.error('[Portal] Referral settings error:', err);
@@ -705,8 +753,8 @@ router.get('/referrals/settings', async (req, res) => {
 
 router.get('/referrals/stats', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const data = await portalService.getReferralFunnelStats(customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const data = await portalService.getReferralFunnelStats(customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Referral stats error:', err);
@@ -716,12 +764,12 @@ router.get('/referrals/stats', async (req, res) => {
 
 router.post('/referrals', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id} = req.portalUser;
     const { referredCustomerId, notes } = req.body || {};
     if (!referredCustomerId) {
       return res.status(400).json({ error: 'Referred customer is required' });
     }
-    const data = await portalService.createReferral(id, customer_id, company_id, {
+    const data = await portalService.createReferral(id, customer_id, {
       referredCustomerId,
       notes,
     });
@@ -734,12 +782,12 @@ router.post('/referrals', async (req, res) => {
 
 router.get('/referrals/customers/search', async (req, res) => {
   try {
-    const { company_id, customer_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { q } = req.query;
     if (!q || String(q).trim().length < 2) {
       return res.json([]);
     }
-    const data = await portalService.searchCustomersForReferral(company_id, String(q), customer_id);
+    const data = await portalService.searchCustomersForReferral( String(q), customer_id);
     res.json(data);
   } catch (err) {
     console.error('[Portal] Customer search error:', err);
@@ -750,8 +798,8 @@ router.get('/referrals/customers/search', async (req, res) => {
 // ─── Support Tickets ──────────────────────────────────────────
 router.get('/support/tickets', async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
-    const data = await portalService.getSupportTickets(id, customer_id, company_id);
+    const { id, customer_id} = req.portalUser;
+    const data = await portalService.getSupportTickets(id, customer_id );
     res.json(data);
   } catch (err) {
     console.error('[Portal] Support tickets error:', err);
@@ -761,12 +809,12 @@ router.get('/support/tickets', async (req, res) => {
 
 router.post('/support/tickets', SENSITIVE_PORTAL_LIMIT, async (req, res) => {
   try {
-    const { id, customer_id, company_id } = req.portalUser;
+    const { id, customer_id} = req.portalUser;
     const { subject, message, priority } = req.body;
     if (!subject || !message) {
       return res.status(400).json({ error: 'Subject and message are required' });
     }
-    const ticket = await portalService.createSupportTicket(id, customer_id, company_id, { subject, message, priority });
+    const ticket = await portalService.createSupportTicket(id, customer_id, { subject, message, priority });
     res.status(201).json(ticket);
   } catch (err) {
     console.error('[Portal] Create ticket error:', err);
@@ -789,12 +837,77 @@ router.post('/support/tickets/:id/messages', async (req, res) => {
   }
 });
 
+router.put('/support/tickets/:id/status', async (req, res) => {
+  try {
+    const { id } = req.portalUser;
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+    const result = await portalService.updateTicketStatus(req.params.id, id, status);
+    res.json(result);
+  } catch (err) {
+    console.error('[Portal] Update ticket status error:', err);
+    res.status(500).json({ error: 'Failed to update ticket status' });
+  }
+});
+
+// ─── Support Ticket Attachments ──────────────────────────────────
+router.post('/support/tickets/:id/attachments', uploadTicketAttachment.single('file'), async (req, res) => {
+  try {
+    const { id } = req.portalUser;
+    const { message_id } = req.body;
+    if (!req.file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+    const attachment = await portalService.uploadTicketAttachment(
+      req.params.id,
+      id,
+      req.file,
+      message_id || null
+    );
+    res.status(201).json(attachment);
+  } catch (err) {
+    console.error('[Portal] Upload attachment error:', err);
+    res.status(500).json({ error: err.message || 'Failed to upload attachment' });
+  }
+});
+
+router.get('/support/tickets/:id/attachments/:attachmentId', async (req, res) => {
+  try {
+    const { customer_id } = req.portalUser;
+    const { attachmentId } = req.params;
+    const attachment = await portalService.getTicketAttachment(attachmentId, customer_id);
+    if (!attachment) {
+      return res.status(404).json({ error: 'Attachment not found' });
+    }
+    const filePath = path.join(TICKET_ATTACHMENTS_DIR, attachment.filename);
+    res.setHeader('Content-Type', attachment.mime_type);
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.original_name}"`);
+    fs.createReadStream(filePath).pipe(res);
+  } catch (err) {
+    console.error('[Portal] Download attachment error:', err);
+    res.status(500).json({ error: 'Failed to download attachment' });
+  }
+});
+
+router.delete('/support/tickets/:id/attachments/:attachmentId', async (req, res) => {
+  try {
+    const { id, customer_id } = req.portalUser;
+    const result = await portalService.deleteTicketAttachment(req.params.attachmentId, id, customer_id);
+    res.json(result);
+  } catch (err) {
+    console.error('[Portal] Delete attachment error:', err);
+    res.status(500).json({ error: 'Failed to delete attachment' });
+  }
+});
+
 // ─── Shipments / Tracking (customer-facing, read-only) ─────────────────────────
 router.get('/shipments', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
+    const { customer_id } = req.portalUser;
     const { status, search } = req.query;
-    const rows = await portalService.getShipments(customer_id, company_id, {
+    const rows = await portalService.getShipments(customer_id, {
       status: status || undefined,
       search: search || undefined,
     });
@@ -807,13 +920,101 @@ router.get('/shipments', async (req, res) => {
 
 router.get('/shipments/:id', async (req, res) => {
   try {
-    const { customer_id, company_id } = req.portalUser;
-    const row = await portalService.getShipmentById(req.params.id, customer_id, company_id);
+    const { customer_id } = req.portalUser;
+    const row = await portalService.getShipmentById(req.params.id, customer_id );
     if (!row) return res.status(404).json({ error: 'Shipment not found' });
     res.json(row);
   } catch (err) {
     console.error('[Portal] Shipment detail error:', err);
     res.status(500).json({ error: 'Failed to load shipment' });
+  }
+});
+
+// ─── Payment Processing ───────────────────────────────────────
+// Create a Stripe PaymentIntent for an invoice (falls back to mock mode if Stripe not configured)
+router.post('/payments/intent', async (req, res) => {
+  try {
+    const { customer_id } = req.portalUser;
+    const { invoiceId, amount, currency = 'USD' } = req.body;
+    if (!invoiceId || !amount) {
+      return res.status(400).json({ error: 'invoiceId and amount are required' });
+    }
+
+    // Verify the invoice belongs to this customer
+    const invoice = await portalService.getInvoiceById(invoiceId, customer_id );
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    if (stripe) {
+      const intent = await stripe.paymentIntents.create({
+        amount: Math.round(Number(amount) * 100), // cents
+        currency: String(currency).toLowerCase(),
+        metadata: { invoiceId: String(invoiceId), customerId: String(customer_id), portalUser: String(req.portalUser.id) },
+      });
+      return res.json({ clientSecret: intent.client_secret, mode: 'stripe' });
+    }
+
+    // Mock mode — returns a fake client secret for development/testing
+    const mockSecret = `pi_mock_${crypto.randomBytes(16).toString('hex')}_secret`;
+    res.json({ clientSecret: mockSecret, mode: 'mock' });
+  } catch (err) {
+    console.error('[Portal] Payment intent error:', err);
+    res.status(500).json({ error: 'Failed to create payment intent' });
+  }
+});
+
+// Record a completed payment (called after Stripe confirms the payment)
+router.post('/payments', async (req, res) => {
+  try {
+    const { customer_id } = req.portalUser;
+    const { invoiceId, amount, currency = 'USD', paymentMethod = 'Card', reference, transactionId } = req.body;
+
+    const { db } = require('../db.cjs');
+    const invoice = await portalService.getInvoiceById(invoiceId, customer_id );
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    const remaining = Number(invoice.total_amount) - Number(invoice.paid_amount || 0) - Number(amount);
+    let newStatus;
+    if (remaining <= 0) newStatus = 'paid';
+    else newStatus = 'partially_paid';
+
+    const paymentId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+    await new Promise((resolve, reject) => {
+      db.run(
+        `INSERT INTO customer_payments (id, customer_id, customer_name, amount, date, method, reference, allocations_json, created_by)
+         VALUES (?, ?, ?, ?, datetime('now'), ?, ?, ?, ?)`,
+
+        [paymentId, customer_id, req.portalUser.customer_name || '', amount, paymentMethod, reference || transactionId || '', JSON.stringify([{ invoice_id: invoiceId, allocated: amount }]), req.portalUser.id],
+        (err) => err ? reject(err) : resolve()
+      );
+    });
+
+    await new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE invoices SET paid_amount = COALESCE(paid_amount, 0) + ?, status = ?, paid_at = datetime('now') WHERE id = ?`,
+        [Number(amount), newStatus, invoiceId],
+        (err) => err ? reject(err) : resolve()
+      );
+    });
+
+    // Emit realtime event and notification
+    portalLifecycleService.publishErpEvent({
+      customerId: customer_id,
+      docType: 'invoice',
+      docId: String(invoiceId),
+      eventType: 'payment_made',
+      docNumber: invoice.invoice_number,
+      title: 'Payment received',
+      body: `A payment of K ${Number(amount).toFixed(2)} has been applied to invoice ${invoice.invoice_number}.`,
+      link: `#/portal/invoices/${invoiceId}`,
+      notificationType: 'payment_received',
+      actor: { type: 'customer', id: req.portalUser.id },
+      metadata: { amount, currency, paymentMethod },
+    });
+
+    res.json({ success: true, paymentId, status: newStatus });
+  } catch (err) {
+    console.error('[Portal] Record payment error:', err);
+    res.status(500).json({ error: 'Failed to record payment' });
   }
 });
 

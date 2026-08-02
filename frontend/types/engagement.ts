@@ -150,7 +150,6 @@ export interface EngagementTimelineEntry {
   actorId?: string
   actorName?: string
   timestamp: string
-  companyId?: string
   createdAt?: string
 }
 
@@ -169,7 +168,6 @@ export interface EngagementAuditEntry {
   ipAddress?: string
   userAgent?: string
   timestamp: string
-  companyId?: string
   createdAt?: string
 }
 
@@ -187,7 +185,6 @@ export interface PointEntry {
   expiresAt?: string
   redeemedAt?: string
   createdBy?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -201,7 +198,6 @@ export interface PointBalance {
   pendingExpiry: number
   expiresAt?: string
   lastUpdated: string
-  companyId?: string
 }
 
 export interface CashbackEntry {
@@ -223,7 +219,6 @@ export interface CashbackEntry {
   reverseReason?: string
   expiresAt?: string
   notes?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -249,7 +244,6 @@ export interface MembershipTier {
   annualReward: number
   benefits: Record<string, any>
   status: 'active' | 'inactive'
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -268,7 +262,6 @@ export interface CustomerTier {
   expiresAt?: string
   status: 'active' | 'expired' | 'suspended'
   notes?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -293,7 +286,6 @@ export interface GiftCard {
   designColor?: string
   giftMessage?: string
   purchasedWith?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -308,7 +300,6 @@ export interface GiftCardTransaction {
   referenceId?: string
   customerId?: string
   description?: string
-  companyId?: string
   createdAt?: string
 }
 
@@ -328,7 +319,6 @@ export interface AffiliateAccount {
   approvedAt?: string
   approvedBy?: string
   notes?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -349,7 +339,6 @@ export interface AffiliateCommission {
   reversedAt?: string
   reverseReason?: string
   notes?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -379,7 +368,6 @@ export interface Promotion {
   expiresAt?: string
   status: 'draft' | 'active' | 'paused' | 'expired' | 'cancelled'
   createdBy?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -407,7 +395,6 @@ export interface CustomerReward {
   rejectedAt?: string
   rejectReason?: string
   expiresAt?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -440,7 +427,6 @@ export interface EngagementAnalytics {
   revenueByCampaign: Record<string, number>
   walletUtilization: number
   generatedAt: string
-  companyId?: string
 }
 
 export interface EngagementPluginResult {

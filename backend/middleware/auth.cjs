@@ -83,12 +83,8 @@ const generateToken = (user) => {
     id: user.id,
     username: user.username,
     role: user.role,
-    email: user.email,
-    company_id: user.company_id || user.companyId || ''
+    email: user.email
   };
-  if (user.companies) {
-    payload.companies = user.companies;
-  }
   return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION });
 };
 

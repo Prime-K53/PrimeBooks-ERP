@@ -59,8 +59,8 @@ class BackupService {
     return stats.size > 0;
   }
 
-  async exportCompanyData(companyId, exportDir = null) {
-    const dir = exportDir || path.join(this.backupDir, `company_${companyId}`);
+  async exportData(exportDir = null) {
+    const dir = exportDir || path.join(this.backupDir, 'export');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -77,8 +77,8 @@ class BackupService {
       try {
         const rows = await new Promise((resolve, reject) => {
           getDb().all(
-            `SELECT * FROM "${table}" WHERE company_id = ?`,
-            [companyId],
+            `SELECT * FROM "${table}"`,
+            [],
             (err, rows) => {
               if (err) reject(err);
               else resolve(rows || []);
@@ -94,7 +94,7 @@ class BackupService {
       }
     }
 
-    return { path: dir, companyId };
+    return { path: dir};
   }
 }
 

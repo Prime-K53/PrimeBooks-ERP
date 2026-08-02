@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { User, UserRole, UserGroup, PasswordPolicy, CompanyConfig, AuditLogEntry, SystemAlert, Reminder } from '../types';
 import { INITIAL_USER_GROUPS, AVAILABLE_PERMISSIONS, SEED_ITEMS } from '../constants';
 import { generateNextId } from '../utils/helpers';
-import { dbService, clearCurrentCompanyId } from '../services/db';
+import { dbService } from '../services/db';
 import { DEFAULT_PRICING_SETTINGS } from '../services/pricingRoundingService';
 import { syncDocumentNumberSeriesConfig } from '../services/documentNumberService';
 import { publishSystemAlert } from '../services/systemAlertService';
@@ -170,7 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [passwordPolicy, setPasswordPolicy] = useState<PasswordPolicy>({ minLength: 8, requireSpecialChar: true, requireNumber: true, expiryDays: 90 });
   
   const defaultCompanyConfig = {
-      companyId: `company_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       companyName: 'Prime ERP', 
       country: 'Malawi', 
       addressLine1: 'Main Street', 
@@ -436,26 +435,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (session?.user) {
             restoredSession = await syncSupabaseUserToLocal(session.user);
             if (restoredSession) {
-              let restoredCompanyId =
-                (restoredSession as User & { companyId?: string })?.companyId ||
-                session.user.user_metadata?.company_id ||
-                null;
-              if (!restoredCompanyId) {
-                try {
-                  const { data: profileRow } = await supabase
-                    .from('profiles')
-                    .select('company_id')
-                    .eq('user_id', session.user.id)
-                    .maybeSingle();
-                  restoredCompanyId = profileRow?.company_id || null;
-                } catch (companyLookupErr) {
-                  logger.warn('[Auth] Could not resolve company_id on session restore:', companyLookupErr);
-                }
-              }
-              if (restoredCompanyId) {
-                dbService.setCurrentCompanyId(restoredCompanyId);
-                (restoredSession as User & { companyId?: string }).companyId = restoredCompanyId;
-              }
               setUser(restoredSession);
               sessionStorage.setItem('nexus_user', JSON.stringify({
                 ...restoredSession,
@@ -493,14 +472,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               securityLevel: profileData.securityLevel || 'Standard',
               groupIds: profileData.group_ids || profileData.groupIds || roleToGroupIds(role, profileData.is_super_admin),
               authMode: 'supabase',
-              companyId: profile.company_id
             } as User;
           }));
 
           setAuditLogs(logs.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
           setAlerts(storedAlerts.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
           setReminders(storedReminders.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-          setRequiresSetup(Boolean(session?.user && !(restoredSession as User & { companyId?: string })?.companyId));
+          setRequiresSetup(Boolean(session?.user && !restoredSession));
           setDbSyncStatus('connected');
           setLastSyncTime(new Date().toISOString());
           return;
@@ -520,13 +498,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }));
             parsedConfig = await hydrateCompanyPdfAssets(parsedConfig);
-            // Ensure companyId exists for multi-tenant isolation
-            if (!parsedConfig.companyId) {
-              parsedConfig.companyId = `company_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-            }
             setCompanyConfig(parsedConfig);
             localStorage.setItem('nexus_company_config', JSON.stringify(parsedConfig));
-            dbService.setCurrentCompanyId(parsedConfig.companyId);
           } catch (err) {
             logger.error("[Auth] Failed to parse company config:", err);
           }
@@ -566,33 +539,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } catch {
               sessionStorage.removeItem('nexus_user');
             }
-          }
-        }
-
-        // On a new device, localStorage may be empty — try to load company config from Supabase
-        if (!parsedConfig && SUPABASE_ENABLED) {
-          try {
-            const cloudCompany = await cloudDb.getCompany();
-            if (cloudCompany?.data || cloudCompany?.company_name) {
-              const companyData = cloudCompany.data || cloudCompany;
-              const mergedConfig: CompanyConfig = withNormalizedSecurityConfig(normalizeCompanyNumberingConfig({
-                ...defaultCompanyConfig,
-                ...companyData,
-                companyId: cloudCompany.id || companyData.companyId || companyData.company_id,
-                companyName: companyData.companyName || companyData.company_name || cloudCompany.company_name,
-                pricingSettings: {
-                  ...DEFAULT_PRICING_SETTINGS,
-                  ...(companyData.pricingSettings || cloudCompany.data?.pricingSettings || {})
-                }
-              }));
-              const hydratedConfig = await hydrateCompanyPdfAssets(mergedConfig).catch(() => mergedConfig);
-              setCompanyConfig(hydratedConfig);
-              localStorage.setItem('nexus_company_config', JSON.stringify(hydratedConfig));
-              dbService.setCurrentCompanyId(hydratedConfig.companyId || '');
-              parsedConfig = hydratedConfig;
-            }
-          } catch (err) {
-            console.warn('[Auth] Could not load company config from cloud:', err);
           }
         }
 
@@ -716,7 +662,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setAllUsers([]);
         setRequiresSetup(false);
-        clearCurrentCompanyId();
       }
     });
 
@@ -790,11 +735,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (username: string, password?: string, mfaCode?: string): Promise<'SUCCESS' | 'INVALID' | 'MFA_REQUIRED' | 'EXPIRED'> => {
     try {
-        // Clear any cached company context from a previous session before
-        // resolving the new user's company. Without this, a previous
-        // user's company can leak into the new session.
-        clearCurrentCompanyId();
-
         if (requiresSetup && !SUPABASE_ENABLED) {
             return 'INVALID';
         }
@@ -907,34 +847,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const profile = await syncSupabaseUserToLocal(signInData.user);
 
-          // Multi-tenant fix: resolve THIS user's actual company_id and force
-          // every cached "current company" pointer to match it. Without this,
-          // the app keeps showing whichever company was last active on this
-          // device/browser, regardless of which account just logged in.
-          let resolvedCompanyId =
-            (profile as (User & { companyId?: string }) | null)?.companyId ||
-            signInData.user.user_metadata?.company_id ||
-            null;
-          if (!resolvedCompanyId) {
-            try {
-              const { data: profileRow } = await supabase
-                .from('profiles')
-                .select('company_id')
-                .eq('user_id', signInData.user.id)
-                .maybeSingle();
-              resolvedCompanyId = profileRow?.company_id || null;
-            } catch (companyLookupErr) {
-              logger.warn('[Auth] Could not resolve company_id at login:', companyLookupErr);
-            }
-          }
-          if (resolvedCompanyId) {
-            dbService.setCurrentCompanyId(resolvedCompanyId);
-          }
-
           setRequiresSetup(false);
           const supabaseUser = {
             ...profile,
-            companyId: resolvedCompanyId || (profile as (User & { companyId?: string }) | null)?.companyId,
             authMode: 'supabase' as const,
             offlineAuthenticated: true,
           };
@@ -1048,12 +963,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [addAuditLog, companyConfig, requiresSetup, SUPABASE_ENABLED, syncSupabaseUserToLocal, updateLoginDiagnostic]);
 
   const loginWithApi = useCallback((apiUser: User, token: string, tokenExpiry: string) => {
-    clearCurrentCompanyId();
     setRequiresSetup(false);
-    const companyId = apiUser.companyId || apiUser.company_id || null;
-    if (companyId) {
-      dbService.setCurrentCompanyId(companyId);
-    }
     setUser(apiUser);
     sessionStorage.setItem('nexus_user', JSON.stringify({
       ...apiUser,
@@ -1074,7 +984,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (SUPABASE_ENABLED) {
           supabase.auth.signOut();
         }
-        clearCurrentCompanyId();
         setUser(null);
         sessionStorage.removeItem('nexus_user');
     }
@@ -1131,7 +1040,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: u.role,
             is_super_admin: u.isSuperAdmin,
             group_ids: u.groupIds,
-            company_id: companyConfig?.companyId || '',
           }
         }
       });
@@ -1200,12 +1108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
     setCompanyConfig(normalizedConfig);
     localStorage.setItem('nexus_company_config', JSON.stringify(normalizedConfig));
-    if (SUPABASE_ENABLED) {
-      void cloudDb.upsertCompany(normalizedConfig as CompanyConfig).catch((error) => {
-        logger.error('Failed to save company config to Supabase', error);
-        notify('Company config could not be saved to cloud', 'error');
-      });
-    }
     void syncDocumentNumberSeriesConfig(normalizedConfig).catch((error) => {
       logger.error('Failed to sync document numbering configuration', error);
     });
@@ -1321,53 +1223,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // Check if this user already has a profile/company
-      let existingCompanyId: string | null = null;
-      try {
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('company_id')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        if (existingProfile?.company_id) {
-          existingCompanyId = existingProfile.company_id;
-        }
-      } catch {
-        // Best-effort; proceed with new company creation
-      }
-
-      const cloudCompanyId = config.companyId || crypto.randomUUID();
       const normalizedConfig: CompanyConfig = withNormalizedSecurityConfig(normalizeCompanyNumberingConfig({
         ...defaultCompanyConfig,
         ...config,
-        companyId: cloudCompanyId,
         pricingSettings: {
           ...DEFAULT_PRICING_SETTINGS,
           ...(config.pricingSettings || {})
         }
       }));
 
-      dbService.setCurrentCompanyId(cloudCompanyId);
-      cloudDb.setActiveCompanyId(cloudCompanyId);
       setCompanyConfig(normalizedConfig);
-
-      const savedCompanyId = await cloudDb.upsertCompany(normalizedConfig as CompanyConfig);
-      const finalCompanyId = savedCompanyId || cloudCompanyId;
-
-      // Sync the correct company_id into the user's Supabase metadata
-      // so that JWT claims and get_user_company_id() fallback resolve correctly.
-      try {
-        await supabase.auth.updateUser({
-          data: { company_id: finalCompanyId }
-        });
-      } catch (metaErr) {
-        logger.warn('[Auth] Could not update user metadata with company_id:', metaErr);
-      }
+      localStorage.setItem('nexus_company_config', JSON.stringify(normalizedConfig));
 
       await cloudDb.upsertProfile({
         ...adminUser,
         user_id: session.user.id,
-        company_id: finalCompanyId,
         role: 'Admin',
         status: 'Active',
         is_super_admin: true,
@@ -1387,7 +1257,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSuperAdmin: true,
         groupIds: ['GRP-ADMIN'],
         authMode: 'supabase',
-        companyId: savedCompanyId || cloudCompanyId,
       } as User]);
 
       // Seed master inventory on first setup
@@ -1410,30 +1279,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Multi-tenant: migrate existing data to old companyId before creating new company
-    const oldConfigRaw = localStorage.getItem('nexus_company_config');
-    if (oldConfigRaw) {
-      try {
-        const oldConfig = JSON.parse(oldConfigRaw);
-        const oldCompanyId = oldConfig.companyId || `company_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-        await dbService.stampAllRecordsWithCompany(oldCompanyId);
-      } catch { /* best-effort migration */ }
-    }
-
-    const newCompanyId = `company_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-
     const normalizedConfig: CompanyConfig = withNormalizedSecurityConfig(normalizeCompanyNumberingConfig({
       ...defaultCompanyConfig,
       ...config,
-      companyId: newCompanyId,
       pricingSettings: {
         ...DEFAULT_PRICING_SETTINGS,
         ...(config.pricingSettings || {})
       }
     }));
-
-    // Set companyId on dbService so new records get stamped
-    dbService.setCurrentCompanyId(newCompanyId);
 
     if (userGroups.length === 0) {
       for (const group of INITIAL_USER_GROUPS) {

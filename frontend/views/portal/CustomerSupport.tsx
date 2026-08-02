@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Plus, Send, Loader2 } from 'lucide-react';
-import { portalApi } from '../../services/portalApiClient';
+import { MessageCircle, Plus, Send, Loader2, Paperclip, Trash2, Download, Image as ImageIcon, FileText, X } from 'lucide-react';
+import { portalApi, uploadTicketAttachment, getTicketAttachments, deleteTicketAttachment, TicketAttachment } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalButton from './components/PortalButton';
 import PortalInput from './components/PortalInput';
@@ -38,6 +38,7 @@ interface Ticket {
   created_at: string;
   latest_message?: string;
   messages?: TicketMessage[];
+  attachments?: TicketAttachment[];
 }
 
 const CustomerSupport: React.FC = () => {
@@ -50,10 +51,15 @@ const CustomerSupport: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   const [newTicket, setNewTicket] = useState({ subject: '', message: '', priority: 'normal' });
   const [creating, setCreating] = useState(false);
   const [createMsg, setCreateMsg] = useState<string | null>(null);
+  const [ticketAttachments, setTicketAttachments] = useState<Record<string, TicketAttachment[]>>({});
+  const [uploadingAttachment, setUploadingAttachment] = useState<string | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
 
   const fetchTickets = () => {
     setLoading(true);
@@ -81,6 +87,9 @@ const CustomerSupport: React.FC = () => {
         addToast('error', err.message || 'Failed to load ticket details');
       }
     }
+    if (!ticketAttachments[ticket.id]) {
+      handleLoadAttachments(ticket.id);
+    }
   };
 
   const handleReply = async (ticketId: string) => {
@@ -99,6 +108,19 @@ const CustomerSupport: React.FC = () => {
     }
   };
 
+  const handleStatusChange = async (ticketId: string, newStatus: string) => {
+    setUpdatingStatus(ticketId);
+    try {
+      await portalApi.put(`/support/tickets/${ticketId}/status`, { status: newStatus });
+      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t)));
+      addToast('success', `Ticket ${newStatus === 'closed' ? 'closed' : 'reopened'}`);
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to update ticket status');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTicket.subject.trim() || !newTicket.message.trim()) return;
@@ -114,6 +136,47 @@ const CustomerSupport: React.FC = () => {
       addToast('error', err.message || 'Failed to create ticket');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUploadAttachment = async (ticketId: string, file: File) => {
+    setUploadingAttachment(ticketId);
+    setAttachmentError(null);
+    try {
+      const attachment = await uploadTicketAttachment(ticketId, file);
+      setTicketAttachments((prev) => ({
+        ...prev,
+        [ticketId]: [...(prev[ticketId] || []), attachment],
+      }));
+      addToast('success', `File "${file.name}" uploaded`);
+    } catch (err: any) {
+      setAttachmentError(err.message || 'Failed to upload attachment');
+      addToast('error', err.message || 'Failed to upload attachment');
+    } finally {
+      setUploadingAttachment(null);
+    }
+  };
+
+  const handleDeleteAttachment = async (ticketId: string, attachmentId: string) => {
+    try {
+      await deleteTicketAttachment(ticketId, attachmentId);
+      setTicketAttachments((prev) => ({
+        ...prev,
+        [ticketId]: (prev[ticketId] || []).filter((a) => a.id !== attachmentId),
+      }));
+      addToast('success', 'Attachment deleted');
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to delete attachment');
+    }
+  };
+
+  const handleLoadAttachments = async (ticketId: string) => {
+    if (ticketAttachments[ticketId]) return;
+    try {
+      const attachments = await getTicketAttachments(ticketId);
+      setTicketAttachments((prev) => ({ ...prev, [ticketId]: attachments }));
+    } catch {
+      // Silently fail - attachments are optional
     }
   };
 
@@ -184,6 +247,26 @@ const CustomerSupport: React.FC = () => {
 
         {activeTab === 'tickets' && (
           <>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 500,
+                  color: ink, background: paper,
+                  border: `1.4px solid ${hairline}`, borderRadius: 8,
+                  padding: '6px 10px', outline: 'none', cursor: 'pointer',
+                  minWidth: 120
+                }}
+              >
+                <option value="all">All Tickets</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+
             {loading ? (
               <PortalLoadingSkeleton type="list" count={5} />
             ) : error ? (
@@ -192,7 +275,7 @@ const CustomerSupport: React.FC = () => {
               <EmptyState icon={<MessageCircle size={28} />} title="No support tickets" description="You haven't created any support tickets yet." action={{ label: 'Create Ticket', onClick: () => setActiveTab('new') }} />
             ) : (
               <div className="space-y-2">
-                {tickets.map((ticket) => (
+                {tickets.filter((t) => statusFilter === 'all' || t.status === statusFilter).map((ticket) => (
                   <div key={ticket.id} style={{
                     background: paper, borderRadius: 14,
                     border: `1.4px solid ${hairline}`,
@@ -224,6 +307,40 @@ const CustomerSupport: React.FC = () => {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <StatusBadge status={ticket.status} size="sm" />
+                        {ticket.status !== 'closed' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStatusChange(ticket.id, 'closed'); }}
+                            disabled={updatingStatus === ticket.id}
+                            title="Close ticket"
+                            style={{
+                              padding: '4px 8px', fontSize: 11, fontWeight: 600,
+                              color: inkSoft, background: 'transparent',
+                              border: `1px solid ${hairline}`, borderRadius: 6,
+                              cursor: 'pointer', transition: 'all .15s ease'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = inkSoft; }}
+                          >
+                            Close
+                          </button>
+                        )}
+                        {ticket.status === 'closed' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStatusChange(ticket.id, 'open'); }}
+                            disabled={updatingStatus === ticket.id}
+                            title="Reopen ticket"
+                            style={{
+                              padding: '4px 8px', fontSize: 11, fontWeight: 600,
+                              color: inkSoft, background: 'transparent',
+                              border: `1px solid ${hairline}`, borderRadius: 6,
+                              cursor: 'pointer', transition: 'all .15s ease'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = inkSoft; }}
+                          >
+                            Reopen
+                          </button>
+                        )}
                       </div>
                     </button>
 
@@ -235,6 +352,90 @@ const CustomerSupport: React.FC = () => {
                             <p style={{ fontSize: 13, color: ink }}>{msg.message}</p>
                           </div>
                         ))}
+                        {/* Attachment Section */}
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                            <Paperclip size={12} color={inkSoft} />
+                            <span style={{ fontSize: 11, fontWeight: 600, color: inkSoft }}>Attachments</span>
+                          </div>
+                          {/* Upload button */}
+                          <label htmlFor={`file-upload-${ticket.id}`} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            padding: '5px 10px', fontSize: 11, fontWeight: 500,
+                            color: teal[700], background: teal[50],
+                            border: `1px solid ${teal[200]}`, borderRadius: 6,
+                            cursor: 'pointer', transition: 'all .15s ease'
+                          }}>
+                            <Paperclip size={11} />
+                            {uploadingAttachment === ticket.id ? 'Uploading...' : 'Attach File'}
+                          </label>
+                          <input
+                            id={`file-upload-${ticket.id}`}
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.zip"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 10 * 1024 * 1024) {
+                                  addToast('error', 'File size must be under 10MB');
+                                  return;
+                                }
+                                handleUploadAttachment(ticket.id, file);
+                              }
+                              e.target.value = '';
+                            }}
+                            style={{ display: 'none' }}
+                          />
+                          {attachmentError && (
+                            <p style={{ fontSize: 10, color: '#dc2626', marginTop: 4 }}>{attachmentError}</p>
+                          )}
+                          {/* Attachment list */}
+                          {(ticketAttachments[ticket.id] || []).length > 0 && (
+                            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {(ticketAttachments[ticket.id] || []).map((att) => (
+                                <div key={att.id} style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                  padding: '4px 8px', background: paper, borderRadius: 6,
+                                  border: `1px solid ${hairline}`, fontSize: 11
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                    {att.mime_type.startsWith('image/') ? (
+                                      <ImageIcon size={12} color={teal[600]} />
+                                    ) : (
+                                      <FileText size={12} color={inkSoft} />
+                                    )}
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={att.original_name}>
+                                      {att.original_name}
+                                    </span>
+                                    <span style={{ color: inkSoft, fontSize: 10 }}>
+                                      ({(att.size_bytes / 1024).toFixed(1)} KB)
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <a
+                                      href={`/portal/support/tickets/${ticket.id}/attachments/${att.id}`}
+                                      download={att.original_name}
+                                      style={{ color: teal[600], cursor: 'pointer', textDecoration: 'none' }}
+                                      title="Download"
+                                    >
+                                      <Download size={11} />
+                                    </a>
+                                    <button
+                                      onClick={() => handleDeleteAttachment(ticket.id, att.id)}
+                                      title="Delete"
+                                      style={{
+                                        background: 'none', border: 'none', cursor: 'pointer',
+                                        color: '#dc2626', padding: 0, display: 'flex'
+                                      }}
+                                    >
+                                      <Trash2 size={11} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                           <input
                             value={replyText}

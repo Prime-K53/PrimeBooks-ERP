@@ -1,37 +1,33 @@
 const BaseAIService = require('./baseService.cjs');
 
 class CashFlowForecaster extends BaseAIService {
-  async forecast(companyId, options = {}) {
+  async forecast( options = {}) {
     const days = options.days || 90;
 
     const invoices = await this._all(
-      `SELECT id, total, status, created_at, due_date FROM invoices
-       WHERE company_id = ? AND status IN ('pending','paid','overdue')`,
-      [companyId]
+      `SELECT id, total, status, created_at, due_date FROM invoices WHERE status 
+ IN ('pending','paid','overdue')`,
+      []
     );
 
     const expenses = await this._all(
-      `SELECT id, amount, status, expense_date FROM expenses
-       WHERE company_id = ? AND status IN ('pending','paid')`,
-      [companyId]
+      `SELECT id, amount, status, expense_date FROM expensesstatus IN ('pending','paid')`,
+      []
     );
 
     const ar = await this._all(
-      `SELECT id, amount, balance_due, due_date, status FROM accounts_receivable
-       WHERE company_id = ?`,
-      [companyId]
+      `SELECT id, amount, balance_due, due_date, status FROM accounts_receivable`,
+      []
     );
 
     const ap = await this._all(
-      `SELECT id, amount, balance_due, due_date, status FROM accounts_payable
-       WHERE company_id = ?`,
-      [companyId]
+      `SELECT id, amount, balance_due, due_date, status FROM accounts_payable`,
+      []
     );
 
     const ledger = await this._all(
-      `SELECT entry_date, entry_type, amount FROM ledger_entries
-       WHERE company_id = ? AND entry_date >= date('now', '-90 days')`,
-      [companyId]
+      `SELECT entry_date, entry_type, amount FROM ledger_entriesentry_date >= date('now', '-90 days')`,
+      []
     );
 
     const historicalIn = this._aggregateByDay(

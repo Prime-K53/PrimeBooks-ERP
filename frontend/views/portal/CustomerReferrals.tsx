@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Users, UserPlus, Gift, Clock, CheckCircle2, Wallet, TrendingUp, Search, Filter, ChevronDown, X, ArrowRight, Copy, ExternalLink } from 'lucide-react';
 import { portalLifecycle, PortalReferral, PortalReferralReward, PortalReferralSettings, PortalReferralTimelineEntry, PortalCustomerSearchResult } from '../../services/portalApiClient';
 import { useNavigate } from 'react-router-dom';
+import { useCustomerAuth } from '../../context/CustomerAuthContext';
+import { useToast } from './components/Toast';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import StatusBadge from './components/StatusBadge';
@@ -55,6 +57,8 @@ const CustomerReferrals: React.FC = () => {
   const [timeline, setTimeline] = useState<PortalReferralTimelineEntry[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useCustomerAuth();
+  const { addToast } = useToast();
 
   const pageSize = 20;
 
@@ -149,6 +153,16 @@ const CustomerReferrals: React.FC = () => {
     }
   };
 
+  const handleCopyReferralLink = useCallback(() => {
+    const referralCode = user?.id || '';
+    const link = `${window.location.origin}/#/portal/referrals?ref=${referralCode}`;
+    navigator.clipboard.writeText(link).then(() => {
+      addToast('success', 'Referral link copied to clipboard!');
+    }).catch(() => {
+      addToast('error', 'Failed to copy link');
+    });
+  }, [user?.id, addToast]);
+
   const openDetail = async (referral: PortalReferral) => {
     setDetailReferral(referral);
     setTimelineLoading(true);
@@ -183,7 +197,7 @@ const CustomerReferrals: React.FC = () => {
   if (loading) return <div className="p-6"><PortalLoadingSkeleton type="card" count={4} /></div>;
 
   return (
-    <div style={{ background: paper, borderRadius: 14, overflow: 'hidden' }}>
+    <div>
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -211,15 +225,30 @@ const CustomerReferrals: React.FC = () => {
           </div>
         </div>
         {settings?.enabled && (
-          <button onClick={() => setShowReferModal(true)} style={{
-            fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-            padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
-            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-            color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 7,
-            boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease'
-          }}>
-            <UserPlus size={16} /> Refer Someone
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={handleCopyReferralLink}
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+                background: 'transparent',
+                color: inkSoft, display: 'inline-flex', alignItems: 'center', gap: 7,
+                border: `1.4px solid ${hairline}`, transition: 'all .15s ease'
+              }}
+              title="Copy your referral link"
+            >
+              <Copy size={16} /> Copy Link
+            </button>
+            <button onClick={() => setShowReferModal(true)} style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+              padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
+              background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+              color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 7,
+              boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', transition: 'all .15s ease'
+            }}>
+              <UserPlus size={16} /> Refer Someone
+            </button>
+          </div>
         )}
       </div>
 

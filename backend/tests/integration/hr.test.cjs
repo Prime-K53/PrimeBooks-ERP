@@ -1,5 +1,4 @@
 const { createTestDb, createTestApp, createTestSchema } = require('../setup.cjs');
-const { TEST_COMPANY_ID } = require('../helpers.cjs');
 
 describe('HR API Integration', () => {
   let db, hr;
@@ -16,23 +15,23 @@ describe('HR API Integration', () => {
     test('CRUD employee', async () => {
       const emp = await hr.createEmployee({
         name: 'John Doe',
-        email: 'john@company.com',
+        email: 'john@example.com',
         department: 'Engineering',
         role: 'Developer',
         salary: 75000
-      }, TEST_COMPANY_ID);
+      });
       expect(emp).toBeDefined();
       expect(emp.name).toBe('John Doe');
 
-      const updated = await hr.updateEmployee(emp.id, { salary: 80000, role: 'Senior Developer' }, TEST_COMPANY_ID);
+      const updated = await hr.updateEmployee(emp.id, { salary: 80000, role: 'Senior Developer' });
       expect(updated.salary).toBe(80000);
       expect(updated.role).toBe('Senior Developer');
 
-      const employees = await hr.getEmployees(TEST_COMPANY_ID);
+      const employees = await hr.getEmployees();
       expect(employees.length).toBeGreaterThanOrEqual(1);
 
-      await hr.deleteEmployee(emp.id, TEST_COMPANY_ID);
-      const afterDelete = await hr.getEmployees(TEST_COMPANY_ID);
+      await hr.deleteEmployee(emp.id);
+      const afterDelete = await hr.getEmployees();
       expect(afterDelete.find(e => e.id === emp.id)).toBeUndefined();
     });
   });
@@ -48,11 +47,11 @@ describe('HR API Integration', () => {
         total_deductions: 10000,
         total_net: 40000,
         employee_count: 10
-      }, TEST_COMPANY_ID);
+      });
       expect(run).toBeDefined();
       expect(run.name).toBe('June 2026 Payroll');
 
-      const runs = await hr.getPayrollRuns(TEST_COMPANY_ID);
+      const runs = await hr.getPayrollRuns();
       expect(runs.length).toBeGreaterThanOrEqual(1);
     });
   });
@@ -61,10 +60,10 @@ describe('HR API Integration', () => {
     test('create and list payslips', async () => {
       const emp = await hr.createEmployee({
         name: 'Jane Smith', department: 'Marketing', salary: 60000
-      }, TEST_COMPANY_ID);
+      });
       const run = await hr.createPayrollRun({
         name: 'Test Payroll', period_start: '2026-06-01', period_end: '2026-06-30'
-      }, TEST_COMPANY_ID);
+      });
 
       const slip = await hr.createPayslip({
         employee_id: emp.id,
@@ -74,11 +73,11 @@ describe('HR API Integration', () => {
         net_pay: 4000,
         pay_period: '2026-06',
         status: 'Draft'
-      }, TEST_COMPANY_ID);
+      });
       expect(slip).toBeDefined();
       expect(slip.net_pay).toBe(4000);
 
-      const slips = await hr.getPayslips(TEST_COMPANY_ID);
+      const slips = await hr.getPayslips();
       expect(slips.length).toBeGreaterThanOrEqual(1);
     });
   });

@@ -6,8 +6,6 @@ export interface StaffUserInfo {
   email: string;
   role: string;
   permissions: string[];
-  company_id: string;
-  companies: Array<{ company_id: string; role: string; is_default: number }>;
 }
 
 export interface PortalUserInfo {
@@ -16,7 +14,6 @@ export interface PortalUserInfo {
   email: string;
   full_name?: string;
   phone?: string;
-  company_id?: string;
 }
 
 export interface UnifiedLoginResponse {
@@ -28,6 +25,8 @@ export interface UnifiedLoginResponse {
   refresh_token?: string;
   expires_in?: string;
   user: StaffUserInfo | PortalUserInfo;
+  requires_two_factor?: boolean;
+  pending_token?: string;
 }
 
 export class ApiError extends Error {
@@ -51,6 +50,7 @@ export async function loginWithApi(payload: {
   email: string;
   password: string;
   portal: 'admin' | 'customer';
+  two_factor_code?: string;
 }): Promise<UnifiedLoginResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',

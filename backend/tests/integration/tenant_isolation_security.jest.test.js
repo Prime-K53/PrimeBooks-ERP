@@ -1,14 +1,11 @@
 /**
- * Tenant Isolation Security Tests (Jest version)
- * Validates that cross-company data leakage is eliminated.
+ * Single-Organization Security Tests (Jest version)
+ * Validates the single-organization architecture: no company_id columns,
+ * no tenant tables, passthrough tenantContext.
  */
-const { db, initDb, getDatabase } = require('../../db.cjs');
+const { db, initDb } = require('../../db.cjs');
 const { tenantContext } = require('../../middleware/tenantContext.cjs');
-
-const COMPANY_A = 'comp-a-test';
-const COMPANY_B = 'comp-b-test';
-const USER_A_ID = 'usr-test-a';
-const USER_B_ID = 'usr-test-b';
+const { generateToken, verifyToken } = require('../../middleware/auth.cjs');
 
 const runQuery = (sql, params = []) => new Promise((resolve, reject) => {
   db.get(sql, params, (err, row) => {
@@ -45,7 +42,7 @@ const tables = [
   'bom_default_materials', 'profit_margin_settings',
   'profit_margin_audit_logs', 'work_centers', 'production_resources',
   'work_orders', 'production_batches', 'sale_items',
-  'user_companies', 'chart_of_accounts', 'suppliers',
+  'chart_of_accounts', 'suppliers',
   'purchase_orders', 'goods_receipts'
 ];
 
@@ -54,110 +51,76 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await runExec('DELETE FROM user_companies WHERE user_id IN (?, ?)', [USER_A_ID, USER_B_ID]);
-  await runExec('DELETE FROM sales WHERE id LIKE \'sale-%\'');
-  await runExec('DELETE FROM examination_batches WHERE id IN (\'batch-a1\', \'batch-b1\')');
-  await runExec('DELETE FROM inventory WHERE id IN (\'inv-a1\', \'inv-b1\')');
+  await runExec("DELETE FROM sales WHERE id LIKE 'sale-%'");
+  await runExec("DELETE FROM examination_batches WHERE id IN ('batch-a1', 'batch-b1')");
+  await runExec("DELETE FROM inventory WHERE id IN ('inv-a1', 'inv-b1')");
 });
 
-describe('Tenant Isolation Security', () => {
+describe('Single-Organization Security', () => {
 
-  test('all business tables have company_id column', async () => {
+  test('all business tables exist and have NO company_id column', async () => {
     for (const table of tables) {
       const cols = await runAll(`PRAGMA table_info(${table})`);
-      expect(cols.some(c => c.name === 'company_id')).toBe(true);
+      expect(cols).toBeDefined();
+      expect(cols.some(c => c.name === 'company_id')).toBe(false);
     }
   });
 
-  test('data isolation: separate company records are separate', async () => {
-    // Insert sample data
-    await runExec('INSERT OR IGNORE INTO sales (id, date, total_amount, company_id) VALUES (?, datetime(\'now\'), ?, ?)',
-      ['sale-a1', 100, COMPANY_A]);
-    await runExec('INSERT OR IGNORE INTO sales (id, date, total_amount, company_id) VALUES (?, datetime(\'now\'), ?, ?)',
-      ['sale-a2', 200, COMPANY_A]);
-    await runExec('INSERT OR IGNORE INTO sales (id, date, total_amount, company_id) VALUES (?, datetime(\'now\'), ?, ?)',
-      ['sale-b1', 300, COMPANY_B]);
-
-    const salesA = await runAll('SELECT id, total_amount FROM sales WHERE company_id = ?', [COMPANY_A]);
-    expect(salesA.length).toBe(2);
-    expect(salesA.some(s => s.id === 'sale-b1')).toBe(false);
-
-    const salesB = await runAll('SELECT id, total_amount FROM sales WHERE company_id = ?', [COMPANY_B]);
-    expect(salesB.length).toBe(1);
-    expect(salesB.some(s => s.id === 'sale-a1')).toBe(false);
+  test('tenant tables (companies, user_companies) do not exist', async () => {
+    const companies = await runQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='companies'");
+    expect(companies).toBeUndefined();
+    const userCompanies = await runQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='user_companies'");
+    expect(userCompanies).toBeUndefined();
   });
 
-  test('examination batches isolation', async () => {
-    await runExec('INSERT OR IGNORE INTO examination_batches (id, batch_number, school_id, name, company_id) VALUES (?, ?, ?, ?, ?)',
-      ['batch-a1', 'BN-A001', 'sch-1', 'Batch A1', COMPANY_A]);
-    await runExec('INSERT OR IGNORE INTO examination_batches (id, batch_number, school_id, name, company_id) VALUES (?, ?, ?, ?, ?)',
-      ['batch-b1', 'BN-B001', 'sch-2', 'Batch B1', COMPANY_B]);
+  test('data isolation: all business data is global', async () => {
+    await runExec("INSERT OR IGNORE INTO sales (id, date, total_amount) VALUES (?, datetime('now'), ?)",
+      ['sale-a1', 100]);
+    await runExec("INSERT OR IGNORE INTO sales (id, date, total_amount) VALUES (?, datetime('now'), ?)",
+      ['sale-b1', 300]);
 
-    const batchesA = await runAll('SELECT id FROM examination_batches WHERE company_id = ?', [COMPANY_A]);
-    expect(batchesA.length).toBeGreaterThanOrEqual(1);
-    expect(batchesA.some(b => b.id === 'batch-b1')).toBe(false);
+    const sales = await runAll("SELECT id, total_amount FROM sales WHERE id LIKE 'sale-%' ORDER BY id");
+    expect(sales.length).toBe(2);
+    expect(sales.some(s => s.id === 'sale-a1')).toBe(true);
+    expect(sales.some(s => s.id === 'sale-b1')).toBe(true);
   });
 
-  test('inventory isolation', async () => {
-    await runExec('INSERT OR IGNORE INTO inventory (id, name, cost_per_unit, quantity, company_id) VALUES (?, ?, ?, ?, ?)',
-      ['inv-a1', 'Item A1', 10, 100, COMPANY_A]);
-    await runExec('INSERT OR IGNORE INTO inventory (id, name, cost_per_unit, quantity, company_id) VALUES (?, ?, ?, ?, ?)',
-      ['inv-b1', 'Item B1', 20, 200, COMPANY_B]);
+  test('examination batches are global', async () => {
+    await runExec("INSERT OR IGNORE INTO examination_batches (id, batch_number, school_id, name) VALUES (?, ?, ?, ?)",
+      ['batch-a1', 'BN-A001', 'sch-1', 'Batch A1']);
+    await runExec("INSERT OR IGNORE INTO examination_batches (id, batch_number, school_id, name) VALUES (?, ?, ?, ?)",
+      ['batch-b1', 'BN-B001', 'sch-2', 'Batch B1']);
 
-    const invA = await runAll('SELECT id FROM inventory WHERE company_id = ?', [COMPANY_A]);
-    expect(invA.length).toBeGreaterThanOrEqual(1);
-    expect(invA.some(i => i.id === 'inv-b1')).toBe(false);
+    const batches = await runAll('SELECT id FROM examination_batches WHERE id IN (?, ?) ORDER BY id', ['batch-a1', 'batch-b1']);
+    expect(batches).toHaveLength(2);
   });
 
-  test('user-company membership validation', async () => {
-    await runExec('INSERT OR IGNORE INTO user_companies (id, user_id, company_id, role) VALUES (?, ?, ?, ?)',
-      ['uc-a', USER_A_ID, COMPANY_A, 'admin']);
-    await runExec('INSERT OR IGNORE INTO user_companies (id, user_id, company_id, role) VALUES (?, ?, ?, ?)',
-      ['uc-b', USER_B_ID, COMPANY_B, 'admin']);
+  test('inventory is global', async () => {
+    await runExec("INSERT OR IGNORE INTO inventory (id, name, cost_per_unit, quantity) VALUES (?, ?, ?, ?)",
+      ['inv-a1', 'Item A1', 10, 100]);
+    await runExec("INSERT OR IGNORE INTO inventory (id, name, cost_per_unit, quantity) VALUES (?, ?, ?, ?)",
+      ['inv-b1', 'Item B1', 20, 200]);
 
-    const membershipA = await runAll('SELECT company_id FROM user_companies WHERE user_id = ?', [USER_A_ID]);
-    expect(membershipA.some(m => m.company_id === COMPANY_A)).toBe(true);
-    expect(membershipA.some(m => m.company_id === COMPANY_B)).toBe(false);
-
-    const membershipB = await runAll('SELECT company_id FROM user_companies WHERE user_id = ?', [USER_B_ID]);
-    expect(membershipB.some(m => m.company_id === COMPANY_B)).toBe(true);
-    expect(membershipB.some(m => m.company_id === COMPANY_A)).toBe(false);
+    const inv = await runAll('SELECT id FROM inventory WHERE id IN (?, ?) ORDER BY id', ['inv-a1', 'inv-b1']);
+    expect(inv).toHaveLength(2);
   });
 
-  test('UPDATE isolation prevents cross-company modification', async () => {
-    await runExec('UPDATE sales SET total_amount = 999 WHERE id = ? AND company_id = ?', ['sale-b1', COMPANY_A]);
-    const saleBAfter = await runQuery('SELECT total_amount FROM sales WHERE id = ?', ['sale-b1']);
-    expect(saleBAfter.total_amount).toBe(300);
-
-    await runExec('UPDATE sales SET total_amount = 999 WHERE id = ? AND company_id = ?', ['sale-b1', COMPANY_B]);
-    const saleBAfterOwn = await runQuery('SELECT total_amount FROM sales WHERE id = ?', ['sale-b1']);
-    expect(saleBAfterOwn.total_amount).toBe(999);
-  });
-
-  test('DELETE isolation prevents cross-company deletion', async () => {
-    await runExec('DELETE FROM sales WHERE id = ? AND company_id = ?', ['sale-a1', COMPANY_B]);
-    const saleAStillExists = await runQuery('SELECT id FROM sales WHERE id = ?', ['sale-a1']);
-    expect(saleAStillExists).toBeDefined();
-
-    await runExec('DELETE FROM sales WHERE id = ? AND company_id = ?', ['sale-a1', COMPANY_A]);
-    const saleAGone = await runQuery('SELECT id FROM sales WHERE id = ?', ['sale-a1']);
-    expect(saleAGone).toBeUndefined();
-  });
-
-  test('tenantContext middleware attaches companyId from header', (done) => {
-    const mockReq = { headers: { 'x-company-id': COMPANY_A }, user: { id: USER_A_ID } };
-    const mockRes = {};
-    tenantContext(mockReq, mockRes, () => {
-      expect(mockReq.companyId).toBe(COMPANY_A);
+  test('tenantContext middleware is a passthrough', (done) => {
+    const mockReq = { headers: { 'x-company-id': 'comp-a-test' }, user: { id: 'usr-test-a' } };
+    tenantContext(mockReq, {}, () => {
+      expect(mockReq.companyId).toBeUndefined();
       done();
     });
   });
 
-  test('tenantContext defaults to empty string when no header', (done) => {
-    const mockReqNoHeader = { headers: {}, user: { id: USER_A_ID } };
-    tenantContext(mockReqNoHeader, {}, () => {
-      expect(mockReqNoHeader.companyId).toBe('');
-      done();
-    });
+  test('JWT payload has no company claims', async () => {
+    const token = generateToken({ id: 'usr-test-a', username: 'tester', role: 'Admin' });
+    const payload = require('jsonwebtoken').decode(token);
+    expect(payload.company_id).toBeUndefined();
+    expect(payload.companies).toBeUndefined();
+
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    await verifyToken(req, { json: () => {} }, () => {});
+    expect(req.user.id).toBe('usr-test-a');
   });
 });

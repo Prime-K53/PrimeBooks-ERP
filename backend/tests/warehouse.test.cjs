@@ -44,7 +44,6 @@ async function createTables() {
     quantity INTEGER NOT NULL DEFAULT 0,
     reserved INTEGER NOT NULL DEFAULT 0,
     available INTEGER NOT NULL DEFAULT 0,
-    company_id TEXT NOT NULL DEFAULT '',
     last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(item_id, warehouse_id)
   )`);
@@ -55,7 +54,6 @@ async function createTables() {
     snapshot_type TEXT DEFAULT 'manual',
     notes TEXT,
     created_by TEXT,
-    company_id TEXT NOT NULL DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
@@ -64,7 +62,6 @@ async function createTables() {
     name TEXT,
     quantity REAL DEFAULT 0,
     reserved REAL DEFAULT 0,
-    company_id TEXT NOT NULL DEFAULT '',
     last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 }
@@ -77,12 +74,12 @@ describe('Warehouse Inventory SQL', () => {
   });
 
   it('creates tables and inserts warehouse inventory rows', async () => {
-    await run(`INSERT INTO warehouse_inventory (id, item_id, warehouse_id, quantity, reserved, available, company_id)
-               VALUES ('wh1-item-a', 'item-a', 'WH-01', 100, 10, 90, 'comp1')`);
-    await run(`INSERT INTO warehouse_inventory (id, item_id, warehouse_id, quantity, reserved, available, company_id)
-               VALUES ('wh1-item-b', 'item-b', 'WH-01', 50, 5, 45, 'comp1')`);
-    await run(`INSERT INTO warehouse_inventory (id, item_id, warehouse_id, quantity, reserved, available, company_id)
-               VALUES ('wh2-item-a', 'item-a', 'WH-02', 30, 3, 27, 'comp1')`);
+    await run(`INSERT INTO warehouse_inventory (id, item_id, warehouse_id, quantity, reserved, available)
+               VALUES ('wh1-item-a', 'item-a', 'WH-01', 100, 10, 90)`);
+    await run(`INSERT INTO warehouse_inventory (id, item_id, warehouse_id, quantity, reserved, available)
+               VALUES ('wh1-item-b', 'item-b', 'WH-01', 50, 5, 45)`);
+    await run(`INSERT INTO warehouse_inventory (id, item_id, warehouse_id, quantity, reserved, available)
+               VALUES ('wh2-item-a', 'item-a', 'WH-02', 30, 3, 27)`);
 
     const rows = await all('SELECT COUNT(*) as cnt FROM warehouse_inventory');
     expect(rows[0].cnt).toBe(3);
@@ -95,9 +92,8 @@ describe('Warehouse Inventory SQL', () => {
                                    COUNT(DISTINCT wi.item_id) as item_count,
                                    MAX(wi.last_updated) as last_updated
                             FROM warehouse_inventory wi
-                            WHERE wi.company_id = ?
                             GROUP BY wi.warehouse_id
-                            ORDER BY wi.warehouse_id`, ['comp1']);
+                            ORDER BY wi.warehouse_id`);
 
     expect(rows).toHaveLength(2);
     expect(rows[0].warehouse_id).toBe('WH-01');
@@ -110,18 +106,6 @@ describe('Warehouse Inventory SQL', () => {
     expect(rows[1].total_reserved).toBe(3);
     expect(rows[1].item_count).toBe(1);
   });
-
-  it('returns empty array for unknown company', async () => {
-    const rows = await all(`SELECT wi.warehouse_id,
-                                   COALESCE(SUM(wi.quantity), 0) as total_stock,
-                                   COALESCE(SUM(wi.reserved), 0) as total_reserved,
-                                   COUNT(DISTINCT wi.item_id) as item_count
-                            FROM warehouse_inventory wi
-                            WHERE wi.company_id = ?
-                            GROUP BY wi.warehouse_id
-                            ORDER BY wi.warehouse_id`, ['comp-unknown']);
-    expect(rows).toEqual([]);
-  });
 });
 
 describe('Warehouse Snapshots SQL', () => {
@@ -131,11 +115,11 @@ describe('Warehouse Snapshots SQL', () => {
 
   it('inserts and retrieves snapshots', async () => {
     const data = JSON.stringify([{ warehouse_id: 'WH-01', total_stock: 150 }]);
-    await run(`INSERT OR REPLACE INTO warehouse_snapshots (id, snapshot_data, snapshot_type, notes, created_by, company_id, created_at)
-               VALUES ('snap1', ?, 'manual', 'Test snapshot', 'tester', 'comp1', ?)`,
+    await run(`INSERT OR REPLACE INTO warehouse_snapshots (id, snapshot_data, snapshot_type, notes, created_by, created_at)
+               VALUES ('snap1', ?, 'manual', 'Test snapshot', 'tester', ?)`,
                [data, new Date().toISOString()]);
 
-    const rows = await all('SELECT * FROM warehouse_snapshots WHERE company_id = ? ORDER BY created_at DESC LIMIT ?', ['comp1', 20]);
+    const rows = await all('SELECT * FROM warehouse_snapshots ORDER BY created_at DESC LIMIT ?', [20]);
     expect(rows).toHaveLength(1);
     expect(rows[0].id).toBe('snap1');
     expect(rows[0].snapshot_type).toBe('manual');
@@ -145,26 +129,21 @@ describe('Warehouse Snapshots SQL', () => {
     const parsed = JSON.parse(rows[0].snapshot_data);
     expect(parsed).toEqual([{ warehouse_id: 'WH-01', total_stock: 150 }]);
   });
-
-  it('filters snapshots by company_id', async () => {
-    const rows = await all('SELECT * FROM warehouse_snapshots WHERE company_id = ? ORDER BY created_at DESC LIMIT ?', ['other-company', 20]);
-    expect(rows).toEqual([]);
-  });
 });
 
 describe('Sync Master Inventory SQL', () => {
   beforeAll(async () => {
     await createTables();
-    await run(`INSERT INTO inventory (id, name, quantity, reserved, company_id)
-               VALUES ('item-a', 'Item A', 0, 0, 'comp1')`);
-    await run(`INSERT INTO inventory (id, name, quantity, reserved, company_id)
-               VALUES ('item-b', 'Item B', 0, 0, 'comp1')`);
+    await run(`INSERT INTO inventory (id, name, quantity, reserved)
+               VALUES ('item-a', 'Item A', 0, 0)`);
+    await run(`INSERT INTO inventory (id, name, quantity, reserved)
+               VALUES ('item-b', 'Item B', 0, 0)`);
   });
 
   it('syncs a single item from warehouse totals', async () => {
     const rows = await all(`SELECT item_id, SUM(quantity) as total_qty, SUM(reserved) as total_reserved
-                            FROM warehouse_inventory WHERE item_id = ? AND company_id = ? GROUP BY item_id`,
-                            ['item-a', 'comp1']);
+                            FROM warehouse_inventory WHERE item_id = ? GROUP BY item_id`,
+                            ['item-a']);
 
     expect(rows).toHaveLength(1);
     expect(rows[0].total_qty).toBe(130); // 100 + 30 from both warehouses
@@ -173,8 +152,7 @@ describe('Sync Master Inventory SQL', () => {
 
   it('syncs all items', async () => {
     const rows = await all(`SELECT wi.item_id, SUM(wi.quantity) as total_qty, SUM(wi.reserved) as total_reserved
-                            FROM warehouse_inventory wi WHERE wi.company_id = ? GROUP BY wi.item_id`,
-                            ['comp1']);
+                            FROM warehouse_inventory wi GROUP BY wi.item_id`);
 
     expect(rows).toHaveLength(2);
     const itemA = rows.find(r => r.item_id === 'item-a');
@@ -187,14 +165,14 @@ describe('Sync Master Inventory SQL', () => {
 
   it('updates inventory from totals', async () => {
     const totals = await all(`SELECT item_id, SUM(quantity) as total_qty, SUM(reserved) as total_reserved
-                              FROM warehouse_inventory WHERE company_id = ? GROUP BY item_id`, ['comp1']);
+                              FROM warehouse_inventory GROUP BY item_id`);
 
     for (const row of totals) {
-      await run('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?',
-                [row.total_qty, row.total_reserved, row.item_id, 'comp1']);
+      await run('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?',
+                [row.total_qty, row.total_reserved, row.item_id]);
     }
 
-    const updated = await all('SELECT id, quantity, reserved FROM inventory WHERE company_id = ? ORDER BY id', ['comp1']);
+    const updated = await all('SELECT id, quantity, reserved FROM inventory ORDER BY id');
     expect(updated[0].id).toBe('item-a');
     expect(updated[0].quantity).toBe(130);
     expect(updated[0].reserved).toBe(13);

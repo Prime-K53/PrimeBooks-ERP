@@ -37,6 +37,7 @@ const CustomerNotifications: React.FC = () => {
   const [notifications, setNotifications] = useState<PortalNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   const fetchNotifications = () => {
     portalApi.get<PortalNotification[]>('/notifications')
@@ -157,8 +158,31 @@ const CustomerNotifications: React.FC = () => {
         {notifications.length === 0 ? (
           <EmptyState icon={<Bell size={28} />} title="No notifications" description="You're all caught up! Notifications will appear here." />
         ) : (
-          <div className="space-y-2">
-            {notifications.map((n) => {
+          <>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 500,
+                  color: ink, background: paper,
+                  border: `1.4px solid ${hairline}`, borderRadius: 8,
+                  padding: '6px 10px', outline: 'none', cursor: 'pointer',
+                  minWidth: 130
+                }}
+              >
+                <option value="all">All Types</option>
+                <option value="info">Info</option>
+                <option value="alert">Alerts</option>
+                <option value="success">Success</option>
+                <option value="payment">Payments</option>
+                <option value="order">Orders</option>
+                <option value="invoice">Invoices</option>
+                <option value="message">Messages</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              {notifications.filter((n) => typeFilter === 'all' || n.type === typeFilter).map((n) => {
               const icon = typeIcons[n.type] || typeIcons.info;
 
               return (
@@ -198,6 +222,7 @@ const CustomerNotifications: React.FC = () => {
               );
             })}
           </div>
+          </>
         )}
       </div>
     </div>

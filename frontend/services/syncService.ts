@@ -4,16 +4,6 @@ import { mergeRecords, fieldLevelMerge } from './syncConflictResolver';
 import { durableSyncQueue } from './durableSyncQueue';
 import { logger } from './logger';
 
-const getCompanyId = (): string | null => {
-  try {
-    const raw = localStorage.getItem('nexus_company_config');
-    if (!raw) return null;
-    return JSON.parse(raw).companyId || null;
-  } catch {
-    return null;
-  }
-};
-
 const SUPABASE_ENABLED = Boolean(
   import.meta.env.VITE_SUPABASE_URL &&
   import.meta.env.VITE_SUPABASE_ANON_KEY &&
@@ -208,7 +198,6 @@ export async function pullRemoteChanges(
   let pulled = 0;
   const totalStores = TABLES_TO_SYNC.length;
   let completedStores = 0;
-  const companyId = getCompanyId();
 
   for (let i = 0; i < totalStores; i += SYNC_CONCURRENCY) {
     const batch = TABLES_TO_SYNC.slice(i, i + SYNC_CONCURRENCY);
@@ -220,8 +209,6 @@ export async function pullRemoteChanges(
 
         try {
           let query = supabase.from(table).select('*');
-
-          if (companyId) query = query.eq('company_id', companyId);
 
           // Incremental sync: only fetch rows updated since last sync
           if (!forceFullSync) {
@@ -328,17 +315,12 @@ export async function pushLocalChanges(): Promise<{ pushed: number; errors: stri
         const cleanPayload = { ...entry.payload };
         delete cleanPayload._updatedAt;
         delete cleanPayload._cloudSource;
-        const companyId = cleanPayload._companyId;
-        delete cleanPayload._companyId;
         const { id, ...domainData } = cleanPayload;
         const record: Record<string, unknown> = {
           id: id || entry.entityId,
           data: domainData,
           updated_at: new Date().toISOString(),
         };
-        if (companyId) {
-          record.company_id = companyId;
-        }
         const { error } = await supabase
           .from(table)
           .upsert(record, {
@@ -384,16 +366,11 @@ function subscribeToRemoteChanges() {
   if (!SUPABASE_ENABLED || realtimeSubscribed) return;
   realtimeSubscribed = true;
 
-  const companyId = getCompanyId();
-
   for (const storeName of TABLES_TO_SYNC) {
     const table = getTable(storeName);
 
     try {
       const filter: Record<string, string> = { event: '*', schema: 'public', table };
-      if (companyId) {
-        filter.filter = `company_id=eq.${companyId}`;
-      }
       const channel = supabase
         .channel(`public:${table}`)
         .on(

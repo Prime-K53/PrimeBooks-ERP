@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, MessageSquare, CheckCircle2, ShoppingCart, RotateCcw, Truck } from 'lucide-react';
+import { ArrowLeft, Download, MessageSquare, CheckCircle2, ShoppingCart, RotateCcw, Truck, FileText } from 'lucide-react';
 import { createElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { portalApi, portalLifecycle, TimelineEvent } from '../../services/portalApiClient';
@@ -74,6 +74,7 @@ const CustomerOrderDetail: React.FC = () => {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [confirmReorder, setConfirmReorder] = useState<{ open: boolean; order: OrderDetail | null }>({ open: false, order: null });
+  const [deliveryCountdown, setDeliveryCountdown] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -136,6 +137,25 @@ const CustomerOrderDetail: React.FC = () => {
     })();
     return () => { cancelled = true; };
   }, [id, load]);
+
+  // Delivery countdown timer - updates every hour
+  useEffect(() => {
+    if (!order?.estimated_delivery) return;
+    const calcCountdown = () => {
+      const now = new Date();
+      const delivery = new Date(order.estimated_delivery!);
+      const diff = delivery.getTime() - now.getTime();
+      if (diff <= 0) return 'Delivered or overdue';
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      return `${days}d ${hours}h remaining`;
+    };
+    setDeliveryCountdown(calcCountdown());
+    const interval = setInterval(() => {
+      setDeliveryCountdown(calcCountdown());
+    }, 60 * 60 * 1000); // Update every hour
+    return () => clearInterval(interval);
+  }, [order?.estimated_delivery]);
 
   const handleDownloadPdf = async () => {
     if (!order) return;
@@ -224,11 +244,37 @@ const CustomerOrderDetail: React.FC = () => {
               {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : ''}
               {order.notes ? ` • ${order.notes}` : ''}
             </p>
+            {order.estimated_delivery && (
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                <Truck size={14} className="text-slate-400" />
+                <span className="text-slate-500">Estimated Delivery:</span>
+                <span className="font-medium text-slate-700">
+                  {new Date(order.estimated_delivery).toLocaleDateString()}
+                </span>
+                {deliveryCountdown && (
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    deliveryCountdown === 'Delivered or overdue'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {deliveryCountdown}
+                  </span>
+                )}
+              </div>
+            )}
+            {order.shipping_address && (
+              <p className="text-xs text-slate-400 mt-1 truncate max-w-md" title={order.shipping_address}>
+                📍 {order.shipping_address}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <StatusBadge status={order.status} />
             {(order as any).tracking_number && (
               <PortalButton variant="primary" onClick={() => navigate(`/portal/shipments/${order.id}`)} icon={Truck}>Track Shipment</PortalButton>
+            )}
+            {order.status !== 'Draft' && order.status !== 'Cancelled' && (
+              <PortalButton variant="secondary" onClick={() => navigate('/portal/invoices')} icon={FileText}>View Invoice</PortalButton>
             )}
             {order.status !== 'Draft' && order.status !== 'Cancelled' && (
               <PortalButton variant="secondary" onClick={handleReorderRequest} icon={RotateCcw}>Reorder</PortalButton>

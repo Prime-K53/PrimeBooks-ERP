@@ -56,11 +56,11 @@ class ReferralService extends BaseService {
 
   // ── Referral CRUD ──────────────────────────────────────────────
 
-  async getAll(params, companyId) {
+  async getAll(params) {
     const { page, limit, offset } = this.getPaginationParams(params);
 
-    const conditions = ['r.company_id = ?', 'r.deleted_at IS NULL'];
-    const queryParams = [companyId];
+    const conditions = ['r.', 'r.deleted_at IS NULL'];
+    const queryParams = [];
 
     if (params.status) {
       conditions.push('r.status = ?');
@@ -110,35 +110,33 @@ class ReferralService extends BaseService {
     return { referrals, total, page, limit, totalPages };
   }
 
-  async getById(id, companyId) {
+  async getById(id) {
     return this._get(
-      'SELECT * FROM customer_referrals WHERE id = ? AND company_id = ? AND deleted_at IS NULL',
-      [id, companyId]
+      'SELECT * FROM customer_referrals WHERE id = ?deleted_at IS NULL',
+      [id]
     );
   }
 
-  async delete(id, companyId) {
-    const existing = await this.getById(id, companyId);
+  async delete(id) {
+    const existing = await this.getById(id);
     if (!existing) throw new Error('Referral not found');
     if (existing.deleted_at) throw new Error('Referral already deleted');
 
     await this._run(
-      `UPDATE customer_referrals SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-      [id, companyId]
+      `UPDATE customer_referrals SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [id]
     );
 
     await this.addTimelineEntry({
       referralId: id,
       eventType: 'referral_cancelled',
       title: 'Referral Deleted',
-      description: 'Referral was soft-deleted',
-      companyId
-    });
+      description: 'Referral was soft-deleted'});
 
-    return this.getById(id, companyId);
+    return this.getById(id);
   }
 
-  async register(data, companyId) {
+  async register(data) {
     if (data.customer_id === data.referred_by_id) {
       throw new Error('Self-referral is not allowed');
     }
@@ -148,11 +146,11 @@ class ReferralService extends BaseService {
       const referralCode = data.referral_code || await this.generateReferralCode();
 
       await this._run(
-      `INSERT INTO customer_referrals (id, customer_id, referred_by_id, referred_by_name, referral_code, status, pending_invoice_id, pending_invoice_amount, notes, company_id, created_at, updated_at)
+      `INSERT INTO customer_referrals (id, customer_id, referred_by_id, referred_by_name, referral_code, status, pending_invoice_id, pending_invoice_amount, notes, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       [id, data.customer_id, data.referred_by_id, data.referred_by_name || null,
        referralCode, data.pending_invoice_id || null, data.pending_invoice_amount || null,
-       data.notes || null, companyId]
+       data.notes || null]
     );
 
     await this.addTimelineEntry({
@@ -161,25 +159,21 @@ class ReferralService extends BaseService {
       title: 'Referral Created',
       description: `Referral created for customer ${data.customer_id}`,
       actorId: data.referred_by_id,
-      actorName: data.referred_by_name,
-      companyId
-    });
+      actorName: data.referred_by_name});
 
     await this.addAuditLog({
       entityType: 'referral',
       entityId: id,
       action: 'created',
       actorId: data.referred_by_id || 'system',
-      actorName: data.referred_by_name || 'System',
-      companyId
-    });
+      actorName: data.referred_by_name || 'System'});
 
       return this._get('SELECT * FROM customer_referrals WHERE id = ?', [id]);
     });
   }
 
-  async update(id, data, companyId) {
-    const existing = await this.getById(id, companyId);
+  async update(id, data) {
+    const existing = await this.getById(id);
     if (!existing) throw new Error('Referral not found');
 
     const fields = [];
@@ -194,25 +188,25 @@ class ReferralService extends BaseService {
     }
 
     if (fields.length > 0) {
-      params.push(id, companyId);
+      params.push(id);
       await this._run(
-        `UPDATE customer_referrals SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
+        `UPDATE customer_referrals SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         params
       );
     }
 
-    return this.getById(id, companyId);
+    return this.getById(id);
   }
 
-  async cancel(id, actorId, actorName, reason, companyId) {
+  async cancel(id, actorId, actorName, reason) {
     return this._transaction(async () => {
-      const existing = await this.getById(id, companyId);
+      const existing = await this.getById(id);
       if (!existing) throw new Error('Referral not found');
       if (existing.status !== 'active') throw new Error('Referral is not active');
 
       await this._run(
-        `UPDATE customer_referrals SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-        [id, companyId]
+        `UPDATE customer_referrals SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [id]
       );
 
       await this.addTimelineEntry({
@@ -221,9 +215,7 @@ class ReferralService extends BaseService {
         title: 'Referral Cancelled',
         description: reason || 'Referral was cancelled',
         actorId,
-        actorName,
-        companyId
-      });
+        actorName});
 
       await this.addAuditLog({
         entityType: 'referral',
@@ -234,43 +226,39 @@ class ReferralService extends BaseService {
         reason,
         fieldName: 'status',
         oldValue: existing.status,
-        newValue: 'cancelled',
-        companyId
-      });
+        newValue: 'cancelled'});
 
-      return this.getById(id, companyId);
+      return this.getById(id);
     });
   }
 
-  async expire(id, companyId) {
+  async expire(id) {
     return this._transaction(async () => {
-      const existing = await this.getById(id, companyId);
+      const existing = await this.getById(id);
       if (!existing) throw new Error('Referral not found');
       if (existing.status !== 'active') throw new Error('Referral is not active');
 
       await this._run(
-        `UPDATE customer_referrals SET status = 'expired', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-        [id, companyId]
+        `UPDATE customer_referrals SET status = 'expired', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [id]
       );
 
       await this.addTimelineEntry({
         referralId: id,
         eventType: 'referral_expired',
         title: 'Referral Expired',
-        description: 'Referral has expired',
-        companyId
-      });
+        description: 'Referral has expired'});
 
-      return this.getById(id, companyId);
+      return this.getById(id);
     });
   }
 
   // ── Reward Management ──────────────────────────────────────────
 
-  async getAllRewards(params, companyId) {
+  async getAllRewards(params) {
     const { page, limit, offset } = this.getPaginationParams(params);
-    const conditions = ['r.company_id = ?'];
-    const queryParams = [companyId];
+    const conditions = ['r.'];
+    const queryParams = [];
 
     if (params.status) {
       conditions.push('r.status = ?');
@@ -299,29 +287,29 @@ class ReferralService extends BaseService {
     return { rewards, total, page, limit, totalPages };
   }
 
-  async getPendingRewards(companyId) {
+  async getPendingRewards() {
     return this._all(
-      "SELECT * FROM referral_rewards WHERE company_id = ? AND status = 'pending' ORDER BY created_at ASC",
-      [companyId]
+      "SELECT * FROM referral_rewards WHERE status = 'pending' ORDER BY created_at ASC",
+      []
     );
   }
 
-  async getRewardById(id, companyId) {
+  async getRewardById(id) {
     return this._get(
-      'SELECT * FROM referral_rewards WHERE id = ? AND company_id = ?',
-      [id, companyId]
+      'SELECT * FROM referral_rewards WHERE id = ?',
+      [id]
     );
   }
 
-  async createReward(data, companyId) {
+  async createReward(data) {
     return this._transaction(async () => {
       const referral = await this._get(
-        "SELECT * FROM customer_referrals WHERE id = ? AND company_id = ? AND status = 'active'",
-        [data.referral_id, companyId]
+        "SELECT * FROM customer_referrals WHERE id = ? AND status = 'active'",
+        [data.referral_id]
       );
       if (!referral) throw new Error('Referral not found or is not active');
 
-      const settings = await this.getSettings(companyId);
+      const settings = await this.getSettings();
       let amount = data.amount;
       if (amount === undefined || amount === null) {
         if (settings.rewardType === 'fixed') {
@@ -341,10 +329,10 @@ class ReferralService extends BaseService {
 
       const id = randomUUID();
       await this._run(
-        `INSERT INTO referral_rewards (id, referral_id, customer_id, invoice_id, invoice_amount, amount, status, company_id, created_at, updated_at)
+        `INSERT INTO referral_rewards (id, referral_id, customer_id, invoice_id, invoice_amount, amount, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [id, data.referral_id, data.customer_id, data.invoice_id, data.invoice_amount || 0,
-         amount, companyId]
+         amount]
       );
 
       await this.addTimelineEntry({
@@ -352,51 +340,47 @@ class ReferralService extends BaseService {
         eventType: 'reward_earned',
         title: 'Reward Earned',
         description: `Reward of ${amount} earned for referral`,
-        amount,
-        companyId
-      });
+        amount});
 
       await this.addAuditLog({
         entityType: 'reward',
         entityId: id,
         action: 'created',
         actorId: 'system',
-        actorName: 'System',
-        companyId
-      });
+        actorName: 'System'});
 
       return this._get('SELECT * FROM referral_rewards WHERE id = ?', [id]);
     });
   }
 
-  async approveReward(id, approvedBy, companyId) {
+  async approveReward(id, approvedBy) {
     return this._transaction(async () => {
-      const reward = await this.getRewardById(id, companyId);
+      const reward = await this.getRewardById(id);
       if (!reward) throw new Error('Reward not found');
       if (reward.status !== 'pending') throw new Error('Reward is not in pending status');
 
       const referral = await this._get(
-        'SELECT * FROM customer_referrals WHERE id = ? AND company_id = ?',
-        [reward.referral_id, companyId]
+        'SELECT * FROM customer_referrals WHERE id = ?',
+        [reward.referral_id]
       );
 
       await this._run(
-        `UPDATE referral_rewards SET status = 'approved', approved_at = CURRENT_TIMESTAMP, approved_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-        [approvedBy, id, companyId]
+        `UPDATE referral_rewards SET status = 'approved', approved_at = CURRENT_TIMESTAMP, approved_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [approvedBy, id]
       );
 
       await this._run(
-        `UPDATE customer_referrals SET status = 'converted', converted_invoice_id = ?, converted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-        [reward.invoice_id, reward.referral_id, companyId]
+        `UPDATE customer_referrals SET status = 'converted', converted_invoice_id = ?, converted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [reward.invoice_id, reward.referral_id]
       );
 
       if (referral) {
-        await this.creditWalletForReward(reward, referral, companyId);
+        await this.creditWalletForReward(reward, referral);
       }
 
-      await this.notificationService.sendRewardApprovedNotification(reward, referral, companyId);
+      await this.notificationService.sendRewardApprovedNotification(reward, referral);
       await this._createPortalNotifications(
-        reward.customer_id, companyId,
+        reward.customer_id,
         'reward_approved',
         'Reward Approved',
         `Your referral reward of ${reward.amount} has been approved.`,
@@ -409,9 +393,7 @@ class ReferralService extends BaseService {
         title: 'Reward Approved',
         description: `Reward of ${reward.amount} approved`,
         amount: reward.amount,
-        actorId: approvedBy,
-        companyId
-      });
+        actorId: approvedBy});
 
       await this.addAuditLog({
         entityType: 'reward',
@@ -420,33 +402,31 @@ class ReferralService extends BaseService {
         actorId: approvedBy,
         fieldName: 'status',
         oldValue: 'pending',
-        newValue: 'approved',
-        companyId
-      });
+        newValue: 'approved'});
 
       return this._get('SELECT * FROM referral_rewards WHERE id = ?', [id]);
     });
   }
 
-  async rejectReward(id, reason, rejectedBy, companyId) {
+  async rejectReward(id, reason, rejectedBy) {
     return this._transaction(async () => {
-      const reward = await this.getRewardById(id, companyId);
+      const reward = await this.getRewardById(id);
       if (!reward) throw new Error('Reward not found');
       if (reward.status !== 'pending') throw new Error('Reward is not in pending status');
 
       const referral = await this._get(
-        'SELECT * FROM customer_referrals WHERE id = ? AND company_id = ?',
-        [reward.referral_id, companyId]
+        'SELECT * FROM customer_referrals WHERE id = ?',
+        [reward.referral_id]
       );
 
       await this._run(
-        `UPDATE referral_rewards SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = ?, cancel_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-        [rejectedBy, reason || null, id, companyId]
+        `UPDATE referral_rewards SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = ?, cancel_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [rejectedBy, reason || null, id]
       );
 
-      await this.notificationService.sendRewardRejectedNotification(reward, referral, reason, companyId);
+      await this.notificationService.sendRewardRejectedNotification(reward, referral, reason);
       await this._createPortalNotifications(
-        reward.customer_id, companyId,
+        reward.customer_id,
         'reward_rejected',
         'Reward Rejected',
         `Your referral reward of ${reward.amount} was rejected. Reason: ${reason || 'No reason provided'}`,
@@ -458,9 +438,7 @@ class ReferralService extends BaseService {
         eventType: 'reward_rejected',
         title: 'Reward Rejected',
         description: reason || 'Reward was rejected',
-        actorId: rejectedBy,
-        companyId
-      });
+        actorId: rejectedBy});
 
       await this.addAuditLog({
         entityType: 'reward',
@@ -470,9 +448,7 @@ class ReferralService extends BaseService {
         reason,
         fieldName: 'status',
         oldValue: 'pending',
-        newValue: 'cancelled',
-        companyId
-      });
+        newValue: 'cancelled'});
 
       return this._get('SELECT * FROM referral_rewards WHERE id = ?', [id]);
     });
@@ -480,32 +456,32 @@ class ReferralService extends BaseService {
 
   // ── Timeline ───────────────────────────────────────────────────
 
-  async getTimeline(referralId, companyId) {
+  async getTimeline(referralId) {
     return this._all(
-      'SELECT * FROM referral_timeline WHERE referral_id = ? AND company_id = ? ORDER BY timestamp DESC',
-      [referralId, companyId]
+      'SELECT * FROM referral_timeline WHERE referral_id = ? ORDER BY timestamp DESC',
+      [referralId]
     );
   }
 
-  async addTimelineEntry({ referralId, eventType, title, description, amount, actorId, actorName, metadata, companyId }) {
+  async addTimelineEntry({ referralId, eventType, title, description, amount, actorId, actorName, metadata}) {
     const id = randomUUID();
     const metadataJson = metadata ? JSON.stringify(metadata) : null;
     await this._run(
-      `INSERT INTO referral_timeline (id, referral_id, event_type, title, description, amount, actor_id, actor_name, metadata_json, timestamp, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)`,
+      `INSERT INTO referral_timeline (id, referral_id, event_type, title, description, amount, actor_id, actor_name, metadata_json, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
       [id, referralId, eventType, title, description || null,
        amount || null, actorId || null, actorName || null,
-       metadataJson, companyId || '']
+       metadataJson]
     );
     return id;
   }
 
   // ── Audit Log ──────────────────────────────────────────────────
 
-  async getAuditLogs(params, companyId) {
+  async getAuditLogs(params) {
     const { page, limit, offset } = this.getPaginationParams(params);
-    const conditions = ['a.company_id = ?'];
-    const queryParams = [companyId];
+    const conditions = ['1 = 1'];
+    const queryParams = [];
 
     if (params.entity_type) {
       conditions.push('a.entity_type = ?');
@@ -537,24 +513,23 @@ class ReferralService extends BaseService {
   async addAuditLog(data) {
     const id = randomUUID();
     await this._run(
-      `INSERT INTO referral_audit_logs (id, entity_type, entity_id, action, actor_id, actor_name, field_name, old_value, new_value, reason, correlation_id, ip_address, user_agent, timestamp, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)`,
+      `INSERT INTO referral_audit_logs (id, entity_type, entity_id, action, actor_id, actor_name, field_name, old_value, new_value, reason, correlation_id, ip_address, user_agent, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
       [id, data.entityType, data.entityId, data.action,
        data.actorId || 'system', data.actorName || null,
        data.fieldName || null, data.oldValue != null ? String(data.oldValue) : null,
        data.newValue != null ? String(data.newValue) : null,
        data.reason || null, data.correlationId || null,
-       data.ipAddress || null, data.userAgent || null,
-       data.companyId || '']
+       data.ipAddress || null, data.userAgent || null]
     );
     return id;
   }
 
   // ── Campaigns ──────────────────────────────────────────────────
 
-  async getAllCampaigns(params, companyId) {
-    const conditions = ['c.company_id = ?'];
-    const queryParams = [companyId];
+  async getAllCampaigns(params) {
+    const conditions = ['c.'];
+    const queryParams = [];
 
     if (params.status && params.status !== 'all') {
       conditions.push('r.status = ?');
@@ -567,28 +542,20 @@ class ReferralService extends BaseService {
     );
   }
 
-  async getActiveCampaign(companyId) {
+  async getActiveCampaign() {
     const now = new Date().toISOString();
     return this._get(
-      "SELECT * FROM referral_campaigns WHERE company_id = ? AND status = 'active' AND start_date <= ? AND (end_date IS NULL OR end_date >= ?) ORDER BY created_at DESC LIMIT 1",
-      [companyId, now, now]
+      "SELECT * FROM referral_campaignsstatus = 'active' AND start_date <= ? AND (end_date IS NULL OR end_date >= ?) ORDER BY created_at DESC LIMIT 1",
+      [now, now]
     );
   }
 
-  async createCampaign(data, companyId) {
+  async createCampaign(data) {
     const id = randomUUID();
     await this._run(
-      `INSERT INTO referral_campaigns (id, name, description, start_date, end_date, status, reward_type, reward_value, reward_percentage, min_purchase_amount, max_reward_amount, max_rewards_per_customer, max_total_rewards, total_rewards_given, target_segments_json, excluded_customers_json, bonus_multiplier, terms_json, created_by, approved_by, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.name, data.description || null, data.start_date,
-       data.end_date || null, data.status || 'draft', data.reward_type || 'percentage',
-       data.reward_value || 0, data.reward_percentage || 0,
-       data.min_purchase_amount || 0, data.max_reward_amount || 0,
-       data.max_rewards_per_customer || 0, data.max_total_rewards || 0,
-       0, data.target_segments_json || null,
-       data.excluded_customers_json || null, data.bonus_multiplier || 1,
-       data.terms_json || null, data.created_by || null,
-       data.approved_by || null, companyId]
+      `INSERT INTO referral_campaigns (id, name, description, start_date, end_date, status, reward_type, reward_value, reward_percentage, min_purchase_amount, max_reward_amount, max_rewards_per_customer, max_total_rewards, total_rewards_given, target_segments_json, excluded_customers_json, bonus_multiplier, terms_json, created_by, approved_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+      [id, data.name, data.description || null, data.start_date, data.end_date || null, data.status || 'draft', data.reward_type || 'percentage', data.reward_value || 0, data.reward_percentage || 0, data.min_purchase_amount || 0, data.max_reward_amount || 0, data.max_rewards_per_customer || 0, data.max_total_rewards || 0, 0, data.target_segments_json || null, data.excluded_customers_json || null, data.bonus_multiplier || 1, data.terms_json || null, data.created_by || null, data.approved_by || null]
     );
 
     await this.addAuditLog({
@@ -596,17 +563,15 @@ class ReferralService extends BaseService {
       entityId: id,
       action: 'created',
       actorId: data.created_by || 'system',
-      actorName: data.created_by || 'System',
-      companyId
-    });
+      actorName: data.created_by || 'System'});
 
     return this._get('SELECT * FROM referral_campaigns WHERE id = ?', [id]);
   }
 
-  async updateCampaign(id, data, companyId) {
+  async updateCampaign(id, data) {
     const existing = await this._get(
-      'SELECT * FROM referral_campaigns WHERE id = ? AND company_id = ?',
-      [id, companyId]
+      'SELECT * FROM referral_campaigns WHERE id = ?',
+      [id]
     );
     if (!existing) throw new Error('Campaign not found');
 
@@ -625,26 +590,26 @@ class ReferralService extends BaseService {
     }
 
     if (fields.length > 0) {
-      params.push(id, companyId);
+      params.push(id);
       await this._run(
-        `UPDATE referral_campaigns SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
+        `UPDATE referral_campaigns SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         params
       );
     }
 
-    return this._get('SELECT * FROM referral_campaigns WHERE id = ? AND company_id = ?', [id, companyId]);
+    return this._get('SELECT * FROM referral_campaigns WHERE id = ?', [id]);
   }
 
-  async updateCampaignStatus(id, status, companyId) {
+  async updateCampaignStatus(id, status) {
     const existing = await this._get(
-      'SELECT * FROM referral_campaigns WHERE id = ? AND company_id = ?',
-      [id, companyId]
+      'SELECT * FROM referral_campaigns WHERE id = ?',
+      [id]
     );
     if (!existing) throw new Error('Campaign not found');
 
     await this._run(
-      `UPDATE referral_campaigns SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-      [status, id, companyId]
+      `UPDATE referral_campaigns SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [status, id]
     );
 
     await this.addAuditLog({
@@ -655,19 +620,17 @@ class ReferralService extends BaseService {
       actorName: 'System',
       fieldName: 'status',
       oldValue: existing.status,
-      newValue: status,
-      companyId
-    });
+      newValue: status});
 
-    return this._get('SELECT * FROM referral_campaigns WHERE id = ? AND company_id = ?', [id, companyId]);
+    return this._get('SELECT * FROM referral_campaigns WHERE id = ?', [id]);
   }
 
   // ── Reversals ──────────────────────────────────────────────────
 
-  async getAllReversals(params, companyId) {
+  async getAllReversals(params) {
     const { page, limit, offset } = this.getPaginationParams(params);
-    const conditions = ['r.company_id = ?'];
-    const queryParams = [companyId];
+    const conditions = ['r.'];
+    const queryParams = [];
 
     if (params.status) {
       conditions.push('r.status = ?');
@@ -691,20 +654,20 @@ class ReferralService extends BaseService {
     return { reversals, total, page, limit, totalPages };
   }
 
-  async createReversal(data, companyId) {
+  async createReversal(data) {
     return this._transaction(async () => {
       const reward = await this._get(
-        'SELECT * FROM referral_rewards WHERE id = ? AND company_id = ?',
-        [data.reward_id, companyId]
+        'SELECT * FROM referral_rewards WHERE id = ?',
+        [data.reward_id]
       );
       if (!reward) throw new Error('Reward not found');
 
       const id = randomUUID();
       await this._run(
-        `INSERT INTO referral_reversals (id, reward_id, reason, status, requested_by, notes, company_id, created_at, updated_at)
+        `INSERT INTO referral_reversals (id, reward_id, reason, status, requested_by, notes, created_at, updated_at)
          VALUES (?, ?, ?, 'pending', ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [id, data.reward_id, data.reason, data.requested_by || 'system',
-         data.notes || null, companyId]
+         data.notes || null]
       );
 
       await this.addAuditLog({
@@ -713,42 +676,40 @@ class ReferralService extends BaseService {
         action: 'created',
         actorId: data.requested_by || 'system',
         actorName: data.requested_by || 'System',
-        reason: data.reason,
-        companyId
-      });
+        reason: data.reason});
 
       return this._get('SELECT * FROM referral_reversals WHERE id = ?', [id]);
     });
   }
 
-  async approveReversal(id, approvedBy, notes, companyId) {
+  async approveReversal(id, approvedBy, notes) {
     return this._transaction(async () => {
       const reversal = await this._get(
-        'SELECT * FROM referral_reversals WHERE id = ? AND company_id = ?',
-        [id, companyId]
+        'SELECT * FROM referral_reversals WHERE id = ?',
+        [id]
       );
       if (!reversal) throw new Error('Reversal not found');
       if (reversal.status !== 'pending') throw new Error('Reversal is not in pending status');
 
       await this._run(
-        `UPDATE referral_reversals SET status = 'approved', approved_by = ?, approved_at = CURRENT_TIMESTAMP, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-        [approvedBy, notes || null, id, companyId]
+        `UPDATE referral_reversals SET status = 'approved', approved_by = ?, approved_at = CURRENT_TIMESTAMP, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [approvedBy, notes || null, id]
       );
 
       await this._run(
-        `UPDATE referral_reversals SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-        [id, companyId]
+        `UPDATE referral_reversals SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [id]
       );
 
       const reward = await this._get(
-        'SELECT * FROM referral_rewards WHERE id = ? AND company_id = ?',
-        [reversal.reward_id, companyId]
+        'SELECT * FROM referral_rewards WHERE id = ?',
+        [reversal.reward_id]
       );
 
       if (reward) {
-        await this.notificationService.sendReversalProcessedNotification(reversal, reward, companyId);
+        await this.notificationService.sendReversalProcessedNotification(reversal, reward);
         await this._createPortalNotifications(
-          reward.customer_id, companyId,
+          reward.customer_id,
           'reversal_processed',
           'Reversal Processed',
           `A reversal has been processed for your reward of ${reward.amount}.`,
@@ -760,9 +721,7 @@ class ReferralService extends BaseService {
           eventType: 'reward_reversed',
           title: 'Reward Reversed',
           description: notes || 'Reward was reversed',
-          actorId: approvedBy,
-          companyId
-        });
+          actorId: approvedBy});
       }
 
       await this.addAuditLog({
@@ -773,34 +732,32 @@ class ReferralService extends BaseService {
         notes,
         fieldName: 'status',
         oldValue: 'pending',
-        newValue: 'completed',
-        companyId
-      });
+        newValue: 'completed'});
 
       return this._get('SELECT * FROM referral_reversals WHERE id = ?', [id]);
     });
   }
 
-  async rejectReversal(id, reason, rejectedBy, notes, companyId) {
+  async rejectReversal(id, reason, rejectedBy, notes) {
     const reversal = await this._get(
-      'SELECT * FROM referral_reversals WHERE id = ? AND company_id = ?',
-      [id, companyId]
+      'SELECT * FROM referral_reversals WHERE id = ?',
+      [id]
     );
     if (!reversal) throw new Error('Reversal not found');
     if (reversal.status !== 'pending') throw new Error('Reversal is not in pending status');
 
     await this._run(
-      `UPDATE referral_reversals SET status = 'rejected', rejected_by = ?, rejected_at = CURRENT_TIMESTAMP, reject_reason = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-      [rejectedBy, reason || null, notes || null, id, companyId]
+      `UPDATE referral_reversals SET status = 'rejected', rejected_by = ?, rejected_at = CURRENT_TIMESTAMP, reject_reason = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [rejectedBy, reason || null, notes || null, id]
     );
 
     const reward = await this._get(
-      'SELECT * FROM referral_rewards WHERE id = ? AND company_id = ?',
-      [reversal.reward_id, companyId]
+      'SELECT * FROM referral_rewards WHERE id = ?',
+      [reversal.reward_id]
     );
     if (reward) {
       await this._createPortalNotifications(
-        reward.customer_id, companyId,
+        reward.customer_id,
         'reversal_rejected',
         'Reversal Rejected',
         `Your reversal request for reward ${reward.amount} was rejected.`,
@@ -816,53 +773,51 @@ class ReferralService extends BaseService {
       reason,
       fieldName: 'status',
       oldValue: 'pending',
-      newValue: 'rejected',
-      companyId
-    });
+      newValue: 'rejected'});
 
     return this._get('SELECT * FROM referral_reversals WHERE id = ?', [id]);
   }
 
   // ── Analytics ──────────────────────────────────────────────────
 
-  async getAnalytics(params, companyId) {
+  async getAnalytics(params) {
     const period = params.period || 'monthly';
     const periodStart = params.period_start || new Date().toISOString().slice(0, 10);
     const periodEnd = params.period_end || periodStart;
 
     let analytics = await this._get(
-      `SELECT * FROM referral_analytics WHERE company_id = ? AND period = ? AND period_start = ? AND period_end = ? ORDER BY generated_at DESC LIMIT 1`,
-      [companyId, period, periodStart, periodEnd]
+      `SELECT * FROM referral_analytics WHERE period = ? AND period_start = ? AND period_end = ? ORDER BY generated_at DESC LIMIT 1`,
+      [period, periodStart, periodEnd]
     );
 
     if (!analytics) {
-      analytics = await this.generateAnalytics(period, periodStart, periodEnd, companyId);
+      analytics = await this.generateAnalytics(period, periodStart, periodEnd);
     }
 
     return analytics;
   }
 
-  async getAnalyticsHistory(params, companyId) {
+  async getAnalyticsHistory(params) {
     return this._all(
-      'SELECT * FROM referral_analytics WHERE company_id = ? ORDER BY period_start DESC',
-      [companyId]
+      'SELECT * FROM referral_analytics ORDER BY period_start DESC',
+      []
     );
   }
 
-  async generateAnalytics(period, periodStart, periodEnd, companyId) {
+  async generateAnalytics(period, periodStart, periodEnd) {
     const totalReferrals = await this._get(
-      'SELECT COUNT(*) as count FROM customer_referrals WHERE company_id = ? AND created_at BETWEEN ? AND ?',
-      [companyId, periodStart, periodEnd + 'T23:59:59.999Z']
+      'SELECT COUNT(*) as count FROM customer_referrals WHERE created_at BETWEEN ? AND ?',
+      [periodStart, periodEnd + 'T23:59:59.999Z']
     );
 
     const activeReferrals = await this._get(
-      "SELECT COUNT(*) as count FROM customer_referrals WHERE company_id = ? AND status = 'active' AND created_at BETWEEN ? AND ?",
-      [companyId, periodStart, periodEnd + 'T23:59:59.999Z']
+      "SELECT COUNT(*) as count FROM customer_referrals WHERE status = 'active' AND created_at BETWEEN ? AND ?",
+      [periodStart, periodEnd + 'T23:59:59.999Z']
     );
 
     const convertedReferrals = await this._get(
-      "SELECT COUNT(*) as count FROM customer_referrals WHERE company_id = ? AND status = 'converted' AND created_at BETWEEN ? AND ?",
-      [companyId, periodStart, periodEnd + 'T23:59:59.999Z']
+      "SELECT COUNT(*) as count FROM customer_referrals WHERE status = 'converted' AND created_at BETWEEN ? AND ?",
+      [periodStart, periodEnd + 'T23:59:59.999Z']
     );
 
     const rewardStats = await this._get(
@@ -872,8 +827,8 @@ class ReferralService extends BaseService {
         COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as paid_amount,
         COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0) as pending_amount,
         COALESCE(AVG(amount), 0) as avg_amount
-       FROM referral_rewards WHERE company_id = ? AND created_at BETWEEN ? AND ?`,
-      [companyId, periodStart, periodEnd + 'T23:59:59.999Z']
+       FROM referral_rewards WHERE created_at BETWEEN ? AND ?`,
+      [periodStart, periodEnd + 'T23:59:59.999Z']
     );
 
     const totalRewardsAmount = rewardStats.total_rewards || 0;
@@ -887,8 +842,8 @@ class ReferralService extends BaseService {
     const conversionRate = totalCount > 0 ? (convertedCount / totalCount) * 100 : 0;
 
     const revenueAttributed = await this._get(
-      'SELECT COALESCE(SUM(invoice_amount), 0) as revenue FROM referral_rewards WHERE company_id = ? AND created_at BETWEEN ? AND ? AND status IN (\'approved\', \'paid\')',
-      [companyId, periodStart, periodEnd + 'T23:59:59.999Z']
+      'SELECT COALESCE(SUM(invoice_amount), 0) as revenue FROM referral_rewardscreated_at BETWEEN ? AND ? AND status IN (\'approved\', \'paid\')',
+      [periodStart, periodEnd + 'T23:59:59.999Z']
     );
 
     const revenue = revenueAttributed.revenue || 0;
@@ -896,12 +851,9 @@ class ReferralService extends BaseService {
 
     const id = randomUUID();
     await this._run(
-      `INSERT INTO referral_analytics (id, period, period_start, period_end, total_referrals, active_referrals, converted_referrals, total_rewards_amount, approved_rewards_amount, paid_rewards_amount, pending_rewards_amount, average_reward_amount, conversion_rate, revenue_attributed, roi, company_id, generated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-      [id, period, periodStart, periodEnd,
-       totalReferrals.count || 0, activeReferrals.count || 0, convertedReferrals.count || 0,
-       totalRewardsAmount, approvedRewardsAmount, paidRewardsAmount, pendingRewardsAmount,
-       averageRewardAmount, conversionRate, revenue, roi, companyId]
+      `INSERT INTO referral_analytics (id, period, period_start, period_end, total_referrals, active_referrals, converted_referrals, total_rewards_amount, approved_rewards_amount, paid_rewards_amount, pending_rewards_amount, average_reward_amount, conversion_rate, revenue_attributed, roi, generated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , CURRENT_TIMESTAMP)`,
+      [id, period, periodStart, periodEnd, totalReferrals.count || 0, activeReferrals.count || 0, convertedReferrals.count || 0, totalRewardsAmount, approvedRewardsAmount, paidRewardsAmount, pendingRewardsAmount, averageRewardAmount, conversionRate, revenue, roi]
     );
 
     return this._get('SELECT * FROM referral_analytics WHERE id = ?', [id]);
@@ -909,10 +861,10 @@ class ReferralService extends BaseService {
 
   // ── Settings ───────────────────────────────────────────────────
 
-  async getSettings(companyId) {
+  async getSettings() {
     const row = await this._get(
-      'SELECT settings_json FROM referral_settings WHERE company_id = ?',
-      [companyId]
+      'SELECT settings_json FROM referral_settings',
+      []
     );
 
     if (!row) {
@@ -938,50 +890,46 @@ class ReferralService extends BaseService {
     }
   }
 
-  async updateSettings(companyId, settings) {
+  async updateSettings( settings) {
     const existing = await this._get(
-      'SELECT id FROM referral_settings WHERE company_id = ?',
-      [companyId]
+      'SELECT id FROM referral_settings',
+      []
     );
+
+    let settingsId = existing?.id;
 
     const settingsJson = JSON.stringify(settings);
 
     if (existing) {
       await this._run(
-        `UPDATE referral_settings SET settings_json = ?, updated_at = CURRENT_TIMESTAMP WHERE company_id = ?`,
-        [settingsJson, companyId]
+        `UPDATE referral_settings SET settings_json = ?, updated_at = CURRENT_TIMESTAMP`,
+        [settingsJson]
       );
     } else {
       const id = randomUUID();
+      settingsId = id;
       await this._run(
-        `INSERT INTO referral_settings (id, company_id, settings_json) VALUES (?, ?, ?)`,
-        [id, companyId, settingsJson]
+        `INSERT INTO referral_settings (id, settings_json) VALUES (? , ?)`,
+        [id, settingsJson]
       );
     }
 
     await this.addAuditLog({
       entityType: 'setting',
-      entityId: companyId,
+      entityId: settingsId,
       action: 'updated',
       actorId: 'system',
       actorName: 'System',
-      fieldName: 'settings_json',
-      companyId
-    });
+      fieldName: 'settings_json'});
 
-    return this.getSettings(companyId);
+    return this.getSettings();
   }
 
-  async cleanupAuditLogs(retentionDays = 90, companyId) {
+  async cleanupAuditLogs(retentionDays = 90) {
     const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
     
     let sql = 'DELETE FROM referral_audit_logs WHERE created_at < ?';
     const params = [cutoff];
-    
-    if (companyId) {
-      sql += ' AND company_id = ?';
-      params.push(companyId);
-    }
     
     const result = await this._run(sql, params);
     return { deleted: result.changes };
@@ -989,29 +937,29 @@ class ReferralService extends BaseService {
 
   // ── Internal Helpers ───────────────────────────────────────────
 
-  async _getPortalUserIdsForCustomer(customerId, companyId) {
+  async _getPortalUserIdsForCustomer(customerId) {
     if (!customerId) return [];
     const rows = await this._all(
-      'SELECT id FROM portal_users WHERE customer_id = ? AND company_id = ? AND status = ?',
-      [customerId, companyId, 'active']
+      'SELECT id FROM portal_users WHERE customer_id = ? AND status = ?',
+      [customerId, 'active']
     );
     return rows.map(r => r.id);
   }
 
-  async _createPortalNotifications(recipientCustomerId, companyId, type, title, message, referralId, rewardId) {
-    const portalUserIds = await this._getPortalUserIdsForCustomer(recipientCustomerId, companyId);
+  async _createPortalNotifications(recipientCustomerId, type, title, message, referralId, rewardId) {
+    const portalUserIds = await this._getPortalUserIdsForCustomer(recipientCustomerId);
     if (portalUserIds.length === 0) return;
     const now = new Date().toISOString();
     for (const portalUserId of portalUserIds) {
       await this._run(
-        `INSERT INTO portal_notifications (id, portal_user_id, type, title, body, link, company_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [randomUUID(), portalUserId, type, title, message, null, companyId, now]
+        `INSERT INTO portal_notifications (id, portal_user_id, type, title, body, link, created_at)
+         VALUES (?, ?, ?, ?, ?, ? , ?)`,
+        [randomUUID(), portalUserId, type, title, message, null, now]
       );
     }
   }
 
-  async creditWalletForReward(reward, referral, companyId) {
+  async creditWalletForReward(reward, referral) {
     const walletTxId = randomUUID();
 
     const customer = await this._get(
@@ -1021,18 +969,18 @@ class ReferralService extends BaseService {
     if (!customer) return;
 
     const account = await this._get(
-      "SELECT id FROM chart_of_accounts WHERE company_id = ? AND type = 'liability' LIMIT 1",
-      [companyId]
+      "SELECT id FROM chart_of_accountstype = 'liability' LIMIT 1",
+      []
     );
     const accountId = account ? account.id : null;
 
     if (accountId) {
       await this._run(
-        `INSERT INTO ledger_entries (id, account_id, account_code, account_name, entry_type, amount, currency, description, reference_type, reference_id, journal_id, entry_date, company_id, created_by)
+        `INSERT INTO ledger_entries (id, account_id, account_code, account_name, entry_type, amount, currency, description, reference_type, reference_id, journal_id, entry_date, created_by)
          VALUES (?, ?, ?, ?, 'credit', ?, 'USD', ?, 'referral_reward', ?, ?, ?, ?, ?)`,
         [randomUUID(), accountId, null, null, reward.amount,
          `Referral reward credit for referral ${referral.referral_code}`,
-         reward.id, walletTxId, new Date().toISOString(), companyId, 'system']
+         reward.id, walletTxId, new Date().toISOString(), 'system']
       );
     }
 
@@ -1042,8 +990,8 @@ class ReferralService extends BaseService {
     );
 
     await this._run(
-      `UPDATE referral_rewards SET wallet_transaction_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
-      [walletTxId, reward.id, companyId]
+      `UPDATE referral_rewards SET wallet_transaction_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [walletTxId, reward.id]
     );
   }
 }

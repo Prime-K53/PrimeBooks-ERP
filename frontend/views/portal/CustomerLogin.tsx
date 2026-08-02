@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Loader2, Mail, KeyRound } from 'lucide-react';
+import { Lock, Loader2, Mail, KeyRound, Shield, QrCode } from 'lucide-react';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import ErrorBanner from './components/ErrorBanner';
 
@@ -11,6 +11,8 @@ const CustomerLogin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,6 +21,25 @@ const CustomerLogin: React.FC = () => {
     setError(null);
 
     const result = await loginWithApi(email.trim(), password);
+    if (result.success) {
+      navigate('/portal/dashboard', { replace: true });
+      return;
+    }
+    if (result.requiresTwoFactor) {
+      setPendingToken(result.pendingToken || null);
+      return;
+    }
+    setError(result.message || 'Login failed. Please try again.');
+    setSubmitting(false);
+  };
+
+  const handleTwoFactorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!twoFactorCode || twoFactorCode.length < 6) return;
+    setSubmitting(true);
+    setError(null);
+
+    const result = await loginWithApi(email.trim(), password, twoFactorCode);
     if (result.success) {
       navigate('/portal/dashboard', { replace: true });
       return;
@@ -57,65 +78,105 @@ const CustomerLogin: React.FC = () => {
 
           {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {pendingToken ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Email</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  className={inputClass}
-                />
+              <div className="mb-8">
+                <h1 className="text-[1.65rem] font-bold tracking-tight leading-snug" style={{ color: '#23282A' }}>Two-Factor Authentication</h1>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: '#5c6567' }}>Enter the 6-digit code from your authenticator app to continue.</p>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Password</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  className={inputClass}
-                />
+              {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
+
+              <form onSubmit={handleTwoFactorSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Verification Code</label>
+                  <div className="relative">
+                    <Shield size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={twoFactorCode}
+                      onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      autoComplete="one-time-code"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting || twoFactorCode.length < 6}
+                  className="w-full h-11 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(90deg, #146b60, #3fa294)', boxShadow: '0 8px 20px rgba(20,107,96,.25)' }}
+                >
+                  {submitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    'Verify & Sign In'
+                  )}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Email</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    className={inputClass}
+                  />
+                </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={submitting || !email.trim() || !password}
-              className="w-full h-11 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(90deg, #146b60, #3fa294)', boxShadow: '0 8px 20px rgba(20,107,96,.25)' }}
-            >
-              {submitting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                'Sign In'
-              )}
-            </button>
-          </form>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Password</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
 
-          <div className="mt-4 flex items-center justify-between text-xs">
-            <Link to="/portal/activate" className="text-slate-500 hover:text-teal-600 transition-colors inline-flex items-center gap-1">
-              <KeyRound size={12} />
-              Activate account
-            </Link>
-            <Link to="/portal/forgot-password" className="text-slate-500 hover:text-teal-600 transition-colors">
-              Forgot password?
-            </Link>
-          </div>
+              <button
+                type="submit"
+                disabled={submitting || !email.trim() || !password}
+                className="w-full h-11 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(90deg, #146b60, #3fa294)', boxShadow: '0 8px 20px rgba(20,107,96,.25)' }}
+              >
+                {submitting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  'Sign In'
+                )}
+              </button>
 
-          <div className="mt-10 pt-6 border-t border-slate-200 text-center">
-            <Link to="/login" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
-              Admin Login
-            </Link>
-          </div>
+              <div className="mt-4 flex items-center justify-between text-xs">
+                <Link to="/portal/activate" className="text-slate-500 hover:text-teal-600 transition-colors inline-flex items-center gap-1">
+                  <KeyRound size={12} />
+                  Activate account
+                </Link>
+                <Link to="/portal/forgot-password" className="text-slate-500 hover:text-teal-600 transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
+
+              <div className="mt-10 pt-6 border-t border-slate-200 text-center">
+                <Link to="/login" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
+                  Admin Login
+                </Link>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

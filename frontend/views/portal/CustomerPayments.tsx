@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Search } from 'lucide-react';
+import { CreditCard, Search, Calendar } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalInput from './components/PortalInput';
+import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
@@ -23,6 +24,8 @@ const CustomerPayments: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -48,6 +51,17 @@ const CustomerPayments: React.FC = () => {
     }
   }, [page, search]);
 
+  const filteredPayments = useMemo(() => {
+    let result = payments;
+    if (dateFrom) {
+      result = result.filter((p) => new Date(p.date) >= new Date(dateFrom));
+    }
+    if (dateTo) {
+      result = result.filter((p) => new Date(p.date) <= new Date(dateTo + 'T23:59:59'));
+    }
+    return result;
+  }, [payments, dateFrom, dateTo]);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -68,14 +82,20 @@ const CustomerPayments: React.FC = () => {
   if (loading && page === 1) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
 
   return (
-    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+    <div>
       <PortalPageHeader title="Payments" subtitle="Your payment history" icon={CreditCard} />
 
       <div style={{ padding: '20px 28px 8px' }}>
         {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
-        <div style={{ position: 'relative', flex: '1 1 240px' }}>
-          <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: portalTheme.inkSoft }} />
-          <PortalInput label="" placeholder="Search payments..." value={search} onChange={(v) => { setPage(1); setSearch(v); }} onFocus={() => {}} onBlur={() => {}} style={{ paddingLeft: 32 }} />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
+          <div style={{ position: 'relative', flex: '1 1 240px' }}>
+            <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: portalTheme.inkSoft }} />
+            <PortalInput label="" placeholder="Search payments..." value={search} onChange={(v) => { setPage(1); setSearch(v); }} onFocus={() => {}} onBlur={() => {}} style={{ paddingLeft: 32 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <PortalInput label="From" type="date" value={dateFrom} onChange={setDateFrom} />
+            <PortalInput label="To" type="date" value={dateTo} onChange={setDateTo} />
+          </div>
         </div>
       </div>
 
@@ -84,8 +104,57 @@ const CustomerPayments: React.FC = () => {
           <EmptyState icon={<CreditCard size={28} />} title="No payments found" description="You have no payment history yet." />
         ) : (
           <>
+            {/* Summary Cards */}
+            {(() => {
+              const now = new Date();
+              const currentMonth = now.getMonth();
+              const currentYear = now.getFullYear();
+              const totalPaid = filteredPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+              const paidThisMonth = filteredPayments
+                .filter((p) => new Date(p.date).getMonth() === currentMonth && new Date(p.date).getFullYear() === currentYear)
+                .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+              const paidThisYear = filteredPayments
+                .filter((p) => new Date(p.date).getFullYear() === currentYear)
+                .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+              const avgPayment = filteredPayments.length > 0 ? totalPaid / filteredPayments.length : 0;
+
+              return (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: 12,
+                  marginBottom: 18
+                }}>
+                  <PortalCard style={{ padding: '18px 20px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 4, display: 'block' }}>Total Paid</span>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+                      K {totalPaid.toFixed(2)}
+                    </div>
+                  </PortalCard>
+                  <PortalCard style={{ padding: '18px 20px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 4, display: 'block' }}>This Month</span>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.teal[700], fontFamily: "'JetBrains Mono', monospace" }}>
+                      K {paidThisMonth.toFixed(2)}
+                    </div>
+                  </PortalCard>
+                  <PortalCard style={{ padding: '18px 20px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 4, display: 'block' }}>This Year</span>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+                      K {paidThisYear.toFixed(2)}
+                    </div>
+                  </PortalCard>
+                  <PortalCard style={{ padding: '18px 20px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 4, display: 'block' }}>Avg Payment</span>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+                      K {avgPayment.toFixed(2)}
+                    </div>
+                  </PortalCard>
+                </div>
+              );
+            })()}
+
             <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginBottom: 8 }}>
-              Showing {payments.length} of {total} payment{total !== 1 ? 's' : ''}
+              Showing {filteredPayments.length} of {total} payment{total !== 1 ? 's' : ''}
             </div>
             <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
               <div className="overflow-x-auto">
@@ -99,7 +168,7 @@ const CustomerPayments: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100/50">
-                    {payments.map((p) => (
+                    {filteredPayments.map((p) => (
                       <tr key={p.id} onClick={() => navigate(`/portal/payments/${p.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
 <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Reference">{p.reference || p.id.slice(0, 8)}</td>
                          <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(p.date).toLocaleDateString()}</td>

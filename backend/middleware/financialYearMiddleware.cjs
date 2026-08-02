@@ -4,13 +4,10 @@ const financialYearService = new FinancialYearService();
 
 async function injectFinancialYear(req, res, next) {
   try {
-    const companyId = req.companyId || '';
-    if (!companyId) return next();
-
     const financialYearId = req.query?.financial_year_id || req.headers['x-financial-year-id'] || req.financialYearId || '';
 
     if (!financialYearId) {
-      const defaultFy = await financialYearService.getDefaultFinancialYear(companyId);
+      const defaultFy = await financialYearService.getDefaultFinancialYear();
       if (defaultFy) {
         req.financialYearId = defaultFy.id;
         req.fyStartDate = defaultFy.start_date;
@@ -21,7 +18,7 @@ async function injectFinancialYear(req, res, next) {
       return next();
     }
 
-    const fy = await financialYearService.getFinancialYearById(financialYearId, companyId);
+    const fy = await financialYearService.getFinancialYearById(financialYearId);
     if (fy) {
       req.financialYearId = fy.id;
       req.fyStartDate = fy.start_date;

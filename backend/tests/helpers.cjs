@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 
 const TEST_JWT_SECRET = 'test-secret-do-not-use-in-production';
-const TEST_COMPANY_ID = 'test-company-001';
 const TEST_USER_ID = 'test-user-001';
 
 function createTestToken(overrides = {}) {
@@ -9,7 +8,6 @@ function createTestToken(overrides = {}) {
     {
       id: TEST_USER_ID,
       role: 'Admin',
-      companyId: TEST_COMPANY_ID,
       ...overrides
     },
     TEST_JWT_SECRET,
@@ -21,7 +19,6 @@ function getAuthHeaders(overrides = {}) {
   const token = createTestToken(overrides);
   return {
     'Authorization': `Bearer ${token}`,
-    'x-company-id': TEST_COMPANY_ID,
     'Content-Type': 'application/json'
   };
 }
@@ -49,7 +46,6 @@ const { generateTestId } = require('./setup.cjs');
 
 module.exports = {
   TEST_JWT_SECRET,
-  TEST_COMPANY_ID,
   TEST_USER_ID,
   createTestToken,
   getAuthHeaders,

@@ -4,9 +4,19 @@ const router = express.Router();
 const portalAuthService = require('../services/portalAuthService.cjs');
 const { generatePortalToken, verifyPortalToken } = require('../middleware/portalAuth.cjs');
 
+// In-memory store for pending 2FA verifications (keyed by a temporary token)
+const pendingTwoFactor = new Map();
+
+function issuePendingTwoFactor(user) {
+  const token = crypto.randomBytes(32).toString('hex');
+  pendingTwoFactor.set(token, { user, createdAt: Date.now() });
+  setTimeout(() => pendingTwoFactor.delete(token), 5 * 60 * 1000);
+  return token;
+}
+
 router.post('/login', async (req, res) => {
   try {
-    const { customer_id, full_name } = req.body;
+    const { customer_id, full_name, two_factor_code } = req.body;
     if (!customer_id || !full_name) {
       return res.status(400).json({ error: 'Customer ID and full name are required' });
     }
@@ -14,18 +24,30 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials', message: 'Customer ID and full name do not match our records' });
     }
+
+    const twoFactorEnabled = await portalAuthService.isTwoFactorEnabled(user.id);
+    if (twoFactorEnabled) {
+      if (!two_factor_code) {
+        const pendingToken = issuePendingTwoFactor(user);
+        return res.json({ requires_two_factor: true, pending_token: pendingToken, user: { id: user.id, email: user.email } });
+      }
+      const secret = await portalAuthService.getTwoFactorSecret(user.id);
+      const isValid = await portalAuthService.verifyTwoFactorToken(secret, two_factor_code);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Invalid verification code' });
+      }
+    }
     const token = generatePortalToken(user);
     const refreshToken = crypto.randomBytes(48).toString('hex');
-    const session = await portalAuthService.createSession(user.id, user.company_id, refreshToken);
     const ip = req.ip || req.connection?.remoteAddress;
     const ua = req.headers['user-agent'];
+    const session = await portalAuthService.createSession(user.id, refreshToken, ip, ua);
     portalAuthService.recordLoginHistory(user.id, ip, ua).catch(() => {});
     res.json({
       message: 'Login successful',
       user: {
         id: user.id,
         customer_id: user.customer_id,
-        company_id: user.company_id,
         email: user.email,
         full_name: user.full_name,
         phone: user.phone
@@ -42,7 +64,7 @@ router.post('/login', async (req, res) => {
 
 router.post('/login-password', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, two_factor_code } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -50,18 +72,31 @@ router.post('/login-password', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials', message: 'Email and password do not match our records' });
     }
+
+    const twoFactorEnabled = await portalAuthService.isTwoFactorEnabled(user.id);
+    if (twoFactorEnabled) {
+      if (!two_factor_code) {
+        const pendingToken = issuePendingTwoFactor(user);
+        return res.json({ requires_two_factor: true, pending_token: pendingToken, user: { id: user.id, email: user.email } });
+      }
+      const secret = await portalAuthService.getTwoFactorSecret(user.id);
+      const isValid = await portalAuthService.verifyTwoFactorToken(secret, two_factor_code);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Invalid verification code' });
+      }
+    }
+
     const token = generatePortalToken(user);
     const refreshToken = crypto.randomBytes(48).toString('hex');
-    const session = await portalAuthService.createSession(user.id, user.company_id, refreshToken);
     const ip = req.ip || req.connection?.remoteAddress;
     const ua = req.headers['user-agent'];
+    const session = await portalAuthService.createSession(user.id, refreshToken, ip, ua);
     portalAuthService.recordLoginHistory(user.id, ip, ua).catch(() => {});
     res.json({
       message: 'Login successful',
       user: {
         id: user.id,
         customer_id: user.customer_id,
-        company_id: user.company_id,
         email: user.email,
         full_name: user.full_name,
         phone: user.phone
@@ -93,7 +128,9 @@ router.post('/refresh', async (req, res) => {
     }
     const token = generatePortalToken(user);
     const newRefreshToken = crypto.randomBytes(48).toString('hex');
-    await portalAuthService.createSession(user.id, user.company_id, newRefreshToken);
+    const ip = req.ip || req.connection?.remoteAddress;
+    const ua = req.headers['user-agent'];
+    await portalAuthService.createSession(user.id, newRefreshToken, ip, ua);
     res.json({
       access_token: token,
       refresh_token: newRefreshToken,
@@ -151,22 +188,20 @@ router.post('/activate', async (req, res) => {
     const user = await portalAuthService.activatePortalUser({
       customer_id,
       code,
-      password,
-      company_id: req.body.company_id || ''
+      password
     });
     if (!user) return res.status(400).json({ error: 'Invalid or expired invite code' });
     const token = generatePortalToken(user);
     const refreshToken = crypto.randomBytes(48).toString('hex');
-    const session = await portalAuthService.createSession(user.id, user.company_id, refreshToken);
     const ip = req.ip || req.connection?.remoteAddress;
     const ua = req.headers['user-agent'];
+    const session = await portalAuthService.createSession(user.id, refreshToken, ip, ua);
     portalAuthService.recordLoginHistory(user.id, ip, ua).catch(() => {});
     res.json({
       message: 'Login successful',
       user: {
         id: user.id,
         customer_id: user.customer_id,
-        company_id: user.company_id,
         email: user.email,
         full_name: user.full_name,
         phone: user.phone
@@ -229,6 +264,82 @@ router.post('/logout', verifyPortalToken, async (req, res) => {
   } catch (err) {
     console.error('[PortalAuth] Logout error:', err);
     res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+router.get('/sessions', verifyPortalToken, async (req, res) => {
+  try {
+    const sessions = await portalAuthService.listSessions(req.portalUser.id);
+    res.json(sessions);
+  } catch (err) {
+    console.error('[PortalAuth] List sessions error:', err);
+    res.status(500).json({ error: 'Failed to list sessions' });
+  }
+});
+
+router.delete('/sessions/:sessionId', verifyPortalToken, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const success = await portalAuthService.revokeSessionById(sessionId, req.portalUser.id);
+    if (!success) return res.status(404).json({ error: 'Session not found' });
+    res.json({ message: 'Session revoked successfully' });
+  } catch (err) {
+    console.error('[PortalAuth] Revoke session error:', err);
+    res.status(500).json({ error: 'Failed to revoke session' });
+  }
+});
+
+// ─── Two-Factor Authentication Routes ───
+
+router.get('/two-factor/status', verifyPortalToken, async (req, res) => {
+  try {
+    const status = await portalAuthService.getTwoFactorStatus(req.portalUser.id);
+    res.json(status);
+  } catch (err) {
+    console.error('[PortalAuth] 2FA status error:', err);
+    res.status(500).json({ error: 'Failed to get 2FA status' });
+  }
+});
+
+router.post('/two-factor/setup', verifyPortalToken, async (req, res) => {
+  try {
+    const user = await portalAuthService.getPortalUserById(req.portalUser.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const { secret, otpauth } = portalAuthService.generateTwoFactorSecret(
+      user.id, user.email, 'Prime ERP Portal'
+    );
+    await portalAuthService.saveTwoFactorSecret(user.id, secret);
+    res.json({ secret, otpauth_uri: otpauth });
+  } catch (err) {
+    console.error('[PortalAuth] 2FA setup error:', err);
+    res.status(500).json({ error: 'Failed to set up 2FA' });
+  }
+});
+
+router.post('/two-factor/enable', verifyPortalToken, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Verification code is required' });
+    await portalAuthService.enableTwoFactor(req.portalUser.id, String(code));
+    // Revoke and recreate sessions to invalidate old tokens
+    await portalAuthService.revokeAllSessions(req.portalUser.id);
+    res.json({ message: 'Two-factor authentication enabled successfully' });
+  } catch (err) {
+    console.error('[PortalAuth] 2FA enable error:', err);
+    res.status(err.code === 'INVALID_TOKEN' ? 401 : 400).json({ error: err.message });
+  }
+});
+
+router.post('/two-factor/disable', verifyPortalToken, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Verification code is required' });
+    await portalAuthService.disableTwoFactor(req.portalUser.id, String(code));
+    await portalAuthService.revokeAllSessions(req.portalUser.id);
+    res.json({ message: 'Two-factor authentication disabled successfully' });
+  } catch (err) {
+    console.error('[PortalAuth] 2FA disable error:', err);
+    res.status(err.code === 'INVALID_TOKEN' ? 401 : err.code === 'NOT_ENABLED' ? 400 : 500).json({ error: err.message });
   }
 });
 

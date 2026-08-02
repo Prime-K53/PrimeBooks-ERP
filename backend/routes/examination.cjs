@@ -39,7 +39,7 @@ router.get('/', (req, res) => {
 // --- Batches ---
 router.get('/meta/adjustments', async (req, res) => {
   try {
-    const adjustments = await examinationService.getMarketAdjustmentMeta(req.companyId || '');
+    const adjustments = await examinationService.getMarketAdjustmentMeta();
     res.json({
       adjustments,
       fetched_at: new Date().toISOString()
@@ -54,7 +54,7 @@ router.post('/sync/market-adjustments', async (req, res) => {
   try {
     const userId = req.user?.id || req.body?.user_id || req.body?.userId || 'System';
     const signal = createRequestAbortSignal(req, res);
-    const result = await examinationService.syncMarketAdjustments(req.body || {}, { userId, signal }, req.companyId || '');
+    const result = await examinationService.syncMarketAdjustments(req.body || {}, { userId, signal } || '');
     if (signal.aborted || res.headersSent) return;
     res.json(result);
   } catch (err) {
@@ -68,7 +68,7 @@ router.post('/sync/inventory-items', async (req, res) => {
   try {
     const userId = req.user?.id || req.body?.user_id || req.body?.userId || 'System';
     const signal = createRequestAbortSignal(req, res);
-    const result = await examinationService.syncInventoryItems(req.body || {}, { userId, signal }, req.companyId || '');
+    const result = await examinationService.syncInventoryItems(req.body || {}, { userId, signal } || '');
     if (signal.aborted || res.headersSent) return;
     res.json(result);
   } catch (err) {
@@ -80,7 +80,7 @@ router.post('/sync/inventory-items', async (req, res) => {
 
 router.get('/sync/health', async (req, res) => {
   try {
-    const result = await examinationService.getSyncHealth(req.companyId || '');
+    const result = await examinationService.getSyncHealth();
     res.json(result);
   } catch (err) {
     console.error('[Examination] sync/health error:', err);
@@ -98,7 +98,7 @@ router.post('/backfill/recalculate-non-invoiced', async (req, res) => {
       includeApproved: req.body?.includeApproved ?? req.body?.include_approved,
       limit: req.body?.limit,
       signal,
-      companyId: req.companyId || ''
+      
     });
     if (signal.aborted || res.headersSent) return;
     res.json(result);
@@ -119,7 +119,7 @@ router.post('/recalculate-batch/:batchId', async (req, res) => {
     const result = await examinationService.calculateBatch(batchId, {
       trigger: 'MANUAL',
       userId
-    }, req.companyId || '');
+    } || '');
     if (res.headersSent) return;
     res.json(result);
   } catch (err) {
@@ -157,8 +157,7 @@ router.get('/batches', async (req, res) => {
       includeSubjectPages = false;
     }
 
-    const companyId = req.companyId || '';
-    const batches = await examinationService.getAllBatches({ includeSubjectPages, includeClassStats, companyId });
+    const batches = await examinationService.getAllBatches({ includeSubjectPages, includeClassStats});
     res.json(batches);
   } catch (err) {
     console.error('[Examination] GET batches error:', err);
@@ -168,8 +167,7 @@ router.get('/batches', async (req, res) => {
 
 router.get('/batches/:id', async (req, res) => {
   try {
-    const companyId = req.companyId || '';
-    const batch = await examinationService.getBatchById(req.params.id, companyId);
+    const batch = await examinationService.getBatchById(req.params.id);
     if (!batch) return res.status(404).json({ error: 'Batch not found' });
     res.json(batch);
   } catch (err) {
@@ -180,7 +178,7 @@ router.get('/batches/:id', async (req, res) => {
 
 router.get('/batches/:id/cost-breakdown', async (req, res) => {
   try {
-    const rows = await examinationService.getBOMCalculations(req.params.id, req.companyId || '');
+    const rows = await examinationService.getBOMCalculations(req.params.id || '');
     res.json(Array.isArray(rows) ? rows : []);
   } catch (err) {
     console.error('[Examination] cost-breakdown error:', err);
@@ -192,7 +190,7 @@ router.get('/batches/:id/cost-breakdown', async (req, res) => {
 router.get('/audit-logs/:entityType/:id', async (req, res) => {
   try {
     const { entityType, id } = req.params;
-    const logs = await examinationService.getAuditLogs(entityType, id, req.companyId || '');
+    const logs = await examinationService.getAuditLogs(entityType, id || '');
     res.json(logs || []);
   } catch (err) {
     console.error('[Examination] audit-logs error:', err);
@@ -203,7 +201,7 @@ router.get('/audit-logs/:entityType/:id', async (req, res) => {
 router.get('/audit-trail/:correlationId', async (req, res) => {
   try {
     const { correlationId } = req.params;
-    const trail = await examinationService.getAuditTrail(correlationId, req.companyId || '');
+    const trail = await examinationService.getAuditTrail(correlationId || '');
     res.json(trail || []);
   } catch (err) {
     console.error('[Examination] audit-trail error:', err);
@@ -213,7 +211,7 @@ router.get('/audit-trail/:correlationId', async (req, res) => {
 
 router.get('/batches/:id/bom', async (req, res) => {
   try {
-    const rows = await examinationService.getBOMCalculations(req.params.id, req.companyId || '');
+    const rows = await examinationService.getBOMCalculations(req.params.id || '');
     res.set('X-Deprecated-Notice', 'GET /api/examination/batches/:id/bom is deprecated. Use /api/examination/batches/:id/cost-breakdown.');
     res.json(Array.isArray(rows) ? rows : []);
   } catch (err) {
@@ -225,7 +223,7 @@ router.get('/batches/:id/bom', async (req, res) => {
 // --- Settings ---
 router.get('/settings/pricing', async (req, res) => {
   try {
-    const settings = await examinationService.getExamPricingSettings(req.companyId || '');
+    const settings = await examinationService.getExamPricingSettings();
     res.json(settings);
   } catch (err) {
     console.error('[Examination] settings/pricing error:', err);
@@ -236,7 +234,7 @@ router.get('/settings/pricing', async (req, res) => {
 router.put('/settings/pricing', validateBody(examinationSchemas.pricingSettings), async (req, res) => {
   try {
     const userId = req.user?.id || 'System';
-    const result = await examinationService.updateExamPricingSettings(req.body || {}, { userId }, req.companyId || '');
+    const result = await examinationService.updateExamPricingSettings(req.body || {}, { userId } || '');
     res.json(result);
   } catch (err) {
     console.error('[ERROR] settings/pricing failed:', err.message);
@@ -264,7 +262,7 @@ router.get('/notifications', async (req, res) => {
     const startTime = Date.now();
 
     // Set a timeout for the database query to prevent hanging
-    const fetchPromise = examinationService.getNotifications(userId, limit, req.companyId || '');
+    const fetchPromise = examinationService.getNotifications(userId, limit || '');
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => reject(new Error('Database query timeout after 10 seconds')), 10000);
@@ -297,7 +295,7 @@ router.get('/notifications', async (req, res) => {
 
 router.post('/notifications', validateBody(notificationSchemas.create), async (req, res) => {
   try {
-    const notification = await examinationService.createNotification(req.body || {}, req.companyId || '');
+    const notification = await examinationService.createNotification(req.body || {} || '');
     res.status(201).json(notification);
   } catch (err) {
     console.error('[Examination] create notification error:', err);
@@ -308,7 +306,7 @@ router.post('/notifications', validateBody(notificationSchemas.create), async (r
 router.post('/notifications/:id/read', async (req, res) => {
   try {
     const userId = req.body?.user_id || req.body?.userId || req.user?.id;
-    const result = await examinationService.markNotificationRead(req.params.id, userId, req.companyId || '');
+    const result = await examinationService.markNotificationRead(req.params.id, userId || '');
     res.json(result);
   } catch (err) {
     console.error('[Examination] mark notification read error:', err);
@@ -319,7 +317,7 @@ router.post('/notifications/:id/read', async (req, res) => {
 router.delete('/notifications/:id', async (req, res) => {
   try {
     const userId = req.query.user_id || req.query.userId || req.user?.id;
-    const result = await examinationService.deleteNotification(req.params.id, userId, req.companyId || '');
+    const result = await examinationService.deleteNotification(req.params.id, userId || '');
     res.json(result);
   } catch (err) {
     console.error('[Examination] delete notification error:', err);
@@ -329,7 +327,7 @@ router.delete('/notifications/:id', async (req, res) => {
 
 router.post('/audit/notifications', async (req, res) => {
   try {
-    const result = await examinationService.createNotificationAuditLog(req.body || {}, req.companyId || '');
+    const result = await examinationService.createNotificationAuditLog(req.body || {} || '');
     res.json(result);
   } catch (err) {
     console.error('[Examination] audit notification error:', err);
@@ -340,7 +338,7 @@ router.post('/audit/notifications', async (req, res) => {
 router.post('/batches', validateBody(examinationSchemas.batch), async (req, res) => {
   try {
     const userId = req.user?.id;
-    const body = { ...req.body, company_id: req.companyId || '' };
+    const body = { ...req.body };
     const batch = await examinationService.createBatch(body, userId);
     res.status(201).json(batch);
   } catch (err) {
@@ -367,8 +365,7 @@ router.post('/batches', validateBody(examinationSchemas.batch), async (req, res)
 router.put('/batches/:id', validateBody(examinationSchemas.batchUpdate), async (req, res) => {
   try {
     const userId = req.user?.id;
-    const companyId = req.companyId || '';
-    const batch = await examinationService.updateBatch(req.params.id, req.body, userId, companyId);
+    const batch = await examinationService.updateBatch(req.params.id, req.body, userId);
     res.json(batch);
   } catch (err) {
     console.error('[Examination] batch update error:', err);
@@ -379,8 +376,7 @@ router.put('/batches/:id', validateBody(examinationSchemas.batchUpdate), async (
 router.delete('/batches/:id', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const companyId = req.companyId || '';
-    await examinationService.deleteBatch(req.params.id, userId, companyId);
+    await examinationService.deleteBatch(req.params.id, userId);
     res.json({ success: true });
   } catch (err) {
     console.error('[Examination] batch delete error:', err);
@@ -410,7 +406,7 @@ router.post('/classes', validateBody(classSchemas.create), async (req, res) => {
 
     const payload = { ...body, class_name, number_of_learners };
 
-    const newClass = await examinationService.createClass(batch_id, payload, { userId, signal, canOverride: canOverrideSuggestedCost(req) }, req.companyId || '');
+    const newClass = await examinationService.createClass(batch_id, payload, { userId, signal, canOverride: canOverrideSuggestedCost(req) } || '');
     if (signal.aborted || res.headersSent) return;
     return res.status(201).json(newClass);
   } catch (err) {
@@ -451,7 +447,7 @@ router.post('/classes', validateBody(classSchemas.create), async (req, res) => {
 
 router.put('/classes/:id', async (req, res) => {
   try {
-    const updatedClass = await examinationService.updateClass(req.params.id, req.body, req.companyId || '');
+    const updatedClass = await examinationService.updateClass(req.params.id, req.body || '');
     res.json(updatedClass);
   } catch (err) {
     console.error('[Examination] class update error:', err);
@@ -466,7 +462,7 @@ router.put('/classes/:id/pricing', async (req, res) => {
       userId,
       trigger: 'MANUAL_OVERRIDE',
       canOverrideSuggestedCost: canOverrideSuggestedCost(req)
-    }, req.companyId || '');
+    } || '');
     res.json(batch);
   } catch (err) {
     const message = String(err?.message || '');
@@ -487,7 +483,7 @@ router.put('/classes/:id/pricing', async (req, res) => {
 router.get('/classes/:id/pricing-history', async (req, res) => {
   try {
     const limit = req.query.limit ? Number(req.query.limit) : 100;
-    const history = await examinationService.getClassPricingHistory(req.params.id, limit, req.companyId || '');
+    const history = await examinationService.getClassPricingHistory(req.params.id, limit || '');
     res.json(history);
   } catch (err) {
     console.error('[Examination] class pricing history error:', err);
@@ -497,7 +493,7 @@ router.get('/classes/:id/pricing-history', async (req, res) => {
 
 router.delete('/classes/:id', async (req, res) => {
   try {
-    await examinationService.deleteClass(req.params.id, req.companyId || '');
+    await examinationService.deleteClass(req.params.id || '');
     res.json({ success: true });
   } catch (err) {
     console.error('[Examination] class delete error:', err);
@@ -509,7 +505,7 @@ router.delete('/classes/:id', async (req, res) => {
 router.post('/subjects', validateBody(subjectSchemas.create), async (req, res) => {
   try {
     const { class_id, ...data } = req.body;
-    const newSubject = await examinationService.createSubject(class_id, data, req.companyId || '');
+    const newSubject = await examinationService.createSubject(class_id, data || '');
     res.status(201).json(newSubject);
   } catch (err) {
     console.error('[Examination] subject create error:', err);
@@ -519,7 +515,7 @@ router.post('/subjects', validateBody(subjectSchemas.create), async (req, res) =
 
 router.put('/subjects/:id', async (req, res) => {
   try {
-    const updatedSubject = await examinationService.updateSubject(req.params.id, req.body, req.companyId || '');
+    const updatedSubject = await examinationService.updateSubject(req.params.id, req.body || '');
     res.json(updatedSubject);
   } catch (err) {
     console.error('[Examination] subject update error:', err);
@@ -529,7 +525,7 @@ router.put('/subjects/:id', async (req, res) => {
 
 router.delete('/subjects/:id', async (req, res) => {
   try {
-    await examinationService.deleteSubject(req.params.id, req.companyId || '');
+    await examinationService.deleteSubject(req.params.id || '');
     res.json({ success: true });
   } catch (err) {
     console.error('[Examination] subject delete error:', err);
@@ -540,7 +536,7 @@ router.delete('/subjects/:id', async (req, res) => {
 // --- Classes (Additional Routes for Examination Pricing Redesign) ---
 router.get('/classes/:id', async (req, res) => {
   try {
-    const cls = await examinationService.getClassById(req.params.id, req.companyId || '');
+    const cls = await examinationService.getClassById(req.params.id || '');
     if (!cls) {
       return res.status(404).json({ error: 'Class not found' });
     }
@@ -557,8 +553,7 @@ router.put('/classes/:id/financial-metrics', async (req, res) => {
     const updatedClass = await examinationService.updateClassFinancialMetrics(
       req.params.id,
       req.body,
-      { userId },
-      req.companyId || ''
+      { userId } || ''
     );
     res.json(updatedClass);
   } catch (err) {
@@ -579,8 +574,7 @@ router.post('/batches/:id/sync-pricing', async (req, res) => {
 
     const result = await examinationService.syncPricingToBatchClasses(
       req.params.id,
-      { settings, adjustments, triggerSource, userId },
-      req.companyId || ''
+      { settings, adjustments, triggerSource, userId } || ''
     );
     res.json(result);
   } catch (err) {
@@ -602,7 +596,7 @@ router.post('/batches/:id/calculate', async (req, res) => {
       ...requestOptions,
       trigger: requestOptions.trigger || 'MANUAL_TRIGGER',
       userId
-    }, req.companyId || '');
+    } || '');
     res.json(result);
   } catch (error) {
     console.error('[Examination] Calculate batch error:', error);
@@ -614,7 +608,7 @@ router.post('/batches/:id/calculate', async (req, res) => {
 router.post('/classes/:id/preview', async (req, res) => {
   try {
     const userId = req.user?.id || 'System';
-    const result = await examinationService.calculateClassPreview(req.params.id, req.body, req.companyId || '');
+    const result = await examinationService.calculateClassPreview(req.params.id, req.body || '');
     res.json(result);
   } catch (err) {
     console.error('[Examination] class preview error:', err);
@@ -625,7 +619,7 @@ router.post('/classes/:id/preview', async (req, res) => {
 router.post('/batches/:id/approve', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const result = await examinationService.approveBatch(req.params.id, userId, req.companyId || '');
+    const result = await examinationService.approveBatch(req.params.id, userId || '');
     res.json(result);
   } catch (err) {
     console.error('[Examination] approve batch error:', err);
@@ -638,7 +632,7 @@ router.post('/batches/:id/invoice', async (req, res) => {
     const userId = req.user?.id;
     const idempotencyKey = req.headers['x-idempotency-key'] || req.body?.idempotency_key || req.body?.idempotencyKey;
     const invoiceNumber = req.body?.invoiceNumber || req.body?.invoice_number;
-    const result = await examinationService.generateInvoice(req.params.id, userId, { idempotencyKey, invoiceNumber }, req.companyId || '');
+    const result = await examinationService.generateInvoice(req.params.id, userId, { idempotencyKey, invoiceNumber } || '');
     res.json(result);
   } catch (err) {
     console.error('[Examination] generate invoice error:', err);

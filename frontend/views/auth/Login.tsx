@@ -40,7 +40,6 @@ const Login: React.FC = () => {
         securityLevel: 'Elevated',
         groupIds: isAdmin ? ['GRP-ADMIN'] : ['GRP-USER'],
         authMode: 'api',
-        companyId: staff.company_id || '',
       };
 
       const token = result.token || '';

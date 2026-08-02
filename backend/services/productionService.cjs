@@ -3,15 +3,13 @@ const BaseService = require('./baseService.cjs');
 
 class ProductionService extends BaseService {
 
-  async _saveLedgerEntry(entry, companyId) {
+  async _saveLedgerEntry(entry) {
     const id = crypto.randomUUID();
     return new Promise((resolve, reject) => {
       this.db.run(
-        `INSERT INTO ledger_entries (id, account_id, entry_type, amount, currency, description, reference_type, reference_id, entry_date, company_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, entry.account_id, entry.entry_type, entry.amount, entry.currency || 'USD',
-         entry.description || null, entry.reference_type || null,
-         entry.reference_id || null, entry.entry_date || new Date().toISOString(), companyId],
+        `INSERT INTO ledger_entries (id, account_id, entry_type, amount, currency, description, reference_type, reference_id, entry_date)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+        [id, entry.account_id, entry.entry_type, entry.amount, entry.currency || 'USD', entry.description || null, entry.reference_type || null, entry.reference_id || null, entry.entry_date || new Date().toISOString()],
         function(err) {
           if (err) reject(err);
           else resolve(id);
@@ -20,15 +18,15 @@ class ProductionService extends BaseService {
     });
   }
 
-  async postWipLedger(workOrder, companyId, currency = 'USD') {
+  async postWipLedger(workOrder, currency = 'USD') {
     const accounts = await this._all(
-      "SELECT * FROM chart_of_accounts WHERE company_id = ? AND type = 'asset' AND (name LIKE '%wip%' OR name LIKE '%work in progress%')",
-      [companyId]
+      "SELECT * FROM chart_of_accounts WHERE type = 'asset' AND (name LIKE '%wip%' OR name LIKE '%work in progress%')",
+      []
     );
     const wipAccount = accounts && accounts.length > 0 ? accounts[0] : null;
     const invAccount = await this._get(
-      "SELECT * FROM chart_of_accounts WHERE company_id = ? AND type = 'asset' AND (name LIKE '%inventory%' OR name LIKE '%stock%')",
-      [companyId]
+      "SELECT * FROM chart_of_accounts WHERE type = 'asset' AND (name LIKE '%inventory%' OR name LIKE '%stock%')",
+      []
     );
     if (!wipAccount || !invAccount) return;
     const qty = workOrder.quantity_planned || 0;
@@ -42,22 +40,22 @@ class ProductionService extends BaseService {
       account_id: wipAccount.id, entry_type: 'debit', amount: totalAmount, currency,
       description: `WIP for Work Order ${workOrder.id}`,
       reference_type: 'work_order', reference_id: workOrder.id
-    }, companyId);
+    });
     await this._saveLedgerEntry({
       account_id: invAccount.id, entry_type: 'credit', amount: totalAmount, currency,
       description: `Raw materials for Work Order ${workOrder.id}`,
       reference_type: 'work_order', reference_id: workOrder.id
-    }, companyId);
+    });
   }
 
-  async postCogsLedger(workOrder, companyId, currency = 'USD') {
+  async postCogsLedger(workOrder, currency = 'USD') {
     const cogsAccount = await this._get(
-      "SELECT * FROM chart_of_accounts WHERE company_id = ? AND type = 'expense' AND (name LIKE '%cogs%' OR name LIKE '%cost of goods%' OR code = '5000')",
-      [companyId]
+      "SELECT * FROM chart_of_accounts WHERE type = 'expense' AND (name LIKE '%cogs%' OR name LIKE '%cost of goods%' OR code = '5000')",
+      []
     );
     const accounts = await this._all(
-      "SELECT * FROM chart_of_accounts WHERE company_id = ? AND type = 'asset' AND (name LIKE '%wip%' OR name LIKE '%work in progress%')",
-      [companyId]
+      "SELECT * FROM chart_of_accounts WHERE type = 'asset' AND (name LIKE '%wip%' OR name LIKE '%work in progress%')",
+      []
     );
     const wipAccount = accounts && accounts.length > 0 ? accounts[0] : null;
     if (!cogsAccount || !wipAccount) return;
@@ -72,78 +70,72 @@ class ProductionService extends BaseService {
       account_id: cogsAccount.id, entry_type: 'debit', amount: totalAmount, currency,
       description: `COGS for Work Order ${workOrder.id}`,
       reference_type: 'work_order_cogs', reference_id: workOrder.id
-    }, companyId);
+    });
     await this._saveLedgerEntry({
       account_id: wipAccount.id, entry_type: 'credit', amount: totalAmount, currency,
       description: `WIP reversal for Work Order ${workOrder.id}`,
       reference_type: 'work_order_cogs', reference_id: workOrder.id
-    }, companyId);
+    });
   }
 
   // ── Work Centers ───────────────────────────────────────────────────
-  async getWorkCenters(companyId) {
+  async getWorkCenters() {
     return this._all(
-      'SELECT * FROM work_centers WHERE company_id = ? ORDER BY name', [companyId]
+      'SELECT * FROM work_centers ORDER BY name', []
     );
   }
 
-  async createWorkCenter(data, companyId) {
+  async createWorkCenter(data) {
     const id = data.id || crypto.randomUUID();
     await this._run(
-      `INSERT INTO work_centers (id, name, description, hourly_rate, capacity_per_day, status, location, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.name, data.description || null, data.hourly_rate || 0,
-       data.capacity_per_day || 8, data.status || 'Active',
-       data.location || null, companyId]
+      `INSERT INTO work_centers (id, name, description, hourly_rate, capacity_per_day, status, location)
+       VALUES (?, ?, ?, ?, ?, ?, ? )`,
+      [id, data.name, data.description || null, data.hourly_rate || 0, data.capacity_per_day || 8, data.status || 'Active', data.location || null]
     );
-    return this._get('SELECT * FROM work_centers WHERE id = ? AND company_id = ?', [id, companyId]);
+    return this._get('SELECT * FROM work_centers WHERE id = ?', [id]);
   }
 
   // ── Resources ──────────────────────────────────────────────────────
-  async getResources(companyId) {
+  async getResources() {
     return this._all(
-      'SELECT * FROM production_resources WHERE company_id = ? ORDER BY name', [companyId]
+      'SELECT * FROM production_resources ORDER BY name', []
     );
   }
 
-  async createResource(data, companyId) {
+  async createResource(data) {
     const id = data.id || crypto.randomUUID();
     await this._run(
-      `INSERT INTO production_resources (id, name, work_center_id, status, resource_type, description, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.name, data.work_center_id, data.status || 'Active',
-       data.resource_type || null, data.description || null, companyId]
+      `INSERT INTO production_resources (id, name, work_center_id, status, resource_type, description)
+       VALUES (?, ?, ?, ?, ?, ? )`,
+      [id, data.name, data.work_center_id, data.status || 'Active', data.resource_type || null, data.description || null]
     );
-    return this._get('SELECT * FROM production_resources WHERE id = ? AND company_id = ?', [id, companyId]);
+    return this._get('SELECT * FROM production_resources WHERE id = ?', [id]);
   }
 
   // ── Work Orders ────────────────────────────────────────────────────
-  async getWorkOrders(companyId) {
+  async getWorkOrders() {
     return this._all(
-      'SELECT * FROM work_orders WHERE company_id = ? ORDER BY created_at DESC', [companyId]
+      'SELECT * FROM work_orders ORDER BY created_at DESC', []
     );
   }
 
-  async getWorkOrderById(id, companyId) {
+  async getWorkOrderById(id) {
     return this._get(
-      'SELECT * FROM work_orders WHERE id = ? AND company_id = ?', [id, companyId]
+      'SELECT * FROM work_orders WHERE id = ?', [id]
     );
   }
 
-  async createWorkOrder(data, companyId, userId) {
+  async createWorkOrder(data, userId) {
     const id = data.id || crypto.randomUUID();
     await this._run(
-      `INSERT INTO work_orders (id, customer_name, product_name, quantity_planned, status, due_date, start_date, priority, work_center_id, linked_batch_id, company_id, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.customer_name || '', data.product_name || '', data.quantity_planned || 0,
-       data.status || 'Draft', data.due_date || null, data.start_date || null,
-       data.priority || 'Medium', data.work_center_id || null,
-       data.linked_batch_id || null, companyId, userId]
+      `INSERT INTO work_orders (id, customer_name, product_name, quantity_planned, status, due_date, start_date, priority, work_center_id, linked_batch_id, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`,
+      [id, data.customer_name || '', data.product_name || '', data.quantity_planned || 0, data.status || 'Draft', data.due_date || null, data.start_date || null, data.priority || 'Medium', data.work_center_id || null, data.linked_batch_id || null, userId]
     );
-    return this.getWorkOrderById(id, companyId);
+    return this.getWorkOrderById(id);
   }
 
-  async updateWorkOrder(id, data, companyId, currency = 'USD') {
+  async updateWorkOrder(id, data, currency = 'USD') {
     const fields = [];
     const params = [];
     const allowed = ['customer_name', 'product_name', 'quantity_planned', 'quantity_completed',
@@ -155,43 +147,41 @@ class ProductionService extends BaseService {
         params.push(data[field]);
       }
     }
-    if (!fields.length) return this.getWorkOrderById(id, companyId);
-    params.push(id, companyId);
+    if (!fields.length) return this.getWorkOrderById(id);
+    params.push(id);
     await this._run(
-      `UPDATE work_orders SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
+      `UPDATE work_orders SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       params
     );
-    const workOrder = await this.getWorkOrderById(id, companyId);
+    const workOrder = await this.getWorkOrderById(id);
     if (data.status === 'In Progress') {
-      await this.postWipLedger(workOrder, companyId, currency);
+      await this.postWipLedger(workOrder, currency);
     } else if (data.status === 'Completed') {
-      await this.postCogsLedger(workOrder, companyId, currency);
+      await this.postCogsLedger(workOrder, currency);
     }
     return workOrder;
   }
 
-  async deleteWorkOrder(id, companyId) {
-    await this._run('DELETE FROM work_orders WHERE id = ? AND company_id = ?', [id, companyId]);
+  async deleteWorkOrder(id) {
+    await this._run('DELETE FROM work_orders WHERE id = ?', [id]);
     return { success: true };
   }
 
   // ── Production Batches ─────────────────────────────────────────────
-  async getBatches(companyId) {
+  async getBatches() {
     return this._all(
-      'SELECT * FROM production_batches WHERE company_id = ? ORDER BY created_at DESC', [companyId]
+      'SELECT * FROM production_batches ORDER BY created_at DESC', []
     );
   }
 
-  async createBatch(data, companyId) {
+  async createBatch(data) {
     const id = data.id || crypto.randomUUID();
     await this._run(
-      `INSERT INTO production_batches (id, work_order_id, customer_name, name, status, total_amount, quantity_produced, unit_cost, total_cost, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.work_order_id || null, data.customer_name || '', data.name || '',
-       data.status || 'Pending', data.total_amount || 0, data.quantity_produced || 0,
-       data.unit_cost || 0, data.total_cost || 0, companyId]
+      `INSERT INTO production_batches (id, work_order_id, customer_name, name, status, total_amount, quantity_produced, unit_cost, total_cost)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+      [id, data.work_order_id || null, data.customer_name || '', data.name || '', data.status || 'Pending', data.total_amount || 0, data.quantity_produced || 0, data.unit_cost || 0, data.total_cost || 0]
     );
-    return this._get('SELECT * FROM production_batches WHERE id = ? AND company_id = ?', [id, companyId]);
+    return this._get('SELECT * FROM production_batches WHERE id = ?', [id]);
   }
 
   // ── Static singleton accessor ──────────────────────────────────────

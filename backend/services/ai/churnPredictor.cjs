@@ -1,25 +1,25 @@
 const BaseAIService = require('./baseService.cjs');
 
 class ChurnPredictor extends BaseAIService {
-  async predict(companyId) {
+  async predict() {
     const sales = await this._all(
-      `SELECT * FROM sales WHERE company_id = ? ORDER BY created_at DESC`,
-      [companyId]
+      `SELECT * FROM sales ORDER BY created_at DESC`,
+      []
     );
 
     const customers = await this._all(
-      `SELECT DISTINCT customer_name, customer_phone, customer_email FROM sales WHERE company_id = ? AND customer_name IS NOT NULL`,
-      [companyId]
+      `SELECT DISTINCT customer_name, customer_phone, customer_email FROM salescustomer_name IS NOT NULL`,
+      []
     );
 
     const invoices = await this._all(
-      `SELECT * FROM invoices WHERE company_id = ? ORDER BY created_at DESC`,
-      [companyId]
+      `SELECT * FROM invoices ORDER BY created_at DESC`,
+      []
     );
 
     const jobOrders = await this._all(
-      `SELECT * FROM sales WHERE company_id = ? AND type = 'job_order' ORDER BY created_at DESC`,
-      [companyId]
+      `SELECT * FROM salestype = 'job_order' ORDER BY created_at DESC`,
+      []
     );
 
     const customerMetrics = this._buildCustomerMetrics(customers, sales, invoices, jobOrders);

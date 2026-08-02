@@ -11,9 +11,8 @@ class PaymentAllocationService extends BaseService {
    * Allocate a payment to one or more invoices/orders
    * @param {Object} payment - The payment record
    * @param {Array} allocations - Array of {invoiceId, amount}
-   * @param {String} companyId
    */
-  async allocatePayment(payment, allocations, companyId, currency = 'USD') {
+  async allocatePayment(payment, allocations, currency = 'USD') {
     if (!allocations || allocations.length === 0) {
       throw new Error('At least one allocation is required');
     }
@@ -36,17 +35,9 @@ class PaymentAllocationService extends BaseService {
         try {
           // Create allocation record
           this.db.run(
-            `INSERT INTO payment_allocations (id, payment_id, company_id, total_allocated, excess_amount, excess_handling, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-              allocationId,
-              payment.id,
-              companyId,
-              totalAllocated,
-              paymentAmount - totalAllocated,
-              payment.excess_handling || 'credit_to_customer',
-              new Date().toISOString()
-            ],
+            `INSERT INTO payment_allocations (id, payment_id, total_allocated, excess_amount, excess_handling, created_at)
+             VALUES (?, ? , ?, ?, ?, ?)`,
+            [allocationId, payment.id, totalAllocated, paymentAmount - totalAllocated, payment.excess_handling || 'credit_to_customer', new Date().toISOString()],
             (err) => {
               if (err) {
                 this.db.run('ROLLBACK');
@@ -77,8 +68,8 @@ class PaymentAllocationService extends BaseService {
                          ELSE status
                        END,
                        updated_at = CURRENT_TIMESTAMP
-                   WHERE id = ? AND company_id = ?`,
-                  [alloc.amount, alloc.amount, alloc.amount, alloc.invoiceId, companyId],
+                   WHERE id = ?`,
+                  [alloc.amount, alloc.amount, alloc.amount, alloc.invoiceId],
                   (err) => {
                     if (err) {
                       this.db.run('ROLLBACK');
@@ -133,16 +124,16 @@ class PaymentAllocationService extends BaseService {
   /**
    * Get payment allocations for a specific payment
    */
-  async getPaymentAllocations(paymentId, companyId) {
+  async getPaymentAllocations(paymentId) {
     return new Promise((resolve, reject) => {
       this.db.all(
         `SELECT pal.*, pal_inv.invoice_id, i.invoice_number, i.customer_name, i.total_amount, i.paid_amount
          FROM payment_allocations pal
          LEFT JOIN payment_allocation_lines pal_inv ON pal.id = pal_inv.allocation_id
          LEFT JOIN invoices i ON pal_inv.invoice_id = i.id
-         WHERE pal.payment_id = ? AND pal.company_id = ?
+         WHERE pal.payment_id = ?
          ORDER BY pal.created_at DESC`,
-        [paymentId, companyId],
+        [paymentId],
         (err, rows) => {
           if (err) return reject(err);
           resolve(rows || []);
@@ -154,17 +145,16 @@ class PaymentAllocationService extends BaseService {
   /**
    * Get outstanding invoices for a customer
    */
-  async getOutstandingInvoices(customerId, companyId) {
+  async getOutstandingInvoices(customerId) {
     return new Promise((resolve, reject) => {
       this.db.all(
         `SELECT id, invoice_number, total_amount, paid_amount, 
                 (total_amount - COALESCE(paid_amount, 0)) as outstanding,
                 status, due_date
          FROM invoices
-         WHERE customer_id = ? AND company_id = ?
-           AND status NOT IN ('Paid', 'Voided', 'Cancelled')
+         WHERE customer_id = ? AND status NOT IN ('Paid', 'Voided', 'Cancelled')
          ORDER BY due_date ASC`,
-        [customerId, companyId],
+        [customerId],
         (err, rows) => {
           if (err) return reject(err);
           resolve(rows || []);
@@ -176,8 +166,8 @@ class PaymentAllocationService extends BaseService {
   /**
    * Suggest payment allocation based on outstanding amounts
    */
-  async suggestAllocation(customerId, paymentAmount, companyId) {
-    const outstanding = await this.getOutstandingInvoices(customerId, companyId);
+  async suggestAllocation(customerId, paymentAmount) {
+    const outstanding = await this.getOutstandingInvoices(customerId);
     const suggestions = [];
     let remaining = paymentAmount;
 
@@ -220,15 +210,15 @@ class PaymentAllocationService extends BaseService {
   /**
    * Reverse a payment allocation
    */
-  async reverseAllocation(allocationId, companyId) {
+  async reverseAllocation(allocationId) {
     return new Promise((resolve, reject) => {
       this.db.run('BEGIN TRANSACTION', (err) => {
         if (err) return reject(err);
 
         // Get allocation details
         this.db.get(
-          'SELECT * FROM payment_allocations WHERE id = ? AND company_id = ?',
-          [allocationId, companyId],
+          'SELECT * FROM payment_allocations WHERE id = ?',
+          [allocationId],
           (err, allocation) => {
             if (err) {
               this.db.run('ROLLBACK');
@@ -253,8 +243,8 @@ class PaymentAllocationService extends BaseService {
                   if (index >= lines.length) {
                     // Mark allocation as reversed
                     this.db.run(
-                      'UPDATE payment_allocations SET reversed = 1, reversed_at = ? WHERE id = ? AND company_id = ?',
-                      [new Date().toISOString(), allocationId, companyId],
+                      'UPDATE payment_allocations SET reversed = 1, reversed_at = ? WHERE id = ?',
+                      [new Date().toISOString(), allocationId],
                       (err) => {
                         if (err) {
                           this.db.run('ROLLBACK');
@@ -281,8 +271,8 @@ class PaymentAllocationService extends BaseService {
                            ELSE 'Partially Paid'
                          END,
                          updated_at = CURRENT_TIMESTAMP
-                     WHERE id = ? AND company_id = ?`,
-                    [line.amount, line.amount, line.invoice_id, companyId],
+                     WHERE id = ?`,
+                    [line.amount, line.amount, line.invoice_id],
                     (err) => {
                       if (err) {
                         this.db.run('ROLLBACK');

@@ -3,12 +3,11 @@ const router = express.Router();
 const metaWhatsApp = require('../services/metaWhatsappService.cjs');
 const { db } = require('../db.cjs');
 
-function loadConfig(companyId) {
+function loadConfig() {
   return new Promise((resolve) => {
-    if (!companyId) return resolve(false);
     db.get(
-      'SELECT value FROM settings WHERE key = ? AND company_id = ?',
-      ['meta_whatsapp_config', companyId],
+      'SELECT value FROM settings WHERE key = ?',
+      ['meta_whatsapp_config'],
       (err, row) => {
         if (err || !row) return resolve(false);
         try {
@@ -23,12 +22,12 @@ function loadConfig(companyId) {
   });
 }
 
-function saveConfig(companyId, phoneNumberId, accessToken) {
+function saveConfig( phoneNumberId, accessToken) {
   return new Promise((resolve, reject) => {
     const value = JSON.stringify({ phoneNumberId, accessToken });
     db.run(
-      'INSERT OR REPLACE INTO settings (key, value, company_id) VALUES (?, ?, ?)',
-      ['meta_whatsapp_config', value, companyId],
+      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ? )',
+      ['meta_whatsapp_config', value],
       (err) => {
         if (err) reject(err);
         else resolve();
@@ -38,7 +37,7 @@ function saveConfig(companyId, phoneNumberId, accessToken) {
 }
 
 router.get('/status', async (req, res) => {
-  await loadConfig(req.companyId || '');
+  await loadConfig();
   res.json(metaWhatsApp.getStatus());
 });
 
@@ -53,7 +52,7 @@ router.post('/config', async (req, res) => {
     if (!valid) {
       return res.status(400).json({ success: false, error: 'Invalid credentials — could not verify with Meta' });
     }
-    await saveConfig(req.companyId || '', phoneNumberId, accessToken);
+    await saveConfig(phoneNumberId, accessToken);
     res.json({ success: true, status: metaWhatsApp.getStatus() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -62,7 +61,7 @@ router.post('/config', async (req, res) => {
 
 router.post('/send', async (req, res) => {
   try {
-    await loadConfig(req.companyId || '');
+    await loadConfig();
     const { to, message } = req.body;
     if (!to || !message) {
       return res.status(400).json({ success: false, error: 'Missing "to" or "message" fields' });
@@ -75,7 +74,7 @@ router.post('/send', async (req, res) => {
 });
 
 router.get('/config', async (req, res) => {
-  await loadConfig(req.companyId || '');
+  await loadConfig();
   res.json({
     configured: metaWhatsApp.configured,
     phoneNumberId: metaWhatsApp.phoneNumberId || null,

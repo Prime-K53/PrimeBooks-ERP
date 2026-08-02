@@ -78,12 +78,11 @@ describe('syncConflictResolver', () => {
 
     it('should strip metadata fields from merged data', () => {
       const local = { id: '1', name: 'Test', _version: 5, _updatedAt: '2026-06-29T00:00:00Z' };
-      const remote = { id: '1', updated_at: '2026-01-01T00:00:00Z', company_id: 'c1' };
+      const remote = { id: '1', updated_at: '2026-01-01T00:00:00Z' };
 
       const merged = fieldLevelMerge(local, remote);
       expect(merged.name).toBe('Test');
       expect(merged._version).toBeUndefined();
-      expect(merged.company_id).toBeUndefined();
       expect(merged.updated_at).toBeUndefined();
     });
   });

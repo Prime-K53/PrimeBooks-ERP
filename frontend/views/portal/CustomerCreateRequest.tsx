@@ -86,7 +86,7 @@ const CustomerCreateRequest: React.FC = () => {
     (async () => {
       try {
         const [items, custs] = await Promise.all([
-          api.inventory.getAllItems(),
+          portalLifecycle.catalog.list(),
           api.customers.getAll(),
         ]);
         setCatalog(items || []);
@@ -112,7 +112,7 @@ const CustomerCreateRequest: React.FC = () => {
       (item: any) =>
         String(item.status || '').toLowerCase() !== 'deleted' &&
         Number(item.price) > 0 &&
-        (Number(item.stock) || 0) > 0
+        (Number(item.quantity) || 0) > 0
     );
     if (!term) return available;
     return available.filter((item: any) =>

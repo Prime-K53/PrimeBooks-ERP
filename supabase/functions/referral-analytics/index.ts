@@ -12,7 +12,6 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}))
     const period = body.period || 'monthly'
-    const companyId = body.companyId || null
 
     const now = new Date()
     let startDate: string
@@ -35,7 +34,6 @@ serve(async (req) => {
       p_period: period,
       p_start_date: startDate,
       p_end_date: endDate,
-      p_company_id: companyId,
     })
 
     if (error) throw error

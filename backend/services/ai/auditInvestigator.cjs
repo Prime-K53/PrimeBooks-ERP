@@ -7,10 +7,10 @@ class AuditInvestigator extends BaseAIService {
     this.llm = new LLMClient();
   }
 
-  async investigate(companyId, query, options = {}) {
-    const auditLogs = await this._getAuditLogs(companyId, options);
-    const pricingAudits = await this._getPricingAudits(companyId, options);
-    const marginAudits = await this._getMarginAudits(companyId, options);
+  async investigate( query, options = {}) {
+    const auditLogs = await this._getAuditLogs( options);
+    const pricingAudits = await this._getPricingAudits( options);
+    const marginAudits = await this._getMarginAudits( options);
 
     const findings = [];
 
@@ -43,33 +43,32 @@ class AuditInvestigator extends BaseAIService {
     };
   }
 
-  async _getAuditLogs(companyId, options) {
+  async _getAuditLogs( options) {
     const daysBack = options.daysBack || 90;
     return this._all(
-      `SELECT * FROM audit_logs
-       WHERE company_id = ? AND created_at >= datetime('now', ? || ' days')
+      `SELECT * FROM audit_logs WHERE created_at >= datetime('now', ? || ' days')
        ORDER BY created_at DESC LIMIT 1000`,
-      [companyId, String(-daysBack)]
+      [String(-daysBack)]
     );
   }
 
-  async _getPricingAudits(companyId, options) {
+  async _getPricingAudits( options) {
     const daysBack = options.daysBack || 90;
     return this._all(
-      `SELECT * FROM examination_pricing_audit
-       WHERE company_id = ? AND created_at >= datetime('now', ? || ' days')
+      `SELECT * FROM examination_pricing_audit WHERE created_at >= 
+datetime('now', ? || ' days')
        ORDER BY created_at DESC LIMIT 500`,
-      [companyId, String(-daysBack)]
+      [String(-daysBack)]
     );
   }
 
-  async _getMarginAudits(companyId, options) {
+  async _getMarginAudits( options) {
     const daysBack = options.daysBack || 90;
     return this._all(
-      `SELECT * FROM profit_margin_audit_logs
-       WHERE company_id = ? AND created_at >= datetime('now', ? || ' days')
+      `SELECT * FROM profit_margin_audit_logs WHERE created_at >= 
+datetime('now', ? || ' days')
        ORDER BY created_at DESC LIMIT 500`,
-      [companyId, String(-daysBack)]
+      [String(-daysBack)]
     );
   }
 

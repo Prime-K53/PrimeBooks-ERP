@@ -3,7 +3,6 @@ process.chdir(path.resolve(__dirname, '..'));
 
 const ReferralService = require('../services/referralService.cjs');
 
-const TEST_COMPANY_ID = 'test-company-' + Date.now();
 const TEST_CUSTOMER_ID = 'test-customer-' + Date.now();
 const TEST_REFERRER_ID = 'test-referrer-' + Date.now();
 const TEST_INVOICE_ID = 'test-invoice-' + Date.now();
@@ -120,7 +119,7 @@ async function runTests() {
       status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','converted','expired','cancelled')),
       pending_invoice_id TEXT, pending_invoice_amount REAL DEFAULT 0,
       converted_invoice_id TEXT, converted_at DATETIME, notes TEXT,
-      company_id TEXT NOT NULL DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, deleted_at DATETIME
     )`);
     await run(`CREATE TABLE IF NOT EXISTS referral_rewards (
@@ -130,7 +129,7 @@ async function runTests() {
       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','paid','cancelled')),
       approved_at DATETIME, approved_by TEXT, cancelled_at DATETIME, cancelled_by TEXT,
       cancel_reason TEXT, wallet_transaction_id TEXT, notes TEXT,
-      company_id TEXT NOT NULL DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (referral_id) REFERENCES customer_referrals(id) ON DELETE CASCADE
     )`);
@@ -138,7 +137,7 @@ async function runTests() {
       id TEXT PRIMARY KEY, referral_id TEXT NOT NULL, event_type TEXT NOT NULL,
       title TEXT NOT NULL, description TEXT, amount REAL, actor_id TEXT, actor_name TEXT,
       metadata_json TEXT, timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      company_id TEXT NOT NULL DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (referral_id) REFERENCES customer_referrals(id) ON DELETE CASCADE
     )`);
     await run(`CREATE TABLE IF NOT EXISTS referral_audit_logs (
@@ -147,7 +146,7 @@ async function runTests() {
       entity_id TEXT NOT NULL, action TEXT NOT NULL, actor_id TEXT NOT NULL, actor_name TEXT,
       field_name TEXT, old_value TEXT, new_value TEXT, reason TEXT, correlation_id TEXT,
       ip_address TEXT, user_agent TEXT, timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      company_id TEXT NOT NULL DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
     await run(`CREATE TABLE IF NOT EXISTS referral_analytics (
       id TEXT PRIMARY KEY,
@@ -158,7 +157,7 @@ async function runTests() {
       paid_rewards_amount REAL DEFAULT 0, pending_rewards_amount REAL DEFAULT 0,
       average_reward_amount REAL DEFAULT 0, conversion_rate REAL DEFAULT 0,
       revenue_attributed REAL DEFAULT 0, roi REAL DEFAULT 0, data_json TEXT,
-      company_id TEXT NOT NULL DEFAULT '', generated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      generated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
     await run(`CREATE TABLE IF NOT EXISTS referral_reversals (
       id TEXT PRIMARY KEY, reward_id TEXT NOT NULL, reason TEXT NOT NULL,
@@ -166,14 +165,13 @@ async function runTests() {
       requested_by TEXT NOT NULL, requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       approved_by TEXT, approved_at DATETIME, rejected_by TEXT, rejected_at DATETIME,
       reject_reason TEXT, completed_at DATETIME, wallet_transaction_id TEXT, notes TEXT,
-      company_id TEXT NOT NULL DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (reward_id) REFERENCES referral_rewards(id) ON DELETE CASCADE
     )`);
     await run(`CREATE TABLE IF NOT EXISTS referral_settings (
-      id TEXT PRIMARY KEY, company_id TEXT NOT NULL, settings_json TEXT NOT NULL DEFAULT '{}',
+      id TEXT PRIMARY KEY, settings_json TEXT NOT NULL DEFAULT '{}',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(company_id)
     )`);
 
     // ── Setup: create a customer ──
@@ -192,7 +190,7 @@ async function runTests() {
         referred_by_id: TEST_REFERRER_ID,
         referred_by_name: 'John Referrer',
         notes: 'Welcome referral'
-      }, TEST_COMPANY_ID);
+      });
 
       assertTruthy(referral, 'register() returns a referral');
       assertEqual(referral.status, 'active', 'referral status is active');
@@ -203,7 +201,7 @@ async function runTests() {
       assertTruthy(referral.id, 'referral has an id');
       assertTruthy(referral.referral_code, 'referral has a referral_code');
 
-      const timeline = await service.getTimeline(referral.id, TEST_COMPANY_ID);
+      const timeline = await service.getTimeline(referral.id);
       assertTruthy(timeline.length >= 1, 'timeline entry created for registration');
       assertEqual(timeline[0].event_type, 'created', 'timeline event type is created');
 
@@ -220,7 +218,7 @@ async function runTests() {
         service.register({
           customer_id: TEST_CUSTOMER_ID,
           referred_by_id: TEST_CUSTOMER_ID
-        }, TEST_COMPANY_ID),
+        }),
         'register() rejects self-referral'
       );
     }
@@ -231,13 +229,13 @@ async function runTests() {
         customer_id: 'test-customer-2-' + Date.now(),
         referred_by_id: 'test-referrer-2-' + Date.now(),
         referred_by_name: 'Jane Referrer'
-      }, TEST_COMPANY_ID);
+      });
 
       const r3 = await service.register({
         customer_id: 'test-customer-3-' + Date.now(),
         referred_by_id: 'test-referrer-3-' + Date.now(),
         referred_by_name: 'Bob Referrer'
-      }, TEST_COMPANY_ID);
+      });
 
       assertTruthy(r2.referral_code, 'r2 has a referral_code');
       assertTruthy(r3.referral_code, 'r3 has a referral_code');
@@ -247,8 +245,8 @@ async function runTests() {
 
       cleanup({ referrals: [r2.id, r3.id] });
 
-      const t2 = await service.getTimeline(r2.id, TEST_COMPANY_ID);
-      const t3 = await service.getTimeline(r3.id, TEST_COMPANY_ID);
+      const t2 = await service.getTimeline(r2.id);
+      const t3 = await service.getTimeline(r3.id);
       cleanup({ timeline: [...t2.map(t => t.id), ...t3.map(t => t.id)] });
 
       global._referral2 = r2;
@@ -257,7 +255,7 @@ async function runTests() {
 
     // ── 4. getAll() – returns paginated referrals ──
     {
-      const result = await service.getAll({ page: 1, limit: 10 }, TEST_COMPANY_ID);
+      const result = await service.getAll({ page: 1, limit: 10 });
       assertTruthy(result, 'getAll() returns result');
       assertEqual(result.page, 1, 'getAll page is 1');
       assertEqual(result.limit, 10, 'getAll limit is 10');
@@ -269,27 +267,27 @@ async function runTests() {
 
     // ── 5. getAll() – filters by status ──
     {
-      const active = await service.getAll({ status: 'active' }, TEST_COMPANY_ID);
+      const active = await service.getAll({ status: 'active' });
       assertTruthy(active.referrals.length >= 3, `filter by active status, got ${active.referrals.length}`);
       active.referrals.forEach(r => assertEqual(r.status, 'active', `referral ${r.id} status is active`));
     }
 
     // ── 6. getAll() – filters by search ──
     {
-      const searched = await service.getAll({ search: 'John' }, TEST_COMPANY_ID);
+      const searched = await service.getAll({ search: 'John' });
       assertTruthy(searched.referrals.length >= 1, `search by name "John" found ${searched.referrals.length}`);
     }
 
     // ── 7. getAll() – filters by customer_id ──
     {
-      const filtered = await service.getAll({ customer_id: TEST_CUSTOMER_ID }, TEST_COMPANY_ID);
+      const filtered = await service.getAll({ customer_id: TEST_CUSTOMER_ID });
       assertTruthy(filtered.referrals.length >= 1, `filter by customer_id found ${filtered.referrals.length}`);
       filtered.referrals.forEach(r => assertEqual(r.customer_id, TEST_CUSTOMER_ID, 'customer_id matches filter'));
     }
 
     // ── 8. getById() – returns single referral ──
     {
-      const found = await service.getById(global._referral1.id, TEST_COMPANY_ID);
+      const found = await service.getById(global._referral1.id);
       assertTruthy(found, 'getById() returns a referral');
       assertEqual(found.id, global._referral1.id, 'getById id matches');
       assertEqual(found.customer_id, TEST_CUSTOMER_ID, 'getById customer_id matches');
@@ -297,7 +295,7 @@ async function runTests() {
 
     // ── 9. getById() – returns null for non-existent ──
     {
-      const missing = await service.getById('non-existent-id', TEST_COMPANY_ID);
+      const missing = await service.getById('non-existent-id');
       assertFalsy(missing, 'getById() returns null for non-existent id');
     }
 
@@ -307,7 +305,7 @@ async function runTests() {
         notes: 'Updated notes',
         pending_invoice_id: 'inv-pending-001',
         pending_invoice_amount: 500
-      }, TEST_COMPANY_ID);
+      });
 
       assertEqual(updated.notes, 'Updated notes', 'update() changes notes');
       assertEqual(updated.pending_invoice_id, 'inv-pending-001', 'update() changes pending_invoice_id');
@@ -321,12 +319,12 @@ async function runTests() {
         customer_id: 'test-customer-4-' + Date.now(),
         referred_by_id: 'test-referrer-4-' + Date.now(),
         referred_by_name: 'Cancel Test'
-      }, TEST_COMPANY_ID);
+      });
 
-      const cancelled = await service.cancel(r4.id, TEST_ACTOR_ID, TEST_ACTOR_NAME, 'No longer needed', TEST_COMPANY_ID);
+      const cancelled = await service.cancel(r4.id, TEST_ACTOR_ID, TEST_ACTOR_NAME, 'No longer needed');
       assertEqual(cancelled.status, 'cancelled', 'cancel() sets status to cancelled');
 
-      const timeline = await service.getTimeline(r4.id, TEST_COMPANY_ID);
+      const timeline = await service.getTimeline(r4.id);
       const cancelledEntry = timeline.find(e => e.event_type === 'referral_cancelled');
       assertTruthy(cancelledEntry, 'cancel creates timeline event');
 
@@ -339,15 +337,15 @@ async function runTests() {
         customer_id: 'test-customer-5-' + Date.now(),
         referred_by_id: 'test-referrer-5-' + Date.now(),
         referred_by_name: 'Double Cancel'
-      }, TEST_COMPANY_ID);
+      });
 
-      await service.cancel(r5.id, TEST_ACTOR_ID, TEST_ACTOR_NAME, null, TEST_COMPANY_ID);
+      await service.cancel(r5.id, TEST_ACTOR_ID, TEST_ACTOR_NAME, null);
       await assertRejects(() =>
-        service.cancel(r5.id, TEST_ACTOR_ID, TEST_ACTOR_NAME, null, TEST_COMPANY_ID),
+        service.cancel(r5.id, TEST_ACTOR_ID, TEST_ACTOR_NAME, null),
         'cancel() throws on already cancelled referral'
       );
 
-      const t5 = await service.getTimeline(r5.id, TEST_COMPANY_ID);
+      const t5 = await service.getTimeline(r5.id);
       cleanup({ referrals: [r5.id], timeline: t5.map(t => t.id) });
     }
 
@@ -357,12 +355,12 @@ async function runTests() {
         customer_id: 'test-customer-6-' + Date.now(),
         referred_by_id: 'test-referrer-6-' + Date.now(),
         referred_by_name: 'Expire Test'
-      }, TEST_COMPANY_ID);
+      });
 
-      const expired = await service.expire(r6.id, TEST_COMPANY_ID);
+      const expired = await service.expire(r6.id);
       assertEqual(expired.status, 'expired', 'expire() sets status to expired');
 
-      const timeline = await service.getTimeline(r6.id, TEST_COMPANY_ID);
+      const timeline = await service.getTimeline(r6.id);
       const expiredEntry = timeline.find(e => e.event_type === 'referral_expired');
       assertTruthy(expiredEntry, 'expire creates timeline event');
 
@@ -371,7 +369,7 @@ async function runTests() {
 
     // ── 14. createReward() – creates reward with calculated amount ──
     {
-      await service.updateSettings(TEST_COMPANY_ID, {
+      await service.updateSettings({
         enabled: true,
         rewardType: 'percentage',
         rewardValue: 0,
@@ -388,7 +386,7 @@ async function runTests() {
         customer_id: TEST_CUSTOMER_ID,
         invoice_id: TEST_INVOICE_ID,
         invoice_amount: 1000
-      }, TEST_COMPANY_ID);
+      });
 
       assertTruthy(reward, 'createReward() returns a reward');
       assertEqual(reward.status, 'pending', 'reward status is pending');
@@ -400,7 +398,7 @@ async function runTests() {
 
       cleanup({ rewards: [reward.id] });
 
-      let r1Timeline = await service.getTimeline(global._referral1.id, TEST_COMPANY_ID);
+      let r1Timeline = await service.getTimeline(global._referral1.id);
       cleanup({ timeline: r1Timeline.map(t => t.id) });
 
       global._reward1 = reward;
@@ -414,7 +412,7 @@ async function runTests() {
           customer_id: TEST_CUSTOMER_ID,
           invoice_id: 'inv-xxx',
           invoice_amount: 500
-        }, TEST_COMPANY_ID),
+        }),
         'createReward() throws for non-existent referral'
       );
     }
@@ -427,14 +425,14 @@ async function runTests() {
         invoice_id: 'inv-custom-001',
         invoice_amount: 200,
         amount: 50
-      }, TEST_COMPANY_ID);
+      });
 
       assertEqual(reward.amount, 50, 'createReward with custom amount uses 50');
       assertEqual(reward.invoice_amount, 200, 'reward invoice_amount matches input');
 
       cleanup({ rewards: [reward.id] });
 
-      let r2Timeline = await service.getTimeline(global._referral2.id, TEST_COMPANY_ID);
+      let r2Timeline = await service.getTimeline(global._referral2.id);
       cleanup({ timeline: r2Timeline.map(t => t.id) });
 
       global._rewardCustom = reward;
@@ -442,7 +440,7 @@ async function runTests() {
 
     // ── 17. getAllRewards() – returns paginated rewards ──
     {
-      const result = await service.getAllRewards({ page: 1, limit: 10 }, TEST_COMPANY_ID);
+      const result = await service.getAllRewards({ page: 1, limit: 10 });
       assertTruthy(result, 'getAllRewards() returns result');
       assertTruthy(result.total >= 2, `getAllRewards total >= 2, got ${result.total}`);
       assertTruthy(Array.isArray(result.rewards), 'getAllRewards rewards is array');
@@ -451,7 +449,7 @@ async function runTests() {
 
     // ── 18. getPendingRewards() – returns only pending ──
     {
-      const pending = await service.getPendingRewards(TEST_COMPANY_ID);
+      const pending = await service.getPendingRewards();
       assertTruthy(Array.isArray(pending), 'getPendingRewards returns array');
       assertTruthy(pending.length >= 2, `getPendingRewards length >= 2, got ${pending.length}`);
       pending.forEach(r => assertEqual(r.status, 'pending', 'pending reward status is pending'));
@@ -459,15 +457,15 @@ async function runTests() {
 
     // ── 19. approveReward() – approves and credits wallet ──
     {
-      const approved = await service.approveReward(global._reward1.id, TEST_ACTOR_ID, TEST_COMPANY_ID);
+      const approved = await service.approveReward(global._reward1.id, TEST_ACTOR_ID);
       assertEqual(approved.status, 'approved', 'approveReward sets status to approved');
       assertEqual(approved.approved_by, TEST_ACTOR_ID, 'approveReward records approved_by');
 
-      const referral = await service.getById(global._reward1.referral_id, TEST_COMPANY_ID);
+      const referral = await service.getById(global._reward1.referral_id);
       assertEqual(referral.status, 'converted', 'referral status becomes converted after reward approval');
       assertEqual(referral.converted_invoice_id, TEST_INVOICE_ID, 'referral converted_invoice_id is set');
 
-      const timeline = await service.getTimeline(referral.id, TEST_COMPANY_ID);
+      const timeline = await service.getTimeline(referral.id);
       const rewardApproved = timeline.find(e => e.event_type === 'reward_approved');
       assertTruthy(rewardApproved, 'reward_approved timeline entry exists');
     }
@@ -475,7 +473,7 @@ async function runTests() {
     // ── 20. approveReward() – throws on already approved ──
     {
       await assertRejects(() =>
-        service.approveReward(global._reward1.id, TEST_ACTOR_ID, TEST_COMPANY_ID),
+        service.approveReward(global._reward1.id, TEST_ACTOR_ID),
         'approveReward() throws on already approved reward'
       );
     }
@@ -486,7 +484,7 @@ async function runTests() {
         customer_id: 'test-customer-7-' + Date.now(),
         referred_by_id: 'test-referrer-7-' + Date.now(),
         referred_by_name: 'Reject Test'
-      }, TEST_COMPANY_ID);
+      });
 
       const reward = await service.createReward({
         referral_id: r7.id,
@@ -494,15 +492,15 @@ async function runTests() {
         invoice_id: 'inv-reject-001',
         invoice_amount: 300,
         amount: 30
-      }, TEST_COMPANY_ID);
+      });
 
-      const rejected = await service.rejectReward(reward.id, 'Fraud suspected', TEST_ACTOR_ID, TEST_COMPANY_ID);
+      const rejected = await service.rejectReward(reward.id, 'Fraud suspected', TEST_ACTOR_ID);
       assertEqual(rejected.status, 'cancelled', 'rejectReward sets status to cancelled');
       assertEqual(rejected.cancelled_by, TEST_ACTOR_ID, 'rejectReward records cancelled_by');
       assertEqual(rejected.cancel_reason, 'Fraud suspected', 'rejectReward records cancel_reason');
 
       cleanup({ referrals: [r7.id], rewards: [reward.id] });
-      const t7 = await service.getTimeline(r7.id, TEST_COMPANY_ID);
+      const t7 = await service.getTimeline(r7.id);
       cleanup({ timeline: t7.map(t => t.id) });
     }
 
@@ -513,7 +511,7 @@ async function runTests() {
         reason: 'Customer returned items',
         requested_by: TEST_ACTOR_ID,
         notes: 'Full refund issued'
-      }, TEST_COMPANY_ID);
+      });
 
       assertTruthy(reversal, 'createReversal() returns a reversal');
       assertEqual(reversal.reward_id, global._rewardCustom.id, 'reversal reward_id matches');
@@ -528,7 +526,7 @@ async function runTests() {
 
     // ── 23. approveReversal() – approves reversal ──
     {
-      const approved = await service.approveReversal(global._reversal1.id, TEST_ACTOR_ID, 'Reversal approved after review', TEST_COMPANY_ID);
+      const approved = await service.approveReversal(global._reversal1.id, TEST_ACTOR_ID, 'Reversal approved after review');
       assertTruthy(approved, 'approveReversal() returns result');
       assertEqual(approved.status, 'completed', 'approveReversal sets status to completed');
     }
@@ -540,7 +538,7 @@ async function runTests() {
         period: 'daily',
         period_start: today,
         period_end: today
-      }, TEST_COMPANY_ID);
+      });
 
       assertTruthy(analytics, 'getAnalytics() returns analytics');
       assertTruthy(analytics.total_referrals >= 1, `analytics total_referrals >= 1, got ${analytics.total_referrals}`);
@@ -550,7 +548,7 @@ async function runTests() {
     // ── 25. generateAnalytics() – calculates and stores analytics ──
     {
       const today = new Date().toISOString().slice(0, 10);
-      const analytics = await service.generateAnalytics('daily', today, today, TEST_COMPANY_ID);
+      const analytics = await service.generateAnalytics('daily', today, today);
 
       assertTruthy(analytics, 'generateAnalytics() returns analytics');
       assertEqual(analytics.period, 'daily', 'analytics period is daily');
@@ -560,15 +558,15 @@ async function runTests() {
 
       cleanup({ analytics: [analytics.id] });
 
-      const history = await service.getAnalyticsHistory({}, TEST_COMPANY_ID);
+      const history = await service.getAnalyticsHistory({});
       assertTruthy(Array.isArray(history), 'getAnalyticsHistory returns array');
       assertTruthy(history.length >= 1, 'getAnalyticsHistory has entries');
     }
 
     // ── 26. getSettings() – returns default settings ──
     {
-      const settings = await service.getSettings('non-existent-company-' + Date.now());
-      assertTruthy(settings, 'getSettings() returns settings for new company');
+      const settings = await service.getSettings();
+      assertTruthy(settings, 'getSettings() returns default settings');
       assertEqual(settings.enabled, true, 'default settings enabled is true');
       assertEqual(settings.rewardType, 'percentage', 'default rewardType is percentage');
       assertEqual(settings.rewardPercentage, 5, 'default rewardPercentage is 5');
@@ -582,7 +580,7 @@ async function runTests() {
 
     // ── 27. updateSettings() – saves settings ──
     {
-      const updated = await service.updateSettings(TEST_COMPANY_ID, {
+      const updated = await service.updateSettings({
         enabled: false,
         rewardType: 'fixed',
         rewardValue: 25,
@@ -600,7 +598,7 @@ async function runTests() {
       assertEqual(updated.requireApproval, false, 'updateSettings changed requireApproval');
       assertEqual(updated.expiryDays, 180, 'updateSettings changed expiryDays');
 
-      const fetched = await service.getSettings(TEST_COMPANY_ID);
+      const fetched = await service.getSettings();
       assertEqual(fetched.enabled, false, 'settings persist after getSettings');
     }
 

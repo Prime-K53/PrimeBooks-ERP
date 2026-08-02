@@ -77,7 +77,11 @@ async function bootstrap() {
   } catch (err) {
     console.error('--- DATABASE CRITICAL ERROR ---');
     console.error(err);
-    
+
+    if (process.env.NODE_ENV === 'test') {
+      throw err;
+    }
+
     // Recovery Logic: Attempt to restore from latest backup
     if (fs.existsSync(backupDir)) {
       const backups = fs.readdirSync(backupDir)

@@ -1,18 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const authService = require('../services/authService.cjs');
 const portalAuthService = require('../services/portalAuthService.cjs');
 const { generateToken, verifyToken } = require('../middleware/auth.cjs');
 const { validateBody, userSchemas } = require('../middleware/validation.cjs');
 
+// Shared in-memory store for pending 2FA verification during login.
+// In production, use Redis or a database for multi-instance deployments.
+const pendingTwoFactorMap = new Map();
+
 router.post('/register', validateBody(userSchemas.createUser), async (req, res) => {
   try {
     const { username, email, password, role, permissions } = req.body;
-    // Do NOT accept companyId from request body — it must be set by an admin
-    // after registration. This prevents attackers from joining arbitrary companies.
-    const user = await authService.registerUser({ username, email, password, role, permissions, companyId: '' });
-    const token = generateToken({ ...user, company_id: '' });
-    res.status(201).json({ message: 'User registered successfully', user: { ...user, company_id: '' }, token });
+    const user = await authService.registerUser({ username, email, password, role, permissions });
+    const token = generateToken({ ...user });
+    res.status(201).json({ message: 'User registered successfully', user, token });
   } catch (err) {
     if (err.message === 'Username already exists') {
       return res.status(409).json({ error: err.message });
@@ -24,7 +27,7 @@ router.post('/register', validateBody(userSchemas.createUser), async (req, res) 
 
 router.post('/login', validateBody(userSchemas.login), async (req, res) => {
   try {
-    const { email, username, password, portal } = req.body;
+    const { email, username, password, portal, two_factor_code } = req.body;
     const requestedPortal = portal === 'customer' ? 'customer' : 'admin';
     const identifier = String(email || username || '').trim();
 
@@ -38,7 +41,29 @@ router.post('/login', validateBody(userSchemas.login), async (req, res) => {
     }
 
     if (requestedPortal === 'customer') {
-      if (portalUser) return loginCustomer(res, portalUser);
+      if (portalUser) {
+        // Check 2FA
+        const twoFactorEnabled = await portalAuthService.isTwoFactorEnabled(portalUser.id);
+        if (twoFactorEnabled && !two_factor_code) {
+          const pendingToken = crypto.randomBytes(32).toString('hex');
+          pendingTwoFactorMap.set(pendingToken, { userId: portalUser.id, email: portalUser.email });
+          // Expire after 10 minutes
+          setTimeout(() => pendingTwoFactorMap.delete(pendingToken), 10 * 60 * 1000);
+          return res.json({
+            requires_two_factor: true,
+            pending_token: pendingToken,
+            user: { id: portalUser.id, email: portalUser.email }
+          });
+        }
+        if (twoFactorEnabled && two_factor_code) {
+          const secret = await portalAuthService.getTwoFactorSecret(portalUser.id);
+          const isValid = await portalAuthService.verifyTwoFactorToken(secret, two_factor_code);
+          if (!isValid) {
+            return res.status(401).json({ error: 'Invalid verification code' });
+          }
+        }
+        return loginCustomer(res, portalUser);
+      }
       if (staff) {
         return res.status(403).json({
           error: 'Wrong portal',
@@ -65,14 +90,7 @@ router.post('/login', validateBody(userSchemas.login), async (req, res) => {
 });
 
 async function loginStaff(res, user) {
-  const { db } = require('../db.cjs');
-  const userCompanies = await new Promise((resolve, reject) => {
-    db.all('SELECT company_id, role, is_default FROM user_companies WHERE user_id = ?', [user.id], (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows || []);
-    });
-  });
-  const token = generateToken({ ...user, companies: userCompanies.map(c => c.company_id) });
+  const token = generateToken({ ...user });
   res.json({
     message: 'Login successful',
     userId: user.id,
@@ -80,8 +98,6 @@ async function loginStaff(res, user) {
     user: {
       id: user.id, username: user.username, email: user.email,
       role: user.role, permissions: user.permissions,
-      company_id: user.company_id || '',
-      companies: userCompanies
     },
     token
   });
@@ -92,9 +108,9 @@ async function loginCustomer(res, user) {
   const { generatePortalToken } = require('../middleware/portalAuth.cjs');
   const token = generatePortalToken(user);
   const refreshToken = crypto.randomBytes(48).toString('hex');
-  await portalAuthService.createSession(user.id, user.company_id, refreshToken);
   const ip = res.req.ip || res.req.connection?.remoteAddress;
   const ua = res.req.headers['user-agent'];
+  await portalAuthService.createSession(user.id, refreshToken, ip, ua);
   portalAuthService.recordLoginHistory(user.id, ip, ua).catch(() => {});
   res.json({
     message: 'Login successful',
@@ -147,14 +163,7 @@ router.get('/me', verifyToken, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    const { db } = require('../db.cjs');
-    const companies = await new Promise((resolve, reject) => {
-      db.all('SELECT company_id, role, is_default FROM user_companies WHERE user_id = ?', [user.id], (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows || []);
-      });
-    });
-    res.json({ ...user, companies });
+    res.json({ ...user });
   } catch (err) {
     console.error('[Auth] Get user error:', err);
     res.status(500).json({ error: 'Failed to get user' });

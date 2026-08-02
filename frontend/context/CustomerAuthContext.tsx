@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { portalApi, getPortalSession, savePortalSession, clearPortalSession } from '../services/portalApiClient';
 import { loginWithApi } from '../services/authApiClient';
-import { clearCurrentCompanyId, dbService } from '../services/db';
 
 interface PortalUser {
   id: string;
@@ -15,9 +14,7 @@ interface CustomerAuthContextType {
   user: PortalUser | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (customerId: string, fullName: string) => Promise<'SUCCESS' | 'INVALID' | 'ERROR'>;
-  loginPassword: (email: string, password: string) => Promise<'SUCCESS' | 'INVALID' | 'ERROR'>;
-  loginWithApi: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  loginWithApi: (email: string, password: string, twoFactorCode?: string) => Promise<{ success: boolean; message?: string; requiresTwoFactor?: boolean; pendingToken?: string }>;
   activate: (customerId: string, code: string, password: string) => Promise<'SUCCESS' | 'INVALID' | 'ERROR'>;
   logout: () => void;
   refreshSession: () => Promise<boolean>;
@@ -52,7 +49,6 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
       portalApi.post('/auth/logout', { refresh_token: session.refresh_token }).catch(() => {});
     }
     clearPortalSession();
-    clearCurrentCompanyId();
     setUser(null);
   }, [clearRefreshTimer]);
 
@@ -103,20 +99,20 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
     };
   }, [clearRefreshTimer, scheduleTokenRefresh]);
 
-  const loginWithApiCallback = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
+  const loginWithApiCallback = useCallback(async (email: string, password: string, twoFactorCode?: string): Promise<{ success: boolean; message?: string; requiresTwoFactor?: boolean; pendingToken?: string }> => {
     try {
-      clearCurrentCompanyId();
-      const result = await loginWithApi({ email, password, portal: 'customer' });
+      const result = await loginWithApi({ email, password, portal: 'customer', two_factor_code: twoFactorCode });
+      
+      if (result.requires_two_factor) {
+        return { success: false, requiresTwoFactor: true, pendingToken: result.pending_token };
+      }
+      
       savePortalSession({
         access_token: result.access_token || '',
         refresh_token: result.refresh_token || '',
         expires_in: result.expires_in || '30m',
         user: result.user as PortalUser,
       });
-      const companyId = (result.user as PortalUser)?.company_id || null;
-      if (companyId) {
-        dbService.setCurrentCompanyId(companyId);
-      }
       setUser(result.user as PortalUser);
       scheduleTokenRefresh(25 * 60 * 1000);
       return { success: true };
@@ -125,73 +121,8 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
     }
   }, [scheduleTokenRefresh]);
 
-  const login = useCallback(async (customerId: string, fullName: string): Promise<'SUCCESS' | 'INVALID' | 'ERROR'> => {
-    try {
-      clearCurrentCompanyId();
-      const result = await portalApi.post<{
-        message: string;
-        user: PortalUser;
-        access_token: string;
-        refresh_token: string;
-        expires_in: string;
-      }>('/auth/login', { customer_id: customerId, full_name: fullName });
-
-      savePortalSession({
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
-        expires_in: result.expires_in,
-        user: result.user,
-      });
-
-      const companyId = result.user?.company_id || null;
-      if (companyId) {
-        dbService.setCurrentCompanyId(companyId);
-      }
-
-      setUser(result.user);
-      scheduleTokenRefresh(25 * 60 * 1000);
-      return 'SUCCESS';
-    } catch (err: any) {
-      if (err?.status === 401) return 'INVALID';
-      return 'ERROR';
-    }
-  }, [scheduleTokenRefresh]);
-
-  const loginPassword = useCallback(async (email: string, password: string): Promise<'SUCCESS' | 'INVALID' | 'ERROR'> => {
-    try {
-      clearCurrentCompanyId();
-      const result = await portalApi.post<{
-        message: string;
-        user: PortalUser;
-        access_token: string;
-        refresh_token: string;
-        expires_in: string;
-      }>('/auth/login-password', { email, password });
-
-      savePortalSession({
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
-        expires_in: result.expires_in,
-        user: result.user,
-      });
-
-      const companyId = result.user?.company_id || null;
-      if (companyId) {
-        dbService.setCurrentCompanyId(companyId);
-      }
-
-      setUser(result.user);
-      scheduleTokenRefresh(25 * 60 * 1000);
-      return 'SUCCESS';
-    } catch (err: any) {
-      if (err?.status === 401) return 'INVALID';
-      return 'ERROR';
-    }
-  }, [scheduleTokenRefresh]);
-
   const activate = useCallback(async (customerId: string, code: string, password: string): Promise<'SUCCESS' | 'INVALID' | 'ERROR'> => {
     try {
-      clearCurrentCompanyId();
       const result = await portalApi.post<{
         message: string;
         user: PortalUser;
@@ -207,11 +138,6 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
         user: result.user,
       });
 
-      const companyId = result.user?.company_id || null;
-      if (companyId) {
-        dbService.setCurrentCompanyId(companyId);
-      }
-
       setUser(result.user);
       scheduleTokenRefresh(25 * 60 * 1000);
       return 'SUCCESS';
@@ -222,7 +148,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
   }, [scheduleTokenRefresh]);
 
   return (
-    <CustomerAuthContext.Provider value={{ user, isAuthenticated, loading, login, loginPassword, loginWithApi: loginWithApiCallback, activate, logout, refreshSession }}>
+    <CustomerAuthContext.Provider value={{ user, isAuthenticated, loading, loginWithApi: loginWithApiCallback, activate, logout, refreshSession }}>
       {children}
     </CustomerAuthContext.Provider>
   );

@@ -8,11 +8,11 @@ class BankingService extends BaseService {
 
   // ==================== BANK ACCOUNTS ====================
 
-  async getAccounts(companyId) {
+  async getAccounts() {
     return new Promise((resolve, reject) => {
       this.db.all(
-        `SELECT * FROM bank_accounts WHERE company_id = ? ORDER BY account_name`,
-        [companyId],
+        `SELECT * FROM bank_accounts ORDER BY account_name`,
+        [],
         (err, rows) => {
           if (err) return reject(err);
           resolve(rows || []);
@@ -21,11 +21,11 @@ class BankingService extends BaseService {
     });
   }
 
-  async getAccountById(id, companyId) {
+  async getAccountById(id) {
     return new Promise((resolve, reject) => {
       this.db.get(
-        'SELECT * FROM bank_accounts WHERE id = ? AND company_id = ?',
-        [id, companyId],
+        'SELECT * FROM bank_accounts WHERE id = ?',
+        [id],
         (err, row) => {
           if (err) return reject(err);
           resolve(row || null);
@@ -34,29 +34,16 @@ class BankingService extends BaseService {
     });
   }
 
-  async createAccount(data, companyId) {
+  async createAccount(data) {
     return new Promise((resolve, reject) => {
       const id = data.id || `BANK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       this.db.run(
         `INSERT INTO bank_accounts (
           id, account_name, account_number, bank_name, branch_code,
           account_type, currency, opening_balance, current_balance,
-          status, company_id, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          id,
-          data.accountName || data.account_name,
-          data.accountNumber || data.account_number,
-          data.bankName || data.bank_name,
-          data.branchCode || data.branch_code || null,
-          data.accountType || data.account_type || 'checking',
-          data.currency || 'USD',
-          data.openingBalance || data.opening_balance || 0,
-          data.openingBalance || data.opening_balance || 0,
-          data.status || 'Active',
-          companyId,
-          data.createdBy || data.created_by || null
-        ],
+          status, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`,
+        [id, data.accountName || data.account_name, data.accountNumber || data.account_number, data.bankName || data.bank_name, data.branchCode || data.branch_code || null, data.accountType || data.account_type || 'checking', data.currency || 'USD', data.openingBalance || data.opening_balance || 0, data.openingBalance || data.opening_balance || 0, data.status || 'Active', data.createdBy || data.created_by || null],
         function (err) {
           if (err) return reject(err);
           resolve({ id, ...data });
@@ -65,7 +52,7 @@ class BankingService extends BaseService {
     });
   }
 
-  async updateAccount(id, data, companyId) {
+  async updateAccount(id, data) {
     return new Promise((resolve, reject) => {
       const fields = [];
       const params = [];
@@ -86,9 +73,9 @@ class BankingService extends BaseService {
 
       if (fields.length === 0) return reject(new Error('No fields to update'));
 
-      params.push(id, companyId);
+      params.push(id);
       this.db.run(
-        `UPDATE bank_accounts SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
+        `UPDATE bank_accounts SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         params,
         function (err) {
           if (err) return reject(err);
@@ -99,12 +86,12 @@ class BankingService extends BaseService {
     });
   }
 
-  async deleteAccount(id, companyId) {
+  async deleteAccount(id) {
     return new Promise((resolve, reject) => {
       // Check if account has transactions
       this.db.get(
-        'SELECT COUNT(*) as count FROM bank_transactions WHERE account_id = ? AND company_id = ?',
-        [id, companyId],
+        'SELECT COUNT(*) as count FROM bank_transactions WHERE account_id = ?',
+        [id],
         (err, row) => {
           if (err) return reject(err);
           if (row && row.count > 0) {
@@ -112,8 +99,8 @@ class BankingService extends BaseService {
           }
           
           this.db.run(
-            'DELETE FROM bank_accounts WHERE id = ? AND company_id = ?',
-            [id, companyId],
+            'DELETE FROM bank_accounts WHERE id = ?',
+            [id],
             function (err) {
               if (err) return reject(err);
               resolve({ success: true });
@@ -126,10 +113,10 @@ class BankingService extends BaseService {
 
   // ==================== BANK TRANSACTIONS ====================
 
-  async getTransactions(companyId, filters = {}) {
+  async getTransactions( filters = {}) {
     return new Promise((resolve, reject) => {
-      let sql = `SELECT * FROM bank_transactions WHERE company_id = ?`;
-      const params = [companyId];
+      let sql = `SELECT * FROM bank_transactions`;
+      const params = [];
 
       if (filters.accountId) {
         sql += ' AND account_id = ?';
@@ -161,11 +148,11 @@ class BankingService extends BaseService {
     });
   }
 
-  async getTransactionById(id, companyId) {
+  async getTransactionById(id) {
     return new Promise((resolve, reject) => {
       this.db.get(
-        'SELECT * FROM bank_transactions WHERE id = ? AND company_id = ?',
-        [id, companyId],
+        'SELECT * FROM bank_transactions WHERE id = ?',
+        [id],
         (err, row) => {
           if (err) return reject(err);
           resolve(row || null);
@@ -174,7 +161,7 @@ class BankingService extends BaseService {
     });
   }
 
-  async createTransaction(data, companyId) {
+  async createTransaction(data) {
     return new Promise((resolve, reject) => {
       const id = data.id || `BT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const currency = data.currency || 'USD';
@@ -187,8 +174,8 @@ class BankingService extends BaseService {
           `INSERT INTO bank_transactions (
             id, account_id, date, type, amount, currency,
             description, reference_type, reference_id, status,
-            reconciled, company_id, created_by
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            reconciled, created_by
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`,
           [
             id,
             data.accountId || data.account_id,
@@ -201,7 +188,6 @@ class BankingService extends BaseService {
             data.referenceId || data.reference_id || null,
             data.status || 'pending',
             data.reconciled || 0,
-            companyId,
             data.createdBy || data.created_by || null
           ],
           function (err) {
@@ -213,8 +199,8 @@ class BankingService extends BaseService {
             // Update account balance
             const balanceChange = data.type === 'deposit' ? data.amount : -data.amount;
             this.db.run(
-              'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ? AND company_id = ?',
-              [balanceChange, data.accountId || data.account_id, companyId],
+              'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ?',
+              [balanceChange, data.accountId || data.account_id],
               (err) => {
                 if (err) {
                   this.db.run('ROLLBACK');
@@ -236,7 +222,7 @@ class BankingService extends BaseService {
     });
   }
 
-  async updateTransaction(id, data, companyId) {
+  async updateTransaction(id, data) {
     return new Promise((resolve, reject) => {
       const fields = [];
       const params = [];
@@ -253,9 +239,9 @@ class BankingService extends BaseService {
 
       if (fields.length === 0) return reject(new Error('No fields to update'));
 
-      params.push(id, companyId);
+      params.push(id);
       this.db.run(
-        `UPDATE bank_transactions SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`,
+        `UPDATE bank_transactions SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         params,
         function (err) {
           if (err) return reject(err);
@@ -266,12 +252,12 @@ class BankingService extends BaseService {
     });
   }
 
-  async deleteTransaction(id, companyId) {
+  async deleteTransaction(id) {
     return new Promise((resolve, reject) => {
       // Get transaction details first to reverse balance
       this.db.get(
-        'SELECT * FROM bank_transactions WHERE id = ? AND company_id = ?',
-        [id, companyId],
+        'SELECT * FROM bank_transactions WHERE id = ?',
+        [id],
         (err, row) => {
           if (err) return reject(err);
           if (!row) return resolve(null);
@@ -282,8 +268,8 @@ class BankingService extends BaseService {
             // Reverse balance update
             const balanceChange = row.type === 'deposit' ? -row.amount : row.amount;
             this.db.run(
-              'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ? AND company_id = ?',
-              [balanceChange, row.account_id, companyId],
+              'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ?',
+              [balanceChange, row.account_id],
               (err) => {
                 if (err) {
                   this.db.run('ROLLBACK');
@@ -292,8 +278,8 @@ class BankingService extends BaseService {
 
                 // Delete transaction
                 this.db.run(
-                  'DELETE FROM bank_transactions WHERE id = ? AND company_id = ?',
-                  [id, companyId],
+                  'DELETE FROM bank_transactions WHERE id = ?',
+                  [id],
                   function (err) {
                     if (err) {
                       this.db.run('ROLLBACK');
@@ -319,11 +305,11 @@ class BankingService extends BaseService {
 
   // ==================== RECONCILIATION ====================
 
-  async reconcileTransaction(id, companyId) {
+  async reconcileTransaction(id) {
     return new Promise((resolve, reject) => {
       this.db.run(
-        'UPDATE bank_transactions SET reconciled = 1, reconciled_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?',
-        [id, companyId],
+        'UPDATE bank_transactions SET reconciled = 1, reconciled_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [id],
         function (err) {
           if (err) return reject(err);
           if (this.changes === 0) return resolve(null);
@@ -333,11 +319,11 @@ class BankingService extends BaseService {
     });
   }
 
-  async unreconcileTransaction(id, companyId) {
+  async unreconcileTransaction(id) {
     return new Promise((resolve, reject) => {
       this.db.run(
-        'UPDATE bank_transactions SET reconciled = 0, reconciled_at = NULL WHERE id = ? AND company_id = ?',
-        [id, companyId],
+        'UPDATE bank_transactions SET reconciled = 0, reconciled_at = NULL WHERE id = ?',
+        [id],
         function (err) {
           if (err) return reject(err);
           if (this.changes === 0) return resolve(null);
@@ -347,7 +333,7 @@ class BankingService extends BaseService {
     });
   }
 
-  async getReconciliationSummary(accountId, companyId, startDate, endDate) {
+  async getReconciliationSummary(accountId, startDate, endDate) {
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT 
@@ -357,11 +343,10 @@ class BankingService extends BaseService {
           SUM(CASE WHEN reconciled = 1 THEN amount ELSE 0 END) as reconciled_amount,
           SUM(CASE WHEN reconciled = 0 THEN amount ELSE 0 END) as unreconciled_amount
         FROM bank_transactions
-        WHERE account_id = ? AND company_id = ?
-          AND date >= ? AND date <= ?
+        WHERE account_id = ?date >= ? AND date <= ?
       `;
 
-      this.db.get(sql, [accountId, companyId, startDate, endDate], (err, row) => {
+      this.db.get(sql, [accountId, startDate, endDate], (err, row) => {
         if (err) return reject(err);
         resolve(row || {});
       });
@@ -370,7 +355,7 @@ class BankingService extends BaseService {
 
   // ==================== TRANSFERS ====================
 
-  async transferFunds(data, companyId) {
+  async transferFunds(data) {
     return new Promise((resolve, reject) => {
       const fromAccountId = data.fromAccountId || data.from_account_id;
       const toAccountId = data.toAccountId || data.to_account_id;
@@ -390,7 +375,7 @@ class BankingService extends BaseService {
           `INSERT INTO bank_transactions (
             id, account_id, date, type, amount, currency,
             description, reference_type, reference_id, status,
-            reconciled, company_id, created_by
+            reconciled, created_by
           ) VALUES (?, ?, ?, 'withdrawal', ?, ?, ?, 'transfer', ?, 'completed', 0, ?, ?)`,
           [
             withdrawalId,
@@ -400,7 +385,6 @@ class BankingService extends BaseService {
             currency,
             `Transfer to ${data.toAccountName || data.to_account_name || 'another account'}`,
             `${Date.now()}`,
-            companyId,
             data.createdBy || data.created_by || null
           ],
           function (err) {
@@ -415,7 +399,7 @@ class BankingService extends BaseService {
               `INSERT INTO bank_transactions (
                 id, account_id, date, type, amount, currency,
                 description, reference_type, reference_id, status,
-                reconciled, company_id, created_by
+                reconciled, created_by
               ) VALUES (?, ?, ?, 'deposit', ?, ?, ?, 'transfer', ?, 'completed', 0, ?, ?)`,
               [
                 depositId,
@@ -425,7 +409,6 @@ class BankingService extends BaseService {
                 currency,
                 `Transfer from ${data.fromAccountName || data.from_account_name || 'another account'}`,
                 `${Date.now()}`,
-                companyId,
                 data.createdBy || data.created_by || null
               ],
               function (err) {
@@ -436,8 +419,8 @@ class BankingService extends BaseService {
 
                 // Update account balances
                 this.db.run(
-                  'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) - ? WHERE id = ? AND company_id = ?',
-                  [amount, fromAccountId, companyId],
+                  'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) - ? WHERE id = ?',
+                  [amount, fromAccountId],
                   (err) => {
                     if (err) {
                       this.db.run('ROLLBACK');
@@ -445,8 +428,8 @@ class BankingService extends BaseService {
                     }
 
                     this.db.run(
-                      'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ? AND company_id = ?',
-                      [amount, toAccountId, companyId],
+                      'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ?',
+                      [amount, toAccountId],
                       (err) => {
                         if (err) {
                           this.db.run('ROLLBACK');
@@ -480,16 +463,15 @@ class BankingService extends BaseService {
 
   // ==================== REPORTING ====================
 
-  async getAccountBalance(accountId, companyId, asOfDate = null) {
+  async getAccountBalance(accountId, asOfDate = null) {
     return new Promise((resolve, reject) => {
       let sql = `
         SELECT 
           COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount ELSE 0 END), 0) -
           COALESCE(SUM(CASE WHEN type = 'withdrawal' THEN amount ELSE 0 END), 0) as balance
         FROM bank_transactions
-        WHERE account_id = ? AND company_id = ?
-      `;
-      const params = [accountId, companyId];
+        WHERE account_id = ?`;
+      const params = [accountId];
 
       if (asOfDate) {
         sql += ' AND date <= ?';
@@ -503,21 +485,19 @@ class BankingService extends BaseService {
     });
   }
 
-  async getCashFlowSummary(companyId, startDate, endDate) {
+  async getCashFlowSummary( startDate, endDate) {
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT 
           type,
           COUNT(*) as count,
           SUM(amount) as total
-        FROM bank_transactions
-        WHERE company_id = ?
-          AND date >= ?
+        FROM bank_transactionsdate >= ?
           AND date <= ?
         GROUP BY type
       `;
 
-      this.db.all(sql, [companyId, startDate, endDate], (err, rows) => {
+      this.db.all(sql, [ startDate, endDate], (err, rows) => {
         if (err) return reject(err);
         
         const summary = {

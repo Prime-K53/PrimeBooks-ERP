@@ -10,7 +10,6 @@ router.post('/email/low-stock', async (req, res) => {
       return res.status(400).json({ error: 'items and recipients are required' });
     }
     const result = await dispatchService.dispatchLowStockAlert({
-      companyId: req.companyId,
       items,
       recipients,
     });
@@ -28,7 +27,6 @@ router.post('/email/approval', async (req, res) => {
       return res.status(400).json({ error: 'entityType, entityName, and approverEmail are required' });
     }
     const result = await dispatchService.dispatchApprovalNotification({
-      companyId: req.companyId,
       type,
       entityType,
       entityId,

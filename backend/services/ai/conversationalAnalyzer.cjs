@@ -7,8 +7,8 @@ class ConversationalAnalyzer extends BaseAIService {
     this.llm = new LLMClient();
   }
 
-  async query(companyId, question, options = {}) {
-    const context = await this._buildContext(companyId, question);
+  async query( question, options = {}) {
+    const context = await this._buildContext( question);
 
     const systemPrompt = `You are Prime ERP's AI business analyst. You have access to business data context.
 Answer questions concisely with specific numbers. When appropriate, include JSON data that can be used for charts.
@@ -50,7 +50,7 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
     return intents;
   }
 
-  async _buildContext(companyId, question) {
+  async _buildContext( question) {
     const q = question.toLowerCase();
     const parts = [];
     const intents = this._detectIntent(q);
@@ -67,19 +67,19 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
       promises.push(
         Promise.all([
           this._all(
-            `SELECT COUNT(*) as count, COALESCE(SUM(total_amount),0) as total FROM sales WHERE company_id = ?`,
-            [companyId]
+            `SELECT COUNT(*) as count, COALESCE(SUM(total_amount),0) as total FROM sales`,
+            []
           ),
           this._all(
             `SELECT customer_name, COUNT(*) as orders, COALESCE(SUM(total_amount),0) as total
-             FROM sales WHERE company_id = ? AND customer_name IS NOT NULL
+             FROM salescustomer_name IS NOT NULL
              GROUP BY customer_name ORDER BY total DESC LIMIT 10`,
-            [companyId]
+            []
           ),
           this._all(
             `SELECT s.status, COUNT(*) as count, COALESCE(SUM(s.total_amount),0) as total
-             FROM sales s WHERE s.company_id = ? GROUP BY s.status`,
-            [companyId]
+             FROM sales s GROUP BY s.status`,
+            []
           )
         ]).then(([salesData, topCustomers, statusData]) => {
           const r = [];
@@ -94,17 +94,17 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
         pushResult('Sales Trend',
           this._all(
             `SELECT strftime('%Y-%m', date) as month, COUNT(*) as count, COALESCE(SUM(total_amount),0) as total
-             FROM sales WHERE company_id = ? AND date >= datetime('now', '-12 months')
+             FROM salesdate >= datetime('now', '-12 months')
              GROUP BY month ORDER BY month ASC`,
-            [companyId]
+            []
           ).then(rows => rows.length > 0 ? rows.map(r => `${r.month} (${Math.round(r.total)})`).join(', ') : null)
         );
       }
 
       if (intents.includes('comparison')) {
         const [thisMonth, lastMonth] = await Promise.all([
-          this._get(`SELECT COALESCE(SUM(total_amount),0) as total, COUNT(*) as count FROM sales WHERE company_id = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now')`, [companyId]),
-          this._get(`SELECT COALESCE(SUM(total_amount),0) as total, COUNT(*) as count FROM sales WHERE company_id = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now', '-1 month')`, [companyId])
+          this._get(`SELECT COALESCE(SUM(total_amount),0) as total, COUNT(*) as count FROM salesstrftime('%Y-%m', date) = strftime('%Y-%m', 'now')`, []),
+          this._get(`SELECT COALESCE(SUM(total_amount),0) as total, COUNT(*) as count FROM salesstrftime('%Y-%m', date) = strftime('%Y-%m', 'now', '-1 month')`, [])
         ]);
         const diff = thisMonth.total - lastMonth.total;
         const pct = lastMonth.total > 0 ? Math.round((diff / lastMonth.total) * 100) : 0;
@@ -118,19 +118,18 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
           this._all(
             `SELECT COUNT(*) as count, COALESCE(SUM(quantity),0) as total_qty,
                     COALESCE(SUM(quantity * cost_per_unit),0) as total_value
-             FROM inventory WHERE company_id = ?`,
-            [companyId]
+             FROM inventory`,
+            []
           ),
           this._all(
-            `SELECT material, quantity, reorder_point FROM inventory
-             WHERE company_id = ? AND reorder_point > 0 AND quantity <= reorder_point
+            `SELECT material, quantity, reorder_point FROM inventoryreorder_point > 0 AND quantity <= reorder_point
              ORDER BY quantity ASC LIMIT 10`,
-            [companyId]
+            []
           ),
           this._all(
             `SELECT type, COUNT(*) as count, COALESCE(SUM(quantity),0) as qty
-             FROM inventory WHERE company_id = ? GROUP BY type`,
-            [companyId]
+             FROM inventory GROUP BY type`,
+            []
           )
         ]).then(([invData, lowStock, typeData]) => {
           const r = [];
@@ -145,9 +144,9 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
         pushResult('Inventory Movements',
           this._all(
             `SELECT strftime('%Y-%m', timestamp) as month, type, COUNT(*) as count, COALESCE(SUM(quantity),0) as qty
-             FROM inventory_transactions WHERE company_id = ? AND timestamp >= datetime('now', '-6 months')
+             FROM inventory_transactionstimestamp >= datetime('now', '-6 months')
              GROUP BY month, type ORDER BY month ASC`,
-            [companyId]
+            []
           ).then(rows => rows.length > 0 ? rows.map(r => `${r.month} ${r.type} (${r.qty} units)`).join(', ') : null)
         );
       }
@@ -157,24 +156,22 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
       promises.push(
         Promise.all([
           this._all(
-            `SELECT type, COUNT(*) as count FROM chart_of_accounts WHERE company_id = ? GROUP BY type`,
-            [companyId]
+            `SELECT type, COUNT(*) as count FROM chart_of_accounts GROUP BY type`,
+            []
           ),
           this._all(
-            `SELECT COALESCE(SUM(amount),0) as total FROM expenses
-             WHERE company_id = ? AND status='paid' AND expense_date >= datetime('now', '-30 days')`,
-            [companyId]
+            `SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE status='paid' AND expense_date >= datetime('now', '-30 days')`,
+            []
           ),
           this._all(
-            `SELECT COALESCE(SUM(amount),0) as total FROM income
-             WHERE company_id = ? AND income_date >= datetime('now', '-30 days')`,
-            [companyId]
+            `SELECT COALESCE(SUM(amount),0) as total FROM income WHERE income_date >= datetime('now', '-30 days')`,
+            []
           ),
           this._all(
             `SELECT strftime('%Y-%m', expense_date) as month, COALESCE(SUM(amount),0) as total
-             FROM expenses WHERE company_id = ? AND status='paid' AND expense_date >= datetime('now', '-6 months')
+             FROM expenses WHERE status='paid' AND expense_date >= datetime('now', '-6 months')
              GROUP BY month ORDER BY month ASC`,
-            [companyId]
+            []
           )
         ]).then(([accounts, expenses, income, expenseTrend]) => {
           const r = [];
@@ -193,11 +190,11 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
       if (intents.includes('aging')) {
         promises.push(
           this._all(
-            `SELECT '0-30' as bucket, COUNT(*) as count, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE company_id = ? AND status='unpaid' AND julianday('now') - julianday(created_at) <= 30
-             UNION ALL SELECT '31-60', COUNT(*), COALESCE(SUM(total_amount),0) FROM invoices WHERE company_id = ? AND status='unpaid' AND julianday('now') - julianday(created_at) BETWEEN 31 AND 60
-             UNION ALL SELECT '61-90', COUNT(*), COALESCE(SUM(total_amount),0) FROM invoices WHERE company_id = ? AND status='unpaid' AND julianday('now') - julianday(created_at) BETWEEN 61 AND 90
-             UNION ALL SELECT '90+', COUNT(*), COALESCE(SUM(total_amount),0) FROM invoices WHERE company_id = ? AND status='unpaid' AND julianday('now') - julianday(created_at) > 90`,
-            [companyId, companyId, companyId, companyId]
+            `SELECT '0-30' as bucket, COUNT(*) as count, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE status='unpaid' AND julianday('now') - julianday(created_at) <= 30
+             UNION ALL SELECT '31-60', COUNT(*), COALESCE(SUM(total_amount),0) FROM invoices WHERE status='unpaid' AND julianday('now') - julianday(created_at) BETWEEN 31 AND 60
+             UNION ALL SELECT '61-90', COUNT(*), COALESCE(SUM(total_amount),0) FROM invoices WHERE status='unpaid' AND julianday('now') - julianday(created_at) BETWEEN 61 AND 90
+             UNION ALL SELECT '90+', COUNT(*), COALESCE(SUM(total_amount),0) FROM invoices WHERE status='unpaid' AND julianday('now') - julianday(created_at) > 90`,
+            []
           ).then(aging => aging.length > 0 ? aging.map(a => `${a.bucket}d: ${a.count} invoices (${Math.round(a.total)})`).join(', ') : null)
             .then(d => { if (d) parts.push(`AR Aging: ${d}`); })
         );
@@ -208,14 +205,14 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
       promises.push(
         Promise.all([
           this._all(
-            `SELECT status, COUNT(*) as count FROM work_orders WHERE company_id = ? GROUP BY status`,
-            [companyId]
+            `SELECT status, COUNT(*) as count FROM work_orders GROUP BY status`,
+            []
           ),
           this._all(
             `SELECT COUNT(*) as count, COALESCE(SUM(CASE WHEN status='completed' AND due_date < completed_at THEN 1 ELSE 0 END),0) as late,
                     COALESCE(SUM(CASE WHEN status='completed' AND due_date >= completed_at THEN 1 ELSE 0 END),0) as on_time
-             FROM work_orders WHERE company_id = ? AND status='completed'`,
-            [companyId]
+             FROM work_orders WHERE status='completed'`,
+            []
           )
         ]).then(([prodData, perfData]) => {
           const r = [];
@@ -232,12 +229,12 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
         Promise.all([
           this._all(
             `SELECT COUNT(*) as count, COALESCE(SUM(salary),0) as total_salary
-             FROM employees WHERE company_id = ? AND status = 'active'`,
-            [companyId]
+             FROM employeesstatus = 'active'`,
+            []
           ),
           this._all(
-            `SELECT department, COUNT(*) as count FROM employees WHERE company_id = ? AND status = 'active' GROUP BY department`,
-            [companyId]
+            `SELECT department, COUNT(*) as count FROM employeesstatus = 'active' GROUP BY department`,
+            []
           )
         ]).then(([empData, deptData]) => {
           const r = [];
@@ -254,19 +251,19 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
           this._all(
             `SELECT COUNT(*) as count, COALESCE(SUM(total_amount),0) as total,
                     COALESCE(SUM(CASE WHEN status='unpaid' THEN total_amount ELSE 0 END),0) as unpaid_total
-             FROM invoices WHERE company_id = ?`,
-            [companyId]
+             FROM invoices`,
+            []
           ),
           this._all(
             `SELECT status, COUNT(*) as count, COALESCE(SUM(total_amount),0) as total
-             FROM invoices WHERE company_id = ? GROUP BY status`,
-            [companyId]
+             FROM invoices GROUP BY status`,
+            []
           ),
           this._all(
             `SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count, COALESCE(SUM(total_amount),0) as total
-             FROM invoices WHERE company_id = ? AND created_at >= datetime('now', '-12 months')
+             FROM invoicescreated_at >= datetime('now', '-12 months')
              GROUP BY month ORDER BY month ASC`,
-            [companyId]
+            []
           )
         ]).then(([invoiceData, statusBreakdown, invTrend]) => {
           const r = [];
@@ -287,25 +284,22 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
         Promise.all([
           this._all(
             `SELECT si.item_name, SUM(si.quantity) as total_qty, SUM(si.line_total) as total_revenue
-             FROM sale_items si JOIN sales s ON si.sale_id = s.id
-             WHERE s.company_id = ? AND si.item_name IS NOT NULL
+             FROM sale_items si JOIN sales s ON si.sale_id = s.idsi.item_name IS NOT NULL
              GROUP BY si.item_name ORDER BY total_qty DESC LIMIT 10`,
-            [companyId]
+            []
           ),
           this._all(
             `SELECT si.item_name, SUM(si.line_total) as total_revenue, SUM(si.quantity) as total_qty
-             FROM sale_items si JOIN sales s ON si.sale_id = s.id
-             WHERE s.company_id = ? AND si.item_name IS NOT NULL
+             FROM sale_items si JOIN sales s ON si.sale_id = s.idsi.item_name IS NOT NULL
              GROUP BY si.item_name ORDER BY total_revenue DESC LIMIT 10`,
-            [companyId]
+            []
           ),
           this._all(
             `SELECT si.item_name, SUM(si.quantity) as total_qty, SUM(si.line_total) as total_revenue,
                     SUM(si.line_total - si.quantity * COALESCE(si.unit_cost,0)) as total_profit
-             FROM sale_items si JOIN sales s ON si.sale_id = s.id
-             WHERE s.company_id = ? AND si.item_name IS NOT NULL AND si.unit_cost > 0
+             FROM sale_items si JOIN sales s ON si.sale_id = s.idsi.item_name IS NOT NULL AND si.unit_cost > 0
              GROUP BY si.item_name ORDER BY total_profit DESC LIMIT 10`,
-            [companyId]
+            []
           )
         ]).then(([topProducts, productsByRevenue, profitData]) => {
           const r = [];
@@ -321,19 +315,18 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
       promises.push(
         Promise.all([
           this._all(
-            `SELECT COUNT(*) as count FROM purchase_orders WHERE company_id = ?`,
-            [companyId]
+            `SELECT COUNT(*) as count FROM purchase_orders`,
+            []
           ),
           this._all(
-            `SELECT status, COUNT(*) as count FROM purchase_orders WHERE company_id = ? GROUP BY status`,
-            [companyId]
+            `SELECT status, COUNT(*) as count FROM purchase_orders GROUP BY status`,
+            []
           ),
           this._all(
             `SELECT poi.item_name, SUM(poi.quantity) as total_qty, SUM(poi.total_price) as total_cost
-             FROM purchase_order_items poi JOIN purchase_orders po ON poi.purchase_order_id = po.id
-             WHERE po.company_id = ? AND poi.item_name IS NOT NULL
+             FROM purchase_order_items poi JOIN purchase_orders po ON poi.purchase_order_id = po.idpoi.item_name IS NOT NULL
              GROUP BY poi.item_name ORDER BY total_qty DESC LIMIT 20`,
-            [companyId]
+            []
           )
         ]).then(([poData, poStatus, poItems]) => {
           const r = [];
@@ -348,10 +341,9 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
         promises.push(
           this._all(
             `SELECT poi.item_name, SUM(poi.quantity) as total_qty, SUM(poi.total_price) as total_cost
-             FROM purchase_order_items poi JOIN purchase_orders po ON poi.purchase_order_id = po.id
-             WHERE po.company_id = ? AND poi.item_name IS NOT NULL
+             FROM purchase_order_items poi JOIN purchase_orders po ON poi.purchase_order_id = po.idpoi.item_name IS NOT NULL
              GROUP BY poi.item_name ORDER BY total_qty DESC`,
-            [companyId]
+            []
           ).then(rows => {
             const w = ['stationery', 'paper', 'book', 'notebook', 'pen', 'pencil', 'ink', 'toner', 'staple', 'folder', 'envelope', 'marker', 'eraser', 'ruler', 'tape', 'glue', 'scissors', 'file', 'binder'];
             const filtered = rows.filter(i => {
@@ -372,10 +364,9 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
       promises.push(
         this._all(
           `SELECT s.name, COUNT(po.id) as po_count, COALESCE(SUM(poi.total_price),0) as total_spend
-           FROM suppliers s LEFT JOIN purchase_orders po ON po.supplier_id = s.id AND po.company_id = ?
-           LEFT JOIN purchase_order_items poi ON poi.purchase_order_id = po.id
-           WHERE s.company_id = ? GROUP BY s.name HAVING po_count > 0 ORDER BY total_spend DESC LIMIT 10`,
-          [companyId, companyId]
+           FROM suppliers s LEFT JOIN purchase_orders po ON po.supplier_id = s.id
+           LEFT JOIN purchase_order_items poi ON poi.purchase_order_id = po.id GROUP BY s.name HAVING po_count > 0 ORDER BY total_spend DESC LIMIT 10`,
+          []
         ).then(rows => rows.length > 0 ? rows.map(s => `${s.name} (${s.po_count} POs, ${Math.round(s.total_spend)} spend)`).join(', ') : null)
           .then(d => { if (d) parts.push(`Suppliers: ${d}`); })
       );
@@ -385,16 +376,16 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
       promises.push(
         Promise.all([
           this._all(
-            `SELECT COUNT(*) as count, COALESCE(SUM(total_amount),0) as total FROM examination_batches WHERE company_id = ?`,
-            [companyId]
+            `SELECT COUNT(*) as count, COALESCE(SUM(total_amount),0) as total FROM examination_batches`,
+            []
           ),
           this._all(
-            `SELECT status, COUNT(*) as count FROM examination_batches WHERE company_id = ? GROUP BY status`,
-            [companyId]
+            `SELECT status, COUNT(*) as count FROM examination_batches GROUP BY status`,
+            []
           ),
           this._all(
-            `SELECT COUNT(DISTINCT school_id) as schools, COALESCE(SUM(expected_candidature),0) as candidates FROM examination_batches WHERE company_id = ?`,
-            [companyId]
+            `SELECT COUNT(DISTINCT school_id) as schools, COALESCE(SUM(expected_candidature),0) as candidates FROM examination_batches`,
+            []
           )
         ]).then(([batchData, batchStatus, batchStats]) => {
           const r = [];
@@ -409,8 +400,8 @@ Respond in markdown. If the user asks for a chart or visualization, include a JS
     if (this._mentions(q, ['bom', 'bill of material', 'cost', 'component'])) {
       promises.push(
         this._all(
-          `SELECT name, total_cost, created_at FROM bill_of_materials WHERE company_id = ? ORDER BY created_at DESC LIMIT 10`,
-          [companyId]
+          `SELECT name, total_cost, created_at FROM bill_of_materials ORDER BY created_at DESC LIMIT 10`,
+          []
         ).then(rows => rows.length > 0 ? rows.map(r => `${r.name} (${Math.round(r.total_cost)})`).join(', ') : null)
           .then(d => { if (d) parts.push(`BOMs: ${d}`); })
       );

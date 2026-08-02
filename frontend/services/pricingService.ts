@@ -912,14 +912,10 @@ export const getGlobalDefaultMargin = async (): Promise<{ margin_type: 'percenta
         const userId = localStorage.getItem('prime_user_id') || 'unknown';
         const userRole = localStorage.getItem('prime_user_role') || 'Admin';
 
-        const rawConfig = localStorage.getItem('nexus_company_config');
-        const companyId = rawConfig ? JSON.parse(rawConfig)?.companyId : null;
-
         const { data: marginSettings, ok, error } = await safeFetch<any[]>(`${apiBase}/settings/profit-margins?scope=global`, {
             headers: {
                 'x-user-id': userId,
                 'x-user-role': userRole,
-                ...(companyId ? { 'x-company-id': String(companyId) } : {}),
             },
             timeoutMs: 5000 // don't hang indefinitely offline
         });

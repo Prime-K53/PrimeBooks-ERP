@@ -12,7 +12,6 @@ export interface FinancialYear {
   is_active: number | boolean;
   is_closed: number;
   status: string;
-  company_id: string;
 }
 
 interface FinancialYearContextType {

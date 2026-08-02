@@ -15,6 +15,7 @@ const CustomerQuotations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -58,14 +59,16 @@ const CustomerQuotations: React.FC = () => {
   }, [load]);
 
   const sorted = useMemo(
-    () => [...quotations].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()),
-    [quotations]
+    () => [...quotations]
+      .filter((q) => statusFilter === 'all' || q.status === statusFilter)
+      .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()),
+    [quotations, statusFilter]
   );
 
   if (loading && page === 1) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
 
   return (
-    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+    <div>
       <PortalPageHeader
         title="Quotations"
         subtitle="View your quotations"
@@ -81,6 +84,24 @@ const CustomerQuotations: React.FC = () => {
           <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: portalTheme.inkSoft }} />
           <PortalInput label="" placeholder="Search quotations..." value={search} onChange={(v) => { setPage(1); setSearch(v); }} onFocus={() => {}} onBlur={() => {}} style={{ paddingLeft: 32 }} />
         </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          style={{
+            fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 500,
+            color: portalTheme.ink, background: portalTheme.paper,
+            border: `1.4px solid ${portalTheme.hairline}`, borderRadius: 8,
+            padding: '6px 10px', outline: 'none', cursor: 'pointer',
+            minWidth: 130
+          }}
+        >
+          <option value="all">All Statuses</option>
+          <option value="ready">Ready</option>
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Rejected</option>
+          <option value="revision_requested">Revision Requested</option>
+          <option value="converted">Converted</option>
+        </select>
       </div>
 
       <div style={{ padding: '16px 28px 28px' }}>
@@ -105,12 +126,24 @@ const CustomerQuotations: React.FC = () => {
                   <tbody className="divide-y divide-slate-100/50">
                     {sorted.map((q) => {
                       const friendlyStatus = FRIENDLY_STATUS_MAP[q.status] || q.status;
+                      const isExpired = q.status === 'expired' || (q.valid_until && new Date(q.valid_until) < new Date());
+                      const isExpiringSoon = q.valid_until && !isExpired && (new Date(q.valid_until).getTime() - Date.now()) < 7 * 86400000;
                       return (
                         <tr key={q.id} onClick={() => navigate(`/portal/quotations/${q.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
 <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Quotation #">{q.quotation_number || q.id.slice(0, 8)}</td>
                            <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(q.created_at).toLocaleDateString()}</td>
                            <td className="px-5 py-3 text-right font-medium" data-label="Total">K {Number(q.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                           <td className="px-5 py-3 text-center" data-label="Status"><StatusBadge status={friendlyStatus} /></td>
+                           <td className="px-5 py-3 text-center" data-label="Status">
+                             <div className="flex items-center justify-center gap-1">
+                               <StatusBadge status={friendlyStatus} />
+                               {isExpired && (
+                                 <span className="text-[10px] font-bold text-rose-500" title="Expired">⚠</span>
+                               )}
+                               {isExpiringSoon && !isExpired && (
+                                 <span className="text-[10px] font-bold text-amber-500" title={`Expires ${new Date(q.valid_until!).toLocaleDateString()}`}>⚠</span>
+                               )}
+                             </div>
+                           </td>
                         </tr>
                       );
                     })}

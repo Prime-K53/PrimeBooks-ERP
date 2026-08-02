@@ -12,22 +12,11 @@ export interface FinancialYearRecord {
   is_active: number | boolean;
   is_closed: number | boolean;
   status: string;
-  company_id: string;
   created_by?: string;
   created_at?: string;
   updated_at?: string;
   [key: string]: any;
 }
-
-const getStoredCompanyId = (): string => {
-  try {
-    const raw = localStorage.getItem('nexus_company_config');
-    if (!raw) return '';
-    return JSON.parse(raw).companyId || '';
-  } catch {
-    return '';
-  }
-};
 
 const toNumber = (v: number | boolean | undefined): number => Number(Boolean(v));
 
@@ -61,11 +50,9 @@ export class FinancialYearRepository extends BaseRepository<FinancialYearRecord>
   }
 
   async create(data: Partial<FinancialYearRecord>): Promise<FinancialYearRecord & SyncMetadata> {
-    const companyId = data.company_id || getStoredCompanyId();
     const startYear = (data.start_date || '').slice(0, 4);
     const payload: Partial<FinancialYearRecord> = {
       ...data,
-      company_id: companyId,
       name: data.name || startYear,
       code: data.code || (startYear ? `FY${startYear}` : `FY-${Date.now()}`),
       is_default: toNumber(data.is_default as number | boolean),

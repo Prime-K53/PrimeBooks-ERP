@@ -27,7 +27,7 @@ class VATManagementService extends BaseService {
   /**
    * Record a VAT transaction
    */
-  async recordVATTransaction(data, companyId) {
+  async recordVATTransaction(data) {
     return new Promise((resolve, reject) => {
       const id = data.id || `VAT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const period = data.period || new Date().toISOString().slice(0, 7); // YYYY-MM format
@@ -35,8 +35,7 @@ class VATManagementService extends BaseService {
       this.db.run(
         `INSERT INTO vat_transactions (
           id, transaction_type, reference_id, reference_type, vat_rate, vat_amount,
-          net_amount, gross_amount, vat_category, is_recoverable, period, status, company_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          net_amount, gross_amount, vat_category, is_recoverable, period, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
         [
           id,
           data.transaction_type, // 'sale', 'purchase', 'adjustment'
@@ -49,9 +48,7 @@ class VATManagementService extends BaseService {
           data.vat_category || 'standard',
           data.is_recoverable !== undefined ? data.is_recoverable : 1,
           period,
-          data.status || 'pending',
-          companyId
-        ],
+          data.status || 'pending'],
         function (err) {
           if (err) return reject(err);
           resolve({ id, ...data, period });
@@ -63,10 +60,10 @@ class VATManagementService extends BaseService {
   /**
    * Get VAT transactions for a period
    */
-  async getVATTransactions(companyId, period, filters = {}) {
+  async getVATTransactions( period, filters = {}) {
     return new Promise((resolve, reject) => {
-      let sql = `SELECT * FROM vat_transactions WHERE company_id = ? AND period = ?`;
-      const params = [companyId, period];
+      let sql = `SELECT * FROM vat_transactionsperiod = ?`;
+      const params = [ period];
 
       if (filters.transaction_type) {
         sql += ' AND transaction_type = ?';
@@ -93,11 +90,11 @@ class VATManagementService extends BaseService {
   /**
    * Update VAT transaction status
    */
-  async updateVATStatus(id, status, companyId) {
+  async updateVATStatus(id, status) {
     return new Promise((resolve, reject) => {
       this.db.run(
-        'UPDATE vat_transactions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?',
-        [status, id, companyId],
+        'UPDATE vat_transactions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [status, id],
         function (err) {
           if (err) return reject(err);
           if (this.changes === 0) return resolve(null);
@@ -110,7 +107,7 @@ class VATManagementService extends BaseService {
   /**
    * Get VAT summary for a period
    */
-  async getVATSummary(companyId, period) {
+  async getVATSummary( period) {
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT 
@@ -120,13 +117,12 @@ class VATManagementService extends BaseService {
           SUM(net_amount) as total_net,
           SUM(vat_amount) as total_vat,
           SUM(gross_amount) as total_gross
-        FROM vat_transactions
-        WHERE company_id = ? AND period = ?
+        FROM vat_transactionsperiod = ?
         GROUP BY transaction_type, vat_category
         ORDER BY transaction_type, vat_category
       `;
 
-      this.db.all(sql, [companyId, period], (err, rows) => {
+      this.db.all(sql, [ period], (err, rows) => {
         if (err) return reject(err);
 
         const summary = {
@@ -180,7 +176,7 @@ class VATManagementService extends BaseService {
   /**
    * Get VAT periods with activity
    */
-  async getVATPeriods(companyId) {
+  async getVATPeriods() {
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT 
@@ -189,12 +185,11 @@ class VATManagementService extends BaseService {
           SUM(vat_amount) as total_vat,
           MAX(created_at) as last_updated
         FROM vat_transactions
-        WHERE company_id = ?
         GROUP BY period
         ORDER BY period DESC
       `;
 
-      this.db.all(sql, [companyId], (err, rows) => {
+      this.db.all(sql, [], (err, rows) => {
         if (err) return reject(err);
         resolve(rows || []);
       });
@@ -204,15 +199,15 @@ class VATManagementService extends BaseService {
   /**
    * Reverse a VAT transaction
    */
-  async reverseVATTransaction(id, companyId, reason) {
+  async reverseVATTransaction(id, reason) {
     return new Promise((resolve, reject) => {
       this.db.run('BEGIN TRANSACTION', (err) => {
         if (err) return reject(err);
 
         // Get original transaction
         this.db.get(
-          'SELECT * FROM vat_transactions WHERE id = ? AND company_id = ?',
-          [id, companyId],
+          'SELECT * FROM vat_transactions WHERE id = ?',
+          [id],
           (err, transaction) => {
             if (err) {
               this.db.run('ROLLBACK');
@@ -228,23 +223,9 @@ class VATManagementService extends BaseService {
             this.db.run(
               `INSERT INTO vat_transactions (
                 id, transaction_type, reference_id, reference_type, vat_rate, vat_amount,
-                net_amount, gross_amount, vat_category, is_recoverable, period, status, company_id
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              [
-                reversalId,
-                'adjustment',
-                transaction.reference_id,
-                transaction.reference_type,
-                transaction.vat_rate,
-                -transaction.vat_amount, // Negative amount for reversal
-                -transaction.net_amount,
-                -transaction.gross_amount,
-                transaction.vat_category,
-                transaction.is_recoverable,
-                transaction.period,
-                'pending',
-                companyId
-              ],
+                net_amount, gross_amount, vat_category, is_recoverable, period, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+              [reversalId, 'adjustment', transaction.reference_id, transaction.reference_type, transaction.vat_rate, -transaction.vat_amount, // Negative amount for reversal
+                -transaction.net_amount, -transaction.gross_amount, transaction.vat_category, transaction.is_recoverable, transaction.period, 'pending'],
               (err) => {
                 if (err) {
                   this.db.run('ROLLBACK');
@@ -253,8 +234,8 @@ class VATManagementService extends BaseService {
 
                 // Mark original as reversed
                 this.db.run(
-                  'UPDATE vat_transactions SET status = ? WHERE id = ? AND company_id = ?',
-                  ['reversed', id, companyId],
+                  'UPDATE vat_transactions SET status = ? WHERE id = ?',
+                  ['reversed', id],
                   (err) => {
                     if (err) {
                       this.db.run('ROLLBACK');
@@ -286,7 +267,7 @@ class VATManagementService extends BaseService {
   /**
    * Bulk import VAT transactions from invoices
    */
-  async importFromInvoices(companyId, period) {
+  async importFromInvoices( period) {
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT 
@@ -299,19 +280,15 @@ class VATManagementService extends BaseService {
           i.other_charges,
           i.created_at,
           i.line_items_json
-        FROM invoices i
-        WHERE i.company_id = ?
-          AND strftime('%Y-%m', i.created_at) = ?
+        FROM invoices istrftime('%Y-%m', i.created_at) = ?
           AND i.status != 'cancelled'
           AND NOT EXISTS (
             SELECT 1 FROM vat_transactions vat 
             WHERE vat.reference_id = i.id 
               AND vat.reference_type = 'invoice'
-              AND vat.company_id = ?
-          )
       `;
 
-      this.db.all(sql, [companyId, period, companyId], (err, invoices) => {
+      this.db.all(sql, [ period], (err, invoices) => {
         if (err) return reject(err);
 
         const results = {
@@ -350,7 +327,7 @@ class VATManagementService extends BaseService {
                 is_recoverable: 0,
                 period,
                 status: 'pending'
-              }, companyId)
+              })
               .then(() => {
                 results.imported++;
                 importNext(index + 1);

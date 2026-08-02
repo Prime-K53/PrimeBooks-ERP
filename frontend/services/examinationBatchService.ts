@@ -188,7 +188,6 @@ const enqueueOutbox = async (type: string, entityId: string, payload: Record<str
       recordId: entityId,
       operation: operation === 'delete' ? 'delete' : 'upsert' as const,
       payload: { ...payload, id: entityId },
-      companyId: null,
     });
   } catch {
   }

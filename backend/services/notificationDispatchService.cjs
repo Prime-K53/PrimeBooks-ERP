@@ -10,7 +10,7 @@ const NOTIFICATION_EVENTS = {
   SYSTEM_ALERT: 'system_alert',
 };
 
-const dispatchLowStockAlert = async ({ companyId, items, recipients }) => {
+const dispatchLowStockAlert = async ({ items, recipients }) => {
   const itemList = items.map(i => `  • ${i.name} (SKU: ${i.sku || 'N/A'}) — Stock: ${i.stock}, Reorder Point: ${i.reorderPoint}`).join('\n');
   const subject = `[Prime ERP] Low Stock Alert — ${items.length} item(s) need reorder`;
   const text = `The following inventory items are at or below their reorder point:\n\n${itemList}\n\nPlease review and place purchase orders as needed.\n\n— Prime ERP System`;
@@ -40,7 +40,7 @@ const dispatchLowStockAlert = async ({ companyId, items, recipients }) => {
   return { event: NOTIFICATION_EVENTS.LOW_STOCK, results };
 };
 
-const dispatchApprovalNotification = async ({ companyId, type, entityType, entityId, entityName, requestedBy, approverEmail, action }) => {
+const dispatchApprovalNotification = async ({ type, entityType, entityId, entityName, requestedBy, approverEmail, action }) => {
   const isRequest = action === 'request';
   const subject = isRequest
     ? `[Prime ERP] ${entityType} Approval Request — ${entityName}`

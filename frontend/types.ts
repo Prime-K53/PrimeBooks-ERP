@@ -214,9 +214,6 @@ export interface RoundingRulesConfig {
 }
 
 export interface CompanyConfig {
-  // Unique identifier for multi-tenant data isolation
-  companyId: string;
-
   // Basic company info
   companyName: string;
   tagline?: string;
@@ -667,7 +664,6 @@ export interface Customer {
   assignedSalesperson?: string;
   subAccounts?: string[];
   avgPaymentDays?: number;
-  company_id?: string;
   taxId?: string;
   companyName?: string;
   currency?: string;
@@ -681,7 +677,6 @@ export interface PortalUser {
   full_name?: string;
   phone?: string;
   status?: 'active' | 'disabled' | 'invited';
-  company_id?: string;
   last_login_at?: string;
   created_at?: string;
 }
@@ -701,7 +696,6 @@ export interface School {
   phone?: string;
   email?: string;
   address?: string;
-  company_id?: string;
   source?: 'school' | 'customer';
   contactPerson?: string;
   [key: string]: any;
@@ -727,7 +721,6 @@ export interface MarketAdjustment {
   last_applied_at?: string;
   total_applied_amount?: number;
   application_count?: number;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -743,7 +736,6 @@ export interface ExaminationSubject {
   total_pages?: number;
   created_at?: string;
   updated_at?: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -767,7 +759,6 @@ export interface ExaminationClass {
   total_price?: number;
   created_at?: string;
   updated_at?: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -803,7 +794,6 @@ export interface ExaminationBatch {
   locked_toner_unit_cost?: number;
   locked_conversion_rate?: number;
   locked_adjustments_json?: string;
-  company_id?: string;
   schoolName?: string;
   school_name?: string;
   customer_name?: string;
@@ -821,7 +811,6 @@ export interface LedgerEntry {
   credit: number;
   referenceType?: string;
   referenceId?: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -856,7 +845,6 @@ export interface Invoice {
   tax?: number;
   taxRate?: number;
   paymentTerms?: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -868,7 +856,6 @@ export interface Expense {
   category?: string;
   paymentMethod?: string;
   reference?: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -1553,7 +1540,6 @@ export interface MarketAdjustmentTransaction {
   unit_amount: number;
   timestamp: string;
   status: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -1562,7 +1548,6 @@ export interface MaterialCategory {
   name: string;
   description?: string;
   parent_category_id?: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -1574,7 +1559,6 @@ export interface WarehouseInventory {
   reserved: number;
   available: number;
   lastUpdated?: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -1593,7 +1577,6 @@ export interface MaterialBatch {
   status: 'active' | 'depleted' | 'expired';
   createdAt?: string;
   updatedAt?: string;
-  company_id?: string;
   [key: string]: any;
 }
 
@@ -1613,7 +1596,6 @@ export interface InventoryTransaction {
   reason: string;
   performedBy?: string;
   timestamp: string;
-  company_id?: string;
   [key: string]: any;
 }
 

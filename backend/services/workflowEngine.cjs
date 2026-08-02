@@ -114,33 +114,31 @@ function genId(prefix = 'dv') {
   return `${prefix}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
 }
 
-async function createVersionSnapshot({ companyId, customerId, docType, docId, version, snapshot, reason, actor = {} }) {
+async function createVersionSnapshot({ customerId, docType, docId, version, snapshot, reason, actor = {} }) {
   if (!docType || !docId || !version) throw new Error('docType, docId and version are required');
   return runQuery(
     `INSERT INTO document_versions
-       (id, company_id, customer_id, doc_type, doc_id, version, snapshot, reason, created_by, created_by_name)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [genId('dv'), companyId || '', customerId || null, docType, docId, version,
-      typeof snapshot === 'string' ? snapshot : JSON.stringify(snapshot),
-      reason || null, actor.id || null, actor.name || null]
+       (id, customer_id, doc_type, doc_id, version, snapshot, reason, created_by, created_by_name)
+     VALUES (? , ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [genId('dv'), customerId || null, docType, docId, version, typeof snapshot === 'string' ? snapshot : JSON.stringify(snapshot), reason || null, actor.id || null, actor.name || null]
   );
 }
 
-async function listDocumentVersions(docType, docId, { companyId } = {}) {
+async function listDocumentVersions(docType, docId, {} = {}) {
   let q = `SELECT id, version, snapshot, reason, created_by, created_by_name, created_at
              FROM document_versions WHERE doc_type = ? AND doc_id = ?`;
   const params = [docType, docId];
-  if (companyId) { q += ' AND company_id = ?'; params.push(companyId); }
+  
   q += ' ORDER BY version ASC';
   const rows = await getAll(q, params);
   return rows.map((r) => ({ ...r, snapshot: parseJson(r.snapshot, {}) }));
 }
 
-async function getDocumentVersion(docType, docId, version, { companyId } = {}) {
+async function getDocumentVersion(docType, docId, version, {} = {}) {
   let q = `SELECT id, version, snapshot, reason, created_by, created_by_name, created_at
              FROM document_versions WHERE doc_type = ? AND doc_id = ? AND version = ?`;
   const params = [docType, docId, version];
-  if (companyId) { q += ' AND company_id = ?'; params.push(companyId); }
+  
   const row = await getOne(q, params);
   if (!row) return null;
   return { ...row, snapshot: parseJson(row.snapshot, {}) };
@@ -150,16 +148,16 @@ async function getDocumentVersion(docType, docId, version, { companyId } = {}) {
 // Resolves the full document chain (request → quotation → sales order) for a
 // given document. Works starting from ANY point in the chain; also follows
 // reorder links so a reorder request surfaces its original order.
-async function getDocumentChain({ companyId, docType, docId, customerId } = {}) {
+async function getDocumentChain({ docType, docId, customerId } = {}) {
   if (!docType || !docId) throw new Error('docType and docId are required');
 
   const collected = { request: null, quotation: null, order: null, originOrder: null };
 
   const loadRequest = async (id) => {
     if (!id || collected.request) return collected.request;
-    let q = 'SELECT id, request_number, request_type, status, customer_id, company_id, quotation_id, sales_order_id, sales_order_number, reorder_of, reorder_of_number, created_at FROM quotation_requests WHERE id = ?';
+    let q = 'SELECT id, request_number, request_type, status, customer_id, quotation_id, sales_order_id, sales_order_number, reorder_of, reorder_of_number, created_at FROM quotation_requests WHERE id = ?';
     const params = [id];
-    if (companyId) { q += ' AND company_id = ?'; params.push(companyId); }
+    
     if (customerId) { q += ' AND customer_id = ?'; params.push(customerId); }
     const row = await getOne(q, params);
     if (row) collected.request = row;
@@ -168,9 +166,9 @@ async function getDocumentChain({ companyId, docType, docId, customerId } = {}) 
 
   const loadQuotation = async (id) => {
     if (!id || collected.quotation) return collected.quotation;
-    let q = 'SELECT id, quotation_number, status, customer_id, company_id, request_id, order_id, created_at FROM quotations WHERE id = ?';
+    let q = 'SELECT id, quotation_number, status, customer_id, request_id, order_id, created_at FROM quotations WHERE id = ?';
     const params = [id];
-    if (companyId) { q += ' AND company_id = ?'; params.push(companyId); }
+    
     if (customerId) { q += ' AND customer_id = ?'; params.push(customerId); }
     const row = await getOne(q, params);
     if (row) collected.quotation = row;
@@ -179,9 +177,9 @@ async function getDocumentChain({ companyId, docType, docId, customerId } = {}) 
 
   const loadOrder = async (id) => {
     if (!id || collected.order) return collected.order;
-    let q = 'SELECT id, order_number, status, customer_id, company_id, quotation_id, source_request_id, source_request_number, reorder_of, reorder_of_number, created_at FROM sales_orders WHERE id = ?';
+    let q = 'SELECT id, order_number, status, customer_id, quotation_id, source_request_id, source_request_number, reorder_of, reorder_of_number, created_at FROM sales_orders WHERE id = ?';
     const params = [id];
-    if (companyId) { q += ' AND company_id = ?'; params.push(companyId); }
+    
     if (customerId) { q += ' AND customer_id = ?'; params.push(customerId); }
     const row = await getOne(q, params);
     if (row) collected.order = row;
@@ -199,8 +197,8 @@ async function getDocumentChain({ companyId, docType, docId, customerId } = {}) 
       await loadOrder(collected.quotation.order_id);
     } else {
       const bySource = await getAll(
-        'SELECT id FROM sales_orders WHERE source_request_id = ? AND company_id = ? ORDER BY created_at DESC LIMIT 1',
-        [request.id, request.company_id]
+        'SELECT id FROM sales_orders WHERE source_request_id = ? ORDER BY created_at DESC LIMIT 1',
+        [request.id]
       );
       if (bySource[0]) await loadOrder(bySource[0].id);
     }

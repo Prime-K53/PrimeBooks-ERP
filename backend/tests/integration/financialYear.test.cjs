@@ -1,5 +1,5 @@
 const { createTestDb, generateTestId } = require('../setup.cjs');
-const { TEST_COMPANY_ID, TEST_USER_ID } = require('../helpers.cjs');
+const { TEST_USER_ID } = require('../helpers.cjs');
 
 describe('Financial Year Integration', () => {
   let db, financialYear;
@@ -14,7 +14,7 @@ describe('Financial Year Integration', () => {
         start_date TEXT NOT NULL, end_date TEXT NOT NULL,
         is_default INTEGER DEFAULT 0, is_closed INTEGER DEFAULT 0,
         status TEXT DEFAULT 'Active' CHECK(status IN ('Active','Closed')),
-        company_id TEXT NOT NULL, created_by TEXT,
+        created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
@@ -22,25 +22,34 @@ describe('Financial Year Integration', () => {
         id TEXT PRIMARY KEY, date TEXT NOT NULL, customer_id TEXT,
         customer_name TEXT, total_amount REAL DEFAULT 0,
         status TEXT DEFAULT 'Draft', items_json TEXT,
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS invoices (
         id TEXT PRIMARY KEY, customer_id TEXT, customer_name TEXT,
         total_amount REAL DEFAULT 0, status TEXT DEFAULT 'unpaid',
-        company_id TEXT NOT NULL, invoice_date TEXT,
+        invoice_date TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY, category TEXT, vendor_name TEXT,
         amount REAL NOT NULL, expense_date TEXT, status TEXT,
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS customer_payments (
         id TEXT PRIMARY KEY, date TEXT NOT NULL, customer_id TEXT,
         customer_name TEXT, amount REAL DEFAULT 0,
-        company_id TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS chart_of_accounts (
+        id TEXT PRIMARY KEY, code TEXT, name TEXT, type TEXT,
+        category TEXT, subtype TEXT, parent_id TEXT,
+        balance REAL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS ledger_entries (
+        id TEXT PRIMARY KEY, account_id TEXT, entry_type TEXT,
+        amount REAL DEFAULT 0, currency TEXT, description TEXT,
+        reference_type TEXT, reference_id TEXT, entry_date TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
     ];
@@ -63,7 +72,7 @@ describe('Financial Year Integration', () => {
       const fy = await financialYear.createFinancialYear({
         id: fyId(), name: 'FY 2026', code: 'FY2026',
         start_date: '2026-01-01', end_date: '2026-12-31',
-      }, TEST_COMPANY_ID, TEST_USER_ID);
+      }, TEST_USER_ID);
       expect(fy).toBeDefined();
       expect(fy.name).toBe('FY 2026');
       expect(fy.start_date).toBe('2026-01-01');
@@ -76,8 +85,8 @@ describe('Financial Year Integration', () => {
       await financialYear.createFinancialYear({
         id, name: 'FY 2025', code: 'FY2025',
         start_date: '2025-01-01', end_date: '2025-12-31',
-      }, TEST_COMPANY_ID, TEST_USER_ID);
-      const fy = await financialYear.getFinancialYearById(id, TEST_COMPANY_ID);
+      }, TEST_USER_ID);
+      const fy = await financialYear.getFinancialYearById(id);
       expect(fy).toBeDefined();
       expect(fy.name).toBe('FY 2025');
     });
@@ -87,8 +96,8 @@ describe('Financial Year Integration', () => {
       await financialYear.createFinancialYear({
         id, name: 'FY 2024', code: 'FY2024',
         start_date: '2024-01-01', end_date: '2024-12-31',
-      }, TEST_COMPANY_ID, TEST_USER_ID);
-      const updated = await financialYear.updateFinancialYear(id, { name: 'FY 2024 Updated' }, TEST_COMPANY_ID);
+      }, TEST_USER_ID);
+      const updated = await financialYear.updateFinancialYear(id, { name: 'FY 2024 Updated' });
       expect(updated.name).toBe('FY 2024 Updated');
     });
 
@@ -97,8 +106,8 @@ describe('Financial Year Integration', () => {
       await financialYear.createFinancialYear({
         id, name: 'FY 2023', code: 'FY2023',
         start_date: '2023-01-01', end_date: '2023-12-31',
-      }, TEST_COMPANY_ID, TEST_USER_ID);
-      const closed = await financialYear.closeFinancialYear(id, TEST_COMPANY_ID);
+      }, TEST_USER_ID);
+      const closed = await financialYear.closeFinancialYear(id);
       expect(closed.is_closed).toBe(1);
       expect(closed.status).toBe('Closed');
     });
@@ -108,26 +117,27 @@ describe('Financial Year Integration', () => {
       await financialYear.createFinancialYear({
         id, name: 'FY 2022', code: 'FY2022',
         start_date: '2022-01-01', end_date: '2022-12-31',
-      }, TEST_COMPANY_ID, TEST_USER_ID);
+      }, TEST_USER_ID);
       const defaultId = fyId();
       await financialYear.createFinancialYear({
         id: defaultId, name: 'FY Default', code: 'FYDefault',
         start_date: '2021-01-01', end_date: '2021-12-31', is_default: true,
-      }, TEST_COMPANY_ID, TEST_USER_ID);
-      const result = await financialYear.deleteFinancialYear(id, TEST_COMPANY_ID);
+      }, TEST_USER_ID);
+      const result = await financialYear.deleteFinancialYear(id);
       expect(result.success).toBe(true);
     });
   });
 
   // ── Default FY ──
   describe('Default Financial Year', () => {
-    test('getDefaultFinancialYear returns null when none exists', async () => {
-      const fy = await financialYear.getDefaultFinancialYear('other-company');
-      expect(fy).toBeNull();
+    test('getDefaultFinancialYear returns the default FY', async () => {
+      const fy = await financialYear.getDefaultFinancialYear();
+      expect(fy).toBeDefined();
+      expect(fy.is_default).toBe(1);
     });
 
-    test('getOrCreateDefaultFinancialYear auto-creates a FY', async () => {
-      const fy = await financialYear.getOrCreateDefaultFinancialYear('new-company', TEST_USER_ID);
+    test('getOrCreateDefaultFinancialYear returns the default FY without duplicating', async () => {
+      const fy = await financialYear.getOrCreateDefaultFinancialYear(TEST_USER_ID);
       expect(fy).toBeDefined();
       expect(fy.is_default).toBe(1);
       expect(fy.status).toBe('Active');
@@ -136,22 +146,20 @@ describe('Financial Year Integration', () => {
     });
   });
 
-  const DATE_VALIDATION_COMPANY = 'company-date-validation';
-
   // ── Date Validation ──
   describe('Date Validation', () => {
     test('passes for date within open FY', async () => {
       await financialYear.createFinancialYear({
-        id: fyId(), name: 'FY 2026', code: 'FY2026',
-        start_date: '2026-01-01', end_date: '2026-12-31',
-      }, DATE_VALIDATION_COMPANY, TEST_USER_ID);
-      const result = await financialYear.validateTransactionDate('2026-06-15', DATE_VALIDATION_COMPANY);
+        id: fyId(), name: 'FY 2027', code: 'FY2027',
+        start_date: '2027-01-01', end_date: '2027-12-31',
+      }, TEST_USER_ID);
+      const result = await financialYear.validateTransactionDate('2027-06-15');
       expect(result).toBeDefined();
     });
 
     test('rejects date outside any FY', async () => {
       await expect(
-        financialYear.validateTransactionDate('2099-01-01', DATE_VALIDATION_COMPANY)
+        financialYear.validateTransactionDate('2099-01-01')
       ).rejects.toThrow(/does not belong/);
     });
 
@@ -160,66 +168,60 @@ describe('Financial Year Integration', () => {
       await financialYear.createFinancialYear({
         id, name: 'FY 2020', code: 'FY2020',
         start_date: '2020-01-01', end_date: '2020-12-31',
-      }, DATE_VALIDATION_COMPANY, TEST_USER_ID);
-      await financialYear.closeFinancialYear(id, DATE_VALIDATION_COMPANY);
+      }, TEST_USER_ID);
+      await financialYear.closeFinancialYear(id);
       await expect(
-        financialYear.validateTransactionDate('2020-06-15', DATE_VALIDATION_COMPANY)
+        financialYear.validateTransactionDate('2020-06-15')
       ).rejects.toThrow(/closed/);
     });
   });
-
-  const SQL_FILTERING_COMPANY = 'company-sql-filtering';
 
   // ── SQL-level filtering ──
   describe('SQL Filtering', () => {
     test('getFinancialYearByDate uses SQL date comparison', async () => {
       const id = fyId();
       await financialYear.createFinancialYear({
-        id, name: 'FY 2026', code: 'FY2026',
-        start_date: '2026-01-01', end_date: '2026-12-31',
-      }, SQL_FILTERING_COMPANY, TEST_USER_ID);
-      const fy = await financialYear.getFinancialYearByDate('2026-06-01', SQL_FILTERING_COMPANY);
+        id, name: 'FY 2028', code: 'FY2028',
+        start_date: '2028-01-01', end_date: '2028-12-31',
+      }, TEST_USER_ID);
+      const fy = await financialYear.getFinancialYearByDate('2028-06-01');
       expect(fy).toBeDefined();
       expect(fy.id).toBe(id);
     });
 
     test('returns null for out-of-range date', async () => {
-      const fy = await financialYear.getFinancialYearByDate('2025-06-01', 'company-with-no-fy');
+      const fy = await financialYear.getFinancialYearByDate('2010-06-01');
       expect(fy).toBeNull();
     });
   });
-
-  const OVERLAP_COMPANY = 'company-overlap';
 
   // ── Overlap Detection ──
   describe('Overlap Detection', () => {
     test('rejects overlapping financial years', async () => {
       await financialYear.createFinancialYear({
-        id: fyId(), name: 'FY 2025', code: 'FY2025',
-        start_date: '2025-01-01', end_date: '2025-12-31',
-      }, OVERLAP_COMPANY, TEST_USER_ID);
+        id: fyId(), name: 'FY 2029', code: 'FY2029',
+        start_date: '2029-01-01', end_date: '2029-12-31',
+      }, TEST_USER_ID);
       await expect(
         financialYear.createFinancialYear({
           id: fyId(), name: 'Overlap FY', code: 'Overlap',
-          start_date: '2025-06-01', end_date: '2026-06-01',
-        }, OVERLAP_COMPANY, TEST_USER_ID)
+          start_date: '2029-06-01', end_date: '2030-06-01',
+        }, TEST_USER_ID)
       ).rejects.toThrow(/Overlapping/);
     });
   });
-
-  const CLOSED_FY_COMPANY = 'company-closed-fy';
 
   // ── Closed FY Rejection ──
   describe('Closed FY Rejection', () => {
     test('closeFinancialYear throws if already closed', async () => {
       const id = fyId();
       await financialYear.createFinancialYear({
-        id, name: 'FY 2021', code: 'FY2021',
-        start_date: '2021-01-01', end_date: '2021-12-31',
-      }, CLOSED_FY_COMPANY, TEST_USER_ID);
-      await financialYear.closeFinancialYear(id, CLOSED_FY_COMPANY);
+        id, name: 'FY 2031', code: 'FY2031',
+        start_date: '2031-01-01', end_date: '2031-12-31',
+      }, TEST_USER_ID);
+      await financialYear.closeFinancialYear(id);
       await expect(
-        financialYear.closeFinancialYear(id, CLOSED_FY_COMPANY)
+        financialYear.closeFinancialYear(id)
       ).rejects.toThrow(/already closed/);
     });
   });

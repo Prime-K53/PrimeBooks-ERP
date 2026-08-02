@@ -12,13 +12,13 @@ class CurrencyService extends BaseService {
   }
 
   /**
-   * Get company's default currency
+   * Get the default currency
    */
-  async getCompanyCurrency(companyId) {
+  async getCurrency() {
     return new Promise((resolve, reject) => {
       this.db.get(
-        "SELECT value FROM settings WHERE key = 'default_currency' AND company_id = ?",
-        [companyId],
+        "SELECT value FROM settings WHERE key = 'default_currency'",
+        [],
         (err, row) => {
           if (err) return reject(err);
           resolve(row?.value || this.defaultCurrency);
@@ -30,9 +30,8 @@ class CurrencyService extends BaseService {
   /**
    * Get exchange rate between two currencies
    */
-  async getExchangeRate(fromCurrency, toCurrency, date = null, companyId = null) {
-    const cid = String(companyId || '').trim();
-    const cacheKey = `${cid || 'global'}:${fromCurrency}_${toCurrency}_${date || 'latest'}`;
+  async getExchangeRate(fromCurrency, toCurrency, date = null) {
+    const cacheKey = `${fromCurrency}_${toCurrency}_${date || 'latest'}`;
     
     // Check cache first
     if (this.exchangeRates.has(cacheKey)) {
@@ -81,10 +80,9 @@ class CurrencyService extends BaseService {
   /**
    * Update exchange rate
    */
-  async updateExchangeRate(fromCurrency, toCurrency, rate, date = null, companyId = null) {
+  async updateExchangeRate(fromCurrency, toCurrency, rate, date = null) {
     const rateDate = date || new Date().toISOString().split('T')[0];
-    const cid = String(companyId || '').trim();
-    const cacheKey = `${cid || 'global'}:${fromCurrency}_${toCurrency}_${rateDate || 'latest'}`;
+    const cacheKey = `${fromCurrency}_${toCurrency}_${rateDate || 'latest'}`;
     
     const svc = this;
     return new Promise((resolve, reject) => {

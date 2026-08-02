@@ -1,19 +1,19 @@
 const BaseAIService = require('./baseService.cjs');
 
 class BOMGenerator extends BaseAIService {
-  async generate(companyId, spec) {
+  async generate( spec) {
     if (!spec || !spec.productName) {
-      return { error: 'Product name is required', suggestions: await this._suggestFromExisting(companyId) };
+      return { error: 'Product name is required', suggestions: await this._suggestFromExisting() };
     }
 
     const existingBoms = await this._all(
-      `SELECT * FROM bill_of_materials WHERE company_id = ? ORDER BY created_at DESC LIMIT 20`,
-      [companyId]
+      `SELECT * FROM bill_of_materials ORDER BY created_at DESC LIMIT 20`,
+      []
     );
 
     const inventory = await this._all(
-      `SELECT * FROM inventory WHERE company_id = ? ORDER BY category, material`,
-      [companyId]
+      `SELECT * FROM inventory ORDER BY category, material`,
+      []
     );
 
     const bomDefaults = await this._all(
@@ -22,8 +22,8 @@ class BOMGenerator extends BaseAIService {
     );
 
     const workCenters = await this._all(
-      `SELECT * FROM work_centers WHERE company_id = ?`,
-      [companyId]
+      `SELECT * FROM work_centers`,
+      []
     );
 
     const bom = this._buildBOM(spec, inventory, bomDefaults, existingBoms, workCenters);
@@ -175,10 +175,10 @@ class BOMGenerator extends BaseAIService {
       }));
   }
 
-  async _suggestFromExisting(companyId) {
+  async _suggestFromExisting() {
     const boms = await this._all(
-      `SELECT name, total_cost FROM bill_of_materials WHERE company_id = ? ORDER BY created_at DESC LIMIT 5`,
-      [companyId]
+      `SELECT name, total_cost FROM bill_of_materials ORDER BY created_at DESC LIMIT 5`,
+      []
     );
     return boms.map(b => ({ name: b.name, totalCost: b.total_cost }));
   }

@@ -630,28 +630,24 @@ const writeAuditLog = async ({
   }
 };
 
-const saveLedgerEntry = async (entry, companyId) => {
+const saveLedgerEntry = async (entry) => {
   const id = randomUUID();
   await runRun(
-    `INSERT INTO ledger_entries (id, account_id, entry_type, amount, currency, description, reference_type, reference_id, entry_date, company_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, entry.account_id, entry.entry_type, entry.amount, entry.currency || 'USD',
-     entry.description || null, entry.reference_type || null,
-     entry.reference_id || null, entry.entry_date || new Date().toISOString(), companyId]
+    `INSERT INTO ledger_entries (id, account_id, entry_type, amount, currency, description, reference_type, reference_id, entry_date)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+    [id, entry.account_id, entry.entry_type, entry.amount, entry.currency || 'USD', entry.description || null, entry.reference_type || null, entry.reference_id || null, entry.entry_date || new Date().toISOString()]
   );
   return id;
 };
 
-const postInvoiceLedger = async (invoiceId, invoiceData, companyId) => {
-  companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-  if (!companyId) return;
+const postInvoiceLedger = async (invoiceId, invoiceData) => {
   const arAccount = await runGet(
-    "SELECT * FROM accounts WHERE company_id = ? AND type = 'asset' AND (name LIKE '%receivable%' OR code = '1100')",
-    [companyId]
+    "SELECT * FROM accountstype = 'asset' AND (name LIKE '%receivable%' OR code = '1100')",
+    []
   );
   const revenueAccount = await runGet(
-    "SELECT * FROM accounts WHERE company_id = ? AND (type = 'revenue' OR name LIKE '%revenue%' OR code = '4000')",
-    [companyId]
+    "SELECT * FROM accounts(type = 'revenue' OR name LIKE '%revenue%' OR code = '4000')",
+    []
   );
   if (!arAccount || !revenueAccount) return;
   const totalAmount = toNumericValue(invoiceData?.total_amount) ?? 0;
@@ -660,12 +656,12 @@ const postInvoiceLedger = async (invoiceId, invoiceData, companyId) => {
     account_id: arAccount.id, entry_type: 'debit', amount: totalAmount,
     currency: invoiceData?.currency || 'USD', description: `Invoice #${invoiceId}`,
     reference_type: 'invoice', reference_id: String(invoiceId)
-  }, companyId);
+  });
   await saveLedgerEntry({
     account_id: revenueAccount.id, entry_type: 'credit', amount: totalAmount,
     currency: invoiceData?.currency || 'USD', description: `Invoice #${invoiceId} Revenue`,
     reference_type: 'invoice', reference_id: String(invoiceId)
-  }, companyId);
+  });
 };
 
 const clearTableCache = (tableName) => {
@@ -779,19 +775,15 @@ const normalizeMarketAdjustmentMeta = (row, columns) => {
   };
 };
 
-const resolveEffectiveClassAdjustments = async (companyId) => {
-  companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+const resolveEffectiveClassAdjustments = async () => {
   const columns = await getTableColumnSet('market_adjustments');
   const whereClauses = buildActiveMarketAdjustmentWhereClauses(columns);
-  if (companyId) {
-    whereClauses.push('company_id = ?');
-  }
-  const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
   const orderSql = buildMarketAdjustmentOrderSql(columns);
-  const params = companyId ? [companyId] : [];
+  const params = [];
   const adjustments = await runQuery(`
     SELECT * FROM market_adjustments
-    ${whereSql}
+    
     ${orderSql}
   `, params);
   return adjustments;
@@ -918,15 +910,10 @@ const resolveConfiguredExamMaterial = ({
   };
 };
 
-const resolveExamMaterialConfiguration = async (companyId) => {
-  companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+const resolveExamMaterialConfiguration = async () => {
   await ensureExaminationPricingSchema();
-  const inventoryQuery = companyId
-    ? runQuery('SELECT * FROM inventory WHERE company_id = ?', [companyId])
-    : runQuery('SELECT * FROM inventory');
-  const bomDefaultsQuery = companyId
-    ? runQuery('SELECT * FROM bom_default_materials WHERE company_id = ?', [companyId])
-    : runQuery('SELECT * FROM bom_default_materials');
+  const inventoryQuery = runQuery('SELECT * FROM inventory');
+  const bomDefaultsQuery = runQuery('SELECT * FROM bom_default_materials');
   const [inventory, bomDefaults] = await Promise.all([inventoryQuery, bomDefaultsQuery]);
 
   const paperItem = resolveConfiguredExamMaterial({
@@ -1281,11 +1268,9 @@ const persistClassAdjustmentRows = async ({
   classId,
   rows = [],
   source = 'SYSTEM',
-  companyId = ''
 }) => {
-  const adjClause = companyId ? ' AND company_id = ?' : '';
-  const adjParams = companyId ? [classId, companyId] : [classId];
-  await runRun(`DELETE FROM examination_class_adjustments WHERE class_id = ?${adjClause}`, adjParams);
+  const adjParams = [classId];
+  await runRun(`DELETE FROM examination_class_adjustments WHERE class_id = ?`, adjParams);
 
   const normalizedSource = source === 'MANUAL_OVERRIDE' ? 'MANUAL_OVERRIDE' : 'SYSTEM';
   let sequenceCounter = 0;
@@ -1440,7 +1425,6 @@ const ensureCoreExaminationSchema = async () => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    await addColumnIfMissing('examination_batches', 'company_id', 'TEXT DEFAULT \'\'');
 
     await runRun(`CREATE TABLE IF NOT EXISTS examination_classes (
       id TEXT PRIMARY KEY,
@@ -1598,7 +1582,6 @@ const ensureNotificationSchema = async () => {
       delivered_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       expires_at DATETIME,
-      company_id TEXT NOT NULL DEFAULT ''
     )`);
 
     await runRun(`CREATE TABLE IF NOT EXISTS notification_audit_logs (
@@ -1610,33 +1593,19 @@ const ensureNotificationSchema = async () => {
       ip_address TEXT,
       user_agent TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      company_id TEXT NOT NULL DEFAULT ''
     )`);
 
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_notifications_user ON examination_batch_notifications(user_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_notifications_created ON examination_batch_notifications(created_at)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_notifications_read ON examination_batch_notifications(is_read)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_exam_notifications_user_created ON examination_batch_notifications(user_id, created_at DESC)');
-    await runRun('CREATE INDEX IF NOT EXISTS idx_examination_batch_notifications_company_id ON examination_batch_notifications(company_id)');
+    await runRun('');
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_notification ON notification_audit_logs(notification_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_user ON notification_audit_logs(user_id)');
     await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_created ON notification_audit_logs(created_at)');
-    await runRun('CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_company_id ON notification_audit_logs(company_id)');
+    await runRun('');
 
-    // Migrate: add company_id column if missing from existing tables
-    try {
-      const cols = await runQuery("PRAGMA table_info(examination_batch_notifications)");
-      if (!cols.some((c) => c.name === 'company_id')) {
-        await runRun("ALTER TABLE examination_batch_notifications ADD COLUMN company_id TEXT NOT NULL DEFAULT ''");
-      }
-      const auditCols = await runQuery("PRAGMA table_info(notification_audit_logs)");
-      if (!auditCols.some((c) => c.name === 'company_id')) {
-        await runRun("ALTER TABLE notification_audit_logs ADD COLUMN company_id TEXT NOT NULL DEFAULT ''");
-      }
-    } catch (migrateErr) {
-      console.warn('[NotificationSchema] Column migration warning:', migrateErr);
-    }
-  })().then(null, (error) => {
+      })().then(null, (error) => {
     ensureNotificationSchemaPromise = null;
     console.error('[NotificationSchema] Error ensuring notification schema:', error);
   });
@@ -1684,13 +1653,12 @@ const ensureExaminationSyncSchema = async () => {
   ensureSyncSchemaPromise = (async () => {
     await runRun(`CREATE TABLE IF NOT EXISTS examination_sync_state (
       entity_type TEXT NOT NULL,
-      company_id TEXT NOT NULL DEFAULT '',
       last_synced_at DATETIME,
       last_checksum TEXT,
       item_count INTEGER DEFAULT 0,
       last_payload_json TEXT,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (entity_type, company_id)
+      PRIMARY KEY (entity_type)
     )`);
 
     await ensureColumnIfMissing('market_adjustments', 'percentage', 'REAL');
@@ -1895,26 +1863,26 @@ const updateSyncState = async (entityType, records) => {
   const payload = stringifyDetails(normalizedRecords);
   await runRun(
     `INSERT INTO examination_sync_state (
-      entity_type, company_id, last_synced_at, last_checksum, item_count, last_payload_json, updated_at
-    ) VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(entity_type, company_id) DO UPDATE SET
+      entity_type, last_synced_at, last_checksum, item_count, last_payload_json, updated_at
+    ) VALUES (? , CURRENT_TIMESTAMP, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(entity_type) DO UPDATE SET
       last_synced_at = CURRENT_TIMESTAMP,
       last_checksum = excluded.last_checksum,
       item_count = excluded.item_count,
       last_payload_json = excluded.last_payload_json,
       updated_at = CURRENT_TIMESTAMP`,
-    [entityType, companyId || '', checksum, normalizedRecords.length, payload]
+    [entityType, checksum, normalizedRecords.length, payload]
   );
   return { checksum, itemCount: normalizedRecords.length };
 };
 
-const getSyncStateRow = async (entityType, companyId) => {
+const getSyncStateRow = async (entityType) => {
   await ensureExaminationSyncSchema();
   return runGet(
-    `SELECT entity_type, company_id, last_synced_at, last_checksum, item_count, updated_at
+    `SELECT entity_type, last_synced_at, last_checksum, item_count, updated_at
      FROM examination_sync_state
-     WHERE entity_type = ? AND company_id = ?`,
-    [entityType, companyId || '']
+     WHERE entity_type = ?`,
+    [entityType]
   );
 };
 
@@ -1933,15 +1901,13 @@ const getPreferredBomMaterialIds = async () => {
   }
 };
 
-const buildBackendMarketAdjustmentChecksumPayload = async (companyId) => {
-  companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+const buildBackendMarketAdjustmentChecksumPayload = async () => {
   const columns = await getTableColumnSet('market_adjustments');
   const orderSql = buildMarketAdjustmentOrderSql(columns);
-  const whereSql = companyId ? 'WHERE company_id = ?' : '';
-  const params = companyId ? [companyId] : [];
+  const params = [];
   const rows = await runQuery(`
     SELECT * FROM market_adjustments
-    ${whereSql}
+    
     ${orderSql}
   `, params);
 
@@ -1964,13 +1930,10 @@ const buildBackendMarketAdjustmentChecksumPayload = async (companyId) => {
     }));
 };
 
-const buildBackendInventoryChecksumPayload = async (companyId) => {
-  companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+const buildBackendInventoryChecksumPayload = async () => {
   const preferredIds = await getPreferredBomMaterialIds();
-  const query = companyId
-    ? 'SELECT * FROM inventory WHERE company_id = ? ORDER BY id ASC'
-    : 'SELECT * FROM inventory ORDER BY id ASC';
-  const params = companyId ? [companyId] : [];
+  const query = 'SELECT * FROM inventory ORDER BY id ASC';
+  const params = [];
   const rows = await runQuery(query, params);
   return (rows || [])
     .map((row) => normalizeInventorySyncRecord(row))
@@ -2019,8 +1982,8 @@ const resolveClassLiveTotalForRollup = (cls) => {
   );
 };
 
-const recalculateBatchFinancialTotalsFromClasses = async (batchId, companyId = '') => {
-  const batchRow = await runGet('SELECT rounding_method, rounding_value FROM examination_batches WHERE id = ? AND company_id = ?', [batchId, companyId]);
+const recalculateBatchFinancialTotalsFromClasses = async (batchId) => {
+  const batchRow = await runGet('SELECT rounding_method, rounding_value FROM examination_batches WHERE id = ?', [batchId]);
   const classes = await runQuery('SELECT * FROM examination_classes WHERE batch_id = ?', [batchId]);
 
   let totalAmount = 0;
@@ -2077,21 +2040,8 @@ const recalculateBatchFinancialTotalsFromClasses = async (batchId, companyId = '
          expected_candidature = ?,
          calculated_cost_per_learner = ?,
          updated_at = CURRENT_TIMESTAMP
-     WHERE id = ? AND company_id = ?`,
-    [
-      roundedTotalAmount,
-      roundedMaterialTotal,
-      roundedAdjustmentTotal,
-      serializeBatchAdjustmentSnapshots(normalizedAdjustmentSnapshots),
-      normalizedRoundingTotal,
-      preRoundingTotalAmount,
-      batchRow?.rounding_method || 'ALWAYS_UP_50',
-      normalizePositiveRoundingStep(batchRow?.rounding_value, 50),
-      learnerCount,
-      calculatedCostPerLearner,
-      batchId,
-      companyId
-    ]
+     WHERE id = ?`,
+    [roundedTotalAmount, roundedMaterialTotal, roundedAdjustmentTotal, serializeBatchAdjustmentSnapshots(normalizedAdjustmentSnapshots), normalizedRoundingTotal, preRoundingTotalAmount, batchRow?.rounding_method || 'ALWAYS_UP_50', normalizePositiveRoundingStep(batchRow?.rounding_value, 50), learnerCount, calculatedCostPerLearner, batchId]
   );
 
   return {
@@ -2116,17 +2066,16 @@ const examinationService = {
   },
 
   // --- Settings ---
-  getExamPricingSettings: async (companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  getExamPricingSettings: async () => {
     await ensureExaminationPricingSchema();
-    const activeAdjustments = await resolveEffectiveClassAdjustments(companyId);
+    const activeAdjustments = await resolveEffectiveClassAdjustments();
     const {
       paperItem,
       tonerItem,
       paperUnitCost,
       tonerUnitCost,
       paperConversionRate
-    } = await resolveExamMaterialConfiguration(companyId);
+    } = await resolveExamMaterialConfiguration();
 
     return {
       paper_item_id: paperItem ? paperItem.id : null,
@@ -2163,7 +2112,6 @@ const examinationService = {
   },
 
   updateExamPricingSettings: async (payload, options = {}) => {
-    const companyId = (typeof options.companyId === 'string' && options.companyId.trim()) ? options.companyId.trim() : '';
     await ensureExaminationPricingSchema();
     const userId = options.userId || 'System';
     const triggerRecalculate = payload?.trigger_recalculate === undefined ? true : toBoolean(payload.trigger_recalculate);
@@ -2197,15 +2145,13 @@ const examinationService = {
           throw new Error('Conversion rate must be greater than zero.');
         }
 
-        const updateWhere = companyId
-          ? `WHERE (conversion_rate IS NOT NULL OR conversion_rate IS NULL) AND company_id = ?`
-          : `WHERE conversion_rate IS NOT NULL OR conversion_rate IS NULL`;
-        const updateParams = companyId ? [normalizedRate, companyId] : [normalizedRate];
+        const updateWhere = `WHERE conversion_rate IS NOT NULL OR conversion_rate IS NULL`;
+        const updateParams = [normalizedRate];
         await runRun(
           `UPDATE inventory
            SET conversion_rate = ?,
                last_updated = CURRENT_TIMESTAMP
-           ${updateWhere}`,
+           `,
           updateParams
         );
       }
@@ -2225,18 +2171,14 @@ const examinationService = {
       recalcSummary = await examinationService.recalculateNonInvoicedBatches({
         trigger: 'SETTINGS_UPDATE',
         userId,
-        includeApproved: false,
-        companyId
-      });
+        includeApproved: false});
     }
 
     let lockSummary = null;
     if (lockPricingSnapshot && lockBatchId) {
       lockSummary = await examinationService.lockBatchPricingSnapshot(lockBatchId, {
         userId,
-        reason: lockReason || 'Saved via examination pricing settings',
-        companyId
-      });
+        reason: lockReason || 'Saved via examination pricing settings'});
 
       await examinationService.calculateBatch(lockBatchId, {
         trigger: 'SETTINGS_PRICING_LOCK',
@@ -2256,8 +2198,6 @@ const examinationService = {
     await ensureCoreExaminationSchema();
     const includeSubjectPages = options?.includeSubjectPages !== false;
     const includeClassStats = options?.includeClassStats !== false;
-    const companyId = options?.companyId || '';
-    const companyFilter = companyId ? 'WHERE b.company_id = ?' : '';
     const runBatchListQuery = async () => {
       if (!includeClassStats) {
         return await runQuery(`
@@ -2296,9 +2236,9 @@ const examinationService = {
             INNER JOIN examination_subjects sub ON sub.class_id = cls.id
             GROUP BY cls.batch_id
           ) subj ON subj.batch_id = b.id
-          ${companyFilter}
+          
           ORDER BY b.created_at DESC
-        `, companyId ? [companyId] : []);
+        `, []);
       }
 
       const classColumns = await getTableColumnSet('examination_classes');
@@ -2382,12 +2322,12 @@ const examinationService = {
           GROUP BY batch_id
         ) cls ON cls.batch_id = b.id
         ${subjectJoinSql}
-        ${companyFilter}
+        
         ORDER BY b.created_at DESC
       `;
 
       try {
-        return await runQuery(primaryQuery, companyId ? [companyId] : []);
+        return await runQuery(primaryQuery, []);
       } catch (error) {
         if (!isSchemaDriftError(error)) throw error;
 
@@ -2408,9 +2348,9 @@ const examinationService = {
             FROM examination_classes
             GROUP BY batch_id
           ) cls ON cls.batch_id = b.id
-          ${companyFilter}
+          
           ORDER BY b.created_at DESC
-        `, companyId ? [companyId] : []);
+        `, []);
       }
     };
 
@@ -2423,11 +2363,10 @@ const examinationService = {
     }
   },
 
-  getBatchById: async (id, companyId = '') => {
+  getBatchById: async (id) => {
     const runBatchDetailQuery = async () => {
-      const companyFilter = companyId ? ' AND company_id = ?' : '';
-      const params = companyId ? [id, companyId] : [id];
-      const batch = await runGet(`SELECT * FROM examination_batches WHERE id = ?${companyFilter}`, params);
+      const params = [id];
+      const batch = await runGet(`SELECT * FROM examination_batches WHERE id = ?`, params);
       if (!batch) {
         console.log(JSON.stringify({
           ts: new Date().toISOString(),
@@ -2501,27 +2440,22 @@ const examinationService = {
     }
   },
 
-  getBOMCalculations: async (batchId, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-    const batchFilter = companyId
-      ? 'AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_bom_calculations.batch_id AND company_id = ?)'
-      : '';
-    const params = companyId ? [batchId, companyId] : [batchId];
+  getBOMCalculations: async (batchId) => {
+    const batchFilter = '';
+    const params = [batchId];
     return await runQuery(
-      `SELECT * FROM examination_bom_calculations WHERE batch_id = ? ${batchFilter} ORDER BY class_id, item_name`,
+      `SELECT * FROM examination_bom_calculations WHERE batch_id = ?  ORDER BY class_id, item_name`,
       params
     );
   },
 
-  getMarketAdjustmentMeta: async (companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  getMarketAdjustmentMeta: async () => {
     const columns = await getTableColumnSet('market_adjustments');
     const orderSql = buildMarketAdjustmentOrderSql(columns);
-    const whereSql = companyId ? 'WHERE company_id = ?' : '';
-    const params = companyId ? [companyId] : [];
+    const params = [];
     const rows = await runQuery(`
       SELECT * FROM market_adjustments
-      ${whereSql}
+      
       ${orderSql}
     `, params);
     return rows.map((row) => normalizeMarketAdjustmentMeta(row, columns));
@@ -2539,15 +2473,12 @@ const examinationService = {
       ? (payload?.triggerRecalculate === undefined ? false : toBoolean(payload.triggerRecalculate))
       : toBoolean(payload.trigger_recalculate);
     const userId = payload?.user_id || payload?.userId || options?.userId || 'System';
-    const companyId = (typeof options.companyId === 'string' && options.companyId.trim()) ? options.companyId.trim() : '';
 
     const normalized = rawAdjustments
       .map((entry) => normalizeMarketAdjustmentSyncRecord(entry))
       .filter(Boolean);
 
-    const existingRows = companyId
-      ? await runQuery('SELECT * FROM market_adjustments WHERE company_id = ?', [companyId])
-      : await runQuery('SELECT * FROM market_adjustments');
+    const existingRows = await runQuery('SELECT * FROM market_adjustments');
     const existingById = new Map(
       (existingRows || [])
         .map((row) => normalizeMarketAdjustmentSyncRecord(row))
@@ -2589,18 +2520,13 @@ const examinationService = {
           adjustment.application_count,
           adjustment.sync_checksum
         ];
-        if (companyId) {
-          upsertParams.push(companyId);
-        }
-        const companyIdCol = companyId ? ', company_id' : '';
-        const companyIdVal = companyId ? ', ?' : '';
         await runRun(
           `INSERT INTO market_adjustments (
             id, name, type, value, percentage, applies_to, active, is_active,
             description, category, display_name, adjustment_category, sort_order,
             is_system_default, apply_to_categories, created_at, last_applied_at,
-            total_applied_amount, application_count, last_synced_at, sync_checksum${companyIdCol}
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), ?, ?, ?, CURRENT_TIMESTAMP, ?${companyIdVal})
+            total_applied_amount, application_count, last_synced_at, sync_checksum
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), ?, ?, ?, CURRENT_TIMESTAMP, ?)
           ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             type = excluded.type,
@@ -2631,26 +2557,23 @@ const examinationService = {
         if (normalized.length > 0) {
           const placeholders = normalized.map(() => '?').join(', ');
           const deactivateParams = normalized.map((item) => item.id);
-          const companyFilter = companyId ? ' AND company_id = ?' : '';
-          if (companyId) deactivateParams.push(companyId);
           deactivateResult = await runRun(
             `UPDATE market_adjustments
              SET active = 0,
                  is_active = 0,
                  last_synced_at = CURRENT_TIMESTAMP
              WHERE id NOT IN (${placeholders})
-               AND COALESCE(active, is_active, 1) = 1${companyFilter}`,
+               AND COALESCE(active, is_active, 1) = 1`,
             deactivateParams
           );
         } else {
-          const companyFilter = companyId ? ' AND company_id = ?' : '';
-          const deactivateParams = companyId ? [companyId] : [];
+          const deactivateParams = [];
           deactivateResult = await runRun(
             `UPDATE market_adjustments
              SET active = 0,
                  is_active = 0,
                  last_synced_at = CURRENT_TIMESTAMP
-             WHERE COALESCE(active, is_active, 1) = 1${companyFilter}`,
+             WHERE COALESCE(active, is_active, 1) = 1`,
             deactivateParams
           );
         }
@@ -2669,7 +2592,7 @@ const examinationService = {
     }
 
     // Always snapshot backend-normalized rows so drift health compares like-for-like.
-    const backendPayload = await buildBackendMarketAdjustmentChecksumPayload(companyId);
+    const backendPayload = await buildBackendMarketAdjustmentChecksumPayload();
     const syncState = await updateSyncState(
       SYNC_ENTITY_MARKET_ADJUSTMENTS,
       backendPayload
@@ -2681,9 +2604,7 @@ const examinationService = {
         trigger: 'SYNC_MARKET_ADJUSTMENTS',
         userId,
         includeApproved: false,
-        signal: options?.signal,
-        companyId
-      });
+        signal: options?.signal});
     }
 
     return {
@@ -2706,7 +2627,6 @@ const examinationService = {
       ? (payload?.triggerRecalculate === undefined ? false : toBoolean(payload.triggerRecalculate))
       : toBoolean(payload.trigger_recalculate);
     const userId = payload?.user_id || payload?.userId || options?.userId || 'System';
-    const companyId = (typeof options.companyId === 'string' && options.companyId.trim()) ? options.companyId.trim() : '';
 
     const preferredIds = await getPreferredBomMaterialIds();
     const normalizedAll = rawItems
@@ -2716,7 +2636,7 @@ const examinationService = {
 
     if (normalized.length === 0) {
       // Keep sync state aligned to backend selection scope even when nothing is upserted.
-      const backendPayload = await buildBackendInventoryChecksumPayload(companyId);
+      const backendPayload = await buildBackendInventoryChecksumPayload();
       const syncState = await updateSyncState(SYNC_ENTITY_INVENTORY_ITEMS, backendPayload);
       return {
         success: true,
@@ -2730,9 +2650,7 @@ const examinationService = {
     }
 
     const existingById = new Map(
-      (companyId
-        ? await runQuery('SELECT * FROM inventory WHERE company_id = ?', [companyId])
-        : await runQuery('SELECT * FROM inventory'))
+      await runQuery('SELECT * FROM inventory')
         .map((row) => [String(row.id), row])
     );
 
@@ -2774,13 +2692,11 @@ const examinationService = {
           item.last_updated,
           item.sync_checksum
         ];
-        const companyIdCol = companyId ? ', company_id' : '';
-        if (companyId) upsertParams.push(companyId);
         await runRun(
           `INSERT INTO inventory (
             id, name, material, quantity, cost_per_unit, unit, category_id,
-            conversion_rate, last_updated, last_synced_at, sync_checksum${companyIdCol}
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, ?${companyId ? ', ?' : ''})
+            conversion_rate, last_updated, last_synced_at, sync_checksum
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, ?)
           ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             material = COALESCE(excluded.material, inventory.material),
@@ -2808,7 +2724,7 @@ const examinationService = {
     }
 
     // Always snapshot backend-normalized rows so drift health compares like-for-like.
-    const backendPayload = await buildBackendInventoryChecksumPayload(companyId);
+    const backendPayload = await buildBackendInventoryChecksumPayload();
     const syncState = await updateSyncState(
       SYNC_ENTITY_INVENTORY_ITEMS,
       backendPayload
@@ -2820,9 +2736,7 @@ const examinationService = {
         trigger: 'SYNC_INVENTORY_ITEMS',
         userId,
         includeApproved: false,
-        signal: options?.signal,
-        companyId
-      });
+        signal: options?.signal});
     }
 
     return {
@@ -2836,14 +2750,13 @@ const examinationService = {
     };
   },
 
-  getSyncHealth: async (companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  getSyncHealth: async () => {
     await ensureExaminationSyncSchema();
     const [marketState, inventoryState, marketPayload, inventoryPayload] = await Promise.all([
       getSyncStateRow(SYNC_ENTITY_MARKET_ADJUSTMENTS),
       getSyncStateRow(SYNC_ENTITY_INVENTORY_ITEMS),
-      buildBackendMarketAdjustmentChecksumPayload(companyId),
-      buildBackendInventoryChecksumPayload(companyId)
+      buildBackendMarketAdjustmentChecksumPayload(),
+      buildBackendInventoryChecksumPayload()
     ]);
 
     const backendMarketChecksum = buildStateChecksum(marketPayload);
@@ -2878,16 +2791,14 @@ const examinationService = {
 
   lockBatchPricingSnapshot: async (batchId, options = {}) => {
     await ensureExaminationPricingSchema();
-    const companyId = (typeof options.companyId === 'string' && options.companyId.trim()) ? options.companyId.trim() : '';
 
     const normalizedBatchId = String(batchId || '').trim();
     if (!normalizedBatchId) {
       throw new Error('Batch id is required to lock pricing snapshot.');
     }
 
-    const batchFilter = companyId ? 'AND company_id = ?' : '';
-    const batchParams = companyId ? [normalizedBatchId, companyId] : [normalizedBatchId];
-    const existingBatch = await runGet(`SELECT id FROM examination_batches WHERE id = ? ${batchFilter}`, batchParams);
+    const batchParams = [normalizedBatchId];
+    const existingBatch = await runGet(`SELECT id FROM examination_batches WHERE id = ? `, batchParams);
     if (!existingBatch) {
       throw new Error('Batch not found');
     }
@@ -2900,8 +2811,8 @@ const examinationService = {
       paperUnitCost,
       tonerUnitCost,
       paperConversionRate
-    } = await resolveExamMaterialConfiguration(companyId);
-    const activeAdjustments = await resolveEffectiveClassAdjustments(companyId);
+    } = await resolveExamMaterialConfiguration();
+    const activeAdjustments = await resolveEffectiveClassAdjustments();
     const lockedAdjustmentsJson = serializeAdjustmentSnapshot(activeAdjustments);
 
     await runRun(
@@ -2915,18 +2826,14 @@ const examinationService = {
            locked_conversion_rate = ?,
            locked_adjustments_json = ?,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
-      companyId
-        ? [reason, userId, pricingEngine.roundCurrency(paperUnitCost), pricingEngine.roundCurrency(tonerUnitCost), paperConversionRate, lockedAdjustmentsJson, normalizedBatchId, companyId]
-        : [reason, userId, pricingEngine.roundCurrency(paperUnitCost), pricingEngine.roundCurrency(tonerUnitCost), paperConversionRate, lockedAdjustmentsJson, normalizedBatchId]
+       WHERE id = ?`,
+      [reason, userId, pricingEngine.roundCurrency(paperUnitCost), pricingEngine.roundCurrency(tonerUnitCost), paperConversionRate, lockedAdjustmentsJson, normalizedBatchId]
     );
 
-    const classFilter = companyId
-      ? 'AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?)'
-      : '';
-    const classParams = companyId ? [normalizedBatchId, companyId] : [normalizedBatchId];
+    const classFilter = '';
+    const classParams = [normalizedBatchId];
     const classCountRow = await runGet(
-      `SELECT COUNT(*) AS total FROM examination_classes WHERE batch_id = ? ${classFilter}`,
+      `SELECT COUNT(*) AS total FROM examination_classes WHERE batch_id = ? `,
       classParams
     );
 
@@ -2938,7 +2845,6 @@ const examinationService = {
   },
 
   recalculateNonInvoicedBatches: async (options = {}) => {
-    const companyId = (typeof options?.companyId === 'string' && options.companyId.trim()) ? options.companyId.trim() : '';
     const trigger = String(options?.trigger || 'BACKFILL_NON_INVOICED').trim() || 'BACKFILL_NON_INVOICED';
     const userId = options?.userId || 'System';
     const includeApproved = toBoolean(options?.includeApproved);
@@ -2950,11 +2856,7 @@ const examinationService = {
       FROM examination_batches
       WHERE COALESCE(status, 'Draft') <> 'Completed'
     `;
-    if (companyId) {
-      query += ` AND company_id = ?`;
-      params.push(companyId);
-    }
-    if (!includeApproved) {
+        if (!includeApproved) {
       query += ` AND COALESCE(status, 'Draft') <> 'Approved'`;
     }
     query += ' ORDER BY datetime(updated_at) ASC, datetime(created_at) ASC';
@@ -3027,8 +2929,8 @@ const examinationService = {
       if (!normalizedCandidate) return normalizedCandidate;
 
       const duplicate = await runGet(
-        'SELECT batch_number FROM examination_batches WHERE batch_number = ? AND company_id = ?',
-        [normalizedCandidate, data?.company_id || '']
+        'SELECT batch_number FROM examination_batches WHERE batch_number = ?',
+        [normalizedCandidate]
       );
       if (!duplicate) {
         return normalizedCandidate;
@@ -3041,8 +2943,8 @@ const examinationService = {
 
       const [, prefix, numericPart, suffix] = parts;
       const existingRows = await runQuery(
-        'SELECT batch_number FROM examination_batches WHERE batch_number LIKE ? AND company_id = ?',
-        [`${prefix}%`, data?.company_id || '']
+        'SELECT batch_number FROM examination_batches WHERE batch_number LIKE ?',
+        [`${prefix}%`]
       );
 
       const highestUsedNumber = (existingRows || []).reduce((max, row) => {
@@ -3066,8 +2968,8 @@ const examinationService = {
       const currentYear = new Date().getFullYear().toString();
       const batchYearPrefix = `BTC-PPS-${currentYear}-`;
       const lastBatchRow = await runQuery(
-        `SELECT batch_number FROM examination_batches WHERE batch_number LIKE ? AND company_id = ? ORDER BY batch_number DESC LIMIT 1`,
-        [`${batchYearPrefix}%`, data?.company_id || '']
+        `SELECT batch_number FROM examination_batches WHERE batch_number LIKE ? ORDER BY batch_number DESC LIMIT 1`,
+        [`${batchYearPrefix}%`]
       );
       let nextNum = 1;
       if (lastBatchRow && lastBatchRow.length > 0 && lastBatchRow[0].batch_number) {
@@ -3085,7 +2987,6 @@ const examinationService = {
       id,
       batch_number: batchNumber,
       school_id: String(schoolIdCandidate).trim(),
-      company_id: String(data?.company_id || '').trim(),
       name: String(nameCandidate).trim(),
       academic_year: String(academicYearCandidate || '').trim() || new Date().getFullYear().toString(),
       term: String(termCandidate || '').trim() || '1',
@@ -3123,7 +3024,6 @@ const examinationService = {
       const preferredColumnOrder = [
         'id',
         'batch_number',
-        'company_id',
         'school_id',
         'name',
         'academic_year',
@@ -3221,7 +3121,7 @@ const examinationService = {
     // Avoid getBatchById here because it does heavy joins (classes, subjects,
     // adjustments, material config) that are unnecessary for a brand-new batch
     // with no classes and can fail on partially-migrated schemas.
-    const batch = await runGet('SELECT * FROM examination_batches WHERE id = ? AND company_id = ?', [id, data?.company_id || '']);
+    const batch = await runGet('SELECT * FROM examination_batches WHERE id = ?', [id]);
     if (!batch) {
       throw new Error('Batch was created but could not be retrieved');
     }
@@ -3237,7 +3137,7 @@ const examinationService = {
     return batch;
   },
 
-  updateBatch: async (id, data, userId = 'System', companyId = '') => {
+  updateBatch: async (id, data, userId = 'System') => {
     const { name, academic_year, term, exam_type, status, currency, sub_account_name } = data;
     let fields = [];
     let params = [];
@@ -3249,11 +3149,10 @@ const examinationService = {
     if (currency) { fields.push('currency = ?'); params.push(currency); }
     if (sub_account_name) { fields.push('sub_account_name = ?'); params.push(sub_account_name); }
 
-    if (fields.length === 0) return await examinationService.getBatchById(id, companyId);
+    if (fields.length === 0) return await examinationService.getBatchById(id);
 
     params.push(id);
-    if (companyId) params.push(companyId);
-    await runRun(`UPDATE examination_batches SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`, params);
+    await runRun(`UPDATE examination_batches SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, params);
 
     await writeAuditLog({
       userId,
@@ -3264,12 +3163,12 @@ const examinationService = {
       newValue: data
     });
 
-    return await examinationService.getBatchById(id, companyId);
+    return await examinationService.getBatchById(id);
   },
 
-  deleteBatch: async (id, userId = 'System', companyId = '') => {
-    const params = companyId ? [id, companyId] : [id];
-    const existingBatch = await runGet(`SELECT * FROM examination_batches WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`, params);
+  deleteBatch: async (id, userId = 'System') => {
+    const params = [id];
+    const existingBatch = await runGet(`SELECT * FROM examination_batches WHERE id = ?`, params);
     if (!existingBatch) {
       return { success: true };
     }
@@ -3289,28 +3188,25 @@ const examinationService = {
 
       if (classIds.length > 0 && await tableExists('examination_subjects')) {
         const placeholders = classIds.map(() => '?').join(', ');
-        const companyClause = companyId ? ' AND company_id = ?' : '';
-        const subjectParams = companyId ? [...classIds, companyId] : classIds;
+        const subjectParams = classIds;
         await runRun(
-          `DELETE FROM examination_subjects WHERE class_id IN (${placeholders})${companyClause}`,
+          `DELETE FROM examination_subjects WHERE class_id IN (${placeholders})`,
           subjectParams
         );
       }
 
-      const classCompanyClause = companyId ? ' AND company_id = ?' : '';
-      const classParams = companyId ? [id, companyId] : [id];
-      await runRun(`DELETE FROM examination_classes WHERE batch_id = ?${classCompanyClause}`, classParams);
+      const classParams = [id];
+      await runRun(`DELETE FROM examination_classes WHERE batch_id = ?`, classParams);
     }
 
     for (const tableName of relatedBatchTables) {
       if (await tableExists(tableName)) {
-        const companyClause = companyId ? ' AND company_id = ?' : '';
-        await runRun(`DELETE FROM ${tableName} WHERE batch_id = ?${companyClause}`, companyId ? [id, companyId] : [id]);
+        await runRun(`DELETE FROM ${tableName} WHERE batch_id = ?`, [id]);
       }
     }
 
-    const deleteParams = companyId ? [id, companyId] : [id];
-    await runRun(`DELETE FROM examination_batches WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`, deleteParams);
+    const deleteParams = [id];
+    await runRun(`DELETE FROM examination_batches WHERE id = ?`, deleteParams);
 
     // Audit Log
     await writeAuditLog({
@@ -3326,8 +3222,7 @@ const examinationService = {
   },
 
   // --- Classes ---
-  createClass: async (batchId, data, options = {}, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  createClass: async (batchId, data, options = {}) => {
     const id = randomUUID();
     const className = String(data.class_name || '').trim();
     const learnersRaw = Number(data.number_of_learners);
@@ -3347,10 +3242,9 @@ const examinationService = {
       throw new Error('Number of learners exceeds allowed maximum (10000)');
     }
 
-    // Verify batch exists and belongs to user's company before attempting insert
-    const batchFilter = companyId ? 'AND company_id = ?' : '';
-    const batchParams = companyId ? [batchId, companyId] : [batchId];
-    const batch = await runGet(`SELECT id FROM examination_batches WHERE id = ? ${batchFilter}`, batchParams);
+    // Verify batch exists before attempting insert
+    const batchParams = [batchId];
+    const batch = await runGet(`SELECT id FROM examination_batches WHERE id = ? `, batchParams);
     if (!batch) {
       throw new Error(`Batch with ID ${batchId} not found. Please create the batch first.`);
     }
@@ -3376,11 +3270,11 @@ const examinationService = {
     let calculation_status = 'not_triggered';
     let calculation_error = null;
     try {
-      const batchStatus = await runGet('SELECT status FROM examination_batches WHERE id = ? AND company_id = ?', [batchId, companyId]);
+      const batchStatus = await runGet('SELECT status FROM examination_batches WHERE id = ?', [batchId]);
       if (!batchStatus || batchStatus.status !== 'Finalized') {
         calculation_status = 'queued';
         Promise.resolve()
-          .then(() => examinationService.calculateBatch(batchId, { trigger: 'AUTO_CLASS_CREATE' }, companyId))
+          .then(() => examinationService.calculateBatch(batchId, { trigger: 'AUTO_CLASS_CREATE' }))
           .catch((calcError) => {
             const asyncError = String(calcError?.message || calcError);
             console.error(`Failed to calculate batch ${batchId} after class creation:`, asyncError);
@@ -3396,13 +3290,10 @@ const examinationService = {
     return Object.assign({}, created, { calculation_status, calculation_error });
   },
 
-  updateClass: async (id, data, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-    const classFilter = companyId
-      ? 'AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?)'
-      : '';
-    const classParams = companyId ? [id, companyId] : [id];
-    const currentClass = await runGet(`SELECT * FROM examination_classes WHERE id = ? ${classFilter}`, classParams);
+  updateClass: async (id, data) => {
+    const classFilter = '';
+    const classParams = [id];
+    const currentClass = await runGet(`SELECT * FROM examination_classes WHERE id = ? `, classParams);
     if (!currentClass) {
       throw new Error('Class not found');
     }
@@ -3432,46 +3323,37 @@ const examinationService = {
     if (fields.length === 0) return await runGet('SELECT * FROM examination_classes WHERE id = ?', [id]);
 
     params.push(id);
-    if (companyId) params.push(companyId);
-    await runRun(`UPDATE examination_classes SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`, params);
+    await runRun(`UPDATE examination_classes SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, params);
 
-    await examinationService.calculateBatch(currentClass.batch_id, { trigger: 'AUTO_CLASS_UPDATE' }, companyId);
+    await examinationService.calculateBatch(currentClass.batch_id, { trigger: 'AUTO_CLASS_UPDATE' });
     return await runGet('SELECT * FROM examination_classes WHERE id = ?', [id]);
   },
 
-  deleteClass: async (id, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-    const classFilter = companyId
-      ? 'AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?)'
-      : '';
-    const classParams = companyId ? [id, companyId] : [id];
-    const currentClass = await runGet(`SELECT * FROM examination_classes WHERE id = ? ${classFilter}`, classParams);
+  deleteClass: async (id) => {
+    const classFilter = '';
+    const classParams = [id];
+    const currentClass = await runGet(`SELECT * FROM examination_classes WHERE id = ? `, classParams);
     if (!currentClass) {
       return { success: true };
     }
 
-    const deleteClassClause = companyId ? ' AND company_id = ?' : '';
-    await runRun(`DELETE FROM examination_classes WHERE id = ?${deleteClassClause}`, companyId ? [id, companyId] : [id]);
-    await examinationService.calculateBatch(currentClass.batch_id, { trigger: 'AUTO_CLASS_DELETE' }, companyId);
+    await runRun(`DELETE FROM examination_classes WHERE id = ?`, [id]);
+    await examinationService.calculateBatch(currentClass.batch_id, { trigger: 'AUTO_CLASS_DELETE' });
     return { success: true };
   },
 
-  updateClassPricing: async (classId, payload, options = {}, companyId) => {
+  updateClassPricing: async (classId, payload, options = {}) => {
     await ensureExaminationPricingSchema();
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
 
-    const classFilter = companyId
-      ? 'AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?)'
-      : '';
-    const classParams = companyId ? [classId, companyId] : [classId];
-    const currentClass = await runGet(`SELECT * FROM examination_classes WHERE id = ? ${classFilter}`, classParams);
+    const classFilter = '';
+    const classParams = [classId];
+    const currentClass = await runGet(`SELECT * FROM examination_classes WHERE id = ? `, classParams);
     if (!currentClass) {
       throw new Error('Class not found');
     }
-    const batchFilter = companyId ? 'AND company_id = ?' : '';
-    const batchParams = companyId ? [currentClass.batch_id, companyId] : [currentClass.batch_id];
+    const batchParams = [currentClass.batch_id];
     const currentBatch = await runGet(
-      `SELECT id, status FROM examination_batches WHERE id = ? ${batchFilter}`,
+      `SELECT id, status FROM examination_batches WHERE id = ? `,
       batchParams
     );
     if (!currentBatch) {
@@ -3524,8 +3406,8 @@ const examinationService = {
              manual_override_by = ?,
              manual_override_at = CURRENT_TIMESTAMP,
              updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
-        companyId ? [manualCost, overrideReason, userId, classId, companyId] : [manualCost, overrideReason, userId, classId]
+         WHERE id = ?`,
+        [manualCost, overrideReason, userId, classId]
       );
     } else {
       await runRun(
@@ -3536,8 +3418,8 @@ const examinationService = {
              manual_override_by = ?,
              manual_override_at = CURRENT_TIMESTAMP,
              updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
-        companyId ? [userId, classId, companyId] : [userId, classId]
+         WHERE id = ?`,
+        [userId, classId]
       );
     }
 
@@ -3567,24 +3449,16 @@ const examinationService = {
     await examinationService.calculateBatch(currentClass.batch_id, {
       trigger: isManualOverride ? 'MANUAL_OVERRIDE' : 'MANUAL_OVERRIDE_RESET',
       userId
-    }, companyId);
+    });
 
-    return await examinationService.getBatchById(currentClass.batch_id, companyId);
+    return await examinationService.getBatchById(currentClass.batch_id);
   },
 
-  getClassPricingHistory: async (classId, limit = 100, companyId) => {
+  getClassPricingHistory: async (classId, limit = 100) => {
     await ensureExaminationPricingSchema();
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
     const safeLimit = Math.max(1, Math.min(500, Number(limit) || 100));
-    const whereClause = companyId
-      ? `WHERE class_id = ?
-         AND class_id IN (
-           SELECT id FROM examination_classes
-           WHERE id = examination_pricing_audit.class_id
-           AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?)
-         )`
-      : `WHERE class_id = ?`;
-    const params = companyId ? [classId, companyId] : [classId];
+    const whereClause = `WHERE class_id = ?`;
+    const params = [classId];
     return await runQuery(
       `SELECT * FROM examination_pricing_audit
        ${whereClause}
@@ -3595,8 +3469,7 @@ const examinationService = {
   },
 
   // --- Subjects ---
-  createSubject: async (classId, data, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  createSubject: async (classId, data) => {
     const id = randomUUID();
     let { subject_name, name, pages, extra_copies, paper_size, orientation } = data;
 
@@ -3617,12 +3490,10 @@ const examinationService = {
       throw new Error('Extra copies cannot be negative');
     }
 
-    // Validate class exists and belongs to user's company before creating subject
-    const classFilter = companyId
-      ? 'AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?)'
-      : '';
-    const classParams = companyId ? [classId, companyId] : [classId];
-    const cls = await runGet(`SELECT batch_id FROM examination_classes WHERE id = ? ${classFilter}`, classParams);
+    // Validate class exists before creating subject
+    const classFilter = '';
+    const classParams = [classId];
+    const cls = await runGet(`SELECT batch_id FROM examination_classes WHERE id = ? `, classParams);
     if (!cls) {
       throw new Error(`Class with ID ${classId} not found. Please create the class first.`);
     }
@@ -3635,10 +3506,10 @@ const examinationService = {
 
     // Only trigger calculation if batch is not already finalized
     if (cls.batch_id) {
-      const batchStatus = await runGet('SELECT status FROM examination_batches WHERE id = ? AND company_id = ?', [cls.batch_id, companyId]);
+      const batchStatus = await runGet('SELECT status FROM examination_batches WHERE id = ?', [cls.batch_id]);
       if (batchStatus && batchStatus.status !== 'Finalized') {
         try {
-          await examinationService.calculateBatch(cls.batch_id, { trigger: 'AUTO_SUBJECT_CREATE' }, companyId);
+          await examinationService.calculateBatch(cls.batch_id, { trigger: 'AUTO_SUBJECT_CREATE' });
         } catch (calcError) {
           console.error(`Failed to calculate batch ${cls.batch_id} after subject creation:`, calcError.message);
           // Don't throw - subject was created successfully, just calculation failed
@@ -3649,13 +3520,10 @@ const examinationService = {
     return await runGet('SELECT * FROM examination_subjects WHERE id = ?', [id]);
   },
 
-  updateSubject: async (id, data, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-    const subjectFilter = companyId
-      ? 'AND class_id IN (SELECT id FROM examination_classes WHERE id = examination_subjects.class_id AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?))'
-      : '';
-    const subjectParams = companyId ? [id, companyId] : [id];
-    const currentSubject = await runGet(`SELECT * FROM examination_subjects WHERE id = ? ${subjectFilter}`, subjectParams);
+  updateSubject: async (id, data) => {
+    const subjectFilter = '';
+    const subjectParams = [id];
+    const currentSubject = await runGet(`SELECT * FROM examination_subjects WHERE id = ? `, subjectParams);
     if (!currentSubject) {
       throw new Error('Subject not found');
     }
@@ -3696,51 +3564,45 @@ const examinationService = {
     if (fields.length === 0) return await runGet('SELECT * FROM examination_subjects WHERE id = ?', [id]);
 
     params.push(id);
-    if (companyId) params.push(companyId);
-    await runRun(`UPDATE examination_subjects SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`, params);
+    await runRun(`UPDATE examination_subjects SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, params);
 
     const cls = await runGet('SELECT batch_id FROM examination_classes WHERE id = ?', [currentSubject.class_id]);
     if (cls?.batch_id) {
-      await examinationService.calculateBatch(cls.batch_id, { trigger: 'AUTO_SUBJECT_UPDATE' }, companyId);
+      await examinationService.calculateBatch(cls.batch_id, { trigger: 'AUTO_SUBJECT_UPDATE' });
     }
 
     return await runGet('SELECT * FROM examination_subjects WHERE id = ?', [id]);
   },
 
-  deleteSubject: async (id, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-    const subjectFilter = companyId
-      ? 'AND class_id IN (SELECT id FROM examination_classes WHERE id = examination_subjects.class_id AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?))'
-      : '';
-    const subjectParams = companyId ? [id, companyId] : [id];
-    const currentSubject = await runGet(`SELECT * FROM examination_subjects WHERE id = ? ${subjectFilter}`, subjectParams);
+  deleteSubject: async (id) => {
+    const subjectFilter = '';
+    const subjectParams = [id];
+    const currentSubject = await runGet(`SELECT * FROM examination_subjects WHERE id = ? `, subjectParams);
     if (!currentSubject) {
       return { success: true };
     }
 
     const cls = await runGet('SELECT batch_id FROM examination_classes WHERE id = ?', [currentSubject.class_id]);
-    const subjectDeleteClause = companyId ? ' AND company_id = ?' : '';
-    await runRun(`DELETE FROM examination_subjects WHERE id = ?${subjectDeleteClause}`, companyId ? [id, companyId] : [id]);
+    await runRun(`DELETE FROM examination_subjects WHERE id = ?${subjectDeleteClause}`, [id]);
 
     if (cls?.batch_id) {
-      await examinationService.calculateBatch(cls.batch_id, { trigger: 'AUTO_SUBJECT_DELETE' }, companyId);
+      await examinationService.calculateBatch(cls.batch_id, { trigger: 'AUTO_SUBJECT_DELETE' });
     }
 
     return { success: true };
   },
 
   // --- Calculation Logic ---
-  calculateBatch: async (batchId, options = {}, companyId) => {
+  calculateBatch: async (batchId, options = {}) => {
     await ensureExaminationPricingSchema();
 
     const startedAt = Date.now();
     const trigger = String(options?.trigger || 'MANUAL').trim() || 'MANUAL';
     const userId = options?.userId || 'System';
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
 
-    const batch = await examinationService.getBatchById(batchId, companyId);
+    const batch = await examinationService.getBatchById(batchId);
     if (!batch) throw new Error('Batch not found');
-    const defaultMaterialConfig = await resolveExamMaterialConfiguration(companyId);
+    const defaultMaterialConfig = await resolveExamMaterialConfiguration();
     const {
       paperItem,
       tonerItem,
@@ -3751,7 +3613,7 @@ const examinationService = {
     } = await resolveMaterialOverridesFromOptions(options, defaultMaterialConfig);
     const activeAdjustments = Array.isArray(options?.adjustments)
       ? options.adjustments
-      : await resolveEffectiveClassAdjustments(companyId);
+      : await resolveEffectiveClassAdjustments();
     const marketAdjustmentSaleRef = `EXAM-BATCH-${batchId}`;
     const isPricingSnapshotLocked = toBoolean(batch?.pricing_lock_enabled);
     const lockedAdjustments = isPricingSnapshotLocked
@@ -3809,8 +3671,8 @@ const examinationService = {
              SET total_sheets = ?,
                  total_pages = ?,
                  updated_at = CURRENT_TIMESTAMP
-             WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
-            companyId ? [subjectConsumption.totalSheets, subjectConsumption.totalPages, sub.id, companyId] : [subjectConsumption.totalSheets, subjectConsumption.totalPages, sub.id]
+             WHERE id = ?`,
+            [subjectConsumption.totalSheets, subjectConsumption.totalPages, sub.id]
           );
         }
 
@@ -3899,8 +3761,8 @@ const examinationService = {
                  manual_override_reason = NULL,
                  manual_override_by = ?,
                  manual_override_at = CURRENT_TIMESTAMP
-             WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
-            companyId ? [userId, cls.id, companyId] : [userId, cls.id]
+             WHERE id = ?`,
+            [userId, cls.id]
           );
         }
 
@@ -3934,9 +3796,7 @@ const examinationService = {
           batchId,
           classId: cls.id,
           rows: classAdjustmentRows,
-          source: isManualOverride ? 'MANUAL_OVERRIDE' : 'SYSTEM',
-          companyId
-        });
+          source: isManualOverride ? 'MANUAL_OVERRIDE' : 'SYSTEM'});
 
         await runRun(
            `UPDATE examination_classes
@@ -3958,9 +3818,8 @@ const examinationService = {
                 financial_metrics_source = ?,
                 financial_metrics_updated_at = CURRENT_TIMESTAMP,
                 financial_metrics_updated_by = ?
-            WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
-          companyId
-            ? [
+            WHERE id = ?`,
+          [
                 expectedFeePerLearner,
                 expectedTotal,
                 totalBomCost,
@@ -3976,27 +3835,7 @@ const examinationService = {
                 liveTotalPreview,
                 financialMetricsSource,
                 userId,
-                cls.id,
-                companyId
-              ]
-            : [
-                expectedFeePerLearner,
-                expectedTotal,
-                totalBomCost,
-                totalAdjustments,
-                marketAdjustmentTotal,
-                roundingAdjustmentTotal,
-                manualOverrideAmount,
-                adjustmentDeltaPercent,
-                finalCostPerLearner,
-                finalClassTotal,
-                expectedFeePerLearner,
-                finalFeePerLearner,
-                liveTotalPreview,
-                financialMetricsSource,
-                userId,
-                cls.id
-              ]
+                cls.id]
         );
 
         for (const adjustmentRow of classAdjustmentBreakdown.rows) {
@@ -4121,25 +3960,8 @@ const examinationService = {
              calculation_duration_ms = ?,
              last_calculated_at = CURRENT_TIMESTAMP,
              updated_at = CURRENT_TIMESTAMP
-         WHERE id = ? AND company_id = ?`,
-        [
-          roundedBatchTotalAmount,
-          roundedBatchMaterialTotal,
-          roundedBatchAdjustmentTotal,
-          pricingEngine.roundCurrency(batchMarketAdjustmentTotal),
-          serializeBatchAdjustmentSnapshots(normalizedAdjustmentSnapshots),
-          persistedRoundingAdjustmentTotal,
-          preRoundingTotalAmount,
-          roundingConfig.persistedMethod,
-          roundingConfig.persistedValue,
-          batchLearnerCount,
-          overallSuggestedCostPerLearner,
-          batchWorkflow.resolveStatusAfterCalculation(batch.classes?.length || 0),
-          trigger,
-          calculationDuration,
-          batchId,
-          companyId
-        ]
+         WHERE id = ?`,
+        [roundedBatchTotalAmount, roundedBatchMaterialTotal, roundedBatchAdjustmentTotal, pricingEngine.roundCurrency(batchMarketAdjustmentTotal), serializeBatchAdjustmentSnapshots(normalizedAdjustmentSnapshots), persistedRoundingAdjustmentTotal, preRoundingTotalAmount, roundingConfig.persistedMethod, roundingConfig.persistedValue, batchLearnerCount, overallSuggestedCostPerLearner, batchWorkflow.resolveStatusAfterCalculation(batch.classes?.length || 0), trigger, calculationDuration, batchId]
       );
 
       await runRun('COMMIT');
@@ -4166,20 +3988,18 @@ const examinationService = {
       }
     }
 
-    return await examinationService.getBatchById(batchId, companyId);
+    return await examinationService.getBatchById(batchId);
   },
 
-  calculateClassPreview: async (classId, options = {}, companyId) => {
+  calculateClassPreview: async (classId, options = {}) => {
     await ensureExaminationPricingSchema();
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
 
-    const cls = await examinationService.getClassById(classId, companyId);
+    const cls = await examinationService.getClassById(classId);
     if (!cls) throw new Error('Class not found');
-    const batchFilter = companyId ? 'AND company_id = ?' : '';
-    const batchParams = companyId ? [cls.batch_id, companyId] : [cls.batch_id];
-    const batch = await runGet(`SELECT id, rounding_method, rounding_value FROM examination_batches WHERE id = ? ${batchFilter}`, batchParams);
+    const batchParams = [cls.batch_id];
+    const batch = await runGet(`SELECT id, rounding_method, rounding_value FROM examination_batches WHERE id = ? `, batchParams);
 
-    const defaultMaterialConfig = await resolveExamMaterialConfiguration(companyId);
+    const defaultMaterialConfig = await resolveExamMaterialConfiguration();
     const {
       paperItem,
       tonerItem,
@@ -4194,7 +4014,7 @@ const examinationService = {
     const effectiveConversionRate = paperConversionRate;
     const effectiveTonerPagesPerUnit = tonerPagesPerUnit;
 
-    const activeAdjustments = await resolveEffectiveClassAdjustments(companyId);
+    const activeAdjustments = await resolveEffectiveClassAdjustments();
     const roundingConfig = resolveBatchRoundingConfig(batch, options);
     const learners = Math.max(1, Math.floor(Number(cls.number_of_learners) || 0));
 
@@ -4266,10 +4086,9 @@ const examinationService = {
     };
   },
 
-  approveBatch: async (batchId, userId = 'System', companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  approveBatch: async (batchId, userId = 'System') => {
     await ensureExaminationPricingSchema();
-    const batch = await examinationService.getBatchById(batchId, companyId);
+    const batch = await examinationService.getBatchById(batchId);
     if (!batch) throw new Error('Batch not found');
     batchWorkflow.assertCanApproveBatch(batch.status);
 
@@ -4279,7 +4098,7 @@ const examinationService = {
       paperUnitCost,
       tonerUnitCost,
       paperConversionRate
-    } = await resolveExamMaterialConfiguration(companyId);
+    } = await resolveExamMaterialConfiguration();
 
     const deductions = batchWorkflow.calculateApprovalMaterialDeductions({
       classes: batch.classes || [],
@@ -4297,9 +4116,7 @@ const examinationService = {
     await runRun('BEGIN TRANSACTION');
     try {
       for (const deduction of deductions) {
-        const item = companyId
-          ? await runGet('SELECT * FROM inventory WHERE id = ? AND company_id = ?', [deduction.item_id, companyId])
-          : await runGet('SELECT * FROM inventory WHERE id = ?', [deduction.item_id]);
+        const item = await runGet('SELECT * FROM inventory WHERE id = ?', [deduction.item_id]);
         if (!item) {
           console.warn(`Item ${deduction.item_id} not found in inventory during batch approval`);
           continue;
@@ -4323,8 +4140,8 @@ const examinationService = {
           `UPDATE inventory
            SET quantity = ?,
                last_updated = CURRENT_TIMESTAMP
-           WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
-          companyId ? [newQuantity, deduction.item_id, companyId] : [newQuantity, deduction.item_id]
+           WHERE id = ?`,
+          [newQuantity, deduction.item_id]
         );
 
         await runRun(
@@ -4350,8 +4167,8 @@ const examinationService = {
       }
 
       await runRun(
-        'UPDATE examination_batches SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?',
-        ['Approved', batchId, companyId]
+        'UPDATE examination_batches SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        ['Approved', batchId]
       );
 
       await writeAuditLog({
@@ -4372,15 +4189,14 @@ const examinationService = {
       throw error;
     }
 
-    const approvedBatch = await examinationService.getBatchById(batchId, companyId);
+    const approvedBatch = await examinationService.getBatchById(batchId);
     return { batch: approvedBatch, warnings };
   },
 
-  generateInvoice: async (batchId, userId = 'System', options = {}, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
+  generateInvoice: async (batchId, userId = 'System', options = {}) => {
     const requestedInvoiceNumber = options?.invoiceNumber || options?.invoice_number;
     await ensureExaminationInvoiceSchema();
-    const batch = await examinationService.getBatchById(batchId, companyId);
+    const batch = await examinationService.getBatchById(batchId);
     if (!batch) throw new Error('Batch not found');
     batchWorkflow.assertCanGenerateInvoice(batch.status);
     const invoiceDraft = examinationInvoiceAdapter.createInvoiceFromBatch({
@@ -4391,17 +4207,13 @@ const examinationService = {
 
     const schoolLookupId = toNumericValue(batch.school_id);
     const school = schoolLookupId !== null
-      ? companyId
-        ? await runGet('SELECT * FROM schools WHERE id = ? AND company_id = ?', [schoolLookupId, companyId])
-        : await runGet('SELECT * FROM schools WHERE id = ?', [schoolLookupId])
+      ? await runGet('SELECT * FROM schools WHERE id = ?', [schoolLookupId])
       : null;
     let customer = null;
     try {
       const customerLookupId = String(batch.customer_id || batch.school_id || '').trim();
       customer = customerLookupId
-        ? companyId
-          ? await runGet('SELECT * FROM customers WHERE id = ? AND company_id = ?', [customerLookupId, companyId])
-          : await runGet('SELECT * FROM customers WHERE id = ?', [customerLookupId])
+        ? await runGet('SELECT * FROM customers WHERE id = ?', [customerLookupId])
         : null;
     } catch {
       customer = null;
@@ -4420,27 +4232,25 @@ const examinationService = {
     }
 
     const findExistingInvoice = async () => {
-      const companyFilter = companyId ? ' AND company_id = ?' : '';
       if (idempotencyKey) {
         const params = [idempotencyKey];
-        if (companyId) params.push(companyId);
         const byIdempotency = await runGet(
-          `SELECT * FROM invoices WHERE idempotency_key = ?${companyFilter} ORDER BY id DESC LIMIT 1`,
+          `SELECT * FROM invoices WHERE idempotency_key = ? ORDER BY id DESC LIMIT 1`,
           params
         );
         if (byIdempotency) return byIdempotency;
       }
 
       const byOrigin = await runGet(
-        `SELECT * FROM invoices WHERE origin_module = ? AND origin_batch_id = ?${companyFilter} ORDER BY id DESC LIMIT 1`,
-        companyId ? [INVOICE_ORIGIN_EXAMINATION, String(batchId), companyId] : [INVOICE_ORIGIN_EXAMINATION, String(batchId)]
+        `SELECT * FROM invoices WHERE origin_module = ? AND origin_batch_id = ? ORDER BY id DESC LIMIT 1`,
+        [INVOICE_ORIGIN_EXAMINATION, String(batchId)]
       );
       if (byOrigin) return byOrigin;
 
       if (batch.invoice_id) {
         const byBatchRef = await runGet(
-          `SELECT * FROM invoices WHERE (invoice_number = ? OR id = ?)${companyFilter} ORDER BY id DESC LIMIT 1`,
-          companyId ? [batch.invoice_id, batch.invoice_id, companyId] : [batch.invoice_id, batch.invoice_id]
+          `SELECT * FROM invoices WHERE (invoice_number = ? OR id = ?) ORDER BY id DESC LIMIT 1`,
+          [batch.invoice_id, batch.invoice_id]
         );
         if (byBatchRef) return byBatchRef;
       }
@@ -4459,14 +4269,8 @@ const examinationService = {
         userId
       });
       await runRun(
-        'UPDATE examination_batches SET status = ?, invoice_id = ?, total_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?',
-        [
-          String(existingInvoice.status || '').toLowerCase() === 'paid' ? 'Paid' : 'Completed',
-          String(linkedLogicalInvoiceId || existingInvoice.invoice_number || existingInvoice.id),
-          existingInvoiceTotal,
-          batchId,
-          companyId
-        ]
+        'UPDATE examination_batches SET status = ?, invoice_id = ?, total_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [String(existingInvoice.status || '').toLowerCase() === 'paid' ? 'Paid' : 'Completed', String(linkedLogicalInvoiceId || existingInvoice.invoice_number || existingInvoice.id), existingInvoiceTotal, batchId]
       );
 
       return {
@@ -4501,10 +4305,9 @@ const examinationService = {
           invoice_number, origin_module, origin_batch_id, idempotency_key,
           line_items_json, notes, document_title,
           rounding_difference, rounding_method, adjustment_total, adjustment_snapshots_json,
-          created_at, updated_at${companyId ? ', company_id' : ''}
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP${companyId ? ', ?' : ''})`,
-        companyId
-          ? [
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [
               persistedSchoolId,
               persistedCustomerId,
               customerName,
@@ -4524,31 +4327,7 @@ const examinationService = {
               toNumericValue(batch.rounding_adjustment_total) || 0,
               batch.rounding_method || 'nearest_50',
               toNumericValue(batch.calculated_adjustment_total) || 0,
-              batch.adjustment_snapshots_json || '[]',
-              companyId
-            ]
-          : [
-              persistedSchoolId,
-              persistedCustomerId,
-              customerName,
-              batch.sub_account_name || null,
-              batchTotalAmount,
-              batchTotalAmount,
-              invoiceDraft.currency,
-              'unpaid',
-              dueDateIso,
-              null,
-              invoiceDraft.originModule,
-              invoiceDraft.originBatchId,
-              idempotencyKey || null,
-              lineItemsJson,
-              invoiceNote,
-              documentTitle,
-              toNumericValue(batch.rounding_adjustment_total) || 0,
-              batch.rounding_method || 'nearest_50',
-              toNumericValue(batch.calculated_adjustment_total) || 0,
-              batch.adjustment_snapshots_json || '[]'
-            ]
+              batch.adjustment_snapshots_json || '[]']
       );
 
       invoiceId = Number(invoiceResult.lastID);
@@ -4566,10 +4345,9 @@ const examinationService = {
             school_id, customer_id, customer_name, sub_account_name,
             subtotal, total_amount, currency, status, due_date,
             invoice_number, origin_module, origin_batch_id, idempotency_key,
-            line_items_json, notes, created_at, updated_at${companyId ? ', company_id' : ''}
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP${companyId ? ', ?' : ''})`,
-          companyId
-            ? [
+            line_items_json, notes, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [
                 persistedSchoolId,
                 persistedCustomerId,
                 customerName,
@@ -4584,26 +4362,7 @@ const examinationService = {
                 invoiceDraft.originBatchId,
                 idempotencyKey || null,
                 lineItemsJson,
-                invoiceNote,
-                companyId
-              ]
-            : [
-                persistedSchoolId,
-                persistedCustomerId,
-                customerName,
-                batch.sub_account_name || null,
-                batchTotalAmount,
-                batchTotalAmount,
-                invoiceDraft.currency,
-                'unpaid',
-                dueDateIso,
-                null,
-                invoiceDraft.originModule,
-                invoiceDraft.originBatchId,
-                idempotencyKey || null,
-                lineItemsJson,
-                invoiceNote
-              ]
+                invoiceNote]
         );
         invoiceId = Number(invoiceResult.lastID);
         const logicalNumber = requestedInvoiceNumber || examinationInvoiceAdapter.buildExaminationLogicalInvoiceNumber(invoiceId);
@@ -4627,9 +4386,7 @@ const examinationService = {
       }
     }
 
-    const invoiceRow = companyId
-      ? await runGet('SELECT * FROM invoices WHERE id = ? AND company_id = ?', [invoiceId, companyId])
-      : await runGet('SELECT * FROM invoices WHERE id = ?', [invoiceId]);
+    const invoiceRow = await runGet('SELECT * FROM invoices WHERE id = ?', [invoiceId]);
     if (!invoiceRow) {
       throw new Error('Invoice creation failed: invoice not found after insert');
     }
@@ -4642,8 +4399,8 @@ const examinationService = {
     });
 
     await runRun(
-      'UPDATE examination_batches SET status = ?, invoice_id = ?, total_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?',
-      ['Completed', String(linkedLogicalInvoiceId || invoiceRow.invoice_number || invoiceId), batchTotalAmount, batchId, companyId]
+      'UPDATE examination_batches SET status = ?, invoice_id = ?, total_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ['Completed', String(linkedLogicalInvoiceId || invoiceRow.invoice_number || invoiceId), batchTotalAmount, batchId]
     );
 
     // Audit Log
@@ -4656,7 +4413,7 @@ const examinationService = {
     });
 
     // Post ledger entries
-    await postInvoiceLedger(invoiceId, invoiceRow, companyId);
+    await postInvoiceLedger(invoiceId, invoiceRow);
 
     return {
       success: true,
@@ -4674,13 +4431,10 @@ const examinationService = {
 
   // --- New Methods for Examination Pricing Redesign ---
 
-  getClassById: async (classId, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-    const batchFilter = companyId
-      ? 'AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?)'
-      : '';
-    const params = companyId ? [classId, companyId] : [classId];
-    const cls = await runGet(`SELECT * FROM examination_classes WHERE id = ? ${batchFilter}`, params);
+  getClassById: async (classId) => {
+    const batchFilter = '';
+    const params = [classId];
+    const cls = await runGet(`SELECT * FROM examination_classes WHERE id = ? `, params);
     if (!cls) return null;
 
     // Attach subjects
@@ -4689,20 +4443,16 @@ const examinationService = {
     return cls;
   },
 
-  updateClassFinancialMetrics: async (classId, payload, { userId }, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-    const classFilter = companyId
-      ? 'AND batch_id IN (SELECT id FROM examination_batches WHERE id = examination_classes.batch_id AND company_id = ?)'
-      : '';
-    const classParams = companyId ? [classId, companyId] : [classId];
-    const currentClass = await runGet(`SELECT * FROM examination_classes WHERE id = ? ${classFilter}`, classParams);
+  updateClassFinancialMetrics: async (classId, payload, { userId }) => {
+    const classFilter = '';
+    const classParams = [classId];
+    const currentClass = await runGet(`SELECT * FROM examination_classes WHERE id = ? `, classParams);
     if (!currentClass) {
       throw new Error(`Class ${classId} not found`);
     }
-    const batchFilter = companyId ? 'AND company_id = ?' : '';
-    const batchParams = companyId ? [currentClass.batch_id, companyId] : [currentClass.batch_id];
+    const batchParams = [currentClass.batch_id];
     const currentBatch = await runGet(
-      `SELECT id, status FROM examination_batches WHERE id = ? ${batchFilter}`,
+      `SELECT id, status FROM examination_batches WHERE id = ? `,
       batchParams
     );
     if (!currentBatch) {
@@ -4773,12 +4523,11 @@ const examinationService = {
     }
 
     params.push(classId);
-    if (companyId) params.push(companyId);
     await runRun(
-      `UPDATE examination_classes SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
+      `UPDATE examination_classes SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       params
     );
-    await recalculateBatchFinancialTotalsFromClasses(currentClass.batch_id, companyId);
+    await recalculateBatchFinancialTotalsFromClasses(currentClass.batch_id);
 
     // Audit log
     await writeAuditLog({
@@ -4792,9 +4541,8 @@ const examinationService = {
     return await runGet('SELECT * FROM examination_classes WHERE id = ?', [classId]);
   },
 
-  syncPricingToBatchClasses: async (batchId, { settings, adjustments, triggerSource, userId }, companyId) => {
-    companyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
-    const batch = await examinationService.getBatchById(batchId, companyId);
+  syncPricingToBatchClasses: async (batchId, { settings, adjustments, triggerSource, userId }) => {
+    const batch = await examinationService.getBatchById(batchId);
     if (!batch) {
       throw new Error(`Batch ${batchId} not found`);
     }
@@ -4900,9 +4648,8 @@ const examinationService = {
             financial_metrics_updated_at = ?,
             cost_last_calculated_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?${companyId ? ' AND company_id = ?' : ''}`,
-          companyId
-            ? [
+          WHERE id = ?`,
+          [
                 expectedFeePerLearner,
                 finalFeePerLearner,
                 liveTotalPreview,
@@ -4912,21 +4659,7 @@ const examinationService = {
                 triggerSource,
                 userId,
                 timestamp,
-                cls.id,
-                companyId
-              ]
-            : [
-                expectedFeePerLearner,
-                finalFeePerLearner,
-                liveTotalPreview,
-                totalBomCost,
-                totalAdjustments,
-                totalCost,
-                triggerSource,
-                userId,
-                timestamp,
-                cls.id
-              ]
+                cls.id]
         );
 
         classesUpdated++;
@@ -4938,7 +4671,7 @@ const examinationService = {
       }
     }
     if (classesUpdated > 0) {
-      await recalculateBatchFinancialTotalsFromClasses(batchId, companyId);
+      await recalculateBatchFinancialTotalsFromClasses(batchId);
     }
 
     // Audit log
@@ -4956,18 +4689,15 @@ const examinationService = {
       errors
     };
   },
-  getNotifications: async (userId, limit = 50, companyId) => {
+  getNotifications: async (userId, limit = 50) => {
     await ensureNotificationSchema();
     if (!userId) return [];
     const normalizedUserId = String(userId).trim();
-    const normalizedCompanyId = (typeof companyId === 'string' && companyId.trim()) ? companyId.trim() : '';
     const normalizedLimit = Math.min(Math.max(Number.parseInt(String(limit), 10) || 50, 1), 1000);
-    const params = normalizedCompanyId
-      ? [normalizedUserId, normalizedCompanyId, normalizedLimit]
-      : [normalizedUserId, normalizedLimit];
+    const params = [normalizedUserId, normalizedLimit];
     const rows = await runQuery(
       `SELECT * FROM examination_batch_notifications
-       WHERE user_id = ?${normalizedCompanyId ? ' AND company_id = ?' : ''}
+       WHERE user_id = ?
        ORDER BY created_at DESC
        LIMIT ?`,
       params
@@ -5017,35 +4747,33 @@ const examinationService = {
       expires_at: expiresAt
     });
   },
-  markNotificationRead: async (notificationId, userId, companyId = '') => {
+  markNotificationRead: async (notificationId, userId) => {
     await ensureNotificationSchema();
     if (!notificationId) return { success: false };
-    const notifClause = companyId ? ' AND company_id = ?' : '';
     if (userId) {
       await runRun(
         `UPDATE examination_batch_notifications
          SET is_read = 1, read_at = CURRENT_TIMESTAMP
-         WHERE id = ? AND user_id = ?${notifClause}`,
-        companyId ? [notificationId, userId, companyId] : [notificationId, userId]
+         WHERE id = ? AND user_id = ?`,
+        [notificationId, userId]
       );
     } else {
       await runRun(
         `UPDATE examination_batch_notifications
          SET is_read = 1, read_at = CURRENT_TIMESTAMP
-         WHERE id = ?${notifClause}`,
-        companyId ? [notificationId, companyId] : [notificationId]
+         WHERE id = ?`,
+        [notificationId]
       );
     }
     return { success: true };
   },
-  deleteNotification: async (notificationId, userId, companyId = '') => {
+  deleteNotification: async (notificationId, userId) => {
     await ensureNotificationSchema();
     if (!notificationId) return { success: false };
-    const notifClause = companyId ? ' AND company_id = ?' : '';
     if (userId) {
-      await runRun(`DELETE FROM examination_batch_notifications WHERE id = ? AND user_id = ?${notifClause}`, companyId ? [notificationId, userId, companyId] : [notificationId, userId]);
+      await runRun(`DELETE FROM examination_batch_notifications WHERE id = ? AND user_id = ?`, [notificationId, userId]);
     } else {
-      await runRun(`DELETE FROM examination_batch_notifications WHERE id = ?${notifClause}`, companyId ? [notificationId, companyId] : [notificationId]);
+      await runRun(`DELETE FROM examination_batch_notifications WHERE id = ?`, [notificationId]);
     }
     return { success: true };
   },

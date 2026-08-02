@@ -1,5 +1,8 @@
 module.exports = {
   testEnvironment: 'node',
+  moduleNameMapper: {
+    '^otplib$': '<rootDir>/tests/__mocks__/otplib.cjs'
+  },
   testMatch: [
     '**/tests/**/*.test.cjs',
     '**/tests/**/*.test.js',
@@ -9,8 +12,8 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
-    '/tests/integration/',
     'tenant_isolation_security.test.js',
+    'multiTenantCompanyResolution.test.js',
     'profitMargin.integration.test.js',
     'referral.test.cjs'
   ],
@@ -29,5 +32,6 @@ module.exports = {
   },
   verbose: true,
   forceExit: true,
-  detectOpenHandles: true
+  detectOpenHandles: true,
+  maxWorkers: 1
 };

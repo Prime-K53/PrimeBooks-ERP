@@ -74,7 +74,7 @@ const CustomerShipments: React.FC = () => {
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
 
   return (
-    <div style={{ background: portalTheme.paper, borderRadius: 14, overflow: 'hidden' }}>
+    <div>
       <PortalPageHeader
         title="Shipments & Tracking"
         subtitle="Track your orders in transit"

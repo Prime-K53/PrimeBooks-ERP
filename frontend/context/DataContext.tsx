@@ -186,19 +186,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [queueRefresh, refreshAllData, startPolling, stopPolling]);
 
     useEffect(() => {
-        if (!isCloudOnlyMode() || !auth.user || !auth.companyConfig?.companyId) return;
+        if (!isCloudOnlyMode() || !auth.user) return;
 
-        const companyId = auth.companyConfig.companyId;
-        const channel = supabase.channel(`primeerp-company-data:${companyId}`);
+        const channel = supabase.channel(`primeerp-data`);
 
         cloudDb.getRealtimeTables().forEach((table) => {
-            const filter = table === 'companies'
-                ? `id=eq.${companyId}`
-                : `company_id=eq.${companyId}`;
-
             channel.on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table, filter },
+                { event: '*', schema: 'public', table },
                 () => queueRefresh(80)
             );
         });
@@ -212,7 +207,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [auth.companyConfig?.companyId, auth.user, queueRefresh]);
+    }, [auth.user, queueRefresh]);
 
     const addTask = useCallback(async (task: any) => {
         const newTask = { ...task, id: task.id || generateNextId('TASK', tasks, auth.companyConfig) };

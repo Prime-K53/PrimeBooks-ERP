@@ -6,11 +6,10 @@ const { validateBody, taskSchemas } = require('../middleware/validation.cjs');
 
 /**
  * @route   GET /api/tasks
- * @desc    Get all tasks for the current company
+ * @desc    Get all tasks
  */
 router.get('/', (req, res) => {
-  const companyId = req.companyId || '';
-  db.all('SELECT * FROM tasks WHERE company_id = ? ORDER BY created_at DESC', [companyId], (err, rows) => {
+  db.all('SELECT * FROM tasks ORDER BY created_at DESC', [], (err, rows) => {
     if (err) {
       console.error('[Tasks] Failed to get tasks:', err);
       return res.status(500).json({ error: 'Failed to retrieve tasks' });
@@ -36,19 +35,15 @@ router.post('/', validateBody(taskSchemas.create), (req, res) => {
     status, priority, hasAlarm, reminderDate, category,
     relatedEntityType, relatedEntityId
   } = req.body;
-  const companyId = req.companyId || '';
   const id = `TASK-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
   const now = new Date().toISOString();
 
   db.run(`INSERT INTO tasks (
     id, title, description, notes, assigned_to, due_date,
     status, priority, has_alarm, reminder_date, category,
-    related_entity_type, related_entity_id, company_id, created_at, updated_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, title, description || '', notes || '', assignedTo || '', dueDate || '',
-     status || 'Pending', priority || 'Medium', hasAlarm ? 1 : 0, reminderDate || null,
-     category || null, relatedEntityType || null, relatedEntityId || null,
-     companyId, now, now],
+    related_entity_type, related_entity_id, created_at, updated_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?, ?)`,
+    [id, title, description || '', notes || '', assignedTo || '', dueDate || '', status || 'Pending', priority || 'Medium', hasAlarm ? 1 : 0, reminderDate || null, category || null, relatedEntityType || null, relatedEntityId || null, now, now],
     function(err) {
       if (err) {
         console.error('[Tasks] Failed to create task:', err);
@@ -61,8 +56,7 @@ router.post('/', validateBody(taskSchemas.create), (req, res) => {
         hasAlarm: !!hasAlarm, reminderDate: reminderDate || null,
         category: category || null,
         relatedEntityType: relatedEntityType || null,
-        relatedEntityId: relatedEntityId || null,
-        companyId, createdAt: now, updatedAt: now
+        relatedEntityId: relatedEntityId || null, createdAt: now, updatedAt: now
       });
     }
   );
@@ -74,7 +68,6 @@ router.post('/', validateBody(taskSchemas.create), (req, res) => {
  */
 router.put('/:id', (req, res) => {
   const { id } = req.params;
-  const companyId = req.companyId || '';
   const {
     title, description, notes, assignedTo, dueDate,
     status, priority, hasAlarm, reminderDate, category,
@@ -96,11 +89,8 @@ router.put('/:id', (req, res) => {
     related_entity_type = COALESCE(?, related_entity_type),
     related_entity_id = COALESCE(?, related_entity_id),
     updated_at = ?
-    WHERE id = ? AND company_id = ?`,
-    [title, description, notes, assignedTo, dueDate,
-     status, priority, hasAlarm !== undefined ? (hasAlarm ? 1 : 0) : undefined,
-     reminderDate, category, relatedEntityType, relatedEntityId,
-     now, id, companyId],
+    WHERE id = ?`,
+    [title, description, notes, assignedTo, dueDate, status, priority, hasAlarm !== undefined ? (hasAlarm ? 1 : 0) : undefined, reminderDate, category, relatedEntityType, relatedEntityId, now, id],
     function(err) {
       if (err) {
         console.error('[Tasks] Failed to update task:', err);
@@ -120,9 +110,8 @@ router.put('/:id', (req, res) => {
  */
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
-  const companyId = req.companyId || '';
 
-  db.run('DELETE FROM tasks WHERE id = ? AND company_id = ?', [id, companyId], function(err) {
+  db.run('DELETE FROM tasks WHERE id = ?', [id], function(err) {
     if (err) {
       console.error('[Tasks] Failed to delete task:', err);
       return res.status(500).json({ error: 'Failed to delete task' });

@@ -1,9 +1,13 @@
 const { db } = require('../db.cjs');
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 const portalAuthService = require('./portalAuthService.cjs');
 const portalLifecycleService = require('./portalLifecycleService.cjs');
 const ReferralService = require('./referralService.cjs');
 const referralService = new ReferralService();
+
+const TICKET_ATTACHMENTS_DIR = path.join(__dirname, '..', 'storage', 'ticket-attachments');
 
 function getOne(query, params = []) {
   return new Promise((resolve, reject) => {
@@ -43,62 +47,45 @@ function parseJson(value, fallback = null) {
 
 const portalService = {
 
-  async getDashboard(portalUserId, customerId, companyId) {
+  async getDashboard(portalUserId, customerId) {
     const customer = await getOne(
-      'SELECT balance, walletBalance, outstandingBalance FROM customers WHERE id = ? AND company_id = ?',
-      [customerId, companyId]
+      'SELECT balance, walletBalance, outstandingBalance FROM customers WHERE id = ?',
+      [customerId]
     );
 
-const unpaidInvoiceCount = await getOne(
-       "SELECT COUNT(*) as count FROM invoices WHERE customer_id = ? AND company_id = ? AND LOWER(COALESCE(status, '')) = 'unpaid'",
-       [customerId, companyId]
-     );
+    const unpaidInvoiceCount = await getOne(
+      "SELECT COUNT(*) as count FROM invoices WHERE customer_id = ? AND LOWER(COALESCE(status, '')) = 'unpaid'",
+      [customerId]
+    );
 
     const ordersRow = await getOne(
-      'SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ? AND company_id = ?',
-      [customerId, companyId]
+      'SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ?',
+      [customerId]
     );
 
     const requestRow = await getOne(
-      "SELECT COUNT(*) as count FROM quotation_requests WHERE customer_id = ? AND company_id = ? AND status IN ('submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion')",
-      [customerId, companyId]
+      "SELECT COUNT(*) as count FROM quotation_requests WHERE customer_id = ? AND status IN ('submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion')",
+      [customerId]
     );
 
     // Dashboard widgets (complete request architecture)
     const openQuotationRow = await getOne(
-      "SELECT COUNT(*) as count FROM quotations WHERE customer_id = ? AND company_id = ? AND status IN ('ready', 'accepted', 'revision_requested')",
-      [customerId, companyId]
+      "SELECT COUNT(*) as count FROM quotations WHERE customer_id = ? AND status IN ('ready', 'accepted', 'revision_requested')",
+      [customerId]
     );
 
     const productionRow = await getOne(
-      "SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ? AND company_id = ? AND LOWER(COALESCE(status, '')) IN ('confirmed', 'processing', 'pending', 'shipped')",
-      [customerId, companyId]
+      "SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ? AND LOWER(COALESCE(status, '')) IN ('confirmed', 'processing', 'pending', 'shipped')",
+      [customerId]
     );
 
     const unreadRow = await getOne(
-      'SELECT COUNT(*) as count FROM portal_notifications WHERE portal_user_id = ? AND company_id = ? AND is_read = 0',
-      [portalUserId, companyId]
+      'SELECT COUNT(*) as count FROM portal_notifications WHERE portal_user_id = ? AND is_read = 0',
+      [portalUserId]
     );
 
-    const recentDocs = await this.getRecentDocuments(customerId, companyId, 5);
-
-    const recentSales = await getAll(
-      `SELECT date, total_amount as amount, customer_name as description, 'sale' as type
-       FROM sales WHERE customer_id = ? AND company_id = ? AND status != 'Voided'
-       ORDER BY date DESC LIMIT 5`,
-      [customerId, companyId]
-    );
-
-    const recentPayments = await getAll(
-      `SELECT date, amount, COALESCE(reference, 'Payment') as description, 'payment' as type
-       FROM customer_payments WHERE customer_id = ? AND company_id = ?
-       ORDER BY date DESC LIMIT 5`,
-      [customerId, companyId]
-    );
-
-    const combined = [...recentSales, ...recentPayments]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 5);
+    const recentDocs = await this.getRecentDocuments(customerId, 5);
+    const recentTransactions = await this.getRecentTransactions(customerId, 5);
 
     return {
       balance: (customer && customer.balance) || 0,
@@ -111,39 +98,70 @@ const unpaidInvoiceCount = await getOne(
       productionOrderCount: (productionRow && productionRow.count) || 0,
       unreadMessageCount: (unreadRow && unreadRow.count) || 0,
       recentDocuments: recentDocs,
-      recentTransactions: combined
+      recentTransactions,
     };
   },
 
+  async getCatalog(includeDeleted = false) {
+    let sql = 'SELECT id, name, sku, unit, selling_price as price, quantity, category, status FROM inventory WHERE 1=1';
+    const params = [];
+    if (!includeDeleted) {
+      sql += ' AND (status IS NULL OR LOWER(status) != ?)';
+      params.push('deleted');
+    }
+    sql += ' ORDER BY name ASC';
+    return getAll(sql, params);
+  },
+
+  async getRecentTransactions(customerId, limit = 5) {
+    const recentSales = await getAll(
+      `SELECT date, total_amount as amount, customer_name as description, 'sale' as type
+       FROM sales WHERE customer_id = ? AND status != 'Voided'
+       ORDER BY date DESC LIMIT ?`,
+      [customerId, limit]
+    );
+
+    const recentPayments = await getAll(
+      `SELECT date, amount, COALESCE(reference, 'Payment') as description, 'payment' as type
+       FROM customer_payments WHERE customer_id = ?
+       ORDER BY date DESC LIMIT ?`,
+      [customerId, limit]
+    );
+
+    return [...recentSales, ...recentPayments]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, limit);
+  },
+
   // Latest documents across the whole chain (requests, quotations, orders)
-  async getRecentDocuments(customerId, companyId, limit = 5) {
+  async getRecentDocuments(customerId, limit = 5) {
     const requests = await getAll(
       `SELECT 'request' as docType, id, request_number as docNumber, status, request_type, created_at
-       FROM quotation_requests WHERE customer_id = ? AND company_id = ?
+       FROM quotation_requests WHERE customer_id = ?
        ORDER BY created_at DESC LIMIT ?`,
-      [customerId, companyId, limit]
+      [customerId, limit]
     );
     const quotations = await getAll(
       `SELECT 'quotation' as docType, id, quotation_number as docNumber, status, created_at
-       FROM quotations WHERE customer_id = ? AND company_id = ?
+       FROM quotations WHERE customer_id = ?
        ORDER BY created_at DESC LIMIT ?`,
-      [customerId, companyId, limit]
+      [customerId, limit]
     );
     const orders = await getAll(
       `SELECT 'order' as docType, id, COALESCE(order_number, id) as docNumber, status, orderDate as created_at
-       FROM sales_orders WHERE customer_id = ? AND company_id = ?
+       FROM sales_orders WHERE customer_id = ?
        ORDER BY orderDate DESC LIMIT ?`,
-      [customerId, companyId, limit]
+      [customerId, limit]
     );
     return [...requests, ...quotations, ...orders]
       .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
       .slice(0, limit);
   },
 
-  async getRequestsPaginated(customerId, companyId, { page = 1, pageSize = 20, status, search } = {}) {
+  async getRequestsPaginated(customerId, { page = 1, pageSize = 20, status, search } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['q.customer_id = ?', 'q.company_id = ?'];
-    const params = [customerId, companyId];
+    const conditions = ['q.customer_id = ?', 'q.'];
+    const params = [customerId];
 
     if (status) {
       conditions.push('LOWER(q.status) = ?');
@@ -179,7 +197,7 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getOrders(customerId, companyId) {
+  async getOrders(customerId) {
     return getAll(
       `SELECT so.id, so.order_number, so.orderDate, c.name as customerName, so.total as totalAmount, so.status,
               so.source_request_id, so.source_request_number, so.reorder_of, so.reorder_of_number,
@@ -188,16 +206,16 @@ const unpaidInvoiceCount = await getOne(
               so.estimated_delivery, so.actual_arrival, so.current_location, so.proof_of_delivery, so.shipping_address
        FROM sales_orders so
        LEFT JOIN customers c ON so.customer_id = c.id
-       WHERE so.customer_id = ? AND so.company_id = ?
+       WHERE so.customer_id = ?
        ORDER BY so.orderDate DESC`,
-      [customerId, companyId]
+      [customerId]
     );
   },
 
-  async getOrdersPaginated(customerId, companyId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
+  async getOrdersPaginated(customerId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['so.customer_id = ?', 'so.company_id = ?'];
-    const params = [customerId, companyId];
+    const conditions = ['so.customer_id = ?', 'so.'];
+    const params = [customerId];
 
     if (status) {
       conditions.push('LOWER(so.status) = ?');
@@ -236,13 +254,13 @@ const unpaidInvoiceCount = await getOne(
     return { orders: rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1 };
   },
 
-  async getOrderById(orderId, customerId, companyId) {
+  async getOrderById(orderId, customerId) {
     const order = await getOne(
       `SELECT so.*, c.name as customerName
        FROM sales_orders so
        LEFT JOIN customers c ON so.customer_id = c.id
-       WHERE so.id = ? AND so.customer_id = ? AND so.company_id = ?`,
-      [orderId, customerId, companyId]
+       WHERE so.id = ? AND so.customer_id = ?`,
+      [orderId, customerId]
     );
     if (!order) return null;
     order.items = parseJson(order.items, []).map((item) => {
@@ -259,14 +277,14 @@ const unpaidInvoiceCount = await getOne(
     return order;
   },
 
-  async getQuotations(customerId, companyId) {
-    return portalLifecycleService.getQuotations({ customerId, companyId });
+  async getQuotations(customerId) {
+    return portalLifecycleService.getQuotations({ customerId});
   },
 
-  async getQuotationsPaginated(customerId, companyId, { page = 1, pageSize = 20, status, search } = {}) {
+  async getQuotationsPaginated(customerId, { page = 1, pageSize = 20, status, search } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['q.customer_id = ?', 'q.company_id = ?'];
-    const params = [customerId, companyId];
+    const conditions = ['q.customer_id = ?', 'q.'];
+    const params = [customerId];
 
     if (status) {
       conditions.push('LOWER(q.status) = ?');
@@ -300,22 +318,22 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getInvoices(customerId, companyId) {
+  async getInvoices(customerId) {
     return getAll(
       `SELECT id, invoice_number, customer_name, total_amount,
         COALESCE((SELECT SUM(pal.amount) FROM payment_allocation_lines pal JOIN payment_allocations pa ON pa.id = pal.allocation_id WHERE pal.invoice_id = invoices.id AND pa.reversed = 0), 0) as paid_amount,
         status, due_date, created_at
        FROM invoices
-       WHERE customer_id = ? AND company_id = ?
+       WHERE customer_id = ?
        ORDER BY created_at DESC`,
-      [customerId, companyId]
+      [customerId]
     );
   },
 
-  async getInvoicesPaginated(customerId, companyId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
+  async getInvoicesPaginated(customerId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['i.customer_id = ?', 'i.company_id = ?'];
-    const params = [customerId, companyId];
+    const conditions = ['i.customer_id = ?', 'i.'];
+    const params = [customerId];
 
     if (status) {
       conditions.push('LOWER(i.status) = ?');
@@ -351,10 +369,10 @@ const unpaidInvoiceCount = await getOne(
     return { invoices: rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1 };
   },
 
-  async getInvoiceById(invoiceId, customerId, companyId) {
+  async getInvoiceById(invoiceId, customerId) {
     const invoice = await getOne(
-      'SELECT * FROM invoices WHERE id = ? AND customer_id = ? AND company_id = ?',
-      [invoiceId, customerId, companyId]
+      'SELECT * FROM invoices WHERE id = ? AND customer_id = ?',
+      [invoiceId, customerId]
     );
     if (!invoice) return null;
     invoice.line_items = parseJson(invoice.line_items_json, []);
@@ -362,20 +380,20 @@ const unpaidInvoiceCount = await getOne(
     return invoice;
   },
 
-  async getPayments(customerId, companyId) {
+  async getPayments(customerId) {
     return getAll(
       `SELECT id, amount, method as payment_method, date, reference
        FROM customer_payments
-       WHERE customer_id = ? AND company_id = ?
+       WHERE customer_id = ?
        ORDER BY date DESC`,
-      [customerId, companyId]
+      [customerId]
     );
   },
 
-  async getPaymentsPaginated(customerId, companyId, { page = 1, pageSize = 20, search, dateFrom, dateTo } = {}) {
+  async getPaymentsPaginated(customerId, { page = 1, pageSize = 20, search, dateFrom, dateTo } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['cp.customer_id = ?', 'cp.company_id = ?'];
-    const params = [customerId, companyId];
+    const conditions = ['cp.customer_id = ?', 'cp.'];
+    const params = [customerId];
 
     if (search) {
       conditions.push('(cp.reference LIKE ? OR cp.method LIKE ?)');
@@ -405,10 +423,10 @@ const unpaidInvoiceCount = await getOne(
     return { payments: rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1 };
   },
 
-  async getPaymentById(paymentId, customerId, companyId) {
+  async getPaymentById(paymentId, customerId) {
     const payment = await getOne(
-      'SELECT * FROM customer_payments WHERE id = ? AND customer_id = ? AND company_id = ?',
-      [paymentId, customerId, companyId]
+      'SELECT * FROM customer_payments WHERE id = ? AND customer_id = ?',
+      [paymentId, customerId]
     );
     if (!payment) return null;
 
@@ -417,33 +435,33 @@ const unpaidInvoiceCount = await getOne(
        FROM payment_allocations pa
        JOIN payment_allocation_lines pal ON pal.allocation_id = pa.id
        LEFT JOIN invoices i ON pal.invoice_id = i.id
-       WHERE pa.payment_id = ? AND pa.company_id = ?`,
-      [paymentId, companyId]
+       WHERE pa.payment_id = ?`,
+      [paymentId]
     );
     payment.allocations = allocations || [];
     return payment;
   },
 
-  async getStatements(customerId, companyId, startDate, endDate) {
+  async getStatements(customerId, startDate, endDate) {
     let openingBalance = 0;
 
     if (startDate) {
       const openingRow = await getOne(
         `SELECT COALESCE(SUM(amount), 0) as balance FROM (
           SELECT total_amount as amount FROM invoices
-          WHERE customer_id = ? AND company_id = ? AND created_at < ?
+          WHERE customer_id = ? AND created_at < ?
           UNION ALL
           SELECT -amount as amount FROM customer_payments
-          WHERE customer_id = ? AND company_id = ? AND date < ?
+          WHERE customer_id = ? AND date < ?
         )`,
-        [customerId, companyId, startDate, customerId, companyId, startDate]
+        [customerId, startDate, customerId, startDate]
       );
       openingBalance = Number((openingRow && openingRow.balance) || 0);
     }
 
-    let invoiceWhere = 'customer_id = ? AND company_id = ?';
-    let paymentWhere = 'customer_id = ? AND company_id = ?';
-    const params = [customerId, companyId, customerId, companyId];
+    let invoiceWhere = 'customer_id = ?';
+    let paymentWhere = 'customer_id = ?';
+    const params = [customerId, customerId];
 
     if (startDate) {
       invoiceWhere += ' AND created_at >= ?';
@@ -488,25 +506,25 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getLoyalty(customerId, companyId) {
+  async getLoyalty(customerId) {
     const points = await getOne(
-      'SELECT * FROM engagement_point_balances WHERE customer_id = ? AND company_id = ?',
-      [customerId, companyId]
+      'SELECT * FROM engagement_point_balances WHERE customer_id = ?',
+      [customerId]
     );
 
     const cashback = await getAll(
-      "SELECT * FROM engagement_cashback WHERE customer_id = ? AND company_id = ? AND status = 'approved'",
-      [customerId, companyId]
+      "SELECT * FROM engagement_cashback WHERE customer_id = ? AND status = 'approved'",
+      [customerId]
     );
 
     const pointsHistory = await getAll(
-      'SELECT * FROM engagement_points WHERE customer_id = ? AND company_id = ? ORDER BY created_at DESC LIMIT 20',
-      [customerId, companyId]
+      'SELECT * FROM engagement_points WHERE customer_id = ? ORDER BY created_at DESC LIMIT 20',
+      [customerId]
     );
 
     const tier = await getOne(
-      'SELECT * FROM engagement_customer_tiers WHERE customer_id = ? AND company_id = ?',
-      [customerId, companyId]
+      'SELECT * FROM engagement_customer_tiers WHERE customer_id = ?',
+      [customerId]
     );
 
     const totalCashback = (cashback || []).reduce((sum, c) => sum + Number(c.amount || 0), 0);
@@ -519,34 +537,34 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getWallet(customerId, companyId) {
+  async getWallet(customerId) {
     const customer = await getOne(
-      'SELECT walletBalance FROM customers WHERE id = ? AND company_id = ?',
-      [customerId, companyId]
+      'SELECT walletBalance FROM customers WHERE id = ?',
+      [customerId]
     );
 
     const rewards = await getAll(
       `SELECT approved_at as date, amount, 'Referral reward' as reference
        FROM referral_rewards
-       WHERE customer_id = ? AND company_id = ? AND status = 'approved'
+       WHERE customer_id = ? AND status = 'approved'
        ORDER BY approved_at DESC`,
-      [customerId, companyId]
+      [customerId]
     );
 
     const cashback = await getAll(
       `SELECT approved_at as date, amount, 'Cashback' as reference
        FROM engagement_cashback
-       WHERE customer_id = ? AND company_id = ? AND status = 'approved'
+       WHERE customer_id = ? AND status = 'approved'
        ORDER BY approved_at DESC`,
-      [customerId, companyId]
+      [customerId]
     );
 
     const walletPayments = await getAll(
       `SELECT date, amount, COALESCE(reference, 'Wallet payment') as reference
        FROM customer_payments
-       WHERE customer_id = ? AND company_id = ? AND LOWER(method) = 'wallet' AND status != 'Voided'
+       WHERE customer_id = ? AND LOWER(method) = 'wallet' AND status != 'Voided'
        ORDER BY date DESC`,
-      [customerId, companyId]
+      [customerId]
     );
 
     const transactions = [
@@ -561,11 +579,11 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getProfile(customerId, companyId) {
+  async getProfile(customerId) {
     const local = await getOne(
       `SELECT id, name, email, phone, address, city, balance, walletBalance, creditLimit, outstandingBalance, status
-       FROM customers WHERE id = ? AND company_id = ?`,
-      [customerId, companyId]
+       FROM customers WHERE id = ?`,
+      [customerId]
     );
     if (local) {
       return {
@@ -605,14 +623,14 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getDocuments(customerId, companyId) {
+  async getDocuments(customerId) {
     const invoices = await getAll(
       `SELECT id, invoice_number, created_at as date, status,
               COALESCE(total_amount, 0) as amount
        FROM invoices
-       WHERE customer_id = ? AND company_id = ?
+       WHERE customer_id = ?
        ORDER BY created_at DESC`,
-      [customerId, companyId]
+      [customerId]
     );
 
     return (invoices || []).map((inv) => ({
@@ -625,17 +643,17 @@ const unpaidInvoiceCount = await getOne(
     }));
   },
 
-  async getNotifications(portalUserId, companyId) {
+  async getNotifications(portalUserId) {
     return getAll(
-      'SELECT * FROM portal_notifications WHERE portal_user_id = ? AND company_id = ? ORDER BY created_at DESC',
-      [portalUserId, companyId]
+      'SELECT * FROM portal_notifications WHERE portal_user_id = ? ORDER BY created_at DESC',
+      [portalUserId]
     );
   },
 
-  async getUnreadNotificationCount(portalUserId, companyId) {
+  async getUnreadNotificationCount(portalUserId) {
     const row = await getOne(
-      'SELECT COUNT(*) as count FROM portal_notifications WHERE portal_user_id = ? AND company_id = ? AND is_read = 0',
-      [portalUserId, companyId]
+      'SELECT COUNT(*) as count FROM portal_notifications WHERE portal_user_id = ? AND is_read = 0',
+      [portalUserId]
     );
     return (row && row.count) || 0;
   },
@@ -647,18 +665,18 @@ const unpaidInvoiceCount = await getOne(
     );
   },
 
-  async markAllNotificationsRead(portalUserId, companyId) {
+  async markAllNotificationsRead(portalUserId) {
     await runQuery(
-      'UPDATE portal_notifications SET is_read = 1 WHERE portal_user_id = ? AND company_id = ? AND is_read = 0',
-      [portalUserId, companyId]
+      'UPDATE portal_notifications SET is_read = 1 WHERE portal_user_id = ? AND is_read = 0',
+      [portalUserId]
     );
   },
 
   // ─── Referrals ──────────────────────────────────────────────────
-  async getReferrals(portalUserId, customerId, companyId, { page = 1, pageSize = 20, status, search, sort = 'date_desc' } = {}) {
+  async getReferrals(portalUserId, customerId, { page = 1, pageSize = 20, status, search, sort = 'date_desc' } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['r.referred_by_id = ?', 'r.company_id = ?', 'r.deleted_at IS NULL'];
-    const params = [customerId, companyId];
+    const conditions = ['r.referred_by_id = ?', 'r.', 'r.deleted_at IS NULL'];
+    const params = [customerId];
 
     if (status) {
       conditions.push('r.status = ?');
@@ -717,13 +735,13 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getReferralById(id, portalUserId, customerId, companyId) {
+  async getReferralById(id, portalUserId, customerId) {
     const referral = await getOne(
       `SELECT r.*, c.name as referred_customer_name, c.email as referred_customer_email
        FROM customer_referrals r
        LEFT JOIN customers c ON c.id = r.customer_id
-       WHERE r.id = ? AND r.company_id = ? AND r.deleted_at IS NULL`,
-      [id, companyId]
+       WHERE r.id = ?r.deleted_at IS NULL`,
+      [id]
     );
     if (!referral || referral.referred_by_id !== customerId) return null;
     return {
@@ -742,17 +760,17 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getReferralTimeline(referralId, companyId) {
+  async getReferralTimeline(referralId) {
     return getAll(
-      'SELECT * FROM referral_timeline WHERE referral_id = ? AND company_id = ? ORDER BY timestamp ASC',
-      [referralId, companyId]
+      'SELECT * FROM referral_timeline WHERE referral_id = ? ORDER BY timestamp ASC',
+      [referralId]
     );
   },
 
-  async getReferralRewards(portalUserId, customerId, companyId, { page = 1, pageSize = 20, status } = {}) {
+  async getReferralRewards(portalUserId, customerId, { page = 1, pageSize = 20, status } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['rr.customer_id = ?', 'rr.company_id = ?'];
-    const params = [customerId, companyId];
+    const conditions = ['rr.customer_id = ?', 'rr.'];
+    const params = [customerId];
 
     if (status) {
       conditions.push('rr.status = ?');
@@ -801,8 +819,8 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getReferralSettings(companyId) {
-    const settings = await referralService.getSettings(companyId);
+  async getReferralSettings() {
+    const settings = await referralService.getSettings();
     return {
       enabled: settings.enabled ?? true,
       rewardType: settings.rewardType || 'percentage',
@@ -816,7 +834,7 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async createReferral(portalUserId, customerId, companyId, { referredCustomerId, notes }) {
+  async createReferral(portalUserId, customerId, { referredCustomerId, notes }) {
     if (!referredCustomerId) {
       throw new Error('Referred customer is required');
     }
@@ -825,16 +843,16 @@ const unpaidInvoiceCount = await getOne(
     }
 
     const customer = await getOne(
-      'SELECT id, name, email FROM customers WHERE id = ? AND company_id = ?',
-      [referredCustomerId, companyId]
+      'SELECT id, name, email FROM customers WHERE id = ?',
+      [referredCustomerId]
     );
     if (!customer) {
       throw new Error('Customer not found');
     }
 
     const existing = await getOne(
-      'SELECT id FROM customer_referrals WHERE customer_id = ? AND referred_by_id = ? AND company_id = ? AND deleted_at IS NULL AND status IN (\'active\', \'converted\')',
-      [referredCustomerId, customerId, companyId]
+      'SELECT id FROM customer_referrals WHERE customer_id = ? AND referred_by_id = ? AND deleted_at IS NULL AND status IN (\'active\', \'converted\')',
+      [referredCustomerId, customerId]
     );
     if (existing) {
       throw new Error('This customer has already been referred by you');
@@ -846,70 +864,67 @@ const unpaidInvoiceCount = await getOne(
         referred_by_id: customerId,
         referred_by_name: customer.name,
         notes: notes || null,
-      },
-      companyId
-    );
+      });
   },
 
-  async searchCustomersForReferral(companyId, query, excludeCustomerId) {
+  async searchCustomersForReferral( query, excludeCustomerId) {
     if (!query || query.trim().length < 2) return [];
     const like = `%${query.trim()}%`;
     return getAll(
-      `SELECT id, name, email, phone FROM customers
-       WHERE company_id = ? AND id != ? AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)
+      `SELECT id, name, email, phone FROM customers WHERE id != ? AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)
        ORDER BY name ASC LIMIT 20`,
-      [companyId, excludeCustomerId, like, like, like]
+      [excludeCustomerId, like, like, like]
     );
   },
 
-  async getReferralFunnelStats(customerId, companyId) {
+  async getReferralFunnelStats(customerId) {
     const totalRow = await getOne(
-      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND company_id = ? AND deleted_at IS NULL`,
-      [customerId, companyId]
+      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND deleted_at IS NULL`,
+      [customerId]
     );
     const total = totalRow?.count || 0;
 
     const activeRow = await getOne(
-      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND company_id = ? AND status = 'active' AND deleted_at IS NULL`,
-      [customerId, companyId]
+      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND status = 'active' AND deleted_at IS NULL`,
+      [customerId]
     );
     const signedUp = activeRow?.count || 0;
 
     const qualifiedRow = await getOne(
-      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND company_id = ? AND status = 'active' AND pending_invoice_id IS NOT NULL AND deleted_at IS NULL`,
-      [customerId, companyId]
+      `SELECT COUNT(*) as count FROM customer_referrals WHERE referred_by_id = ? AND status = 'active' AND pending_invoice_id IS NOT NULL AND deleted_at IS NULL`,
+      [customerId]
     );
     const qualified = qualifiedRow?.count || 0;
 
     const approvedRow = await getOne(
       `SELECT COUNT(*) as count FROM referral_rewards rr
        JOIN customer_referrals r ON r.id = rr.referral_id
-       WHERE r.referred_by_id = ? AND rr.company_id = ? AND rr.status IN ('approved', 'paid')`,
-      [customerId, companyId]
+       WHERE r.referred_by_id = ? AND rr.status IN ('approved', 'paid')`,
+      [customerId]
     );
     const rewardApproved = approvedRow?.count || 0;
 
     const paidRow = await getOne(
       `SELECT COUNT(*) as count FROM referral_rewards rr
        JOIN customer_referrals r ON r.id = rr.referral_id
-       WHERE r.referred_by_id = ? AND rr.company_id = ? AND rr.status = 'paid'`,
-      [customerId, companyId]
+       WHERE r.referred_by_id = ? AND rr.status = 'paid'`,
+      [customerId]
     );
     const paid = paidRow?.count || 0;
 
     const pendingAmountRow = await getOne(
       `SELECT COALESCE(SUM(rr.amount), 0) as amount FROM referral_rewards rr
        JOIN customer_referrals r ON r.id = rr.referral_id
-       WHERE r.referred_by_id = ? AND rr.company_id = ? AND rr.status = 'pending'`,
-      [customerId, companyId]
+       WHERE r.referred_by_id = ? AND rr.status = 'pending'`,
+      [customerId]
     );
     const pendingRewardAmount = pendingAmountRow?.amount || 0;
 
     const totalEarnedRow = await getOne(
       `SELECT COALESCE(SUM(rr.amount), 0) as amount FROM referral_rewards rr
        JOIN customer_referrals r ON r.id = rr.referral_id
-       WHERE r.referred_by_id = ? AND rr.company_id = ? AND rr.status IN ('approved', 'paid')`,
-      [customerId, companyId]
+       WHERE r.referred_by_id = ? AND rr.status IN ('approved', 'paid')`,
+      [customerId]
     );
     const totalEarned = totalEarnedRow?.amount || 0;
 
@@ -925,23 +940,23 @@ const unpaidInvoiceCount = await getOne(
     };
   },
 
-  async getSupportTickets(portalUserId, customerId, companyId) {
+  async getSupportTickets(portalUserId, customerId) {
     return getAll(
       `SELECT pt.*,
         (SELECT message FROM portal_ticket_messages WHERE ticket_id = pt.id ORDER BY created_at DESC LIMIT 1) as latest_message
        FROM portal_tickets pt
-       WHERE pt.portal_user_id = ? AND pt.customer_id = ? AND pt.company_id = ?
+       WHERE pt.portal_user_id = ? AND pt.customer_id = ?
        ORDER BY pt.created_at DESC`,
-      [portalUserId, customerId, companyId]
+      [portalUserId, customerId]
     );
   },
 
-  async createSupportTicket(portalUserId, customerId, companyId, { subject, message, priority }) {
+  async createSupportTicket(portalUserId, customerId, { subject, message, priority }) {
     const id = genId('ptkt');
     await runQuery(
-      `INSERT INTO portal_tickets (id, portal_user_id, customer_id, subject, message, priority, company_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, portalUserId, customerId, subject, message, priority || 'normal', companyId]
+      `INSERT INTO portal_tickets (id, portal_user_id, customer_id, subject, message, priority)
+       VALUES (?, ?, ?, ?, ?, ? )`,
+      [id, portalUserId, customerId, subject, message, priority || 'normal']
     );
 
     const msgId = genId('pmsg');
@@ -970,7 +985,89 @@ const unpaidInvoiceCount = await getOne(
     return { id, ticket_id: ticketId, message };
   },
 
-  async getShipments(customerId, companyId, { status, search } = {}) {
+  async updateTicketStatus(ticketId, portalUserId, status) {
+    const result = await runQuery(
+      `UPDATE portal_tickets SET status = ?, updated_at = datetime('now')
+       WHERE id = ? AND portal_user_id = ?`,
+      [status, ticketId, portalUserId]
+    );
+    if (result.changes === 0) {
+      throw new Error('Ticket not found or access denied');
+    }
+    return { success: true, ticketId, status };
+  },
+
+  async uploadTicketAttachment(ticketId, portalUserId, file, messageId) {
+    // Verify ticket belongs to this user
+    const ticket = await getOne(
+      'SELECT id, customer_id FROM portal_tickets WHERE id = ? AND portal_user_id = ?',
+      [ticketId, portalUserId]
+    );
+    if (!ticket) {
+      throw new Error('Ticket not found or access denied');
+    }
+
+    const id = genId('tatt');
+    const storagePath = file.filename;
+    await runQuery(
+      `INSERT INTO ticket_attachments (id, ticket_id, message_id, filename, original_name, mime_type, size_bytes, storage_path, uploaded_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, ticketId, messageId || null, storagePath, file.originalname, file.mimetype, file.size, storagePath, portalUserId]
+    );
+
+    return {
+      id,
+      ticket_id: ticketId,
+      message_id: messageId || null,
+      filename: storagePath,
+      original_name: file.originalname,
+      mime_type: file.mimetype,
+      size_bytes: file.size,
+      uploaded_by: portalUserId,
+      created_at: new Date().toISOString(),
+    };
+  },
+
+  async getTicketAttachment(attachmentId, customerId) {
+    const attachment = await getOne(
+      `SELECT ta.* FROM ticket_attachments ta
+       JOIN portal_tickets pt ON pt.id = ta.ticket_id
+       WHERE ta.id = ? AND pt.customer_id = ?`,
+      [attachmentId, customerId]
+    );
+    return attachment || null;
+  },
+
+  async deleteTicketAttachment(attachmentId, portalUserId, customerId) {
+    // Verify the attachment belongs to a ticket this customer owns
+    const attachment = await getOne(
+      `SELECT ta.id, ta.ticket_id, ta.filename, ta.uploaded_by
+       FROM ticket_attachments ta
+       JOIN portal_tickets pt ON pt.id = ta.ticket_id
+       WHERE ta.id = ? AND pt.customer_id = ?`,
+      [attachmentId, customerId]
+    );
+    if (!attachment) {
+      throw new Error('Attachment not found or access denied');
+    }
+
+    // Delete the file from disk
+    const filePath = path.join(TICKET_ATTACHMENTS_DIR, attachment.filename);
+    try {
+      await fs.promises.unlink(filePath);
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        console.error('[Portal] Error deleting attachment file:', err.message);
+      }
+    }
+
+    // Delete the database record
+    await runQuery('DELETE FROM ticket_attachments WHERE id = ?', [attachmentId]);
+
+    return { success: true, attachmentId };
+  },
+
+  async getShipments(customerId, { status, search } = {}) {
     let sql = `SELECT so.id, so.order_number, so.orderDate, so.customer_id, so.status as order_status,
                     so.tracking_number, so.carrier, so.driver_name, so.vehicle_no,
                     so.estimated_delivery, so.actual_arrival, so.current_location,
@@ -978,9 +1075,8 @@ const unpaidInvoiceCount = await getOne(
                     c.name as customerName
              FROM sales_orders so
              LEFT JOIN customers c ON so.customer_id = c.id
-             WHERE so.customer_id = ? AND so.company_id = ?
-               AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''`;
-    const params: any[] = [customerId, companyId];
+             WHERE so.customer_id = ? AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''`;
+    const params = [customerId];
     if (status) {
       sql += ` AND LOWER(so.status) = ?`;
       params.push(String(status).toLowerCase());
@@ -993,14 +1089,13 @@ const unpaidInvoiceCount = await getOne(
     return getAll(sql, params);
   },
 
-  async getShipmentById(shipmentId, customerId, companyId) {
+  async getShipmentById(shipmentId, customerId) {
     return getOne(
       `SELECT so.*, c.name as customerName
        FROM sales_orders so
        LEFT JOIN customers c ON so.customer_id = c.id
-       WHERE so.id = ? AND so.customer_id = ? AND so.company_id = ?
-         AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''`,
-      [shipmentId, customerId, companyId]
+       WHERE so.id = ? AND so.customer_id = ? AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''`,
+      [shipmentId, customerId]
     );
   },
 

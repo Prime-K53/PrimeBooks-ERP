@@ -3,16 +3,16 @@ const { getDatabase } = require('../db.cjs');
 const crypto = require('crypto');
 const getDb = () => getDatabase();
 
-const requestVerification = async ({ email, companyId = null, purpose = 'email_verification' }) => {
+const requestVerification = async ({ email, purpose = 'email_verification' }) => {
   const id = crypto.randomUUID();
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
   await new Promise((resolve, reject) => {
     getDb().run(
-      `INSERT INTO email_verifications (id, email, code, purpose, expires_at${companyId ? ', company_id' : ''})
-       VALUES (?, ?, ?, ?, ?${companyId ? ', ?' : ''})`,
-      companyId ? [id, email, code, purpose, expiresAt, companyId] : [id, email, code, purpose, expiresAt],
+      `INSERT INTO email_verifications (id, email, code, purpose, expires_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [id, email, code, purpose, expiresAt],
       function(err) {
         if (err) reject(err);
         else resolve(id);
@@ -34,16 +34,13 @@ const requestVerification = async ({ email, companyId = null, purpose = 'email_v
   return { success: true, code, expiresAt };
 };
 
-const verifyCode = async ({ email, code, companyId = null }) => {
+const verifyCode = async ({ email, code }) => {
   return new Promise((resolve, reject) => {
-    const companyFilter = companyId ? 'AND company_id = ?' : '';
     const params = [email, code];
-    if (companyId) params.push(companyId);
     getDb().get(
       `SELECT * FROM email_verifications
        WHERE email = ? AND code = ? AND purpose = 'email_verification'
          AND verified = 0 AND expires_at > datetime('now')
-         ${companyFilter}
        ORDER BY created_at DESC LIMIT 1`,
       params,
       (err, row) => {
@@ -63,15 +60,12 @@ const verifyCode = async ({ email, code, companyId = null }) => {
   });
 };
 
-const findLatestPending = async (email, companyId = null) => {
+const findLatestPending = async (email) => {
   return new Promise((resolve, reject) => {
-    const companyFilter = companyId ? 'AND company_id = ?' : '';
     const params = [email];
-    if (companyId) params.push(companyId);
     getDb().get(
       `SELECT * FROM email_verifications
        WHERE email = ? AND verified = 0 AND expires_at > datetime('now')
-         ${companyFilter}
        ORDER BY created_at DESC LIMIT 1`,
       params,
       (err, row) => {

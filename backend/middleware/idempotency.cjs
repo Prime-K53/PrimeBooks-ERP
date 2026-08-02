@@ -59,10 +59,9 @@ const idempotencyMiddleware = (options = {}) => {
 
           // Store the idempotency key before processing
           db.run(
-            `INSERT INTO idempotency_keys (id, key, method, path, user_id, company_id, expires_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [id, key, req.method, req.originalUrl || req.url,
-             req.user?.id || null, req.companyId || '', expiresAt],
+            `INSERT INTO idempotency_keys (id, key, method, path, user_id, expires_at)
+             VALUES (?, ?, ?, ?, ? , ?)`,
+            [id, key, req.method, req.originalUrl || req.url, req.user?.id || null, expiresAt],
             (insertErr) => {
               if (insertErr) {
                 // Key already exists (race condition) - re-check

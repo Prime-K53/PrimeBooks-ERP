@@ -705,32 +705,23 @@ const Settings: React.FC = () => {
         }));
     };
 
-    const handleDeleteCompany = async () => {
+    const handleFactoryReset = async () => {
         setConfirmState({
             open: true,
-            title: 'Delete Company',
-            message: `Delete "${config.companyName}" permanently?\n\nThis will remove your company from the cloud and reset all local data. This action cannot be undone.`,
+            title: 'Factory Reset',
+            message: `Reset all local data permanently?\n\nThis will erase all records and reset the application to its initial state. This action cannot be undone.`,
             type: 'danger',
-            confirmText: 'Delete',
+            confirmText: 'Reset',
             onConfirm: () => {
                 setDoubleConfirmState({
                     open: true,
                     title: 'Final Confirmation',
-                    message: 'ARE YOU SURE?\n\nAll company data will be deleted. Local data will be cleared. You will be signed out.',
+                    message: 'ARE YOU SURE?\n\nAll data will be permanently deleted. You will be signed out.',
                     type: 'danger',
-                    confirmText: 'Yes, Delete Everything',
+                    confirmText: 'Yes, Reset Everything',
                     onConfirm: async () => {
                         (async () => {
                             try {
-                                if (isSupabaseConfigured()) {
-                                    const companyId = config.companyId || (config as CompanyConfig & { id?: string }).id;
-                                    if (companyId) {
-                                        await cloudDb.deleteCompany(companyId);
-                                    }
-                                    sessionStorage.removeItem('nexus_user');
-                                } else {
-                                    await api.system.deleteWorkspace();
-                                }
                                 await dbService.factoryReset();
                                 localStorage.clear();
                                 sessionStorage.clear();
@@ -1115,10 +1106,10 @@ const Settings: React.FC = () => {
                                         <div style={{ fontSize: 11, color: inkSoft, fontWeight: 500 }}>Irreversible actions that affect your entire company.</div>
                                     </div>
                                     <button
-                                        onClick={handleDeleteCompany}
+                                        onClick={handleFactoryReset}
                                         style={{ ...btnPrimaryStyle, background: danger, boxShadow: `0 4px 14px 0 rgba(181,73,63,.1)` }}
                                     >
-                                        <Trash2 size={16} /> Delete Company
+                                        <Trash2 size={16} /> Factory Reset
                                     </button>
                                 </div>
 

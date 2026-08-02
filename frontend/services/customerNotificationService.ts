@@ -215,7 +215,6 @@ export const customerNotificationService = {
           operation: 'insert',
           payload: { type, data, message, phoneNumber: sanitizePhoneNumber(data.phoneNumber || '') },
           userId: null,
-          companyId: null,
         });
         await saveLog({ type, entityId: data.id, customerName: data.customerName, phoneNumber: data.phoneNumber || '', message, status: 'pending', deliveryMode: 'queued' });
         logger.info(`[Notification] Queued for offline delivery: ${type}`);

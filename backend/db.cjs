@@ -112,7 +112,6 @@ const initDb = () => {
         warehouse_id TEXT,
         reserved INTEGER NOT NULL DEFAULT 0,
         is_protected INTEGER DEFAULT 0,
-        company_id TEXT NOT NULL DEFAULT '',
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -124,13 +123,13 @@ const initDb = () => {
           db.all("PRAGMA table_info(inventory)", (err, rows) => {
             if (!err && rows) {
               const existingColumns = new Set(rows.map(r => r.name));
-              const columnsToAdd = [
-                { name: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },
-                { name: 'sku', type: 'TEXT' },
+              const columnsToAdd = [ { name: 'sku', type: 'TEXT' },
                 { name: 'selling_price', type: 'REAL DEFAULT 0' },
                 { name: 'created_by', type: 'TEXT' },
-                { name: 'created_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
-                { name: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+                { name: 'reserved', type: 'INTEGER NOT NULL DEFAULT 0' },
+                { name: 'is_protected', type: 'INTEGER DEFAULT 0' },
+                { name: 'created_at', type: 'DATETIME' },
+                { name: 'updated_at', type: 'DATETIME' },
                 { name: 'status', type: "TEXT NOT NULL DEFAULT 'Active'" },
                 { name: 'deleted_at', type: 'DATETIME' },
                 { name: 'void_reason', type: 'TEXT' },
@@ -143,7 +142,7 @@ const initDb = () => {
                   });
                 }
               });
-              db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_company_sku ON inventory (company_id, sku) WHERE sku IS NOT NULL AND sku != ''`);
+              db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_sku ON inventory (sku) WHERE sku IS NOT NULL AND sku != ''`);
             }
           });
         }
@@ -233,7 +232,7 @@ const initDb = () => {
                 { name: 'line_items_json', type: 'TEXT' },
                 { name: 'notes', type: 'TEXT' },
                 { name: 'document_title', type: 'TEXT' },
-                { name: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' }
+                { name: 'updated_at', type: 'DATETIME' }
               ];
 
               columnsToAdd.forEach(col => {
@@ -310,7 +309,7 @@ const initDb = () => {
                 { name: 'rounding_total', type: 'REAL DEFAULT 0' },
                 { name: 'other_charges', type: 'REAL DEFAULT 0' },
                 { name: 'adjustment_snapshots_json', type: 'TEXT' },
-                { name: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+                { name: 'updated_at', type: 'DATETIME' },
                 { name: 'created_by', type: 'TEXT' },
                 { name: 'updated_by', type: 'TEXT' },
                 { name: 'void_reason', type: 'TEXT' },
@@ -356,7 +355,6 @@ const initDb = () => {
         user_id TEXT NOT NULL,
         user_role TEXT NOT NULL,
         session_id TEXT,
-        company_id TEXT,
         action TEXT NOT NULL,
         entity_type TEXT NOT NULL,
         entity_id TEXT NOT NULL,
@@ -392,16 +390,13 @@ const initDb = () => {
         performed_by TEXT NOT NULL DEFAULT 'system',
         ip_address TEXT,
         user_agent TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
       )`, (err) => {
         if (!err) {
           db.all("PRAGMA table_info(inventory_transactions)", (err, rows) => {
             if (!err && rows) {
               const existingColumns = new Set(rows.map(r => r.name));
-              const columnsToAdd = [
-                { name: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-                { name: 'ip_address', type: 'TEXT' },
+              const columnsToAdd = [ { name: 'ip_address', type: 'TEXT' },
                 { name: 'user_agent', type: 'TEXT' },
               ];
               columnsToAdd.forEach(col => {
@@ -431,16 +426,13 @@ const initDb = () => {
         supplier_name TEXT,
         warehouse_id TEXT,
         status TEXT DEFAULT 'active' CHECK(status IN ('active', 'depleted', 'expired')),
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`, (err) => {
         if (!err) {
           db.all("PRAGMA table_info(material_batches)", (err, rows) => {
             if (!err && rows) {
               const existingColumns = new Set(rows.map(r => r.name));
-              const columnsToAdd = [
-                { name: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-              ];
+              const columnsToAdd = [ ];
               columnsToAdd.forEach(col => {
                 if (!existingColumns.has(col.name)) {
                   db.run(`ALTER TABLE material_batches ADD COLUMN ${col.name} ${col.type}`, (err) => {
@@ -462,7 +454,6 @@ const initDb = () => {
         quantity INTEGER NOT NULL DEFAULT 0,
         reserved INTEGER NOT NULL DEFAULT 0,
         available INTEGER NOT NULL DEFAULT 0,
-        company_id TEXT NOT NULL DEFAULT '',
         last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(item_id, warehouse_id)
       )`, (err) => {
@@ -470,9 +461,7 @@ const initDb = () => {
           db.all("PRAGMA table_info(warehouse_inventory)", (err, rows) => {
             if (!err && rows) {
               const existingColumns = new Set(rows.map(r => r.name));
-              const columnsToAdd = [
-                { name: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-              ];
+              const columnsToAdd = [ ];
               columnsToAdd.forEach(col => {
                 if (!existingColumns.has(col.name)) {
                   db.run(`ALTER TABLE warehouse_inventory ADD COLUMN ${col.name} ${col.type}`, (err) => {
@@ -493,12 +482,9 @@ const initDb = () => {
         snapshot_type TEXT DEFAULT 'manual',
         notes TEXT,
         created_by TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`, (err) => {
-        if (!err) {
-          db.run(`CREATE INDEX IF NOT EXISTS idx_warehouse_snapshots_company ON warehouse_snapshots(company_id)`, () => {});
-        }
+        if (!err) { }
       });
 
       // Material Categories Table
@@ -621,7 +607,6 @@ const initDb = () => {
 
       db.run(`CREATE TABLE IF NOT EXISTS examination_batch_notifications (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         batch_id TEXT,
         user_id TEXT NOT NULL,
         notification_type TEXT NOT NULL,
@@ -637,7 +622,6 @@ const initDb = () => {
       )`);
       db.run(`CREATE TABLE IF NOT EXISTS notification_audit_logs (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         notification_id TEXT,
         user_id TEXT NOT NULL,
         action TEXT NOT NULL,
@@ -655,7 +639,6 @@ const initDb = () => {
       // Note: school_id references either schools(id) or customers(id) — app-level enforced
       db.run(`CREATE TABLE IF NOT EXISTS examination_batches (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         batch_number TEXT UNIQUE,
         school_id TEXT NOT NULL,
         name TEXT NOT NULL, -- e.g. "Term 1 2026"
@@ -694,7 +677,6 @@ const initDb = () => {
       // 2. Examination Classes (Groups learners and pricing per class)
       db.run(`CREATE TABLE IF NOT EXISTS examination_classes (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         batch_id TEXT NOT NULL,
         class_name TEXT NOT NULL,
         number_of_learners INTEGER NOT NULL,
@@ -722,7 +704,6 @@ const initDb = () => {
       // 3. Examination Subjects (The actual patch/paper details)
       db.run(`CREATE TABLE IF NOT EXISTS examination_subjects (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         class_id TEXT NOT NULL,
         subject_name TEXT NOT NULL,
         pages INTEGER NOT NULL,
@@ -739,7 +720,6 @@ const initDb = () => {
       // 3b. Examination Global Hidden BOM Defaults
       db.run(`CREATE TABLE IF NOT EXISTS bom_default_materials (
         material_type TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         preferred_item_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -749,7 +729,6 @@ const initDb = () => {
       // 4. Examination BOM Calculations (Stores cost breakdown)
       db.run(`CREATE TABLE IF NOT EXISTS examination_bom_calculations (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         batch_id TEXT NOT NULL,
         class_id TEXT, -- Optional, if specific to a class
         item_id TEXT NOT NULL, -- Inventory Item ID (Paper, Toner), app-level FK to inventory(id)
@@ -771,7 +750,6 @@ const initDb = () => {
       // Stores original and redistributed adjustment amounts per class.
       db.run(`CREATE TABLE IF NOT EXISTS examination_class_adjustments (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         batch_id TEXT NOT NULL,
         class_id TEXT NOT NULL,
         adjustment_id TEXT NOT NULL,
@@ -794,7 +772,6 @@ const initDb = () => {
       // Full history of automatic/manual pricing changes.
       db.run(`CREATE TABLE IF NOT EXISTS examination_pricing_audit (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         batch_id TEXT NOT NULL,
         class_id TEXT,
         user_id TEXT,
@@ -886,7 +863,6 @@ const initDb = () => {
         email TEXT NOT NULL,
         code TEXT NOT NULL,
         purpose TEXT NOT NULL,
-        company_id TEXT,
         verified INTEGER DEFAULT 0,
         attempts INTEGER DEFAULT 0,
         expires_at TEXT NOT NULL,
@@ -1062,101 +1038,7 @@ const initDb = () => {
         { table: 'examination_bom_calculations', column: 'allocation_ratio', type: 'REAL DEFAULT 0' },
         { table: 'documents', column: 'logical_number', type: 'TEXT' },
         { table: 'profit_margin_settings', column: 'apply_volume_margins', type: 'INTEGER DEFAULT 0' },
-        // Multi-tenant isolation: add company_id column to all business tables
-        { table: 'sales', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'invoices', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'examinations', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'schools', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'customers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'inventory', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'inventory_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'material_batches', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'warehouse_inventory', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'warehouse_snapshots', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'material_categories', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'sales_orders', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'sales_exchanges', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'sales_exchange_items', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'sales_exchange_approvals', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'reprint_jobs', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'market_adjustments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'market_adjustment_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'transaction_adjustment_snapshots', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'audit_logs', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'documents', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'tasks', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'classes', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'subjects', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'examination_classes', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'examination_batches', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'examination_subjects', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'examination_bom_calculations', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'examination_class_adjustments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'examination_pricing_audit', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'examination_batch_notifications', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'notification_audit_logs', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'bom_default_materials', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'profit_margin_settings', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'profit_margin_audit_logs', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'work_centers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'production_resources', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'work_orders', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'production_batches', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'sale_items', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'email_verifications', column: 'company_id', type: 'TEXT' },
-        { table: 'assets', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'bank_accounts', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'bank_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'budgets', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'chart_of_accounts', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'chart_of_accounts', column: 'balance', type: 'REAL DEFAULT 0' },
-
-        { table: 'customer_payments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'customer_referrals', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'departments', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'employees', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'expenses', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'financial_years', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'goods_receipts', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'idempotency_keys', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'income', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'ledger_entries', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'notifications', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'payment_allocations', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'payment_allocation_lines', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'payroll_runs', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'payslips', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'purchase_order_items', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'purchase_orders', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'referral_analytics', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'referral_audit_logs', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'referral_campaigns', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'referral_reversals', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'referral_rewards', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'referral_settings', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'referral_timeline', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'settings', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'suppliers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'transfers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'user_companies', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'user_preferences', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'vat_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_membership_tiers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_customer_tiers', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_gift_cards', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_gift_card_transactions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_promotions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_cashback', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_points', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_point_balances', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_affiliates', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_affiliate_commissions', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_customer_rewards', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_timeline', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_audit', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'engagement_analytics', column: 'company_id', type: 'TEXT NOT NULL DEFAULT \'\'' },
-        { table: 'quotations', column: 'source_request_number', type: 'TEXT' },
-        { table: 'quotations', column: 'erp_quotation_id', type: 'TEXT' },
+                { table: 'quotations', column: 'erp_quotation_id', type: 'TEXT' },
         { table: 'quotation_requests', column: 'requested_delivery_date', type: 'TEXT' },
         { table: 'quotation_requests', column: 'attachments', type: 'TEXT' },
         { table: 'quotation_requests', column: 'assigned_to', type: 'TEXT' },
@@ -1169,7 +1051,11 @@ const initDb = () => {
         { table: 'quotation_requests', column: 'sales_order_id', type: 'TEXT' },
         { table: 'quotation_requests', column: 'sales_order_number', type: 'TEXT' },
         { table: 'quotation_requests', column: 'reorder_of', type: 'TEXT' },
-        { table: 'quotation_requests', column: 'reorder_of_number', type: 'TEXT' }
+        { table: 'quotation_requests', column: 'reorder_of_number', type: 'TEXT' },
+        // Customer Portal 2FA (Phase: portal security)
+        { table: 'portal_users', column: 'two_factor_enabled', type: "INTEGER DEFAULT 0" },
+        { table: 'portal_users', column: 'two_factor_secret', type: 'TEXT' },
+        { table: 'portal_users', column: 'two_factor_confirmed', type: "INTEGER DEFAULT 0" }
       ];
 
       // Process migrations: add missing columns to existing tables
@@ -1188,10 +1074,7 @@ const initDb = () => {
             }
           });
         });
-      });
-
-      // User-company membership table for multi-tenant validation
-      // ==================== REFERRAL MODULE ====================
+      }); // ==================== REFERRAL MODULE ====================
       db.run(`CREATE TABLE IF NOT EXISTS customer_referrals (
         id TEXT PRIMARY KEY,
         customer_id TEXT NOT NULL,
@@ -1204,7 +1087,6 @@ const initDb = () => {
         converted_invoice_id TEXT,
         converted_at DATETIME,
         notes TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         deleted_at DATETIME
@@ -1212,11 +1094,7 @@ const initDb = () => {
       db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_customer ON customer_referrals(customer_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON customer_referrals(referred_by_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_code ON customer_referrals(referral_code)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_status ON customer_referrals(status)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_company ON customer_referrals(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_created ON customer_referrals(created_at)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_company_status ON customer_referrals(company_id, status)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_status ON customer_referrals(status)`); db.run(`CREATE INDEX IF NOT EXISTS idx_referrals_created ON customer_referrals(created_at)`); 
       db.run(`CREATE TABLE IF NOT EXISTS referral_rewards (
         id TEXT PRIMARY KEY,
         referral_id TEXT NOT NULL,
@@ -1232,7 +1110,6 @@ const initDb = () => {
         cancel_reason TEXT,
         wallet_transaction_id TEXT,
         notes TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (referral_id) REFERENCES customer_referrals(id) ON DELETE CASCADE
@@ -1240,9 +1117,7 @@ const initDb = () => {
       db.run(`CREATE INDEX IF NOT EXISTS idx_rewards_referral ON referral_rewards(referral_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_rewards_customer ON referral_rewards(customer_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_rewards_invoice ON referral_rewards(invoice_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_rewards_status ON referral_rewards(status)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_rewards_company ON referral_rewards(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_rewards_created ON referral_rewards(created_at)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_rewards_status ON referral_rewards(status)`); db.run(`CREATE INDEX IF NOT EXISTS idx_rewards_created ON referral_rewards(created_at)`);
 
       db.run(`CREATE TABLE IF NOT EXISTS referral_timeline (
         id TEXT PRIMARY KEY,
@@ -1255,14 +1130,11 @@ const initDb = () => {
         actor_name TEXT,
         metadata_json TEXT,
         timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (referral_id) REFERENCES customer_referrals(id) ON DELETE CASCADE
       )`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_referral ON referral_timeline(referral_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_event ON referral_timeline(event_type)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_company_referral ON referral_timeline(company_id, referral_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_event ON referral_timeline(event_type)`); 
       db.run(`CREATE TABLE IF NOT EXISTS referral_audit_logs (
         id TEXT PRIMARY KEY,
         entity_type TEXT NOT NULL CHECK(entity_type IN ('referral','reward','campaign','setting','reversal')),
@@ -1278,7 +1150,6 @@ const initDb = () => {
         ip_address TEXT,
         user_agent TEXT,
         timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_audit_entity ON referral_audit_logs(entity_type, entity_id)`);
@@ -1306,14 +1177,11 @@ const initDb = () => {
         terms_json TEXT,
         created_by TEXT,
         approved_by TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_campaigns_status ON referral_campaigns(status)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_campaigns_dates ON referral_campaigns(start_date, end_date)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_campaigns_company ON referral_campaigns(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_campaigns_dates ON referral_campaigns(start_date, end_date)`); 
       db.run(`CREATE TABLE IF NOT EXISTS referral_analytics (
         id TEXT PRIMARY KEY,
         period TEXT NOT NULL CHECK(period IN ('daily','weekly','monthly','quarterly','yearly')),
@@ -1331,12 +1199,9 @@ const initDb = () => {
         revenue_attributed REAL DEFAULT 0,
         roi REAL DEFAULT 0,
         data_json TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         generated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_analytics_period ON referral_analytics(period, period_start)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_analytics_company ON referral_analytics(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_analytics_period ON referral_analytics(period, period_start)`); 
       db.run(`CREATE TABLE IF NOT EXISTS referral_reversals (
         id TEXT PRIMARY KEY,
         reward_id TEXT NOT NULL,
@@ -1352,7 +1217,6 @@ const initDb = () => {
         completed_at DATETIME,
         wallet_transaction_id TEXT,
         notes TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (reward_id) REFERENCES referral_rewards(id) ON DELETE CASCADE
@@ -1363,13 +1227,10 @@ const initDb = () => {
 
       db.run(`CREATE TABLE IF NOT EXISTS referral_settings (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL,
         settings_json TEXT NOT NULL DEFAULT '{}',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(company_id)
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_settings_company ON referral_settings(company_id)`);
 
       db.run(`CREATE TABLE IF NOT EXISTS idempotency_keys (
         id TEXT PRIMARY KEY,
@@ -1379,7 +1240,6 @@ const initDb = () => {
         method TEXT NOT NULL,
         path TEXT NOT NULL,
         user_id TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         expires_at DATETIME NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1394,40 +1254,11 @@ const initDb = () => {
         recipient_id TEXT NOT NULL,
         referral_id TEXT,
         reward_id TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','read','sent','failed')),
         read_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_company ON notifications(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status)`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS companies (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        slug TEXT UNIQUE,
-        owner_id TEXT,
-        status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'suspended')),
-        subscription_tier TEXT DEFAULT 'free',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      db.run(`CREATE INDEX IF NOT EXISTS idx_companies_owner ON companies(owner_id)`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS user_companies (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        company_id TEXT NOT NULL,
-        role TEXT DEFAULT 'member',
-        is_default INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, company_id)
-      )`);
-
-      db.run(`CREATE INDEX IF NOT EXISTS idx_user_companies_user ON user_companies(user_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_user_companies_company ON user_companies(company_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id)`); db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status)`);
 
       // ==================== BANKING MODULE ====================
       db.run(`CREATE TABLE IF NOT EXISTS bank_accounts (
@@ -1441,13 +1272,10 @@ const initDb = () => {
         opening_balance REAL DEFAULT 0,
         current_balance REAL DEFAULT 0,
         status TEXT DEFAULT 'Active' CHECK(status IN ('Active', 'Inactive', 'Closed')),
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_bank_accounts_company ON bank_accounts(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_bank_accounts_status ON bank_accounts(status)`);
+      )`); db.run(`CREATE INDEX IF NOT EXISTS idx_bank_accounts_status ON bank_accounts(status)`);
 
       db.run(`CREATE TABLE IF NOT EXISTS bank_transactions (
         id TEXT PRIMARY KEY,
@@ -1462,7 +1290,6 @@ const initDb = () => {
         status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'failed', 'cancelled')),
         reconciled INTEGER DEFAULT 0,
         reconciled_at DATETIME,
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -1470,9 +1297,7 @@ const initDb = () => {
       )`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_account ON bank_transactions(account_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_date ON bank_transactions(date)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_reconciled ON bank_transactions(reconciled)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_company ON bank_transactions(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_reconciled ON bank_transactions(reconciled)`); 
       // ==================== VAT/TAX MODULE ====================
       db.run(`CREATE TABLE IF NOT EXISTS vat_transactions (
         id TEXT PRIMARY KEY,
@@ -1487,16 +1312,10 @@ const initDb = () => {
         is_recoverable INTEGER DEFAULT 1,
         period TEXT NOT NULL,
         status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'filed', 'paid')),
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_vat_transactions_period ON vat_transactions(period)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_vat_transactions_company ON vat_transactions(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_vat_transactions_reference ON vat_transactions(reference_id, reference_type)`);
-
-      // ==================== PURCHASE ORDER ITEMS (with company_id) ====================
-      db.run(`CREATE TABLE IF NOT EXISTS purchase_order_items (
+      db.run(`CREATE INDEX IF NOT EXISTS idx_vat_transactions_period ON vat_transactions(period)`); db.run(`CREATE INDEX IF NOT EXISTS idx_vat_transactions_reference ON vat_transactions(reference_id, reference_type)`); db.run(`CREATE TABLE IF NOT EXISTS purchase_order_items (
         id TEXT PRIMARY KEY,
         purchase_order_id TEXT NOT NULL,
         item_id TEXT,
@@ -1504,14 +1323,9 @@ const initDb = () => {
         quantity REAL NOT NULL CHECK(quantity > 0),
         unit_price REAL NOT NULL CHECK(unit_price >= 0),
         total_price REAL NOT NULL CHECK(total_price >= 0),
-        company_id TEXT NOT NULL,
         FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_po_items_po ON purchase_order_items(purchase_order_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_po_items_company ON purchase_order_items(company_id)`);
-
-      // ==================== SALE ITEMS (ensure company_id exists) ====================
-      db.run(`CREATE TABLE IF NOT EXISTS sale_items (
+      db.run(`CREATE INDEX IF NOT EXISTS idx_po_items_po ON purchase_order_items(purchase_order_id)`); db.run(`CREATE TABLE IF NOT EXISTS sale_items (
         id TEXT PRIMARY KEY,
         sale_id TEXT NOT NULL,
         item_id TEXT NOT NULL,
@@ -1524,14 +1338,11 @@ const initDb = () => {
         discount REAL DEFAULT 0,
         item_type TEXT,
         consumption_snapshot_json TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE
       )`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_sale_items_item ON sale_items(item_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_sale_items_company ON sale_items(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_sale_items_item ON sale_items(item_id)`); 
       // Production resources (work centers and resources) — must be queued
       // BEFORE migration ALTER TABLEs so they exist when initDb() resolves.
       db.run(`CREATE TABLE IF NOT EXISTS work_centers (
@@ -1608,7 +1419,6 @@ const initDb = () => {
       db.run(`CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
-        company_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1635,7 +1445,6 @@ const initDb = () => {
         annual_reward REAL DEFAULT 0,
         benefits_json TEXT,
         status TEXT DEFAULT 'active',
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1654,7 +1463,6 @@ const initDb = () => {
         expires_at DATETIME,
         status TEXT DEFAULT 'active',
         notes TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1679,7 +1487,6 @@ const initDb = () => {
         design_color TEXT,
         gift_message TEXT,
         purchased_with TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1694,7 +1501,6 @@ const initDb = () => {
         reference_id TEXT,
         customer_id TEXT,
         description TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
@@ -1723,7 +1529,6 @@ const initDb = () => {
         expires_at DATETIME,
         status TEXT DEFAULT 'draft',
         created_by TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1747,7 +1552,6 @@ const initDb = () => {
         reverse_reason TEXT,
         expires_at DATETIME,
         notes TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1766,7 +1570,6 @@ const initDb = () => {
         expires_at DATETIME,
         redeemed_at DATETIME,
         created_by TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1780,7 +1583,6 @@ const initDb = () => {
         pending_expiry INTEGER DEFAULT 0,
         expires_at DATETIME,
         last_updated DATETIME,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
@@ -1800,7 +1602,6 @@ const initDb = () => {
         approved_at DATETIME,
         approved_by TEXT,
         notes TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1821,7 +1622,6 @@ const initDb = () => {
         reversed_at DATETIME,
         reverse_reason TEXT,
         notes TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1849,7 +1649,6 @@ const initDb = () => {
         rejected_at DATETIME,
         reject_reason TEXT,
         expires_at DATETIME,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1869,7 +1668,6 @@ const initDb = () => {
         actor_id TEXT,
         actor_name TEXT,
         timestamp DATETIME NOT NULL,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
@@ -1888,7 +1686,6 @@ const initDb = () => {
         ip_address TEXT,
         user_agent TEXT,
         timestamp DATETIME NOT NULL,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
@@ -1898,7 +1695,6 @@ const initDb = () => {
         period_start TEXT NOT NULL,
         period_end TEXT NOT NULL,
         data_json TEXT NOT NULL,
-        company_id TEXT NOT NULL DEFAULT '',
         generated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
@@ -1913,7 +1709,6 @@ const initDb = () => {
         balance REAL DEFAULT 0,
         is_active INTEGER DEFAULT 1,
         description TEXT,
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -1933,7 +1728,6 @@ const initDb = () => {
         reference_id TEXT,
         journal_id TEXT,
         entry_date TEXT NOT NULL,
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (account_id) REFERENCES chart_of_accounts(id) ON DELETE CASCADE
@@ -1965,7 +1759,6 @@ const initDb = () => {
         period TEXT NOT NULL CHECK(period IN ('monthly','quarterly','yearly')),
         amount REAL NOT NULL CHECK(amount >= 0),
         spent REAL DEFAULT 0,
-        company_id TEXT NOT NULL,
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -1981,7 +1774,6 @@ const initDb = () => {
         description TEXT,
         status TEXT DEFAULT 'completed' CHECK(status IN ('pending','completed','failed','cancelled')),
         reference TEXT,
-        company_id TEXT NOT NULL,
         created_by TEXT,
         executed_at DATETIME,
         ledger_journal_id TEXT,
@@ -2002,7 +1794,6 @@ const initDb = () => {
         payment_method TEXT,
         status TEXT DEFAULT 'pending' CHECK(status IN ('pending','paid','cancelled')),
         receipt_url TEXT,
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -2019,7 +1810,6 @@ const initDb = () => {
         account_id TEXT,
         payment_method TEXT,
         reference TEXT,
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (account_id) REFERENCES chart_of_accounts(id) ON DELETE SET NULL
@@ -2035,7 +1825,6 @@ const initDb = () => {
         status TEXT DEFAULT 'Active',
         category TEXT,
         payment_terms TEXT,
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -2048,7 +1837,6 @@ const initDb = () => {
         status TEXT DEFAULT 'Draft' CHECK(status IN ('Draft','Sent','Approved','Received','Cancelled')),
         currency TEXT DEFAULT 'USD',
         notes TEXT,
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -2072,7 +1860,6 @@ const initDb = () => {
         received_date TEXT NOT NULL,
         status TEXT DEFAULT 'Received',
         notes TEXT,
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE SET NULL
@@ -2082,7 +1869,6 @@ const initDb = () => {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
@@ -2095,7 +1881,6 @@ const initDb = () => {
         role TEXT,
         status TEXT DEFAULT 'Active',
         salary REAL DEFAULT 0,
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -2110,7 +1895,6 @@ const initDb = () => {
         total_deductions REAL DEFAULT 0,
         total_net REAL DEFAULT 0,
         employee_count INTEGER DEFAULT 0,
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -2124,7 +1908,6 @@ const initDb = () => {
         net_pay REAL DEFAULT 0,
         pay_period TEXT,
         status TEXT DEFAULT 'Draft' CHECK(status IN ('Draft','Paid','Cancelled')),
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
         FOREIGN KEY (payroll_run_id) REFERENCES payroll_runs(id) ON DELETE CASCADE
@@ -2145,13 +1928,10 @@ const initDb = () => {
         notes TEXT,
         status TEXT DEFAULT 'Cleared',
         reconciled INTEGER DEFAULT 0,
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_customer_payments_company ON customer_payments(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_customer_payments_customer ON customer_payments(customer_id)`);
+      )`); db.run(`CREATE INDEX IF NOT EXISTS idx_customer_payments_customer ON customer_payments(customer_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date)`);
 
       db.run(`CREATE TABLE IF NOT EXISTS financial_years (
@@ -2163,33 +1943,23 @@ const initDb = () => {
         is_default INTEGER DEFAULT 0,
         is_closed INTEGER DEFAULT 0,
         status TEXT DEFAULT 'Active' CHECK(status IN ('Active','Closed')),
-        company_id TEXT NOT NULL,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_financial_years_company ON financial_years(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_financial_years_dates ON financial_years(company_id, start_date, end_date)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_financial_years_default ON financial_years(company_id, is_default)`);
-
+      )`); 
       // User Preferences Table — cross-device preference sync
       db.run(`CREATE TABLE IF NOT EXISTS user_preferences (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
-        company_id TEXT NOT NULL,
         pref_key TEXT NOT NULL,
         pref_value TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_preferences_unique ON user_preferences(user_id, company_id, pref_key)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_user_preferences_lookup ON user_preferences(user_id, company_id)`);
-
+      )`); 
       // Payment Allocation Tables
       db.run(`CREATE TABLE IF NOT EXISTS payment_allocations (
         id TEXT PRIMARY KEY,
         payment_id TEXT NOT NULL,
-        company_id TEXT NOT NULL,
         total_allocated REAL NOT NULL DEFAULT 0,
         excess_amount REAL DEFAULT 0,
         excess_handling TEXT DEFAULT 'credit_to_customer',
@@ -2198,9 +1968,7 @@ const initDb = () => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (payment_id) REFERENCES customer_payments(id) ON DELETE CASCADE
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_payment_allocations_payment ON payment_allocations(payment_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_payment_allocations_company ON payment_allocations(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_payment_allocations_payment ON payment_allocations(payment_id)`); 
       db.run(`CREATE TABLE IF NOT EXISTS payment_allocation_lines (
         id TEXT PRIMARY KEY,
         allocation_id TEXT NOT NULL,
@@ -2231,7 +1999,6 @@ const initDb = () => {
         warranty_expiry TEXT,
         last_maintenance TEXT,
         next_maintenance TEXT,
-        company_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
@@ -2245,14 +2012,11 @@ const initDb = () => {
         full_name TEXT,
         phone TEXT,
         status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'disabled', 'invited')),
-        company_id TEXT NOT NULL DEFAULT '',
         last_login_at TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_users_customer ON portal_users(customer_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_users_company ON portal_users(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_users_email ON portal_users(email)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_users_customer ON portal_users(customer_id)`); db.run(`CREATE INDEX IF NOT EXISTS idx_portal_users_email ON portal_users(email)`);
 
       db.run(`CREATE TABLE IF NOT EXISTS portal_sessions (
         id TEXT PRIMARY KEY,
@@ -2262,7 +2026,6 @@ const initDb = () => {
         user_agent TEXT,
         expires_at TEXT NOT NULL,
         revoked_at TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (portal_user_id) REFERENCES portal_users(id)
       )`);
@@ -2301,7 +2064,6 @@ const initDb = () => {
         body TEXT,
         link TEXT,
         is_read INTEGER DEFAULT 0,
-        company_id TEXT NOT NULL DEFAULT '',
         created_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (portal_user_id) REFERENCES portal_users(id)
       )`);
@@ -2316,7 +2078,6 @@ const initDb = () => {
         message TEXT NOT NULL,
         priority TEXT DEFAULT 'normal' CHECK(priority IN ('low', 'normal', 'high', 'urgent')),
         status TEXT DEFAULT 'open' CHECK(status IN ('open', 'in_progress', 'resolved', 'closed')),
-        company_id TEXT NOT NULL DEFAULT '',
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (portal_user_id) REFERENCES portal_users(id)
@@ -2334,13 +2095,30 @@ const initDb = () => {
       )`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_portal_ticket_messages_ticket ON portal_ticket_messages(ticket_id)`);
 
+      // Ticket Attachments Table
+      db.run(`CREATE TABLE IF NOT EXISTS ticket_attachments (
+        id TEXT PRIMARY KEY,
+        ticket_id TEXT NOT NULL,
+        message_id TEXT,
+        filename TEXT NOT NULL,
+        original_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        size_bytes INTEGER NOT NULL DEFAULT 0,
+        storage_path TEXT NOT NULL,
+        uploaded_by TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (ticket_id) REFERENCES portal_tickets(id) ON DELETE CASCADE,
+        FOREIGN KEY (message_id) REFERENCES portal_ticket_messages(id) ON DELETE CASCADE
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_ticket_attachments_ticket ON ticket_attachments(ticket_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_ticket_attachments_message ON ticket_attachments(message_id)`);
+
       // Portal document lifecycle — customer quotation/order requests (NOT official documents)
       db.run(`CREATE TABLE IF NOT EXISTS quotation_requests (
         id TEXT PRIMARY KEY,
         request_number TEXT UNIQUE NOT NULL,
         customer_id TEXT NOT NULL,
         customer_name TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         request_type TEXT NOT NULL DEFAULT 'quotation' CHECK(request_type IN ('quotation', 'order')),
         items TEXT NOT NULL,
         subtotal REAL DEFAULT 0,
@@ -2366,10 +2144,7 @@ const initDb = () => {
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_company ON quotation_requests(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_status ON quotation_requests(company_id, status)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`); 
       // NOTE: the legacy quotation_requests rebuild migration runs below, after
       // the column migrations — SQLite re-prepares every trigger when a table is
       // renamed, so all columns referenced by triggers must exist first.
@@ -2381,7 +2156,6 @@ const initDb = () => {
         request_id TEXT,
         customer_id TEXT NOT NULL,
         customer_name TEXT,
-        company_id TEXT NOT NULL DEFAULT '',
         items TEXT NOT NULL,
         subtotal REAL DEFAULT 0,
         discount REAL DEFAULT 0,
@@ -2410,14 +2184,11 @@ const initDb = () => {
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_customer ON quotations(customer_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_company ON quotations(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_request ON quotations(request_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_customer ON quotations(customer_id)`); db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_request ON quotations(request_id)`);
 
       // Portal document lifecycle — merged chronological timeline per document
       db.run(`CREATE TABLE IF NOT EXISTS portal_timeline_events (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         customer_id TEXT,
         doc_type TEXT NOT NULL,
         doc_id TEXT NOT NULL,
@@ -2430,13 +2201,10 @@ const initDb = () => {
         metadata TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_doc ON portal_timeline_events(doc_type, doc_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_company ON portal_timeline_events(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_timeline_doc ON portal_timeline_events(doc_type, doc_id)`); 
       // Portal document lifecycle — download audit trail + analytics counters
       db.run(`CREATE TABLE IF NOT EXISTS portal_downloads (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         customer_id TEXT NOT NULL,
         portal_user_id TEXT,
         doc_type TEXT NOT NULL,
@@ -2446,15 +2214,12 @@ const initDb = () => {
         user_agent TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_downloads_doc ON portal_downloads(doc_type, doc_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_downloads_company ON portal_downloads(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_portal_downloads_doc ON portal_downloads(doc_type, doc_id)`); 
       // Portal document lifecycle — version snapshots (Phase 3: Versioning).
       // Generic per-document history so any docType (quotation today, artwork
       // files in later phases) records immutable point-in-time snapshots.
       db.run(`CREATE TABLE IF NOT EXISTS document_versions (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         customer_id TEXT,
         doc_type TEXT NOT NULL,
         doc_id TEXT NOT NULL,
@@ -2465,15 +2230,12 @@ const initDb = () => {
         created_by_name TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_document_versions_doc ON document_versions(doc_type, doc_id, version)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_document_versions_company ON document_versions(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_versions_doc ON document_versions(doc_type, doc_id, version)`); 
       // Portal document lifecycle — decision signatures (Phase 3: digital
       // approval trail). Records who accepted/rejected/requested revision and
       // when, so acceptance can never be forged or silently overwritten.
       db.run(`CREATE TABLE IF NOT EXISTS document_signatures (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         customer_id TEXT,
         doc_type TEXT NOT NULL,
         doc_id TEXT NOT NULL,
@@ -2486,15 +2248,12 @@ const initDb = () => {
         user_agent TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_document_signatures_doc ON document_signatures(doc_type, doc_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_document_signatures_company ON document_signatures(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_signatures_doc ON document_signatures(doc_type, doc_id)`); 
       // Portal document lifecycle — threaded discussions (Phase 4: collaboration).
       // 'customer' visibility = visible to the customer; 'internal' = staff-only
       // notes. Comments are always attached to a document in the chain.
       db.run(`CREATE TABLE IF NOT EXISTS document_comments (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         customer_id TEXT,
         doc_type TEXT NOT NULL,
         doc_id TEXT NOT NULL,
@@ -2505,13 +2264,10 @@ const initDb = () => {
         body TEXT NOT NULL,
         created_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_document_comments_doc ON document_comments(doc_type, doc_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_document_comments_company ON document_comments(company_id)`);
-
+      db.run(`CREATE INDEX IF NOT EXISTS idx_document_comments_doc ON document_comments(doc_type, doc_id)`); 
       // Admin notifications — new quotation requests, customer decisions, downloads
       db.run(`CREATE TABLE IF NOT EXISTS admin_notifications (
         id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL DEFAULT '',
         type TEXT NOT NULL,
         title TEXT NOT NULL,
         body TEXT,
@@ -2521,21 +2277,8 @@ const initDb = () => {
         is_read INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_admin_notifications_company ON admin_notifications(company_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_admin_notifications_read ON admin_notifications(company_id, is_read)`);
 
-      // Add company_id to newly created tables if not already present
-      const newTableColumns = [
-        { table: 'bank_accounts', column: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },
-        { table: 'bank_transactions', column: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },
-        { table: 'vat_transactions', column: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },
-        { table: 'purchase_order_items', column: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },
-        { table: 'inventory_transactions', column: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },
-        { table: 'warehouse_inventory', column: 'company_id', type: "TEXT NOT NULL DEFAULT ''" },
-        { table: 'material_batches', column: 'company_id', type: "TEXT NOT NULL DEFAULT ''" }
-      ];
-
-      const allColumns = [...columns, ...newTableColumns];
+      const allColumns = [...columns];
       const migrationPromises = allColumns.map(col => {
         return new Promise((res) => {
           db.run(`ALTER TABLE ${col.table} ADD COLUMN IF NOT EXISTS ${col.column} ${col.type}`, (err) => {
@@ -2567,7 +2310,6 @@ const initDb = () => {
                   request_number TEXT UNIQUE NOT NULL,
                   customer_id TEXT NOT NULL,
                   customer_name TEXT,
-                  company_id TEXT NOT NULL DEFAULT '',
                   request_type TEXT NOT NULL DEFAULT 'quotation' CHECK(request_type IN ('quotation', 'order')),
                   items TEXT NOT NULL,
                   subtotal REAL DEFAULT 0,
@@ -2595,10 +2337,10 @@ const initDb = () => {
                 )`, (cErr) => {
                   if (cErr) return console.error('[DB] quotation_requests rebuild create failed:', cErr.message);
                   db.run(`INSERT INTO quotation_requests
-                     (id, request_number, customer_id, customer_name, company_id, request_type,
+                     (id, request_number, customer_id, customer_name, request_type,
                       items, subtotal, notes, status, review_note, reviewed_by, reviewed_at,
                       quotation_id, created_by, created_at, updated_at)
-                   SELECT id, request_number, customer_id, customer_name, company_id, request_type,
+                   SELECT id, request_number, customer_id, customer_name, request_type,
                           items, subtotal, notes,
                           CASE WHEN status = 'quotation_ready' THEN 'ready_for_conversion' ELSE status END,
                           review_note, reviewed_by, reviewed_at,
@@ -2607,10 +2349,7 @@ const initDb = () => {
                     if (iErr) return console.error('[DB] quotation_requests rebuild copy failed:', iErr.message);
                     db.run(`DROP TABLE quotation_requests_legacy`, (dErr) => {
                       if (dErr) console.error('[DB] quotation_requests legacy drop failed:', dErr.message);
-                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`);
-                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_company ON quotation_requests(company_id)`);
-                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_status ON quotation_requests(company_id, status)`);
-                      resolve();
+                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`); resolve();
                     });
                   });
                 });
@@ -2636,7 +2375,6 @@ const initDb = () => {
                   request_id TEXT,
                   customer_id TEXT NOT NULL,
                   customer_name TEXT,
-                  company_id TEXT NOT NULL DEFAULT '',
                   items TEXT NOT NULL,
                   subtotal REAL DEFAULT 0,
                   discount REAL DEFAULT 0,
@@ -2667,12 +2405,12 @@ const initDb = () => {
                 )`, (cErr) => {
                   if (cErr) return console.error('[DB] quotations rebuild create failed:', cErr.message);
                   db.run(`INSERT INTO quotations
-                     (id, quotation_number, request_id, customer_id, customer_name, company_id, items,
+                     (id, quotation_number, request_id, customer_id, customer_name, items,
                       subtotal, discount, tax_rate, tax_amount, delivery_fee, total, currency,
                       payment_terms, valid_until, status, revision_note, rejection_reason,
                       accepted_at, rejected_at, revision_requested_at, converted_at, order_id,
                       created_by, source_request_number, erp_quotation_id, created_at, updated_at)
-                   SELECT id, quotation_number, request_id, customer_id, customer_name, company_id, items,
+                   SELECT id, quotation_number, request_id, customer_id, customer_name, items,
                           subtotal, discount, tax_rate, tax_amount, delivery_fee, total, currency,
                           payment_terms, valid_until, status, revision_note, rejection_reason,
                           accepted_at, rejected_at, revision_requested_at, converted_at, order_id,
@@ -2681,9 +2419,7 @@ const initDb = () => {
                     if (iErr) return console.error('[DB] quotations rebuild copy failed:', iErr.message);
                     db.run(`DROP TABLE quotations_legacy`, (dErr) => {
                       if (dErr) console.error('[DB] quotations legacy drop failed:', dErr.message);
-                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_customer ON quotations(customer_id)`);
-                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_company ON quotations(company_id)`);
-                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_request ON quotations(request_id)`);
+                      db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_customer ON quotations(customer_id)`); db.run(`CREATE INDEX IF NOT EXISTS idx_quotations_request ON quotations(request_id)`);
                       resolve();
                     });
                   });
@@ -2694,67 +2430,218 @@ const initDb = () => {
         });
       }).then(() => {
         Promise.all([
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_invoices_company_id ON invoices(company_id)`),
+          
           runIndex(`CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON invoices(customer_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_sales_company_id ON sales(company_id)`),
+          
           runIndex(`CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_sales_customer_id ON sales(customer_id)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_sales_status ON sales(status)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_sales_source ON sales(source)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_sales_created_at ON sales(created_at)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_expenses_company_id ON expenses(company_id)`),
+          
           runIndex(`CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_expenses_category_date ON expenses(category, expense_date)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_inventory_company_id ON inventory(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_inventory_transactions_company ON inventory_transactions(company_id)`),
+          
+          
           runIndex(`CREATE INDEX IF NOT EXISTS idx_inventory_transactions_item ON inventory_transactions(item_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_warehouse_inventory_company ON warehouse_inventory(company_id)`),
+          
           runIndex(`CREATE INDEX IF NOT EXISTS idx_warehouse_inventory_item ON warehouse_inventory(item_id)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_warehouse_inventory_warehouse ON warehouse_inventory(warehouse_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_material_batches_company ON material_batches(company_id)`),
+          
           runIndex(`CREATE INDEX IF NOT EXISTS idx_material_batches_item ON material_batches(item_id)`),
           runIndex(`CREATE INDEX IF NOT EXISTS idx_material_batches_status ON material_batches(status)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_examination_batches_company_id ON examination_batches(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_examination_classes_company_id ON examination_classes(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_examination_subjects_company_id ON examination_subjects(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_examination_bom_calculations_company_id ON examination_bom_calculations(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_examination_class_adjustments_company_id ON examination_class_adjustments(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_examination_pricing_audit_company_id ON examination_pricing_audit(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_examination_batch_notifications_company_id ON examination_batch_notifications(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_notification_audit_logs_company_id ON notification_audit_logs(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_bom_default_materials_company_id ON bom_default_materials(company_id)`),
-          runIndex(`CREATE INDEX IF NOT EXISTS idx_audit_logs_company_id ON audit_logs(company_id)`),
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
           // Financial Year performance indexes
-          runIndex('CREATE INDEX IF NOT EXISTS idx_sales_fy ON sales(company_id, date)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_invoices_fy ON invoices(company_id, created_at)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_customer_payments_fy ON customer_payments(company_id, date)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_ledger_entries_fy ON ledger_entries(company_id, entry_date)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_expenses_fy ON expenses(company_id, expense_date)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_income_fy ON income(company_id, income_date)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_purchase_orders_fy ON purchase_orders(company_id, order_date)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_goods_receipts_fy ON goods_receipts(company_id, received_date)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_sales_orders_fy ON sales_orders(company_id, orderDate)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_inventory_transactions_fy ON inventory_transactions(company_id, timestamp)'),
-          // Company-scoped unique indexes (backfill for inline UNIQUE constraints missing company_id)
-          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_class_name_per_company ON classes(company_id, name)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_subject_name_per_company ON subjects(company_id, name)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_subject_code_per_company ON subjects(company_id, code)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_logical_number_per_company ON documents(company_id, logical_number)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_exchange_number_per_company ON sales_exchanges(company_id, exchange_number)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_sale_idempotency_key ON sales(company_id, idempotency_key)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_referral_code_per_company ON customer_referrals(company_id, referral_code)'),
-          runIndex('CREATE INDEX IF NOT EXISTS idx_unique_idempotency_keys ON idempotency_keys(company_id, key)'),
-          runIndex('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_coa_code_per_company ON chart_of_accounts(company_id, code)'),
-          runIndex('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_warehouse_inventory_per_company ON warehouse_inventory(company_id, item_id, warehouse_id)'),
-          runIndex('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_exam_class_per_batch ON examination_classes(company_id, batch_id, class_name)')
+          runIndex('CREATE INDEX IF NOT EXISTS idx_sales_date_fy ON sales(date)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_invoices_created_fy ON invoices(created_at)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_customer_payments_date_fy ON customer_payments(date)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_ledger_entries_date_fy ON ledger_entries(entry_date)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_expenses_date_fy ON expenses(expense_date)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_income_date_fy ON income(income_date)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_purchase_orders_date_fy ON purchase_orders(order_date)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_goods_receipts_date_fy ON goods_receipts(received_date)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_sales_orders_date_fy ON sales_orders(orderDate)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_inventory_transactions_ts_fy ON inventory_transactions(timestamp)'), 
+          
+          runIndex('CREATE INDEX IF NOT EXISTS idx_subjects_code ON subjects(code)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_documents_logical_number ON documents(logical_number)'),
+          runIndex('CREATE INDEX IF NOT EXISTS idx_sales_exchanges_exchange_number ON sales_exchanges(exchange_number)'),
+          
+          
+          
+          
+          
+          runIndex('CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_classes_batch_class ON examination_classes(batch_id, class_name)')
         ]).then(() => {
-          resolve();
+          migrateSingleOrganization(resolve);
         });
       });
     });
   });
 };
+
+/**
+ * Single-organization ERP migration.
+ *
+ * Removes all company_id columns / indexes / tables from existing databases so
+ * the application runs as one shared organization with no company concept.
+ * Steps:
+ *   1. Back up the current schema (CREATE statements) to the storage dir.
+ *   2. Verify existing data belongs to a single company (warn if not).
+ *   3. Drop the companies / user_companies tables and company indexes.
+ *   4. Drop the company_id column from every table that has one, rebuilding
+ *      any table whose constraints (e.g. UNIQUE(company_id)) block the drop.
+ * Idempotent: safe to run on every startup.
+ */
+function migrateSingleOrganization(cb) {
+  const serialize = () => {
+    // 1. Schema backup
+    db.all(`SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND type IN ('table','index','trigger','view')`, (e, schema) => {
+      if (!e && schema && schema.length) {
+        try {
+          const { backupDir } = require('./runtimePaths.cjs');
+          const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const file = require('path').join(backupDir, `schema_backup_pre_single_org_${stamp}.sql`);
+          require('fs').writeFileSync(file, schema.map(s => s.sql + ';\n').join('\n'), 'utf8');
+          console.log(`[DB] Schema backup written to ${file}`);
+        } catch (backupErr) {
+          console.warn('[DB] Schema backup failed:', backupErr.message);
+        }
+      }
+      verifySingleCompany(dropCompanyTables);
+    });
+  };
+
+  // 2. Verify all data belongs to one company
+  const verifySingleCompany = (next) => {
+    db.all(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`, (e, tables) => {
+      if (e || !tables || !tables.length) return next();
+      const names = tables.map(t => t.name);
+      let i = 0;
+      const checkNext = () => {
+        if (i >= names.length) return next();
+        const t = names[i++];
+        db.all(`PRAGMA table_info("${t}")`, (e2, cols) => {
+          if (e2 || !cols || !cols.some(c => c.name === 'company_id')) return checkNext();
+          db.get(`SELECT COUNT(DISTINCT company_id) AS n, COUNT(*) AS total FROM "${t}"`, (e3, row) => {
+            if (!e3 && row && row.total > 0 && row.n > 1) {
+              console.warn(`[DB] MIGRATION: table "${t}" has ${row.n} distinct company_id values across ${row.total} rows. All data will be merged into the single organization.`);
+            }
+            checkNext();
+          });
+        });
+      };
+      checkNext();
+    });
+  };
+
+  // 3. Drop company tables and company indexes
+  const dropCompanyTables = () => {
+    db.run(`DROP TABLE IF EXISTS companies`, () => {
+      // company_pricing_config is a dead multi-tenant table from the old schema;
+      // no code creates or references it, and its PRIMARY KEY (company_id) blocks
+      // an in-place ALTER, so drop it outright.
+      db.run(`DROP TABLE IF EXISTS company_pricing_config`, () => {
+        db.run(`DROP TABLE IF EXISTS user_companies`, () => {
+      db.all(`SELECT name, sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL`, (e, indexes) => {
+        if (e || !indexes) return dropColumns();
+        const toDrop = indexes.filter(ix => /company|company_id/i.test(ix.sql || '')).map(ix => ix.name);
+        const dropNext = (i) => {
+          if (i >= toDrop.length) return dropColumns();
+          db.run(`DROP INDEX IF EXISTS "${toDrop[i]}"`, () => dropNext(i + 1));
+        };
+          dropNext(0);
+        });
+        });
+      });
+    });
+  };
+
+  // 4. Drop company_id columns (rebuild table if constraints block the drop)
+  const dropColumns = () => {
+    db.all(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`, (e, tables) => {
+      if (e || !tables) { return cb(); }
+      const names = tables.map(t => t.name);
+      let i = 0;
+      const next = () => {
+        if (i >= names.length) { return cb(); }
+        const t = names[i++];
+        db.all(`PRAGMA table_info("${t}")`, (e2, cols) => {
+          if (e2 || !cols) { return next(); }
+          if (!cols.some(c => c.name === 'company_id')) return next();
+          db.run(`ALTER TABLE "${t}" DROP COLUMN company_id`, (e3) => {
+            if (!e3) return next();
+            rebuildTableWithoutCompany(t, next);
+          });
+        });
+      };
+      next();
+    });
+  };
+
+  // Rebuild a table whose company_id column cannot be dropped in place
+  const rebuildTableWithoutCompany = (table, cb2) => {
+    db.get(`SELECT sql FROM sqlite_master WHERE type='table' AND name=?`, [table], (e, row) => {
+      if (e || !row || !row.sql) return cb2();
+      let createSql = String(row.sql);
+      if (!/company_id/i.test(createSql)) return cb2();
+      // Strip the company_id column definition (and its trailing comma)
+      createSql = createSql.replace(/\s*"?company_id"?\s+TEXT[^\n,)]*,?/gi, '');
+      // Strip constraints that reference company_id
+      createSql = createSql.replace(/\s*,\s*UNIQUE\s*\(\s*"?company_id"?\s*\)/gi, '');
+      createSql = createSql.replace(/\s*,\s*UNIQUE\s*\([^)]*"?company_id"?[^)]*\)/gi, '');
+      createSql = createSql.replace(/\s*,\s*PRIMARY\s+KEY\s*\(\s*"?company_id"?\s*\)/gi, '');
+      createSql = createSql.replace(/\s*,\s*FOREIGN\s+KEY\s*\(\s*"?company_id"?\s*\)\s*REFERENCES[^,)]*\),?/gi, '');
+      createSql = createSql.replace(/\s*,\s*"?company_id"?\s+TEXT[^,]*(?:REFERENCES[^,]*)?,?/gi, '');
+      // Clean up any dangling commas left by the removals
+      createSql = createSql.replace(/\s*,\s*\)/g, ')');
+      createSql = createSql.replace(/,{2,}/g, ',');
+      const temp = table + '_single_org_new';
+      createSql = createSql.split(`CREATE TABLE ${table}`).join(`CREATE TABLE ${temp}`);
+      createSql = createSql.split(`CREATE TABLE "${table}"`).join(`CREATE TABLE "${temp}"`);
+      db.run(createSql, (cErr) => {
+        if (cErr) {
+          console.error(`[DB] MIGRATION: rebuild of "${table}" failed:`, cErr.message);
+          return cb2();
+        }
+        db.all(`PRAGMA table_info("${table}")`, (e2, cols) => {
+          if (e2 || !cols) {
+            db.run(`DROP TABLE IF EXISTS "${temp}"`, () => cb2());
+            return;
+          }
+          const colList = cols.filter(c => c.name !== 'company_id').map(c => `"${c.name}"`).join(', ');
+          db.run(`INSERT INTO "${temp}" (${colList}) SELECT ${colList} FROM "${table}"`, (iErr) => {
+            if (iErr) {
+              console.error(`[DB] MIGRATION: copy into "${temp}" failed:`, iErr.message);
+              db.run(`DROP TABLE IF EXISTS "${temp}"`, () => cb2());
+              return;
+            }
+            db.run(`DROP TABLE "${table}"`, (dErr) => {
+              if (dErr) {
+                console.error(`[DB] MIGRATION: drop legacy "${table}" failed:`, dErr.message);
+                db.run(`DROP TABLE IF EXISTS "${temp}"`, () => cb2());
+                return;
+              }
+              db.run(`ALTER TABLE "${temp}" RENAME TO "${table}"`, () => cb2());
+            });
+          });
+        });
+      });
+    });
+  };
+
+  serialize();
+}
 
 /**
  * Re-initialize the database connection with the current dbPath.

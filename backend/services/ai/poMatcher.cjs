@@ -1,26 +1,24 @@
 const BaseAIService = require('./baseService.cjs');
 
 class POMatcher extends BaseAIService {
-  async matchAll(companyId) {
+  async matchAll() {
     const purchaseOrders = await this._all(
       `SELECT po.*, s.name as supplier_name
        FROM purchase_orders po
-       LEFT JOIN suppliers s ON po.supplier_id = s.id
-       WHERE po.company_id = ? AND po.status NOT IN ('cancelled')`,
-      [companyId]
+       LEFT JOIN suppliers s ON po.supplier_id = s.idpo.status NOT IN ('cancelled')`,
+      []
     );
 
     const goodsReceipts = await this._all(
       `SELECT gr.*, po.po_number, po.supplier_id
        FROM goods_receipts gr
-       JOIN purchase_orders po ON gr.purchase_order_id = po.id
-       WHERE gr.company_id = ?`,
-      [companyId]
+       JOIN purchase_orders po ON gr.purchase_order_id = po.id`,
+      []
     );
 
     const apInvoices = await this._all(
-      `SELECT * FROM accounts_payable WHERE company_id = ?`,
-      [companyId]
+      `SELECT * FROM accounts_payable`,
+      []
     );
 
     const matches = [];
@@ -29,8 +27,8 @@ class POMatcher extends BaseAIService {
       const pos = await this._all(
         `SELECT poi.* FROM purchase_order_items poi
          JOIN purchase_orders po2 ON poi.purchase_order_id = po2.id
-         WHERE poi.purchase_order_id = ? AND po2.company_id = ?`,
-        [po.id, companyId]
+         WHERE poi.purchase_order_id = ?`,
+        [po.id]
       );
 
       const grs = goodsReceipts.filter(g => g.purchase_order_id === po.id);

@@ -1,30 +1,30 @@
 const BaseAIService = require('./baseService.cjs');
 
 class SmartScheduler extends BaseAIService {
-  async optimize(companyId, options = {}) {
+  async optimize( options = {}) {
     const workOrders = await this._all(
-      `SELECT * FROM work_orders WHERE company_id = ? AND status NOT IN ('completed','cancelled')`,
-      [companyId]
+      `SELECT * FROM work_ordersstatus NOT IN ('completed','cancelled')`,
+      []
     );
 
     const workCenters = await this._all(
-      `SELECT * FROM work_centers WHERE company_id = ?`,
-      [companyId]
+      `SELECT * FROM work_centers`,
+      []
     );
 
     const resources = await this._all(
-      `SELECT * FROM production_resources WHERE company_id = ?`,
-      [companyId]
+      `SELECT * FROM production_resources`,
+      []
     );
 
     const batches = await this._all(
-      `SELECT * FROM production_batches WHERE company_id = ?`,
-      [companyId]
+      `SELECT * FROM production_batches`,
+      []
     );
 
     const employees = await this._all(
-      `SELECT * FROM employees WHERE company_id = ? AND status = 'active'`,
-      [companyId]
+      `SELECT * FROM employeesstatus = 'active'`,
+      []
     );
 
     const schedule = this._buildSchedule(workOrders, workCenters, resources, employees, options);

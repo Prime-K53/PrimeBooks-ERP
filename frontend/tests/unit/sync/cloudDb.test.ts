@@ -29,7 +29,7 @@ vi.mock('../../../services/supabaseClient', () => ({
     auth: {
       getSession: vi.fn(() => Promise.resolve({ data: { session: { user: { id: 'user-1' }, access_token: 'tok' } } })),
       refreshSession: vi.fn(() => Promise.resolve({ data: { session: { user: { id: 'user-1' }, access_token: 'tok' } } })),
-      getUser: vi.fn(() => Promise.resolve({ data: { user: { id: 'user-1', user_metadata: { company_id: 'comp-1' } } } })),
+      getUser: vi.fn(() => Promise.resolve({ data: { user: { id: 'user-1' } } })),
     },
     from: vi.fn(() => mockBuilder),
     storage: {
@@ -55,8 +55,6 @@ describe('cloudDb', () => {
     resolvedData = null;
     resolvedError = null;
 
-    localStorage.setItem('nexus_company_config', JSON.stringify({ companyId: 'comp-1' }));
-
     cloudDb = (await import('../../../services/cloudDb')).cloudDb;
   });
 
@@ -67,7 +65,6 @@ describe('cloudDb', () => {
         updated_at: '2026-06-29T12:00:00Z',
         created_at: '2026-06-29T11:00:00Z',
         version: 3,
-        company_id: 'comp-1',
       };
       resolvedData = serverData;
       resolvedError = null;
@@ -121,8 +118,8 @@ describe('cloudDb', () => {
   describe('getAll', () => {
     it('should fetch and flatten records', async () => {
       const serverRecords = [
-        { id: '1', data: { name: 'Product A' }, updated_at: '2026-06-29T12:00:00Z', company_id: 'comp-1' },
-        { id: '2', data: { name: 'Product B' }, updated_at: '2026-06-29T13:00:00Z', company_id: 'comp-1' },
+        { id: '1', data: { name: 'Product A' }, updated_at: '2026-06-29T12:00:00Z' },
+        { id: '2', data: { name: 'Product B' }, updated_at: '2026-06-29T13:00:00Z' },
       ];
       resolvedData = serverRecords;
       resolvedError = null;
@@ -130,13 +127,12 @@ describe('cloudDb', () => {
       const records = await cloudDb.getAll('inventory');
       expect(records).toHaveLength(2);
       expect(records![0].name).toBe('Product A');
-      expect(records![0]._companyId).toBe('comp-1');
     });
   });
 
   describe('get', () => {
     it('should fetch single record with flattened data', async () => {
-      const serverRecord = { id: '1', data: { name: 'Product A', price: 100 }, updated_at: '2026-06-29T12:00:00Z', company_id: 'comp-1' };
+      const serverRecord = { id: '1', data: { name: 'Product A', price: 100 }, updated_at: '2026-06-29T12:00:00Z' };
       resolvedData = serverRecord;
       resolvedError = null;
 

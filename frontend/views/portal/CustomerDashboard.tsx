@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { DollarSign, Wallet, FileText, ShoppingCart, ArrowRight, ChevronRight, TrendingUp, TrendingDown, Activity, ClipboardList, FileCheck2, Users, Gift, UserPlus } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { DollarSign, FileText, ShoppingCart, ArrowRight, ChevronRight, TrendingUp, TrendingDown, Activity, ClipboardList, FileCheck2, Users, Gift, UserPlus, Sparkles, MessageSquare, CalendarDays, Truck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { portalApi, portalLifecycle } from '../../services/portalApiClient';
+import { portalApi, portalLifecycle, PortalShipmentRecord } from '../../services/portalApiClient';
 import ErrorBanner from './components/ErrorBanner';
 import PortalKPICard from './components/PortalKPICard';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import PortalPageHeader from './components/PortalPageHeader';
+import PortalButton from './components/PortalButton';
 
 interface Transaction {
   date: string;
@@ -55,6 +57,9 @@ const CustomerDashboard: React.FC = () => {
   const [referralSettings, setReferralSettings] = useState<any>(null);
   const [referralFunnel, setReferralFunnel] = useState<any>(null);
   const [referralLoading, setReferralLoading] = useState(true);
+  const [shipments, setShipments] = useState<PortalShipmentRecord[]>([]);
+  const [shipmentsLoading, setShipmentsLoading] = useState(true);
+  const [shipmentsError, setShipmentsError] = useState<string | null>(null);
 
   useEffect(() => {
     portalApi.get<DashboardData>('/dashboard')
@@ -98,6 +103,23 @@ const CustomerDashboard: React.FC = () => {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  const loadShipments = useCallback(async () => {
+    setShipmentsLoading(true);
+    setShipmentsError(null);
+    try {
+      const rows = await portalLifecycle.shipments.list();
+      setShipments(rows.slice(0, 3));
+    } catch (err: any) {
+      setShipmentsError(err?.message || 'Failed to load delivery updates');
+    } finally {
+      setShipmentsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadShipments();
+  }, [loadShipments]);
  
   if (loading) {
     return (
@@ -120,9 +142,11 @@ const CustomerDashboard: React.FC = () => {
 
   const quickActions = [
     { label: 'View Invoices', onClick: () => navigate('/portal/invoices'), icon: <FileText size={16} /> },
-    { label: 'View Orders', onClick: () => navigate('/portal/orders'), icon: <ShoppingCart size={16} /> },
-    { label: 'Download Statement', onClick: () => navigate('/portal/statements'), icon: <FileText size={16} /> },
-    { label: 'Contact Support', onClick: () => navigate('/portal/support'), icon: <FileText size={16} /> },
+    { label: 'Create New Request', onClick: () => navigate('/portal/new-request'), icon: <ShoppingCart size={16} /> },
+    { label: 'Download Statement', onClick: () => navigate('/portal/statements'), icon: <CalendarDays size={16} /> },
+    { label: 'Track Shipments', onClick: () => navigate('/portal/shipments'), icon: <Truck size={16} /> },
+    { label: 'Contact Support', onClick: () => navigate('/portal/support'), icon: <MessageSquare size={16} /> },
+    { label: 'Rewards & Referrals', onClick: () => navigate('/portal/referrals'), icon: <Gift size={16} /> },
   ];
 
   const recentTransactions = (data.recentTransactions || []).slice(0, 5);
@@ -146,13 +170,17 @@ const CustomerDashboard: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500 mt-1">Welcome to your customer portal</p>
-      </div>
+      <PortalPageHeader
+        title="Customer Dashboard"
+        subtitle="Track your invoices, requests, and outstanding balance in one place"
+        icon={Sparkles}
+        action={{ label: 'Create request', onClick: () => navigate('/portal/new-request'), icon: ShoppingCart }}
+      />
+
+      <div className="mt-6" />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 18 }}>
-        <PortalKPICard label="Outstanding Balance" value={`K ${(data.outstandingBalance || 0).toFixed(2)}`} icon={DollarSign} color="emerald" />
+        <PortalKPICard label="Outstanding Balance" value={`K ${(data.outstandingBalance || 0).toFixed(2)}`} icon={DollarSign} color="emerald" onClick={() => navigate('/portal/statements')} />
         <PortalKPICard label="Unpaid Invoices" value={data.unpaidInvoiceCount ?? 0} icon={FileText} color="amber" onClick={() => navigate('/portal/invoices?status=Unpaid')} />
         <PortalKPICard label="Total Orders" value={data.totalOrders ?? 0} icon={ShoppingCart} color="slate" onClick={() => navigate('/portal/orders')} />
       </div>
@@ -191,6 +219,44 @@ const CustomerDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-slate-200/60 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-800">Delivery updates</h2>
+            <p className="text-xs text-slate-500 mt-1">Your latest shipped orders, tracking details, and estimated deliveries.</p>
+          </div>
+          <PortalButton variant="secondary" size="sm" onClick={() => navigate('/portal/shipments')} icon={Truck}>View all shipments</PortalButton>
+        </div>
+        <div className="p-5">
+          {shipmentsLoading ? (
+            <div className="text-sm text-slate-500">Loading delivery updates...</div>
+          ) : shipmentsError ? (
+            <div className="text-sm text-rose-600">{shipmentsError}</div>
+          ) : shipments.length === 0 ? (
+            <div className="text-sm text-slate-500">No tracked shipments yet. Once your orders ship, tracking details will appear here.</div>
+          ) : (
+            <div className="space-y-4">
+              {shipments.map((shipment) => (
+                <div key={shipment.id} className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{shipment.order_number || `Order ${shipment.id.slice(0, 8)}`}</div>
+                      <div className="text-xs text-slate-500 mt-1">{shipment.carrier || 'Carrier unavailable'} • Tracking {shipment.tracking_number || 'pending'}</div>
+                    </div>
+                    <span className="inline-flex items-center rounded-full bg-teal-100 text-teal-700 text-[11px] font-semibold px-3 py-1 uppercase tracking-[0.14em]">{shipment.status || 'Pending'}</span>
+                  </div>
+                  <div className="mt-3 text-sm text-slate-600">Estimated delivery: {shipment.estimated_delivery ? new Date(shipment.estimated_delivery).toLocaleDateString() : 'TBD'}</div>
+                  <div className="mt-3 flex flex-wrap gap-2 items-center">
+                    <button onClick={() => navigate(`/portal/shipments/${shipment.id}`)} className="text-xs font-semibold text-teal-600 hover:text-teal-700">Open tracking details</button>
+                    {shipment.actual_arrival && <span className="text-xs text-slate-500">Arrived: {new Date(shipment.actual_arrival).toLocaleDateString()}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

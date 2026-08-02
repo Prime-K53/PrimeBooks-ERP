@@ -9,7 +9,6 @@ export interface ReferralTimelineEntry {
   actorName?: string
   metadata?: Record<string, any>
   timestamp: string
-  companyId?: string
   createdAt?: string
 }
 
@@ -28,7 +27,6 @@ export interface ReferralAuditEntry {
   userAgent?: string
   timestamp: string
   correlationId?: string
-  companyId?: string
   createdAt?: string
 }
 
@@ -53,7 +51,6 @@ export interface ReferralCampaign {
   termsAndConditions?: string
   createdBy?: string
   approvedBy?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -78,7 +75,6 @@ export interface ReferralAnalytics {
   revenueAttributed: number
   roi: number
   generatedAt: string
-  companyId?: string
 }
 
 export interface ReferralEvent {
@@ -114,7 +110,6 @@ export interface ReversalRequest {
   walletTransactionId?: string
   ledgerEntryId?: string
   notes?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -128,7 +123,6 @@ export interface ReferralRule {
   actions: Record<string, any>
   priority: number
   enabled: boolean
-  companyId?: string
   createdAt?: string
   updatedAt?: string
 }

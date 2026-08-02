@@ -14,7 +14,7 @@ const referralService = new ReferralService();
 // --- Analytics ---
 router.get('/analytics/history', requireRole('Admin', 'Manager', 'Accountant', 'Viewer'), validateQuery(referralSchemas.getAnalyticsQuery), async (req, res) => {
   try {
-    const result = await referralService.getAnalyticsHistory(req.query, req.companyId || '');
+    const result = await referralService.getAnalyticsHistory(req.query || '');
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to get analytics history:', err);
@@ -24,7 +24,7 @@ router.get('/analytics/history', requireRole('Admin', 'Manager', 'Accountant', '
 
 router.get('/analytics', requireRole('Admin', 'Manager', 'Accountant', 'Viewer'), validateQuery(referralSchemas.getAnalyticsQuery), async (req, res) => {
   try {
-    const result = await referralService.getAnalytics(req.query, req.companyId || '');
+    const result = await referralService.getAnalytics(req.query || '');
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to get analytics:', err);
@@ -35,7 +35,7 @@ router.get('/analytics', requireRole('Admin', 'Manager', 'Accountant', 'Viewer')
 // --- Campaigns ---
 router.get('/campaigns', requireRole('Admin', 'Manager', 'Accountant', 'Viewer'), async (req, res) => {
   try {
-    const result = await referralService.getAllCampaigns(req.query, req.companyId || '');
+    const result = await referralService.getAllCampaigns(req.query || '');
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to list campaigns:', err);
@@ -45,7 +45,7 @@ router.get('/campaigns', requireRole('Admin', 'Manager', 'Accountant', 'Viewer')
 
 router.post('/campaigns', requireRole('Admin', 'Manager'), validateBody(referralSchemas.createCampaign), async (req, res) => {
   try {
-    const data = await referralService.createCampaign({ ...req.body, createdBy: req.user.id }, req.companyId || '');
+    const data = await referralService.createCampaign({ ...req.body, createdBy: req.user.id } || '');
     res.status(201).json(data);
   } catch (err) {
     console.error('[Referrals] Failed to create campaign:', err);
@@ -55,7 +55,7 @@ router.post('/campaigns', requireRole('Admin', 'Manager'), validateBody(referral
 
 router.put('/campaigns/:id', requireRole('Admin', 'Manager'), validateBody(referralSchemas.updateCampaign), async (req, res) => {
   try {
-    const data = await referralService.updateCampaign(req.params.id, req.body, req.companyId || '');
+    const data = await referralService.updateCampaign(req.params.id, req.body || '');
     if (!data) return res.status(404).json({ error: 'Campaign not found' });
     res.json(data);
   } catch (err) {
@@ -66,7 +66,7 @@ router.put('/campaigns/:id', requireRole('Admin', 'Manager'), validateBody(refer
 
 router.patch('/campaigns/:id/status', requireRole('Admin', 'Manager'), validateBody(referralSchemas.updateCampaignStatus), async (req, res) => {
   try {
-    const data = await referralService.updateCampaignStatus(req.params.id, req.body.status, req.companyId || '');
+    const data = await referralService.updateCampaignStatus(req.params.id, req.body.status || '');
     if (!data) return res.status(404).json({ error: 'Campaign not found' });
     res.json(data);
   } catch (err) {
@@ -78,7 +78,7 @@ router.patch('/campaigns/:id/status', requireRole('Admin', 'Manager'), validateB
 // --- Reversals ---
 router.get('/reversals', requireRole('Admin', 'Manager', 'Accountant', 'Viewer'), async (req, res) => {
   try {
-    const result = await referralService.getAllReversals(req.query, req.companyId || '');
+    const result = await referralService.getAllReversals(req.query || '');
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to list reversals:', err);
@@ -88,7 +88,7 @@ router.get('/reversals', requireRole('Admin', 'Manager', 'Accountant', 'Viewer')
 
 router.post('/reversals', requireRole('Admin', 'Manager'), validateBody(referralSchemas.createReversal), async (req, res) => {
   try {
-    const data = await referralService.createReversal({ ...req.body, requestedBy: req.user.id }, req.companyId || '');
+    const data = await referralService.createReversal({ ...req.body, requestedBy: req.user.id } || '');
     res.status(201).json(data);
   } catch (err) {
     console.error('[Referrals] Failed to create reversal:', err);
@@ -98,7 +98,7 @@ router.post('/reversals', requireRole('Admin', 'Manager'), validateBody(referral
 
 router.patch('/reversals/:id/approve', requireRole('Admin', 'Manager'), idempotencyMiddleware(), validateBody(referralSchemas.approveReversal), async (req, res) => {
   try {
-    const data = await referralService.approveReversal(req.params.id, req.body.approved_by, req.body.notes, req.companyId || '');
+    const data = await referralService.approveReversal(req.params.id, req.body.approved_by, req.body.notes || '');
     if (!data) return res.status(404).json({ error: 'Reversal not found' });
     res.json(data);
   } catch (err) {
@@ -109,7 +109,7 @@ router.patch('/reversals/:id/approve', requireRole('Admin', 'Manager'), idempote
 
 router.patch('/reversals/:id/reject', requireRole('Admin', 'Manager'), validateBody(referralSchemas.rejectReversal), async (req, res) => {
   try {
-    const data = await referralService.rejectReversal(req.params.id, req.body.reason, req.body.rejected_by, req.body.notes, req.companyId || '');
+    const data = await referralService.rejectReversal(req.params.id, req.body.reason, req.body.rejected_by, req.body.notes || '');
     if (!data) return res.status(404).json({ error: 'Reversal not found' });
     res.json(data);
   } catch (err) {
@@ -121,7 +121,7 @@ router.patch('/reversals/:id/reject', requireRole('Admin', 'Manager'), validateB
 // --- Rewards ---
 router.get('/rewards', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'Viewer'), async (req, res) => {
   try {
-    const result = await referralService.getAllRewards(req.query, req.companyId || '');
+    const result = await referralService.getAllRewards(req.query || '');
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to list rewards:', err);
@@ -131,7 +131,7 @@ router.get('/rewards', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'V
 
 router.get('/rewards/pending', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'Viewer'), async (req, res) => {
   try {
-    const result = await referralService.getPendingRewards(req.companyId || '');
+    const result = await referralService.getPendingRewards();
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to get pending rewards:', err);
@@ -141,7 +141,7 @@ router.get('/rewards/pending', requireRole('Admin', 'Manager', 'Accountant', 'Cl
 
 router.get('/rewards/:id', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'Viewer'), async (req, res) => {
   try {
-    const data = await referralService.getRewardById(req.params.id, req.companyId || '');
+    const data = await referralService.getRewardById(req.params.id || '');
     if (!data) return res.status(404).json({ error: 'Reward not found' });
     res.json(data);
   } catch (err) {
@@ -152,7 +152,7 @@ router.get('/rewards/:id', requireRole('Admin', 'Manager', 'Accountant', 'Clerk'
 
 router.post('/rewards', requireRole('Admin', 'Manager'), rewardCreateLimiter, idempotencyMiddleware(), validateBody(referralSchemas.createReward), async (req, res) => {
   try {
-    const data = await referralService.createReward(req.body, req.companyId || '');
+    const data = await referralService.createReward(req.body || '');
     res.status(201).json(data);
   } catch (err) {
     console.error('[Referrals] Failed to create reward:', err);
@@ -162,7 +162,7 @@ router.post('/rewards', requireRole('Admin', 'Manager'), rewardCreateLimiter, id
 
 router.patch('/rewards/:id/approve', requireRole('Admin', 'Manager'), idempotencyMiddleware(), validateBody(referralSchemas.approveReward), async (req, res) => {
   try {
-    const data = await referralService.approveReward(req.params.id, req.body.approved_by, req.companyId || '');
+    const data = await referralService.approveReward(req.params.id, req.body.approved_by || '');
     if (!data) return res.status(404).json({ error: 'Reward not found' });
     res.json(data);
   } catch (err) {
@@ -173,7 +173,7 @@ router.patch('/rewards/:id/approve', requireRole('Admin', 'Manager'), idempotenc
 
 router.patch('/rewards/:id/reject', requireRole('Admin', 'Manager'), idempotencyMiddleware(), validateBody(referralSchemas.rejectReward), async (req, res) => {
   try {
-    const data = await referralService.rejectReward(req.params.id, req.body.reason, req.body.rejected_by, req.companyId || '');
+    const data = await referralService.rejectReward(req.params.id, req.body.reason, req.body.rejected_by || '');
     if (!data) return res.status(404).json({ error: 'Reward not found' });
     res.json(data);
   } catch (err) {
@@ -185,7 +185,7 @@ router.patch('/rewards/:id/reject', requireRole('Admin', 'Manager'), idempotency
 // --- Settings ---
 router.get('/settings', requireRole('Admin', 'Manager', 'Viewer'), async (req, res) => {
   try {
-    const data = await referralService.getSettings(req.companyId || '');
+    const data = await referralService.getSettings();
     res.json(data);
   } catch (err) {
     console.error('[Referrals] Failed to get settings:', err);
@@ -195,7 +195,7 @@ router.get('/settings', requireRole('Admin', 'Manager', 'Viewer'), async (req, r
 
 router.put('/settings', requireRole('Admin', 'Manager'), validateBody(referralSchemas.updateSettings), async (req, res) => {
   try {
-    const data = await referralService.updateSettings(req.companyId || '', req.body.settings);
+    const data = await referralService.updateSettings(req.body.settings);
     res.json(data);
   } catch (err) {
     console.error('[Referrals] Failed to update settings:', err);
@@ -206,7 +206,7 @@ router.put('/settings', requireRole('Admin', 'Manager'), validateBody(referralSc
 // --- Audit ---
 router.get('/audit', requireRole('Admin', 'Manager', 'Auditor'), async (req, res) => {
   try {
-    const result = await referralService.getAuditLogs(req.query, req.companyId || '');
+    const result = await referralService.getAuditLogs(req.query || '');
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to get audit logs:', err);
@@ -217,7 +217,7 @@ router.get('/audit', requireRole('Admin', 'Manager', 'Auditor'), async (req, res
 // --- CSV Export ---
 router.get('/export/referrals', requireRole('Admin', 'Manager', 'Accountant', 'Viewer'), async (req, res) => {
   try {
-    const result = await referralService.getAll({ ...req.query, limit: 10000 }, req.companyId || '');
+    const result = await referralService.getAll({ ...req.query, limit: 10000 } || '');
     const rows = result.referrals || [];
     const header = 'id,customer_id,referred_by_id,referred_by_name,referral_code,status,pending_invoice_id,pending_invoice_amount,converted_invoice_id,notes,created_at,updated_at';
     const csv = rows.map(r =>
@@ -234,7 +234,7 @@ router.get('/export/referrals', requireRole('Admin', 'Manager', 'Accountant', 'V
 
 router.get('/export/rewards', requireRole('Admin', 'Manager', 'Accountant', 'Viewer'), async (req, res) => {
   try {
-    const result = await referralService.getAllRewards({ ...req.query, limit: 10000 }, req.companyId || '');
+    const result = await referralService.getAllRewards({ ...req.query, limit: 10000 } || '');
     const rows = result.rewards || [];
     const header = 'id,referral_id,customer_id,invoice_id,invoice_amount,amount,status,approved_at,approved_by,wallet_transaction_id,created_at';
     const csv = rows.map(r =>
@@ -251,7 +251,7 @@ router.get('/export/rewards', requireRole('Admin', 'Manager', 'Accountant', 'Vie
 
 router.get('/export/analytics', requireRole('Admin', 'Manager', 'Accountant', 'Viewer'), async (req, res) => {
   try {
-    const result = await referralService.getAnalyticsHistory(req.query, req.companyId || '');
+    const result = await referralService.getAnalyticsHistory(req.query || '');
     const rows = Array.isArray(result) ? result : [];
     const header = 'period,period_start,period_end,total_referrals,active_referrals,converted_referrals,total_rewards_amount,approved_rewards_amount,paid_rewards_amount,pending_rewards_amount,average_reward_amount,conversion_rate,revenue_attributed,roi,generated_at';
     const csv = rows.map(r =>
@@ -269,7 +269,7 @@ router.get('/export/analytics', requireRole('Admin', 'Manager', 'Accountant', 'V
 // --- Referrals ---
 router.get('/', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'Viewer'), validateQuery(referralSchemas.getReferralsQuery), async (req, res) => {
   try {
-    const result = await referralService.getAll(req.query, req.companyId || '');
+    const result = await referralService.getAll(req.query || '');
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to list:', err);
@@ -279,7 +279,7 @@ router.get('/', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'Viewer')
 
 router.get('/:id', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'Viewer'), async (req, res) => {
   try {
-    const data = await referralService.getById(req.params.id, req.companyId || '');
+    const data = await referralService.getById(req.params.id || '');
     if (!data) return res.status(404).json({ error: 'Referral not found' });
     res.json(data);
   } catch (err) {
@@ -290,7 +290,7 @@ router.get('/:id', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'Viewe
 
 router.post('/', requireRole('Admin', 'Manager'), referralCreateLimiter, idempotencyMiddleware(), validateBody(referralSchemas.createReferral), async (req, res) => {
   try {
-    const data = await referralService.register(req.body, req.companyId || '');
+    const data = await referralService.register(req.body || '');
     res.status(201).json(data);
   } catch (err) {
     console.error('[Referrals] Failed to create referral:', err);
@@ -300,7 +300,7 @@ router.post('/', requireRole('Admin', 'Manager'), referralCreateLimiter, idempot
 
 router.put('/:id', requireRole('Admin', 'Manager'), validateBody(referralSchemas.updateReferral), async (req, res) => {
   try {
-    const data = await referralService.update(req.params.id, req.body, req.companyId || '');
+    const data = await referralService.update(req.params.id, req.body || '');
     if (!data) return res.status(404).json({ error: 'Referral not found' });
     res.json(data);
   } catch (err) {
@@ -315,8 +315,7 @@ router.patch('/:id/cancel', requireRole('Admin', 'Manager'), validateBody(referr
       req.params.id,
       req.user.id,
       req.user.name || '',
-      req.body.reason,
-      req.companyId || ''
+      req.body.reason || ''
     );
     if (!data) return res.status(404).json({ error: 'Referral not found' });
     res.json(data);
@@ -331,7 +330,7 @@ router.patch('/:id/cancel', requireRole('Admin', 'Manager'), validateBody(referr
 
 router.patch('/:id/expire', requireRole('Admin', 'Manager'), async (req, res) => {
   try {
-    const data = await referralService.expire(req.params.id, req.companyId || '');
+    const data = await referralService.expire(req.params.id || '');
     if (!data) return res.status(404).json({ error: 'Referral not found' });
     res.json(data);
   } catch (err) {
@@ -345,7 +344,7 @@ router.patch('/:id/expire', requireRole('Admin', 'Manager'), async (req, res) =>
 
 router.delete('/:id', requireRole('Admin', 'Manager'), async (req, res) => {
   try {
-    const data = await referralService.delete(req.params.id, req.companyId || '');
+    const data = await referralService.delete(req.params.id || '');
     if (!data) return res.status(404).json({ error: 'Referral not found' });
     res.json({ message: 'Referral deleted', referral: data });
   } catch (err) {
@@ -356,7 +355,7 @@ router.delete('/:id', requireRole('Admin', 'Manager'), async (req, res) => {
 
 router.post('/audit/cleanup', requireRole('Admin'), async (req, res) => {
   try {
-    const result = await referralService.cleanupAuditLogs(req.body.retention_days || 90, req.companyId || '');
+    const result = await referralService.cleanupAuditLogs(req.body.retention_days || 90 || '');
     res.json(result);
   } catch (err) {
     console.error('[Referrals] Failed to cleanup audit logs:', err);
@@ -366,7 +365,7 @@ router.post('/audit/cleanup', requireRole('Admin'), async (req, res) => {
 
 router.get('/:id/timeline', requireRole('Admin', 'Manager', 'Accountant', 'Clerk', 'Viewer'), async (req, res) => {
   try {
-    const data = await referralService.getTimeline(req.params.id, req.companyId || '');
+    const data = await referralService.getTimeline(req.params.id || '');
     if (!data) return res.status(404).json({ error: 'Referral not found' });
     res.json(data);
   } catch (err) {

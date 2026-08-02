@@ -42,8 +42,8 @@ export function mergeRecords(localRecord: any, remoteRecord: any): any {
  */
 export function fieldLevelMerge(localRecord: any, remoteRecord: any): any {
   const METADATA_FIELDS = new Set([
-    'id', '_updatedAt', '_cloudSource', '_companyId', '_version',
-    'version', 'updated_at', 'created_at', 'company_id', 'serverUpdatedAt',
+    'id', '_updatedAt', '_cloudSource', '_version',
+    'version', 'updated_at', 'created_at', 'serverUpdatedAt',
   ]);
 
   // Prefer server authoritative timestamps

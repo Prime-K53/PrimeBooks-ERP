@@ -137,6 +137,63 @@ export const portalApi = {
   },
 };
 
+export interface TicketAttachment {
+  id: string;
+  ticket_id: string;
+  message_id: string | null;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size_bytes: number;
+  uploaded_by: string;
+  created_at: string;
+  download_url?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Ticket Attachments
+// ---------------------------------------------------------------------------
+
+export async function uploadTicketAttachment(
+  ticketId: string,
+  file: File,
+  messageId?: string | null
+): Promise<TicketAttachment> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (messageId) {
+    formData.append('message_id', messageId);
+  }
+
+  const token = getPortalAccessToken();
+  const url = `${API_BASE_URL}/portal/support/tickets/${ticketId}/attachments`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const error: any = new Error(body.message || body.error || `Upload failed with status ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+
+  return response.json();
+}
+
+export async function getTicketAttachments(ticketId: string): Promise<TicketAttachment[]> {
+  return portalApi.get<TicketAttachment[]>(`/support/tickets/${ticketId}/attachments`);
+}
+
+export async function deleteTicketAttachment(ticketId: string, attachmentId: string): Promise<{ success: boolean }> {
+  return portalApi.delete<{ success: boolean }>(`/support/tickets/${ticketId}/attachments/${attachmentId}`);
+}
+
 // ---------------------------------------------------------------------------
 // Document lifecycle (requests, quotations, downloads, timeline, realtime)
 // ---------------------------------------------------------------------------
@@ -147,6 +204,17 @@ export interface RequestLineItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+}
+
+export interface PortalCatalogItem {
+  id: string;
+  name: string;
+  sku?: string;
+  unit?: string;
+  price?: number;
+  quantity?: number;
+  category?: string;
+  status?: string;
 }
 
 export interface PortalAttachment {
@@ -171,7 +239,6 @@ export interface QuotationRequestRecord {
   request_number: string;
   customer_id: string;
   customer_name: string;
-  company_id: string;
   request_type: string;
   items: RequestLineItem[];
   subtotal: number;
@@ -255,7 +322,6 @@ export interface QuotationRecord {
   request_id: string | null;
   customer_id: string;
   customer_name: string;
-  company_id: string;
   items: RequestLineItem[];
   subtotal: number;
   discount: number;
@@ -379,7 +445,6 @@ export interface PortalNotification {
   body: string;
   link: string;
   is_read: boolean;
-  company_id: string;
   created_at: string;
 }
 
@@ -489,6 +554,12 @@ export const portalLifecycle = {
     },
     signatures(id: string): Promise<DocumentSignatureRecord[]> {
       return portalApi.get<DocumentSignatureRecord[]>(`/quotations/${id}/signatures`);
+    },
+  },
+
+  catalog: {
+    list(): Promise<PortalCatalogItem[]> {
+      return portalApi.get<PortalCatalogItem[]>('/catalog');
     },
   },
 
@@ -638,6 +709,26 @@ export const portalLifecycle = {
     get(id: string): Promise<any> {
       return portalApi.get(`/payments/${id}`);
     },
+    /** Create a Stripe PaymentIntent (or mock client secret) for an invoice */
+    createIntent(invoiceId: string, amount: number, currency?: string): Promise<{ clientSecret: string; mode: string }> {
+      return portalApi.post('/payments/intent', { invoiceId, amount, currency });
+    },
+    /** Record a completed payment against an invoice */
+    recordPayment(invoiceId: string, amount: number, options?: {
+      currency?: string;
+      paymentMethod?: string;
+      reference?: string;
+      transactionId?: string;
+    }): Promise<{ success: boolean; paymentId: string; status: string }> {
+      return portalApi.post('/payments', {
+        invoiceId,
+        amount,
+        currency: options?.currency || 'USD',
+        paymentMethod: options?.paymentMethod || 'Card',
+        reference: options?.reference,
+        transactionId: options?.transactionId,
+      });
+    },
   },
 
   statements: {
@@ -671,6 +762,24 @@ export const portalLifecycle = {
     },
     changePassword(payload: { currentPassword: string; newPassword: string }): Promise<any> {
       return portalApi.post('/profile/password', payload);
+    },
+    listSessions(): Promise<any[]> {
+      return portalApi.get('/auth/sessions');
+    },
+  },
+
+  twoFactor: {
+    status(): Promise<{ enabled: boolean; confirmed: boolean }> {
+      return portalApi.get('/auth/two-factor/status');
+    },
+    setup(): Promise<{ secret: string; otpauth_uri: string }> {
+      return portalApi.post('/auth/two-factor/setup', {});
+    },
+    enable(code: string): Promise<{ message: string }> {
+      return portalApi.post('/auth/two-factor/enable', { code });
+    },
+    disable(code: string): Promise<{ message: string }> {
+      return portalApi.post('/auth/two-factor/disable', { code });
     },
   },
 

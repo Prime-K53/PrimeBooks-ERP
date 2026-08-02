@@ -11,7 +11,6 @@ export interface Referral {
   pendingInvoiceId?: string
   pendingInvoiceAmount?: number
   notes?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
   [key: string]: any
@@ -33,7 +32,6 @@ export interface ReferralReward {
   cancelReason?: string
   walletTransactionId?: string
   notes?: string
-  companyId?: string
   createdAt?: string
   updatedAt?: string
   [key: string]: any

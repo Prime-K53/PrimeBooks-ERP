@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const { totp, authenticator } = require('otplib');
 const { db } = require('../db.cjs');
 
 const SALT_ROUNDS = 10;
@@ -32,7 +33,6 @@ function generateEventTicket(userOrCustomerId, purpose = 'portal') {
     {
       id: user.id || user.portal_user_id || null,
       customer_id: user.customer_id,
-      company_id: user.company_id || '',
       email: user.email || null,
       role: 'portal_customer',
       purpose,
@@ -54,7 +54,6 @@ const ensurePortalSchema = () => {
         full_name TEXT,
         phone TEXT,
         status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'disabled', 'invited')),
-        company_id TEXT NOT NULL DEFAULT '',
         last_login_at TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
@@ -66,20 +65,20 @@ const ensurePortalSchema = () => {
   });
 };
 
-const registerPortalUser = async ({ customer_id, email, password, full_name, phone, company_id, status = 'active' }) => {
+const registerPortalUser = async ({ customer_id, email, password, full_name, phone, status = 'active' }) => {
   const id = genId('pusr');
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO portal_users (id, customer_id, email, password_hash, full_name, phone, company_id, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, customer_id, email.toLowerCase().trim(), password_hash, full_name || null, phone || null, company_id || '', status],
+      `INSERT INTO portal_users (id, customer_id, email, password_hash, full_name, phone, status)
+       VALUES (?, ?, ?, ?, ?, ? , ?)`,
+      [id, customer_id, email.toLowerCase().trim(), password_hash, full_name || null, phone || null, status],
       function (err) {
         if (err) {
           if (err.message.includes('UNIQUE')) return reject(new Error('Email already registered'));
           return reject(err);
         }
-        resolve({ id, customer_id, email, full_name, phone, company_id, status });
+        resolve({ id, customer_id, email, full_name, phone, status });
       }
     );
   });
@@ -88,7 +87,7 @@ const registerPortalUser = async ({ customer_id, email, password, full_name, pho
 const authenticatePortalUser = (email, password) => {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, customer_id, email, password_hash, full_name, phone, status, company_id
+      `SELECT id, customer_id, email, password_hash, full_name, phone, status
        FROM portal_users WHERE email = ?`,
       [email.toLowerCase().trim()],
       async (err, row) => {
@@ -103,8 +102,7 @@ const authenticatePortalUser = (email, password) => {
           customer_id: row.customer_id,
           email: row.email,
           full_name: row.full_name,
-          phone: row.phone,
-          company_id: row.company_id || ''
+          phone: row.phone
         });
       }
     );
@@ -115,7 +113,7 @@ const findCustomerInSupabase = async (customerId) => {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) return null;
   try {
     const { data } = await axios.get(`${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/customers`, {
-      params: { id: `eq.${customerId}`, select: 'id,company_id,data' },
+      params: { id: `eq.${customerId}`, select: 'id,data' },
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
       timeout: 5000,
     });
@@ -137,7 +135,6 @@ const findCustomerInSupabase = async (customerId) => {
       creditLimit: domain.creditLimit || 0,
       outstandingBalance: domain.outstandingBalance || 0,
       status: domain.status || row.status || '',
-      company_id: row.company_id || domain.company_id || '',
     };
   } catch {
     return null;
@@ -153,8 +150,7 @@ const finishPortalLogin = (existing, customer, resolve) => {
     customer_id: existing.customer_id,
     email: existing.email || customer.email || '',
     full_name: existing.full_name || customer.name,
-    phone: existing.phone || customer.phone || '',
-    company_id: existing.company_id || ''
+    phone: existing.phone || customer.phone || ''
   });
 };
 
@@ -164,22 +160,12 @@ const resolvePortalUserForCustomer = (customer, fullName) => {
       return resolve(null);
     }
     const customerId = customer.customer_id || customer.id;
-    const company_id = customer.company_id || '';
     db.get(
-      `SELECT id, customer_id, email, full_name, phone, status, company_id FROM portal_users WHERE customer_id = ? AND company_id = ?`,
-      [customerId, company_id],
+      `SELECT id, customer_id, email, full_name, phone, status FROM portal_users WHERE customer_id = ?`,
+      [customerId],
       (err, existing) => {
         if (err) return reject(err);
-        if (existing) return finishPortalLogin(existing, customer, resolve);
-        // Fallback: match on customer_id alone when stored company_id differs
-        db.get(
-          `SELECT id, customer_id, email, full_name, phone, status, company_id FROM portal_users WHERE customer_id = ?`,
-          [customerId],
-          (err2, row) => {
-            if (err2) return reject(err2);
-            finishPortalLogin(row, customer, resolve);
-          }
-        );
+        finishPortalLogin(existing, customer, resolve);
       }
     );
   });
@@ -188,7 +174,7 @@ const resolvePortalUserForCustomer = (customer, fullName) => {
 const loginWithCustomerId = (customerId, fullName) => {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, name, email, phone, company_id FROM customers WHERE id = ?`,
+      `SELECT id, name, email, phone FROM customers WHERE id = ?`,
       [customerId],
       async (err, customer) => {
         if (err) return reject(err);
@@ -216,7 +202,7 @@ const loginWithCustomerId = (customerId, fullName) => {
 const getPortalUserById = (id) => {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, customer_id, email, full_name, phone, status, company_id, last_login_at, created_at
+      `SELECT id, customer_id, email, full_name, phone, status, last_login_at, created_at
        FROM portal_users WHERE id = ?`,
       [id],
       (err, row) => {
@@ -227,12 +213,12 @@ const getPortalUserById = (id) => {
   });
 };
 
-const getPortalUserByCustomerId = (customerId, companyId) => {
+const getPortalUserByCustomerId = (customerId) => {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, customer_id, email, full_name, phone, status, company_id, last_login_at, created_at
-       FROM portal_users WHERE customer_id = ? AND company_id = ?`,
-      [customerId, companyId],
+      `SELECT id, customer_id, email, full_name, phone, status, last_login_at, created_at
+       FROM portal_users WHERE customer_id = ?`,
+      [customerId],
       (err, row) => {
         if (err) return reject(err);
         resolve(row || null);
@@ -241,17 +227,12 @@ const getPortalUserByCustomerId = (customerId, companyId) => {
   });
 };
 
-const getPortalUserByEmail = (email, companyId) => {
+const getPortalUserByEmail = (email) => {
   return new Promise((resolve, reject) => {
     const params = [String(email || '').toLowerCase().trim()];
-    let where = 'email = ?';
-    if (companyId !== undefined && companyId !== null) {
-      where += ' AND company_id = ?';
-      params.push(companyId);
-    }
     db.get(
-      `SELECT id, customer_id, email, full_name, phone, status, company_id, last_login_at, created_at
-       FROM portal_users WHERE ${where}`,
+      `SELECT id, customer_id, email, full_name, phone, status, last_login_at, created_at
+       FROM portal_users WHERE email = ?`,
       params,
       (err, row) => {
         if (err) return reject(err);
@@ -334,8 +315,8 @@ const setPortalUserStatus = (id, status) => {
   });
 };
 
-const activatePortalUser = async ({ customer_id, code, password, company_id }) => {
-  const user = await getPortalUserByCustomerId(customer_id, company_id || '');
+const activatePortalUser = async ({ customer_id, code, password }) => {
+  const user = await getPortalUserByCustomerId(customer_id);
   if (!user) {
     const err = new Error('Invalid customer ID or invite code');
     err.code = 'INVALID_INVITE';
@@ -360,7 +341,7 @@ const activatePortalUser = async ({ customer_id, code, password, company_id }) =
 };
 
 const updatePortalUser = (id, fields) => {
-  const allowed = ['full_name', 'phone', 'email'];
+  const allowed = ['full_name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'country'];
   const sets = [];
   const params = [];
   for (const key of allowed) {
@@ -411,15 +392,15 @@ const updatePassword = async (id, newPassword) => {
   });
 };
 
-function createSession(portalUserId, companyId, refreshToken) {
+function createSession(portalUserId, refreshToken, ipAddress, userAgent) {
   const id = genId('pses');
   const tokenHash = hashToken(refreshToken);
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO portal_sessions (id, portal_user_id, refresh_token_hash, expires_at, company_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id, portalUserId, tokenHash, expiresAt, companyId || ''],
+      `INSERT INTO portal_sessions (id, portal_user_id, refresh_token_hash, expires_at, ip_address, user_agent)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, portalUserId, tokenHash, expiresAt, ipAddress || null, userAgent || null],
       (err) => {
         if (err) return reject(err);
         resolve({ id, expiresAt });
@@ -432,7 +413,7 @@ function findSessionByRefreshToken(refreshToken) {
   const tokenHash = hashToken(refreshToken);
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, portal_user_id, company_id, expires_at, revoked_at
+      `SELECT id, portal_user_id, expires_at, revoked_at
        FROM portal_sessions WHERE refresh_token_hash = ?`,
       [tokenHash],
       (err, row) => {
@@ -464,6 +445,19 @@ function revokeAllSessions(portalUserId) {
   });
 }
 
+function revokeSessionById(sessionId, portalUserId) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE portal_sessions SET revoked_at = datetime('now') WHERE id = ? AND portal_user_id = ? AND revoked_at IS NULL`,
+      [sessionId, portalUserId],
+      function (err) {
+        if (err) return reject(err);
+        resolve(!!this.changes);
+      }
+    );
+  });
+}
+
 function recordLoginHistory(portalUserId, ip, userAgent) {
   return new Promise((resolve, reject) => {
     db.run(
@@ -475,6 +469,135 @@ function recordLoginHistory(portalUserId, ip, userAgent) {
         resolve();
       }
     );
+  });
+}
+
+function listSessions(portalUserId) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, portal_user_id, expires_at, revoked_at, created_at, user_agent, ip_address
+       FROM portal_sessions
+       WHERE portal_user_id = ? AND revoked_at IS NULL AND expires_at > datetime('now')
+       ORDER BY created_at DESC`,
+      [portalUserId],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      }
+    );
+  });
+}
+
+// ─── Two-Factor Authentication (TOTP) ─────────────────────────────────────
+
+const TOTP_WINDOW = 1; // Accept tokens within 30s window (1 step before/after)
+
+function generateTwoFactorSecret(portalUserId, email, serviceName) {
+  const secret = authenticator.generateSecret();
+  const otpauth = authenticator.keyuri(email, serviceName || 'Prime ERP', email);
+  return { secret, otpauth };
+}
+
+async function saveTwoFactorSecret(portalUserId, secret) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE portal_users SET two_factor_secret = ?, updated_at = datetime('now') WHERE id = ?`,
+      [secret, portalUserId],
+      (err) => {
+        if (err) return reject(err);
+        resolve();
+      }
+    );
+  });
+}
+
+async function verifyTwoFactorToken(secret, token) {
+  try {
+    return authenticator.check(token, secret, TOTP_WINDOW);
+  } catch {
+    return false;
+  }
+}
+
+async function enableTwoFactor(portalUserId, token) {
+  const user = await new Promise((resolve, reject) => {
+    db.get(`SELECT two_factor_secret FROM portal_users WHERE id = ?`, [portalUserId], (err, row) => {
+      if (err) return reject(err);
+      resolve(row);
+    });
+  });
+  if (!user || !user.two_factor_secret) {
+    const err = new Error('No 2FA secret found');
+    err.code = 'NO_SECRET';
+    throw err;
+  }
+  if (!verifyTwoFactorToken(user.two_factor_secret, token)) {
+    const err = new Error('Invalid verification code');
+    err.code = 'INVALID_TOKEN';
+    throw err;
+  }
+  await new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE portal_users SET two_factor_enabled = 1, two_factor_confirmed = 1, updated_at = datetime('now') WHERE id = ?`,
+      [portalUserId],
+      (err) => { if (err) return reject(err); resolve(); }
+    );
+  });
+}
+
+async function disableTwoFactor(portalUserId, token) {
+  const user = await new Promise((resolve, reject) => {
+    db.get(`SELECT two_factor_secret, two_factor_enabled FROM portal_users WHERE id = ?`, [portalUserId], (err, row) => {
+      if (err) return reject(err);
+      resolve(row);
+    });
+  });
+  if (!user || user.two_factor_enabled !== 1) {
+    const err = new Error('Two-factor authentication is not enabled');
+    err.code = 'NOT_ENABLED';
+    throw err;
+  }
+  if (user.two_factor_secret && !verifyTwoFactorToken(user.two_factor_secret, token)) {
+    const err = new Error('Invalid verification code');
+    err.code = 'INVALID_TOKEN';
+    throw err;
+  }
+  await new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE portal_users SET two_factor_enabled = 0, two_factor_secret = NULL, two_factor_confirmed = 0, updated_at = datetime('now') WHERE id = ?`,
+      [portalUserId],
+      (err) => { if (err) return reject(err); resolve(); }
+    );
+  });
+}
+
+async function isTwoFactorEnabled(portalUserId) {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT two_factor_enabled FROM portal_users WHERE id = ?`, [portalUserId], (err, row) => {
+      if (err) return reject(err);
+      resolve(row && row.two_factor_enabled === 1);
+    });
+  });
+}
+
+async function getTwoFactorStatus(portalUserId) {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT two_factor_enabled, two_factor_confirmed FROM portal_users WHERE id = ?`, [portalUserId], (err, row) => {
+      if (err) return reject(err);
+      resolve({
+        enabled: row?.two_factor_enabled === 1,
+        confirmed: row?.two_factor_confirmed === 1,
+      });
+    });
+  });
+}
+
+async function getTwoFactorSecret(portalUserId) {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT two_factor_secret FROM portal_users WHERE id = ?`, [portalUserId], (err, row) => {
+      if (err) return reject(err);
+      resolve(row?.two_factor_secret || null);
+    });
   });
 }
 
@@ -501,7 +624,17 @@ module.exports = {
   findSessionByRefreshToken,
   revokeSession,
   revokeAllSessions,
+  revokeSessionById,
   recordLoginHistory,
+  listSessions,
+  generateTwoFactorSecret,
+  saveTwoFactorSecret,
+  verifyTwoFactorToken,
+  enableTwoFactor,
+  disableTwoFactor,
+  isTwoFactorEnabled,
+  getTwoFactorStatus,
+  getTwoFactorSecret,
   ACCESS_TOKEN_EXPIRY,
   REFRESH_TOKEN_EXPIRY_DAYS,
   generateEventTicket

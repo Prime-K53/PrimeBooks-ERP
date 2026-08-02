@@ -1,7 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CreditCard, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle2, Download, Loader2 } from 'lucide-react';
+import { createElement } from 'react';
+import { pdf } from '@react-pdf/renderer';
 import { portalApi, portalLifecycle } from '../../services/portalApiClient';
+import { attachDocumentSecurity } from '../../utils/documentSecurity';
+import { initializePrimePdfFonts } from '../shared/components/PDF/templateSettings';
+import { PrimeDocument } from '../shared/components/PDF/PrimeDocument';
+import { useAuth } from '../../context/AuthContext';
 import ErrorBanner from './components/ErrorBanner';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 
@@ -31,6 +37,8 @@ const CustomerPaymentDetail: React.FC = () => {
   const [payment, setPayment] = useState<PaymentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const { companyConfig } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -59,6 +67,62 @@ const CustomerPaymentDetail: React.FC = () => {
     return () => { cancelled = true; };
   }, [id]);
 
+  const handleDownloadReceipt = useCallback(async () => {
+    if (!payment) return;
+    setDownloading(true);
+    try {
+      await initializePrimePdfFonts();
+
+      const allocations = payment.allocations || [];
+      const appliedInvoices = allocations.map((a) => a.invoice_number || a.invoice_id);
+      const invoiceTotal = allocations.reduce((sum, a) => sum + Number(a.invoice_total || 0), 0);
+      const totalAllocated = allocations.reduce((sum, a) => sum + Number(a.amount || 0), 0);
+      const amountReceived = Number(payment.amount || 0);
+
+      let paymentStatus: 'PAID' | 'PARTIALLY PAID' | 'OVERPAID' = 'PAID';
+      if (totalAllocated < amountReceived) paymentStatus = 'OVERPAID';
+      else if (totalAllocated < invoiceTotal) paymentStatus = 'PARTIALLY PAID';
+
+      const receiptData = {
+        receiptNumber: payment.reference || payment.id?.slice(0, 8) || 'N/A',
+        date: payment.date ? new Date(payment.date).toLocaleDateString() : new Date().toLocaleDateString(),
+        customerName: companyConfig?.companyName || 'Customer',
+        amountReceived,
+        amountApplied: totalAllocated,
+        changeGiven: 0,
+        walletDeposit: 0,
+        paymentMethod: payment.payment_method || 'Unknown',
+        appliedInvoices,
+        appliedOrders: [],
+        invoiceTotal,
+        paymentStatus,
+        balanceDue: Math.max(0, invoiceTotal - totalAllocated),
+        overpaymentAmount: Math.max(0, amountReceived - totalAllocated),
+        narrative: `Payment of K ${amountReceived.toFixed(2)} received via ${payment.payment_method || 'N/A'}. ${allocations.length} invoice(s) allocated.`,
+        currentBalance: Math.max(0, invoiceTotal - totalAllocated),
+        calculationVersion: 1,
+      };
+
+      const secured = await attachDocumentSecurity(receiptData, companyConfig?.companyName);
+      const blob = await pdf(
+        createElement(PrimeDocument, { type: 'RECEIPT', data: secured })
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = `Receipt-${payment.reference || payment.id?.slice(0, 8) || 'payment'}.pdf`;
+      window.document.body.appendChild(a);
+      a.click();
+      window.document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to generate receipt PDF:', err);
+    } finally {
+      setDownloading(false);
+    }
+  }, [payment, companyConfig]);
+
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
   if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!payment) return null;
@@ -80,9 +144,25 @@ const CustomerPaymentDetail: React.FC = () => {
               {payment.status ? ` • ${payment.status}` : ''}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} className="text-emerald-600" />
-            <span className="text-2xl font-bold text-emerald-600 font-mono">K {Number(payment.amount).toFixed(2)}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={18} className="text-emerald-600" />
+              <span className="text-2xl font-bold text-emerald-600 font-mono">K {Number(payment.amount).toFixed(2)}</span>
+            </div>
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={downloading}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+              style={{
+                background: 'linear-gradient(155deg, #1f8577, #0f544c)',
+                color: '#fff',
+                opacity: downloading ? 0.6 : 1,
+                cursor: downloading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {downloading ? 'Generating…' : 'Download Receipt'}
+            </button>
           </div>
         </div>
         {payment.notes && <div className="text-sm text-slate-500">{payment.notes}</div>}
