@@ -169,19 +169,53 @@ export const durableSyncQueue = {
     fileRef?: string | null;
   }): Promise<QueuedOperation> {
     const now = new Date().toISOString();
-    const dependsOn = input.dependsOn || [];
+    const db = await getDb();
+    const payloadStr = JSON.stringify(input.payload);
+    const allExisting = await db.getAll('operations');
+
+    const duplicate = allExisting.find((op) =>
+      op.table === input.table
+      && op.recordId === (input.recordId || null)
+      && op.operation === input.operation
+      && (op.status === 'pending' || op.status === 'syncing' || op.status === 'failed')
+      && JSON.stringify(op.payload) === payloadStr
+    );
+
+    if (duplicate) {
+      return duplicate;
+    }
+
+    let dependsOn = [...(input.dependsOn || [])];
+
+    if (input.operation === 'delete' && input.recordId) {
+      const sameRecordOps = allExisting.filter((op) =>
+        op.table === input.table
+        && op.recordId === input.recordId
+        && (op.status === 'pending' || op.status === 'syncing' || op.status === 'failed')
+        && op.operation !== 'delete'
+      );
+
+      dependsOn = Array.from(new Set([
+        ...dependsOn,
+        ...sameRecordOps.filter((op) => op.status === 'syncing').map((op) => op.id),
+      ]));
+
+      for (const op of sameRecordOps) {
+        if (op.status !== 'syncing') {
+          await db.delete('operations', op.id);
+        }
+      }
+    }
 
     if (dependsOn.length > 0) {
-      const db = await getDb();
-      const allExisting = await db.getAll('operations');
+      const cycleCandidates = await db.getAll('operations');
       const visited = new Set<string>();
       const path = new Set<string>();
-      if (detectCycle(dependsOn, allExisting, visited, path)) {
+      if (detectCycle(dependsOn, cycleCandidates, visited, path)) {
         throw new Error(`Dependency cycle detected: operation would create a circular dependency`);
       }
     }
 
-    const payloadStr = JSON.stringify(input.payload);
     const item: QueuedOperation = {
       id: generateId(),
       operationId: input.fileRef ? input.fileRef : generateOperationId(),
@@ -199,7 +233,6 @@ export const durableSyncQueue = {
       fileRef: input.fileRef || null,
       payloadSizeBytes: payloadStr.length,
     };
-    const db = await getDb();
     await db.put('operations', item);
     return item;
   },

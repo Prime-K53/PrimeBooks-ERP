@@ -57,6 +57,7 @@ export function fieldLevelMerge(localRecord: any, remoteRecord: any): any {
   const merged: Record<string, unknown> = {
     id: remoteRecord.id || localRecord.id,
     _updatedAt: new Date().toISOString(),
+    serverUpdatedAt: remoteRecord.updated_at || remoteRecord.serverUpdatedAt || localRecord.serverUpdatedAt,
     _cloudSource: true,
   };
 

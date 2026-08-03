@@ -182,6 +182,29 @@ const enqueueOutbox = async (type: string, entityId: string, payload: Record<str
       : 'create';
 
   try {
+    const { queueOfflineMutation } = await import('./offlineQueueManager');
+    const method = operation === 'delete' ? 'DELETE' : operation === 'update' ? 'PUT' : 'POST';
+    const url = operation === 'create'
+      ? '/api/examination/batches'
+      : `/api/examination/batches/${encodeURIComponent(entityId)}`;
+
+    await queueOfflineMutation({
+      entityId,
+      operation,
+      request: {
+        url,
+        method,
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: payload
+      },
+      payload
+    });
+  } catch {
+  }
+
+  try {
     const { durableSyncQueue } = await import('./durableSyncQueue');
     await durableSyncQueue.enqueue({
       table: 'examination_batches',

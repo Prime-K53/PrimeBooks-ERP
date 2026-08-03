@@ -659,16 +659,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
+        import('../services/syncService').then(({ stopPeriodicSync }) => {
+          stopPeriodicSync();
+        }).catch(() => {});
         setUser(null);
         setAllUsers([]);
         setRequiresSetup(false);
+        return;
+      }
+
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && !requiresSetup) {
+        import('../services/syncService').then(({ startPeriodicSync }) => {
+          startPeriodicSync();
+        }).catch(() => {});
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [requiresSetup]);
 
   // ── Inactivity timeout ──
   const lastActivityRef = useRef(Date.now());

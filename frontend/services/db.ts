@@ -105,6 +105,7 @@ interface NexusDB extends DBSchema {
     salesExchangeApprovals: { key: string; value: any; };
     files: { key: string; value: { id: string; blob: Blob; name: string; type: string; created: string } };
     financialYears: { key: string; value: any };
+    userPreferences: { key: string; value: any };
     tasks: { key: string; value: any };
     syncOutbox: { key: string; value: { id: string; entityId: string; type: string; payload: any; date: string } };
     vatTransactions: { key: string; value: VatTransaction; };
@@ -158,7 +159,7 @@ interface NexusDB extends DBSchema {
 }
 
 const DB_NAME = 'PrimeERP_Final_v3_Clean';
-const DB_VERSION = 50;
+const DB_VERSION = 51;
 
 let dbPromise: Promise<IDBPDatabase<NexusDB>> | null = null;
 
@@ -364,6 +365,14 @@ const LOCAL_ONLY_STORES = new Set([
   'productAttributes'
 ]);
 
+interface PutOptions {
+    cloudSource?: boolean;
+}
+
+interface DeleteOptions {
+    cloudSource?: boolean;
+}
+
 const shouldUseCloud = () => {
   return SUPABASE_CONFIGURED();
 };
@@ -406,6 +415,7 @@ const CLOUD_TABLE_MAP: Record<string, string> = {
   bankCategories: 'bank_categories',
   idempotencyKeys: 'idempotency_keys',
   financialYears: 'financial_years',
+  userPreferences: 'user_preferences',
   customerNotificationLogs: 'customer_notification_logs',
   whatsappChats: 'whatsapp_chats',
   whatsappTemplates: 'whatsapp_templates',
@@ -504,6 +514,7 @@ const STORE_NAMES: (keyof NexusDB)[] = [
     'transfers', 'employees', 'payrollRuns', 'payslips', 'tasks',
     'users', 'userGroups', 'goodsReceipts', 'files',
     'financialYears',
+    'userPreferences',
     'smsCampaigns', 'subscribers', 'smsTemplates', 'shipments',
     'subcontractOrders', 'maintenanceLogs',
     'auditLogs', 'syncOutbox', 'alerts', 'reminders',
@@ -993,29 +1004,36 @@ export const dbService = {
         return getFromLegacyStore<T>(storeName, id);
     },
 
-    async put<T>(storeName: keyof NexusDB, item: T): Promise<string> {
-        if (typeof item === 'object' && item !== null) {
-            (item as Record<string, unknown>)._updatedAt = new Date().toISOString();
+    async put<T>(storeName: keyof NexusDB, item: T, options: PutOptions = {}): Promise<string> {
+        const raw = { ...((item as Record<string, unknown>) || {}) };
+        const isCloudSource = options.cloudSource === true || raw._cloudSource === true;
+
+        if (isCloudSource) {
+            const preservedUpdatedAt = raw.serverUpdatedAt ?? raw.updated_at ?? raw._updatedAt;
+            if (typeof preservedUpdatedAt === 'string' && preservedUpdatedAt.trim()) {
+                raw._updatedAt = preservedUpdatedAt;
+            }
+        } else {
+            raw._updatedAt = new Date().toISOString();
         }
 
-        const raw = item as Record<string, unknown>;
         delete raw._cloudSource;
 
         const itemId = String(raw.id ?? '');
 
         // Local-first: always write to IndexedDB, return immediately
-        const localResultId = await putToLegacyStore(storeName, item);
+        const localResultId = await putToLegacyStore(storeName, raw as T);
 
         // Background sync: fire-and-forget queue to cloud
         const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
-        if (!isLocalOnly && itemId) {
+        if (!isLocalOnly && itemId && !isCloudSource) {
             try {
                 const table = getCloudTable(String(storeName));
                 durableSyncQueue.enqueue({
                     table,
                     recordId: itemId,
                     operation: 'upsert',
-                    payload: item,
+                    payload: raw,
                 }).catch((enqueueErr) => {
                     console.warn(`[Sync] Enqueue failed for ${storeName}/${itemId}:`, enqueueErr);
                 });
@@ -1038,8 +1056,15 @@ export const dbService = {
         const tx = db.transaction(storeName as any, 'readwrite');
         const store = tx.objectStore(storeName as any);
         for (const item of items) {
-          (item as Record<string, unknown>)._updatedAt = new Date().toISOString();
-          store.put(item);
+          const raw = { ...((item as Record<string, unknown>) || {}) };
+          const preservedUpdatedAt = raw.serverUpdatedAt ?? raw.updated_at ?? raw._updatedAt;
+          if (typeof preservedUpdatedAt === 'string' && preservedUpdatedAt.trim()) {
+            raw._updatedAt = preservedUpdatedAt;
+          } else {
+            raw._updatedAt = new Date().toISOString();
+          }
+          delete raw._cloudSource;
+          store.put(raw as T);
         }
         await tx.done;
         emitDataChange([String(storeName)]);
@@ -1133,7 +1158,7 @@ export const dbService = {
         dbPromise = null;
     },
 
-    async delete(storeName: keyof NexusDB, id: string): Promise<void> {
+    async delete(storeName: keyof NexusDB, id: string, options: DeleteOptions = {}): Promise<void> {
         // Local-first: soft delete in IndexedDB immediately
         const existing = await getFromLegacyStore<any>(storeName, id);
         if (existing) {
@@ -1145,8 +1170,9 @@ export const dbService = {
         }
 
         // Background sync: queue delete to cloud
+        const isCloudSource = options.cloudSource === true;
         const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
-        if (!isLocalOnly && id) {
+        if (!isLocalOnly && id && !isCloudSource) {
             try {
                 const table = getCloudTable(String(storeName));
                 durableSyncQueue.enqueue({

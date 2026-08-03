@@ -103,7 +103,17 @@ const portalService = {
   },
 
   async getCatalog(includeDeleted = false) {
-    let sql = 'SELECT id, name, sku, unit, selling_price as price, quantity, category, status FROM inventory WHERE 1=1';
+    let sql = `SELECT
+      id,
+      name,
+      sku,
+      unit,
+      selling_price as price,
+      quantity,
+      COALESCE(NULLIF(category_id, ''), material, 'General') as category,
+      status
+    FROM inventory
+    WHERE 1=1`;
     const params = [];
     if (!includeDeleted) {
       sql += ' AND (status IS NULL OR LOWER(status) != ?)';

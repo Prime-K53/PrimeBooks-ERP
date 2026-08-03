@@ -84,9 +84,6 @@ const CustomerProfile: React.FC = () => {
   const handleRevokeSession = async (sessionId: string) => {
     setRevokingSessionId(sessionId);
     try {
-      // Revoke via the logout endpoint by sending the session's refresh token
-      // Since we only have the session ID, we'll need a dedicated revoke endpoint
-      // For now, we'll call a helper that marks the session as revoked
       await portalApi.delete(`/auth/sessions/${sessionId}`);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
       addToast('success', 'Session revoked successfully');

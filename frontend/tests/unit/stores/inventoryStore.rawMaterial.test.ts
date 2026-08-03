@@ -3,10 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockApi = {
   inventory: {
     getAllItems: vi.fn(),
-    createItem: vi.fn(),
-    updateItem: vi.fn(),
     deleteItem: vi.fn(),
   }
+};
+
+const mockTransactionService = {
+  saveItem: vi.fn(async () => ({ success: true })),
+  deleteItem: vi.fn(async () => ({ success: true })),
+  adjustStock: vi.fn(),
+  updateReservedStock: vi.fn(),
+  transferStock: vi.fn(),
+};
+
+const mockDbService = {
+  getAll: vi.fn(async () => []),
+  put: vi.fn(async () => undefined),
 };
 
 vi.mock('../../../services/api', () => ({
@@ -22,12 +33,12 @@ vi.mock('../../../services/logger', () => ({
   }
 }));
 
+vi.mock('../../../services/db', () => ({
+  dbService: mockDbService
+}));
+
 vi.mock('../../../services/transactionService', () => ({
-  transactionService: {
-    adjustStock: vi.fn(),
-    updateReservedStock: vi.fn(),
-    transferStock: vi.fn(),
-  }
+  transactionService: mockTransactionService
 }));
 
 vi.mock('../../../services/pricingValidationService', () => ({
@@ -38,7 +49,6 @@ describe('useInventoryStore raw material creation', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockApi.inventory.getAllItems.mockResolvedValue([]);
-    mockApi.inventory.createItem.mockImplementation((item: any) => Promise.resolve(item));
 
     const { useInventoryStore } = await import('../../../stores/inventoryStore');
     useInventoryStore.setState({
@@ -84,7 +94,7 @@ describe('useInventoryStore raw material creation', () => {
     expect(state.inventory.map(i => i.id)).toEqual(['ITM-001', 'ITM-002']);
     expect(state.inventory[0].name).toBe('Bond Paper 80gsm');
     expect(state.inventory[1].name).toBe('Toner Cartridge');
-    expect(mockApi.inventory.createItem).toHaveBeenCalledTimes(2);
+    expect(mockTransactionService.saveItem).toHaveBeenCalledTimes(2);
   });
 
   it('does not reuse a stale sequential ID across multiple creations', async () => {
@@ -119,7 +129,7 @@ describe('useInventoryStore raw material creation', () => {
     await useInventoryStore.getState().addItem(firstNewItem);
     await useInventoryStore.getState().addItem(secondNewItem);
 
-    const calls = mockApi.inventory.createItem.mock.calls;
+    const calls = mockTransactionService.saveItem.mock.calls;
     const firstCallId = calls[0][0].id;
     const secondCallId = calls[1][0].id;
 
@@ -140,8 +150,6 @@ describe('useInventoryStore raw material creation', () => {
       error: null
     });
 
-    mockApi.inventory.updateItem.mockImplementation((item: any) => Promise.resolve(item));
-
     await useInventoryStore.getState().updateItem({
       id: 'ITM-EXISTING',
       name: 'Existing Item Updated',
@@ -153,8 +161,7 @@ describe('useInventoryStore raw material creation', () => {
       sellingPrice: 0,
     });
 
-    expect(mockApi.inventory.updateItem).toHaveBeenCalledTimes(1);
-    expect(mockApi.inventory.createItem).not.toHaveBeenCalled();
+    expect(mockTransactionService.saveItem).toHaveBeenCalledTimes(1);
     expect(useInventoryStore.getState().inventory).toHaveLength(1);
     expect(useInventoryStore.getState().inventory[0].name).toBe('Existing Item Updated');
   });

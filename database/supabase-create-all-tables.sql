@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS public.tax_rates (
 -- ============================================================================
 -- 2. Business / ERP core tables
 -- ============================================================================
+CREATE TABLE IF NOT EXISTS public.financial_years (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.user_preferences (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.products (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.customers (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.suppliers (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());

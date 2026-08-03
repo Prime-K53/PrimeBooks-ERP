@@ -34,6 +34,29 @@ interface InventoryState {
   transferStock: (itemId: string, fromLocationId: string, toLocationId: string, quantity: number) => Promise<void>;
 }
 
+const resolveNextInventoryId = async (currentInventory: Item[]) => {
+  const inventoryMap = new Map<string, Item>();
+
+  for (const item of currentInventory || []) {
+    if (item?.id) {
+      inventoryMap.set(String(item.id), item);
+    }
+  }
+
+  try {
+    const persistedItems = await api.inventory.getAllItems();
+    for (const item of persistedItems || []) {
+      if (item?.id) {
+        inventoryMap.set(String(item.id), item);
+      }
+    }
+  } catch {
+    // Keep ID generation resilient even if a refresh fails.
+  }
+
+  return generateNextId('ITM', Array.from(inventoryMap.values()));
+};
+
 export const useInventoryStore = create<InventoryState>((set, get) => ({
   inventory: [],
   warehouses: [],
@@ -59,7 +82,15 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         };
       });
 
-      set({ inventory: normalizedItems });
+      const existingStateItems = get().inventory || [];
+      const itemMap = new Map<string, Item>();
+      for (const item of existingStateItems) {
+        itemMap.set(item.id, item);
+      }
+      for (const item of normalizedItems) {
+        itemMap.set(item.id, item);
+      }
+      set({ inventory: Array.from(itemMap.values()) });
 
       if (loadedWarehouses.length === 0) {
         for (const w of MOCK_WAREHOUSES) await dbService.put('warehouses', w);
@@ -106,9 +137,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       pricingValidated: !isSellable || validation.valid,
       validationTimestamp: new Date().toISOString(),
     };
-    const id = newItem.id || generateNextId('ITM', get().inventory);
-    await transactionService.saveItem({ ...newItem, id });
-    await get().fetchInventory();
+    const id = newItem.id || await resolveNextInventoryId(get().inventory);
+    const savedItem = { ...newItem, id };
+    set(state => ({
+      inventory: [...state.inventory.filter(i => i.id !== id), savedItem]
+    }));
+    await transactionService.saveItem(savedItem);
+    await get().fetchInventory(true);
   },
 
   updateItem: async (item: Item) => {
@@ -143,8 +178,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       pricingValidated: !isSellable || validation.valid,
       validationTimestamp: new Date().toISOString(),
     };
+    set(state => ({
+      inventory: state.inventory.map(i => i.id === item.id ? { ...i, ...updatedItem } : i)
+    }));
     await transactionService.saveItem(updatedItem, previous);
-    await get().fetchInventory();
+    await get().fetchInventory(true);
 
     const previousCost = Number(previous?.cost_price ?? previous?.cost ?? 0);
     const nextCost = Number(item.cost_price ?? item.cost ?? 0);

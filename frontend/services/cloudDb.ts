@@ -136,6 +136,10 @@ async function ensureSession(signal?: AbortSignal) {
 
 const SESSION_TIMEOUT_MS = 8_000;
 
+interface CloudPutOptions {
+  cloudSource?: boolean;
+}
+
 async function withSession<T>(fn: () => Promise<T>): Promise<T> {
   const session = await ensureSession();
   if (!session) throw new Error('No Supabase session available');
@@ -338,9 +342,15 @@ export const cloudDb = {
     }
   },
 
-  async put<T>(storeName: string, item: T, operationId?: string): Promise<{ id: string | null; updatedAt?: string; createdAt?: string; version?: number } | null> {
+  async put<T>(
+    storeName: string,
+    item: T,
+    operationId?: string,
+    options: CloudPutOptions = {}
+  ): Promise<{ id: string | null; updatedAt?: string; createdAt?: string; version?: number } | null> {
     return withSession(async () => {
       const raw = { ...(item as Record<string, unknown>) };
+      const isCloudSource = options.cloudSource === true || raw._cloudSource === true;
 
       // Idempotency check
       const opId = operationId || (raw._operationId as string | undefined);
@@ -363,8 +373,13 @@ export const cloudDb = {
       const record: Record<string, unknown> = {
         id: id || crypto.randomUUID(),
         data: domainData,
-        updated_at: new Date().toISOString(),
       };
+
+      if (!isCloudSource) {
+        record.updated_at = new Date().toISOString();
+      } else if (typeof raw.updated_at === 'string' && raw.updated_at.trim()) {
+        record.updated_at = raw.updated_at;
+      }
 
       // Use `any` type for the query builder chain to avoid complex type inference issues
       // with Supabase's PostgrestBuilder/PostgrestFilterBuilder type hierarchy

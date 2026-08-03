@@ -109,6 +109,7 @@ const STORE_TO_TABLE: Record<string, string> = {
   shipments: 'shipments',
   schools: 'schools',
   financialYears: 'financial_years',
+  userPreferences: 'user_preferences',
   tasks: 'tasks',
 };
 
@@ -139,6 +140,7 @@ const TABLES_TO_SYNC = [
   'subcontractOrders', 'maintenanceLogs', 'classes', 'subjects',
   'subscribers', 'shipments', 'schools', 'tasks',
   'financialYears',
+  'userPreferences',
   'bankScheduledPayments', 'bankExchangeRates', 'bankFees',
   'bankReconciliations', 'bankAdjustments', 'bankCashFlowForecasts',
   'bankAlerts', 'bankCategories',
@@ -150,6 +152,18 @@ const TABLES_TO_SYNC = [
 ];
 
 const getTable = (storeName: string): string => STORE_TO_TABLE[storeName] || storeName;
+
+const toCloudRecord = (record: any) => {
+  const { data: jsonData, updated_at, ...rest } = record;
+  const serverUpdatedAt = typeof updated_at === 'string' ? updated_at : undefined;
+  return {
+    id: record.id,
+    ...rest,
+    ...(jsonData || {}),
+    ...(serverUpdatedAt ? { updated_at: serverUpdatedAt, _updatedAt: serverUpdatedAt, serverUpdatedAt } : {}),
+    _cloudSource: true,
+  };
+};
 
 async function ensureSession() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -229,10 +243,7 @@ export async function pullRemoteChanges(
           if (error) { errors.push(`${storeName}: ${error.message}`); return 0; }
           if (!data || data.length === 0) return 0;
 
-          const cloudRecords = data.map((record: any) => {
-            const { data: jsonData, updated_at, ...rest } = record;
-            return { id: record.id, ...rest, ...(jsonData || {}), _cloudSource: true };
-          });
+          const cloudRecords = data.map((record: any) => toCloudRecord(record));
 
           // Apply field-level merge for existing records, skip for new ones
           // All cloud records are marked _cloudSource: true so they don't trigger re-sync
@@ -241,8 +252,11 @@ export async function pullRemoteChanges(
             const existing = await dbService.get(storeName, cloudRecord.id);
             if (existing) {
               const merged = fieldLevelMerge(existing, cloudRecord);
+              if (cloudRecord.serverUpdatedAt) {
+                merged.serverUpdatedAt = cloudRecord.serverUpdatedAt;
+              }
               merged._cloudSource = true;
-              await dbService.put(storeName, merged);
+              await dbService.put(storeName, merged, { cloudSource: true });
             } else {
               mergedRecords.push(cloudRecord as Record<string, unknown>);
             }
@@ -309,17 +323,19 @@ function subscribeToRemoteChanges() {
           async (payload: any) => {
             try {
               if (payload.eventType === 'DELETE') {
-                try { await dbService.delete(storeName, payload.old.id); } catch (e) { logger.error("Operation failed", e as Error); }
+                try { await dbService.delete(storeName, payload.old.id, { cloudSource: true }); } catch (e) { logger.error("Operation failed", e as Error); }
               } else if (payload.new) {
-                const { data: jsonData, updated_at, ...rest } = payload.new;
-                const cloudRecord = { id: payload.new.id, ...rest, ...(jsonData || {}), _cloudSource: true };
+                const cloudRecord = toCloudRecord(payload.new);
                 const local = await dbService.get(storeName, payload.new.id);
                 if (local) {
                   const merged = fieldLevelMerge(local, cloudRecord);
+                  if (cloudRecord.serverUpdatedAt) {
+                    merged.serverUpdatedAt = cloudRecord.serverUpdatedAt;
+                  }
                   merged._cloudSource = true;
-                  await dbService.put(storeName, merged as Record<string, unknown>);
+                  await dbService.put(storeName, merged as Record<string, unknown>, { cloudSource: true });
                 } else {
-                  await dbService.put(storeName, cloudRecord as Record<string, unknown>);
+                  await dbService.put(storeName, cloudRecord as Record<string, unknown>, { cloudSource: true });
                 }
               }
             } catch {
@@ -390,4 +406,7 @@ export function stopPeriodicSync() {
     pushTimer = null;
   }
   unsubscribeFromRemoteChanges();
+  import('./backgroundSyncService').then(({ backgroundSyncService }) => {
+    backgroundSyncService.stopPeriodicSync();
+  }).catch(() => {});
 }
