@@ -100,6 +100,11 @@ const verifyToken = async (req, res, next) => {
     return next();
   }
 
+  // Skip portal routes — they have their own auth via verifyPortalToken
+  if (req.path.startsWith('/portal')) {
+    return next();
+  }
+
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
   
