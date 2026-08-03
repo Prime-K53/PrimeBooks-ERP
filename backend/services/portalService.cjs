@@ -170,7 +170,7 @@ const portalService = {
 
   async getRequestsPaginated(customerId, { page = 1, pageSize = 20, status, search } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['q.customer_id = ?', 'q.'];
+    const conditions = ['q.customer_id = ?'];
     const params = [customerId];
 
     if (status) {
@@ -224,7 +224,7 @@ const portalService = {
 
   async getOrdersPaginated(customerId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['so.customer_id = ?', 'so.'];
+    const conditions = ['so.customer_id = ?'];
     const params = [customerId];
 
     if (status) {
@@ -293,7 +293,7 @@ const portalService = {
 
   async getQuotationsPaginated(customerId, { page = 1, pageSize = 20, status, search } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['q.customer_id = ?', 'q.'];
+    const conditions = ['q.customer_id = ?'];
     const params = [customerId];
 
     if (status) {
@@ -342,7 +342,7 @@ const portalService = {
 
   async getInvoicesPaginated(customerId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['i.customer_id = ?', 'i.'];
+    const conditions = ['i.customer_id = ?'];
     const params = [customerId];
 
     if (status) {
@@ -402,7 +402,7 @@ const portalService = {
 
   async getPaymentsPaginated(customerId, { page = 1, pageSize = 20, search, dateFrom, dateTo } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['cp.customer_id = ?', 'cp.'];
+    const conditions = ['cp.customer_id = ?'];
     const params = [customerId];
 
     if (search) {
@@ -685,7 +685,7 @@ const portalService = {
   // ─── Referrals ──────────────────────────────────────────────────
   async getReferrals(portalUserId, customerId, { page = 1, pageSize = 20, status, search, sort = 'date_desc' } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['r.referred_by_id = ?', 'r.', 'r.deleted_at IS NULL'];
+    const conditions = ['r.referred_by_id = ?', 'r.deleted_at IS NULL'];
     const params = [customerId];
 
     if (status) {
@@ -779,7 +779,7 @@ const portalService = {
 
   async getReferralRewards(portalUserId, customerId, { page = 1, pageSize = 20, status } = {}) {
     const offset = (page - 1) * pageSize;
-    const conditions = ['rr.customer_id = ?', 'rr.'];
+    const conditions = ['rr.customer_id = ?'];
     const params = [customerId];
 
     if (status) {

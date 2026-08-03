@@ -111,7 +111,6 @@ const CustomerCreateRequest: React.FC = () => {
     const available = (catalog || []).filter(
       (item: any) =>
         String(item.status || '').toLowerCase() !== 'deleted' &&
-        Number(item.price) > 0 &&
         (Number(item.quantity) || 0) > 0
     );
     if (!term) return available;

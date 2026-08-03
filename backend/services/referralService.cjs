@@ -60,7 +60,7 @@ class ReferralService extends BaseService {
   async getAll(params) {
     const { page, limit, offset } = this.getPaginationParams(params);
 
-    const conditions = ['r.', 'r.deleted_at IS NULL'];
+    const conditions = ['1=1', 'r.deleted_at IS NULL'];
     const queryParams = [];
 
     if (params.status) {
@@ -258,7 +258,7 @@ class ReferralService extends BaseService {
 
   async getAllRewards(params) {
     const { page, limit, offset } = this.getPaginationParams(params);
-    const conditions = ['r.'];
+    const conditions = ['1=1'];
     const queryParams = [];
 
     if (params.status) {
@@ -529,7 +529,7 @@ class ReferralService extends BaseService {
   // ── Campaigns ──────────────────────────────────────────────────
 
   async getAllCampaigns(params) {
-    const conditions = ['c.'];
+    const conditions = ['1=1'];
     const queryParams = [];
 
     if (params.status && params.status !== 'all') {
@@ -630,7 +630,7 @@ class ReferralService extends BaseService {
 
   async getAllReversals(params) {
     const { page, limit, offset } = this.getPaginationParams(params);
-    const conditions = ['r.'];
+    const conditions = ['1=1'];
     const queryParams = [];
 
     if (params.status) {
