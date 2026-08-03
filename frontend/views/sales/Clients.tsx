@@ -126,9 +126,6 @@ const relativeDate = (iso: string) => {
   return format(date, 'MMM dd, yyyy');
 };
 
-type ChipFilter = 'All' | 'Active' | 'Owing' | 'Paid';
-const CHIP_FILTERS: ChipFilter[] = ['All', 'Active', 'Owing', 'Paid'];
-
 export const Clients: React.FC = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, isLoading, customerPayments } = useSales();
   const { invoices } = useFinance();
@@ -145,7 +142,6 @@ export const Clients: React.FC = () => {
   const [selectedWorkspaceCustomer, setSelectedWorkspaceCustomer] = useState<Customer | null>(null);
   const [selectedCardCustomer, setSelectedCardCustomer] = useState<Customer | null>(null);
   const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Inactive' | 'Lead'>('All');
-  const [chipFilter, setChipFilter] = useState<ChipFilter>('All');
   const [selectedMetric, setSelectedMetric] = useState<'All' | 'Overdue' | 'Open' | 'Paid'>('All');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -192,13 +188,6 @@ export const Clients: React.FC = () => {
         (c.phone && c.phone.includes(searchQuery));
       const matchesStatus = filterStatus === 'All' || c.status === filterStatus;
 
-      let matchesChip = true;
-      if (chipFilter === 'Active') matchesChip = c.status === 'Active';
-      else if (chipFilter === 'Owing') matchesChip = (c.balance || 0) > 0.5 || invoices.some(inv =>
-        inv.customerId === c.id && (inv.status === 'Unpaid' || inv.status === 'Partial'));
-      else if (chipFilter === 'Paid') matchesChip = (c.balance || 0) <= 0.5 && !invoices.some(inv =>
-        inv.customerId === c.id && (inv.status === 'Unpaid' || inv.status === 'Partial'));
-
       const matchesSegment = customerSegment === 'All Segments' || c.segment === customerSegment;
       const matchesPipelineStage = pipelineStageFilter === 'All Stages' || (c as Customer & Record<string, unknown>).pipelineStage === pipelineStageFilter;
 
@@ -233,9 +222,9 @@ export const Clients: React.FC = () => {
         matchesMetric = hasRecentPayment;
       }
 
-      return matchesSearch && matchesStatus && matchesChip && matchesMetric && matchesSegment && matchesBalance && matchesPipelineStage;
+      return matchesSearch && matchesStatus && matchesMetric && matchesSegment && matchesBalance && matchesPipelineStage;
     });
-  }, [customers, searchQuery, filterStatus, chipFilter, selectedMetric, invoices, customerPayments, balanceRange, customerSegment, pipelineStageFilter]);
+  }, [customers, searchQuery, filterStatus, selectedMetric, invoices, customerPayments, balanceRange, customerSegment, pipelineStageFilter]);
 
   const { currentItems, currentPage, maxPage, totalItems, next, prev, first, last, setItemsPerPage, itemsPerPage } = usePagination(filteredCustomers, 25);
 
@@ -443,7 +432,7 @@ export const Clients: React.FC = () => {
           <div style={{ padding: 10, borderRadius: 10, background: '#fef2f2', color: danger, display: 'inline-flex' }}><AlertTriangle size={20} /></div>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Overdue</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+            <p style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: 0, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', letterSpacing: 0 }}>
               {currency}{(stats.overdueBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
@@ -461,7 +450,7 @@ export const Clients: React.FC = () => {
           <div style={{ padding: 10, borderRadius: 10, background: amber[100], color: amber[500], display: 'inline-flex' }}><Clock size={20} /></div>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Open Invoices</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+            <p style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: 0, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', letterSpacing: 0 }}>
               {currency}{(stats.openInvoicesTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
@@ -479,7 +468,7 @@ export const Clients: React.FC = () => {
           <div style={{ padding: 10, borderRadius: 10, background: teal[100], color: teal[600], display: 'inline-flex' }}><CheckCircle size={20} /></div>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Paid (30d)</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+            <p style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: 0, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', letterSpacing: 0 }}>
               {currency}{(stats.paidLast30Days || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
@@ -497,7 +486,7 @@ export const Clients: React.FC = () => {
           <div style={{ padding: 10, borderRadius: 10, background: teal[50], color: teal[500], display: 'inline-flex' }}><User size={20} /></div>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>Total Balance</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+            <p style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: 0, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', letterSpacing: 0 }}>
               {currency}{(stats.totalBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
@@ -506,38 +495,6 @@ export const Clients: React.FC = () => {
 
       {/* Main Content Card */}
       <div style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'visible', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 30px -14px rgba(0,0,0,.14), 0 1px 3px rgba(0,0,0,.04)' }}>
-        {/* Filter Chips */}
-        <div style={{ padding: '12px 18px 0', borderBottom: `1px solid ${hairline}`, background: paper, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {CHIP_FILTERS.map((chip) => {
-              const counts: Record<ChipFilter, number> = {
-                All: customers.length,
-                Active: customers.filter(c => c.status === 'Active').length,
-                Owing: customers.filter(c => (c.balance || 0) > 0.5 || invoices.some(inv => inv.customerId === c.id && (inv.status === 'Unpaid' || inv.status === 'Partial'))).length,
-                Paid: customers.filter(c => (c.balance || 0) <= 0.5 && !invoices.some(inv => inv.customerId === c.id && (inv.status === 'Unpaid' || inv.status === 'Partial'))).length,
-              };
-              const active = chipFilter === chip;
-              return (
-                <button key={chip} onClick={() => setChipFilter(chip)}
-                  style={{
-                    padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    border: `1.4px solid ${active ? 'transparent' : hairline}`,
-                    background: active ? `linear-gradient(155deg, ${teal[500]}, ${teal[700]})` : paper,
-                    color: active ? '#fff' : inkSoft,
-                    boxShadow: active ? `0 4px 10px -4px rgba(15,84,76,.55)` : 'none',
-                    display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all .15s ease'
-                  }}>
-                  {chip}
-                  <span style={{
-                    fontSize: 10.5, fontWeight: 700, padding: '1px 7px', borderRadius: 999,
-                    background: active ? 'rgba(255,255,255,.22)' : teal[50], color: active ? '#fff' : teal[700]
-                  }}>{counts[chip]}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Filters & Search */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: `1px solid ${hairline}`, background: paper, flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 14, minWidth: 0, flexWrap: 'wrap' }}>
@@ -751,11 +708,11 @@ export const Clients: React.FC = () => {
                             <span style={{ color: inkSoft, fontSize: 12 }}>—&nbsp;No transactions</span>
                           )}
                         </td>
-                        <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', color: teal[600], fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', color: '#111827', fontWeight: 600, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                           {fmtMoney(customer.walletBalance)}
                         </td>
                         <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: owing ? danger : '#15803d' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Inter', sans-serif", fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: owing ? danger : '#15803d' }}>
                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: owing ? danger : '#22c55e', flexShrink: 0 }} />
                             {owing ? fmtMoney(customer.balance) : 'Paid'}
                           </span>
@@ -803,10 +760,10 @@ export const Clients: React.FC = () => {
                                   {customer.subAccounts.map((sub) => (
                                     <tr key={sub.id} style={{ borderBottom: `1px solid ${hairline}` }}>
                                       <td style={{ padding: '10px 16px', fontWeight: 600, color: ink }}>{sub.name}</td>
-                                      <td style={{ padding: '10px 16px', textAlign: 'right', color: teal[600], fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
+                                      <td style={{ padding: '10px 16px', textAlign: 'right', color: '#111827', fontWeight: 600, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
                                         {currency}{(sub.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                       </td>
-                                      <td style={{ padding: '10px 16px', textAlign: 'right', color: (sub.balance || 0) > 0 ? danger : ink, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
+                                      <td style={{ padding: '10px 16px', textAlign: 'right', color: (sub.balance || 0) > 0 ? danger : '#111827', fontWeight: 600, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
                                         {currency}{(sub.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                       </td>
                                       <td style={{ padding: '10px 16px', textAlign: 'center' }}>
