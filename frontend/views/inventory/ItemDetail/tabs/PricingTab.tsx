@@ -36,7 +36,7 @@ export const PricingTab: React.FC<Props> = ({ item }) => {
               <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
               <span style={{ color: k.accent ? t[500] : inkSoft }}>{k.icon}</span>
             </div>
-            <p style={{ fontSize: 24, fontWeight: 700, fontFamily: 'monospace', color: k.color || (k.accent ? t[500] : ink) }}>
+            <p style={{ fontSize: 24, fontWeight: 600, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', color: k.color || '#111827' }}>
               {k.value}
             </p>
           </div>

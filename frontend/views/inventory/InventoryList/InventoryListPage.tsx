@@ -583,7 +583,7 @@ const handleProduce = useCallback((item: Item) => {
                             {(m as Record<string, unknown>).supplierName ? <div className="pp-sub">{esc((m as Record<string, unknown>).supplierName)}</div> : ''}
                           </td>
                           <td className="mono" style={{ fontFamily:'IBM Plex Mono,monospace' }}>{esc(m.unit || 'pcs')}</td>
-                          <td className="num mono" style={{ fontFamily:'IBM Plex Mono,monospace' }}>{money(m.costPrice || m.cost || 0, currencySymbol)}</td>
+                          <td className="num mono" style={{ fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600 }}>{money(m.costPrice || m.cost || 0, currencySymbol)}</td>
                           <td className="num mono" style={{ fontFamily:'IBM Plex Mono,monospace' }}>
                             <span className="pp-stepper">
                               <button onClick={e => { e.stopPropagation(); adjustStock(m, -1); }}>&minus;</button>
@@ -657,7 +657,7 @@ const handleProduce = useCallback((item: Item) => {
                         <td></td>
                         <td>Total ({searchFiltered.length} items)</td>
                         <td></td>
-                        <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(searchFiltered.reduce((s,i) => s + (i.costPrice || i.cost || 0), 0), currencySymbol)}</td>
+                        <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(searchFiltered.reduce((s,i) => s + (i.costPrice || i.cost || 0), 0), currencySymbol)}</td>
                         <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{searchFiltered.reduce((s,i) => s + num(i.stock), 0)}</td>
                         <td></td>
                         <td></td>
@@ -747,8 +747,8 @@ const handleProduce = useCallback((item: Item) => {
                               </td>
                               <td>{esc(p.name)}</td>
                               <td>{variantLabel}</td>
-                              <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(parentCp, currencySymbol)}</td>
-                              <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(parentSp, currencySymbol)}</td>
+                              <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(parentCp, currencySymbol)}</td>
+                              <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(parentSp, currencySymbol)}</td>
                               <td className={`num mono ${parentSp-parentCp >= 0 ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{parentMargin}%</td>
                               <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>
                                 <span className="pp-stepper">
@@ -827,8 +827,8 @@ const handleProduce = useCallback((item: Item) => {
                                   <td></td>
                                   <td className="text-xs text-slate-500 pl-6">↳ {esc(v.name || 'Standard')}</td>
                                   <td></td>
-                                  <td className="num mono text-xs" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(vCp, currencySymbol)}</td>
-                                  <td className="num mono text-xs" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(vSp, currencySymbol)}</td>
+                                  <td className="num mono text-xs" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(vCp, currencySymbol)}</td>
+                                  <td className="num mono text-xs" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(vSp, currencySymbol)}</td>
                                   <td className={`num mono text-xs ${vSp-vCp >= 0 ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{vMargin}%</td>
                                   <td className="num mono text-xs" style={{fontFamily:'IBM Plex Mono,monospace'}}>
                                     <span className="pp-stepper" style={{fontSize:12}}>
@@ -851,8 +851,8 @@ const handleProduce = useCallback((item: Item) => {
                         <td>Total ({searchFiltered.length} items)</td>
                         <td></td>
                         <td></td>
-                        <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(searchFiltered.reduce((s,i) => s + (i.costPrice || i.cost || 0), 0), currencySymbol)}</td>
-                        <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(searchFiltered.reduce((s,i) => s + (i.sellingPrice || i.price || 0), 0), currencySymbol)}</td>
+                        <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(searchFiltered.reduce((s,i) => s + (i.costPrice || i.cost || 0), 0), currencySymbol)}</td>
+                        <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(searchFiltered.reduce((s,i) => s + (i.sellingPrice || i.price || 0), 0), currencySymbol)}</td>
                         <td></td>
                         <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{searchFiltered.reduce((s,i) => s + num(i.stock), 0)}</td>
                         <td></td>
@@ -942,8 +942,8 @@ const handleProduce = useCallback((item: Item) => {
                               </td>
                               <td>{esc(p.name)}</td>
                               <td>{variantLabel}</td>
-                              <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(parentCp, currencySymbol)}</td>
-                              <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(parentSp, currencySymbol)}</td>
+                              <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(parentCp, currencySymbol)}</td>
+                              <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(parentSp, currencySymbol)}</td>
                               <td className={`num mono ${parentSp-parentCp >= 0 ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{parentMargin}%</td>
                               <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>
                                 <span className="pp-stepper">
@@ -1017,8 +1017,8 @@ const handleProduce = useCallback((item: Item) => {
                                   <td></td>
                                   <td className="text-xs text-slate-500 pl-6">↳ {esc(v.name || 'Standard')}</td>
                                   <td></td>
-                                  <td className="num mono text-xs" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(vCp, currencySymbol)}</td>
-                                  <td className="num mono text-xs" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(vSp, currencySymbol)}</td>
+                                  <td className="num mono text-xs" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(vCp, currencySymbol)}</td>
+                                  <td className="num mono text-xs" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(vSp, currencySymbol)}</td>
                                   <td className={`num mono text-xs ${vSp-vCp >= 0 ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{vMargin}%</td>
                                   <td className="num mono text-xs" style={{fontFamily:'IBM Plex Mono,monospace'}}>
                                     <span className="pp-stepper" style={{fontSize:12}}>
@@ -1041,8 +1041,8 @@ const handleProduce = useCallback((item: Item) => {
                         <td>Total ({searchFiltered.length} items)</td>
                         <td></td>
                         <td></td>
-                        <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(searchFiltered.reduce((s,i) => s + (i.costPrice || i.cost || 0), 0), currencySymbol)}</td>
-                        <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{money(searchFiltered.reduce((s,i) => s + (i.sellingPrice || i.price || 0), 0), currencySymbol)}</td>
+                        <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(searchFiltered.reduce((s,i) => s + (i.costPrice || i.cost || 0), 0), currencySymbol)}</td>
+                        <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(searchFiltered.reduce((s,i) => s + (i.sellingPrice || i.price || 0), 0), currencySymbol)}</td>
                         <td></td>
                         <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>{searchFiltered.reduce((s,i) => s + num(i.stock), 0)}</td>
                         <td></td>

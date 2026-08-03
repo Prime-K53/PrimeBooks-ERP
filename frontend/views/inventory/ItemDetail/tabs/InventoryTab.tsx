@@ -88,7 +88,7 @@ export const InventoryTab: React.FC<Props> = ({ item, stockCalc }) => {
               <BarChart3 size={16} style={{ color: inkSoft }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>Inventory Value</span>
             </div>
-            <p style={{ fontSize: 24, fontWeight: 700, color: ink }}>{stockCalc.inventoryValue.toFixed(2)}</p>
+            <p style={{ fontSize: 24, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums', fontFamily: "'Inter', sans-serif" }}>{stockCalc.inventoryValue.toFixed(2)}</p>
           </div>
           {stockCalc.currentStock <= minStock && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: amber[100], border: `1.4px solid ${amber[100]}`, borderRadius: 12 }}>

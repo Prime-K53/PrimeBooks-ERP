@@ -684,11 +684,11 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                                                 <>
                                                     <div style={{ fontSize: 18, fontWeight: 900, color: ink, fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{v.stock || 0}</div>
                                                     <div style={{ fontSize: 10, color: inkSoft }}>in stock</div>
-                                                    <div style={{ fontSize: 12, fontWeight: 700, color: t[500], marginTop: 8, fontVariantNumeric: 'tabular-nums' }}>{currency}{(v.price || 0).toFixed(2)}</div>
+                                                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', marginTop: 8, fontVariantNumeric: 'tabular-nums' }}>{currency}{(v.price || 0).toFixed(2)}</div>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div style={{ fontSize: 18, fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{currency}{(v.price || 0).toFixed(2)}</div>
+                                                    <div style={{ fontSize: 18, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{currency}{(v.price || 0).toFixed(2)}</div>
                                                     <div style={{ fontSize: 10, color: inkSoft }}>selling price</div>
                                                     <div style={{ fontSize: 11, color: inkSoft, marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         {Object.values(v.attributes || {}).join(' / ') || 'No attribute'}
@@ -724,9 +724,9 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                                     {[
                                         { label: 'Total Variants', value: variants.length, color: ink },
-                                        { label: supportsStockRecords ? 'Combined Stock' : 'Average Price', value: supportsStockRecords ? variantTotalStock.toLocaleString() : `${currency}${averageVariantPrice.toFixed(2)}`, color: t[500] },
+                                        { label: supportsStockRecords ? 'Combined Stock' : 'Average Price', value: supportsStockRecords ? variantTotalStock.toLocaleString() : `${currency}${averageVariantPrice.toFixed(2)}`, color: '#111827' },
                                         { label: 'Total Units Sold', value: variantSalesData.reduce((sum, v) => sum + v.unitsSold, 0).toLocaleString(), color: t[500] },
-                                        { label: 'Total Revenue', value: `${currency}${variantSalesData.reduce((sum, v) => sum + v.revenue, 0).toLocaleString()}`, color: t[500] },
+                                        { label: 'Total Revenue', value: `${currency}${variantSalesData.reduce((sum, v) => sum + v.revenue, 0).toLocaleString()}`, color: '#111827' },
                                     ].map((k, i) => (
                                         <div key={i} className="prime-card" style={{ ...cardInner, padding: 16 }}>
                                             <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</div>
@@ -798,7 +798,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                                                             <div style={{ fontSize: 12, fontWeight: 700, color: ink }}>{variant.name}</div>
                                                             <div style={{ fontSize: 10, color: inkSoft }}>{Object.values(variant.attributes || {}).join(' / ') || 'No attribute'}</div>
                                                         </div>
-                                                        <div style={{ fontSize: 13, fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{(variant.price || 0).toFixed(2)}</div>
+                                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>{currency}{(variant.price || 0).toFixed(2)}</div>
                                                     </div>
                                                 )) : (
                                                     <div style={{ fontSize: 13, color: inkSoft, fontStyle: 'italic' }}>No variant pricing data yet.</div>
@@ -874,9 +874,9 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                                                                 </td>
                                                             )}
                                                             <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{currency}{v.cost.toFixed(2)}</td>
-                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{v.price.toFixed(2)}</td>
+                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>{currency}{v.price.toFixed(2)}</td>
                                                             <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{v.unitsSold.toLocaleString()}</td>
-                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{v.revenue.toFixed(2)}</td>
+                                                            <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>{currency}{v.revenue.toFixed(2)}</td>
                                                             <td className="prime-table-cell" style={{ padding: '12px 16px', textAlign: 'right' }}>
                                                                 <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 700, background: v.margin >= 25 ? t[100] : v.margin >= 10 ? amber[100] : '#fef2f2', color: v.margin >= 25 ? t[600] : v.margin >= 10 ? amber[500] : danger }}>
                                                                     {v.margin.toFixed(1)}%
@@ -1019,7 +1019,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                                             <td className="prime-table-cell" style={{ padding: '12px 24px', fontFamily: 'monospace', fontSize: 11 }}>{s.ref}</td>
                                             <td className="prime-table-cell" style={{ padding: '12px 24px', fontWeight: 700, color: ink }}>{s.entity}</td>
                                             <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{Math.abs(s.qty)}</td>
-                                            <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{(s.price || 0).toFixed(2)}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>{currency}{(s.price || 0).toFixed(2)}</td>
                                         </tr>
                                     )) : (
                                         <tr><td colSpan={5} style={{ padding: '48px 0', textAlign: 'center', color: inkSoft, fontStyle: 'italic', fontSize: 13 }}>No sales history found for this item.</td></tr>
@@ -1057,7 +1057,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ item, onBack, onEdit, o
                                             <td className="prime-table-cell" style={{ padding: '12px 24px', fontFamily: 'monospace', fontSize: 11 }}>{p.ref}</td>
                                             <td className="prime-table-cell" style={{ padding: '12px 24px', fontWeight: 700, color: ink }}>{p.entity}</td>
                                             <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{p.qty}</td>
-                                            <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 900, color: t[500], fontVariantNumeric: 'tabular-nums' }}>{currency}{(p.price || 0).toFixed(2)}</td>
+                                            <td className="prime-table-cell" style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>{currency}{(p.price || 0).toFixed(2)}</td>
                                         </tr>
                                     )) : (
                                         <tr><td colSpan={5} style={{ padding: '48px 0', textAlign: 'center', color: inkSoft, fontStyle: 'italic', fontSize: 13 }}>No purchase history found for this item.</td></tr>

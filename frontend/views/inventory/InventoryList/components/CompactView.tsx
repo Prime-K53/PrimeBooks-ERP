@@ -52,8 +52,8 @@ export const CompactView: React.FC<Props> = ({ items, onView, onEdit }) => (
         <div className="flex items-center gap-3 shrink-0">
           <RowIndicators item={item} />
           <StockBadge item={item} />
-          <span className="font-mono text-[12.5px] tabular-nums" style={{ color: '#64748B' }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span>
-          <span className="font-mono text-[12.5px] font-medium tabular-nums" style={{ color: '#2563EB' }}>{(item.sellingPrice || item.price || 0).toFixed(2)}</span>
+          <span className="text-[12.5px] tabular-nums" style={{ color: '#111827', fontWeight: 600 }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span>
+          <span className="text-[12.5px] font-medium tabular-nums" style={{ color: '#111827' }}>{(item.sellingPrice || item.price || 0).toFixed(2)}</span>
         </div>
         <button onClick={e => { e.stopPropagation(); onEdit(item); }}
           className="px-3 py-1 text-xs font-medium rounded-xl border border-[#E2E8F0] bg-white text-[#475569] hover:bg-blue-50/50 transition-all shadow-sm shrink-0">

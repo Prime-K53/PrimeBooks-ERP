@@ -46,7 +46,7 @@ export const PurchaseHistoryTab: React.FC<Props> = ({ purchases, itemId }) => {
               <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
               <span style={{ color: inkSoft }}>{k.icon}</span>
             </div>
-            <p style={{ fontSize: 20, fontWeight: 700, color: k.color, fontFamily: 'monospace' }}>{k.value}</p>
+            <p style={{ fontSize: 20, fontWeight: 600, color: k.color, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>{k.value}</p>
           </div>
         ))}
       </div>
@@ -84,8 +84,8 @@ export const PurchaseHistoryTab: React.FC<Props> = ({ purchases, itemId }) => {
                   <td style={{ padding: '12px 16px', color: inkSoft }}>{p.supplierId || p.supplierName || '—'}</td>
                   <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft }}>{p.date ? new Date(p.date).toLocaleDateString() : '—'}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{line.quantity}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>{line.cost?.toFixed(2)}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{(line.cost * line.quantity).toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#111827' }}>{line.cost?.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111827' }}>{(line.cost * line.quantity).toFixed(2)}</td>
                   <td style={{ padding: '12px 16px' }}>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600,

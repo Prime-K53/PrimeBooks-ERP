@@ -57,7 +57,7 @@ export const SalesHistoryTab: React.FC<Props> = ({ sales, itemId }) => {
               <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
               <span style={{ color: inkSoft }}>{k.icon}</span>
             </div>
-            <p style={{ fontSize: 20, fontWeight: 700, color: k.color, fontFamily: 'monospace' }}>{k.value}</p>
+            <p style={{ fontSize: 20, fontWeight: 600, color: k.color, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>{k.value}</p>
           </div>
         ))}
       </div>
@@ -100,9 +100,9 @@ export const SalesHistoryTab: React.FC<Props> = ({ sales, itemId }) => {
                   <td style={{ padding: '12px 16px', color: inkSoft }}>{s.customerName || s.customerId || '—'}</td>
                   <td style={{ padding: '12px 16px', fontSize: 12, color: inkSoft }}>{s.date ? new Date(s.date).toLocaleDateString() : '—'}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{qty}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: inkSoft }}>{price.toFixed(2)}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{total.toFixed(2)}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: profit >= 0 ? t[500] : danger }}>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#111827' }}>{price.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111827' }}>{total.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: profit >= 0 ? t[500] : danger }}>
                     {profit.toFixed(2)}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>

@@ -71,11 +71,11 @@ export const ItemSidebar: React.FC<Props> = ({ item, stockCalc, pricingCalc, val
               { label: 'Available', value: stockCalc.available, color: stockCalc.available > 0 ? INV.green : INV.red },
               { label: 'Incoming', value: stockCalc.incoming, color: INV.green },
               { label: 'Committed', value: stockCalc.committed, color: INV.muted },
-              { label: 'Inventory Value', value: stockCalc.inventoryValue.toFixed(2), color: INV.text },
+              { label: 'Inventory Value', value: stockCalc.inventoryValue.toFixed(2), color: INV.text, amount: true },
             ].map(s => (
               <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="pp-muted" style={{ fontSize: 11.5 }}>{s.label}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: 12, color: s.color }}>{s.value}</span>
+                <span style={{ fontFamily: s.amount ? "'Inter', sans-serif" : "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: 12, fontVariantNumeric: s.amount ? 'tabular-nums' : undefined, color: s.amount ? '#111827' : s.color }}>{s.value}</span>
               </div>
             ))}
           </div>
@@ -101,14 +101,14 @@ export const ItemSidebar: React.FC<Props> = ({ item, stockCalc, pricingCalc, val
           </div>
           <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
-              { label: 'Cost', value: pricingCalc.costPrice.toFixed(2), color: INV.text },
-              { label: 'Selling', value: pricingCalc.sellingPrice.toFixed(2), color: INV.text },
+              { label: 'Cost', value: pricingCalc.costPrice.toFixed(2), color: INV.text, amount: true },
+              { label: 'Selling', value: pricingCalc.sellingPrice.toFixed(2), color: INV.text, amount: true },
               { label: 'Profit', value: pricingCalc.profit.toFixed(2), color: pricingCalc.profit >= 0 ? INV.green : INV.red },
               { label: 'Markup', value: `${pricingCalc.markup.toFixed(1)}%`, color: pricingCalc.markup >= pricingCalc.minimumMarkup ? INV.green : INV.red },
             ].map(s => (
               <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="pp-muted" style={{ fontSize: 11.5 }}>{s.label}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: 12, color: s.color }}>{s.value}</span>
+                <span style={{ fontFamily: s.amount ? "'Inter', sans-serif" : "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: 12, fontVariantNumeric: s.amount ? 'tabular-nums' : undefined, color: s.amount ? '#111827' : s.color }}>{s.value}</span>
               </div>
             ))}
             <div style={{ paddingTop: 6, borderTop: `1px solid ${INV.line}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

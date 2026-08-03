@@ -41,8 +41,8 @@ export const CardView: React.FC<Props> = ({ items, onView, onEdit }) => (
         <div className="grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px', fontSize: '12.5px' }}>
           <div><span className="block text-[10.5px] uppercase tracking-[.05em]" style={{ color: '#94A3B8' }}>Stock</span><span className="font-mono tabular-nums">{item.stock || 0}</span></div>
           <div><span className="block text-[10.5px] uppercase tracking-[.05em]" style={{ color: '#94A3B8' }}>Available</span><span className="font-mono tabular-nums">{(item.stock || 0) - (item.reserved || 0)}</span></div>
-          <div><span className="block text-[10.5px] uppercase tracking-[.05em]" style={{ color: '#94A3B8' }}>Cost</span><span className="font-mono tabular-nums">{(item.costPrice || item.cost || 0).toFixed(2)}</span></div>
-          <div><span className="block text-[10.5px] uppercase tracking-[.05em]" style={{ color: '#94A3B8' }}>Selling</span><span className="font-mono tabular-nums">{(item.sellingPrice || item.price || 0).toFixed(2)}</span></div>
+          <div><span className="block text-[10.5px] uppercase tracking-[.05em]" style={{ color: '#94A3B8' }}>Cost</span><span className="tabular-nums" style={{ fontWeight: 600, color: '#111827' }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span></div>
+          <div><span className="block text-[10.5px] uppercase tracking-[.05em]" style={{ color: '#94A3B8' }}>Selling</span><span className="tabular-nums" style={{ fontWeight: 600, color: '#111827' }}>{(item.sellingPrice || item.price || 0).toFixed(2)}</span></div>
         </div>
         <div className="flex gap-2 mt-3 pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
           <button onClick={e => { e.stopPropagation(); onView(item); }}

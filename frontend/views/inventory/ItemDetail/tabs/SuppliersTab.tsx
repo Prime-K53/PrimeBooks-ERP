@@ -75,7 +75,7 @@ export const SuppliersTab: React.FC<Props> = ({ item, suppliers }) => {
               <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>
                 <DollarSign size={11} style={{ display: 'inline', marginRight: 4 }} />Last Cost
               </span>
-              <span style={{ fontFamily: 'monospace', fontWeight: 600, color: ink }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, color: '#111827' }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span>
             </div>
             <div>
               <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Supplier SKU</span>

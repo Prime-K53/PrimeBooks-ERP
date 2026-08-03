@@ -54,7 +54,7 @@ export const RecipesTab: React.FC<Props> = ({ item }) => {
             </div>
             <div>
               <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Estimated Cost</span>
-              <span style={{ fontFamily: 'monospace', fontWeight: 600, color: t[500] }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, color: '#111827' }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span>
             </div>
           </div>
           <button className="prime-btn-secondary" style={{ marginTop: 20, padding: '8px 16px', background: t[50], color: t[600], border: 'none', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'background .15s' }}>

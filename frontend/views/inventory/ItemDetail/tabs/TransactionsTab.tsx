@@ -143,7 +143,7 @@ export const TransactionsTab: React.FC<Props> = ({ transactions }) => {
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: t[500], fontWeight: 500 }}>{isIn ? Math.abs(qty) : '—'}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: danger, fontWeight: 500 }}>{!isIn ? Math.abs(qty) : '—'}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{balance}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: inkSoft }}>{t2.unitCost || t2.cost || '—'}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#111827' }}>{t2.unitCost || t2.cost || '—'}</td>
                   </tr>
                 );
               })}

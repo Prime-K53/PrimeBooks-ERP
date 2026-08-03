@@ -41,7 +41,7 @@ export const VariantsTab: React.FC<Props> = ({ item }) => {
   const kpis = [
     { label: 'Total Variants', value: variants.length, icon: <Layers size={16} />, color: ink },
     { label: 'Combined Stock', value: totalStock, icon: <Package size={16} />, color: t[500] },
-    { label: 'Avg Price', value: avgPrice.toFixed(2), icon: <DollarSign size={16} />, color: t[500], mono: true },
+    { label: 'Avg Price', value: avgPrice.toFixed(2), icon: <DollarSign size={16} />, color: '#111827' },
     { label: 'Active', value: `${activeCount}/${variants.length}`, icon: <TrendingUp size={16} />, color: t[500] },
   ];
 
@@ -58,7 +58,7 @@ export const VariantsTab: React.FC<Props> = ({ item }) => {
               <span style={{ fontSize: 10, fontWeight: 600, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</span>
               <span style={{ color: inkSoft }}>{k.icon}</span>
             </div>
-            <p style={{ fontSize: 24, fontWeight: 700, color: k.color, fontFamily: k.mono ? 'monospace' : undefined }}>{k.value}</p>
+            <p style={{ fontSize: 24, fontWeight: 600, color: k.color, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>{k.value}</p>
           </div>
         ))}
       </div>
@@ -114,9 +114,9 @@ export const VariantsTab: React.FC<Props> = ({ item }) => {
                       />
                     </td>
                   )}
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: inkSoft }}>{autoCp.toFixed(2)}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', color: t[500], fontWeight: 600 }}>{sp.toFixed(2)}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: marginOk ? t[500] : danger }}>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#111827' }}>{autoCp.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', color: '#111827', fontWeight: 600 }}>{sp.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: marginOk ? t[500] : danger }}>
                     {margin.toFixed(1)}%
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>

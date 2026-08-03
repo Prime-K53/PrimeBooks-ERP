@@ -336,7 +336,7 @@ export const InventoryReports: React.FC = () => {
                     <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: teal[50] }}>
                       <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(90deg, #1f8577, #0f544c)` }} />
                     </div>
-                    <span className="w-24 text-xs font-semibold text-right finance-nums" style={{ color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{data.value.toFixed(2)}</span>
+                    <span className="w-24 text-xs font-semibold text-right finance-nums" style={{ color: '#111827', fontFamily: "'Inter', sans-serif" }}>{currency}{data.value.toFixed(2)}</span>
                     <span className="w-16 text-[10px] text-right" style={{ color: inkSoft }}>{pct.toFixed(1)}%</span>
                   </div>
                 );
@@ -358,7 +358,7 @@ export const InventoryReports: React.FC = () => {
                     <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: teal[50] }}>
                       <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(90deg, #1f8577, #0f544c)` }} />
                     </div>
-                    <span className="w-24 text-xs font-semibold text-right finance-nums" style={{ color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{data.value.toFixed(2)}</span>
+                    <span className="w-24 text-xs font-semibold text-right finance-nums" style={{ color: '#111827', fontFamily: "'Inter', sans-serif" }}>{currency}{data.value.toFixed(2)}</span>
                     <span className="w-16 text-[10px] text-right" style={{ color: inkSoft }}>{pct.toFixed(1)}%</span>
                   </div>
                 );
@@ -451,8 +451,8 @@ export const InventoryReports: React.FC = () => {
                     <tr key={cat}>
                       <td style={{ fontWeight: 600, color: ink }}>{cat}</td>
                       <td className="num" style={{ color: inkSoft }}>{data.count}</td>
-                      <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800] }}>{currency}{data.cost.toFixed(2)}</td>
-                      <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{data.value.toFixed(2)}</td>
+                      <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#111827' }}>{currency}{data.cost.toFixed(2)}</td>
+                      <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111827', fontFamily: "'Inter', sans-serif" }}>{currency}{data.value.toFixed(2)}</td>
                       <td className="num" style={{ color: inkSoft }}>{totalValue > 0 ? ((data.value / totalValue) * 100).toFixed(1) : '0.0'}%</td>
                     </tr>
                   ))}
@@ -478,7 +478,7 @@ export const InventoryReports: React.FC = () => {
                     <tr key={wh}>
                       <td style={{ fontWeight: 600, color: ink }}>{wh}</td>
                       <td className="num" style={{ color: inkSoft }}>{data.count}</td>
-                      <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{data.value.toFixed(2)}</td>
+                      <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111827', fontFamily: "'Inter', sans-serif" }}>{currency}{data.value.toFixed(2)}</td>
                       <td className="num" style={{ color: inkSoft }}>{totalValue > 0 ? ((data.value / totalValue) * 100).toFixed(1) : '0.0'}%</td>
                     </tr>
                   ))}
@@ -490,7 +490,7 @@ export const InventoryReports: React.FC = () => {
           <div className="pp-panel" style={{ background: paper, border: `1px solid ${hairline}`, borderRadius: 14 }}>
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold" style={{ color: ink }}>Total Inventory Value</span>
-              <span className="text-lg font-bold finance-nums" style={{ color: teal[700], fontFamily: "'JetBrains Mono',monospace" }}>{currency}{totalValue.toFixed(2)}</span>
+              <span className="text-lg font-bold finance-nums" style={{ color: '#111827', fontFamily: "'Inter', sans-serif" }}>{currency}{totalValue.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -510,7 +510,7 @@ export const InventoryReports: React.FC = () => {
                 <div className="p-2.5 rounded-lg" style={{ background: kpi.iconBg, color: kpi.iconText }}>{kpi.icon}</div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-tight leading-none mb-1.5" style={{ color: inkSoft }}>{kpi.label}</p>
-                  <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{kpi.value}</p>
+                  <p className="text-lg md:text-xl font-semibold finance-nums" style={{ color: '#111827', fontFamily: "'Inter', sans-serif" }}>{kpi.value}</p>
                 </div>
               </div>
             ))}
@@ -566,7 +566,7 @@ export const InventoryReports: React.FC = () => {
                       return (
                         <tr key={`${i.id}-${idx}`}>
                           <td style={{ fontWeight: 600, color: ink }}>{i.name}</td>
-                          <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800] }}>{currency}{(i.costPrice || 0).toFixed(2)}</td>
+                          <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#111827' }}>{currency}{(i.costPrice || 0).toFixed(2)}</td>
                           <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: danger }}>{currency}{(i.sellingPrice || 0).toFixed(2)}</td>
                           <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: danger }}>-{currency}{loss.toFixed(2)}</td>
                           <td className="num" style={{ color: inkSoft }}>{i.stock ?? 0}</td>
@@ -616,10 +616,10 @@ export const InventoryReports: React.FC = () => {
                           <div style={{ fontWeight: 600, color: ink }}>{p.name}</div>
                           {p.sku && <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace", color: inkSoft }}>{p.sku}</div>}
                         </td>
-                        <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: ink, fontFamily: "'JetBrains Mono',monospace" }}>{p.qty}</td>
-                        <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800], fontFamily: "'JetBrains Mono',monospace" }}>{currency}{p.revenue.toFixed(2)}</td>
-                        <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: teal[800], fontFamily: "'JetBrains Mono',monospace" }}>{currency}{p.cost.toFixed(2)}</td>
-                        <td className="num" style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: p.profit >= 0 ? teal[600] : danger, fontFamily: "'JetBrains Mono',monospace" }}>{currency}{p.profit.toFixed(2)}</td>
+                        <td className="num" style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111827', fontFamily: "'Inter', sans-serif" }}>{p.qty}</td>
+                        <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#111827', fontFamily: "'Inter', sans-serif" }}>{currency}{p.revenue.toFixed(2)}</td>
+                        <td className="num" style={{ fontVariantNumeric: 'tabular-nums', color: '#111827', fontFamily: "'Inter', sans-serif" }}>{currency}{p.cost.toFixed(2)}</td>
+                        <td className="num" style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: p.profit >= 0 ? teal[600] : danger, fontFamily: "'Inter', sans-serif" }}>{currency}{p.profit.toFixed(2)}</td>
                         <td className="num">
                           <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{
                             background: markupPct >= 30 ? teal[50] : markupPct >= 15 ? teal[100] : markupPct >= 0 ? amber[100] : '#fef2f2',

@@ -76,10 +76,10 @@ export const OverviewTab: React.FC<Props> = ({ item }) => {
       title: 'Costing & Pricing',
       fields: [
         { label: 'Cost Method', value: item.costingMethod || 'weighted_average', capitalize: true },
-        { label: 'Last Purchase Cost', value: (item.costPrice || item.cost || 0).toFixed(2), mono: true },
-        { label: 'Avg Cost', value: (item.normalizedCP || item.costPrice || item.cost || 0).toFixed(2), mono: true },
-        { label: 'Cost Price', value: (item.costPrice || item.cost || 0).toFixed(2), mono: true, bold: true },
-        { label: 'Selling Price', value: (item.sellingPrice || item.price || 0).toFixed(2), mono: true, bold: true, accent: true },
+        { label: 'Last Purchase Cost', value: (item.costPrice || item.cost || 0).toFixed(2), amount: true },
+        { label: 'Avg Cost', value: (item.normalizedCP || item.costPrice || item.cost || 0).toFixed(2), amount: true },
+        { label: 'Cost Price', value: (item.costPrice || item.cost || 0).toFixed(2), amount: true, bold: true },
+        { label: 'Selling Price', value: (item.sellingPrice || item.price || 0).toFixed(2), amount: true, bold: true, accent: true },
         { label: 'Min Markup', value: `${resolveMinimumMarkup(item)}%` },
         { label: 'Currency', value: item.currency || 'KWD' },
       ],
@@ -163,8 +163,9 @@ export const OverviewTab: React.FC<Props> = ({ item }) => {
                     <span style={{ fontSize: 10, fontWeight: 500, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 2 }}>{f.label}</span>
                     <span style={{
                       fontWeight: f.bold ? 600 : 400,
-                      fontFamily: f.mono ? 'monospace' : undefined,
-                      color: f.accent ? t[500] : f.enabled ? t[500] : ink,
+                      fontFamily: f.mono ? 'monospace' : f.amount ? "'Inter', sans-serif" : undefined,
+                      fontVariantNumeric: f.amount ? 'tabular-nums' : undefined,
+                      color: f.amount ? '#111827' : f.accent ? t[500] : f.enabled ? t[500] : ink,
                       textTransform: f.capitalize ? 'capitalize' as const : undefined,
                     }}>
                       {f.value}

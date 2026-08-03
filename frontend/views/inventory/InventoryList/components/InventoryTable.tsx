@@ -153,8 +153,8 @@ function renderCell(item: any, col: string): React.ReactNode {
     case 'Available': return <span className={`font-mono tabular-nums ${(item.stock || 0) - (item.reserved || 0) <= 0 ? 'text-red-500' : 'text-slate-700'}`}>{(item.stock || 0) - (item.reserved || 0)}</span>;
     case 'Reserved': return <span className="font-mono tabular-nums text-amber-600">{item.reserved || 0}</span>;
     case 'Base Unit': return <span className="text-slate-500">{item.unit || 'pcs'}</span>;
-    case 'Cost Price': return <span className="font-mono tabular-nums text-slate-700">{(item.costPrice || item.cost || 0).toFixed(2)}</span>;
-    case 'Selling Price': return <span className="font-mono tabular-nums text-slate-700">{(item.sellingPrice || item.price || 0).toFixed(2)}</span>;
+    case 'Cost Price': return <span className="tabular-nums" style={{ color: '#111827', fontWeight: 600 }}>{(item.costPrice || item.cost || 0).toFixed(2)}</span>;
+    case 'Selling Price': return <span className="tabular-nums" style={{ color: '#111827', fontWeight: 600 }}>{(item.sellingPrice || item.price || 0).toFixed(2)}</span>;
     case 'Markup': {
       const cost = item.costPrice || item.cost || 0;
       const sell = item.sellingPrice || item.price || 0;
@@ -164,7 +164,7 @@ function renderCell(item: any, col: string): React.ReactNode {
     }
     case 'Inventory Value': {
       const val = (item.stock || 0) * (item.costPrice || item.cost || 0);
-      return <span className="font-mono tabular-nums text-slate-900">{val.toFixed(2)}</span>;
+      return <span className="tabular-nums" style={{ color: '#111827', fontWeight: 600 }}>{val.toFixed(2)}</span>;
     }
     case 'Supplier': return <span className="text-slate-500">{item.preferredSupplierId || '—'}</span>;
     case 'Warehouse': return <span className="text-slate-500">{item.warehouseId || '—'}</span>;

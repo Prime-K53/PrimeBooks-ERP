@@ -216,13 +216,13 @@ const InventoryTransactionHistory: React.FC<InventoryTransactionHistoryProps> = 
                     {tx.unitCost && (
                       <div>
                         <span className="text-gray-500">Unit Cost:</span>
-                        <span className="ml-2 text-gray-700">MWK {tx.unitCost.toFixed(2)}</span>
+                        <span className="ml-2 text-gray-700" style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#111827' }}>MWK {tx.unitCost.toFixed(2)}</span>
                       </div>
                     )}
                     {tx.totalCost && (
                       <div>
                         <span className="text-gray-500">Total Cost:</span>
-                        <span className="ml-2 text-gray-700">MWK {Math.abs(tx.totalCost).toFixed(2)}</span>
+                        <span className="ml-2 text-gray-700" style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#111827' }}>MWK {Math.abs(tx.totalCost).toFixed(2)}</span>
                       </div>
                     )}
                     {tx.warehouseId && (
