@@ -42,7 +42,7 @@ const CustomerWallet: React.FC = () => {
     (async () => {
       const sub = await portalLifecycle.subscribe({
         onEvent: (type, payload) => {
-          if (type === 'entity_changed' && (payload?.docType === 'invoice' || payload?.event === 'payment_allocated') && !cancelled) {
+          if (type === 'entity_changed' && (payload?.docType === 'invoice' || payload?.docType === 'wallet' || payload?.docType === 'payment' || payload?.event === 'payment_allocated') && !cancelled) {
             portalLifecycle.wallet.get()
               .then(setData)
               .catch(() => {});

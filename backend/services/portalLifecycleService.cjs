@@ -455,6 +455,8 @@ const portalLifecycleService = {
   subscribePortal(req, res) { return subscribe('portal', res, req); },
   subscribeAdmin(req, res) { return subscribe('admin', res, req); },
   emitEntityChange(channel, payload) { return emitEntityChange(channel, payload); },
+  notifyCustomer(payload) { return notifyCustomer(payload); },
+  notifyAdmin(payload) { return notifyAdmin(payload); },
 
   async publishErpEvent({
     customerId,

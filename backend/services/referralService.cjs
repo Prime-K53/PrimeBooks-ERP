@@ -1,6 +1,7 @@
 const { randomUUID } = require('crypto');
 const BaseService = require('./baseService.cjs');
 const ReferralNotificationService = require('./referralNotificationService.cjs');
+const portalLifecycleService = require('./portalLifecycleService.cjs');
 
 class ReferralService extends BaseService {
   constructor() {
@@ -969,7 +970,7 @@ class ReferralService extends BaseService {
     if (!customer) return;
 
     const account = await this._get(
-      "SELECT id FROM chart_of_accountstype = 'liability' LIMIT 1",
+      "SELECT id FROM chart_of_accounts WHERE type = 'liability' LIMIT 1",
       []
     );
     const accountId = account ? account.id : null;
@@ -984,15 +985,39 @@ class ReferralService extends BaseService {
       );
     }
 
+    const targetCustomerId = referral.referred_by_id || reward.customer_id;
     await this._run(
       'UPDATE customers SET walletBalance = COALESCE(walletBalance, 0) + ? WHERE id = ?',
-      [reward.amount, referral.referred_by_id || reward.customer_id]
+      [reward.amount, targetCustomerId]
     );
 
     await this._run(
       `UPDATE referral_rewards SET wallet_transaction_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [walletTxId, reward.id]
     );
+
+    const balanceRow = await this._get('SELECT walletBalance FROM customers WHERE id = ?', [targetCustomerId]);
+    const balance = balanceRow ? balanceRow.walletBalance || 0 : reward.amount;
+    const walletPayload = {
+      customerId: targetCustomerId,
+      docType: 'wallet',
+      event: 'balance_changed',
+      delta: reward.amount,
+      balance,
+    };
+    try {
+      portalLifecycleService.emitEntityChange('portal', walletPayload);
+      portalLifecycleService.emitEntityChange('admin', walletPayload);
+      await portalLifecycleService.notifyCustomer({
+        customerId: targetCustomerId,
+        type: 'payment',
+        title: 'Wallet credited',
+        body: `You earned a referral reward of ${reward.amount.toFixed(2)} in your wallet.`,
+        link: '/wallet',
+      });
+    } catch (err) {
+      console.error('[Referral] Wallet SSE/notification failed:', err.message);
+    }
   }
 }
 

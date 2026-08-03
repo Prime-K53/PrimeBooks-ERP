@@ -269,14 +269,16 @@ CREATE TABLE IF NOT EXISTS public.cheques (id TEXT PRIMARY KEY, company_id TEXT,
 CREATE TABLE IF NOT EXISTS public.subscribers (id TEXT PRIMARY KEY, company_id TEXT, data JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 
 -- ============================================================================
--- 13. Indexes on company_id for multi-tenant performance
+-- 13. Indexes for query performance
+-- NOTE: company_id-based indexes (idx_profiles_company_id,
+-- idx_idempotency_keys_company_id, idx_tax_rates_company_id) were removed
+-- because supabase-migrate-to-single-company.sql drops the company_id column
+-- from every table. Re-running this file on an already-migrated database
+-- otherwise fails with: ERROR 42703: column "company_id" does not exist.
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_companies_company_id ON public.companies(id);
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles(user_id);
-CREATE INDEX IF NOT EXISTS idx_profiles_company_id ON public.profiles(company_id);
 CREATE INDEX IF NOT EXISTS idx_idempotency_keys_expires_at ON public.idempotency_keys(expires_at);
-CREATE INDEX IF NOT EXISTS idx_idempotency_keys_company_id ON public.idempotency_keys(company_id);
-CREATE INDEX IF NOT EXISTS idx_tax_rates_company_id ON public.tax_rates(company_id);
 
 -- ============================================================================
 -- 14. Enable RLS on all tables (idempotent via IF NOT EXISTS approach,

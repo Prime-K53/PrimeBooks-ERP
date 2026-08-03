@@ -332,6 +332,12 @@ const currencyService = new CurrencyService();
 const currencyMiddleware = new CurrencyMiddleware(currencyService);
 app.use('/api', currencyMiddleware.injectCurrency());
 
+// ERP → Portal bridge: lets the offline-first ERP mirror created documents
+// (invoices, sales orders, quotations, payments, wallet movements) into the
+// portal SQLite layer and broadcast SSE + notifications.
+const erpPortalMirrorRoutes = require('./routes/erpPortalMirror.cjs');
+app.use('/api/erp-portal', erpPortalMirrorRoutes);
+
 // Shared helper for pricing validation
 async function validateItemsPricing(items) {
   if (!items || !Array.isArray(items)) return;
@@ -2011,6 +2017,16 @@ db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
          body.reference || null, body.notes || null, body.status || 'Cleared', req.user?.id || null],
         function (err) {
           if (err) { return handleInsertConstraintError(res, err, 'Create customer payment'); }
+          const paymentPayload = {
+            customerId: body.customer_id || body.customerId || null,
+            docType: 'payment',
+            docId: id,
+            event: 'payment_recorded',
+            amount: body.amount || 0,
+            method: body.payment_method || body.paymentMethod || 'Cash',
+          };
+          portalLifecycleService.emitEntityChange('portal', paymentPayload);
+          portalLifecycleService.emitEntityChange('admin', paymentPayload);
           res.status(201).json({ id, ...body });
         }
       );
@@ -3034,6 +3050,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
         );
       });
       await documentService.logAudit(req.userId, 'CREATE', 'sales_order', o.id, { created: true });
+      portalLifecycleService.emitEntityChange('portal', { customerId: o.customerId, docType: 'order', docId: o.id, status: o.status || 'Draft', orderNumber: o.orderNumber || null });
+      portalLifecycleService.emitEntityChange('admin', { customerId: o.customerId, docType: 'order', docId: o.id, status: o.status || 'Draft', orderNumber: o.orderNumber || null });
       res.status(201).json({ id: o.id });
     } catch (err) {
       sendError(res, 500, err.message, 'CREATE_SALES_ORDER_FAILED');
@@ -3055,6 +3073,8 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
           }
         );
       });
+      portalLifecycleService.emitEntityChange('portal', { customerId: o.customerId, docType: 'order', docId: id, status: o.status || 'Draft', orderNumber: o.orderNumber || null });
+      portalLifecycleService.emitEntityChange('admin', { customerId: o.customerId, docType: 'order', docId: id, status: o.status || 'Draft', orderNumber: o.orderNumber || null });
       res.json({ status: 'updated' });
     } catch (err) {
       sendError(res, 500, err.message, 'UPDATE_SALES_ORDER_FAILED');
