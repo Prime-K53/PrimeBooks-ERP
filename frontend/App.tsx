@@ -533,7 +533,7 @@ const AppLayout: React.FC = () => {
         toggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <div className="app-content-shell flex-1 flex flex-col h-full min-w-0 transition-all duration-300">
-        <div className="px-3 sm:px-6 pb-2 pt-3 sm:pt-6 shrink-0">
+        <div className="pb-2 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0" style={{ background: '#FEFDFB', borderBottom: '1.4px solid #e4ddd1', padding: '10px 20px', borderRadius: 0 }}>
             <button
               type="button"

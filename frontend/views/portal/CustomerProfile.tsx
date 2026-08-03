@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { User, Save, Lock, Loader2, Monitor, Smartphone, Bell, Shield } from 'lucide-react';
 import QRCode from 'qrcode';
 import { portalLifecycle, portalApi } from '../../services/portalApiClient';
@@ -146,24 +146,45 @@ const CustomerProfile: React.FC = () => {
     }
   };
 
+  const loadProfile = useCallback(async () => {
+    try {
+      const data = await portalLifecycle.profile.get();
+      setProfile(data);
+      setForm({
+        full_name: data.full_name || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        zip: data.zip || '',
+        country: data.country || '',
+        email: data.email || user?.email || '',
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.email]);
+
   useEffect(() => {
-    portalLifecycle.profile.get()
-      .then((data) => {
-        setProfile(data);
-        setForm({
-          full_name: data.full_name || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          city: data.city || '',
-          state: data.state || '',
-          zip: data.zip || '',
-          country: data.country || '',
-          email: data.email || user?.email || '',
-        });
-      })
-      .catch((err) => setError(err.message || 'Failed to load profile'))
-      .finally(() => setLoading(false));
-  }, [user]);
+    loadProfile();
+  }, [loadProfile]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && (payload?.docType === 'customer_updated' || payload?.docType === 'customer') && !cancelled) {
+            loadProfile();
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, [loadProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

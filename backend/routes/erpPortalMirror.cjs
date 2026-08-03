@@ -417,6 +417,593 @@ async function mirrorWallet(record) {
   return customerId;
 }
 
+async function mirrorCustomer(record) {
+  const id = String(record.id ?? record.customerId ?? randomUUID());
+  const name = record.name ?? record.customerName ?? record.customer_name ?? null;
+  const email = record.email ?? record.customerEmail ?? record.customer_email ?? null;
+  const phone = record.phone ?? record.phoneNumber ?? record.customerPhone ?? record.customer_phone ?? null;
+  const status = record.status ?? record.customerStatus ?? record.customer_status ?? 'Active';
+  const creditLimit = num(record.creditLimit ?? record.credit_limit);
+  const balance = num(record.balance ?? record.outstandingBalance ?? record.outstanding_balance);
+  const walletBalance = num(record.walletBalance ?? record.wallet_balance);
+
+  await runQuery(
+    `INSERT INTO customers (id, name, email, phone, status, creditLimit, outstandingBalance, walletBalance, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        email = excluded.email,
+        phone = excluded.phone,
+        status = excluded.status,
+        creditLimit = excluded.creditLimit,
+        outstandingBalance = excluded.outstandingBalance,
+        walletBalance = excluded.walletBalance,
+        updated_at = CURRENT_TIMESTAMP`,
+    [id, name || 'Customer', email, phone, status, creditLimit, balance, walletBalance]
+  );
+
+  const payload = { customerId: id, docType: 'customer_updated', docId: id, event: 'customer_updated', status };
+  emit('portal', payload);
+  emit('admin', payload);
+
+  return id;
+}
+
+async function mirrorDeliveryNote(record) {
+  const id = String(record.id ?? record.deliveryNoteId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const customerName = record.customerName ?? record.customer_name ?? null;
+  const orderId = record.orderId ?? record.salesOrderId ?? record.sales_order_id ?? null;
+  const status = String(record.status ?? record.deliveryStatus ?? record.delivery_status ?? 'pending');
+  const trackingNumber = record.trackingNumber ?? record.tracking_number ?? null;
+  const deliveryDate = record.deliveryDate ?? record.delivery_date ?? null;
+  const items = record.items ?? record.lineItems ?? record.line_items ?? null;
+
+  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
+  await runQuery(
+    `CREATE TABLE IF NOT EXISTS delivery_notes (
+      id TEXT PRIMARY KEY,
+      order_id TEXT,
+      customer_id TEXT,
+      customer_name TEXT,
+      status TEXT DEFAULT 'pending',
+      tracking_number TEXT,
+      delivery_date DATETIME,
+      items_json TEXT,
+      notes TEXT,
+      created_by TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  await runQuery(
+    `INSERT OR IGNORE INTO delivery_notes (id, order_id, customer_id, customer_name, status, tracking_number, delivery_date, items_json, notes, created_by, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    [id, orderId, customerId, customerName, status, trackingNumber, deliveryDate,
+     items ? (Array.isArray(items) ? JSON.stringify(items) : items) : null,
+     record.notes ?? record.comments ?? null, record.createdBy ?? record.created_by ?? null]
+  );
+
+  if (trackingNumber || status !== 'pending') {
+    await runQuery(
+      `UPDATE sales_orders SET
+         status = CASE
+           WHEN ? = 'delivered' THEN 'Delivered'
+           WHEN ? = 'in_transit' OR ? = 'shipped' THEN 'Shipped'
+           ELSE status
+         END,
+         tracking_number = COALESCE(?, tracking_number),
+         updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [status, status, status, trackingNumber, orderId]
+    );
+  }
+
+  const payload = { customerId, docType: 'shipment', docId: id, event: 'delivery_updated', status, trackingNumber, orderId };
+  emit('portal', payload);
+  emit('admin', payload);
+  const orderPayload = { customerId, docType: 'order', docId: orderId || id, event: 'delivery_updated', status, trackingNumber, deliveryNoteId: id };
+  emit('portal', orderPayload);
+  emit('admin', orderPayload);
+
+  if (customerId && trackingNumber) {
+    await notifyPortalCustomer({
+      customerId,
+      type: 'order',
+      title: 'Delivery update',
+      body: status === 'delivered' ? 'Your order has been delivered.' : `Your order is ${status}. Tracking: ${trackingNumber}`,
+      link: `/shipments/${orderId || id}`,
+    });
+  }
+
+  return id;
+}
+
+async function mirrorShipment(record) {
+  return mirrorDeliveryNote(record);
+}
+
+async function mirrorReceipt(record) {
+  const id = String(record.id ?? record.receiptId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const customerName = record.customerName ?? record.customer_name ?? null;
+  const amount = num(record.amount ?? record.totalAmount ?? record.total);
+  const paymentId = record.paymentId ?? record.payment_id ?? null;
+  const invoiceIds = record.invoiceIds ?? record.invoice_ids ?? null;
+  const receiptNumber = record.receiptNumber ?? record.receipt_number ?? null;
+
+  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
+  await runQuery(
+    `CREATE TABLE IF NOT EXISTS receipts (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT,
+      customer_name TEXT,
+      amount REAL DEFAULT 0,
+      receipt_number TEXT,
+      payment_id TEXT,
+      invoice_ids_json TEXT,
+      date DATETIME,
+      notes TEXT,
+      created_by TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  await runQuery(
+    `INSERT INTO receipts (id, customer_id, customer_name, amount, receipt_number, payment_id, invoice_ids_json, date, notes, created_by, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT(id) DO UPDATE SET
+        customer_id = excluded.customer_id,
+        customer_name = excluded.customer_name,
+        amount = excluded.amount,
+        receipt_number = excluded.receipt_number,
+        payment_id = excluded.payment_id,
+        updated_at = CURRENT_TIMESTAMP`,
+    [id, customerId, customerName || '', amount, receiptNumber, paymentId,
+     invoiceIds ? (Array.isArray(invoiceIds) ? JSON.stringify(invoiceIds) : invoiceIds) : null,
+     record.date ?? record.createdAt ?? new Date().toISOString(),
+     record.notes ?? null, record.createdBy ?? record.created_by ?? null]
+  );
+
+  const payload = { customerId, docType: 'payment', docId: id, event: 'receipt_issued', amount, receiptNumber };
+  emit('portal', payload);
+  emit('admin', payload);
+
+  if (customerId && amount > 0) {
+    await notifyPortalCustomer({
+      customerId,
+      type: 'receipt',
+      title: 'Receipt issued',
+      body: `Receipt ${receiptNumber || id} for ${amount.toFixed(2)} is available.`,
+      link: `/payments/${paymentId || id}`,
+    });
+  }
+
+  return id;
+}
+
+async function mirrorCreditNote(record) {
+  const id = String(record.id ?? record.creditNoteId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const customerName = record.customerName ?? record.customer_name ?? null;
+  const amount = num(record.amount ?? record.totalAmount ?? record.total);
+  const status = String(record.status ?? 'applied');
+  const reason = record.reason ?? record.notes ?? null;
+
+  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
+  await runQuery(
+    `CREATE TABLE IF NOT EXISTS credit_notes (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT,
+      customer_name TEXT,
+      amount REAL DEFAULT 0,
+      status TEXT DEFAULT 'applied',
+      reason TEXT,
+      date DATETIME,
+      invoice_id TEXT,
+      created_by TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  await runQuery(
+    `INSERT INTO credit_notes (id, customer_id, customer_name, amount, status, reason, date, invoice_id, created_by, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT(id) DO UPDATE SET
+        customer_id = excluded.customer_id,
+        amount = excluded.amount,
+        status = excluded.status,
+        reason = excluded.reason,
+        updated_at = CURRENT_TIMESTAMP`,
+    [id, customerId, customerName || '', amount, status, reason,
+     record.date ?? record.createdAt ?? new Date().toISOString(),
+     record.invoiceId ?? record.invoice_id ?? null,
+     record.createdBy ?? record.created_by ?? null]
+  );
+
+  if (customerId && amount > 0) {
+    await runQuery('UPDATE customers SET outstandingBalance = MAX(COALESCE(outstandingBalance, 0) - ?, 0) WHERE id = ?', [amount, customerId]);
+  }
+
+  const payload = { customerId, docType: 'invoice', docId: id, event: 'credit_note', amount, status };
+  emit('portal', payload);
+  emit('admin', payload);
+
+  if (customerId && amount > 0) {
+    await notifyPortalCustomer({
+      customerId,
+      type: 'invoice',
+      title: 'Credit note issued',
+      body: `A credit note of ${amount.toFixed(2)} has been applied to your account.`,
+      link: `/invoices`,
+    });
+  }
+
+  return id;
+}
+
+async function mirrorDebitNote(record) {
+  const id = String(record.id ?? record.debitNoteId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const customerName = record.customerName ?? record.customer_name ?? null;
+  const amount = num(record.amount ?? record.totalAmount ?? record.total);
+  const status = String(record.status ?? 'pending');
+  const reason = record.reason ?? record.notes ?? null;
+
+  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
+  await runQuery(
+    `CREATE TABLE IF NOT EXISTS debit_notes (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT,
+      customer_name TEXT,
+      amount REAL DEFAULT 0,
+      status TEXT DEFAULT 'pending',
+      reason TEXT,
+      date DATETIME,
+      invoice_id TEXT,
+      created_by TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  await runQuery(
+    `INSERT INTO debit_notes (id, customer_id, customer_name, amount, status, reason, date, invoice_id, created_by, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT(id) DO UPDATE SET
+        customer_id = excluded.customer_id,
+        amount = excluded.amount,
+        status = excluded.status,
+        reason = excluded.reason,
+        updated_at = CURRENT_TIMESTAMP`,
+    [id, customerId, customerName || '', amount, status, reason,
+     record.date ?? record.createdAt ?? new Date().toISOString(),
+     record.invoiceId ?? record.invoice_id ?? null,
+     record.createdBy ?? record.created_by ?? null]
+  );
+
+  if (customerId && amount > 0) {
+    await runQuery('UPDATE customers SET outstandingBalance = COALESCE(outstandingBalance, 0) + ? WHERE id = ?', [amount, customerId]);
+  }
+
+  const payload = { customerId, docType: 'invoice', docId: id, event: 'debit_note', amount, status };
+  emit('portal', payload);
+  emit('admin', payload);
+
+  if (customerId && amount > 0) {
+    await notifyPortalCustomer({
+      customerId,
+      type: 'invoice',
+      title: 'Debit note issued',
+      body: `A debit note of ${amount.toFixed(2)} has been applied to your account.`,
+      link: `/invoices`,
+    });
+  }
+
+  return id;
+}
+
+async function mirrorWalletTransaction(record) {
+  const customerId = record.customerId ?? record.customer_id;
+  if (!customerId) return null;
+  const txnId = String(record.id ?? record.transactionId ?? record.walletTransactionId ?? randomUUID());
+  const amount = num(record.amount ?? record.delta);
+  const type = record.type ?? (amount >= 0 ? 'credit' : 'debit');
+  const reason = record.reason ?? record.description ?? null;
+  const reference = record.reference ?? record.ref ?? null;
+  const balanceAfter = record.balanceAfter ?? record.balance_after ?? null;
+
+  await ensureCustomerRow(customerId, record.customerName ?? record.customer_name,
+    record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
+  await runQuery(
+    `CREATE TABLE IF NOT EXISTS customer_wallet_transactions (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT,
+      amount REAL NOT NULL DEFAULT 0,
+      type TEXT NOT NULL DEFAULT 'credit',
+      reason TEXT,
+      reference TEXT,
+      balance_after REAL DEFAULT 0,
+      created_by TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  await runQuery(
+    `INSERT OR IGNORE INTO customer_wallet_transactions (id, customer_id, amount, type, reason, reference, balance_after, created_by, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [txnId, customerId, Math.abs(amount), type, reason, reference,
+     balanceAfter !== null ? num(balanceAfter) : 0,
+     record.createdBy ?? record.created_by ?? null,
+     record.createdAt ?? record.date ?? new Date().toISOString()]
+  );
+
+  const payload = { customerId, docType: 'wallet', docId: txnId, event: 'wallet_transaction', amount, type };
+  emit('portal', payload);
+  emit('admin', payload);
+
+  return txnId;
+}
+
+async function mirrorJobTicket(record) {
+  const id = String(record.id ?? record.jobTicketId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const customerName = record.customerName ?? record.customer_name ?? null;
+  const orderId = record.orderId ?? record.salesOrderId ?? record.sales_order_id ?? null;
+  const status = String(record.status ?? record.ticketStatus ?? 'pending');
+  const jobType = record.jobType ?? record.job_type ?? record.type ?? null;
+  const progress = num(record.progress ?? record.completionPercent ?? record.completion_percent);
+
+  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
+  await runQuery(
+    `CREATE TABLE IF NOT EXISTS job_tickets (
+      id TEXT PRIMARY KEY,
+      order_id TEXT,
+      customer_id TEXT,
+      customer_name TEXT,
+      status TEXT DEFAULT 'pending',
+      job_type TEXT,
+      progress REAL DEFAULT 0,
+      notes TEXT,
+      due_date DATETIME,
+      created_by TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  await runQuery(
+    `INSERT INTO job_tickets (id, order_id, customer_id, customer_name, status, job_type, progress, notes, due_date, created_by, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT(id) DO UPDATE SET
+        status = excluded.status,
+        progress = excluded.progress,
+        notes = excluded.notes,
+        updated_at = CURRENT_TIMESTAMP`,
+    [id, orderId, customerId, customerName || '', status, jobType, progress,
+     record.notes ?? null, record.dueDate ?? record.due_date ?? null,
+     record.createdBy ?? record.created_by ?? null]
+  );
+
+  const payload = { customerId, docType: 'order', docId: orderId || id, event: 'production_update', status, progress, jobTicketId: id };
+  emit('portal', payload);
+  emit('admin', payload);
+
+  return id;
+}
+
+async function mirrorWorkOrder(record) {
+  const id = String(record.id ?? record.workOrderId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const orderId = record.orderId ?? record.salesOrderId ?? record.sales_order_id ?? record.sourceSalesOrder ?? null;
+  const status = String(record.status ?? record.workOrderStatus ?? 'pending');
+  const progress = num(record.progress ?? record.completionPercent);
+  const finishedGoods = record.finishedGoods ?? record.finished_goods ?? [];
+
+  const payload = { customerId, docType: 'order', docId: orderId || id, event: 'production_status', status, progress, workOrderId: id };
+  emit('portal', payload);
+  emit('admin', payload);
+
+  if (customerId && status === 'completed') {
+    await notifyPortalCustomer({
+      customerId,
+      type: 'order',
+      title: 'Production completed',
+      body: `Production for order ${orderId || id} has been completed.`,
+      link: `/orders/${orderId || id}`,
+    });
+  }
+
+  return id;
+}
+
+async function mirrorProductionBatch(record) {
+  return mirrorWorkOrder(record);
+}
+
+async function mirrorInventoryTransaction(record) {
+  const id = String(record.id ?? record.inventoryTransactionId ?? randomUUID());
+  const type = record.type ?? record.txnType ?? record.transaction_type ?? null;
+  const productId = record.productId ?? record.product_id ?? record.itemId ?? null;
+  const quantity = num(record.quantity);
+  const reference = record.reference ?? record.ref ?? record.orderId ?? null;
+
+  const payload = { docType: 'inventory', docId: id, event: 'stock_changed', type, productId, quantity, reference };
+  emit('admin', payload);
+
+  return id;
+}
+
+async function mirrorLedgerEntry(record) {
+  const id = String(record.id ?? record.ledgerEntryId ?? record.entryId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const accountId = record.accountId ?? record.account_id ?? null;
+  const amount = num(record.amount ?? record.debit ?? record.credit);
+  const debit = num(record.debit ?? record.debitAmount);
+  const credit = num(record.credit ?? record.creditAmount);
+  const description = record.description ?? record.narration ?? record.notes ?? null;
+
+  if (customerId) {
+    const delta = credit - debit || amount;
+    if (delta !== 0) {
+      await runQuery('UPDATE customers SET outstandingBalance = COALESCE(outstandingBalance, 0) - ? WHERE id = ?', [delta, customerId]);
+    }
+
+    const payload = { customerId, docType: 'statement', docId: id, event: 'ledger_updated', debit, credit, amount };
+    emit('portal', payload);
+    emit('admin', payload);
+  }
+
+  return id;
+}
+
+async function mirrorSupportTicket(record) {
+  const id = String(record.id ?? record.ticketId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const customerName = record.customerName ?? record.customer_name ?? null;
+  const subject = record.subject ?? record.title ?? null;
+  const status = String(record.status ?? 'open');
+  const priority = record.priority ?? 'normal';
+  const message = record.message ?? record.initialMessage ?? record.description ?? null;
+
+  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
+  await runQuery(
+    `CREATE TABLE IF NOT EXISTS support_tickets (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT,
+      customer_name TEXT,
+      subject TEXT,
+      message TEXT,
+      status TEXT DEFAULT 'open',
+      priority TEXT DEFAULT 'normal',
+      assigned_to TEXT,
+      created_by TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  await runQuery(
+    `INSERT INTO support_tickets (id, customer_id, customer_name, subject, message, status, priority, assigned_to, created_by, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT(id) DO UPDATE SET
+        status = excluded.status,
+        priority = excluded.priority,
+        assigned_to = excluded.assigned_to,
+        updated_at = CURRENT_TIMESTAMP`,
+    [id, customerId, customerName || '', subject, message, status, priority,
+     record.assignedTo ?? record.assigned_to ?? null,
+     record.createdBy ?? record.created_by ?? null]
+  );
+
+  const payload = { customerId, docType: 'ticket_updated', docId: id, event: 'ticket_updated', status, priority };
+  emit('portal', payload);
+  emit('admin', payload);
+  const supportPayload = { customerId, docType: 'support', docId: id, event: 'ticket_updated', status, priority };
+  emit('portal', supportPayload);
+  emit('admin', supportPayload);
+
+  if (customerId && (status === 'resolved' || status === 'closed')) {
+    await notifyPortalCustomer({
+      customerId,
+      type: 'system',
+      title: 'Support ticket updated',
+      body: `Ticket "${subject || id}" status: ${status}.`,
+      link: `/support`,
+    });
+  }
+
+  return id;
+}
+
+async function mirrorNotification(record) {
+  const id = String(record.id ?? record.notificationId ?? randomUUID());
+  const customerId = record.customerId ?? record.customer_id ?? null;
+  const portalUserId = record.portalUserId ?? record.portal_user_id ?? null;
+  const type = record.type ?? record.notificationType ?? 'system';
+  const title = record.title ?? record.subject ?? null;
+  const body = record.body ?? record.message ?? record.description ?? null;
+  const link = record.link ?? record.url ?? null;
+
+  await notifyPortalCustomer({ customerId, type, title, body, link });
+
+  return id;
+}
+
+async function mirrorEngagement(record) {
+  const customerId = record.customerId ?? record.customer_id;
+  if (!customerId) return null;
+  const customerName = record.customerName ?? record.customer_name ?? null;
+  const pointsEarned = num(record.pointsEarned ?? record.points_earned ?? record.points);
+  const rewardType = record.rewardType ?? record.reward_type ?? record.type ?? null;
+
+  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
+  const payload = { customerId, docType: 'loyalty', event: 'reward_earned', pointsEarned, rewardType };
+  emit('portal', payload);
+  emit('admin', payload);
+
+  if (customerId && pointsEarned > 0) {
+    await notifyPortalCustomer({
+      customerId,
+      type: 'system',
+      title: 'Rewards earned',
+      body: `You earned ${pointsEarned} reward points!`,
+      link: '/loyalty',
+    });
+  }
+
+  return customerId;
+}
+
+async function mirrorBulk(record) {
+  const entities = record.entities ?? record.items ?? [];
+  const results = [];
+  for (const entry of entities) {
+    try {
+      const { entity, data } = entry;
+      let id;
+      switch (entity) {
+        case 'invoice': id = await mirrorInvoice(data); break;
+        case 'salesOrder': id = await mirrorSalesOrder(data); break;
+        case 'quotation': id = await mirrorQuotation(data); break;
+        case 'customerPayment': id = await mirrorCustomerPayment(data); break;
+        case 'wallet': id = await mirrorWallet(data); break;
+        case 'customer': id = await mirrorCustomer(data); break;
+        case 'deliveryNote': id = await mirrorDeliveryNote(data); break;
+        case 'shipment': id = await mirrorShipment(data); break;
+        case 'receipt': id = await mirrorReceipt(data); break;
+        case 'creditNote': id = await mirrorCreditNote(data); break;
+        case 'debitNote': id = await mirrorDebitNote(data); break;
+        case 'walletTransaction': id = await mirrorWalletTransaction(data); break;
+        case 'jobTicket': id = await mirrorJobTicket(data); break;
+        case 'workOrder': id = await mirrorWorkOrder(data); break;
+        case 'productionBatch': id = await mirrorProductionBatch(data); break;
+        case 'inventoryTransaction': id = await mirrorInventoryTransaction(data); break;
+        case 'ledgerEntry': id = await mirrorLedgerEntry(data); break;
+        case 'supportTicket': id = await mirrorSupportTicket(data); break;
+        case 'notification': id = await mirrorNotification(data); break;
+        case 'engagement': id = await mirrorEngagement(data); break;
+        default: continue;
+      }
+      results.push({ entity, id, success: true });
+    } catch (err) {
+      results.push({ entity: entry.entity, success: false, error: err?.message || String(err) });
+    }
+  }
+  return results;
+}
+
 // POST /api/erp-portal/mirror
 router.post('/mirror', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
   try {
@@ -441,6 +1028,54 @@ router.post('/mirror', requireRole('Admin', 'Accountant', 'Manager'), async (req
         break;
       case 'wallet':
         id = await mirrorWallet(data);
+        break;
+      case 'customer':
+        id = await mirrorCustomer(data);
+        break;
+      case 'deliveryNote':
+        id = await mirrorDeliveryNote(data);
+        break;
+      case 'shipment':
+        id = await mirrorShipment(data);
+        break;
+      case 'receipt':
+        id = await mirrorReceipt(data);
+        break;
+      case 'creditNote':
+        id = await mirrorCreditNote(data);
+        break;
+      case 'debitNote':
+        id = await mirrorDebitNote(data);
+        break;
+      case 'walletTransaction':
+        id = await mirrorWalletTransaction(data);
+        break;
+      case 'jobTicket':
+        id = await mirrorJobTicket(data);
+        break;
+      case 'workOrder':
+        id = await mirrorWorkOrder(data);
+        break;
+      case 'productionBatch':
+        id = await mirrorProductionBatch(data);
+        break;
+      case 'inventoryTransaction':
+        id = await mirrorInventoryTransaction(data);
+        break;
+      case 'ledgerEntry':
+        id = await mirrorLedgerEntry(data);
+        break;
+      case 'supportTicket':
+        id = await mirrorSupportTicket(data);
+        break;
+      case 'notification':
+        id = await mirrorNotification(data);
+        break;
+      case 'engagement':
+        id = await mirrorEngagement(data);
+        break;
+      case 'bulk':
+        id = await mirrorBulk(data);
         break;
       default:
         return res.status(400).json({ error: `Unknown entity: ${entity}` });

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Plus, Send, Loader2, Paperclip, Trash2, Download, Image as ImageIcon, FileText, X } from 'lucide-react';
-import { portalApi, uploadTicketAttachment, getTicketAttachments, deleteTicketAttachment, TicketAttachment } from '../../services/portalApiClient';
+import { portalApi, uploadTicketAttachment, getTicketAttachments, deleteTicketAttachment, TicketAttachment, portalLifecycle } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalButton from './components/PortalButton';
 import PortalInput from './components/PortalInput';
@@ -61,17 +61,32 @@ const CustomerSupport: React.FC = () => {
   const [uploadingAttachment, setUploadingAttachment] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
 
-  const fetchTickets = () => {
+  const fetchTickets = useCallback(() => {
     setLoading(true);
     portalApi.get<Ticket[]>('/support/tickets')
       .then(setTickets)
       .catch((err) => setError(err.message || 'Failed to load tickets'))
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     fetchTickets();
-  }, []);
+  }, [fetchTickets]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && (payload?.docType === 'ticket_updated' || payload?.docType === 'support' || payload?.docType === 'comment') && !cancelled) {
+            fetchTickets();
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, [fetchTickets]);
 
   const handleExpand = async (ticket: Ticket) => {
     if (expandedId === ticket.id) {

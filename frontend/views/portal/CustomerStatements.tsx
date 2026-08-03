@@ -39,7 +39,7 @@ const CustomerStatements: React.FC = () => {
   const [downloading, setDownloading] = useState(false);
   const { companyConfig } = useAuth();
 
-  const fetchStatement = async (start?: string, end?: string) => {
+  const fetchStatement = useCallback(async (start?: string, end?: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -50,7 +50,7 @@ const CustomerStatements: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const end = new Date().toISOString().split('T')[0];
@@ -58,7 +58,26 @@ const CustomerStatements: React.FC = () => {
     setStartDate(start);
     setEndDate(end);
     fetchStatement(start, end);
-  }, []);
+  }, [fetchStatement]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sub = await portalLifecycle.subscribe({
+        onEvent: (type, payload) => {
+          if (type === 'entity_changed' && (
+            payload?.docType === 'statement' || payload?.docType === 'invoice'
+              || payload?.docType === 'payment_allocated' || payload?.docType === 'credit_note'
+              || payload?.docType === 'debit_note'
+          ) && !cancelled) {
+            fetchStatement(startDate, endDate);
+          }
+        },
+      });
+      if (!cancelled) return sub;
+    })();
+    return () => { cancelled = true; };
+  }, [fetchStatement, startDate, endDate]);
 
   const handleDownloadPdf = useCallback(async () => {
     if (!data) return;
