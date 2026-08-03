@@ -3,7 +3,8 @@ import {
   Search, Plus, Filter, Download, Phone,
   MapPin, ChevronRight, User, School, Building2, Landmark,
   Trash2, Edit, ExternalLink, MoreVertical,
-  DollarSign, Clock, CheckCircle, AlertCircle, TrendingUp, AlertTriangle, FileText, Target
+  DollarSign, Clock, CheckCircle, AlertCircle, TrendingUp, AlertTriangle, FileText, Target,
+  Mail, Eye, Send, Wallet, BookOpen, Printer
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSales } from '../../context/SalesContext';
@@ -90,6 +91,44 @@ const selectStyle: React.CSSProperties = {
   cursor: 'pointer'
 };
 
+const menuItemStyle: React.CSSProperties = {
+  textAlign: 'left', padding: '8px 10px', fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+  color: ink, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', transition: 'background .15s'
+};
+
+const AVATAR_PALETTE = [
+  { bg: '#dff1ec', text: '#146b60' },
+  { bg: '#fbead0', text: '#a8711f' },
+  { bg: '#e6ecf8', text: '#3b5b9b' },
+  { bg: '#f3e8f7', text: '#7c3aed' },
+  { bg: '#fde8e8', text: '#b5493f' },
+  { bg: '#e8f3ea', text: '#15803d' },
+];
+
+const getInitials = (name: string) =>
+  (name || '?').trim().split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '?';
+
+const avatarPaletteFor = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_PALETTE[h % AVATAR_PALETTE.length];
+};
+
+const relativeDate = (iso: string) => {
+  const date = parseISO(iso);
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return format(date, 'MMM dd, yyyy');
+};
+
+type ChipFilter = 'All' | 'Active' | 'Owing' | 'Paid';
+const CHIP_FILTERS: ChipFilter[] = ['All', 'Active', 'Owing', 'Paid'];
+
 export const Clients: React.FC = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, isLoading, customerPayments } = useSales();
   const { invoices } = useFinance();
@@ -106,6 +145,7 @@ export const Clients: React.FC = () => {
   const [selectedWorkspaceCustomer, setSelectedWorkspaceCustomer] = useState<Customer | null>(null);
   const [selectedCardCustomer, setSelectedCardCustomer] = useState<Customer | null>(null);
   const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Inactive' | 'Lead'>('All');
+  const [chipFilter, setChipFilter] = useState<ChipFilter>('All');
   const [selectedMetric, setSelectedMetric] = useState<'All' | 'Overdue' | 'Open' | 'Paid'>('All');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -152,6 +192,13 @@ export const Clients: React.FC = () => {
         (c.phone && c.phone.includes(searchQuery));
       const matchesStatus = filterStatus === 'All' || c.status === filterStatus;
 
+      let matchesChip = true;
+      if (chipFilter === 'Active') matchesChip = c.status === 'Active';
+      else if (chipFilter === 'Owing') matchesChip = (c.balance || 0) > 0.5 || invoices.some(inv =>
+        inv.customerId === c.id && (inv.status === 'Unpaid' || inv.status === 'Partial'));
+      else if (chipFilter === 'Paid') matchesChip = (c.balance || 0) <= 0.5 && !invoices.some(inv =>
+        inv.customerId === c.id && (inv.status === 'Unpaid' || inv.status === 'Partial'));
+
       const matchesSegment = customerSegment === 'All Segments' || c.segment === customerSegment;
       const matchesPipelineStage = pipelineStageFilter === 'All Stages' || (c as Customer & Record<string, unknown>).pipelineStage === pipelineStageFilter;
 
@@ -186,9 +233,9 @@ export const Clients: React.FC = () => {
         matchesMetric = hasRecentPayment;
       }
 
-      return matchesSearch && matchesStatus && matchesMetric && matchesSegment && matchesBalance && matchesPipelineStage;
+      return matchesSearch && matchesStatus && matchesChip && matchesMetric && matchesSegment && matchesBalance && matchesPipelineStage;
     });
-  }, [customers, searchQuery, filterStatus, selectedMetric, invoices, customerPayments, balanceRange, customerSegment, pipelineStageFilter]);
+  }, [customers, searchQuery, filterStatus, chipFilter, selectedMetric, invoices, customerPayments, balanceRange, customerSegment, pipelineStageFilter]);
 
   const { currentItems, currentPage, maxPage, totalItems, next, prev, first, last, setItemsPerPage, itemsPerPage } = usePagination(filteredCustomers, 25);
 
@@ -320,14 +367,15 @@ export const Clients: React.FC = () => {
 
   const getLastTransaction = (customerId: string) => {
     const customerInvoices = invoices.filter(inv => inv.customerId === customerId || inv.customerName === customers.find(c => c.id === customerId)?.name);
-    if (customerInvoices.length === 0) return 'No transactions';
+    if (customerInvoices.length === 0) return null;
 
-    const latest = customerInvoices.reduce((prev, current) =>
+    return customerInvoices.reduce((prev, current) =>
       isAfter(parseISO(current.date), parseISO(prev.date)) ? current : prev
     );
-
-    return format(parseISO(latest.date), 'MMM dd, yyyy');
   };
+
+  const fmtMoney = (v: number | undefined) =>
+    `${currency}${(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const statusBadge = (status: string) => {
     const map: Record<string, { bg: string; text: string; border: string }> = {
@@ -457,7 +505,39 @@ export const Clients: React.FC = () => {
       </div>
 
       {/* Main Content Card */}
-      <div style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'visible', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'visible', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 30px -14px rgba(0,0,0,.14), 0 1px 3px rgba(0,0,0,.04)' }}>
+        {/* Filter Chips */}
+        <div style={{ padding: '12px 18px 0', borderBottom: `1px solid ${hairline}`, background: paper, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {CHIP_FILTERS.map((chip) => {
+              const counts: Record<ChipFilter, number> = {
+                All: customers.length,
+                Active: customers.filter(c => c.status === 'Active').length,
+                Owing: customers.filter(c => (c.balance || 0) > 0.5 || invoices.some(inv => inv.customerId === c.id && (inv.status === 'Unpaid' || inv.status === 'Partial'))).length,
+                Paid: customers.filter(c => (c.balance || 0) <= 0.5 && !invoices.some(inv => inv.customerId === c.id && (inv.status === 'Unpaid' || inv.status === 'Partial'))).length,
+              };
+              const active = chipFilter === chip;
+              return (
+                <button key={chip} onClick={() => setChipFilter(chip)}
+                  style={{
+                    padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    border: `1.4px solid ${active ? 'transparent' : hairline}`,
+                    background: active ? `linear-gradient(155deg, ${teal[500]}, ${teal[700]})` : paper,
+                    color: active ? '#fff' : inkSoft,
+                    boxShadow: active ? `0 4px 10px -4px rgba(15,84,76,.55)` : 'none',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all .15s ease'
+                  }}>
+                  {chip}
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 700, padding: '1px 7px', borderRadius: 999,
+                    background: active ? 'rgba(255,255,255,.22)' : teal[50], color: active ? '#fff' : teal[700]
+                  }}>{counts[chip]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Filters & Search */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: `1px solid ${hairline}`, background: paper, flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 14, minWidth: 0, flexWrap: 'wrap' }}>
@@ -563,125 +643,140 @@ export const Clients: React.FC = () => {
         </div>
 
         {/* Table */}
-        <div style={{ overflow: 'auto' }}>
-          <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse', textAlign: 'left', fontSize: 13, color: ink }}>
+        <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
+          <style>{`
+            .clients-table { border-collapse: separate; border-spacing: 0; }
+            .clients-table tbody tr { transition: background .12s ease; }
+            .clients-table tbody tr:hover > td { background: #f3faf8; }
+            .clients-table tbody tr.selected-row > td { background: #eef7f6; }
+          `}</style>
+          <table className="clients-table" style={{ width: '100%', minWidth: 1080, textAlign: 'left', fontSize: 13, color: ink }}>
             <thead>
-              <tr style={{ background: teal[50] }}>
-                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'center', width: 44, borderBottom: `1px solid ${hairline}` }}>
+              <tr>
+                <th style={{ position: 'sticky', top: 0, zIndex: 5, padding: '12px 14px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'center', width: 44, background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                   <input type="checkbox"
                     style={{ width: 15, height: 15, borderRadius: 6, accentColor: teal[600], cursor: 'pointer', border: `1px solid ${teal[200]}` }}
                     checked={selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0}
                     onChange={toggleSelectAll} />
                 </th>
-                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}` }}>ID</th>
-                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}` }}>Name</th>
-                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}` }}>Contact Info</th>
-                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}` }}>Last Transaction</th>
-                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}`, textAlign: 'right' }}>Wallet</th>
-                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}`, textAlign: 'right' }}>Open Balance</th>
-                <th style={{ padding: '12px 12px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, borderBottom: `1px solid ${hairline}`, textAlign: 'center' }}>Actions</th>
+                <th style={{ position: 'sticky', top: 0, zIndex: 5, padding: '12px 14px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, background: teal[50], borderBottom: `1px solid ${hairline}` }}>Customer</th>
+                <th style={{ position: 'sticky', top: 0, zIndex: 5, padding: '12px 14px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, background: teal[50], borderBottom: `1px solid ${hairline}` }}>Contact</th>
+                <th style={{ position: 'sticky', top: 0, zIndex: 5, padding: '12px 14px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, background: teal[50], borderBottom: `1px solid ${hairline}` }}>Last Transaction</th>
+                <th style={{ position: 'sticky', top: 0, zIndex: 5, padding: '12px 14px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'right', background: teal[50], borderBottom: `1px solid ${hairline}` }}>Wallet</th>
+                <th style={{ position: 'sticky', top: 0, zIndex: 5, padding: '12px 14px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'right', background: teal[50], borderBottom: `1px solid ${hairline}` }}>Open Balance</th>
+                <th style={{ position: 'sticky', top: 0, zIndex: 5, padding: '12px 14px', fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08, textAlign: 'center', width: 72, background: teal[50], borderBottom: `1px solid ${hairline}` }}>Actions</th>
               </tr>
             </thead>
-            <tbody style={{ divideY: `1px solid ${hairline}` }}>
+            <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>Loading clients...</td></tr>
+                <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>Loading clients...</td></tr>
               ) : filteredCustomers.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No clients found matching your criteria.</td></tr>
+                <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: inkSoft, fontStyle: 'italic' }}>No clients found matching your criteria.</td></tr>
               ) : (
                 currentItems.map((customer) => {
                   const isChecked = selectedIds.includes(customer.id);
+                  const pal = avatarPaletteFor(customer.name || customer.id);
+                  const lastTx = getLastTransaction(customer.id);
+                  const owing = (customer.balance || 0) > 0.5;
                   return (
                     <React.Fragment key={customer.id}>
-                      <tr onClick={(e) => { e.stopPropagation(); setSelectedCardCustomer(customer); }}
-                        style={{ cursor: 'pointer', background: isChecked ? teal[50] : 'transparent', borderLeft: isChecked ? `4px solid ${teal[500]}` : '4px solid transparent', transition: 'background .15s ease' }}>
-                        <td style={{ padding: '11px 12px', textAlign: 'center', borderBottom: `1px solid ${hairline}` }} onClick={(e) => e.stopPropagation()}>
+                      <tr className={isChecked ? 'selected-row' : ''} onClick={(e) => { e.stopPropagation(); setSelectedCardCustomer(customer); }}
+                        style={{ cursor: 'pointer', background: isChecked ? teal[50] : 'transparent' }}>
+                        <td style={{ padding: '13px 14px', textAlign: 'center', borderBottom: `1px solid ${hairline}` }} onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox"
                             style={{ width: 15, height: 15, borderRadius: 6, accentColor: teal[600], cursor: 'pointer', border: `1px solid ${teal[200]}` }}
                             checked={isChecked}
                             onChange={() => toggleSelect(customer.id)} />
                         </td>
-                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, fontFamily: "'JetBrains Mono', monospace", color: inkSoft, fontWeight: 700, letterSpacing: 0.2 }}>
-                          {customer.id}
-                        </td>
-                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}` }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}` }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
                             <button onClick={(e) => { e.stopPropagation(); setExpandedClientId(expandedClientId === customer.id ? null : customer.id); }}
-                              style={{ padding: 4, color: inkSoft, hoverColor: teal[600], background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', transition: 'color .15s' }}>
+                              style={{ padding: 4, marginTop: 4, color: inkSoft, background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', transition: 'color .15s' }}>
                               <ChevronRight size={14} style={{ transition: 'transform .2s', transform: expandedClientId === customer.id ? 'rotate(90deg)' : 'rotate(0deg)' }} />
                             </button>
-                            <div style={{ width: 34, height: 34, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: teal[50], color: teal[600], border: `1px solid ${teal[200]}`, flexShrink: 0 }}>
-                              {customer.segment === 'School Account' ? <School size={14} /> :
-                                customer.segment === 'Institution' ? <Building2 size={14} /> :
-                                customer.segment === 'Government' ? <Landmark size={14} /> :
-                                <User size={14} />}
+                            <div style={{ width: 38, height: 38, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: pal.bg, color: pal.text, fontWeight: 700, fontSize: 13, letterSpacing: 0.3, flexShrink: 0, border: `1px solid ${teal[100]}` }}>
+                              {getInitials(customer.name)}
                             </div>
-                            <div style={{ cursor: 'pointer', minWidth: 0 }}
-                              onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 600, color: ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180, display: 'inline-block' }}>{customer.name}</span>
-                                {statusBadge(customer.status)}
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ cursor: 'pointer', minWidth: 0 }} onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <span style={{ fontWeight: 600, color: ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200, display: 'inline-block' }}>{customer.name}</span>
+                                  {statusBadge(customer.status)}
+                                </div>
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                                {(customer as Customer & Record<string, unknown>).pipelineStage && (
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, border: `1px solid ${teal[200]}`, background: teal[50], color: teal[700], whiteSpace: 'nowrap' }}>
-                                    {(customer as Customer & Record<string, unknown>).pipelineStage}
-                                  </span>
-                                )}
-                                {(customer as Customer & Record<string, unknown>).leadSource && (
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, border: `1px solid ${amber[300]}`, background: amber[100], color: amber[600], whiteSpace: 'nowrap' }}>
-                                    {(customer as Customer & Record<string, unknown>).leadSource as string}
-                                  </span>
-                                )}
-                                {customer.subAccounts && customer.subAccounts.length > 0 && (
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, border: `1px solid ${teal[200]}`, background: teal[50], color: teal[700], whiteSpace: 'nowrap' }}>
-                                    {customer.subAccounts.length} Sub
-                                  </span>
-                                )}
-                                {customer.creditHold && <AlertTriangle size={12} style={{ color: danger, animation: 'pulse 2s infinite' }} />}
-                              </div>
+                              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: inkSoft, fontWeight: 600, letterSpacing: 0.02, marginTop: 3 }}>{customer.id}</div>
+                              {(customer as Customer & Record<string, unknown>).pipelineStage && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, border: `1px solid ${teal[200]}`, background: teal[50], color: teal[700], whiteSpace: 'nowrap', marginTop: 4 }}>
+                                  {(customer as Customer & Record<string, unknown>).pipelineStage}
+                                </span>
+                              )}
+                              {(customer as Customer & Record<string, unknown>).leadSource && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, border: `1px solid ${amber[300]}`, background: amber[100], color: amber[600], whiteSpace: 'nowrap', marginTop: 4 }}>
+                                  {(customer as Customer & Record<string, unknown>).leadSource as string}
+                                </span>
+                              )}
+                              {customer.creditHold && <AlertTriangle size={12} style={{ color: danger, marginLeft: 6 }} />}
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, color: inkSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Phone size={13} style={{ color: inkSoft }} />{customer.phone || 'No phone'}</span>
+                        <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}` }}>
+                          {customer.phone || customer.portalEmail || customer.email ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-start' }}>
+                              {customer.phone && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: inkSoft, whiteSpace: 'nowrap' }}>
+                                  <Phone size={11} style={{ color: inkSoft, flexShrink: 0 }} />{customer.phone}
+                                </span>
+                              )}
+                              {(customer.portalEmail || customer.email) && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: teal[700], whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 230 }} title={customer.portalEmail || customer.email}>
+                                  <Mail size={11} style={{ color: teal[500], flexShrink: 0 }} />{customer.portalEmail || customer.email}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ color: inkSoft, fontSize: 12 }}>—</span>
+                          )}
                         </td>
-                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, color: ink, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
-                          {getLastTransaction(customer.id)}
+                        <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}`, whiteSpace: 'nowrap' }}>
+                          {lastTx ? (
+                            <>
+                              <div style={{ color: ink, fontWeight: 600, whiteSpace: 'nowrap' }} title={format(parseISO(lastTx.date), 'MMM dd, yyyy hh:mm a')}>
+                                {relativeDate(lastTx.date)}
+                              </div>
+                              <div style={{ fontSize: 11, color: inkSoft, fontFamily: "'JetBrains Mono', monospace", marginTop: 3, whiteSpace: 'nowrap' }}>
+                                {(lastTx as unknown as { invoiceNumber?: string }).invoiceNumber || (lastTx as unknown as { invoice_number?: string }).invoice_number || lastTx.id}
+                              </div>
+                            </>
+                          ) : (
+                            <span style={{ color: inkSoft, fontSize: 12 }}>—&nbsp;No transactions</span>
+                          )}
                         </td>
-                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', color: teal[600], fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
-                          {currency}{(customer.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', color: teal[600], fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
+                          {fmtMoney(customer.walletBalance)}
                         </td>
-                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', color: (customer.balance || 0) > 0 ? danger : ink, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
-                          {currency}{(customer.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}`, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: owing ? danger : '#15803d' }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: owing ? danger : '#22c55e', flexShrink: 0 }} />
+                            {owing ? fmtMoney(customer.balance) : 'Paid'}
+                          </span>
                         </td>
-                        <td style={{ padding: '11px 12px', borderBottom: `1px solid ${hairline}`, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <button onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }} style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease' }} title="View Profile">
-                              <ChevronRight size={14} />
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleEdit(customer); }} style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease' }} title="Edit">
-                              <Edit size={14} />
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/sales-flow/invoices', { state: { action: 'create', customer: customer.name } }); }} style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: teal[700], cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease' }} title="Create Invoice">
-                              <DollarSign size={15} />
-                            </button>
-                          </div>
-                          <div style={{ position: 'relative', display: 'inline-block', marginLeft: 2 }}>
-                            <button onClick={(e) => handleRowMenuClick(e, customer.id)} style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease' }} title="More">
-                              <MoreVertical size={14} />
+                        <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}`, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                          <div style={{ position: 'relative', display: 'inline-block' }}>
+                            <button onClick={(e) => handleRowMenuClick(e, customer.id)}
+                              style={{ padding: '7px 9px', borderRadius: 9, border: `1.4px solid ${hairline}`, background: paper, color: inkSoft, cursor: 'pointer', display: 'inline-flex', transition: 'all .15s ease', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
+                              title="Actions">
+                              <MoreVertical size={15} />
                             </button>
                             {activeMenuId === customer.id && (
-                              <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', width: 200, borderRadius: 12, boxShadow: '0 16px 36px -12px rgba(0,0,0,.28)', padding: '10px 12px', zIndex: 40, background: paper, border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                <button onClick={() => { setActiveMenuId(null); navigate('/sales-flow/payments', { state: { action: 'create', customer: customer.name, isTopUp: true } }); }} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: ink, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', transition: 'background .15s' }}>
-                                  <DollarSign size={14} style={{ color: inkSoft }} /> Add Prepayment
-                                </button>
-                                <button onClick={() => { setActiveMenuId(null); navigate('/revenue/contacts', { state: { customerId: customer.id } }); }} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: ink, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', transition: 'background .15s' }}>
-                                  <FileText size={14} style={{ color: inkSoft }} /> Account Statement
-                                </button>
-                                <div style={{ height: 1, background: hairline, margin: '2px 0' }} />
-                                <button onClick={() => { setActiveMenuId(null); handleDelete(customer.id); }} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: danger, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', transition: 'background .15s' }}>
-                                  <Trash2 size={14} /> Delete Client
-                                </button>
+                              <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', width: 224, borderRadius: 12, boxShadow: '0 16px 36px -12px rgba(0,0,0,.28)', padding: '8px 10px', zIndex: 40, background: paper, border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <button onClick={() => { setActiveMenuId(null); setSelectedWorkspaceCustomer(customer); }} style={menuItemStyle}><Eye size={14} style={{ color: inkSoft }} /> View Profile</button>
+                                <button onClick={() => { setActiveMenuId(null); handleEdit(customer); }} style={menuItemStyle}><Edit size={14} style={{ color: inkSoft }} /> Edit Customer</button>
+                                <button onClick={() => { setActiveMenuId(null); navigate('/sales-flow/invoices', { state: { action: 'create', customer: customer.name } }); }} style={menuItemStyle}><Send size={14} style={{ color: teal[600] }} /> Add Transaction</button>
+                                <button onClick={() => { setActiveMenuId(null); navigate('/sales-flow/payments', { state: { action: 'create', customer: customer.name, isTopUp: true } }); }} style={menuItemStyle}><Wallet size={14} style={{ color: teal[600] }} /> Deposit to Wallet</button>
+                                <button onClick={() => { setActiveMenuId(null); navigate('/revenue/contacts', { state: { customerId: customer.id } }); }} style={menuItemStyle}><BookOpen size={14} style={{ color: inkSoft }} /> View Ledger</button>
+                                <button onClick={() => { setActiveMenuId(null); navigate('/revenue/contacts', { state: { customerId: customer.id } }); }} style={menuItemStyle}><Printer size={14} style={{ color: inkSoft }} /> Print Statement</button>
+                                <div style={{ height: 1, background: hairline, margin: '4px 0' }} />
+                                <button onClick={() => { setActiveMenuId(null); handleDelete(customer.id); }} style={{ ...menuItemStyle, color: danger }}><Trash2 size={14} /> Delete Client</button>
                               </div>
                             )}
                           </div>
@@ -690,7 +785,7 @@ export const Clients: React.FC = () => {
                       {expandedClientId === customer.id && customer.subAccounts && customer.subAccounts.length > 0 && (
                         <tr style={{ background: paper }}>
                           <td style={{ padding: 0, borderBottom: `1px solid ${hairline}` }}></td>
-                          <td colSpan={7} style={{ padding: '18px 22px', borderBottom: `1px solid ${hairline}` }}>
+                          <td colSpan={6} style={{ padding: '18px 22px', borderBottom: `1px solid ${hairline}` }}>
                             <div style={{ background: paper, borderRadius: 12, border: `1.4px solid ${hairline}`, overflow: 'hidden' }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: teal[50], borderBottom: `1px solid ${hairline}` }}>
                                 <span style={{ fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.08 }}>Sub Accounts</span>
