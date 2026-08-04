@@ -572,7 +572,7 @@ const AppLayout: React.FC = () => {
                 }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#d4cdc2'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,62,57,.04)'; }} onMouseLeave={e => { if (!showFyDropdown) { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = 'none'; } }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <CalendarDays size={14} color="#0b6e6e" />
-                    {!isMobile && <span>{isFyLoading ? 'Loading...' : currentFyDisplay}</span>}
+                    {!isMobile && <span>{isFyLoading ? 'Loading...' : 'Financial Year'}</span>}
                     <ChevronDown size={14} style={{ transform: showFyDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', color: '#5b578c' }} />
                   </div>
                 </button>

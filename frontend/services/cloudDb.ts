@@ -208,7 +208,14 @@ export const cloudDb = {
       delete profileData.user_id;
       delete profileData.userId;
 
-      const payload = {
+      // Resolve company_id: from profile payload, auth metadata, or localStorage
+      const companyId = profile.company_id
+        || user?.user_metadata?.company_id
+        || user?.app_metadata?.company_id
+        || localStorage.getItem('nexus_company_id')
+        || null;
+
+      const payload: Record<string, unknown> = {
         id: profile.profile_id || profile.profileId || crypto.randomUUID(),
         user_id: userId,
         full_name: profile.full_name || profile.fullName || profile.name || user?.email?.split('@')[0] || 'User',
@@ -217,6 +224,9 @@ export const cloudDb = {
         data: profileData,
         updated_at: new Date().toISOString(),
       };
+      if (companyId) {
+        payload.company_id = companyId;
+      }
 
       const { data, error } = await supabase
         .from('profiles')
@@ -374,6 +384,29 @@ export const cloudDb = {
         id: id || crypto.randomUUID(),
         data: domainData,
       };
+
+      // Include company_id for multi-tenant isolation.
+      // The DB trigger (set_company_id_on_insert) will stamp it if missing,
+      // but we include it explicitly so RLS passes even before the trigger runs.
+      // Resolve it authoritatively from the live session user metadata — the
+      // exact value get_user_company_id() reads from auth.users — and never
+      // send a stale localStorage value that mismatches the current session
+      // (that mismatch is what produces PostgREST 403 on every write).
+      const storedCompanyId = localStorage.getItem('nexus_company_id');
+      let companyId = storedCompanyId || null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const metaCompanyId = user?.user_metadata?.company_id || user?.app_metadata?.company_id as string | undefined;
+        if (metaCompanyId) {
+          companyId = metaCompanyId;
+          if (companyId !== storedCompanyId) localStorage.setItem('nexus_company_id', companyId);
+        }
+      } catch {
+        // Fall back to the cached value.
+      }
+      if (companyId) {
+        record.company_id = companyId;
+      }
 
       if (!isCloudSource) {
         record.updated_at = new Date().toISOString();

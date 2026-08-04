@@ -28,6 +28,7 @@ import { hardwareService } from '../services/hardwareService';
 import { z } from 'zod';
 
 import { api } from '../services/api';
+import { adminLifecycle } from '../services/adminPortalClient';
 import { dbService } from '../services/db';
 import cloudDb from '../services/cloudDb';
 import { isSupabaseConfigured } from '../services/cloudMode';
@@ -705,6 +706,36 @@ const Settings: React.FC = () => {
         }));
     };
 
+    const handleDeleteCompany = async () => {
+        setConfirmState({
+            open: true,
+            title: 'Delete Company Permanently',
+            message: `Delete this company from the cloud?\n\nThis will permanently remove all company data and its sign-in accounts. After this, logging in with the current credentials will no longer work. This action cannot be undone.`,
+            type: 'danger',
+            confirmText: 'Delete Company',
+            onConfirm: () => {
+                setDoubleConfirmState({
+                    open: true,
+                    title: 'Final Confirmation',
+                    message: 'ARE YOU ABSOLUTELY SURE?\n\nAll company data and sign-in accounts will be permanently deleted from the cloud. You will be signed out and will need to create a new company to log in again.',
+                    type: 'danger',
+                    confirmText: 'Yes, Delete Everything',
+                    onConfirm: async () => {
+                        try {
+                            await adminLifecycle.company.remove();
+                            await dbService.factoryReset();
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.href = '#/setup';
+                        } catch (error: any) {
+                            notify?.('Delete failed: ' + (error?.body?.detail || error?.body?.error || error?.message || error), 'error');
+                        }
+                    }
+                });
+            }
+        });
+    };
+
     const handleFactoryReset = async () => {
         setConfirmState({
             open: true,
@@ -1105,12 +1136,20 @@ const Settings: React.FC = () => {
                                         <div style={{ fontSize: 13, fontWeight: 700, color: danger }}>Danger Zone</div>
                                         <div style={{ fontSize: 11, color: inkSoft, fontWeight: 500 }}>Irreversible actions that affect your entire company.</div>
                                     </div>
-                                    <button
-                                        onClick={handleFactoryReset}
-                                        style={{ ...btnPrimaryStyle, background: danger, boxShadow: `0 4px 14px 0 rgba(181,73,63,.1)` }}
-                                    >
-                                        <Trash2 size={16} /> Factory Reset
-                                    </button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <button
+                                            onClick={handleDeleteCompany}
+                                            style={{ ...btnPrimaryStyle, background: danger, boxShadow: `0 4px 14px 0 rgba(181,73,63,.1)` }}
+                                        >
+                                            <Trash2 size={16} /> Delete Company
+                                        </button>
+                                        <button
+                                            onClick={handleFactoryReset}
+                                            style={{ ...btnPrimaryStyle, background: danger, boxShadow: `0 4px 14px 0 rgba(181,73,63,.1)` }}
+                                        >
+                                            <Trash2 size={16} /> Factory Reset
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Dashboard</span></div>

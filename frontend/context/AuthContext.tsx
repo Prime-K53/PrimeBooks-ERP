@@ -49,6 +49,7 @@ interface AuditParams {
 
 interface AuthContextType {
   user: User | null;
+  companyId: string | null;
   allUsers: User[];
   userGroups: UserGroup[];
   passwordPolicy: PasswordPolicy;
@@ -332,6 +333,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const [companyConfig, setCompanyConfig] = useState<CompanyConfig>(() => withNormalizedSecurityConfig(defaultCompanyConfig as CompanyConfig));
+  const [companyId, setCompanyId] = useState<string | null>(() => localStorage.getItem('nexus_company_id'));
 
   const [notification, setNotification] = useState<Notification | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -375,6 +377,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userId = supabaseUser?.id;
     if (!userId) return null;
 
+    // Extract company_id from auth metadata and store it
+    const meta = supabaseUser?.user_metadata || {};
+    const authMeta = supabaseUser?.app_metadata || {};
+    const resolvedCompanyId = meta.company_id || authMeta.company_id || null;
+    if (resolvedCompanyId) {
+      setCompanyId(resolvedCompanyId);
+      localStorage.setItem('nexus_company_id', resolvedCompanyId);
+    }
+
     // 1. Check local users store
     try {
       const localUsers = await dbService.getAll<User>('users');
@@ -383,7 +394,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch { /* fall through */ }
 
     // 2. Build from user_metadata (set during signup)
-    const meta = supabaseUser?.user_metadata || {};
     if (meta.role || meta.is_super_admin) {
       return {
         id: userId,
@@ -857,6 +867,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const profile = await syncSupabaseUserToLocal(signInData.user);
 
+          // Detect company switch and clear stale local data
+          const prevCompanyId = localStorage.getItem('nexus_company_id');
+          const newCompanyId = signInData.user?.user_metadata?.company_id || signInData.user?.app_metadata?.company_id || null;
+          if (prevCompanyId && newCompanyId && prevCompanyId !== newCompanyId) {
+            console.log('[Auth] Company switch detected, clearing stale local data');
+            try {
+              const { openDB } = await import('idb');
+              const localDb = await openDB('nexus-db', 1);
+              const storeNames = Array.from(localDb.objectStoreNames);
+              const skipStores = new Set(['users', 'settings', 'userGroups', 'files']);
+              for (const storeName of storeNames) {
+                if (!skipStores.has(storeName)) {
+                  const tx = localDb.transaction(storeName, 'readwrite');
+                  await tx.objectStore(storeName).clear();
+                  await tx.done;
+                }
+              }
+              // Clear sync state
+              localStorage.removeItem('nexus_last_sync_pull');
+              localStorage.removeItem('nexus_last_sync');
+            } catch (e) {
+              console.warn('[Auth] Failed to clear stale local data:', e);
+            }
+          }
+
           setRequiresSetup(false);
           const supabaseUser = {
             ...profile,
@@ -995,7 +1030,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           supabase.auth.signOut();
         }
         setUser(null);
+        setCompanyId(null);
         sessionStorage.removeItem('nexus_user');
+        localStorage.removeItem('nexus_company_id');
     }
   }, [user, addAuditLog, SUPABASE_ENABLED]);
 
@@ -1245,9 +1282,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCompanyConfig(normalizedConfig);
       localStorage.setItem('nexus_company_config', JSON.stringify(normalizedConfig));
 
+      // Resolve company_id: prefer auth metadata (set during signup), then the
+      // stable id persisted by SetupWizard, so the exact generated id is always
+      // used even if the metadata round-trip is incomplete.
+      const authCompanyId = session.user?.user_metadata?.company_id
+        || session.user?.app_metadata?.company_id
+        || localStorage.getItem('nexus_company_id')
+        || session.user?.id
+        || crypto.randomUUID();
+      setCompanyId(authCompanyId);
+      localStorage.setItem('nexus_company_id', authCompanyId);
+
       await cloudDb.upsertProfile({
         ...adminUser,
         user_id: session.user.id,
+        company_id: authCompanyId,
         role: 'Admin',
         status: 'Active',
         is_super_admin: true,
@@ -1418,7 +1467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const value = {
-    user, allUsers, userGroups, passwordPolicy, companyConfig, requiresSetup, notification, auditLogs, alerts, isInitialized, activeFinancialYear, reminders, isOnline, dbSyncStatus, lastSyncTime,
+    user, companyId, allUsers, userGroups, passwordPolicy, companyConfig, requiresSetup, notification, auditLogs, alerts, isInitialized, activeFinancialYear, reminders, isOnline, dbSyncStatus, lastSyncTime,
     loginDiagnostic,
     notify, clearNotification, login, loginWithApi, logout, checkPermission, validatePasswordStrength,
     manageUser, deleteUser, manageUserGroup, deleteUserGroup, updatePasswordPolicy, updateCompanyConfig,

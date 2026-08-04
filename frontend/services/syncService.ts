@@ -344,12 +344,12 @@ function subscribeToRemoteChanges() {
           }
         )
         .subscribe((status: string) => {
-          // On reconnection, trigger an incremental pull to catch missed events
-          if (status === 'SUBSCRIBED') {
-            import('./backgroundSyncService').then(({ backgroundSyncService }) => {
-              backgroundSyncService.trigger();
-            }).catch(() => {});
-          }
+          // Deliberately no on-subscribe action beyond acknowledging the
+          // subscription. Previously each channel fired backgroundSyncService
+          // on SUBSCRIBED — with 130+ tables that meant a full push sync per
+          // channel during connection setup, which made startup/networking
+          // crawl. Realtime replays missed events on subscribe, and the
+          // periodic incremental pull (30s) covers any gaps.
         });
 
       realtimeChannels.push(channel);

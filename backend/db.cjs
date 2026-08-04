@@ -82,7 +82,30 @@ const initDb = () => {
         status TEXT DEFAULT 'Active',
         category TEXT DEFAULT 'School',
         segment TEXT DEFAULT 'B2B'
-      )`);
+      )`, (err) => {
+        if (!err) {
+          // The original customers table predates the ERP→Portal mirror writes,
+          // which upsert with updated_at/created_at (and queries order by
+          // updated_at). Add the missing columns so /api/erp-portal/mirror no
+          // longer fails with "table customers has no column named updated_at".
+          db.all("PRAGMA table_info(customers)", (err, rows) => {
+            if (!err && rows) {
+              const existingColumns = new Set(rows.map(r => r.name));
+              const columnsToAdd = [
+                { name: 'created_at', type: 'DATETIME' },
+                { name: 'updated_at', type: 'DATETIME' },
+              ];
+              columnsToAdd.forEach(col => {
+                if (!existingColumns.has(col.name)) {
+                  db.run(`ALTER TABLE customers ADD COLUMN ${col.name} ${col.type}`, (err) => {
+                    if (err) console.error(`Error adding ${col.name} column to customers:`, err);
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
 
       // Schools Table
       db.run(`CREATE TABLE IF NOT EXISTS schools (

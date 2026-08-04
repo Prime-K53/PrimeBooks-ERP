@@ -62,6 +62,7 @@ const getHeaderAuthUser = (req) => {
   const role = String(req.headers['x-user-role'] || 'User').trim() || 'User';
   const email = String(req.headers['x-user-email'] || '').trim() || undefined;
   const isSuperAdmin = readBooleanHeader(req.headers['x-user-is-super-admin']);
+  const companyId = String(req.headers['x-company-id'] || '').trim() || undefined;
 
   return {
     id: userId,
@@ -69,6 +70,7 @@ const getHeaderAuthUser = (req) => {
     role,
     email,
     isSuperAdmin,
+    company_id: companyId,
     permissions: isSuperAdmin ? ['*'] : [],
   };
 };

@@ -167,11 +167,21 @@ export const durableSyncQueue = {
     userId?: string | null;
     dependsOn?: string[];
     fileRef?: string | null;
-  }): Promise<QueuedOperation> {
+}): Promise<QueuedOperation> {
     const now = new Date().toISOString();
     const db = await getDb();
     const payloadStr = JSON.stringify(input.payload);
-    const allExisting = await db.getAll('operations');
+
+    // Only active operations (pending/syncing/failed) participate in
+    // duplicate detection and dependency resolution. Scanning the full store
+    // (which also holds 24h of completed records) made every local write
+    // O(all operations) and slowed the app down as the queue grew.
+    const activeLayers = await Promise.all(
+      (['pending', 'syncing', 'failed'] as QueueStatus[]).map((status) =>
+        db.getAllFromIndex('operations', 'by-status', IDBKeyRange.only(status))
+      )
+    );
+    const allExisting = ([] as QueuedOperation[]).concat(...activeLayers);
 
     const duplicate = allExisting.find((op) =>
       op.table === input.table
@@ -260,12 +270,18 @@ export const durableSyncQueue = {
     const db = await getDb();
     const allPending = await db.getAllFromIndex('operations', 'by-status', IDBKeyRange.only('pending'));
 
+    // Loading every completed/dead-lettr record on each dequeue was a hidden
+    // O(all operations) scan. Only load them when at least one pending item
+    // actually has dependencies (the common empty/independent case skips it).
+    const hasDeps = allPending.some((op) => op.dependsOn.length > 0);
     const completedIds = new Set<string>();
     const deadLetterIds = new Set<string>();
-    const allCompleted = await db.getAllFromIndex('operations', 'by-status', IDBKeyRange.only('completed'));
-    for (const op of allCompleted) completedIds.add(op.id);
-    const allDead = await db.getAllFromIndex('operations', 'by-status', IDBKeyRange.only('dead_letter'));
-    for (const op of allDead) deadLetterIds.add(op.id);
+    if (hasDeps) {
+      const allCompleted = await db.getAllFromIndex('operations', 'by-status', IDBKeyRange.only('completed'));
+      for (const op of allCompleted) completedIds.add(op.id);
+      const allDead = await db.getAllFromIndex('operations', 'by-status', IDBKeyRange.only('dead_letter'));
+      for (const op of allDead) deadLetterIds.add(op.id);
+    }
 
     const blocked = new Set<string>(completedIds);
     for (const id of deadLetterIds) blocked.add(id);

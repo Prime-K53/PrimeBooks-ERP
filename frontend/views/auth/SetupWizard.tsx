@@ -201,6 +201,12 @@ const SetupWizard: React.FC = () => {
         },
       });
 
+      // Generate a stable company_id for this new company (used for multi-tenant isolation).
+      // Persist it before signup so completeSetup/cloudDb always resolve the exact same id,
+      // even if the auth-metadata round-trip is unavailable.
+      const newCompanyId = crypto.randomUUID();
+      localStorage.setItem('nexus_company_id', newCompanyId);
+
       if (SUPABASE_ENABLED && admin.email) {
         const supabasePassword = admin.password || `${admin.username}_${Date.now()}`;
         const signUpResult = await signUpSupabase(admin.email.trim(), supabasePassword, {
@@ -209,7 +215,8 @@ const SetupWizard: React.FC = () => {
           role: 'Admin',
           is_super_admin: true,
           group_ids: ['GRP-ADMIN'],
-          company_name: admin.fullName.trim(),
+          company_name: company.companyName.trim(),
+          company_id: newCompanyId,
         });
 
         if (!signUpResult.success) {

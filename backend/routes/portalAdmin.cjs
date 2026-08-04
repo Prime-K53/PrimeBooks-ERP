@@ -64,6 +64,7 @@ const verifyAdminAuth = async (req, res, next) => {
               role: sbUser.user_metadata?.role || 'Admin',
               email: sbUser.email,
               isSuperAdmin: sbUser.user_metadata?.is_super_admin === true,
+              company_id: sbUser.user_metadata?.company_id || sbUser.app_metadata?.tenant_id || null,
               permissions: sbUser.user_metadata?.is_super_admin ? ['*'] : []
             };
             req.authMode = 'supabase';
@@ -74,10 +75,89 @@ const verifyAdminAuth = async (req, res, next) => {
     }
   }
 
+  console.warn('[PortalAdmin] verifyAdminAuth 403 path=%s method=%s hasBearer=%s hasHeaderUser=%s', req.originalUrl, req.method, Boolean(authHeader), Boolean(getHeaderAuthUser(req)));
   return res.status(403).json({ error: 'Authentication required', message: 'Valid admin auth required' });
 };
 
 router.use(verifyAdminAuth);
+
+// Permanently deletes the caller's own company in the cloud: all company rows,
+// profiles, the company record and the company's Supabase Auth users — so the
+// same credentials can no longer sign in. The company id comes from the
+// caller's own Supabase auth user (or the caller-provided body company_id,
+// which the frontend resolves from the caller's own session/localStorage);
+// the request body is never trusted for OTHER companies' ids.
+router.post('/company/delete', async (req, res) => {
+  try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) {
+      return res.status(503).json({ error: 'Supabase is not configured on this server' });
+    }
+    const base = SUPABASE_URL.replace(/\/+$/, '');
+    // Use the caller's Supabase JWT for the RPC call — cascade_delete_company is
+    // granted to `authenticated`, not `anon`, so the anon key as bearer would
+    // be rejected (42501).
+    const authHeader = req.headers['authorization'] || '';
+    const callerToken = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7).trim()
+      : SUPABASE_ANON_KEY;
+
+    // 1. Prefer the caller's own company id sent by the frontend (avoids the
+    //    Admin API anon-key limitation). 2. Then the company_id resolved during
+    //    authentication from the same /auth/v1/user call (supabase header path).
+    //    3. Fall back to the auth user's metadata via the Admin API (works when
+    //    a service-role key is set).
+    let target = String(req.body?.company_id || '').trim()
+      || String(req.user?.company_id || '').trim();
+
+    // Resolve from the caller's Supabase access token if the client did not
+    // send the company id. /auth/v1/user works with the anon key + a valid
+    // user JWT (no service-role key required).
+    if (!target && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7).trim();
+      try {
+        const { data: sbUser } = await axios.get(`${base}/auth/v1/user`, {
+          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
+          timeout: 6000,
+        });
+        target = String(sbUser?.user_metadata?.company_id || sbUser?.app_metadata?.tenant_id || '').trim();
+      } catch { /* token could not be validated */ }
+    }
+
+    if (!target && req.user?.id) {
+      try {
+        const { data } = await axios.get(`${base}/auth/v1/admin/users/${req.user.id}`, {
+          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+          timeout: 6000,
+        });
+        target = String(data?.user_metadata?.company_id || data?.app_metadata?.tenant_id || '').trim();
+      } catch { /* fall through */ }
+    }
+    if (!target) {
+      console.warn('[PortalAdmin] Delete company could not resolve target', {
+        bodyCompanyId: req.body?.company_id,
+        userCompanyId: req.user?.company_id,
+        userId: req.user?.id,
+        authMode: req.authMode,
+        hasAuthHeader: Boolean(authHeader),
+        hasCompanyHeader: Boolean(req.headers['x-company-id']),
+      });
+      return res.status(400).json({ error: 'Could not resolve the company for the current user' });
+    }
+    const { data } = await axios.post(
+      `${base}/rest/v1/rpc/cascade_delete_company`,
+      { target_company_id: target },
+      {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${callerToken}`, 'Content-Type': 'application/json' },
+        timeout: 30000,
+      }
+    );
+    console.log(`[PortalAdmin] Deleted company ${target} via cascade_delete_company: ${data}`);
+    res.json({ ok: true, company_id: target, detail: data });
+  } catch (err) {
+    console.error('[PortalAdmin] Delete company error:', err?.response?.status, err?.response?.data || err.message);
+    res.status(500).json({ error: 'Failed to delete company', detail: err?.response?.data || err.message });
+  }
+});
 
 // Short-lived ticket so the browser EventSource stream can authenticate via
 // query param (EventSource cannot send Authorization/custom headers).
@@ -686,13 +766,13 @@ router.post('/users/auto-create', async (req, res) => {
         for (const word of words) {
           const sanitized = word.toLowerCase().replace(/[^a-z0-9]/g, '');
           if (sanitized) {
-            const candidate = `${sanitized}@prime.erp`;
+            const candidate = `${sanitized}@primeportal.com`;
             const existing = await portalAuthService.getPortalUserByEmail(candidate);
             if (!existing) return candidate;
           }
         }
       }
-      return `${customer_id.toLowerCase()}@prime.erp`;
+      return `${customer_id.toLowerCase()}@primeportal.com`;
     })();
     const user = await portalAuthService.registerPortalUser({
       customer_id,
@@ -753,7 +833,7 @@ router.post('/users/:id/regenerate-password', async (req, res) => {
         user = await portalAuthService.registerPortalUser({
           id: portalUserId,
           customer_id: customerId,
-          email: email || info.email || `${customerId}@prime.erp`,
+          email: email || info.email || `${customerId}@primeportal.com`,
           password: crypto.randomBytes(9).toString('base64url'),
           full_name: name || info.name || '',
           phone: phone || info.phone || '',

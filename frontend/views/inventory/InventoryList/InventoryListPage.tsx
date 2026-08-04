@@ -5,6 +5,7 @@ import { useInventory } from '../../../context/InventoryContext';
 import { useAuth } from '../../../context/AuthContext';
 import { currencyService } from '../../../services/currencyService';
 import { getDefaultDate } from '../../../utils/financialYearUtils';
+import { resolveMinimumMarkup } from '../../../services/pricingValidationService';
 
 import StockAdjustmentModal from '../components/StockAdjustmentModal';
 import SmartAdjustModal from '../components/SmartAdjustModal';
@@ -749,7 +750,7 @@ const handleProduce = useCallback((item: Item) => {
                               <td>{variantLabel}</td>
                               <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(parentCp, currencySymbol)}</td>
                               <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(parentSp, currencySymbol)}</td>
-                              <td className={`num mono ${parentSp-parentCp >= 0 ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{parentMargin}%</td>
+                              <td className={`num mono ${Number(parentMargin) >= resolveMinimumMarkup(p) ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{parentMargin}%</td>
                               <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>
                                 <span className="pp-stepper">
                                   <button onClick={e => { e.stopPropagation(); adjustStock(p, -1); }}>&minus;</button>
@@ -829,7 +830,7 @@ const handleProduce = useCallback((item: Item) => {
                                   <td></td>
                                   <td className="num mono text-xs" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(vCp, currencySymbol)}</td>
                                   <td className="num mono text-xs" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(vSp, currencySymbol)}</td>
-                                  <td className={`num mono text-xs ${vSp-vCp >= 0 ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{vMargin}%</td>
+                                  <td className={`num mono text-xs ${Number(vMargin) >= resolveMinimumMarkup(p) ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{vMargin}%</td>
                                   <td className="num mono text-xs" style={{fontFamily:'IBM Plex Mono,monospace'}}>
                                     <span className="pp-stepper" style={{fontSize:12}}>
                                       <button onClick={e => { e.stopPropagation(); adjustStock({...p, stock: v.stock, id: v.id || p.id}, -1); }}>&minus;</button>
@@ -944,7 +945,7 @@ const handleProduce = useCallback((item: Item) => {
                               <td>{variantLabel}</td>
                               <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(parentCp, currencySymbol)}</td>
                               <td className="num mono" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(parentSp, currencySymbol)}</td>
-                              <td className={`num mono ${parentSp-parentCp >= 0 ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{parentMargin}%</td>
+                              <td className={`num mono ${Number(parentMargin) >= resolveMinimumMarkup(p) ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{parentMargin}%</td>
                               <td className="num mono" style={{fontFamily:'IBM Plex Mono,monospace'}}>
                                 <span className="pp-stepper">
                                   <button onClick={e => { e.stopPropagation(); adjustStock(p, -1); }}>&minus;</button>
@@ -1019,7 +1020,7 @@ const handleProduce = useCallback((item: Item) => {
                                   <td></td>
                                   <td className="num mono text-xs" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(vCp, currencySymbol)}</td>
                                   <td className="num mono text-xs" style={{fontFamily:"'Inter',sans-serif", fontVariantNumeric:'tabular-nums', fontWeight:600}}>{money(vSp, currencySymbol)}</td>
-                                  <td className={`num mono text-xs ${vSp-vCp >= 0 ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{vMargin}%</td>
+                                  <td className={`num mono text-xs ${Number(vMargin) >= resolveMinimumMarkup(p) ? 'pp-pos' : 'pp-neg'}`} style={{fontFamily:'IBM Plex Mono,monospace'}}>{vMargin}%</td>
                                   <td className="num mono text-xs" style={{fontFamily:'IBM Plex Mono,monospace'}}>
                                     <span className="pp-stepper" style={{fontSize:12}}>
                                       <button onClick={e => { e.stopPropagation(); adjustStock({...p, stock: v.stock, id: v.id || p.id}, -1); }}>&minus;</button>

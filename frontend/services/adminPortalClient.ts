@@ -28,6 +28,26 @@ function getAccessToken(): string | null {
   }
 }
 
+/**
+ * Resolve the caller's own company_id: prefer the locally cached value, then
+ * fall back to the live Supabase session's user metadata (which is stamped
+ * with company_id at signup / by the tenant backfill).
+ */
+async function resolveCompanyId(): Promise<string | null> {
+  try {
+    const stored = localStorage.getItem('nexus_company_id');
+    if (stored) return stored;
+  } catch { /* ignore */ }
+  try {
+    const { supabase } = await import('./supabaseClient');
+    const { data } = await supabase.auth.getSession();
+    const meta = data?.session?.user?.user_metadata || data?.session?.user?.app_metadata || {};
+    return (meta.company_id || meta.tenant_id || null) as string | null;
+  } catch {
+    return null;
+  }
+}
+
 async function adminRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
@@ -43,6 +63,10 @@ async function adminRequest<T>(path: string, options: RequestInit = {}): Promise
     headers['x-user-role'] = user.role || 'Admin';
     if (user.email) headers['x-user-email'] = user.email;
     if (user.isSuperAdmin) headers['x-user-is-super-admin'] = 'true';
+  }
+  const companyId = localStorage.getItem('nexus_company_id');
+  if (companyId) {
+    headers['x-company-id'] = companyId;
   }
   const res = await fetch(`${API_BASE_URL}/portal/admin${path}`, { ...options, headers });
   if (!res.ok) {
@@ -297,6 +321,14 @@ export async function subscribeAdminEvents(callbacks: {
   onEntityChange?: (payload: any) => void;
   onError?: (err: any) => void;
 }): Promise<() => void> {
+  // Don't attempt ticket issuance when there is no signed-in admin session
+  // (e.g. right after the company was deleted, or a session expired). The
+  // app subscribes unconditionally from NotificationContext, so without this
+  // guard every signed-out page load fires a guaranteed 403 from
+  // /api/portal/admin/events-ticket.
+  if (!getAccessToken() && !getAdminUser()) {
+    return () => {};
+  }
   let source: EventSource | null = null;
   try {
     const { ticket } = await adminPortalApi.get<{ ticket: string; expiresIn: number }>('/events-ticket');
@@ -495,6 +527,18 @@ export const adminLifecycle = {
   staff: {
     list(): Promise<{ id: string; username: string; email: string | null; role: string }[]> {
       return adminPortalApi.get<{ id: string; username: string; email: string | null; role: string }[]>('/staff');
+    },
+  },
+  company: {
+    async remove(): Promise<{ ok: boolean; company_id: string; detail?: string }> {
+      // Send the caller's own company id (resolved from localStorage or the
+      // live Supabase session) so the backend does not depend on a
+      // service-role Admin API lookup that may not be available.
+      const companyId = await resolveCompanyId();
+      return adminPortalApi.post<{ ok: boolean; company_id: string; detail?: string }>(
+        '/company/delete',
+        companyId ? { company_id: companyId } : {}
+      );
     },
   },
 };

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { DollarSign, FileText, ShoppingCart, TrendingUp, Activity, ClipboardList, FileCheck2, Users, Gift, Truck, ChevronRight, UserPlus, CreditCard, Wallet, Share2 } from 'lucide-react';
+import { DollarSign, FileText, ShoppingCart, TrendingUp, Activity, ClipboardList, FileCheck2, ChevronRight, UserPlus, CreditCard, Wallet, Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { portalApi, portalLifecycle, PortalShipmentRecord } from '../../services/portalApiClient';
+import { portalApi, portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import ErrorBanner from './components/ErrorBanner';
 import PortalKPICard from './components/PortalKPICard';
@@ -84,9 +84,6 @@ const CustomerDashboard: React.FC = () => {
   const [referralSettings, setReferralSettings] = useState<any>(null);
   const [referralFunnel, setReferralFunnel] = useState<any>(null);
   const [referralLoading, setReferralLoading] = useState(true);
-  const [shipments, setShipments] = useState<PortalShipmentRecord[]>([]);
-  const [shipmentsLoading, setShipmentsLoading] = useState(true);
-  const [shipmentsError, setShipmentsError] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<number | null>(null);
 
   const paymentMethods = [
@@ -154,27 +151,11 @@ const CustomerDashboard: React.FC = () => {
               .then(setData)
               .catch(() => {});
           }
-          if (docType === 'shipment' && !cancelled) {
-            loadShipments();
-          }
         },
       });
       if (!cancelled) return sub;
     })();
     return () => { cancelled = true; };
-  }, []);
-
-  const loadShipments = useCallback(async () => {
-    setShipmentsLoading(true);
-    setShipmentsError(null);
-    try {
-      const rows = await portalLifecycle.shipments.list();
-      setShipments(rows.slice(0, 3));
-    } catch (err: any) {
-      setShipmentsError(err?.message || 'Failed to load delivery updates');
-    } finally {
-      setShipmentsLoading(false);
-    }
   }, []);
 
   const handleShareWhatsApp = useCallback(() => {
@@ -183,10 +164,6 @@ const CustomerDashboard: React.FC = () => {
     window.open(url, '_blank');
   }, []);
 
-  useEffect(() => {
-    loadShipments();
-  }, [loadShipments]);
- 
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -236,79 +213,6 @@ const CustomerDashboard: React.FC = () => {
         <PortalKPICard label="Unpaid Invoices" value={data.unpaidInvoiceCount ?? 0} icon={FileText} color="amber" onClick={() => navigate('/portal/invoices?status=Unpaid')} />
         <PortalKPICard label="Total Orders" value={data.totalOrders ?? 0} icon={ShoppingCart} color="slate" onClick={() => navigate('/portal/orders')} />
         <PortalKPICard label="Wallet Balance" value={formatK(data.walletBalance || 0)} icon={Wallet} color="blue" onClick={() => navigate('/portal/wallet')} />
-      </div>
-
-      {referralSettings?.enabled && !referralLoading && referralFunnel && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden mb-6">
-          <div className="px-5 py-4 border-b border-slate-200/60 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users size={16} className="text-teal-600" />
-              <h2 className="text-sm font-semibold text-slate-800">My Referrals</h2>
-            </div>
-            <button onClick={() => navigate('/portal/referrals')} className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1">
-              View all <ChevronRight size={12} />
-            </button>
-          </div>
-          <div className="p-5">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-              {[
-                { label: 'Invited', value: referralFunnel.total, icon: Users, color: 'teal' },
-                { label: 'Signed Up', value: referralFunnel.signedUp, icon: UserPlus, color: 'teal' },
-                { label: 'Qualified', value: referralFunnel.qualified, icon: FileCheck2, color: 'amber' },
-                { label: 'Reward Approved', value: referralFunnel.rewardApproved, icon: Gift, color: 'emerald' },
-                { label: 'Paid', value: referralFunnel.paid, icon: Wallet, color: 'teal' },
-              ].map((stage) => (
-                <div key={stage.label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: 0.06, margin: '0 0 6px' }}>{stage.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#23282A', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{stage.value}</div>
-                </div>
-              ))}
-            </div>
-            {referralFunnel.pendingRewardAmount > 0 && (
-              <p style={{ fontSize: 11, color: '#5c6567', marginTop: 12 }}>
-                <span style={{ fontWeight: 600, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>{referralFunnel.pendingRewardAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> pending • <span style={{ fontWeight: 700, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>{referralFunnel.totalEarned.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> total earned
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden mb-6">
-        <div className="px-5 py-4 border-b border-slate-200/60 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-800">Delivery updates</h2>
-            <p className="text-xs text-slate-500 mt-1">Your latest shipped orders, tracking details, and estimated deliveries.</p>
-          </div>
-          <PortalButton variant="secondary" size="sm" onClick={() => navigate('/portal/shipments')} icon={Truck}>View all shipments</PortalButton>
-        </div>
-        <div className="p-5">
-          {shipmentsLoading ? (
-            <div className="text-sm text-slate-500">Loading delivery updates...</div>
-          ) : shipmentsError ? (
-            <div className="text-sm text-rose-600">{shipmentsError}</div>
-          ) : shipments.length === 0 ? (
-            <div className="text-sm text-slate-500">No tracked shipments yet. Once your orders ship, tracking details will appear here.</div>
-          ) : (
-            <div className="space-y-4">
-              {shipments.map((shipment) => (
-                <div key={shipment.id} className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900">{shipment.order_number || `Order ${shipment.id.slice(0, 8)}`}</div>
-                      <div className="text-xs text-slate-500 mt-1">{shipment.carrier || 'Carrier unavailable'} • Tracking {shipment.tracking_number || 'pending'}</div>
-                    </div>
-                    <span className="inline-flex items-center rounded-full bg-teal-100 text-teal-700 text-[11px] font-semibold px-3 py-1 uppercase tracking-[0.14em]">{shipment.status || 'Pending'}</span>
-                  </div>
-                  <div className="mt-3 text-sm text-slate-600">Estimated delivery: {shipment.estimated_delivery ? new Date(shipment.estimated_delivery).toLocaleDateString() : 'TBD'}</div>
-                  <div className="mt-3 flex flex-wrap gap-2 items-center">
-                    <button onClick={() => navigate(`/portal/shipments/${shipment.id}`)} className="text-xs font-semibold text-teal-600 hover:text-teal-700">Open tracking details</button>
-                    {shipment.actual_arrival && <span className="text-xs text-slate-500">Arrived: {new Date(shipment.actual_arrival).toLocaleDateString()}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

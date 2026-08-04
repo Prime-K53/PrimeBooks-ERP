@@ -147,7 +147,20 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
 }
 
 async function syncOnce(force: boolean = false): Promise<BatchResult | null> {
-  if (!force && state.isSyncing) return null;
+  // Never run two sync passes concurrently — forced syncs (navigation, online,
+  // visibility) previously bypassed this guard and flooded the network with
+  // overlapping cloud writes.
+  if (state.isSyncing) return null;
+
+  // Cheap short-circuit: when nothing is pending there is nothing to do, so we
+  // avoid the heavy getMetrics()/dequeue() scans that fired on every page
+  // navigation and every background interval tick.
+  try {
+    if ((await durableSyncQueue.countPending()) === 0) return null;
+  } catch {
+    // If the count fails, proceed anyway.
+  }
+
   state.isSyncing = true;
 
   try {
