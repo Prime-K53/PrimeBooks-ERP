@@ -6,6 +6,7 @@ import PortalPageHeader from './components/PortalPageHeader';
 import PortalInput from './components/PortalInput';
 import EmptyState from './components/EmptyState';
 import StatusBadge from './components/StatusBadge';
+import PortalCard from './components/PortalCard';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import { portalTheme, QUOTATION_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from './constants';
 
@@ -113,42 +114,41 @@ const CustomerQuotations: React.FC = () => {
               Showing {quotations.length} of {total} quotation{total !== 1 ? 's' : ''}
             </div>
             <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                  <thead>
-                    <tr style={{ background: portalTheme.teal[50] }}>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Quotation #</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Total</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center" style={{ color: portalTheme.inkSoft }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/50">
-                    {sorted.map((q) => {
-                      const friendlyStatus = FRIENDLY_STATUS_MAP[q.status] || q.status;
-                      const isExpired = q.status === 'expired' || (q.valid_until && new Date(q.valid_until) < new Date());
-                      const isExpiringSoon = q.valid_until && !isExpired && (new Date(q.valid_until).getTime() - Date.now()) < 7 * 86400000;
-                      return (
-                        <tr key={q.id} onClick={() => navigate(`/portal/quotations/${q.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
-<td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Quotation #">{q.quotation_number || q.id.slice(0, 8)}</td>
-                           <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(q.created_at).toLocaleDateString()}</td>
-                           <td className="px-5 py-3 text-right font-medium" data-label="Total">K {Number(q.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                           <td className="px-5 py-3 text-center" data-label="Status">
-                             <div className="flex items-center justify-center gap-1">
-                               <StatusBadge status={friendlyStatus} />
-                               {isExpired && (
-                                 <span className="text-[10px] font-bold text-rose-500" title="Expired">⚠</span>
-                               )}
-                               {isExpiringSoon && !isExpired && (
-                                 <span className="text-[10px] font-bold text-amber-500" title={`Expires ${new Date(q.valid_until!).toLocaleDateString()}`}>⚠</span>
-                               )}
-                             </div>
-                           </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="p-4 space-y-2">
+                {sorted.map((q) => {
+                  const friendlyStatus = FRIENDLY_STATUS_MAP[q.status] || q.status;
+                  const isExpired = q.status === 'expired' || (q.valid_until && new Date(q.valid_until) < new Date());
+                  const isExpiringSoon = q.valid_until && !isExpired && (new Date(q.valid_until).getTime() - Date.now()) < 7 * 86400000;
+                  const quotationNumber = q.quotation_number || q.id.slice(0, 8);
+                  const date = new Date(q.created_at).toLocaleDateString();
+                  const total = Number(q.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                  return (
+                    <PortalCard hoverable key={q.id} onClick={() => navigate(`/portal/quotations/${q.id}`)}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <FileText size={15} className="text-teal-600" />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#23282A' }}>{quotationNumber}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <StatusBadge status={friendlyStatus} />
+                          {isExpired && (
+                            <span className="text-[10px] font-bold text-rose-500" title="Expired">⚠</span>
+                          )}
+                          {isExpiringSoon && !isExpired && (
+                            <span className="text-[10px] font-bold text-amber-500" title={`Expires ${new Date(q.valid_until!).toLocaleDateString()}`}>⚠</span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: '#5c6567', marginTop: 8 }}>
+                        <span>Date: <span style={{ color: '#23282A' }}>{date}</span></span>
+                        <span>Total: <span style={{ color: '#23282A' }}>K {total}</span></span>
+                        {q.valid_until && <span>Valid until: <span style={{ color: '#23282A' }}>{new Date(q.valid_until).toLocaleDateString()}</span></span>}
+                      </div>
+                    </PortalCard>
+                  );
+                })}
               </div>
             </div>
             {totalPages > 1 && (

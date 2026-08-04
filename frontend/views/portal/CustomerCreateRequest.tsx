@@ -8,7 +8,7 @@ import PortalCard from './components/PortalCard';
 import PortalButton from './components/PortalButton';
 import PortalInput from './components/PortalInput';
 import ErrorBanner from './components/ErrorBanner';
-import { portalTheme, DEFAULT_PAGE_SIZE } from './constants';
+import { portalTheme, DEFAULT_PAGE_SIZE, formatK } from './constants';
 import { validateRequired, validateEmail, validatePassword, validateConfirmPassword } from './utils/validation';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 
@@ -415,7 +415,7 @@ const CustomerCreateRequest: React.FC = () => {
                         </p>
                       </div>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                        <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: ink }}>{currencySymbol}{Number(item.price).toFixed(2)}</span>
+                        <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: ink }}>{formatK(item.price)}</span>
                         <Plus size={16} color={teal[500]} />
                       </span>
                     </button>
@@ -449,48 +449,29 @@ const CustomerCreateRequest: React.FC = () => {
                 No items selected yet — search and add products above.
               </p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                  <thead style={{ background: teal[50] }}>
-                    <tr>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: inkSoft }}>Item</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: inkSoft }}>Unit Price</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: inkSoft }}>Qty</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: inkSoft }}>Total</th>
-                      <th className="px-5 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/50">
-                    {lines.map((l) => (
-                      <tr key={l.id} className="text-slate-700">
-                        <td className="px-5 py-3">
-                          <p className="font-medium text-slate-800">{l.name}</p>
-                          {l.unit && <p className="text-xs text-slate-400">{l.unit}</p>}
-                        </td>
-                        <td className="px-5 py-3 text-right font-mono">K {l.unitPrice.toFixed(2)}</td>
-                        <td className="px-5 py-3 text-right">
-                          <input
-                            type="number"
-                            min={1}
-                            value={l.quantity}
-                            onChange={(e) => updateQuantity(l.id, parseInt(e.target.value, 10) || 1)}
-                            style={{
-                              width: 64, height: 32, padding: '0 8px',
-                              ...inputStyle, textAlign: 'right',
-                              fontFamily: "'JetBrains Mono', monospace"
-                            }}
-                          />
-                        </td>
-                        <td className="px-5 py-3 text-right font-mono">K {(l.quantity * l.unitPrice).toFixed(2)}</td>
-                        <td className="px-5 py-3 text-right">
-                          <button onClick={() => removeLine(l.id)} className="p-2 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors" aria-label="Remove line item">
-                            <Trash2 size={15} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-2" style={{ padding: '14px 16px' }}>
+                {lines.map((l) => (
+                  <div key={l.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#23282A', margin: 0 }}>{l.name}</p>
+                      {l.unit && <p style={{ fontSize: 11, color: '#5c6567', marginTop: 2 }}>{l.unit}</p>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#5c6567' }}>{formatK(l.unitPrice)}</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={l.quantity}
+                        onChange={(e) => updateQuantity(l.id, parseInt(e.target.value, 10) || 1)}
+                        style={{ width: 64, height: 32, padding: '0 8px', ...inputStyle, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
+                      />
+                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#23282A' }}>{formatK(l.quantity * l.unitPrice)}</span>
+                      <button onClick={() => removeLine(l.id)} className="p-2 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors" aria-label="Remove line item">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -535,12 +516,12 @@ const CustomerCreateRequest: React.FC = () => {
               display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: inkSoft }}>Total</span>
-              <span style={{
-                fontSize: 20, fontWeight: 700, color: ink,
-                fontFamily: "'JetBrains Mono', monospace"
-              }}>
-                K {subtotal.toFixed(2)}
-              </span>
+<span style={{
+  fontSize: 20, fontWeight: 700, color: ink,
+  fontFamily: "'JetBrains Mono', monospace"
+}}>
+  {formatK(subtotal)}
+</span>
             </div>
           </div>
 

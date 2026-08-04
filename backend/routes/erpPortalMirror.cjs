@@ -426,20 +426,22 @@ async function mirrorCustomer(record) {
   const creditLimit = num(record.creditLimit ?? record.credit_limit);
   const balance = num(record.balance ?? record.outstandingBalance ?? record.outstanding_balance);
   const walletBalance = num(record.walletBalance ?? record.wallet_balance);
+  const outstandingBalance = num(record.outstandingBalance ?? record.outstanding_balance ?? record.balance);
 
   await runQuery(
-    `INSERT INTO customers (id, name, email, phone, status, creditLimit, outstandingBalance, walletBalance, updated_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `INSERT INTO customers (id, name, email, phone, status, creditLimit, balance, outstandingBalance, walletBalance, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
      ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         email = excluded.email,
         phone = excluded.phone,
         status = excluded.status,
         creditLimit = excluded.creditLimit,
+        balance = excluded.balance,
         outstandingBalance = excluded.outstandingBalance,
         walletBalance = excluded.walletBalance,
         updated_at = CURRENT_TIMESTAMP`,
-    [id, name || 'Customer', email, phone, status, creditLimit, balance, walletBalance]
+    [id, name || 'Customer', email, phone, status, creditLimit, balance, outstandingBalance, walletBalance]
   );
 
   const payload = { customerId: id, docType: 'customer_updated', docId: id, event: 'customer_updated', status };
@@ -449,18 +451,58 @@ async function mirrorCustomer(record) {
   return id;
 }
 
-async function mirrorDeliveryNote(record) {
-  const id = String(record.id ?? record.deliveryNoteId ?? randomUUID());
-  const customerId = record.customerId ?? record.customer_id ?? null;
+async function resolveDeliveryCustomer(record, fallbackOrderId) {
+  const direct = record.customerId ?? record.customer_id ?? null;
+  if (direct) return direct;
+
+  const recordId = record.id ?? record.deliveryNoteId ?? null;
+  const orderId = fallbackOrderId || record.salesOrderId || record.sales_order_id || null;
+  const invoiceId = record.invoiceId ?? record.invoice_id ?? null;
+
+  // Delivery notes built from an invoice carry the underlying doc reference.
+  if (invoiceId) {
+    const invRow = await getOne('SELECT customer_id FROM invoices WHERE id = ?', [invoiceId]);
+    if (invRow?.customer_id) return invRow.customer_id;
+    const invByNo = await getOne('SELECT customer_id FROM invoices WHERE invoice_number = ?', [invoiceId]);
+    if (invByNo?.customer_id) return invByNo.customer_id;
+  }
+
+  if (recordId || orderId) {
+    const noteRow = await getOne(
+      `SELECT customer_id FROM delivery_notes
+       WHERE (id = ? OR order_id = ?) AND customer_id IS NOT NULL AND TRIM(customer_id) != ''
+       ORDER BY id LIMIT 1`,
+      [recordId, orderId]
+    );
+    if (noteRow?.customer_id) return noteRow.customer_id;
+  }
+
+  if (orderId) {
+    const soRow = await getOne('SELECT customer_id FROM sales_orders WHERE id = ? OR erp_order_id = ? ORDER BY id LIMIT 1', [orderId, orderId]);
+    if (soRow?.customer_id) return soRow.customer_id;
+  }
+
   const customerName = record.customerName ?? record.customer_name ?? null;
-  const orderId = record.orderId ?? record.salesOrderId ?? record.sales_order_id ?? null;
-  const status = String(record.status ?? record.deliveryStatus ?? record.delivery_status ?? 'pending');
-  const trackingNumber = record.trackingNumber ?? record.tracking_number ?? null;
-  const deliveryDate = record.deliveryDate ?? record.delivery_date ?? null;
-  const items = record.items ?? record.lineItems ?? record.line_items ?? null;
+  if (customerName) {
+    const byName = await getOne(
+      'SELECT id FROM customers WHERE name = ? ORDER BY updated_at DESC LIMIT 1',
+      [customerName]
+    );
+    if (byName?.id) return byName.id;
+  }
 
-  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+  return null;
+}
 
+function mirrorDeliveryOrderStatus(status) {
+  const s = String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+  if (s === 'delivered') return 'Delivered';
+  if (s === 'in_transit' || s === 'shipped' || s === 'out_for_delivery' || s === 'on_the_way') return 'Shipped';
+  if (s === 'cancelled' || s === 'canceled') return 'Cancelled';
+  return null;
+}
+
+async function mirrorDeliveryNote(record) {
   await runQuery(
     `CREATE TABLE IF NOT EXISTS delivery_notes (
       id TEXT PRIMARY KEY,
@@ -478,27 +520,91 @@ async function mirrorDeliveryNote(record) {
     )`
   );
 
+  const id = String(record.id ?? record.deliveryNoteId ?? randomUUID());
+  const customerName = record.customerName ?? record.customer_name ?? null;
+  let orderId = record.orderId ?? record.salesOrderId ?? record.sales_order_id ?? null;
+  const status = String(record.status ?? record.deliveryStatus ?? record.delivery_status ?? 'pending');
+  const trackingNumber = record.trackingNumber ?? record.tracking_number ?? null;
+  const deliveryDate = record.deliveryDate ?? record.delivery_date ?? null;
+  const items = record.items ?? record.lineItems ?? record.line_items ?? null;
+  const carrier = record.carrier ?? null;
+  const driverName = record.driverName ?? record.driver_name ?? null;
+  const vehicleNo = record.vehicleNo ?? record.vehicle_no ?? null;
+  const estimatedDelivery = record.estimatedDelivery ?? record.estimated_delivery ?? null;
+  const notes = record.notes ?? record.comments ?? null;
+
+  // Resolve the linked order so the shipment can be attached to the correct
+  // sales order in the portal layer (dispatch mirrors key on the delivery/id)
+  if (!orderId) {
+    const noteRow = await getOne('SELECT order_id FROM delivery_notes WHERE id = ?', [id]);
+    if (noteRow?.order_id) orderId = noteRow.order_id;
+  }
+  if (!orderId && (record.invoiceId ?? record.invoice_id)) {
+    orderId = String(record.invoiceId ?? record.invoice_id);
+  }
+
+  const customerId = await resolveDeliveryCustomer(record, orderId);
+
+  await ensureCustomerRow(customerId, customerName, record.customerEmail ?? record.customer_email, record.customerPhone ?? record.customer_phone);
+
   await runQuery(
-    `INSERT OR IGNORE INTO delivery_notes (id, order_id, customer_id, customer_name, status, tracking_number, delivery_date, items_json, notes, created_by, updated_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    `INSERT INTO delivery_notes (id, order_id, customer_id, customer_name, status, tracking_number, delivery_date, items_json, notes, created_by, updated_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT(id) DO UPDATE SET
+        order_id = excluded.order_id,
+        customer_id = excluded.customer_id,
+        customer_name = excluded.customer_name,
+        status = excluded.status,
+        tracking_number = excluded.tracking_number,
+        delivery_date = excluded.delivery_date,
+        items_json = excluded.items_json,
+        notes = excluded.notes,
+        updated_at = CURRENT_TIMESTAMP`,
     [id, orderId, customerId, customerName, status, trackingNumber, deliveryDate,
      items ? (Array.isArray(items) ? JSON.stringify(items) : items) : null,
-     record.notes ?? record.comments ?? null, record.createdBy ?? record.created_by ?? null]
+     notes, record.createdBy ?? record.created_by ?? null]
   );
 
-  if (trackingNumber || status !== 'pending') {
-    await runQuery(
-      `UPDATE sales_orders SET
-         status = CASE
-           WHEN ? = 'delivered' THEN 'Delivered'
-           WHEN ? = 'in_transit' OR ? = 'shipped' THEN 'Shipped'
-           ELSE status
-         END,
-         tracking_number = COALESCE(?, tracking_number),
-         updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [status, status, status, trackingNumber, orderId]
-    );
+  // Reflect the dispatch into the portal `sales_orders` view (the portal renders
+  // shipments from sales_orders rows carrying a tracking number). Upsert so a
+  // dispatch becomes visible even if the source order was never mirrored yet.
+  if (trackingNumber || !/^\s*(pending|draft|new)\s*$/i.test(status)) {
+    const orderKey = orderId || id;
+    const orderNumber = record.orderNumber ?? record.order_number ?? orderKey;
+    const now = new Date().toISOString();
+    const mappedStatus = mirrorDeliveryOrderStatus(status);
+    const soDeliveryDate = estimatedDelivery || deliveryDate || null;
+
+    const existingOrder = await getOne('SELECT id FROM sales_orders WHERE id = ?', [orderKey]);
+
+    if (!existingOrder) {
+      await runQuery(
+        `INSERT INTO sales_orders
+           (id, order_number, customer_id, orderDate, deliveryDate, status, items,
+            tracking_number, carrier, driver_name, vehicle_no, estimated_delivery, notes,
+            created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, '[]', ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [orderKey, orderNumber, customerId, now, soDeliveryDate,
+         mappedStatus || 'Pending', trackingNumber, carrier ?? null, driverName ?? null, vehicleNo ?? null,
+         estimatedDelivery ?? deliveryDate ?? null, notes]
+      );
+    } else {
+      await runQuery(
+        `UPDATE sales_orders SET
+           customer_id = COALESCE(?, customer_id),
+           status = COALESCE(?, status),
+           tracking_number = COALESCE(?, tracking_number),
+           carrier = COALESCE(?, carrier),
+           driver_name = COALESCE(?, driver_name),
+           vehicle_no = COALESCE(?, vehicle_no),
+           estimated_delivery = COALESCE(?, estimated_delivery),
+           notes = COALESCE(?, notes),
+           updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [customerId, mappedStatus, trackingNumber, carrier ?? null, driverName ?? null,
+         vehicleNo ?? null, estimatedDelivery ?? deliveryDate ?? null, notes, orderKey]
+      );
+    }
   }
 
   const payload = { customerId, docType: 'shipment', docId: id, event: 'delivery_updated', status, trackingNumber, orderId };

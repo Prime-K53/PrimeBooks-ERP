@@ -439,44 +439,31 @@ const CustomerProfile: React.FC = () => {
               No active sessions found.
             </p>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${hairline}` }}>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', color: portalTheme.inkSoft, fontWeight: 600 }}>Device</th>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', color: portalTheme.inkSoft, fontWeight: 600 }}>Created</th>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', color: portalTheme.inkSoft, fontWeight: 600 }}>Expires</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px', color: portalTheme.inkSoft, fontWeight: 600 }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sessions.map((s) => {
-                    const created = s.created_at ? new Date(s.created_at).toLocaleDateString() : '—';
-                    const expires = s.expires_at ? new Date(s.expires_at).toLocaleDateString() : '—';
-                    return (
-                      <tr key={s.id} style={{ borderBottom: `1px solid ${hairline}` }}>
-                        <td style={{ padding: '10px 12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Smartphone size={16} style={{ color: portalTheme.inkSoft }} />
-                            <span style={{ color: ink }}>{s.user_agent || 'Unknown device'}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '10px 12px', color: portalTheme.inkSoft }}>{created}</td>
-                        <td style={{ padding: '10px 12px', color: portalTheme.inkSoft }}>{expires}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                          <button
-                            onClick={() => setRevokeConfirmSessionId(s.id)}
-                            disabled={revokingSessionId === s.id}
-                            className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors inline-flex items-center gap-1"
-                          >
-                            {revokingSessionId === s.id ? 'Revoking...' : 'Revoke'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              {sessions.map((s) => {
+                const created = s.created_at ? new Date(s.created_at).toLocaleDateString() : '—';
+                const expires = s.expires_at ? new Date(s.expires_at).toLocaleDateString() : '—';
+                return (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 8, background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5c6567', flexShrink: 0 }}>
+                        <Smartphone size={16} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#23282A', margin: 0 }}>{s.user_agent || 'Unknown device'}</p>
+                        <p style={{ fontSize: 11, color: '#5c6567', marginTop: 2 }}>Created: {created} • Expires: {expires}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setRevokeConfirmSessionId(s.id)}
+                      disabled={revokingSessionId === s.id}
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors inline-flex items-center gap-1"
+                    >
+                      {revokingSessionId === s.id ? 'Revoking...' : 'Revoke'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </PortalCard>

@@ -6,6 +6,7 @@ import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import { useToast } from './components/Toast';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalInput from './components/PortalInput';
+import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import StatusBadge from './components/StatusBadge';
@@ -110,52 +111,47 @@ const CustomerShipments: React.FC = () => {
           <EmptyState icon={<Truck size={28} />} title="No shipments yet" description={search || statusFilter !== 'All' ? 'No shipments match your filters.' : 'When your orders are shipped, tracking information will appear here.'} />
         ) : (
           <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-[13px] table-fixed">
-                <thead>
-                  <tr style={{ background: portalTheme.teal[50] }}>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Order #</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center" style={{ color: portalTheme.inkSoft }}>Status</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Carrier</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Tracking #</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Est. Delivery</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center" style={{ color: portalTheme.inkSoft }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100/50">
-                  {shipments.map((shipment) => {
-                    const statusKey = shipment.status.toLowerCase();
-                    const statusMeta = SHIPMENT_STATUS_META[statusKey] || SHIPMENT_STATUS_META.draft;
-                    return (
-                      <tr key={shipment.id} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
-                        <td className="px-5 py-3 font-mono text-slate-500 font-bold" data-label="Order #">#{shipment.order_number || shipment.id.slice(0, 8)}</td>
-                        <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{shipment.orderDate ? new Date(shipment.orderDate).toLocaleDateString() : ''}</td>
-                        <td className="px-5 py-3 text-center" data-label="Status">
-                          <StatusBadge status={shipment.status} type="order" />
-                        </td>
-                        <td className="px-5 py-3 text-slate-600" data-label="Carrier">{shipment.carrier || '—'}</td>
-                        <td className="px-5 py-3 font-mono text-slate-500 text-xs" data-label="Tracking #">{shipment.tracking_number || '—'}</td>
-                        <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Est. Delivery">
-                          {shipment.estimated_delivery ? new Date(shipment.estimated_delivery).toLocaleDateString() : '—'}
-                        </td>
-                        <td className="px-5 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex justify-center gap-1 items-center shrink-0">
-                            <button
-                              onClick={() => navigate(`/portal/shipments/${shipment.id}`)}
-                              className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
-                              title="Track shipment"
-                              aria-label={`Track shipment for order ${shipment.order_number || shipment.id}`}
-                            >
-                              <Eye size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="p-4 space-y-2">
+              {shipments.map((shipment) => {
+                const statusKey = shipment.status.toLowerCase();
+                const statusMeta = SHIPMENT_STATUS_META[statusKey] || SHIPMENT_STATUS_META.draft;
+                const orderNumber = shipment.order_number || shipment.id.slice(0, 8);
+                const date = shipment.orderDate ? new Date(shipment.orderDate).toLocaleDateString() : '';
+                const carrier = shipment.carrier || '—';
+                const tracking = shipment.tracking_number || '—';
+                const estDelivery = shipment.estimated_delivery ? new Date(shipment.estimated_delivery).toLocaleDateString() : '—';
+                return (
+                  <PortalCard hoverable key={shipment.id}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Truck size={15} className="text-teal-600" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#23282A' }}>#{orderNumber}</div>
+                      </div>
+                      <StatusBadge status={shipment.status} type="order" />
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: '#5c6567', marginTop: 8 }}>
+                      <span>Date: <span style={{ color: '#23282A' }}>{date}</span></span>
+                      <span>Carrier: <span style={{ color: '#23282A' }}>{carrier}</span></span>
+                      <span>Tracking: <span style={{ color: '#23282A' }}>{tracking}</span></span>
+                      <span>Est. Delivery: <span style={{ color: '#23282A' }}>{estDelivery}</span></span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-center gap-1 items-center shrink-0">
+                        <button
+                          onClick={() => navigate(`/portal/shipments/${shipment.id}`)}
+                          className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
+                          title="Track shipment"
+                          aria-label={`Track shipment for order ${shipment.order_number || shipment.id}`}
+                        >
+                          <Eye size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </PortalCard>
+                );
+              })}
             </div>
           </div>
         )}

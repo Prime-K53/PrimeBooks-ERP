@@ -1,14 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, ChevronRight, Download, DollarSign, Search } from 'lucide-react';
+import { Eye, Search, FileText, ChevronRight } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalInput from './components/PortalInput';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import StatusBadge from './components/StatusBadge';
-import { portalTheme, DEFAULT_PAGE_SIZE } from './constants';
+import { portalTheme, DEFAULT_PAGE_SIZE, formatK } from './constants';
 
 const teal = {
   50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
@@ -143,42 +142,41 @@ const CustomerInvoices: React.FC = () => {
               Showing {invoices.length} of {total} invoice{total !== 1 ? 's' : ''}
             </div>
             <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                  <thead>
-                    <tr style={{ background: portalTheme.teal[50] }}>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Invoice #</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Total</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Paid</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center" style={{ color: portalTheme.inkSoft }}>Status</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/50">
-                    {filtered.map((inv) => {
-                      const isPaid = inv.status === 'Paid';
-                      const isCancelled = inv.status === 'Cancelled';
-                      const balanceDue = isCancelled ? 0 : ((inv.total_amount || 0) - (inv.paid_amount || 0));
-                      const totalAmount = isCancelled ? 0 : (inv.total_amount || 0);
-                      return (
-                        <tr key={inv.id} onClick={() => navigate(`/portal/invoices/${inv.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
-                          <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Invoice #">{inv.invoice_number}</td>
-                          <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(inv.created_at).toLocaleDateString()}</td>
-                          <td className="px-5 py-3 text-right font-medium" data-label="Total">K {totalAmount.toLocaleString()}</td>
-                          <td className="px-5 py-3 text-right font-medium" data-label="Paid">K {Number(inv.paid_amount).toFixed(2)}</td>
-                          <td className="px-5 py-3 text-center" data-label="Status"><StatusBadge status={inv.status} /></td>
-                          <td className="px-5 py-3 text-right" data-label="Actions">
-                            <div className="flex justify-center gap-1 items-center shrink-0" onClick={(e) => e.stopPropagation()}>
-                              <button className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail" aria-label={`View invoice ${inv.invoice_number}`}><Eye size={14} /></button>
-                              <button className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all" title="Download PDF" aria-label={`Download invoice ${inv.invoice_number}`}><Download size={14} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="p-4 space-y-2">
+                {filtered.map((inv) => {
+                  const date = new Date(inv.created_at).toLocaleDateString();
+                  return (
+                    <div
+                      key={inv.id}
+                      onClick={() => navigate(`/portal/invoices/${inv.id}`)}
+                      className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                      style={{ borderLeftColor: portalTheme.teal[500], cursor: 'pointer' }}
+                    >
+                      <div style={{ width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
+                        <FileText size={16} color={portalTheme.teal[500]} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{inv.invoice_number}</div>
+                        <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                          {date}
+                          {inv.status ? ` • ${inv.status}` : ''}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', minWidth: 80 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#dc2626', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
+                          {formatK(inv.total_amount)}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#5c6567', textTransform: 'uppercase', marginTop: 1 }}>
+                          Invoice
+                        </div>
+                      </div>
+                      <div style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 6, background: '#eef7f6', fontSize: 10, fontWeight: 600, color: '#1f8577', display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+                        View
+                        <ChevronRight size={10} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             {totalPages > 1 && (

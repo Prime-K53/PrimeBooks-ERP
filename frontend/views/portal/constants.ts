@@ -123,15 +123,20 @@ export const PAGE_TITLES: Record<string, string> = {
   '/portal/invoices/:id': 'Invoice Details',
   '/portal/payments': 'Payments',
   '/portal/payments/:id': 'Payment Details',
-  '/portal/statements': 'Statements',
-  '/portal/wallet': 'Wallet',
-  '/portal/loyalty': 'Loyalty',
-  '/portal/documents': 'Documents',
-  '/portal/notifications': 'Notifications',
-  '/portal/referrals': 'Referrals',
+   '/portal/statements': 'Statements',
+   '/portal/wallet': 'Wallet',
+   '/portal/referrals': 'Referrals',
   '/portal/support': 'Support',
   '/portal/profile': 'Profile',
 };
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
+
+export const formatK = (value: number | string | undefined | null, decimals = 2) => {
+  const num = typeof value === 'number' ? value : Number(value || 0);
+  const fixed = num.toFixed(decimals);
+  const [intPart, decPart] = fixed.split('.');
+  const formattedInt = Number(intPart).toLocaleString('en-US');
+  return `K ${formattedInt}.${decPart}`;
+};

@@ -71,16 +71,13 @@ const pageTitles: Record<string, string> = {
   '/portal/requests': 'Requests',
   '/portal/orders': 'Orders',
   '/portal/quotations': 'Quotations',
-  '/portal/invoices': 'Invoices',
-  '/portal/payments': 'Payments',
-  '/portal/statements': 'Statements',
-  '/portal/documents': 'Documents',
-  '/portal/referrals': 'Referrals',
-  '/portal/loyalty': 'Loyalty',
-  '/portal/wallet': 'Wallet',
-  '/portal/notifications': 'Notifications',
-  '/portal/support': 'Support',
-  '/portal/profile': 'Profile',
+   '/portal/invoices': 'Invoices',
+   '/portal/payments': 'Payments',
+   '/portal/statements': 'Statements',
+   '/portal/referrals': 'Referrals',
+   '/portal/wallet': 'Wallet',
+   '/portal/support': 'Support',
+   '/portal/profile': 'Profile',
 };
 
 const CustomerLayout: React.FC = () => {
@@ -101,55 +98,6 @@ const CustomerLayout: React.FC = () => {
     }
     return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen]);
-
-  // ─── Browser Notifications ───
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const enabled = localStorage.getItem('portal_browser_notifications') !== 'false';
-    if (!enabled) return;
-
-    if (!('Notification' in window)) return;
-
-    const requestPermission = async () => {
-      if (Notification.permission === 'default') {
-        await Notification.requestPermission();
-      }
-    };
-
-    requestPermission();
-
-    let unsubscribe: (() => void) | null = null;
-
-    const setupSubscription = async () => {
-      try {
-        unsubscribe = await portalLifecycle.subscribe({
-          onEvent: (type, payload) => {
-            if (type !== 'notification' || Notification.permission !== 'granted') return;
-
-            const notif = payload?.notification || payload;
-            const title = notif?.title || 'New notification';
-            const body = notif?.message || notif?.body || '';
-
-            new Notification(title, {
-              body,
-              icon: '/favicon.ico',
-              tag: notif?.id || `portal-${Date.now()}`,
-            });
-          },
-          onError: () => {},
-        });
-      } catch {
-        // Silent fail — SSE is optional, real-time still works via polling
-      }
-    };
-
-    setupSubscription();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [isAuthenticated]);
 
   if (loading) {
     return (

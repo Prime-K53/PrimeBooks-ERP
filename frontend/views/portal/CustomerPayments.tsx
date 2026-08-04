@@ -8,7 +8,7 @@ import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, DEFAULT_PAGE_SIZE } from './constants';
+import { portalTheme, DEFAULT_PAGE_SIZE, formatK } from './constants';
 
 interface Payment {
   id: string;
@@ -127,27 +127,27 @@ const CustomerPayments: React.FC = () => {
                 }}>
                   <PortalCard style={{ padding: '18px 20px' }}>
                     <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 4, display: 'block' }}>Total Paid</span>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-                      K {totalPaid.toFixed(2)}
-                    </div>
+<div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+  {formatK(totalPaid)}
+</div>
                   </PortalCard>
                   <PortalCard style={{ padding: '18px 20px' }}>
                     <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 4, display: 'block' }}>This Month</span>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.teal[700], fontFamily: "'JetBrains Mono', monospace" }}>
-                      K {paidThisMonth.toFixed(2)}
-                    </div>
+<div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.teal[700], fontFamily: "'JetBrains Mono', monospace" }}>
+  {formatK(paidThisMonth)}
+</div>
                   </PortalCard>
                   <PortalCard style={{ padding: '18px 20px' }}>
                     <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 4, display: 'block' }}>This Year</span>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-                      K {paidThisYear.toFixed(2)}
-                    </div>
+<div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+  {formatK(paidThisYear)}
+</div>
                   </PortalCard>
                   <PortalCard style={{ padding: '18px 20px' }}>
                     <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 4, display: 'block' }}>Avg Payment</span>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-                      K {avgPayment.toFixed(2)}
-                    </div>
+<div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+  {formatK(avgPayment)}
+</div>
                   </PortalCard>
                 </div>
               );
@@ -156,29 +156,34 @@ const CustomerPayments: React.FC = () => {
             <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginBottom: 8 }}>
               Showing {filteredPayments.length} of {total} payment{total !== 1 ? 's' : ''}
             </div>
-            <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                  <thead>
-                    <tr style={{ background: portalTheme.teal[50] }}>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Reference</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Amount</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Method</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/50">
-                    {filteredPayments.map((p) => (
-                      <tr key={p.id} onClick={() => navigate(`/portal/payments/${p.id}`)} className="transition-colors cursor-pointer group hover:bg-[#eef7f6]">
-<td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Reference">{p.reference || p.id.slice(0, 8)}</td>
-                         <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(p.date).toLocaleDateString()}</td>
-                         <td className="px-5 py-3 text-right font-medium" data-label="Amount">K {Number(p.amount).toFixed(2)}</td>
-                         <td className="px-5 py-3 text-slate-500" data-label="Method">{p.payment_method || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="space-y-2">
+              {filteredPayments.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => navigate(`/portal/payments/${p.id}`)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    padding: '14px 18px', background: portalTheme.paper, borderRadius: 12,
+                    border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                    cursor: 'pointer', transition: 'all .15s ease', flexWrap: 'wrap'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#a6d9d3'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,.08)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)'; }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 9, background: portalTheme.teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: portalTheme.teal[600], flexShrink: 0 }}>
+                      <CreditCard size={16} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{p.reference || p.id.slice(0, 8)}</p>
+                      <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 2 }}>{new Date(p.date).toLocaleDateString()} • {p.payment_method || '-'}</p>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: portalTheme.ink, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{formatK(p.amount)}</p>
+                  </div>
+                </div>
+              ))}
             </div>
             {totalPages > 1 && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 12, color: portalTheme.inkSoft }}>

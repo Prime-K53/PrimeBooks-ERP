@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Wallet, Filter } from 'lucide-react';
+import { Wallet, Filter, TrendingUp, TrendingDown } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalCard from './components/PortalCard';
@@ -8,7 +8,13 @@ import PortalButton from './components/PortalButton';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme } from './constants';
+import { portalTheme, formatK } from './constants';
+
+const teal = { 50:'#eef7f6', 400:'#3fa294', 600:'#146b60', 700:'#0f544c' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
 
 interface WalletTransaction {
   date: string;
@@ -80,9 +86,9 @@ const CustomerWallet: React.FC = () => {
             </div>
             <div style={{ minWidth: 0 }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Wallet Balance</span>
-              <div style={{ fontSize: 22, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-                K {Number(data.balance || 0).toFixed(2)}
-              </div>
+<div style={{ fontSize: 22, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+  {formatK(data.balance || 0)}
+</div>
             </div>
           </PortalCard>
         )}
@@ -117,29 +123,33 @@ const CustomerWallet: React.FC = () => {
           {!data ? null : filteredTransactions.length === 0 ? (
             <EmptyState icon={<Wallet size={28} />} title="No transactions" description={typeFilter !== 'all' || dateFrom || dateTo ? 'No transactions match your filters.' : 'Your wallet transactions will appear here.'} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                <thead>
-                  <tr style={{ background: portalTheme.teal[50] }}>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Description</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Amount</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Reference</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100/50">
-                  {filteredTransactions.map((t, i) => (
-                    <tr key={`${t.date}-${t.reference}-${i}`} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
-<td className="px-5 py-3 whitespace-nowrap" style={{ color: portalTheme.inkSoft }} data-label="Date">{new Date(t.date).toLocaleDateString()}</td>
-                       <td className="px-5 py-3" data-label="Description">{t.type}</td>
-                       <td className="px-5 py-3 text-right font-mono" style={{ color: Number(t.amount) >= 0 ? portalTheme.teal[600] : portalTheme.danger }} data-label="Amount">
-                         {Number(t.amount) >= 0 ? '+' : ''}K {Number(t.amount).toFixed(2)}
-                       </td>
-                       <td className="px-5 py-3" style={{ color: portalTheme.inkSoft }} data-label="Reference">{t.reference}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              {filteredTransactions.map((t, i) => {
+                const isCredit = Number(t.amount) >= 0;
+                return (
+                  <PortalCard key={`${t.date}-${t.reference}-${i}`} hoverable style={{ padding: '14px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 8, background: isCredit ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isCredit ? '#059669' : '#dc2626', flexShrink: 0 }}>
+                          {isCredit ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>{t.type}</p>
+                          <p style={{ fontSize: 11, color: inkSoft, marginTop: 1 }}>{new Date(t.date).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: 15, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: isCredit ? '#059669' : '#dc2626', margin: 0 }}>
+                          {formatK(t.amount)}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: inkSoft, marginTop: 4 }}>
+                      Reference: <span style={{ color: ink, fontWeight: 500 }}>{t.reference || '—'}</span>
+                    </div>
+                  </PortalCard>
+                );
+              })}
             </div>
           )}
         </div>

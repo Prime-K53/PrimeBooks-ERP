@@ -226,10 +226,20 @@ const ShippingManager: React.FC = () => {
             ? dispatchForm.newDriverName 
             : payrollDrivers.find(e => e.id === dispatchForm.driverId)?.name || 'Unknown';
 
+        // The portal keys shipments to the ERP customer id, so resolve it here
+        // (delivery notes may only carry a name) rather than relying on the mirror.
+        const resolvedCustomerId =
+            dispatchTarget.customerId ||
+            customers.find(c => (c.name || '').trim().toLowerCase() === (dispatchTarget.customerName || '').trim().toLowerCase())?.id ||
+            customers.find(c => (c.name || '').trim().toLowerCase() === (dispatchTarget.invoiceId ? String(dispatchTarget.invoiceId) : '').trim().toLowerCase())?.id;
+
         const newShipment: Shipment = {
             id,
             orderId: dispatchTarget.id,
+            customerId: resolvedCustomerId,
             customerName: dispatchTarget.customerName,
+            items: dispatchTarget.items || [],
+            date: new Date().toISOString(),
             carrier: dispatchForm.carrier,
             driverId: isAddingNewDriver ? undefined : dispatchForm.driverId,
             driverName: driverName,
@@ -643,93 +653,96 @@ const ShippingManager: React.FC = () => {
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
                 {activeTab === 'Pipeline' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
-                        {filteredDeliveries.map(dn => (
-                            <div key={dn.id} id={`dn-card-${dn.id}`} style={{
-                              background: paper, borderRadius: 14,
-                              border: `1px solid ${hairline}`,
-                              boxShadow: '0 1px 3px rgba(0,0,0,.04)',
-                              padding: 24, transition: 'all .2s ease',
-                              position: 'relative', overflow: 'hidden',
-                              display: 'flex', flexDirection: 'column'
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = teal[200]; e.currentTarget.style.boxShadow = '0 8px 24px -8px rgba(15,84,76,.15)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,.04)'; }}
-                            >
-                                <div style={{ marginBottom: 24 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <span style={{
-                                          fontSize: 9, fontWeight: 700, color: teal[600], textTransform: 'uppercase',
-                                          letterSpacing: 0.08, background: teal[50],
-                                          padding: '3px 10px', borderRadius: 20, border: `1px solid ${teal[100]}`
-                                        }}>
-                                            Ready for dispatch
-                                        </span>
-                                    </div>
-                                    <h3 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: '12px 0 4px', letterSpacing: -0.2 }}>{dn.customerName}</h3>
-                                    <p style={{ fontSize: 10, color: inkSoft, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.05, margin: 0 }}>
-                                        Delivery ID: {dn.id}
-                                    </p>
-                                </div>
-                                <div style={{ position: 'absolute', top: 24, right: 24, display: 'flex', gap: 8 }}>
-                                    <button 
-                                        onClick={() => handlePreview('DELIVERY_NOTE', dn)}
-                                        style={{
-                                          padding: 8, background: paper, border: `1px solid ${hairline}`,
-                                          color: inkSoft, borderRadius: 10, cursor: 'pointer',
-                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                          transition: 'all .15s ease'
-                                        }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
-                                        title="Preview PDF"
+                    <div style={{ background: paper, borderRadius: 14, border: `1px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,.04)', overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: teal[700], textTransform: 'uppercase', letterSpacing: 0.08 }}>Customer</th>
+                                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: teal[700], textTransform: 'uppercase', letterSpacing: 0.08 }}>Shipping Address</th>
+                                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: teal[700], textTransform: 'uppercase', letterSpacing: 0.08 }}>Delivery ID</th>
+                                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: teal[700], textTransform: 'uppercase', letterSpacing: 0.08 }}>Items</th>
+                                    <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: teal[700], textTransform: 'uppercase', letterSpacing: 0.08 }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredDeliveries.map(dn => (
+                                    <tr key={dn.id} style={{ borderBottom: `1px solid ${hairline}`, transition: 'background .15s ease' }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <Eye size={16}/>
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDownloadPDF(dn)}
-                                        style={{
-                                          padding: 8, background: paper, border: `1px solid ${hairline}`,
-                                          color: inkSoft, borderRadius: 10, cursor: 'pointer',
-                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                          transition: 'all .15s ease'
-                                        }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
-                                        title="Download PDF"
-                                    >
-                                        <Download size={16}/>
-                                    </button>
-                                </div>
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                        <MapPin size={16} style={{ color: teal[400], flexShrink: 0, marginTop: 2 }} />
-                                        <p style={{ fontSize: 13, color: ink, lineHeight: 1.5, fontWeight: 500, margin: 0 }}>{dn.shippingAddress}</p>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                        <Package size={16} style={{ color: inkSoft, flexShrink: 0 }} />
-                                        <p style={{ fontSize: 13, color: ink, fontWeight: 600, margin: 0 }}>{dn.items.length} Items</p>
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={() => handleOpenDispatch(dn)}
-                                    style={{
-                                      ...btnPrimaryStyle, width: '100%', padding: '14px 20px',
-                                      justifyContent: 'center', gap: 8, fontSize: 10, letterSpacing: 0.08
-                                    }}
-                                >
-                                    <Navigation size={14}/> Initiate Dispatch
-                                </button>
-                            </div>
-                        ))}
-                        {filteredDeliveries.length === 0 && (
-                          <div style={{ 
-                            gridColumn: '1 / -1', padding: '80px 20px', textAlign: 'center',
-                            color: inkSoft, fontStyle: 'italic', fontSize: 14
-                          }}>
-                            Manifest pipeline clear. All pending notes are dispatched.
-                          </div>
-                        )}
+                                        <td style={{ padding: '14px 16px' }}>
+                                            <div>
+                                                <div style={{ fontSize: 14, fontWeight: 700, color: ink, margin: 0, letterSpacing: -0.2 }}>{dn.customerName}</div>
+                                                <span style={{
+                                                  fontSize: 9, fontWeight: 700, color: teal[600], textTransform: 'uppercase',
+                                                  letterSpacing: 0.08, background: teal[50],
+                                                  padding: '2px 8px', borderRadius: 12, border: `1px solid ${teal[100]}`, marginTop: 4, display: 'inline-block'
+                                                }}>
+                                                    Ready for dispatch
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '14px 16px', fontSize: 13, color: ink, verticalAlign: 'middle', maxWidth: 260 }}>
+                                            {dn.shippingAddress}
+                                        </td>
+                                        <td style={{ padding: '14px 16px', fontSize: 13, color: inkSoft, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", verticalAlign: 'middle' }}>
+                                            {dn.id}
+                                        </td>
+                                        <td style={{ padding: '14px 16px', fontSize: 13, color: ink, fontWeight: 600, verticalAlign: 'middle' }}>
+                                            {dn.items.length}
+                                        </td>
+                                        <td style={{ padding: '14px 16px', textAlign: 'right', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                            <div style={{ display: 'inline-flex', gap: 6 }}>
+                                                <button
+                                                    onClick={() => handlePreview('DELIVERY_NOTE', dn)}
+                                                    style={{
+                                                      padding: 7, background: paper, border: `1px solid ${hairline}`,
+                                                      color: inkSoft, borderRadius: 8, cursor: 'pointer',
+                                                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                      transition: 'all .15s ease'
+                                                    }}
+                                                    onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                                                    onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                                                    title="Preview PDF"
+                                                >
+                                                    <Eye size={15}/>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDownloadPDF(dn)}
+                                                    style={{
+                                                      padding: 7, background: paper, border: `1px solid ${hairline}`,
+                                                      color: inkSoft, borderRadius: 8, cursor: 'pointer',
+                                                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                      transition: 'all .15s ease'
+                                                    }}
+                                                    onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
+                                                    onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+                                                    title="Download PDF"
+                                                >
+                                                    <Download size={15}/>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleOpenDispatch(dn)}
+                                                    style={{
+                                                      ...btnPrimaryStyle, padding: '8px 16px',
+                                                      justifyContent: 'center', gap: 5, fontSize: 10, letterSpacing: 0.08
+                                                    }}
+                                                >
+                                                    <Navigation size={13}/> Dispatch
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredDeliveries.length === 0 && (
+                                  <tr>
+                                    <td colSpan={5} style={{ padding: '80px 20px', textAlign: 'center', color: inkSoft, fontStyle: 'italic', fontSize: 14 }}>
+                                        Manifest pipeline clear. All pending notes are dispatched.
+                                    </td>
+                                  </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 

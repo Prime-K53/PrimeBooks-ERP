@@ -6,7 +6,13 @@ import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme } from './constants';
+import { portalTheme, formatK } from './constants';
+
+const teal = { 50:'#eef7f6', 400:'#3fa294', 600:'#146b60', 700:'#0f544c' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
 
 interface PointsHistory {
   date: string;
@@ -81,9 +87,9 @@ const CustomerLoyalty: React.FC = () => {
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Cashback Available</span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-                K {Number(data.cashback || 0).toFixed(2)}
-              </div>
+<div style={{ fontSize: 22, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+  {formatK(data.cashback || 0)}
+</div>
             </PortalCard>
 
             <PortalCard style={{ padding: '20px 24px' }}>
@@ -112,35 +118,27 @@ const CustomerLoyalty: React.FC = () => {
                 Points History
               </h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                <thead>
-                  <tr style={{ background: portalTheme.teal[50] }}>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Description</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Points</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Balance</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100/50">
-                  {(data.pointsHistory || []).length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-5 py-8 text-center" style={{ color: portalTheme.inkSoft }}>No points history yet</td>
-                    </tr>
-                  ) : (
-                    (data.pointsHistory || []).map((h, i) => (
-                      <tr key={`${h.date}-${h.description}-${i}`} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
-<td className="px-5 py-3 whitespace-nowrap" style={{ color: portalTheme.inkSoft }} data-label="Date">{new Date(h.date).toLocaleDateString()}</td>
-                         <td className="px-5 py-3" data-label="Description">{h.description}</td>
-                         <td className="px-5 py-3 text-right font-mono" style={{ color: Number(h.points) >= 0 ? portalTheme.teal[600] : portalTheme.danger }} data-label="Points">
-                           {Number(h.points) >= 0 ? '+' : ''}{h.points}
-                         </td>
-                         <td className="px-5 py-3 text-right font-mono font-semibold" data-label="Balance">{h.balance?.toLocaleString() || 0}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              {(data.pointsHistory || []).length === 0 ? (
+                <p style={{ textAlign: 'center', color: inkSoft, padding: '24px 0' }}>No points history yet</p>
+              ) : (
+                (data.pointsHistory || []).map((h, i) => (
+                  <div key={`${h.date}-${h.description}-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: paper, borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>{h.description}</p>
+                      <p style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>{new Date(h.date).toLocaleDateString()}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: Number(h.points) >= 0 ? teal[600] : portalTheme.danger }}>
+                        {Number(h.points) >= 0 ? '+' : ''}{h.points} pts
+                      </span>
+                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: ink }}>
+                        Balance: {h.balance?.toLocaleString() || 0}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}

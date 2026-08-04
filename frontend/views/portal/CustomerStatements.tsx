@@ -14,7 +14,13 @@ import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme } from './constants';
+import { portalTheme, formatK } from './constants';
+
+const teal = { 50:'#eef7f6', 400:'#3fa294', 600:'#146b60', 700:'#0f544c' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
 
 interface Transaction {
   date: string;
@@ -161,15 +167,15 @@ const CustomerStatements: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 18 }}>
             <PortalCard style={{ padding: '20px 24px' }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 6, display: 'block' }}>Opening Balance</span>
-              <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-                K {Number(data.opening_balance || 0).toFixed(2)}
-              </div>
+<div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+  {formatK(data.opening_balance || 0)}
+</div>
             </PortalCard>
             <PortalCard style={{ padding: '20px 24px' }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, marginBottom: 6, display: 'block' }}>Closing Balance</span>
-              <div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-                K {Number(data.closing_balance || 0).toFixed(2)}
-              </div>
+<div style={{ fontSize: 20, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+  {formatK(data.closing_balance || 0)}
+</div>
             </PortalCard>
           </div>
         )}
@@ -180,29 +186,20 @@ const CustomerStatements: React.FC = () => {
           <EmptyState icon={<FileText size={28} />} title="No transactions" description="No transactions found for the selected period." />
         ) : (
           <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                <thead>
-                  <tr style={{ background: portalTheme.teal[50] }}>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Description</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Debit</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Credit</th>
-                    <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Balance</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100/50">
-                  {data.transactions.map((t, i) => (
-                    <tr key={`${t.date}-${t.description}-${i}`} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
-<td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{new Date(t.date).toLocaleDateString()}</td>
-                       <td className="px-5 py-3" data-label="Description">{t.description}</td>
-                       <td className="px-5 py-3 text-right font-mono" style={{ color: portalTheme.danger }} data-label="Debit">{t.debit ? `K ${Number(t.debit).toFixed(2)}` : '-'}</td>
-                       <td className="px-5 py-3 text-right font-mono" style={{ color: portalTheme.teal[600] }} data-label="Credit">{t.credit ? `K ${Number(t.credit).toFixed(2)}` : '-'}</td>
-                       <td className="px-5 py-3 text-right font-mono font-semibold" data-label="Balance">K {Number(t.balance).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              {data.transactions.map((t, i) => (
+                <div key={`${t.date}-${t.description}-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: paper, borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>{t.description}</p>
+                    <p style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>{new Date(t.date).toLocaleDateString()}</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
+                    {t.debit ? <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: portalTheme.danger }}>Debit: {formatK(t.debit)}</span> : null}
+                    {t.credit ? <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: teal[600] }}>Credit: {formatK(t.credit)}</span> : null}
+                    <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: ink }}>{formatK(t.balance)}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

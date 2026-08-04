@@ -47,7 +47,7 @@ const PortalKPICard: React.FC<Props> = ({ label, value, icon: Icon, trend, color
       </div>
       <div style={{ minWidth: 0 }}>
         <p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>{label}</p>
-        <p style={{ fontSize: 18, fontWeight: 700, color: '#23282A', margin: 0, fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.2 }}>
+        <p style={{ fontSize: 18, fontWeight: 700, color: '#23282A', margin: 0, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', textAlign: 'right', letterSpacing: -0.2 }}>
           {value}
         </p>
       </div>

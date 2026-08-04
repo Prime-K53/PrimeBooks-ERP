@@ -20,7 +20,9 @@ const PortalCard: React.FC<Props> = ({
   const baseStyle: React.CSSProperties = {
     background: '#FEFDFB',
     borderRadius: 14,
-    border: '1.4px solid #e4ddd1',
+    borderWidth: '1.4px',
+    borderStyle: 'solid',
+    borderColor: '#e4ddd1',
     boxShadow: '0 1px 3px rgba(0,0,0,.04)',
     transition: 'transform .15s ease, box-shadow .15s ease, border-color .15s ease',
     cursor: onClick ? 'pointer' : 'default',

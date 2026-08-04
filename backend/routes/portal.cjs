@@ -703,28 +703,6 @@ router.get('/referrals', async (req, res) => {
   }
 });
 
-router.get('/referrals/:id', async (req, res) => {
-  try {
-    const { id, customer_id} = req.portalUser;
-    const data = await portalService.getReferralById(req.params.id, id, customer_id );
-    if (!data) return res.status(404).json({ error: 'Referral not found' });
-    res.json(data);
-  } catch (err) {
-    console.error('[Portal] Referral detail error:', err);
-    res.status(500).json({ error: 'Failed to load referral' });
-  }
-});
-
-router.get('/referrals/:id/timeline', async (req, res) => {
-  try {
-    const data = await portalService.getReferralTimeline(req.params.id );
-    res.json(data);
-  } catch (err) {
-    console.error('[Portal] Referral timeline error:', err);
-    res.status(500).json({ error: 'Failed to load timeline' });
-  }
-});
-
 router.get('/referrals/rewards', async (req, res) => {
   try {
     const { id, customer_id} = req.portalUser;
@@ -759,6 +737,28 @@ router.get('/referrals/stats', async (req, res) => {
   } catch (err) {
     console.error('[Portal] Referral stats error:', err);
     res.status(500).json({ error: 'Failed to load referral stats' });
+  }
+});
+
+router.get('/referrals/:id/timeline', async (req, res) => {
+  try {
+    const data = await portalService.getReferralTimeline(req.params.id );
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Referral timeline error:', err);
+    res.status(500).json({ error: 'Failed to load timeline' });
+  }
+});
+
+router.get('/referrals/:id', async (req, res) => {
+  try {
+    const { id, customer_id} = req.portalUser;
+    const data = await portalService.getReferralById(req.params.id, id, customer_id );
+    if (!data) return res.status(404).json({ error: 'Referral not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('[Portal] Referral detail error:', err);
+    res.status(500).json({ error: 'Failed to load referral' });
   }
 });
 

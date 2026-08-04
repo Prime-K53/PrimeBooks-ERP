@@ -15,6 +15,7 @@ import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import DocumentChain from './components/DocumentChain';
 import DocumentDiscussion from './components/DocumentDiscussion';
 import VersionHistoryModal from './components/VersionHistoryModal';
+import { portalTheme, formatK } from './constants';
 
 const stageDefinitions = [
   { key: 'submitted', label: 'Requested', description: 'Your request was received' },
@@ -362,43 +363,35 @@ const CustomerQuotationDetail: React.FC = () => {
         <div className="px-5 py-4 border-b border-slate-200/60">
           <h2 className="text-sm font-semibold text-slate-800">Items</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-            <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
-              <tr>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Item</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Qty</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Unit Price</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100/50">
-              {(quotation.items || []).map((item, i) => (
-                <tr key={i} className="text-slate-700">
-<td className="px-5 py-3 font-medium text-slate-900" data-label="Item">{item.name}</td>
-                   <td className="px-5 py-3 text-right" data-label="Qty">{item.quantity}</td>
-                   <td className="px-5 py-3 text-right font-mono" data-label="Unit Price">K {Number(item.unitPrice || 0).toFixed(2)}</td>
-                   <td className="px-5 py-3 text-right font-mono" data-label="Total">K {Number(item.lineTotal ?? item.quantity * item.unitPrice).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {(quotation.items || []).map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#23282A', margin: 0 }}>{item.name}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: 13, color: '#5c6567' }}>Qty: {item.quantity}</span>
+                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#5c6567' }}>{formatK(item.unitPrice || 0)}</span>
+                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#23282A' }}>{formatK(item.lineTotal ?? item.quantity * item.unitPrice)}</span>
+              </div>
+            </div>
+          ))}
         </div>
         <div className="px-5 py-4 border-t border-slate-200/60 space-y-1.5 text-sm">
-          <div className="flex justify-between text-slate-600"><span>Subtotal</span><span className="font-mono">K {Number(quotation.subtotal).toFixed(2)}</span></div>
-          {Number(quotation.discount) > 0 && (
-            <div className="flex justify-between text-slate-600"><span>Discount</span><span className="font-mono">- K {Number(quotation.discount).toFixed(2)}</span></div>
-          )}
-          {Number(quotation.delivery_fee) > 0 && (
-            <div className="flex justify-between text-slate-600"><span>Delivery Fee</span><span className="font-mono">K {Number(quotation.delivery_fee).toFixed(2)}</span></div>
-          )}
-          {Number(quotation.tax_amount) > 0 && (
-            <div className="flex justify-between text-slate-600"><span>Tax ({Number(quotation.tax_rate)}%)</span><span className="font-mono">K {Number(quotation.tax_amount).toFixed(2)}</span></div>
-          )}
-          <div className="flex justify-between pt-2 border-t border-slate-200/60 text-base font-bold">
-            <span className="text-slate-800">Total</span>
-            <span className="text-slate-900 font-mono">K {Number(quotation.total).toFixed(2)}</span>
-          </div>
+          <div className="flex justify-between text-slate-600"><span>Subtotal</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.subtotal)}</span></div>
+{Number(quotation.discount) > 0 && (
+  <div className="flex justify-between text-slate-600"><span>Discount</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>- {formatK(quotation.discount)}</span></div>
+)}
+{Number(quotation.delivery_fee) > 0 && (
+  <div className="flex justify-between text-slate-600"><span>Delivery Fee</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.delivery_fee)}</span></div>
+)}
+{Number(quotation.tax_amount) > 0 && (
+  <div className="flex justify-between text-slate-600"><span>Tax ({Number(quotation.tax_rate)}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.tax_amount)}</span></div>
+)}
+<div className="flex justify-between pt-2 border-t border-slate-200/60 text-base font-bold">
+  <span className="text-slate-800">Total</span>
+  <span className="text-slate-900" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.total)}</span>
+</div>
         </div>
       </div>
 
@@ -440,33 +433,20 @@ const CustomerQuotationDetail: React.FC = () => {
           <div className="px-5 py-4 border-b border-slate-200/60">
             <h2 className="text-sm font-semibold text-slate-800">Decision Records</h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-              <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
-                <tr>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Decision</th>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Signed By</th>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Email</th>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100/50">
-                {signatures.map((sig) => (
-                  <tr key={sig.id} className="text-slate-700">
-<td className="px-5 py-3" data-label="Decision">
-                       <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${
-                         sig.decision === 'accepted' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                         sig.decision === 'rejected' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                         'bg-violet-100 text-violet-700 border-violet-200'
-                       }`}>{sig.decision}</span>
-                     </td>
-                     <td className="px-5 py-3 font-medium text-slate-900" data-label="Signed By">{sig.signer_name || '—'}</td>
-                     <td className="px-5 py-3 text-slate-500" data-label="Email">{sig.signer_email || '—'}</td>
-                     <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Timestamp">{sig.signed_at ? new Date(sig.signed_at).toLocaleString() : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {signatures.map((sig) => (
+              <div key={sig.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ${
+                    sig.decision === 'accepted' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                    sig.decision === 'rejected' ? 'bg-rose-100 text-rose-700 border-rose-200' :
+                    'bg-violet-100 text-violet-700 border-violet-200'
+                  }`}>{sig.decision}</span>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#23282A', marginTop: 4 }}>{sig.signer_name || '—'}</p>
+                  <p style={{ fontSize: 11, color: '#5c6567', marginTop: 2 }}>{sig.signer_email || '—'} • {sig.signed_at ? new Date(sig.signed_at).toLocaleString() : '—'}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

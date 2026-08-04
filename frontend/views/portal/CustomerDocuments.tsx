@@ -17,7 +17,7 @@ import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import { useToast } from './components/Toast';
-import { portalTheme } from './constants';
+import { portalTheme, formatK } from './constants';
 
 interface Document {
   id: string;
@@ -256,7 +256,7 @@ const CustomerDocuments: React.FC = () => {
                           <p className="text-sm font-medium truncate" style={{ color: portalTheme.ink }}>{doc.title}</p>
                           <p className="text-xs mt-1" style={{ color: portalTheme.inkSoft }}>
                             {doc.date ? new Date(doc.date).toLocaleDateString() : ''}
-                            {doc.amount !== undefined ? ` • K ${Number(doc.amount).toFixed(2)}` : ''}
+                            {doc.amount !== undefined ? ` • ${formatK(doc.amount)}` : ''}
                           </p>
                         </div>
                         {doc.url?.startsWith('#/') ? (

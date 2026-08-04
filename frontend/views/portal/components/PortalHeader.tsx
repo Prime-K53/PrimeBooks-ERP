@@ -121,7 +121,14 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
           >
             <Menu size={20} />
           </button>
-        <h1 className="text-lg font-bold text-slate-900 tracking-tight">{title}</h1>
+        {title === 'Dashboard' ? (
+          <h1 className="md:hidden text-lg font-bold text-slate-900 tracking-tight">
+            Prime<span style={{ color: '#d99a3f' }}>PORTAL</span>
+          </h1>
+        ) : (
+          <h1 className="md:hidden text-lg font-bold text-slate-900 tracking-tight">{title}</h1>
+        )}
+        <h1 className="hidden md:block text-lg font-bold text-slate-900 tracking-tight">{title}</h1>
       </div>
 
       <div className="flex items-center gap-3">

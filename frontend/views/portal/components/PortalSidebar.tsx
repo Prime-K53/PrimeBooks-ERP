@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, FileText, Receipt, CreditCard,
-  FileBarChart, FolderOpen, Gift, Wallet, Bell, MessageSquare,
+  FileBarChart, Wallet, MessageSquare,
   User, LogOut, Globe, X, ClipboardList, Users, Truck
 } from 'lucide-react';
 import { useCustomerAuth } from '../../../context/CustomerAuthContext';
@@ -13,22 +13,59 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/portal/dashboard', icon: LayoutDashboard },
-  { label: 'Requests', path: '/portal/requests', icon: ClipboardList },
-  { label: 'Orders', path: '/portal/orders', icon: ShoppingCart },
-  { label: 'Shipments & Tracking', path: '/portal/shipments', icon: Truck },
-  { label: 'Quotations', path: '/portal/quotations', icon: FileText },
-  { label: 'Invoices', path: '/portal/invoices', icon: Receipt },
-  { label: 'Payments', path: '/portal/payments', icon: CreditCard },
-  { label: 'Statements', path: '/portal/statements', icon: FileBarChart },
-  { label: 'Documents', path: '/portal/documents', icon: FolderOpen },
-  { label: 'Referrals', path: '/portal/referrals', icon: Users },
-  { label: 'Loyalty', path: '/portal/loyalty', icon: Gift },
-  { label: 'Wallet', path: '/portal/wallet', icon: Wallet },
-  { label: 'Notifications', path: '/portal/notifications', icon: Bell },
-  { label: 'Support', path: '/portal/support', icon: MessageSquare },
-  { label: 'Profile', path: '/portal/profile', icon: User },
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    title: 'Main',
+    items: [
+      { label: 'Dashboard', path: '/portal/dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: 'Commerce',
+    items: [
+      { label: 'Requests', path: '/portal/requests', icon: ClipboardList },
+      { label: 'Orders', path: '/portal/orders', icon: ShoppingCart },
+      { label: 'Quotations', path: '/portal/quotations', icon: FileText },
+    ],
+  },
+  {
+    title: 'Documents & Billing',
+    items: [
+      { label: 'Invoices', path: '/portal/invoices', icon: Receipt },
+      { label: 'Statements', path: '/portal/statements', icon: FileBarChart },
+    ],
+  },
+  {
+    title: 'Finance',
+    items: [
+      { label: 'Payments', path: '/portal/payments', icon: CreditCard },
+      { label: 'Wallet', path: '/portal/wallet', icon: Wallet },
+    ],
+  },
+  {
+    title: 'Logistics',
+    items: [
+      { label: 'Shipments & Tracking', path: '/portal/shipments', icon: Truck },
+    ],
+  },
+  {
+    title: 'Rewards',
+    items: [
+      { label: 'Referrals', path: '/portal/referrals', icon: Users },
+    ],
+  },
+  {
+    title: 'Account',
+    items: [
+      { label: 'Support', path: '/portal/support', icon: MessageSquare },
+      { label: 'Profile', path: '/portal/profile', icon: User },
+    ],
+  },
 ];
 
 interface Props {
@@ -69,24 +106,31 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const sidebarBody = (
     <div className="flex flex-col h-full">
-      <nav className="flex-1 overflow-y-auto custom-scrollbar py-3 px-3 space-y-1">
-        {navItems.map((item) => {
-          const isActive = location.pathname.startsWith(item.path);
-          return (
-            <button
-              key={item.path}
-              onClick={() => handleNavigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm group ${
-                isActive
-                  ? 'bg-white/10 text-white border-l-2 border-[#d99a3f]'
-                  : 'text-white/70 hover:text-white hover:bg-white/5 border-l-2 border-transparent'
-              }`}
-            >
-              <item.icon size={18} className="shrink-0" />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto custom-scrollbar py-3 px-3 space-y-4">
+        {navSections.map((section) => (
+          <div key={section.title}>
+            <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/40">{section.title}</p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const isActive = location.pathname.startsWith(item.path);
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => handleNavigate(item.path)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm group ${
+                      isActive
+                        ? 'bg-white/10 text-white border-l-2 border-[#d99a3f]'
+                        : 'text-white/70 hover:text-white hover:bg-white/5 border-l-2 border-transparent'
+                    }`}
+                  >
+                    <item.icon size={18} className="shrink-0" />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className="border-t border-white/5 p-4 space-y-3">

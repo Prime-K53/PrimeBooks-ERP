@@ -10,6 +10,13 @@ import { PrimeDocument } from '../shared/components/PDF/PrimeDocument';
 import { useAuth } from '../../context/AuthContext';
 import ErrorBanner from './components/ErrorBanner';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
+import { portalTheme, formatK } from './constants';
+
+const teal = { 50:'#eef7f6', 400:'#3fa294', 600:'#146b60', 700:'#0f544c' };
+const paper = '#FEFDFB';
+const ink = '#23282A';
+const inkSoft = '#5c6567';
+const hairline = '#e4ddd1';
 
 interface Allocation {
   id: string;
@@ -98,7 +105,7 @@ const CustomerPaymentDetail: React.FC = () => {
         paymentStatus,
         balanceDue: Math.max(0, invoiceTotal - totalAllocated),
         overpaymentAmount: Math.max(0, amountReceived - totalAllocated),
-        narrative: `Payment of K ${amountReceived.toFixed(2)} received via ${payment.payment_method || 'N/A'}. ${allocations.length} invoice(s) allocated.`,
+        narrative: `Payment of ${formatK(amountReceived)} received via ${payment.payment_method || 'N/A'}. ${allocations.length} invoice(s) allocated.`,
         currentBalance: Math.max(0, invoiceTotal - totalAllocated),
         calculationVersion: 1,
       };
@@ -147,7 +154,7 @@ const CustomerPaymentDetail: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={18} className="text-emerald-600" />
-              <span className="text-2xl font-bold text-emerald-600 font-mono">K {Number(payment.amount).toFixed(2)}</span>
+              <span className="text-2xl font-bold text-emerald-600" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(payment.amount)}</span>
             </div>
             <button
               onClick={handleDownloadReceipt}
@@ -175,25 +182,18 @@ const CustomerPaymentDetail: React.FC = () => {
         {allocations.length === 0 ? (
           <div className="px-5 py-8 text-center text-slate-400 text-sm">No invoice allocations for this payment.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-              <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
-                <tr>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Invoice</th>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Invoice Total</th>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Allocated</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100/50">
-                {allocations.map((a) => (
-                  <tr key={a.id} className="text-slate-700 hover:bg-blue-50/50 transition-colors border-l-4 border-l-transparent">
-                    <td className="px-5 py-3 font-mono text-slate-500 font-bold truncate">{a.invoice_number || a.invoice_id}</td>
-                    <td className="px-5 py-3 text-right font-mono">K {Number(a.invoice_total).toFixed(2)}</td>
-                    <td className="px-5 py-3 text-right font-mono text-emerald-600">K {Number(a.amount).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {allocations.map((a) => (
+              <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: paper, borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>Invoice {a.invoice_number || a.invoice_id}</p>
+                </div>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: inkSoft }}>Total: {formatK(a.invoice_total)}</span>
+                  <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#059669' }}>Allocated: {formatK(a.amount)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

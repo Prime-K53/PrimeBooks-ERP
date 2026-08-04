@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createElement } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, Eye, CreditCard, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Download, Eye } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { portalLifecycle } from '../../services/portalApiClient';
 import { mapToInvoiceData } from '../../utils/pdfMapper';
@@ -12,15 +12,11 @@ import { useAuth } from '../../context/AuthContext';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalButton from './components/PortalButton';
 import PortalCard from './components/PortalCard';
-import PortalInput from './components/PortalInput';
 import ErrorBanner from './components/ErrorBanner';
 import DocumentPreviewModal from './components/DocumentPreviewModal';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { useToast } from './components/Toast';
-import { portalTheme, DEFAULT_PAGE_SIZE } from './constants';
-
-const StripePaymentForm = React.lazy(() => import('./StripePaymentForm'));
+import { portalTheme, DEFAULT_PAGE_SIZE, formatK } from './constants';
 
 interface LineItem {
   item_name: string;
@@ -47,7 +43,6 @@ const CustomerInvoiceDetail: React.FC = () => {
   const { id } = useParams() as { id?: string };
   const navigate = useNavigate();
   const { companyConfig } = useAuth();
-  const { addToast } = useToast();
 
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,14 +50,6 @@ const CustomerInvoiceDetail: React.FC = () => {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-
-  // Payment state
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [showStripeForm, setShowStripeForm] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paying, setPaying] = useState(false);
-  const [payError, setPayError] = useState<string | null>(null);
-  const [paySuccess, setPaySuccess] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -130,56 +117,6 @@ const CustomerInvoiceDetail: React.FC = () => {
     }
   };
 
-  const handlePay = useCallback(async () => {
-    if (!invoice) return;
-    const remaining = Number(invoice.total_amount) - Number(invoice.paid_amount || 0);
-    const amount = paymentAmount ? Number(paymentAmount) : remaining;
-    if (amount <= 0 || amount > remaining) {
-      setPayError('Please enter a valid amount (max ' + remaining.toFixed(2) + ')');
-      return;
-    }
-    setPaying(true);
-    setPayError(null);
-    setPaySuccess(false);
-    try {
-      const data = await portalLifecycle.payments.createIntent(invoice.id, amount, 'usd');
-      setClientSecret(data.clientSecret);
-      if (data.mode === 'stripe') {
-        setShowStripeForm(true);
-      } else {
-        // Mock mode — simulate successful payment
-        setShowStripeForm(false);
-        await portalLifecycle.payments.recordPayment(invoice.id, amount, { paymentMethod: 'Card', currency: 'USD' });
-        setPaySuccess(true);
-        setClientSecret(null);
-        setPaymentAmount('');
-        addToast('success', 'Payment successful!');
-        portalLifecycle.invoices.get(invoice.id).then(setInvoice).catch(() => {});
-      }
-    } catch (err: any) {
-      setPayError(err.message || 'Failed to initialize payment');
-    } finally {
-      setPaying(false);
-    }
-  }, [invoice, paymentAmount, addToast]);
-
-  const handlePaymentSuccess = useCallback(() => {
-    setPaySuccess(true);
-    setClientSecret(null);
-    setShowStripeForm(false);
-    setPaymentAmount('');
-    if (invoice) {
-      portalLifecycle.invoices.get(invoice.id).then(setInvoice).catch(() => {});
-    }
-  }, [invoice]);
-
-  const handlePaymentCancel = useCallback(() => {
-    setClientSecret(null);
-    setShowStripeForm(false);
-    setPaymentAmount('');
-    setPayError(null);
-  }, []);
-
   if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
   if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!invoice) return null;
@@ -219,105 +156,47 @@ const CustomerInvoiceDetail: React.FC = () => {
           <div style={{ padding: '14px 16px', borderBottom: '1px solid #e4ddd1' }}>
             <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Line Items</h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-              <thead>
-                <tr style={{ background: portalTheme.teal[50] }}>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Item</th>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Qty</th>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Unit Price</th>
-                  <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100/50">
-                {(invoice.line_items || []).map((item, i) => (
-                  <tr key={i} className="text-slate-700 hover:bg-[#eef7f6] transition-colors">
-                    <td className="px-5 py-3 font-medium text-slate-900" data-label="Item">{item.item_name}</td>
-                    <td className="px-5 py-3 text-right" data-label="Qty">{item.quantity}</td>
-                    <td className="px-5 py-3 text-right font-mono" data-label="Unit Price">K {Number(item.unit_price).toFixed(2)}</td>
-                    <td className="px-5 py-3 text-right font-mono" data-label="Total">K {Number(item.line_total).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ padding: '4px 18px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '10px 0', borderBottom: '1px solid #e4ddd1' }}>
+              <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Item</span>
+              <span style={{ width: 48, textAlign: 'right', fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Qty</span>
+              <span style={{ width: 96, textAlign: 'right', fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Price</span>
+              <span style={{ width: 110, textAlign: 'right', fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Total</span>
+            </div>
+            {(invoice.line_items || []).map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '14px 0', borderBottom: i < (invoice.line_items || []).length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{item.item_name}</span>
+                </div>
+                <span style={{ width: 48, textAlign: 'right', fontSize: 13, color: '#5c6567' }}>{item.quantity}</span>
+                <span style={{ width: 96, textAlign: 'right', fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#5c6567' }}>{formatK(item.unit_price)}</span>
+                <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#23282A' }}>{formatK(item.line_total)}</span>
+              </div>
+            ))}
           </div>
           <div style={{ padding: '14px 16px', borderTop: '1px solid #e4ddd1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: portalTheme.inkSoft }}>Subtotal</span>
-              <span className="font-mono" style={{ color: portalTheme.ink }}>K {subtotal.toFixed(2)}</span>
-            </div>
-            {Number(invoice.paid_amount) > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                <span style={{ color: portalTheme.teal[600] }}>Paid</span>
-                <span className="font-mono" style={{ color: portalTheme.teal[600] }}>K {Number(invoice.paid_amount).toFixed(2)}</span>
-              </div>
-            )}
-            {remaining > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                <span style={{ color: portalTheme.amber[600] }}>Remaining</span>
-                <span className="font-mono" style={{ color: portalTheme.amber[600] }}>K {remaining.toFixed(2)}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, borderTop: '1px solid #e4ddd1', paddingTop: 8, marginTop: 4 }}>
-              <span style={{ color: portalTheme.ink }}>Total</span>
-              <span className="font-mono" style={{ color: portalTheme.ink }}>K {Number(invoice.total_amount).toFixed(2)}</span>
-            </div>
+<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+  <span style={{ color: portalTheme.inkSoft }}>Subtotal</span>
+  <span style={{ fontFamily: "'JetBrains Mono', monospace", color: portalTheme.ink }}>{formatK(subtotal)}</span>
+</div>
+{Number(invoice.paid_amount) > 0 && (
+  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+    <span style={{ color: portalTheme.teal[600] }}>Paid</span>
+    <span style={{ fontFamily: "'JetBrains Mono', monospace", color: portalTheme.teal[600] }}>{formatK(invoice.paid_amount)}</span>
+  </div>
+)}
+{remaining > 0 && (
+  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+    <span style={{ color: portalTheme.amber[600] }}>Remaining</span>
+    <span style={{ fontFamily: "'JetBrains Mono', monospace", color: portalTheme.amber[600] }}>{formatK(remaining)}</span>
+  </div>
+)}
+<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, borderTop: '1px solid #e4ddd1', paddingTop: 8, marginTop: 4 }}>
+  <span style={{ color: portalTheme.ink }}>Total</span>
+  <span style={{ fontFamily: "'JetBrains Mono', monospace", color: portalTheme.ink }}>{formatK(invoice.total_amount)}</span>
+</div>
           </div>
         </div>
-
-        {/* Payment Section */}
-        {remaining > 0 && invoice.status !== 'paid' && (
-          <PortalCard style={{ padding: '24px 30px', marginBottom: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-              <CreditCard size={18} style={{ color: portalTheme.inkSoft }} />
-              <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
-                Pay Online
-              </h2>
-            </div>
-
-            {paySuccess && (
-              <div className="mb-4 p-3.5 bg-teal-50 border border-teal-200 rounded-xl text-sm text-teal-700 flex items-center gap-2">
-                <CheckCircle size={16} />
-                Payment successful! Thank you for your payment.
-              </div>
-            )}
-
-            {payError && <ErrorBanner message={payError} onDismiss={() => setPayError(null)} />}
-
-            {!clientSecret && !paySuccess ? (
-              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <PortalInput
-                  label="Amount (K)"
-                  value={paymentAmount}
-                  onChange={(v) => setPaymentAmount(v)}
-                  placeholder={remaining.toFixed(2)}
-                  type="number"
-                  style={{ maxWidth: 160 }}
-                />
-                <PortalButton
-                  onClick={handlePay}
-                  disabled={paying || !invoice}
-                  icon={paying ? Loader2 : CreditCard}
-                >
-                  {paying ? 'Processing...' : `Pay K ${remaining.toFixed(2)}`}
-                </PortalButton>
-              </div>
-            ) : clientSecret && showStripeForm ? (
-              <Suspense fallback={<div className="flex items-center gap-2 text-sm text-slate-500"><Loader2 size={16} className="animate-spin" /> Loading payment form...</div>}>
-                <StripePaymentForm
-                  clientSecret={clientSecret}
-                  invoice={invoice}
-                  onSuccess={handlePaymentSuccess}
-                  onCancel={handlePaymentCancel}
-                />
-              </Suspense>
-            ) : null}
-
-            <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 12 }}>
-              Your payment is processed securely via Stripe. Your card information is never stored on our servers.
-            </p>
-          </PortalCard>
-        )}
 
       </div>
 
@@ -343,12 +222,12 @@ const CustomerInvoiceDetail: React.FC = () => {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
             <span style={{ color: portalTheme.inkSoft }}>Total:</span>
-            <span style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(invoice.total_amount).toFixed(2)}</span>
+            <span style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>{formatK(invoice.total_amount)}</span>
           </div>
           {(invoice.line_items || []).map((item, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
               <span style={{ color: portalTheme.ink }}>{item.item_name} × {item.quantity}</span>
-              <span style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>K {Number(item.line_total).toFixed(2)}</span>
+              <span style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.line_total)}</span>
             </div>
           ))}
         </div>

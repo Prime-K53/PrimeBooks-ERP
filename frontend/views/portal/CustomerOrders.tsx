@@ -12,7 +12,7 @@ import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, ORDER_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from './constants';
+import { portalTheme, ORDER_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP, formatK } from './constants';
 
 interface Order {
   id: string;
@@ -155,66 +155,59 @@ const CustomerOrders: React.FC = () => {
               Showing {orders.length} of {total} order{total !== 1 ? 's' : ''}
             </div>
             <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-                  <thead>
-                    <tr style={{ background: portalTheme.teal[50] }}>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Order #</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left" style={{ color: portalTheme.inkSoft }}>Date</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Total</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-center" style={{ color: portalTheme.inkSoft }}>Status</th>
-                      <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right" style={{ color: portalTheme.inkSoft }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/50">
-                    {filtered.map((order) => {
-                      const statusMeta = ORDER_STATUS_META[order.status.toLowerCase()] || ORDER_STATUS_META.draft;
-                      return (
-                        <tr
-                          key={order.id}
-                          onClick={() => navigate(`/portal/orders/${order.id}`)}
-                          className="transition-colors cursor-pointer group hover:bg-[#eef7f6]"
-                        >
-<td className="px-5 py-3 font-mono text-slate-500 font-bold truncate" data-label="Order #">#{order.orderNumber || order.id.slice(0, 8)}</td>
-                           <td className="px-5 py-3 text-slate-500 whitespace-nowrap" data-label="Date">{order.orderDate ? new Date(order.orderDate).toLocaleDateString() : ''}</td>
-                           <td className="px-5 py-3 text-right font-medium" data-label="Total">K {Number(order.totalAmount).toFixed(2)}</td>
-                           <td className="px-5 py-3 text-center" data-label="Status">
-                            <StatusBadge status={FRIENDLY_STATUS_MAP[order.status.toLowerCase()] || order.status} />
-                          </td>
-                           <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                             <div className="flex justify-center gap-1 items-center shrink-0">
-                               <button className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail" aria-label="View order detail">
-                                 <Eye size={14} />
-                               </button>
-                               {(order as any).tracking_number && (
-                                 <button
-                                   onClick={() => navigate(`/portal/shipments/${order.id}`)}
-                                   className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all"
-                                   title="Track shipment"
-                                   aria-label={`Track shipment for order ${order.orderNumber || order.id}`}
-                                 >
-                                   <Truck size={14} />
-                                 </button>
-                               )}
-                               {order.status !== 'Draft' && order.status !== 'Cancelled' && (
-                                 <button
-                                   onClick={() => handleReorderClick(order)}
-                                   disabled={reorderingId === order.id}
-                                   className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                   title="Reorder"
-                                   aria-label={`Reorder ${order.orderNumber || order.id}`}
-                                 >
-                                   {reorderingId === order.id ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-                                 </button>
-                               )}
-                               <button className="p-2 text-[#5c6567] hover:text-slate-600 rounded" aria-label="More actions"><MoreVertical size={14} /></button>
-                             </div>
-                           </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="p-4 space-y-2">
+                {filtered.map((order) => {
+                  const statusMeta = ORDER_STATUS_META[order.status.toLowerCase()] || ORDER_STATUS_META.draft;
+                  const orderNumber = order.orderNumber || order.id.slice(0, 8);
+                  const date = order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '';
+                  const total = formatK(order.totalAmount);
+                  return (
+                    <PortalCard hoverable key={order.id} onClick={() => navigate(`/portal/orders/${order.id}`)}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <ShoppingCart size={15} className="text-teal-600" />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#23282A' }}>#{orderNumber}</div>
+                        </div>
+                        <StatusBadge status={FRIENDLY_STATUS_MAP[order.status.toLowerCase()] || order.status} />
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: '#5c6567', marginTop: 8 }}>
+                        <span>Date: <span style={{ color: '#23282A' }}>{date}</span></span>
+                        <span>Total: <span style={{ color: '#23282A' }}>{total}</span></span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-center gap-1 items-center shrink-0">
+                          <button className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail" aria-label="View order detail">
+                            <Eye size={14} />
+                          </button>
+                          {(order as any).tracking_number && (
+                            <button
+                              onClick={() => navigate(`/portal/shipments/${order.id}`)}
+                              className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all"
+                              title="Track shipment"
+                              aria-label={`Track shipment for order ${order.orderNumber || order.id}`}
+                            >
+                              <Truck size={14} />
+                            </button>
+                          )}
+                          {order.status !== 'Draft' && order.status !== 'Cancelled' && (
+                            <button
+                              onClick={() => handleReorderClick(order)}
+                              disabled={reorderingId === order.id}
+                              className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Reorder"
+                              aria-label={`Reorder ${order.orderNumber || order.id}`}
+                            >
+                              {reorderingId === order.id ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                            </button>
+                          )}
+                          <button className="p-2 text-[#5c6567] hover:text-slate-600 rounded" aria-label="More actions"><MoreVertical size={14} /></button>
+                        </div>
+                      </div>
+                    </PortalCard>
+                  );
+                })}
               </div>
             </div>
             {totalPages > 1 && (
@@ -256,4 +249,3 @@ const CustomerOrders: React.FC = () => {
 };
 
 export default CustomerOrders;
-

@@ -159,6 +159,7 @@ const verifyToken = async (req, res, next) => {
         }
       } catch { /* Supabase verification also failed — fall through to 403 */ }
     }
+    console.warn('[verifyToken] 403 path=%s method=%s url=%s hasBearer=%s', req.path, req.method, req.originalUrl, Boolean(authHeader));
     return res.status(403).json({ 
       error: 'Invalid token',
       message: 'Authentication failed' 

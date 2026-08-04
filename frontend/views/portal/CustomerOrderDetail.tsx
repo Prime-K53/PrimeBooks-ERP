@@ -16,6 +16,7 @@ import DocumentDiscussion from './components/DocumentDiscussion';
 import ConfirmDialog from './components/ConfirmDialog';
 import ErrorBanner from './components/ErrorBanner';
 import PortalButton from './components/PortalButton';
+import { portalTheme, formatK } from './constants';
 
 interface OrderItem {
   name: string;
@@ -319,31 +320,23 @@ const CustomerOrderDetail: React.FC = () => {
         <div className="px-5 py-4 border-b border-slate-200/60">
           <h2 className="text-sm font-semibold text-slate-800">Order Items</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
-            <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
-              <tr>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-left">Item</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Qty</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Unit Price</th>
-                <th className="px-5 py-3 font-bold text-[10px] uppercase tracking-wider text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100/50">
-              {(order.items || []).map((item, i) => (
-                <tr key={i} className="text-slate-700">
-<td className="px-5 py-3 font-medium text-slate-900" data-label="Item">{item.name}</td>
-                   <td className="px-5 py-3 text-right" data-label="Qty">{item.quantity}</td>
-                   <td className="px-5 py-3 text-right font-mono" data-label="Unit Price">K {Number(item.unitPrice).toFixed(2)}</td>
-                   <td className="px-5 py-3 text-right font-mono" data-label="Total">K {Number(item.lineTotal).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {(order.items || []).map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#23282A', margin: 0 }}>{item.name}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: 13, color: '#5c6567' }}>Qty: {item.quantity}</span>
+                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#5c6567' }}>{formatK(item.unitPrice)}</span>
+                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#23282A' }}>{formatK(item.lineTotal)}</span>
+              </div>
+            </div>
+          ))}
         </div>
         <div className="px-5 py-4 border-t border-slate-200/60 flex justify-between items-center">
           <span className="text-sm font-semibold text-slate-700">Total</span>
-          <span className="text-lg font-bold text-slate-900">K {Number(order.totalAmount).toFixed(2)}</span>
+          <span className="text-lg font-bold text-slate-900" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(order.totalAmount)}</span>
         </div>
       </div>
       {order.notes && (

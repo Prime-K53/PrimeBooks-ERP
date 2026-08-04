@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Users, UserPlus, Gift, Clock, CheckCircle2, Wallet, TrendingUp, Search, Filter, ChevronDown, X, ArrowRight, Copy, ExternalLink } from 'lucide-react';
+import { Users, UserPlus, Gift, Clock, CheckCircle2, Wallet, TrendingUp, Search, Filter, ChevronDown, X, ArrowRight, Copy, ExternalLink, Share2 } from 'lucide-react';
 import { portalLifecycle, PortalReferral, PortalReferralReward, PortalReferralSettings, PortalReferralTimelineEntry, PortalCustomerSearchResult } from '../../services/portalApiClient';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
@@ -163,6 +163,12 @@ const CustomerReferrals: React.FC = () => {
     });
   }, [user?.id, addToast]);
 
+  const handleShareWhatsApp = useCallback(() => {
+    const message = `I highly recommend *Prime Printing* for quality, affordable, and reliable printing services.\n\nSimply *mention that you were referred by an existing customer*, and you'll receive a *discount on your first order*.\n\nGive them a try—you won't be disappointed!`;
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  }, []);
+
   const openDetail = async (referral: PortalReferral) => {
     setDetailReferral(referral);
     setTimelineLoading(true);
@@ -180,9 +186,7 @@ const CustomerReferrals: React.FC = () => {
     if (!funnel) return [];
     return [
       { label: 'Invited', value: funnel.total, icon: Users, color: teal[600] },
-      { label: 'Signed Up', value: funnel.signedUp, icon: UserPlus, color: teal[500] },
       { label: 'Qualified', value: funnel.qualified, icon: CheckCircle2, color: amber[500] },
-      { label: 'Reward Approved', value: funnel.rewardApproved, icon: Gift, color: '#0f766e' },
       { label: 'Paid', value: funnel.paid, icon: Wallet, color: teal[700] },
     ];
   }, [funnel]);
@@ -239,6 +243,19 @@ const CustomerReferrals: React.FC = () => {
             >
               <Copy size={16} /> Copy Link
             </button>
+            <button
+              onClick={handleShareWhatsApp}
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
+                background: '#25D366',
+                color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 7,
+                border: '1.4px solid transparent', transition: 'all .15s ease'
+              }}
+              title="Share via WhatsApp"
+            >
+              <Share2 size={16} /> Share
+            </button>
             <button onClick={() => setShowReferModal(true)} style={{
               fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
               padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent',
@@ -269,21 +286,21 @@ const CustomerReferrals: React.FC = () => {
               Referral Funnel
             </span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {funnelStages.map((stage, idx) => (
               <div key={stage.label} style={{ position: 'relative' }}>
                 <div style={{
-                  padding: '12px 14px', borderRadius: 12, background: paper,
+                  padding: '14px 16px', borderRadius: 12, background: paper,
                   border: '1.4px solid #e4ddd1', borderLeft: `4px solid ${stage.color}`,
                   boxShadow: '0 1px 3px rgba(0,0,0,.04)'
                 }}>
                   <p style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>{stage.label}</p>
-                  <p style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>
+                  <p style={{ fontSize: 22, fontWeight: 700, color: ink, margin: 0, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums' }}>
                     {stage.value}
                   </p>
                 </div>
                 {idx < funnelStages.length - 1 && (
-                  <div style={{ position: 'absolute', top: '50%', right: -14, transform: 'translateY(-50%)', zIndex: 2 }}>
+                  <div style={{ position: 'absolute', top: '50%', right: -10, transform: 'translateY(-50%)', zIndex: 2 }}>
                     <ArrowRight size={16} style={{ color: hairline }} />
                   </div>
                 )}
@@ -378,45 +395,37 @@ const CustomerReferrals: React.FC = () => {
         )}
 
         {settings?.enabled && tab === 'referrals' && referrals.length > 0 && (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${hairline}` }}>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Customer</th>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Status</th>
-                  <th style={{ textAlign: 'right', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Pending Amount</th>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Date</th>
-                  <th style={{ textAlign: 'right', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {referrals.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: `1px solid ${hairline}`, transition: 'background .15s' }} className="hover:bg-slate-50/50">
-                    <td style={{ padding: '12px 12px' }}>
-                      <p style={{ fontWeight: 600, color: ink, margin: 0 }}>{r.referredCustomerName}</p>
-                      {r.referredCustomerEmail && <p style={{ fontSize: 11, color: inkSoft, margin: '2px 0 0' }}>{r.referredCustomerEmail}</p>}
-                    </td>
-                    <td style={{ padding: '12px 12px' }}>
-                      <StatusBadge status={r.status} size="sm" />
-                    </td>
-                    <td style={{ padding: '12px 12px', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: r.pendingInvoiceAmount > 0 ? ink : inkSoft }}>
-                      {r.pendingInvoiceAmount > 0 ? r.pendingInvoiceAmount.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                    </td>
-                    <td style={{ padding: '12px 12px', fontSize: 12, color: inkSoft }}>
-                      {new Date(r.createdAt).toLocaleDateString()}
-                    </td>
-                    <td style={{ padding: '12px 12px', textAlign: 'right' }}>
-                      <button onClick={() => openDetail(r)} style={{
-                        fontSize: 11, fontWeight: 700, color: teal[600], background: 'none', border: 'none', cursor: 'pointer',
-                        padding: '4px 8px', borderRadius: 6, transition: 'all .15s'
-                      }} onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                        View Timeline
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {referrals.map((r) => (
+              <div key={r.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                padding: '14px 18px', background: paper, borderRadius: 12,
+                border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                flexWrap: 'wrap', cursor: 'pointer', transition: 'all .15s ease'
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#a6d9d3'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)'; }}
+                onClick={() => openDetail(r)}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontWeight: 600, color: ink, margin: 0, fontSize: 13 }}>{r.referredCustomerName}</p>
+                  {r.referredCustomerEmail && <p style={{ fontSize: 11, color: inkSoft, margin: '2px 0 0' }}>{r.referredCustomerEmail}</p>}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                  <StatusBadge status={r.status} size="sm" />
+                  <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: r.pendingInvoiceAmount > 0 ? ink : inkSoft }}>
+                    {r.pendingInvoiceAmount > 0 ? r.pendingInvoiceAmount.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                  </span>
+                  <span style={{ fontSize: 12, color: inkSoft, whiteSpace: 'nowrap' }}>{new Date(r.createdAt).toLocaleDateString()}</span>
+                  <button onClick={(e) => { e.stopPropagation(); openDetail(r); }} style={{
+                    fontSize: 11, fontWeight: 700, color: teal[600], background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '4px 8px', borderRadius: 6, transition: 'all .15s'
+                  }} onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                    View Timeline
+                  </button>
+                </div>
+              </div>
+            ))}
             {referralTotalPages > 1 && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 12, color: inkSoft }}>
                 <span>Page {referralPage} of {referralTotalPages}</span>
@@ -442,40 +451,32 @@ const CustomerReferrals: React.FC = () => {
         )}
 
         {settings?.enabled && tab === 'rewards' && rewards.length > 0 && (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${hairline}` }}>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Referred Customer</th>
-                  <th style={{ textAlign: 'right', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Invoice Amount</th>
-                  <th style={{ textAlign: 'right', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Reward</th>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Status</th>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rewards.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: `1px solid ${hairline}` }}>
-                    <td style={{ padding: '12px 12px', fontWeight: 600, color: ink }}>{r.referredCustomerName}</td>
-                    <td style={{ padding: '12px 12px', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: inkSoft }}>
-                      {r.invoiceAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
-                    <td style={{ padding: '12px 12px', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 700, color: teal[700] }}>
-                      +{r.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
-                    <td style={{ padding: '12px 12px' }}>
-                      <span className={`inline-flex items-center gap-1.5 font-semibold rounded-full whitespace-nowrap text-xs px-2.5 py-1 ${rewardStatusColor[r.status]?.bg || 'bg-slate-100'} ${rewardStatusColor[r.status]?.text || 'text-slate-600'}`}>
-                        <span className={`rounded-full ${rewardStatusColor[r.status]?.bg ? 'bg-current opacity-40' : 'bg-slate-400'} w-2 h-2`} />
-                        {statusLabel[r.status] || r.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 12px', fontSize: 12, color: inkSoft }}>
-                      {new Date(r.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {rewards.map((r) => (
+              <div key={r.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                padding: '14px 18px', background: paper, borderRadius: 12,
+                border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontWeight: 600, color: ink, margin: 0, fontSize: 13 }}>{r.referredCustomerName}</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0, flexWrap: 'wrap' }}>
+                  <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: inkSoft }}>
+                    {r.invoiceAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                  <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 700, color: teal[700] }}>
+                    +{r.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 font-semibold rounded-full whitespace-nowrap text-xs px-2.5 py-1 ${rewardStatusColor[r.status]?.bg || 'bg-slate-100'} ${rewardStatusColor[r.status]?.text || 'text-slate-600'}`}>
+                    <span className={`rounded-full ${rewardStatusColor[r.status]?.bg ? 'bg-current opacity-40' : 'bg-slate-400'} w-2 h-2`} />
+                    {statusLabel[r.status] || r.status}
+                  </span>
+                  <span style={{ fontSize: 12, color: inkSoft, whiteSpace: 'nowrap' }}>{new Date(r.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
             {rewardTotalPages > 1 && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 12, color: inkSoft }}>
                 <span>Page {rewardPage} of {rewardTotalPages}</span>

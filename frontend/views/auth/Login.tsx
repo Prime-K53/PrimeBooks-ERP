@@ -188,6 +188,12 @@ const Login: React.FC = () => {
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center space-y-2">
           <p className="text-xs text-slate-400">
+            New to Prime ERP?{' '}
+            <a href="#/setup" className="text-xs font-semibold text-sky-600 hover:text-sky-700 transition-colors">
+              Create a New Company
+            </a>
+          </p>
+          <p className="text-xs text-slate-400">
             <a href="#/portal/login" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
               Customer Portal Login
             </a>

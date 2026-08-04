@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { DocumentVersionRecord } from '../../../services/portalApiClient';
+import { formatK } from '../constants';
 
 interface Props {
   open: boolean;
@@ -77,21 +78,21 @@ const VersionHistoryModal: React.FC<Props> = ({ open, onClose, versions, loading
                                 <tr key={i} className="text-slate-700">
                                   <td className="px-3 py-2 font-medium text-slate-900">{item.name}</td>
                                   <td className="px-3 py-2 text-right">{item.quantity}</td>
-                                  <td className="px-3 py-2 text-right font-mono">K {Number(item.unitPrice || 0).toFixed(2)}</td>
-                                  <td className="px-3 py-2 text-right font-mono">K {Number(item.lineTotal ?? item.quantity * item.unitPrice).toFixed(2)}</td>
+                                  <td className="px-3 py-2 text-right" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.unitPrice || 0)}</td>
+                                  <td className="px-3 py-2 text-right" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.lineTotal ?? item.quantity * item.unitPrice)}</td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                           <div className="px-3 py-2 border-t border-slate-100 space-y-1 text-xs text-slate-600">
-                            <div className="flex justify-between"><span>Subtotal</span><span className="font-mono">K {Number(version.snapshot.subtotal || 0).toFixed(2)}</span></div>
-                            {Number(version.snapshot.discount || 0) > 0 && (
-                              <div className="flex justify-between"><span>Discount</span><span className="font-mono">- K {Number(version.snapshot.discount).toFixed(2)}</span></div>
-                            )}
-                            {Number(version.snapshot.taxAmount || 0) > 0 && (
-                              <div className="flex justify-between"><span>Tax</span><span className="font-mono">K {Number(version.snapshot.taxAmount).toFixed(2)}</span></div>
-                            )}
-                            <div className="flex justify-between font-bold text-slate-800"><span>Total</span><span className="font-mono">K {Number(version.snapshot.total || 0).toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span>Subtotal</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(version.snapshot.subtotal || 0)}</span></div>
+{Number(version.snapshot.discount || 0) > 0 && (
+  <div className="flex justify-between"><span>Discount</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>- {formatK(version.snapshot.discount)}</span></div>
+)}
+{Number(version.snapshot.taxAmount || 0) > 0 && (
+  <div className="flex justify-between"><span>Tax</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(version.snapshot.taxAmount)}</span></div>
+)}
+                            <div className="flex justify-between font-bold text-slate-800"><span>Total</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(version.snapshot.total || 0)}</span></div>
                             {version.snapshot.validUntil && (
                               <div className="flex justify-between"><span>Valid until</span><span>{new Date(version.snapshot.validUntil).toLocaleDateString()}</span></div>
                             )}

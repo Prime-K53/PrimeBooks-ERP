@@ -5,6 +5,7 @@ const fs = require('fs');
 const portalAuthService = require('./portalAuthService.cjs');
 const portalLifecycleService = require('./portalLifecycleService.cjs');
 const ReferralService = require('./referralService.cjs');
+const supabaseStore = require('./supabaseStore.cjs');
 const referralService = new ReferralService();
 
 const TICKET_ATTACHMENTS_DIR = path.join(__dirname, '..', 'storage', 'ticket-attachments');
@@ -48,15 +49,25 @@ function parseJson(value, fallback = null) {
 const portalService = {
 
   async getDashboard(portalUserId, customerId) {
-    const customer = await getOne(
-      'SELECT balance, walletBalance, outstandingBalance FROM customers WHERE id = ?',
-      [customerId]
-    );
+    const [customer, cloudCustomer, cloudInvoices, unpaidInvoiceCount] = await Promise.all([
+      getOne(
+        'SELECT balance, walletBalance, outstandingBalance FROM customers WHERE id = ?',
+        [customerId]
+      ),
+      supabaseStore.getCustomer(customerId).catch(() => null),
+      supabaseStore.listInvoices(customerId).catch(() => []),
+      getOne(
+        "SELECT COUNT(*) as count FROM invoices WHERE customer_id = ? AND LOWER(COALESCE(status, '')) = 'unpaid'",
+        [customerId]
+      ),
+    ]);
 
-    const unpaidInvoiceCount = await getOne(
-      "SELECT COUNT(*) as count FROM invoices WHERE customer_id = ? AND LOWER(COALESCE(status, '')) = 'unpaid'",
-      [customerId]
-    );
+    const cloudUnpaid = Array.isArray(cloudInvoices)
+      ? cloudInvoices.filter((i) => /unpaid|partial/i.test(String(i.status))).length
+      : 0;
+    const unpaidCount = cloudInvoices && Array.isArray(cloudInvoices)
+      ? cloudUnpaid
+      : (unpaidInvoiceCount && unpaidInvoiceCount.count) || 0;
 
     const ordersRow = await getOne(
       'SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ?',
@@ -88,10 +99,16 @@ const portalService = {
     const recentTransactions = await this.getRecentTransactions(customerId, 5);
 
     return {
-      balance: (customer && customer.balance) || 0,
-      walletBalance: (customer && customer.walletBalance) || 0,
-      outstandingBalance: (customer && customer.outstandingBalance) || 0,
-      unpaidInvoiceCount: (unpaidInvoiceCount && unpaidInvoiceCount.count) || 0,
+      balance: (cloudCustomer && cloudCustomer.balance != null)
+        ? cloudCustomer.balance
+        : (customer && customer.balance) || 0,
+      walletBalance: (cloudCustomer && cloudCustomer.walletBalance != null)
+        ? cloudCustomer.walletBalance
+        : (customer && customer.walletBalance) || 0,
+      outstandingBalance: (cloudCustomer && cloudCustomer.outstandingBalance != null)
+        ? cloudCustomer.outstandingBalance
+        : (customer && customer.outstandingBalance) || (customer && customer.balance) || 0,
+      unpaidInvoiceCount: unpaidCount,
       totalOrders: (ordersRow && ordersRow.count) || 0,
       activeRequestCount: (requestRow && requestRow.count) || 0,
       openQuotationCount: (openQuotationRow && openQuotationRow.count) || 0,
@@ -103,6 +120,19 @@ const portalService = {
   },
 
   async getCatalog(includeDeleted = false) {
+    try {
+      const cloud = await supabaseStore.listCatalogItems();
+      if (Array.isArray(cloud) && cloud.length > 0) {
+        let catalogItems = cloud;
+        if (!includeDeleted) {
+          catalogItems = catalogItems.filter((i) => String(i.status || '').toLowerCase() !== 'deleted');
+        }
+        catalogItems.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        return catalogItems;
+      }
+    } catch (err) {
+      console.warn('[PortalService] Cloud catalog unavailable, using local:', err.message);
+    }
     let sql = `SELECT
       id,
       name,
@@ -123,23 +153,116 @@ const portalService = {
     return getAll(sql, params);
   },
 
-  async getRecentTransactions(customerId, limit = 5) {
-    const recentSales = await getAll(
-      `SELECT date, total_amount as amount, customer_name as description, 'sale' as type
+async getRecentTransactions(customerId, limit = 5) {
+    const entries = [];
+
+    // 1. Real ERP invoices (Supabase) — invoice issued/created activity
+    try {
+      const cloudInvoices = await supabaseStore.listInvoices(customerId);
+      for (const inv of cloudInvoices) {
+        entries.push({
+          date: inv.created_at,
+          description: `Invoice ${inv.invoice_number || inv.id}`,
+          amount: inv.total_amount,
+          type: 'invoice',
+          status: inv.status,
+          docType: 'invoice',
+          docId: inv.id,
+        });
+      }
+    } catch (err) {
+      console.warn('[PortalService] Cloud invoices unavailable for activity:', err.message);
+    }
+
+    // 2. Real ERP cash sales (Supabase POS receipts for this customer)
+    try {
+      const cloudSales = await supabaseStore.listSales(customerId);
+      for (const sale of cloudSales) {
+        entries.push({
+          date: sale.date,
+          description: `Sale ${sale.id || ''}`.trim() || 'Sale',
+          amount: sale.totalAmount,
+          type: 'sale',
+          status: sale.status,
+          docType: 'sale',
+          docId: sale.id,
+        });
+      }
+    } catch (err) {
+      console.warn('[PortalService] Cloud sales unavailable for activity:', err.message);
+    }
+    const localSales = await getAll(
+      `SELECT date, total_amount as amount, customer_name as description, 'sale' as type, id as docId, status
        FROM sales WHERE customer_id = ? AND status != 'Voided'
        ORDER BY date DESC LIMIT ?`,
       [customerId, limit]
     );
+    if (Array.isArray(localSales)) {
+      for (const row of localSales) {
+        const existing = entries.find((e) => e.docType === 'sale' && e.docId === String(row.docId));
+        if (!existing) {
+          entries.push({ ...row, docType: 'sale' });
+        }
+      }
+    }
 
+    // 3. Payments received against invoices
     const recentPayments = await getAll(
-      `SELECT date, amount, COALESCE(reference, 'Payment') as description, 'payment' as type
+      `SELECT id, date, amount, COALESCE(reference, 'Payment') as description, 'payment' as type
        FROM customer_payments WHERE customer_id = ?
        ORDER BY date DESC LIMIT ?`,
       [customerId, limit]
     );
+    for (const pay of recentPayments) {
+      entries.push({
+        ...pay,
+        description: pay.description && String(pay.description).trim() ? String(pay.description).trim() : 'Payment received',
+        docType: 'payment',
+        docId: pay.id,
+      });
+    }
 
-    return [...recentSales, ...recentPayments]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
+    // 4. Recent order confirmations / status changes (portfolio docs)
+    const recentOrders = await getAll(
+      `SELECT id, COALESCE(order_number, id) as orderNumber, status, orderDate as date
+       FROM sales_orders WHERE customer_id = ?
+       ORDER BY orderDate DESC LIMIT ?`,
+      [customerId, limit]
+    );
+    for (const ord of recentOrders) {
+      entries.push({
+        date: ord.date,
+        description: `Order ${ord.orderNumber || ord.id} ${ord.status || ''}`.trim(),
+        amount: null,
+        type: 'order',
+        status: ord.status,
+        docType: 'order',
+        docId: ord.id,
+      });
+    }
+
+    // 5. Customer-submitted requests (recent document chain)
+    const recentRequests = await getAll(
+      `SELECT id, COALESCE(request_number, id) as requestNumber, status, request_type, created_at as date
+       FROM quotation_requests WHERE customer_id = ?
+       ORDER BY created_at DESC LIMIT ?`,
+      [customerId, limit]
+    );
+    for (const req of recentRequests) {
+      entries.push({
+        date: req.date,
+        description: `${req.request_type || 'Request'} ${req.requestNumber || req.id}`.trim(),
+        amount: null,
+        type: 'request',
+        status: req.status,
+        docType: 'request',
+        docId: req.id,
+      });
+    }
+
+    return entries
+      .filter((e) => e.date)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, limit);
   },
 
@@ -328,7 +451,24 @@ const portalService = {
     };
   },
 
-  async getInvoices(customerId) {
+async getInvoices(customerId) {
+    try {
+      const cloud = await supabaseStore.listInvoices(customerId);
+      if (Array.isArray(cloud) && cloud.length > 0) {
+        return cloud.map((i) => ({
+          id: i.id,
+          invoice_number: i.invoice_number,
+          customer_name: i.customer_name,
+          total_amount: i.total_amount,
+          paid_amount: i.paid_amount,
+          status: i.status,
+          due_date: i.due_date,
+          created_at: i.created_at,
+        }));
+      }
+    } catch (err) {
+      console.warn('[PortalService] Cloud invoices unavailable, using local:', err.message);
+    }
     return getAll(
       `SELECT id, invoice_number, customer_name, total_amount,
         COALESCE((SELECT SUM(pal.amount) FROM payment_allocation_lines pal JOIN payment_allocations pa ON pa.id = pal.allocation_id WHERE pal.invoice_id = invoices.id AND pa.reversed = 0), 0) as paid_amount,
@@ -342,6 +482,43 @@ const portalService = {
 
   async getInvoicesPaginated(customerId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
     const offset = (page - 1) * pageSize;
+
+    try {
+      const cloudInvoices = await supabaseStore.listInvoices(customerId);
+      if (Array.isArray(cloudInvoices) && cloudInvoices.length > 0) {
+        let filtered = cloudInvoices.map((i) => ({
+          id: i.id,
+          invoice_number: i.invoice_number,
+          customer_name: i.customer_name,
+          total_amount: i.total_amount,
+          paid_amount: i.paid_amount,
+          status: i.status,
+          due_date: i.due_date,
+          created_at: i.created_at,
+        }));
+        if (status) {
+          const lowerStatus = String(status).toLowerCase();
+          filtered = filtered.filter((inv) => String(inv.status || '').toLowerCase() === lowerStatus);
+        }
+        if (search) {
+          const lowerSearch = String(search).toLowerCase();
+          filtered = filtered.filter((inv) =>
+            String(inv.invoice_number || '').toLowerCase().includes(lowerSearch) ||
+            String(inv.customer_name || '').toLowerCase().includes(lowerSearch)
+          );
+        }
+        return {
+          invoices: filtered.slice(offset, offset + pageSize),
+          total: filtered.length,
+          page,
+          pageSize,
+          totalPages: Math.ceil(filtered.length / pageSize) || 1,
+        };
+      }
+    } catch (err) {
+      console.warn('[PortalService] Cloud invoices unavailable, using local:', err.message);
+    }
+
     const conditions = ['i.customer_id = ?'];
     const params = [customerId];
 
@@ -380,6 +557,12 @@ const portalService = {
   },
 
   async getInvoiceById(invoiceId, customerId) {
+    try {
+      const cloud = await supabaseStore.getInvoice(invoiceId, customerId);
+      if (cloud) return cloud;
+    } catch (err) {
+      console.warn('[PortalService] Cloud invoice unavailable, using local:', err.message);
+    }
     const invoice = await getOne(
       'SELECT * FROM invoices WHERE id = ? AND customer_id = ?',
       [invoiceId, customerId]
@@ -495,6 +678,26 @@ const portalService = {
       params
     );
 
+    // Merge real ERP invoices from Supabase so the statement reflects cloud data
+    try {
+      const cloudInvoices = await supabaseStore.listInvoices(customerId);
+      if (Array.isArray(cloudInvoices) && cloudInvoices.length > 0) {
+        for (const inv of cloudInvoices) {
+          if (startDate && String(inv.created_at || '') < startDate) continue;
+          if (endDate && String(inv.created_at || '') > endDate) continue;
+          transactions.push({
+            date: inv.created_at,
+            description: `Invoice ${inv.invoice_number || inv.id}`,
+            debit: inv.total_amount,
+            credit: 0,
+          });
+        }
+        transactions.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+      }
+    } catch (err) {
+      console.warn('[PortalService] Cloud invoices unavailable for statement:', err.message);
+    }
+
     let running = openingBalance;
     const mapped = (transactions || []).map(t => {
       const debit = Number(t.debit) || 0;
@@ -548,10 +751,13 @@ const portalService = {
   },
 
   async getWallet(customerId) {
-    const customer = await getOne(
-      'SELECT walletBalance FROM customers WHERE id = ?',
-      [customerId]
-    );
+    const [customer, cloudProfile] = await Promise.all([
+      getOne(
+        'SELECT walletBalance FROM customers WHERE id = ?',
+        [customerId]
+      ),
+      supabaseStore.getCustomer(customerId).catch(() => null),
+    ]);
 
     const rewards = await getAll(
       `SELECT approved_at as date, amount, 'Referral reward' as reference
@@ -584,12 +790,38 @@ const portalService = {
     ].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
     return {
-      balance: (customer && customer.walletBalance) || 0,
+      balance: (cloudProfile && cloudProfile.walletBalance != null)
+        ? cloudProfile.walletBalance
+        : (customer && customer.walletBalance) || 0,
       transactions
     };
   },
 
   async getProfile(customerId) {
+    // Prefer real ERP data from Supabase (secret-key reads server-side)
+    try {
+      const cloudProfile = await supabaseStore.getCustomer(customerId);
+      if (cloudProfile) {
+        return {
+          id: cloudProfile.id,
+          full_name: cloudProfile.name || '',
+          email: cloudProfile.email || '',
+          phone: cloudProfile.phone || '',
+          address: cloudProfile.address || '',
+          city: cloudProfile.city || '',
+          state: cloudProfile.state || '',
+          zip: cloudProfile.zip || '',
+          country: cloudProfile.country || '',
+          balance: Number(cloudProfile.balance) || 0,
+          walletBalance: Number(cloudProfile.walletBalance) || 0,
+          creditLimit: Number(cloudProfile.creditLimit) || 0,
+          outstandingBalance: Number(cloudProfile.outstandingBalance) || 0,
+          status: cloudProfile.status || ''
+        };
+      }
+    } catch (err) {
+      console.warn('[PortalService] Cloud profile unavailable, using local:', err.message);
+    }
     const local = await getOne(
       `SELECT id, name, email, phone, address, city, balance, walletBalance, creditLimit, outstandingBalance, status
        FROM customers WHERE id = ?`,
@@ -643,7 +875,7 @@ const portalService = {
       [customerId]
     );
 
-    return (invoices || []).map((inv) => ({
+    const mapped = (invoices || []).map((inv) => ({
       id: inv.id,
       type: inv.status && /paid|fulfilled/i.test(String(inv.status)) ? 'receipt' : 'invoice',
       title: `${inv.invoice_number || inv.id} (${inv.status || 'Draft'})`,
@@ -651,6 +883,27 @@ const portalService = {
       url: `#/portal/invoices/${inv.id}`,
       amount: inv.amount
     }));
+
+    // Merge real ERP invoices from Supabase
+    try {
+      const cloudInvoices = await supabaseStore.listInvoices(customerId);
+      if (Array.isArray(cloudInvoices) && cloudInvoices.length > 0) {
+        const cloudMapped = cloudInvoices.map((inv) => ({
+          id: inv.id,
+          type: inv.status && /paid|fulfilled/i.test(String(inv.status)) ? 'receipt' : 'invoice',
+          title: `${inv.invoice_number || inv.id} (${inv.status || 'Draft'})`,
+          date: inv.created_at,
+          url: `#/portal/invoices/${inv.id}`,
+          amount: inv.total_amount
+        }));
+        mapped.push(...cloudMapped);
+        mapped.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+      }
+    } catch (err) {
+      console.warn('[PortalService] Cloud documents unavailable:', err.message);
+    }
+
+    return mapped;
   },
 
   async getNotifications(portalUserId) {
@@ -1078,33 +1331,55 @@ const portalService = {
   },
 
   async getShipments(customerId, { status, search } = {}) {
-    let sql = `SELECT so.id, so.order_number, so.orderDate, so.customer_id, so.status as order_status,
-                    so.tracking_number, so.carrier, so.driver_name, so.vehicle_no,
-                    so.estimated_delivery, so.actual_arrival, so.current_location,
-                    so.proof_of_delivery, so.shipping_address, so.items as items_json,
-                    c.name as customerName
-             FROM sales_orders so
-             LEFT JOIN customers c ON so.customer_id = c.id
-             WHERE so.customer_id = ? AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''`;
-    const params = [customerId];
+    let sql = `SELECT * FROM (
+               SELECT so.id, so.order_number, so.orderDate, so.customer_id, so.status as order_status,
+                      so.tracking_number, so.carrier, so.driver_name, so.vehicle_no,
+                      so.estimated_delivery, so.actual_arrival, so.current_location,
+                      so.proof_of_delivery, so.shipping_address, so.items as items_json,
+                      c.name as customerName
+               FROM sales_orders so
+               LEFT JOIN customers c ON so.customer_id = c.id
+               WHERE so.customer_id = ? AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''
+               UNION ALL
+               SELECT dn.id, NULL as order_number, dn.delivery_date as orderDate, dn.customer_id,
+                      dn.status as order_status, dn.tracking_number, NULL as carrier, NULL as driver_name,
+                      NULL as vehicle_no, NULL as estimated_delivery, NULL as actual_arrival,
+                      NULL as current_location, NULL as proof_of_delivery, NULL as shipping_address,
+                      dn.items_json, c2.name as customerName
+               FROM delivery_notes dn
+               LEFT JOIN customers c2 ON dn.customer_id = c2.id
+               WHERE dn.customer_id = ? AND dn.tracking_number IS NOT NULL AND TRIM(dn.tracking_number) != ''
+                 AND NOT EXISTS (SELECT 1 FROM sales_orders so2 WHERE so2.id = dn.order_id AND so2.tracking_number IS NOT NULL AND TRIM(so2.tracking_number) != '')
+               ) t`;
+    const params = [customerId, customerId];
     if (status) {
-      sql += ` AND LOWER(so.status) = ?`;
+      sql += ` WHERE LOWER(t.order_status) = ?`;
       params.push(String(status).toLowerCase());
     }
     if (search) {
-      sql += ` AND (so.order_number LIKE ? OR so.tracking_number LIKE ? OR c.name LIKE ?)`;
+      sql += status ? ` AND` : ` WHERE`;
+      sql += ` (t.order_number LIKE ? OR t.tracking_number LIKE ? OR t.customerName LIKE ?)`;
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-    sql += ` ORDER BY so.orderDate DESC`;
+    sql += ` ORDER BY t.orderDate DESC`;
     return getAll(sql, params);
   },
 
   async getShipmentById(shipmentId, customerId) {
-    return getOne(
+    const row = await getOne(
       `SELECT so.*, c.name as customerName
        FROM sales_orders so
        LEFT JOIN customers c ON so.customer_id = c.id
        WHERE so.id = ? AND so.customer_id = ? AND so.tracking_number IS NOT NULL AND TRIM(so.tracking_number) != ''`,
+      [shipmentId, customerId]
+    );
+    if (row) return row;
+    return getOne(
+      `SELECT dn.id, dn.id as shipment_number, dn.customer_id, dn.customer_name as customerName,
+              dn.status as order_status, dn.tracking_number, dn.delivery_date as estimated_delivery,
+              dn.items_json as items_json, dn.notes
+       FROM delivery_notes dn
+       WHERE dn.id = ? AND dn.customer_id = ? AND dn.tracking_number IS NOT NULL AND TRIM(dn.tracking_number) != ''`,
       [shipmentId, customerId]
     );
   },
