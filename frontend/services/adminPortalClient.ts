@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+import { API_BASE_URL } from '../config/api.js';
 
 interface AdminUserInfo {
   id: string;
@@ -44,7 +44,7 @@ async function adminRequest<T>(path: string, options: RequestInit = {}): Promise
     if (user.email) headers['x-user-email'] = user.email;
     if (user.isSuperAdmin) headers['x-user-is-super-admin'] = 'true';
   }
-  const res = await fetch(`${API_BASE}/portal/admin${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE_URL}/portal/admin${path}`, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const error: any = new Error(body.message || body.error || `Request failed with status ${res.status}`);
@@ -300,7 +300,7 @@ export async function subscribeAdminEvents(callbacks: {
   let source: EventSource | null = null;
   try {
     const { ticket } = await adminPortalApi.get<{ ticket: string; expiresIn: number }>('/events-ticket');
-    source = new EventSource(`${API_BASE}/portal/admin/events?token=${encodeURIComponent(ticket)}`);
+    source = new EventSource(`${API_BASE_URL}/portal/admin/events?token=${encodeURIComponent(ticket)}`);
     source.addEventListener('notification', (e: MessageEvent) => {
       try {
         callbacks.onNotification?.(JSON.parse(e.data));

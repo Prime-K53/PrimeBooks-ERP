@@ -718,12 +718,30 @@ router.post('/users/auto-create', async (req, res) => {
 
 router.post('/users/:id/regenerate-password', async (req, res) => {
   try {
-    const user = await portalAuthService.getPortalUserById(req.params.id);
-    if (!user) return res.status(404).json({ error: 'Portal user not found' });
+    const portalUserId = req.params.id;
+    let user = await portalAuthService.getPortalUserById(portalUserId);
+    if (!user) {
+      // The portal_users row is missing (e.g. Render redeploy reset SQLite while
+      // customers still reference this id in Supabase). Recreate the account with
+      // the same id so the customer's portalUserId stays valid.
+      const customer = await portalAuthService.findCustomerByPortalUserId(portalUserId);
+      if (!customer) return res.status(404).json({ error: 'Portal user not found' });
+      const info = (customer.data && typeof customer.data === 'object') ? customer.data : {};
+      user = await portalAuthService.registerPortalUser({
+        id: portalUserId,
+        customer_id: customer.id,
+        email: info.email || `${customer.id}@prime.erp`,
+        password: crypto.randomBytes(9).toString('base64url'),
+        full_name: info.name || '',
+        phone: info.phone || '',
+        status: 'active',
+      });
+      console.log(`[PortalAdmin] Recreated missing portal user ${portalUserId} for customer ${customer.id}`);
+    }
 
     const new_password = crypto.randomBytes(9).toString('base64url');
-    await portalAuthService.updatePassword(req.params.id, new_password);
-    await portalAuthService.revokeAllSessions(req.params.id);
+    await portalAuthService.updatePassword(portalUserId, new_password);
+    await portalAuthService.revokeAllSessions(portalUserId);
     res.json({ generated_password: new_password });
   } catch (err) {
     console.error('[PortalAdmin] Regenerate password error:', err);

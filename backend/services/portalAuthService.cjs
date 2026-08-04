@@ -66,20 +66,20 @@ const ensurePortalSchema = () => {
   });
 };
 
-const registerPortalUser = async ({ customer_id, email, password, full_name, phone, status = 'active' }) => {
-  const id = genId('pusr');
+const registerPortalUser = async ({ id, customer_id, email, password, full_name, phone, status = 'active' }) => {
+  const portalUserId = id || genId('pusr');
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
   return new Promise((resolve, reject) => {
     db.run(
       `INSERT INTO portal_users (id, customer_id, email, password_hash, full_name, phone, status)
        VALUES (?, ?, ?, ?, ?, ? , ?)`,
-      [id, customer_id, email.toLowerCase().trim(), password_hash, full_name || null, phone || null, status],
+      [portalUserId, customer_id, email.toLowerCase().trim(), password_hash, full_name || null, phone || null, status],
       function (err) {
         if (err) {
           if (err.message.includes('UNIQUE')) return reject(new Error('Email already registered'));
           return reject(err);
         }
-        resolve({ id, customer_id, email, full_name, phone, status });
+        resolve({ id: portalUserId, customer_id, email, full_name, phone, status });
       }
     );
   });
@@ -136,6 +136,24 @@ const findCustomerInSupabase = async (customerId) => {
       creditLimit: domain.creditLimit || 0,
       outstandingBalance: domain.outstandingBalance || 0,
       status: domain.status || row.status || '',
+    };
+  } catch {
+    return null;
+  }
+};
+
+const findCustomerByPortalUserId = async (portalUserId) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) return null;
+  try {
+    const { data } = await axios.get(`${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/customers`, {
+      params: { select: 'id,data', 'data->>portalUserId': `eq.${portalUserId}`, limit: 1 },
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      timeout: 5000,
+    });
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return {
+      id: data[0].id,
+      data: (data[0].data && typeof data[0].data === 'object') ? data[0].data : {},
     };
   } catch {
     return null;
@@ -608,6 +626,7 @@ module.exports = {
   authenticatePortalUser,
   loginWithCustomerId,
   findCustomerInSupabase,
+  findCustomerByPortalUserId,
   getPortalUserById,
   getPortalUserByCustomerId,
   getPortalUserByEmail,
