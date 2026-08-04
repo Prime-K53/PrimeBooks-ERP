@@ -37,6 +37,7 @@ router.post('/login', validateBody(userSchemas.login), async (req, res) => {
     const portalUser = await portalAuthService.authenticatePortalUser(identifier, password);
 
     if (!staff && !portalUser) {
+      console.warn(`[Auth] Login failed for ${identifier}: staff=${Boolean(staff)} portalUser=${Boolean(portalUser)}`);
       return res.status(401).json({ error: 'Invalid credentials', message: 'Email or password is incorrect' });
     }
 

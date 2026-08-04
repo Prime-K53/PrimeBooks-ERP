@@ -94,6 +94,10 @@ const authenticateUser = (usernameOrEmail, password) => {
         // backend's SQLite users table may be empty (ephemeral disk on Render),
         // so fall back to authenticating against Supabase Auth directly.
         if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) {
+          console.warn(
+            `[Auth] Supabase fallback DISABLED for ${String(usernameOrEmail).toLowerCase()}` +
+            ` - SUPABASE_URL=${SUPABASE_URL || '(unset)'} SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY ? '(set)' : '(unset)'}`
+          );
           return resolve(null);
         }
         try {
@@ -117,7 +121,11 @@ const authenticateUser = (usernameOrEmail, password) => {
           };
           upsertLocalStaffUser(staff).catch(() => {});
           return resolve(staff);
-        } catch {
+        } catch (err) {
+          console.warn(
+            `[Auth] Supabase auth failed for ${String(usernameOrEmail).toLowerCase()}:` +
+            ` status=${err.response?.status || 'n/a'} ${err.response?.data?.error_description || err.response?.data?.msg || err.code || err.message}`
+          );
           return resolve(null);
         }
       }
