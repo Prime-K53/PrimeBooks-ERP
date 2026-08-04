@@ -654,26 +654,28 @@ export const Clients: React.FC = () => {
                             <div style={{ width: 38, height: 38, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: pal.bg, color: pal.text, fontWeight: 700, fontSize: 13, letterSpacing: 0.3, flexShrink: 0, border: `1px solid ${teal[100]}` }}>
                               {getInitials(customer.name)}
                             </div>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ cursor: 'pointer', minWidth: 0 }} onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                  <span style={{ fontWeight: 600, color: ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200, display: 'inline-block' }}>{customer.name}</span>
-                                  {statusBadge(customer.status)}
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ cursor: 'pointer', minWidth: 0 }} onClick={(e) => { e.stopPropagation(); setSelectedWorkspaceCustomer(customer); }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 600, color: ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200, display: 'inline-block' }}>{customer.name}</span>
+                                    {statusBadge(customer.status)}
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
+                                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: inkSoft, fontWeight: 600, letterSpacing: 0.02 }}>{customer.id}</div>
+                                  {(customer as Customer & Record<string, unknown>).pipelineStage && (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, border: `1px solid ${teal[200]}`, background: teal[50], color: teal[700], whiteSpace: 'nowrap', lineHeight: 1.6 }}>
+                                      {(customer as Customer & Record<string, unknown>).pipelineStage}
+                                    </span>
+                                  )}
+                                  {(customer as Customer & Record<string, unknown>).leadSource && (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, border: `1px solid ${amber[300]}`, background: amber[100], color: amber[600], whiteSpace: 'nowrap', lineHeight: 1.6 }}>
+                                      {(customer as Customer & Record<string, unknown>).leadSource as string}
+                                    </span>
+                                  )}
+                                  {customer.creditHold && <AlertTriangle size={12} style={{ color: danger, marginLeft: 6 }} />}
                                 </div>
                               </div>
-                              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: inkSoft, fontWeight: 600, letterSpacing: 0.02, marginTop: 3 }}>{customer.id}</div>
-                              {(customer as Customer & Record<string, unknown>).pipelineStage && (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, border: `1px solid ${teal[200]}`, background: teal[50], color: teal[700], whiteSpace: 'nowrap', marginTop: 4 }}>
-                                  {(customer as Customer & Record<string, unknown>).pipelineStage}
-                                </span>
-                              )}
-                              {(customer as Customer & Record<string, unknown>).leadSource && (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, border: `1px solid ${amber[300]}`, background: amber[100], color: amber[600], whiteSpace: 'nowrap', marginTop: 4 }}>
-                                  {(customer as Customer & Record<string, unknown>).leadSource as string}
-                                </span>
-                              )}
-                              {customer.creditHold && <AlertTriangle size={12} style={{ color: danger, marginLeft: 6 }} />}
-                            </div>
                           </div>
                         </td>
                         <td style={{ padding: '13px 14px', borderBottom: `1px solid ${hairline}` }}>

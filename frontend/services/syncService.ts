@@ -114,7 +114,7 @@ const STORE_TO_TABLE: Record<string, string> = {
 };
 
 const TABLES_TO_SYNC = [
-  'users', 'userGroups', 'inventory', 'warehouses', 'customers', 'suppliers',
+  'userGroups', 'inventory', 'warehouses', 'customers', 'suppliers',
   'sales', 'invoices', 'purchases', 'accounts', 'ledger',
   'settings', 'reminders',
   'workCenters', 'workOrders', 'batches', 'resources',

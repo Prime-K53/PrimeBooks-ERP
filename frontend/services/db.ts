@@ -362,7 +362,11 @@ const LOCAL_ONLY_STORES = new Set([
   'syncOutbox', 'idempotencyKeys',
   'customerNotificationLogs',
   'alerts', 'auditLogs',
-  'productAttributes'
+  'productAttributes',
+  // Users are auth records only — no `users` table exists in Supabase
+  // (staff profiles live in `profiles`), so keep them local to avoid
+  // 404s on /rest/v1/users from the background sync engine.
+  'users',
 ]);
 
 const PORTAL_MIRROR_STORES = new Set([
