@@ -119,21 +119,37 @@ const authenticatePortalUser = (email, password) => {
 // on success, restore the local SQLite row so sessions/refresh flows keep working
 // for the remainder of this deployment.
 const authenticatePortalUserFromSupabase = async (email, password) => {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) return null;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) {
+    console.warn(`[PortalAuth] Supabase fallback DISABLED for ${email}: URL=${SUPABASE_URL || '(unset)'} KEY=${SUPABASE_ANON_KEY ? '(set)' : '(unset)'} (secret=${process.env.SUPABASE_SECRET_KEY ? 'yes' : 'no'}, publishable=${process.env.SUPABASE_PUBLISHABLE_KEY ? 'yes' : 'no'})`);
+    return null;
+  }
   try {
     const { data } = await axios.get(`${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/customers`, {
       params: { select: 'id,data', 'data->>portalEmail': `eq.${email}`, limit: 1 },
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
       timeout: 5000,
     });
-    if (!Array.isArray(data) || data.length === 0) return null;
+    if (!Array.isArray(data) || data.length === 0) {
+      console.warn(`[PortalAuth] Supabase fallback: no customer found for ${email}`);
+      return null;
+    }
     const row = data[0];
     const info = (row.data && typeof row.data === 'object') ? row.data : {};
     const hash = info.portalPasswordHash;
-    if (!hash || !info.portalUserId) return null;
-    if (info.portalStatus && info.portalStatus !== 'active') return null;
+    if (!hash || !info.portalUserId) {
+      console.warn(`[PortalAuth] Supabase fallback: no portal mirror for ${email} (customer ${row.id})`);
+      return null;
+    }
+    if (info.portalStatus && info.portalStatus !== 'active') {
+      console.warn(`[PortalAuth] Supabase fallback: account ${email} is not active (${info.portalStatus})`);
+      return null;
+    }
     const match = await bcrypt.compare(password, hash);
-    if (!match) return null;
+    if (!match) {
+      console.warn(`[PortalAuth] Supabase fallback: password mismatch for ${email} (customer ${row.id})`);
+      return null;
+    }
+    console.log(`[PortalAuth] Supabase fallback: authenticated ${email} (customer ${row.id})`);
     await new Promise((res) => {
       db.run(
         `INSERT OR IGNORE INTO portal_users (id, customer_id, email, password_hash, full_name, phone, status)
@@ -149,7 +165,8 @@ const authenticatePortalUserFromSupabase = async (email, password) => {
       full_name: info.name || '',
       phone: info.phone || ''
     };
-  } catch {
+  } catch (err) {
+    console.warn(`[PortalAuth] Supabase fallback ERROR for ${email}: ${err.message}`);
     return null;
   }
 };
