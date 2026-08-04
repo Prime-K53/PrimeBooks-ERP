@@ -89,8 +89,20 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
     setPortalBusy(true);
     setPortalError(null);
     try {
-      const result = await adminLifecycle.users.regeneratePassword(customer.portalUserId as string);
-      setPortalCreds({ email: customer.portalEmail || '', password: result.generated_password });
+      const result = await adminLifecycle.users.regeneratePassword(customer.portalUserId as string, {
+        customer_id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      });
+      if (result.user_id && result.user_id !== customer.portalUserId) {
+        applyPortalAccount(
+          { id: result.user_id, email: customer.portalEmail || '', status: customer.portalStatus },
+          { email: customer.portalEmail || '', password: result.generated_password }
+        );
+      } else {
+        setPortalCreds({ email: customer.portalEmail || '', password: result.generated_password });
+      }
     } catch (err: any) {
       setPortalError(err?.body?.error || err?.message || 'Failed to regenerate password');
     } finally {

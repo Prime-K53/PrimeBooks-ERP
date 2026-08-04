@@ -488,8 +488,8 @@ export const adminLifecycle = {
     invite(id: string): Promise<{ code: string; expires_at: string; user: AdminPortalAccount['user'] }> {
       return adminPortalApi.post<{ code: string; expires_at: string; user: AdminPortalAccount['user'] }>(`/users/${id}/invite`);
     },
-    regeneratePassword(id: string): Promise<{ generated_password: string }> {
-      return adminPortalApi.post<{ generated_password: string }>(`/users/${id}/regenerate-password`);
+    regeneratePassword(id: string, payload: { customer_id: string; name?: string; email?: string; phone?: string }): Promise<{ generated_password: string; user_id?: string }> {
+      return adminPortalApi.post<{ generated_password: string; user_id?: string }>(`/users/${id}/regenerate-password`, payload);
     },
   },
   staff: {

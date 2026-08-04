@@ -719,30 +719,62 @@ router.post('/users/auto-create', async (req, res) => {
 router.post('/users/:id/regenerate-password', async (req, res) => {
   try {
     const portalUserId = req.params.id;
+    const { customer_id, name, email, phone } = req.body || {};
     let user = await portalAuthService.getPortalUserById(portalUserId);
+    let adoptedId = portalUserId;
+
+    if (!user && customer_id) {
+      // Same customer recreated earlier under a different id (auto-create after a
+      // redeploy wipe). Adopt that account and tell the frontend the new id.
+      user = await portalAuthService.getPortalUserByCustomerId(customer_id);
+      if (user) adoptedId = user.id;
+    }
+
     if (!user) {
-      // The portal_users row is missing (e.g. Render redeploy reset SQLite while
-      // customers still reference this id in Supabase). Recreate the account with
-      // the same id so the customer's portalUserId stays valid.
-      const customer = await portalAuthService.findCustomerByPortalUserId(portalUserId);
-      if (!customer) return res.status(404).json({ error: 'Portal user not found' });
-      const info = (customer.data && typeof customer.data === 'object') ? customer.data : {};
-      user = await portalAuthService.registerPortalUser({
-        id: portalUserId,
-        customer_id: customer.id,
-        email: info.email || `${customer.id}@prime.erp`,
-        password: crypto.randomBytes(9).toString('base64url'),
-        full_name: info.name || '',
-        phone: info.phone || '',
-        status: 'active',
-      });
-      console.log(`[PortalAdmin] Recreated missing portal user ${portalUserId} for customer ${customer.id}`);
+      // The portal_users row is missing (Render redeploy reset SQLite while the
+      // customer still references this id). Recreate the account with the same id
+      // so the customer's portalUserId stays valid. Prefer request-provided
+      // customer data so this works even when Supabase env vars are not
+      // configured on the host; fall back to a Supabase lookup.
+      let customerId = customer_id;
+      let info = { name, email, phone };
+      if (!customerId || !email) {
+        const customer = await portalAuthService.findCustomerByPortalUserId(portalUserId);
+        if (!customer && !customerId) return res.status(404).json({ error: 'Portal user not found' });
+        if (customer) {
+          customerId = customer.id;
+          info = {
+            ...info,
+            ...((customer.data && typeof customer.data === 'object') ? customer.data : {}),
+          };
+        }
+      }
+      try {
+        user = await portalAuthService.registerPortalUser({
+          id: portalUserId,
+          customer_id: customerId,
+          email: email || info.email || `${customerId}@prime.erp`,
+          password: crypto.randomBytes(9).toString('base64url'),
+          full_name: name || info.name || '',
+          phone: phone || info.phone || '',
+          status: 'active',
+        });
+      } catch (err) {
+        // Email collision with an account recreated earlier: adopt that account
+        // instead of failing with 409.
+        if (err.message !== 'Email already registered') throw err;
+        const existing = await portalAuthService.getPortalUserByEmail(email || info.email);
+        if (!existing) throw err;
+        user = existing;
+        adoptedId = existing.id;
+      }
+      console.log(`[PortalAdmin] Recreated missing portal user ${portalUserId} -> ${adoptedId} for customer ${customerId}`);
     }
 
     const new_password = crypto.randomBytes(9).toString('base64url');
-    await portalAuthService.updatePassword(portalUserId, new_password);
-    await portalAuthService.revokeAllSessions(portalUserId);
-    res.json({ generated_password: new_password });
+    await portalAuthService.updatePassword(adoptedId, new_password);
+    await portalAuthService.revokeAllSessions(adoptedId);
+    res.json({ generated_password: new_password, user_id: adoptedId });
   } catch (err) {
     console.error('[PortalAdmin] Regenerate password error:', err);
     res.status(500).json({ error: 'Failed to regenerate password' });
