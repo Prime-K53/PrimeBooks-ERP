@@ -21,9 +21,18 @@ CREATE TABLE IF NOT EXISTS financial_years (
     updated_at  TEXT DEFAULT (CURRENT_TIMESTAMP::TEXT)
 );
 
--- Index for company-scoped lookups
-CREATE INDEX IF NOT EXISTS idx_financial_years_company
-    ON financial_years(company_id, status, start_date);
+-- Index for company-scoped lookups (only when the company_id column exists;
+-- the single-company migration drops that column, breaking replay).
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'financial_years' AND column_name = 'company_id'
+    ) THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_financial_years_company
+            ON financial_years(company_id, status, start_date)';
+    END IF;
+END $$;
 
 -- 2. User Preferences table — key-value store per user + company
 -- Used for storing things like "selected financial year id" that
@@ -38,13 +47,20 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     updated_at  TEXT DEFAULT (CURRENT_TIMESTAMP::TEXT)
 );
 
--- Unique constraint: one value per (user, company, key)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_preferences_unique
-    ON user_preferences(user_id, company_id, pref_key);
-
--- Index for fast lookup of all prefs for a user+company
-CREATE INDEX IF NOT EXISTS idx_user_preferences_lookup
-    ON user_preferences(user_id, company_id);
+-- Unique constraint: one value per (user, company, key); only when the
+-- company_id column still exists (single-company migration drops it).
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'user_preferences' AND column_name = 'company_id'
+    ) THEN
+        EXECUTE 'CREATE UNIQUE INDEX IF NOT EXISTS idx_user_preferences_unique
+            ON user_preferences(user_id, company_id, pref_key)';
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_user_preferences_lookup
+            ON user_preferences(user_id, company_id)';
+    END IF;
+END $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- RLS Policies
@@ -55,46 +71,59 @@ ALTER TABLE financial_years ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 
 -- ── financial_years RLS ──
--- Users can see financial years for their company
-DROP POLICY IF EXISTS financial_years_select ON financial_years;
-CREATE POLICY financial_years_select ON financial_years
-    FOR SELECT
-    USING (
-        company_id IN (
-            SELECT company_id FROM profiles WHERE user_id = auth.uid()::TEXT
-        )
-    );
+-- These company-scoped policies only apply when the company_id column still
+-- exists on the table (single-company migration drops it, so re-running this
+-- migration on such a schema must skip company-scoped policies entirely).
+DO $$
+DECLARE
+    has_company_col BOOLEAN;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'financial_years' AND column_name = 'company_id'
+    ) INTO has_company_col;
 
--- Only admins can insert/update/delete financial years
-DROP POLICY IF EXISTS financial_years_insert ON financial_years;
-CREATE POLICY financial_years_insert ON financial_years
-    FOR INSERT
-    WITH CHECK (
-        company_id IN (
-            SELECT company_id FROM profiles
-            WHERE user_id = auth.uid()::TEXT AND role IN ('Admin', 'Company Admin', 'Super Admin')
-        )
-    );
+    IF has_company_col THEN
+        DROP POLICY IF EXISTS financial_years_select ON financial_years;
+        CREATE POLICY financial_years_select ON financial_years
+            FOR SELECT
+            USING (
+                company_id IN (
+                    SELECT company_id FROM profiles WHERE user_id = auth.uid()::TEXT
+                )
+            );
 
-DROP POLICY IF EXISTS financial_years_update ON financial_years;
-CREATE POLICY financial_years_update ON financial_years
-    FOR UPDATE
-    USING (
-        company_id IN (
-            SELECT company_id FROM profiles
-            WHERE user_id = auth.uid()::TEXT AND role IN ('Admin', 'Company Admin', 'Super Admin')
-        )
-    );
+        DROP POLICY IF EXISTS financial_years_insert ON financial_years;
+        CREATE POLICY financial_years_insert ON financial_years
+            FOR INSERT
+            WITH CHECK (
+                company_id IN (
+                    SELECT company_id FROM profiles
+                    WHERE user_id = auth.uid()::TEXT AND role IN ('Admin', 'Company Admin', 'Super Admin')
+                )
+            );
 
-DROP POLICY IF EXISTS financial_years_delete ON financial_years;
-CREATE POLICY financial_years_delete ON financial_years
-    FOR DELETE
-    USING (
-        company_id IN (
-            SELECT company_id FROM profiles
-            WHERE user_id = auth.uid()::TEXT AND role IN ('Admin', 'Company Admin', 'Super Admin')
-        )
-    );
+        DROP POLICY IF EXISTS financial_years_update ON financial_years;
+        CREATE POLICY financial_years_update ON financial_years
+            FOR UPDATE
+            USING (
+                company_id IN (
+                    SELECT company_id FROM profiles
+                    WHERE user_id = auth.uid()::TEXT AND role IN ('Admin', 'Company Admin', 'Super Admin')
+                )
+            );
+
+        DROP POLICY IF EXISTS financial_years_delete ON financial_years;
+        CREATE POLICY financial_years_delete ON financial_years
+            FOR DELETE
+            USING (
+                company_id IN (
+                    SELECT company_id FROM profiles
+                    WHERE user_id = auth.uid()::TEXT AND role IN ('Admin', 'Company Admin', 'Super Admin')
+                )
+            );
+    END IF;
+END $$;
 
 -- ── user_preferences RLS ──
 -- Users can only read/write their own preferences
