@@ -79,6 +79,7 @@ const registerPortalUser = async ({ id, customer_id, email, password, full_name,
           if (err.message.includes('UNIQUE')) return reject(new Error('Email already registered'));
           return reject(err);
         }
+        upsertSupabasePortalAuth(customer_id, { email: email.toLowerCase().trim(), password_hash, status }).catch(() => {});
         resolve({ id: portalUserId, customer_id, email, full_name, phone, status });
       }
     );
@@ -93,7 +94,11 @@ const authenticatePortalUser = (email, password) => {
       [email.toLowerCase().trim()],
       async (err, row) => {
         if (err) return reject(err);
-        if (!row) return resolve(null);
+        if (!row) {
+          // SQLite portal_users may have been reset by a redeploy (ephemeral disk
+          // on Render). Fall back to the account mirror in Supabase customers.data.
+          return resolve(await authenticatePortalUserFromSupabase(email.toLowerCase().trim(), password));
+        }
         if (row.status !== 'active') return resolve(null);
         const match = await bcrypt.compare(password, row.password_hash);
         if (!match) return resolve(null);
@@ -108,6 +113,72 @@ const authenticatePortalUser = (email, password) => {
       }
     );
   });
+};
+
+// Authenticate against the account mirror stored in Supabase customers.data and,
+// on success, restore the local SQLite row so sessions/refresh flows keep working
+// for the remainder of this deployment.
+const authenticatePortalUserFromSupabase = async (email, password) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) return null;
+  try {
+    const { data } = await axios.get(`${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/customers`, {
+      params: { select: 'id,data', 'data->>portalEmail': `eq.${email}`, limit: 1 },
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      timeout: 5000,
+    });
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const row = data[0];
+    const info = (row.data && typeof row.data === 'object') ? row.data : {};
+    const hash = info.portalPasswordHash;
+    if (!hash || !info.portalUserId) return null;
+    if (info.portalStatus && info.portalStatus !== 'active') return null;
+    const match = await bcrypt.compare(password, hash);
+    if (!match) return null;
+    await new Promise((res) => {
+      db.run(
+        `INSERT OR IGNORE INTO portal_users (id, customer_id, email, password_hash, full_name, phone, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [info.portalUserId, row.id, email, hash, info.name || '', info.phone || '', 'active'],
+        (e) => res(!e)
+      );
+    });
+    return {
+      id: info.portalUserId,
+      customer_id: row.id,
+      email,
+      full_name: info.name || '',
+      phone: info.phone || ''
+    };
+  } catch {
+    return null;
+  }
+};
+
+// Best-effort mirror of the portal account (email + bcrypt hash + status) into
+// Supabase customers.data so portal login survives redeploys that wipe the
+// ephemeral SQLite. SUPABASE_SECRET_KEY (when configured) bypasses RLS.
+const upsertSupabasePortalAuth = async (customerId, { email, password_hash, status }) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder') || !customerId) return;
+  try {
+    const base = `${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/customers`;
+    const headers = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' };
+    const { data: rows } = await axios.get(base, {
+      params: { id: `eq.${customerId}`, select: 'data' },
+      headers,
+      timeout: 5000,
+    });
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    const current = (rows[0].data && typeof rows[0].data === 'object') ? rows[0].data : {};
+    const next = {
+      ...current,
+      portalEmail: email || current.portalEmail,
+      portalPasswordHash: password_hash || current.portalPasswordHash,
+      portalStatus: status || current.portalStatus,
+    };
+    await axios.patch(base, { data: next }, { params: { id: `eq.${customerId}` }, headers, timeout: 5000 });
+  } catch (err) {
+    console.warn('[PortalAuth] Supabase portal-auth sync failed:', err.message);
+  }
 };
 
 const findCustomerInSupabase = async (customerId) => {
@@ -323,14 +394,19 @@ const createInviteCode = async (portalUserId) => {
 
 const setPortalUserStatus = (id, status) => {
   return new Promise((resolve, reject) => {
-    db.run(
-      `UPDATE portal_users SET status = ?, updated_at = datetime('now') WHERE id = ?`,
-      [status, id],
-      (err) => {
-        if (err) return reject(err);
-        resolve();
-      }
-    );
+    db.get(`SELECT customer_id FROM portal_users WHERE id = ?`, [id], (err, row) => {
+      if (err) return reject(err);
+      if (!row) return resolve();
+      db.run(
+        `UPDATE portal_users SET status = ?, updated_at = datetime('now') WHERE id = ?`,
+        [status, id],
+        (uerr) => {
+          if (uerr) return reject(uerr);
+          upsertSupabasePortalAuth(row.customer_id, { status }).catch(() => {});
+          resolve();
+        }
+      );
+    });
   });
 };
 
@@ -404,9 +480,18 @@ const changePassword = async (id, currentPassword, newPassword) => {
 const updatePassword = async (id, newPassword) => {
   const password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
   return new Promise((resolve, reject) => {
-    db.run(`UPDATE portal_users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`, [password_hash, id], (err) => {
+    db.get(`SELECT customer_id, email FROM portal_users WHERE id = ?`, [id], (err, row) => {
       if (err) return reject(err);
-      resolve();
+      if (!row) return reject(new Error('User not found'));
+      db.run(
+        `UPDATE portal_users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`,
+        [password_hash, id],
+        (uerr) => {
+          if (uerr) return reject(uerr);
+          upsertSupabasePortalAuth(row.customer_id, { email: row.email, password_hash }).catch(() => {});
+          resolve();
+        }
+      );
     });
   });
 };
