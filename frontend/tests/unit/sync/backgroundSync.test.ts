@@ -10,9 +10,13 @@ import { backgroundSyncService } from '../../../services/backgroundSyncService';
 };
 
 const { openDBMock } = vi.hoisted(() => ({ openDBMock: vi.fn() }));
-const { mockPut, mockDelete, mockUploadFile } = vi.hoisted(() => ({
-  mockPut: vi.fn(async () => ({ id: 'mock-id', updatedAt: new Date().toISOString(), version: 1 })),
-  mockDelete: vi.fn(async () => true),
+const { mockSendOps, mockUploadFile } = vi.hoisted(() => ({
+  mockSendOps: vi.fn(async (ops: { operationId?: string }[]) => ({
+    ok: true,
+    processed: ops.length,
+    succeeded: ops.length,
+    results: ops.map((op) => ({ operationId: op.operationId, ok: true, id: 'mock-id' })),
+  })),
   mockUploadFile: vi.fn(async () => 'mock-url'),
 }));
 
@@ -22,10 +26,12 @@ vi.mock('idb', () => ({
   unwrap: vi.fn(),
 }));
 
+vi.mock('../../../services/syncApiClient', () => ({
+  sendSyncOps: mockSendOps,
+}));
+
 vi.mock('../../../services/cloudDb', () => ({
   cloudDb: {
-    put: mockPut,
-    delete: mockDelete,
     uploadFile: mockUploadFile,
   },
 }));
@@ -78,8 +84,12 @@ describe('backgroundSyncService', () => {
     freshDb = createDb();
     openDBMock.mockReset().mockResolvedValue(freshDb);
 
-    mockPut.mockReset().mockResolvedValue({ id: 'mock-id', updatedAt: new Date().toISOString(), version: 1 });
-    mockDelete.mockReset().mockResolvedValue(true);
+    mockSendOps.mockReset().mockImplementation(async (ops: { operationId?: string }[]) => ({
+      ok: true,
+      processed: ops.length,
+      succeeded: ops.length,
+      results: ops.map((op) => ({ operationId: op.operationId, ok: true, id: 'mock-id' })),
+    }));
     mockUploadFile.mockReset().mockResolvedValue('mock-url');
 
     resetDbConnection();
@@ -101,7 +111,7 @@ describe('backgroundSyncService', () => {
     });
 
     it('should mark items as failed on cloud error', async () => {
-      mockPut.mockRejectedValueOnce(new Error('timeout'));
+      mockSendOps.mockRejectedValueOnce(new Error('timeout'));
 
       await durableSyncQueue.enqueue({ table: 'products', recordId: 'p1', operation: 'upsert', payload: { name: 'Test' } });
 
@@ -112,7 +122,12 @@ describe('backgroundSyncService', () => {
     });
 
     it('should move permanent errors to dead letter queue', async () => {
-      mockPut.mockImplementation(() => Promise.reject(new Error('violates foreign key constraint')));
+      mockSendOps.mockImplementation(async (ops: { operationId?: string }[]) => ({
+        ok: true,
+        processed: ops.length,
+        succeeded: 0,
+        results: ops.map((op) => ({ operationId: op.operationId, ok: false, error: 'violates foreign key constraint', retryable: false })),
+      }));
 
       await durableSyncQueue.enqueue({ table: 'products', recordId: 'p1', operation: 'upsert', payload: { name: 'Test' } });
 

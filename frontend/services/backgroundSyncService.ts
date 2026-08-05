@@ -1,4 +1,5 @@
 import { durableSyncQueue, classifyError, QueuedOperation, QueueMetrics } from './durableSyncQueue';
+import { sendSyncOps, SyncOp, SyncOpResult } from './syncApiClient';
 import { cloudDb } from './cloudDb';
 
 type SyncEventType = 'sync-start' | 'sync-complete' | 'sync-failure' | 'sync-partial' | 'queue-empty' | 'queue-full' | 'dead-letter';
@@ -81,26 +82,71 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
 
   if (items.length === 0) return { success: 0, failed: 0, deadLetter: 0, skipped: 0, durationMs: 0 };
 
-  const promises = items.map(async (item) => {
+  // Split the batch: business ops go through the backend sync gateway
+  // (single write path); file uploads stay direct to Supabase Storage.
+  const gatewayOps: { item: QueuedOperation; op: SyncOp }[] = [];
+  const fileItems: QueuedOperation[] = [];
+
+  for (const item of items) {
+    if (item.fileRef) {
+      fileItems.push(item);
+    } else {
+      gatewayOps.push({
+        item,
+        op: {
+          operationId: item.operationId,
+          table: item.table,
+          recordId: item.recordId,
+          operation: item.operation === 'delete' ? 'delete' : 'upsert',
+          payload: item.payload,
+        },
+      });
+    }
+  }
+
+  // 1) Business ops → backend gateway (one round-trip for the whole batch).
+  let opResults = new Map<string, SyncOpResult>();
+  let transportFailed = false;
+  if (gatewayOps.length > 0) {
     try {
-      const clientData = item.payload as Record<string, unknown>;
-      const table = item.table;
-
-      if (item.operation === 'delete') {
-        await cloudDb.delete(table, item.recordId!, item.operationId);
-      } else if (item.fileRef) {
-        const { openDB } = await import('idb');
-        const localDb = await openDB('nexus-db', 1);
-        const fileRecord = await localDb.get('files', item.fileRef);
-        if (fileRecord?.blob) {
-          await cloudDb.uploadFile(fileRecord.blob as File, 'documents', item.operationId);
-        }
-      } else {
-        await cloudDb.put(table, clientData, item.operationId);
+      const response = await sendSyncOps(gatewayOps.map(({ op }) => op));
+      for (const result of response.results) {
+        if (result.operationId) opResults.set(result.operationId, result);
       }
+    } catch (err) {
+      // Transport failure: the entire batch is retryable. Mark items failed
+      // and bail before the settle loop so they aren't marked completed.
+      transportFailed = true;
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorType = classifyError(errorMessage);
+      for (const { item } of gatewayOps) {
+        await durableSyncQueue.markFailed(item.id, errorMessage);
+        if (errorType === 'permanent') deadLetter++;
+        else failed++;
+      }
+    }
+  }
 
+  const settleItem = async (item: QueuedOperation, result: SyncOpResult | undefined) => {
+    if (!result || result.ok) {
       await durableSyncQueue.markCompleted(item.id);
+      return 'success';
+    }
+    // Per-op rejection from the gateway: dead-letter permanent errors,
+    // keep retrying transient ones.
+    const errorMessage = result.error || 'Sync gateway rejected the operation';
+    const permanent = result.retryable === false || classifyError(errorMessage) === 'permanent';
+    await durableSyncQueue.markFailed(item.id, errorMessage);
+    return permanent ? 'deadLetter' : 'failed';
+  };
 
+  for (const { item } of gatewayOps) {
+    if (transportFailed) {
+      // Already handled in the transport-failure catch above.
+      continue;
+    }
+    const outcome = await settleItem(item, opResults.get(item.operationId));
+    if (outcome === 'success') {
       // Mark the local record as synced so the FY migration is idempotent
       // and the record is never re-queued. Uses bulkPut (no re-enqueue).
       if (item.table === 'financial_years' && item.recordId) {
@@ -117,23 +163,36 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
           // best-effort status write
         }
       }
+      success++;
+    } else if (outcome === 'deadLetter') {
+      deadLetter++;
+    } else {
+      failed++;
+    }
+  }
 
+  // 2) File uploads → direct Supabase Storage (large binaries bypass the
+  // backend so the gateway never becomes a bandwidth bottleneck).
+  const filePromises = fileItems.map(async (item) => {
+    try {
+      const { openDB } = await import('idb');
+      const localDb = await openDB('nexus-db', 1);
+      const fileRecord = await localDb.get('files', item.fileRef);
+      if (fileRecord?.blob) {
+        await cloudDb.uploadFile(fileRecord.blob as File, 'documents', item.operationId);
+      }
+      await durableSyncQueue.markCompleted(item.id);
       success++;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       const errorType = classifyError(errorMessage);
-
-      if (errorType === 'permanent') {
-        await durableSyncQueue.markFailed(item.id, errorMessage);
-        deadLetter++;
-      } else {
-        await durableSyncQueue.markFailed(item.id, errorMessage);
-        failed++;
-      }
+      await durableSyncQueue.markFailed(item.id, errorMessage);
+      if (errorType === 'permanent') deadLetter++;
+      else failed++;
     }
   });
 
-  const settled = await Promise.allSettled(promises);
+  const settled = await Promise.allSettled(filePromises);
   for (const result of settled) {
     if (result.status === 'rejected') {
       skipped++;

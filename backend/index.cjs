@@ -338,6 +338,13 @@ app.use('/api', currencyMiddleware.injectCurrency());
 const erpPortalMirrorRoutes = require('./routes/erpPortalMirror.cjs');
 app.use('/api/erp-portal', erpPortalMirrorRoutes);
 
+// ERP sync gateway: single write path for all business data from the
+// offline-first client's durable sync queue. Validates the JWT (Supabase or
+// backend token) via the global verifyToken above, allow-lists cloud tables,
+// applies idempotent upserts and tombstone deletes with the service-role key.
+const syncRoutes = require('./routes/sync.cjs');
+app.use('/api/sync', syncRoutes);
+
 // Shared helper for pricing validation
 async function validateItemsPricing(items) {
   if (!items || !Array.isArray(items)) return;

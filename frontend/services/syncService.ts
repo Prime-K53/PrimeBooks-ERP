@@ -249,6 +249,15 @@ export async function pullRemoteChanges(
           // All cloud records are marked _cloudSource: true so they don't trigger re-sync
           const mergedRecords = [];
           for (const cloudRecord of cloudRecords) {
+            // Server-side tombstone (soft delete via the sync gateway):
+            // reconcile locally as a delete, never resurrect the row.
+            if (cloudRecord.deleted === true) {
+              const existing = await dbService.get(storeName, cloudRecord.id);
+              if (existing && !(existing as Record<string, unknown>).deletedAt) {
+                await dbService.delete(storeName, cloudRecord.id, { cloudSource: true });
+              }
+              continue;
+            }
             const existing = await dbService.get(storeName, cloudRecord.id);
             if (existing) {
               const merged = fieldLevelMerge(existing, cloudRecord);
@@ -326,6 +335,12 @@ function subscribeToRemoteChanges() {
                 try { await dbService.delete(storeName, payload.old.id, { cloudSource: true }); } catch (e) { logger.error("Operation failed", e as Error); }
               } else if (payload.new) {
                 const cloudRecord = toCloudRecord(payload.new);
+                // Server-side tombstone arrives as an UPDATE (soft delete):
+                // delete locally and skip the merge so the row isn't resurrected.
+                if (cloudRecord.deleted === true) {
+                  try { await dbService.delete(storeName, payload.new.id, { cloudSource: true }); } catch (e) { logger.error("Operation failed", e as Error); }
+                  return;
+                }
                 const local = await dbService.get(storeName, payload.new.id);
                 if (local) {
                   const merged = fieldLevelMerge(local, cloudRecord);
