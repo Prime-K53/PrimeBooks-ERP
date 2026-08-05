@@ -512,5 +512,8 @@ export const adminLifecycle = {
         {}
       );
     },
+    async reset(): Promise<{ ok: boolean; cleared: string[] }> {
+      return adminPortalApi.post<{ ok: boolean; cleared: string[] }>('/company/reset', {});
+    },
   },
 };

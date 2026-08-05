@@ -722,6 +722,7 @@ const Settings: React.FC = () => {
                     confirmText: 'Yes, Delete Everything',
                     onConfirm: async () => {
                         try {
+                            await adminLifecycle.company.reset().catch(() => {});
                             await adminLifecycle.company.remove();
                             await dbService.factoryReset();
                             localStorage.clear();

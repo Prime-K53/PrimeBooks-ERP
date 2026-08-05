@@ -754,7 +754,7 @@ const DashboardContent: React.FC = () => {
   const handleCreateCompany = async () => {
     setConfirmState({
       open: true, title: 'Create New Company', message: 'Create a new company? This will permanently wipe and reset all current data except your subscription status.', type: 'danger', confirmText: 'Create New Company',
-      onConfirm: () => { (async () => { try { await resetSystem(); window.location.reload(); } catch (e) { logger.error(e); } })(); }
+      onConfirm: () => { (async () => { try { await adminLifecycle.company.reset().catch(() => {}); await resetSystem(); window.location.reload(); } catch (e) { logger.error(e); } })(); }
     });
   };
 
@@ -1241,9 +1241,9 @@ const DashboardContent: React.FC = () => {
           </div>
 
           {widgets.find(w => w.id === 'chart')?.visible !== false && (
-            <div style={{
-              background: '#FEFDFB', border: '1px solid #e4ddd1', borderRadius: 14, padding: isMobile ? '20px' : '28px', boxShadow: '0 1px 2px rgba(11,62,57,.04)', display: 'flex', flexDirection: 'column', minWidth: 0,
-            }}>
+             <div style={{
+               background: '#FEFDFB', border: '1px solid #e4ddd1', borderRadius: 14, padding: isMobile ? '20px' : '28px', boxShadow: '0 1px 2px rgba(11,62,57,.04)', display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%',
+             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isMobile ? 16 : 24, flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <h3 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: '#2e2a5d', margin: 0, letterSpacing: '-0.02em' }}>Financial performance</h3>

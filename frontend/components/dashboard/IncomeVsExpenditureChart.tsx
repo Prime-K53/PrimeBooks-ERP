@@ -37,8 +37,9 @@ const AXIS_TEXT_COLOR = '#94A3B8';
 // ============================================================
 const CHART_CONTAINER_STYLE: React.CSSProperties = {
   width: '100%',
-  height: '350px',
-  minHeight: '300px',
+  height: '100%',
+  minHeight: 200,
+  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
 };
 
 const X_AXIS_STYLE = {

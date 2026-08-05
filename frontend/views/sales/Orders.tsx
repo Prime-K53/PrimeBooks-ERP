@@ -1749,7 +1749,7 @@ const Orders: React.FC = () => {
                         </div>
                         <div className="flex-1 min-h-0 w-full">
                         {/* console.log("Chart container mounted", dashboardData.monthly) */}
-                        <ResponsiveContainer width="100%" height="100%" minHeight={180} minWidth={0} aspect={3}>
+                        <ResponsiveContainer width="100%" height="100%" minHeight={180} minWidth={0}>
                             <BarChart data={dashboardData.monthly}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4ddd1" />
                                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#5c6567' }} dy={10} />
@@ -1770,7 +1770,7 @@ const Orders: React.FC = () => {
                         </h3>
                         <div className="flex-1 min-h-0 w-full">
                         {/* console.log("Chart container mounted", dashboardData.status) */}
-                        <ResponsiveContainer width="100%" height="100%" minHeight={180} minWidth={0} aspect={1.2}>
+                        <ResponsiveContainer width="100%" height="100%" minHeight={180} minWidth={0}>
                             <PieChart>
                                     <Pie
                                         data={dashboardData.status}

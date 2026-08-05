@@ -133,6 +133,63 @@ router.post('/company/delete', async (req, res) => {
   }
 });
 
+// Wipes ALL local portal SQLite data (single-company architecture). Used by the
+// "Create New Company" / "Delete Company" flows so the Sales Request Pipeline
+// and portal lifecycle start from a clean slate instead of the previous
+// company's stale rows. This does NOT touch Supabase — it only clears the
+// backend SQLite tables that feed /portal/admin/*.
+const PORTAL_RESET_TABLES = [
+  'quotation_requests',
+  'quotations',
+  'sales_orders',
+  'portal_downloads',
+  'portal_timeline_events',
+  'document_versions',
+  'document_signatures',
+  'document_comments',
+  'admin_notifications',
+  'portal_notifications',
+  'portal_tickets',
+  'portal_ticket_messages',
+  'ticket_attachments',
+  'portal_users',
+  'portal_sessions',
+  'portal_password_resets',
+  'portal_login_history',
+];
+
+router.post('/company/reset', async (req, res) => {
+  try {
+    const existing = await new Promise((resolve, reject) => {
+      db.all(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN (" +
+          PORTAL_RESET_TABLES.map(() => '?').join(',') +
+          ')',
+        PORTAL_RESET_TABLES,
+        (err, rows) => (err ? reject(err) : resolve(rows || []))
+      );
+    });
+    const present = new Set((existing || []).map((r) => r.name));
+    const cleared = [];
+
+    for (const table of PORTAL_RESET_TABLES) {
+      if (!present.has(table)) continue;
+      await new Promise((resolve, reject) => {
+        db.run(`DELETE FROM ${table}`, (err) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+      cleared.push(table);
+    }
+    console.log(`[PortalAdmin] Wiped ${cleared.length} local portal tables`);
+    res.json({ ok: true, cleared });
+  } catch (err) {
+    console.error('[PortalAdmin] Company reset error:', err.message);
+    res.status(500).json({ error: 'Failed to reset portal data', detail: err.message });
+  }
+});
+
 // Short-lived ticket so the browser EventSource stream can authenticate via
 // query param (EventSource cannot send Authorization/custom headers).
 router.get('/events-ticket', (req, res) => {
