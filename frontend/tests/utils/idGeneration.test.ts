@@ -9,8 +9,12 @@ import {
 } from '../../utils/idGeneration';
 
 describe('idGeneration', () => {
-  it('uses UUID-backed local ids when available', () => {
-    expect(generateLocalId('local')).toBe('local-mock-uuid-1234');
+  it('uses ULID-based local ids (globally unique, time-sortable)', () => {
+    const defaultId = generateLocalId();
+    expect(defaultId.slice('local-'.length)).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+    const id = generateLocalId('local');
+    expect(id.startsWith('local-')).toBe(true);
+    expect(id.slice('local-'.length)).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
   });
 
   it('creates opaque prefixed ids for local-only records', () => {

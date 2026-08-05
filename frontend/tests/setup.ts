@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { vi, beforeEach, afterEach } from 'vitest';
+import { createHash } from 'node:crypto';
 
 // Mock IndexedDB
 vi.mock('idb', () => ({
@@ -98,11 +99,19 @@ global.URL.createObjectURL = vi.fn(() => 'mock-url');
 global.URL.revokeObjectURL = vi.fn();
 
 // Mock crypto.randomUUID
+// jsdom lacks a working crypto.subtle (the non-enumerable property is dropped by the
+// the earlier spread), and utils/uuid.ts stringToUuid5 needs it for deterministic offline ids.
+const cryptoSubtleMock = {
+  digest: async (_algorithm: unknown, data: BufferSource) => {
+    const view = data instanceof Uint8Array ? data : new Uint8Array(data);
+    return createHash('sha1').update(Buffer.from(view)).digest();
+  },
+};
 Object.defineProperty(global, 'crypto', {
   value: {
-    ...global.crypto,
     randomUUID: vi.fn(() => 'mock-uuid-1234'),
     getRandomValues: vi.fn((arr) => arr),
+    subtle: cryptoSubtleMock as SubtleCrypto,
   },
   writable: true,
   configurable: true,

@@ -1,9 +1,6 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { examinationBatchService } from '../../services/examinationBatchService';
-import { dbService } from '../../services/db';
-import { examinationDb } from '../../services/examinationDb';
 import { offlineDb } from '../../services/offlineDb';
-import { getQueuedMutations } from '../../services/offlineQueueManager';
 
 type StoreRecord = Map<string, any>;
 
@@ -17,7 +14,6 @@ const getStore = (name: string) => {
 };
 
 const offlineBatchStore = new Map<string, any>();
-const syncQueueStore = new Map<string, any>();
 
 const seedOfflineBatches = (batches: any[]) => {
   offlineBatchStore.clear();
@@ -26,15 +22,7 @@ const seedOfflineBatches = (batches: any[]) => {
   });
 };
 
-const createResponse = (payload: any, status = 200) => ({
-  ok: status >= 200 && status < 300,
-  status,
-  headers: {
-    get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null
-  },
-  text: async () => JSON.stringify(payload),
-  json: async () => payload
-});
+const enqueuedOps: any[] = [];
 
 vi.mock('../../services/db', async () => {
   const dbServiceMock = {
@@ -95,11 +83,6 @@ vi.mock('../../services/examinationDb', () => {
         anyOf: vi.fn(() => ({ toArray: vi.fn(async () => []) })),
       })),
     },
-    examinationBatchNotifications: {
-      toArray: vi.fn(async () => []),
-      put: vi.fn(async (item: any) => item.id),
-      delete: vi.fn(async () => {}),
-    },
   };
   return { examinationDb: examDbMock };
 });
@@ -121,21 +104,13 @@ vi.mock('../../services/offlineDb', async () => {
     deleteBatch: vi.fn(async (id: string) => {
       offlineBatchStore.delete(String(id));
     }),
-    getSyncQueue: vi.fn(async () => Array.from(syncQueueStore.values())),
-    saveSyncQueueItem: vi.fn(async (item: any) => {
-      syncQueueStore.set(String(item.id), item);
-      return item;
-    }),
-    deleteSyncQueueItem: vi.fn(async (id: string) => {
-      syncQueueStore.delete(String(id));
-    }),
     getMetaValue: vi.fn(async () => undefined),
     setMetaValue: vi.fn(async () => undefined),
     getOfflineState: vi.fn(async () => ({
       isOnline: true,
       isSyncing: false,
       lastSyncedAt: null,
-      pendingMutations: syncQueueStore.size,
+      pendingMutations: enqueuedOps.length,
       authBlocked: false,
       cacheReady: true
     })),
@@ -144,64 +119,48 @@ vi.mock('../../services/offlineDb', async () => {
   return { offlineDb: offlineDbMock };
 });
 
-vi.mock('../../services/apiClient', () => ({
-  apiClient: {
-    canUseRemoteApi: () => true,
-    requestRaw: async (config) => {
-      return globalThis.fetch(config.endpoint, {
-        method: config.method || 'GET',
-        headers: config.headers,
-        body: config.body,
-      });
-    }
-  }
-}));
-
-vi.mock('../../services/offlineQueueManager', async () => {
-  const queueOfflineMutation = vi.fn(async (input: any) => {
-    const item = {
-      id: `sync-${syncQueueStore.size + 1}`,
-      entityType: 'examination-batch',
-      operation: input.operation,
-      entityId: input.entityId,
-      request: input.request,
-      payload: input.payload,
-      status: 'pending',
-      retries: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    syncQueueStore.set(String(item.id), item);
-    return item;
-  });
-
-  return {
-    BACKGROUND_SYNC_TAG: 'prime-erp-sync',
-    queueOfflineMutation,
-    getQueuedMutations: vi.fn(async () => Array.from(syncQueueStore.values())),
-    saveQueuedMutation: vi.fn(async (item: any) => {
-      syncQueueStore.set(String(item.id), item);
-      return item;
+vi.mock('../../services/durableSyncQueue', async () => {
+  const durableSyncQueue = {
+    enqueue: vi.fn(async (input: any) => {
+      enqueuedOps.push(input);
+      return { ...input, id: `q-${enqueuedOps.length}` };
     }),
-    removeQueuedMutation: vi.fn(async (id: string) => {
-      syncQueueStore.delete(String(id));
-    }),
-    countQueuedMutations: vi.fn(async () => syncQueueStore.size)
+    getAll: vi.fn(async (status: string) =>
+      status === 'pending'
+        ? enqueuedOps.map((op) => ({ ...op, id: `q-${enqueuedOps.indexOf(op) + 1}` }))
+        : []
+    ),
   };
+  return { durableSyncQueue };
 });
 
-describe('examinationBatchService offline support', () => {
+vi.mock('../../services/backgroundSyncService', () => ({
+  backgroundSyncService: {
+    trigger: vi.fn(async () => null),
+  },
+}));
+
+const createResponse = (payload: any, status = 200) => ({
+  ok: status >= 200 && status < 300,
+  status,
+  headers: {
+    get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null
+  },
+  text: async () => JSON.stringify(payload),
+  json: async () => payload
+});
+
+describe('examinationBatchService offline support (single write path)', () => {
   let fetchMock: any;
   let shouldFailFetch = false;
 
   beforeEach(async () => {
     stores.clear();
     offlineBatchStore.clear();
-    syncQueueStore.clear();
+    enqueuedOps.length = 0;
     localStorage.clear();
     sessionStorage.clear();
     shouldFailFetch = false;
-    // indexedDB is available in jsdom via fake-indexeddb
     fetchMock = vi.fn((url: string) => {
       if (shouldFailFetch) {
         return Promise.reject(new TypeError('Failed to fetch'));
@@ -209,7 +168,6 @@ describe('examinationBatchService offline support', () => {
       return Promise.resolve(createResponse({ id: 'server-1', name: 'Server Batch' }));
     });
     vi.stubGlobal('fetch', fetchMock);
-    vi.stubGlobal('crypto', { randomUUID: () => 'uuid-123' });
     Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
     seedOfflineBatches([]);
   });
@@ -243,7 +201,7 @@ describe('examinationBatchService offline support', () => {
     expect(result[0].id).toBe('local-401');
   });
 
-  it('creates batches offline and stores them in the outbox', async () => {
+  it('creates batches offline and enqueues them on the durable sync queue', async () => {
     shouldFailFetch = true;
     Object.defineProperty(window.navigator, 'onLine', { value: false, configurable: true });
 
@@ -253,13 +211,15 @@ describe('examinationBatchService offline support', () => {
     });
 
     const stored = await offlineDb.getAllBatches();
-    const outbox = await getQueuedMutations();
 
     expect(batch.id).toContain('local-');
     expect(batch._syncStatus).toBe('pending');
     expect(stored.length).toBe(1);
-    expect(outbox.length).toBe(1);
-    expect(outbox[0].operation).toBe('create');
+    // Single write path: everything goes through the durable queue → /api/sync/ops.
+    expect(enqueuedOps).toHaveLength(1);
+    expect(enqueuedOps[0].table).toBe('examination_batches');
+    expect(enqueuedOps[0].operation).toBe('upsert');
+    expect(enqueuedOps[0].recordId).toBe(batch.id);
   });
 
   it('creates batches locally when the backend responds with an auth challenge', async () => {
@@ -275,19 +235,19 @@ describe('examinationBatchService offline support', () => {
     });
 
     const stored = await offlineDb.getAllBatches();
-    const outbox = await getQueuedMutations();
 
     expect(batch.id).toContain('local-');
     expect(batch._syncStatus).toBe('pending');
     expect(stored.length).toBe(1);
-    expect(outbox.length).toBe(1);
+    expect(enqueuedOps).toHaveLength(1);
+    expect(enqueuedOps[0].recordId).toBe(batch.id);
   });
 
   it('syncs offline-created batches when backend is available', async () => {
     shouldFailFetch = true;
     Object.defineProperty(window.navigator, 'onLine', { value: false, configurable: true });
 
-    const offlineBatch = await examinationBatchService.createBatch({
+    await examinationBatchService.createBatch({
       school_id: 'SCH-1',
       name: 'Offline Batch'
     });
@@ -297,11 +257,11 @@ describe('examinationBatchService offline support', () => {
 
     const syncResult = await examinationBatchService.syncPendingBatches();
     const stored = await offlineDb.getAllBatches();
-    const outbox = await getQueuedMutations();
 
     expect(syncResult.failed).toBe(0);
     expect(stored.length).toBeGreaterThan(0);
-    expect(outbox.length).toBeGreaterThanOrEqual(0);
+    // The durable queue still holds the pending statement for the created batch.
+    expect(enqueuedOps).toHaveLength(1);
   });
 
   it('uses the localStorage-backed cache when IndexedDB is unavailable', async () => {

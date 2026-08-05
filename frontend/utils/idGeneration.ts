@@ -1,4 +1,5 @@
 import { CompanyConfig } from '../types';
+import { newUlid } from './ulid';
 import {
   extractConfiguredDocumentNumberValue,
   formatConfiguredDocumentNumber,
@@ -108,11 +109,9 @@ export const generateOpaqueId = (
 };
 
 export const generateLocalId = (prefix = 'local') => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-
-  return generateOpaqueId(prefix, { randomLength: 6 });
+  // Phase 2: opaque local ids are now globally-unique ULIDs (client-generated,
+  // time-sortable) so offline drafts never collide with another device.
+  return `${prefix}-${newUlid()}`;
 };
 
 export const generateNumericAccountNumber = (digits = 8): string => {

@@ -27,7 +27,7 @@ Phase 2 introduces a storage control plane around the existing hybrid ERP runtim
 
 - Customers and suppliers exist in both legacy IndexedDB and RxDB collection space.
 - Notifications existed in both exam notification stores and localStorage.
-- Offline queue state existed in `offlineDb.syncQueue`, `syncOutbox`, and RxDB `syncOperations`.
+- Offline queue state once lived in `offlineDb.syncQueue`, `syncOutbox`, and RxDB `syncOperations`; Phase 2 consolidated everything onto a single durable write path (`durableSyncQueue` → `POST /api/sync/ops`).
 - Settings and migration state existed in localStorage, `offlineDb.meta`, and RxDB `settings`.
 - Examination pricing data exists across Dexie examination tables, `offlineDb.batches`, and RxDB `examinationPricing`.
 
@@ -107,9 +107,13 @@ flowchart LR
 ### Compatibility refactors
 
 - `frontend/services/offlineDb.ts`
-  Now routes queue and offline meta through RxDB when enabled, with safe legacy fallback.
-- `frontend/services/offlineQueueManager.ts`
-  Now attaches queue priority, dedupe, optimistic, and processor metadata.
+  No longer holds any sync state; it is now only the batches + meta cache.
+- `frontend/services/durableSyncQueue.ts` + `frontend/services/backgroundSyncService.ts`
+  The single write path (UI → IndexedDB → durable queue → `POST /api/sync/ops`). The legacy `offlineQueueManager` and `syncOutbox` were removed.
+- `frontend/services/cloudDb.ts`
+  Business writes (e.g. profiles) route through the durable queue; reads, realtime, and file storage stay direct.
+- `frontend/services/examinationBatchService.ts`
+  Offline batch/class/subject ids are now ULIDs; `enqueueOutbox` writes only to the durable queue.
 - `frontend/services/syncManager.ts`
   Now records retry attempts and reuses queue failure patching consistently.
 - `frontend/services/notificationService.ts`
@@ -227,7 +231,7 @@ Final-state principles:
 - Consolidate manufacturing work orders and job tickets under `manufacturingJobs`
 - Replace examination Dexie usage with RxDB-backed repositories
 - Move report data-source reads off generic `dbService.getAll()` for large datasets
-- Retire `offlineDb.syncQueue` and `offlineDb.meta` legacy storage after shadow period
+- Remove the leftover `offlineDb.syncQueue` store from existing installs (already removed from the schema); keep `offlineDb.meta` until the migration state is fully on RxDB
 - Remove notification localStorage mirror once UI subscribers are fully RxDB-reactive
 - Remove supplier local mirrors after procurement UI adopts repository subscriptions
 - Add conflict metadata and operation logs to entity writes ahead of replication

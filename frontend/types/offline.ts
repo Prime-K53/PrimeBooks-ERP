@@ -1,13 +1,4 @@
-export type SyncOperation = 'create' | 'update' | 'delete';
-export type SyncQueueStatus = 'pending' | 'syncing' | 'failed' | 'blocked';
 export type BatchSyncStatus = 'pending' | 'synced' | 'failed' | 'blocked';
-export type SyncQueuePriority = 'low' | 'normal' | 'high' | 'urgent';
-
-export interface SyncAttemptRecord {
-  attemptedAt: string;
-  status: SyncQueueStatus | 'synced' | 'conflict';
-  error?: string;
-}
 
 export interface BatchSubjectRecord {
   id: string;
@@ -63,55 +54,6 @@ export interface BatchRecord {
   _lastSyncedAt?: string;
   _lastModifiedAt?: string;
   [key: string]: unknown;
-}
-
-export interface SyncRequest<TPayload = Record<string, unknown>> {
-  url: string;
-  method: 'POST' | 'PUT' | 'DELETE';
-  headers: Record<string, string>;
-  body: TPayload;
-}
-
-export interface SyncQueueItem<TPayload = Record<string, unknown>> {
-  id: string;
-  entityType: 'examination-batch';
-  operation: SyncOperation;
-  entityId: string;
-  correlationId: string;
-  request: SyncRequest<TPayload>;
-  payload: TPayload;
-  status: SyncQueueStatus;
-  retries: number;
-  createdAt: string;
-  updatedAt: string;
-  nextRetryAt: string | null;
-  lastError: string | null;
-  priority?: SyncQueuePriority;
-  dedupeKey?: string;
-  availableAt?: string | null;
-  processor?: string;
-  optimistic?: boolean;
-  conflictKey?: string;
-  lastAttemptAt?: string | null;
-  attemptHistory?: SyncAttemptRecord[];
-}
-
-export interface APIResponse<T> {
-  data: T;
-  source: 'remote' | 'cache';
-  syncedAt: string | null;
-  stale: boolean;
-}
-
-export interface AuthState {
-  userId: string | null;
-  role: string | null;
-  isSuperAdmin: boolean;
-  accessToken: string | null;
-  refreshToken: string | null;
-  expiresAt: string | null;
-  authMode: 'supabase' | 'anonymous';
-  isAuthenticated: boolean;
 }
 
 export interface OfflineState {

@@ -27,6 +27,7 @@ import { cloudDb } from './cloudDb';
 import { isCloudOnlyMode, isSupabaseConfigured, requireCloudSessionMessage } from './cloudMode';
 import { durableSyncQueue } from './durableSyncQueue';
 import { backgroundSyncService } from './backgroundSyncService';
+import { newId } from '../utils/ulid';
 
 interface NexusDB extends DBSchema {
     inventory: { key: string; value: Item; };
@@ -107,7 +108,6 @@ interface NexusDB extends DBSchema {
     financialYears: { key: string; value: any };
     userPreferences: { key: string; value: any };
     tasks: { key: string; value: any };
-    syncOutbox: { key: string; value: { id: string; entityId: string; type: string; payload: any; date: string } };
     vatTransactions: { key: string; value: VatTransaction; };
     vatReturns: { key: string; value: VatReturn; };
     roundingLogs: { key: string; value: RoundingLog; };
@@ -359,7 +359,7 @@ const deleteFromLegacyStore = async (storeName: keyof NexusDB, id: string): Prom
 const SUPABASE_CONFIGURED = isSupabaseConfigured;
 
 const LOCAL_ONLY_STORES = new Set([
-  'syncOutbox', 'idempotencyKeys',
+  'idempotencyKeys',
   'customerNotificationLogs',
   'alerts', 'auditLogs',
   'productAttributes',
@@ -557,7 +557,7 @@ const STORE_NAMES: (keyof NexusDB)[] = [
     'userPreferences',
     'smsCampaigns', 'subscribers', 'smsTemplates', 'shipments',
     'subcontractOrders', 'maintenanceLogs',
-    'auditLogs', 'syncOutbox', 'alerts', 'reminders',
+    'auditLogs', 'alerts', 'reminders',
     'examJobs', 'examPapers', 'examPrintingBatches',
     'examinationJobs', 'examinationJobSubjects', 'examinationInvoiceGroups', 'examinationRecurringProfiles', 'examinationInventoryDeductions', 'examinationBatchNotifications', 'examinationBatches', 'notificationAuditLogs',
     'schools',
@@ -1059,6 +1059,13 @@ export const dbService = {
 
         delete raw._cloudSource;
 
+        // New records without an explicit id get a globally-unique
+        // client-generated ULID so offline writes can never collide across
+        // devices. Existing ids are always preserved.
+        if (!raw.id) {
+            raw.id = newId();
+        }
+
         const itemId = String(raw.id ?? '');
 
         // Local-first: always write to IndexedDB, return immediately
@@ -1070,7 +1077,7 @@ export const dbService = {
         }
 
         // Background sync: fire-and-forget queue to cloud
-        const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
+        const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName));
         if (!isLocalOnly && itemId && !isCloudSource) {
             try {
                 const table = getCloudTable(String(storeName));
@@ -1222,7 +1229,7 @@ export const dbService = {
 
         // Background sync: queue delete to cloud
         const isCloudSource = options.cloudSource === true;
-        const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName)) || String(storeName) === 'syncOutbox';
+        const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName));
         if (!isLocalOnly && id && !isCloudSource) {
             try {
                 const table = getCloudTable(String(storeName));

@@ -115,8 +115,6 @@ const SUPABASE_ENABLED = isSupabaseConfigured();
 const FILE_BUCKET = 'prime-erp-files';
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
-const getTable = (storeName: string): string => STORE_TO_TABLE[storeName] || storeName;
-
 async function ensureSession(signal?: AbortSignal) {
   if (!SUPABASE_ENABLED) return null;
   try {
@@ -135,10 +133,6 @@ async function ensureSession(signal?: AbortSignal) {
 }
 
 const SESSION_TIMEOUT_MS = 8_000;
-
-interface CloudPutOptions {
-  cloudSource?: boolean;
-}
 
 async function withSession<T>(fn: () => Promise<T>): Promise<T> {
   const session = await ensureSession();
@@ -166,22 +160,6 @@ export const cloudDb = {
     ]));
   },
 
-  async getCurrentProfile(): Promise<any | null> {
-    return withSession(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) return null;
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return profile || null;
-    });
-  },
-
   async listCompanyProfiles(): Promise<any[] | null> {
     return withSession(async () => {
       const { data, error } = await supabase
@@ -190,71 +168,60 @@ export const cloudDb = {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data || [];
-    });
-  },
-
-  async upsertProfile(profile: Record<string, any>): Promise<string | null> {
-    return withSession(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = profile.user_id || profile.userId || profile.id || user?.id;
-      if (!userId) return null;
-
-      const profileData = { ...profile };
-      delete profileData.password;
-      delete profileData.confirmPassword;
-      delete profileData.profile_id;
-      delete profileData.profileId;
-      delete profileData.user_id;
-      delete profileData.userId;
-      delete profileData.company_id;
-      delete profileData.companyId;
-
-      const payload: Record<string, unknown> = {
-        id: profile.profile_id || profile.profileId || crypto.randomUUID(),
-        user_id: userId,
-        full_name: profile.full_name || profile.fullName || profile.name || user?.email?.split('@')[0] || 'User',
-        role: profile.role || 'Sales Staff',
-        status: profile.status || 'Active',
-        data: profileData,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert(payload, { onConflict: 'user_id' })
-        .select('id')
-        .single();
-
-      if (error) throw error;
-      return data?.id || null;
-    });
-  },
-
-
-  async getAll<T>(storeName: string): Promise<T[] | null> {
-    return withSession(async () => {
-      const table = getTable(storeName);
-      const query = supabase.from(table).select('*');
-      const { data, error } = await query.order('updated_at', { ascending: false });
-      if (error) throw error;
       return (data || []).map((r: any) => {
         const { data: jsonData, updated_at, ...rest } = r;
-        return { id: r.id, ...rest, ...(jsonData || {}) } as T;
+        return { id: r.id, ...rest, ...(jsonData || {}) } as any;
       });
     });
   },
 
-  async get<T>(storeName: string, id: string): Promise<T | null> {
-    return withSession(async () => {
-      const table = getTable(storeName);
-      const query = supabase.from(table).select('*').eq('id', id);
-      const { data, error } = await query.maybeSingle();
-      if (error) throw error;
-      if (!data) return null;
-      const { data: jsonData, updated_at, ...rest } = data;
-      return { id: data.id, ...rest, ...(jsonData || {}) } as T;
-    });
+  /**
+   * Write a staff profile through the single sync write path. The row is
+   * enqueued on the durable queue and reaches the cloud via the backend sync
+   * gateway (POST /api/sync/ops) — never written directly to Supabase from
+   * the browser. The profile id is derived deterministically from the user id
+   * so a retried upsert merges onto the existing row instead of duplicating it.
+   */
+  async upsertProfile(profile: Record<string, any>): Promise<string | null> {
+    const userId = profile.user_id || profile.userId || profile.id;
+    if (!userId) return null;
+
+    const profileId = profile.profile_id || profile.profileId || await stringToUuid5(String(userId));
+
+    const profileData = { ...profile };
+    delete profileData.password;
+    delete profileData.confirmPassword;
+    delete profileData.profile_id;
+    delete profileData.profileId;
+    delete profileData.user_id;
+    delete profileData.userId;
+    delete profileData.company_id;
+    delete profileData.companyId;
+
+    const payload: Record<string, unknown> = {
+      id: profileId,
+      user_id: userId,
+      full_name: profile.full_name || profile.fullName || 'User',
+      role: profile.role || 'Sales Staff',
+      status: profile.status || 'Active',
+      data: profileData,
+      updated_at: new Date().toISOString(),
+    };
+
+    try {
+      const { durableSyncQueue } = await import('./durableSyncQueue');
+      await durableSyncQueue.enqueue({
+        table: 'profiles',
+        recordId: profileId,
+        operation: 'upsert',
+        payload: payload as unknown,
+      });
+      const { backgroundSyncService } = await import('./backgroundSyncService');
+      backgroundSyncService.trigger();
+    } catch {
+      // best-effort write: the queue will pick it up on the next sync pass.
+    }
+    return profileId;
   },
 
   /**
@@ -344,125 +311,7 @@ export const cloudDb = {
     }
   },
 
-  async put<T>(
-    storeName: string,
-    item: T,
-    operationId?: string,
-    options: CloudPutOptions = {}
-  ): Promise<{ id: string | null; updatedAt?: string; createdAt?: string; version?: number } | null> {
-    return withSession(async () => {
-      const raw = { ...(item as Record<string, unknown>) };
-      const isCloudSource = options.cloudSource === true || raw._cloudSource === true;
-
-      // Idempotency check
-      const opId = operationId || (raw._operationId as string | undefined);
-      if (opId) {
-        const { alreadyProcessed, result } = await this.checkIdempotency(opId);
-        if (alreadyProcessed) {
-          return result ? { id: result } : null;
-        }
-      }
-
-      const table = getTable(storeName);
-      const version = raw._version as number | undefined;
-      delete raw._updatedAt;
-      delete raw._cloudSource;
-      delete raw._operationId;
-      delete raw._version;
-      delete raw.dependsOn;
-
-      const { id, ...domainData } = raw;
-      const record: Record<string, unknown> = {
-        id: id || crypto.randomUUID(),
-        data: domainData,
-      };
-
-      if (!isCloudSource) {
-        record.updated_at = new Date().toISOString();
-      } else if (typeof raw.updated_at === 'string' && raw.updated_at.trim()) {
-        record.updated_at = raw.updated_at;
-      }
-
-      // Use `any` type for the query builder chain to avoid complex type inference issues
-      // with Supabase's PostgrestBuilder/PostgrestFilterBuilder type hierarchy
-      let query: any = supabase
-        .from(table)
-        .upsert(record, { onConflict: 'id', ignoreDuplicates: false })
-        .select('*')
-        .single();
-
-      if (version !== undefined) {
-        query = query.eq('version', version);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const result = {
-        id: data?.id || id || null,
-        updatedAt: data?.updated_at ? String(data.updated_at) : undefined,
-        createdAt: data?.created_at ? String(data.created_at) : undefined,
-        version: data?.version ? Number(data.version) : undefined,
-      };
-
-      // Record idempotency
-      if (opId && result.id) {
-        await this.recordIdempotency(opId, result.id);
-      }
-
-      return result;
-    });
-  },
-
-  async delete(storeName: string, id: string, operationId?: string): Promise<boolean | null> {
-    return withSession(async () => {
-      // Idempotency check
-      if (operationId) {
-        const { alreadyProcessed } = await this.checkIdempotency(operationId);
-        if (alreadyProcessed) return true;
-      }
-
-      const table = getTable(storeName);
-      const query = supabase.from(table).delete().eq('id', id);
-      const { error } = await query;
-      if (error) throw error;
-
-      // Record idempotency
-      if (operationId) {
-        await this.recordIdempotency(operationId, id);
-      }
-
-      return true;
-    });
-  },
-
-  async getSetting<T>(key: string): Promise<T | null> {
-    return withSession(async () => {
-      const query = supabase
-        .from('settings')
-        .select('data')
-        .eq('id', key);
-      const { data, error } = await query.maybeSingle();
-      if (error) throw error;
-      return data?.data as T ?? null;
-    });
-  },
-
-  async saveSetting<T>(key: string, value: T): Promise<void | null> {
-    return withSession(async () => {
-      const record: Record<string, unknown> = {
-        id: key,
-        data: value,
-        updated_at: new Date().toISOString(),
-      };
-      const { error } = await supabase
-        .from('settings')
-        .upsert(record, { onConflict: 'id' });
-      if (error) throw error;
-    });
-  },
-
-  async uploadFile(file: File, folder = 'documents', operationId?: string): Promise<string | null> {
+async uploadFile(file: File, folder = 'documents', operationId?: string): Promise<string | null> {
     return withSession(async () => {
       // Idempotency check for file uploads
       if (operationId) {

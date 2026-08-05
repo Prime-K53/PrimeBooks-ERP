@@ -4,8 +4,7 @@ import { generateNextExaminationBatchNumber } from './documentNumberService';
 import { calculateBatchPricing, PricingSettings } from '../utils/examinationPricingCalculator';
 import { isExaminationDebugLoggingEnabled } from '../utils/debugFlags';
 import { examinationDb } from './examinationDb';
-import { getQueuedMutations, removeQueuedMutation } from './offlineQueueManager';
-import type { BatchRecord } from '../types/offline';
+import { newUlid } from '../utils/ulid';
 
 export interface ExaminationInvoiceLineItem {
   id: string;
@@ -83,10 +82,9 @@ const debugExam = (...args: any[]) => {
 };
 
 const generateLocalId = () => {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return `local-${crypto.randomUUID()}`;
-  }
-  return `local-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+  // Phase 2: offline batch ids are globally-unique ULIDs so two devices can
+  // never mint the same batch id while offline.
+  return `local-${newUlid()}`;
 };
 
 const toIso = () => new Date().toISOString();
@@ -181,29 +179,8 @@ const enqueueOutbox = async (type: string, entityId: string, payload: Record<str
       ? 'update'
       : 'create';
 
-  try {
-    const { queueOfflineMutation } = await import('./offlineQueueManager');
-    const method = operation === 'delete' ? 'DELETE' : operation === 'update' ? 'PUT' : 'POST';
-    const url = operation === 'create'
-      ? '/api/examination/batches'
-      : `/api/examination/batches/${encodeURIComponent(entityId)}`;
-
-    await queueOfflineMutation({
-      entityId,
-      operation,
-      request: {
-        url,
-        method,
-        headers: {
-          'content-type': 'application/json'
-        },
-        body: payload
-      },
-      payload
-    });
-  } catch {
-  }
-
+  // Single write path: business ops flow to the cloud only through the
+  // durable sync queue → backend sync gateway (/api/sync/ops).
   try {
     const { durableSyncQueue } = await import('./durableSyncQueue');
     await durableSyncQueue.enqueue({
@@ -214,23 +191,6 @@ const enqueueOutbox = async (type: string, entityId: string, payload: Record<str
     });
   } catch {
   }
-};
-
-const loadOutbox = async () => {
-  const entries = await getQueuedMutations();
-  return entries.map((entry) => ({
-    id: entry.id,
-    entityId: entry.entityId,
-    type: `examinationBatch:${entry.operation}`,
-    payload: entry.payload,
-    date: entry.createdAt,
-    status: entry.status,
-    retries: entry.retries
-  }));
-};
-
-const removeOutboxEntries = async (ids: string[]) => {
-  await Promise.all(ids.map((id) => removeQueuedMutation(id)));
 };
 
 const getLocalInventory = async () => {
@@ -693,8 +653,18 @@ export const examinationBatchService = {
   },
 
   async syncPendingBatches(): Promise<{ synced: number; failed: number; pending: number }> {
-    const outbox = (await loadOutbox()).filter(entry => String(entry.type || '').startsWith('examinationBatch:'));
-    return { synced: 0, failed: 0, pending: outbox.length };
+    // The durable queue is the single sync engine — a re-online event just
+    // reports what is still pending for examination batches. The actual
+    // drain is handled by backgroundSyncService via /api/sync/ops.
+    try {
+      const { durableSyncQueue } = await import('./durableSyncQueue');
+      const { backgroundSyncService } = await import('./backgroundSyncService');
+      backgroundSyncService.trigger();
+      const pending = (await durableSyncQueue.getAll('pending')).filter(op => op.table === 'examination_batches').length;
+      return { synced: 0, failed: 0, pending };
+    } catch {
+      return { synced: 0, failed: 0, pending: 0 };
+    }
   },
 
   async calculateBatch(

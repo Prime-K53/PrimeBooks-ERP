@@ -1,20 +1,11 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { BatchRecord, OfflineState, SyncQueueItem, SyncQueuePriority, SyncQueueStatus } from '../types/offline';
+import type { BatchRecord, OfflineState } from '../types/offline';
 import { dbService } from './db';
 
 interface PrimeErpOfflineDbSchema extends DBSchema {
   batches: {
     key: string;
     value: BatchRecord;
-  };
-  syncQueue: {
-    key: string;
-    value: SyncQueueItem;
-    indexes: {
-      'by-status': SyncQueueStatus;
-      'by-next-retry': string;
-      'by-entity-id': string;
-    };
   };
   meta: {
     key: string;
@@ -35,7 +26,7 @@ let dbPromise: Promise<IDBPDatabase<PrimeErpOfflineDbSchema>> | null = null;
 
 const nowIso = () => new Date().toISOString();
 
-const storageKey = (storeName: 'batches' | 'syncQueue' | 'meta') => `${STORAGE_PREFIX}:${storeName}`;
+const storageKey = (storeName: 'batches' | 'meta') => `${STORAGE_PREFIX}:${storeName}`;
 
 const canUseIndexedDb = () => typeof indexedDB !== 'undefined';
 
@@ -53,7 +44,7 @@ const emitOfflineDbChange = (store: string, ids: string[]) => {
   }));
 };
 
-const readLocalFallback = async <T extends { id?: string; key?: string }>(storeName: 'batches' | 'syncQueue' | 'meta'): Promise<T[]> => {
+const readLocalFallback = async <T extends { id?: string; key?: string }>(storeName: 'batches' | 'meta'): Promise<T[]> => {
   if (typeof localStorage === 'undefined') {
     return [];
   }
@@ -66,7 +57,7 @@ const readLocalFallback = async <T extends { id?: string; key?: string }>(storeN
   }
 };
 
-const writeLocalFallback = async <T extends { id?: string; key?: string }>(storeName: 'batches' | 'syncQueue' | 'meta', rows: T[]) => {
+const writeLocalFallback = async <T extends { id?: string; key?: string }>(storeName: 'batches' | 'meta', rows: T[]) => {
   if (typeof localStorage === 'undefined') {
     return;
   }
@@ -75,7 +66,7 @@ const writeLocalFallback = async <T extends { id?: string; key?: string }>(store
 };
 
 const upsertLocalFallback = async <T extends { id?: string; key?: string }>(
-  storeName: 'batches' | 'syncQueue' | 'meta',
+  storeName: 'batches' | 'meta',
   row: T
 ) => {
   const rows = await readLocalFallback<T>(storeName);
@@ -85,7 +76,7 @@ const upsertLocalFallback = async <T extends { id?: string; key?: string }>(
   await writeLocalFallback(storeName, next);
 };
 
-const removeFromLocalFallback = async (storeName: 'batches' | 'syncQueue' | 'meta', key: string) => {
+const removeFromLocalFallback = async (storeName: 'batches' | 'meta', key: string) => {
   const rows = await readLocalFallback<any>(storeName);
   await writeLocalFallback(storeName, rows.filter((entry) => String(entry.id ?? entry.key ?? '') !== String(key)));
 };
@@ -100,12 +91,6 @@ const initDb = async () => {
       upgrade(db) {
         if (!db.objectStoreNames.contains('batches')) {
           db.createObjectStore('batches', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('syncQueue')) {
-          const queueStore = db.createObjectStore('syncQueue', { keyPath: 'id' });
-          queueStore.createIndex('by-status', 'status');
-          queueStore.createIndex('by-next-retry', 'nextRetryAt');
-          queueStore.createIndex('by-entity-id', 'entityId');
         }
         if (!db.objectStoreNames.contains('meta')) {
           db.createObjectStore('meta', { keyPath: 'key' });
@@ -196,75 +181,6 @@ const deleteBatchFromLegacy = async (id: string) => {
   );
 };
 
-const normalizeQueueRows = (rows: SyncQueueItem[], statuses?: SyncQueueStatus[]) => {
-  const priorityWeight: Record<SyncQueuePriority, number> = {
-    urgent: 0,
-    high: 1,
-    normal: 2,
-    low: 3
-  };
-  const wanted = Array.isArray(statuses) && statuses.length > 0 ? new Set(statuses) : null;
-  return rows
-    .filter((row) => !wanted || wanted.has(row.status))
-    .sort((left, right) => {
-      const leftPriority = priorityWeight[(left.priority || 'normal') as SyncQueuePriority] ?? priorityWeight.normal;
-      const rightPriority = priorityWeight[(right.priority || 'normal') as SyncQueuePriority] ?? priorityWeight.normal;
-      if (leftPriority !== rightPriority) {
-        return leftPriority - rightPriority;
-      }
-
-      const leftAvailableAt = left.availableAt || left.nextRetryAt || left.createdAt;
-      const rightAvailableAt = right.availableAt || right.nextRetryAt || right.createdAt;
-      const availableDelta = new Date(leftAvailableAt).getTime() - new Date(rightAvailableAt).getTime();
-      if (availableDelta !== 0) {
-        return availableDelta;
-      }
-
-      return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
-    });
-};
-
-const mergeByIdentifier = <T extends { id?: string; dedupeKey?: string }>(primary: T[], fallback: T[]) => {
-  const merged = new Map<string, T>();
-
-  [...fallback, ...primary].forEach((row) => {
-    const key = String(row.id || row.dedupeKey || '');
-    if (!key) return;
-    merged.set(key, row);
-  });
-
-  return Array.from(merged.values());
-};
-
-const readQueueFromLegacy = (statuses?: SyncQueueStatus[]) => withIndexedDbFallback(
-  async () => normalizeQueueRows(await readLocalFallback<SyncQueueItem>('syncQueue'), statuses),
-  async (db) => normalizeQueueRows(await db.getAll('syncQueue'), statuses)
-);
-
-const writeQueueToLegacy = async (item: SyncQueueItem) => {
-  await withIndexedDbFallback(
-    async () => {
-      await upsertLocalFallback('syncQueue', item);
-      return undefined;
-    },
-    async (db) => {
-      await db.put('syncQueue', item);
-    }
-  );
-};
-
-const deleteQueueFromLegacy = async (id: string) => {
-  await withIndexedDbFallback(
-    async () => {
-      await removeFromLocalFallback('syncQueue', id);
-      return undefined;
-    },
-    async (db) => {
-      await db.delete('syncQueue', id);
-    }
-  );
-};
-
 const readMetaFromLegacy = async <T>(key: string): Promise<T | undefined> =>
   withIndexedDbFallback(
     async () => {
@@ -344,50 +260,6 @@ export const offlineDb = {
 
     if (!silent) {
       emitOfflineDbChange('batches', [key]);
-    }
-  },
-
-  async getSyncQueue(statuses?: SyncQueueStatus[]): Promise<SyncQueueItem[]> {
-    return readQueueFromLegacy(statuses);
-  },
-
-  async enqueueSyncQueueItem(item: SyncQueueItem, { silent = false }: { silent?: boolean } = {}): Promise<SyncQueueItem | null> {
-    const next = {
-      ...item,
-      updatedAt: nowIso()
-    } as SyncQueueItem;
-
-    await writeQueueToLegacy(next);
-
-    if (!silent) {
-      emitOfflineDbChange('syncQueue', [String(next.id)]);
-    }
-
-    return next;
-  },
-
-  async saveSyncQueueItem(item: SyncQueueItem, { silent = false }: { silent?: boolean } = {}): Promise<SyncQueueItem> {
-    const next: SyncQueueItem = {
-      ...item,
-      updatedAt: nowIso()
-    };
-
-    await writeQueueToLegacy(next);
-
-    if (!silent) {
-      emitOfflineDbChange('syncQueue', [String(next.id)]);
-    }
-
-    return next;
-  },
-
-  async deleteSyncQueueItem(id: string, { silent = false }: { silent?: boolean } = {}) {
-    const key = String(id || '');
-
-    await deleteQueueFromLegacy(key);
-
-    if (!silent) {
-      emitOfflineDbChange('syncQueue', [key]);
     }
   },
 
