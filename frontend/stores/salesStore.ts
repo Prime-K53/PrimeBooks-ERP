@@ -3,7 +3,7 @@ import { logger } from '@/services/logger';
 import { Sale, Quotation, JobOrder, HeldOrder, ZReport, CustomerPayment, Shipment, Customer, SalesExchange, ReprintJob, DeliveryNote, SalesOrder } from '../types';
 import { api } from '../services/api';
 import { transactionService } from '../services/transactionService';
-import { generateNextId } from '../utils/helpers';
+import { generateCustomerId, generateNextId } from '../utils/helpers';
 import { customerNotificationService } from '../services/customerNotificationService';
 import { adminLifecycle, type PortalCredentials } from '../services/adminPortalClient';
 
@@ -328,7 +328,7 @@ addCustomerPayment: async (payment) => {
   },
 
   addCustomer: async (customer, options = {}): Promise<PortalCredentials | null> => {
-    const newCustomer = { ...customer, id: customer.id || generateNextId('CUST', get().customers) };
+    const newCustomer = { ...customer, id: customer.id || generateCustomerId(get().customers) };
     const prev = get().customers;
     set(state => ({ customers: [...state.customers, newCustomer] }));
     try {

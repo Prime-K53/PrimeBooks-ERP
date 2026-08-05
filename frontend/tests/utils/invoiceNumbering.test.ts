@@ -40,7 +40,7 @@ describe('invoice numbering padding', () => {
   it('uses built-in prefixes for non-invoice documents with the shared rule', () => {
     const config = buildSharedConfig(3);
     expect(generateNextId('quotation', [], config)).toBe('QTN-001');
-    expect(generateNextId('customer', [], config)).toBe('CUST-001');
+    expect(generateNextId('supplier', [], config)).toBe('SUP-001');
   });
 
   it('includes the configured global extension in generated numbers', () => {

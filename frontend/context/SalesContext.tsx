@@ -5,7 +5,7 @@ import { useFinance } from './FinanceContext';
 import { useProductionStore } from '../stores/productionStore';
 import { useInventoryStore } from '../stores/inventoryStore';
 import { Sale, Quotation, JobOrder, HeldOrder, ZReport, CustomerPayment, Invoice, WorkOrder, LedgerEntry, RecurringInvoice, WalletTransaction, CartItem, Customer, SalesExchange, ReprintJob, SalesOrder, Shipment, Order } from '../types';
-import { generateNextId, roundFinancial, resolveCustomerPaymentPolicy, resolveCustomerPaymentTerms } from '../utils/helpers';
+import { generateCustomerId, generateNextId, roundFinancial, resolveCustomerPaymentPolicy, resolveCustomerPaymentTerms } from '../utils/helpers';
 import { useAuth } from './AuthContext';
 import { bomService } from '../services/bomService';
 import { transactionService } from '../services/transactionService';
@@ -995,7 +995,7 @@ export const SalesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const addCustomer = async (customer: Customer, options?: { invite?: boolean }): Promise<PortalCredentials | null> => {
         try {
-            const id = customer.id || generateNextId('CUST', salesStore.customers, companyConfig);
+            const id = customer.id || generateCustomerId(salesStore.customers);
             const finalCustomer = normalizeCustomerPaymentTerms({ ...customer, id });
             await transactionService.saveCustomer(finalCustomer);
             await salesStore.fetchSalesData();

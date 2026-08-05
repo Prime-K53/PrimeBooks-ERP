@@ -120,8 +120,7 @@ const CustomerCreateRequest: React.FC = () => {
     const term = search.trim().toLowerCase();
     const available = (catalog || []).filter(
       (item: any) =>
-        String(item.status || '').toLowerCase() !== 'deleted' &&
-        (Number(item.quantity) || 0) > 0
+        String(item.status || '').toLowerCase() !== 'deleted'
     );
     if (!term) return available;
     return available.filter((item: any) =>

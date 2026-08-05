@@ -9,7 +9,7 @@ import { useFinance } from '../../../context/FinanceContext';
 import { useSales } from '../../../context/SalesContext';
 import { useInventory } from '../../../context/InventoryContext';
 import { CartItem, Item, Invoice, ProductVariant, Account, OrderItem, OrderPayment, BOMTemplate, AdjustmentSnapshot, Customer } from '../../../types';
-import { generateNextId, getDefaultPaymentTermsForSegment, resolveCustomerPaymentPolicy, roundToCurrency } from '../../../utils/helpers';
+import { generateCustomerId, generateNextId, getDefaultPaymentTermsForSegment, resolveCustomerPaymentPolicy, roundToCurrency } from '../../../utils/helpers';
 import { generateLocalId } from '../../../utils/idGeneration';
 import { pricingService, DynamicServicePricingResult } from '../../../services/pricingService';
 import { dbService } from '../../../services/db';
@@ -202,7 +202,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ type, initialData, onSave,
         if (typeof addCustomer !== 'function') return null;
 
         const newCustomer: Customer = {
-            id: generateNextId('CUST', customers, companyConfig),
+            id: generateCustomerId(customers),
             name: normalizedName,
             email: '',
             phone: '',
@@ -2006,7 +2006,7 @@ const handleVariantSelect = async (variant: ProductVariant) => {
                                             e.preventDefault();
                                             const name = customerSearch.trim();
                                             const newCustomer: Customer = {
-                                                id: generateNextId('CUST', customers, companyConfig),
+                                                id: generateCustomerId(customers),
                                                 name,
                                                 email: '',
                                                 phone: '',

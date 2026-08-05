@@ -153,12 +153,49 @@ export const generateCategorySku = (category: string, collection: any[]) => {
   return `${prefix}-${String(maxNum + 1).padStart(DEFAULT_PADDING, '0')}`;
 };
 
+export const CUSTOMER_ID_PREFIX = 'CUST';
+export const CUSTOMER_ID_PADDING = DEFAULT_PADDING;
+
+/**
+ * Generates the next customer id as a CUST-XXXX sequence (e.g. CUST-0001).
+ *
+ * Customer ids are intentionally NOT driven by the numbering rules in Settings
+ * (transactionSettings.numbering). They always use the fixed CUST prefix with
+ * four-digit padding, incrementing from the highest CUST- number already in the
+ * collection.
+ */
+export const generateCustomerId = (collection: any[] = []) => {
+  const customerIdPattern = new RegExp(`^${CUSTOMER_ID_PREFIX}-(\\d+)$`, 'i');
+  let max = 0;
+
+  (collection || []).forEach((item) => {
+    if (!item?.id || typeof item.id !== 'string') return;
+    const match = item.id.trim().match(customerIdPattern);
+    if (!match) return;
+    const parsed = parseInt(match[1], 10);
+    if (!Number.isNaN(parsed) && parsed > max) max = parsed;
+  });
+
+  return `${CUSTOMER_ID_PREFIX}-${String(max + 1).padStart(CUSTOMER_ID_PADDING, '0')}`;
+};
+
+export const isCustomerNumberingType = (type: string) => {
+  return resolveBuiltInDocumentPrefix(type) === CUSTOMER_ID_PREFIX;
+};
+
 export const generateSequentialId = (
   type: string = 'ID',
   collection: any[] = [],
   config?: CompanyConfig
 ) => {
   const safeType = String(type || 'ID');
+
+  // Customer ids are ALWAYS the fixed CUST-XXXX sequence. They must never be
+  // driven by the numbering rules configured in Settings.
+  if (isCustomerNumberingType(safeType)) {
+    return generateCustomerId(collection);
+  }
+
   const { effectiveRule } = resolveSequentialNumberingRule(safeType, config);
   const padding = resolveSequentialNumberingPadding(safeType, config);
 

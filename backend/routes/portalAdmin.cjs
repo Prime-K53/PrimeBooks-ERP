@@ -64,7 +64,6 @@ const verifyAdminAuth = async (req, res, next) => {
               role: sbUser.user_metadata?.role || 'Admin',
               email: sbUser.email,
               isSuperAdmin: sbUser.user_metadata?.is_super_admin === true,
-              company_id: sbUser.user_metadata?.company_id || sbUser.app_metadata?.tenant_id || null,
               permissions: sbUser.user_metadata?.is_super_admin ? ['*'] : []
             };
             req.authMode = 'supabase';
@@ -81,78 +80,53 @@ const verifyAdminAuth = async (req, res, next) => {
 
 router.use(verifyAdminAuth);
 
-// Permanently deletes the caller's own company in the cloud: all company rows,
-// profiles, the company record and the company's Supabase Auth users — so the
-// same credentials can no longer sign in. The company id comes from the
-// caller's own Supabase auth user (or the caller-provided body company_id,
-// which the frontend resolves from the caller's own session/localStorage);
-// the request body is never trusted for OTHER companies' ids.
+// Permanently deletes ALL cloud data (single-company architecture): every row
+// in every public table plus the caller's Supabase Auth user, so the same
+// credentials can no longer sign in. Requires the service-role key.
 router.post('/company/delete', async (req, res) => {
   try {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('placeholder')) {
+    const serviceKey = process.env.SUPABASE_SECRET_KEY;
+    if (!SUPABASE_URL || SUPABASE_URL.includes('placeholder') || !serviceKey) {
       return res.status(503).json({ error: 'Supabase is not configured on this server' });
     }
     const base = SUPABASE_URL.replace(/\/+$/, '');
-    // Use the caller's Supabase JWT for the RPC call — cascade_delete_company is
-    // granted to `authenticated`, not `anon`, so the anon key as bearer would
-    // be rejected (42501).
-    const authHeader = req.headers['authorization'] || '';
-    const callerToken = authHeader.startsWith('Bearer ')
-      ? authHeader.slice(7).trim()
-      : SUPABASE_ANON_KEY;
+    const adminHeaders = {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+    };
 
-    // 1. Prefer the caller's own company id sent by the frontend (avoids the
-    //    Admin API anon-key limitation). 2. Then the company_id resolved during
-    //    authentication from the same /auth/v1/user call (supabase header path).
-    //    3. Fall back to the auth user's metadata via the Admin API (works when
-    //    a service-role key is set).
-    let target = String(req.body?.company_id || '').trim()
-      || String(req.user?.company_id || '').trim();
+    // 1. List every table via the PostgREST OpenAPI spec.
+    const { data: spec } = await axios.get(`${base}/rest/v1/`, {
+      headers: adminHeaders,
+      timeout: 10000,
+    });
+    const paths = spec?.paths || {};
+    const tableNames = Object.keys(paths)
+      .filter((p) => /^\/([a-z_][a-z0-9_]*)$/.test(p) && !p.includes('('))
+      .map((p) => p.slice(1));
 
-    // Resolve from the caller's Supabase access token if the client did not
-    // send the company id. /auth/v1/user works with the anon key + a valid
-    // user JWT (no service-role key required).
-    if (!target && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.slice(7).trim();
+    // 2. Wipe every table (service role bypasses RLS; no filter = all rows).
+    const wiped = [];
+    for (const table of tableNames) {
       try {
-        const { data: sbUser } = await axios.get(`${base}/auth/v1/user`, {
-          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
-          timeout: 6000,
-        });
-        target = String(sbUser?.user_metadata?.company_id || sbUser?.app_metadata?.tenant_id || '').trim();
-      } catch { /* token could not be validated */ }
+        await axios.delete(`${base}/rest/v1/${table}`, { headers: adminHeaders, timeout: 60000 });
+        wiped.push(table);
+      } catch { /* skip tables that failed (e.g. internal) */ }
     }
 
-    if (!target && req.user?.id) {
+    // 3. Delete the caller's Supabase Auth user so their credentials stop working.
+    if (req.user?.id) {
       try {
-        const { data } = await axios.get(`${base}/auth/v1/admin/users/${req.user.id}`, {
-          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-          timeout: 6000,
+        await axios.delete(`${base}/auth/v1/admin/users/${req.user.id}`, {
+          headers: adminHeaders,
+          timeout: 10000,
         });
-        target = String(data?.user_metadata?.company_id || data?.app_metadata?.tenant_id || '').trim();
-      } catch { /* fall through */ }
+      } catch { /* best effort */ }
     }
-    if (!target) {
-      console.warn('[PortalAdmin] Delete company could not resolve target', {
-        bodyCompanyId: req.body?.company_id,
-        userCompanyId: req.user?.company_id,
-        userId: req.user?.id,
-        authMode: req.authMode,
-        hasAuthHeader: Boolean(authHeader),
-        hasCompanyHeader: Boolean(req.headers['x-company-id']),
-      });
-      return res.status(400).json({ error: 'Could not resolve the company for the current user' });
-    }
-    const { data } = await axios.post(
-      `${base}/rest/v1/rpc/cascade_delete_company`,
-      { target_company_id: target },
-      {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${callerToken}`, 'Content-Type': 'application/json' },
-        timeout: 30000,
-      }
-    );
-    console.log(`[PortalAdmin] Deleted company ${target} via cascade_delete_company: ${data}`);
-    res.json({ ok: true, company_id: target, detail: data });
+
+    console.log(`[PortalAdmin] Wiped ${wiped.length} tables for single-company reset`);
+    res.json({ ok: true, tables_wiped: wiped.length });
   } catch (err) {
     console.error('[PortalAdmin] Delete company error:', err?.response?.status, err?.response?.data || err.message);
     res.status(500).json({ error: 'Failed to delete company', detail: err?.response?.data || err.message });

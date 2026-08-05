@@ -7,6 +7,7 @@ import {
 } from './numbering';
 import {
   generateCategorySku,
+  generateCustomerId as generateCustomerIdCore,
   generateNumericAccountNumber,
   generateSequentialId,
   isInvoiceNumberingType,
@@ -60,6 +61,10 @@ export const generateNextId = (type: string = 'ID', collection: any[] = [], conf
 
 export const generateSku = (category: string, collection: any[]) => {
   return generateCategorySku(category, collection);
+};
+
+export const generateCustomerId = (collection: any[] = []) => {
+  return generateCustomerIdCore(collection);
 };
 
 export const parseTemplate = (template: string, variables: Record<string, any>): string => {

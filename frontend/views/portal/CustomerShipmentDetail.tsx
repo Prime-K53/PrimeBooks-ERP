@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Clock, User, Car, Package, FileText } from 'lucide-react';
 import { portalLifecycle, PortalShipmentRecord } from '../../services/portalApiClient';
-import { useCustomerAuth } from '../../context/CustomerAuthContext';
+import { useAuth } from '../../context/AuthContext';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalButton from './components/PortalButton';
 import ErrorBanner from './components/ErrorBanner';
@@ -13,7 +13,7 @@ import { portalTheme, SHIPMENT_STATUS_META } from './constants';
 const CustomerShipmentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { companyConfig } = useCustomerAuth();
+  const { companyConfig } = useAuth();
   const [shipment, setShipment] = useState<PortalShipmentRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

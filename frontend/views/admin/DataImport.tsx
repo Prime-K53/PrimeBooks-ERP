@@ -5,7 +5,7 @@ import { useInventory } from '../../context/InventoryContext';
 import { Upload, FileText, CheckCircle, AlertTriangle, ArrowLeft, Users, Package, Download, Info, Loader2, Sparkles, FileSpreadsheet, Share, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { parseCSV, exportToCSV } from '../../services/excelService';
-import { generateAccountNumber, generateNextId, generateSku } from '../../utils/helpers';
+import { generateAccountNumber, generateCustomerId, generateNextId, generateSku } from '../../utils/helpers';
 import type { Item, ItemType } from '../../types';
 import type { InventoryRole, ResourceSubtype } from '../../types/inventory';
 import type { ProductType } from '../../types/service';
@@ -101,7 +101,7 @@ const processImport = async () => {
               }
               const phoneValue = normalizePhone(row['Phone number'] || row.Contact || row.Phone || row.contact || row['Phone Number'] || row.PhoneNumber || row.Mobile || row['Mobile Number'] || row.MobileNumber || row.Telephone || row['Phone No'] || row.Phone_Number || '');
                 const customer = {
-                 id: row['Customer ID'] || row.ID || row.id || generateNextId('customer', currentCustomers, companyConfig),
+                 id: row['Customer ID'] || row.ID || row.id || generateCustomerId(currentCustomers),
                  name,
                  accountNumber: row['Branch Account'] || row.AccountNumber || row.accountNumber || generateAccountNumber(),
                  contact: phoneValue,

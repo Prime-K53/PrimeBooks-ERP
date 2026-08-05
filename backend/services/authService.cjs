@@ -70,6 +70,15 @@ const upsertLocalStaffUser = (user) => {
   });
 };
 
+const isSupabaseMirrorRow = (row) => {
+  // Rows mirrored from Supabase Auth (upsertLocalStaffUser) store the sentinel
+  // 'supabase-auth' instead of a bcrypt hash — they can never match a bcrypt
+  // compare, so they must fall through to the Supabase password grant.
+  if (row && row.password_hash === 'supabase-auth') return true;
+  // A real bcrypt hash always starts with the $2a$/$2b$/$2y$ prefix.
+  return Boolean(row && typeof row.password_hash === 'string' && !/^\$2[aby]\$/.test(row.password_hash));
+};
+
 const authenticateUser = (usernameOrEmail, password) => {
   return new Promise((resolve, reject) => {
     db.get(
@@ -77,7 +86,7 @@ const authenticateUser = (usernameOrEmail, password) => {
       [usernameOrEmail, usernameOrEmail],
       async (err, row) => {
         if (err) return reject(err);
-        if (row) {
+        if (row && !isSupabaseMirrorRow(row)) {
           if (!row.is_active) return resolve(null);
           const match = await bcrypt.compare(password, row.password_hash);
           if (!match) return resolve(null);
