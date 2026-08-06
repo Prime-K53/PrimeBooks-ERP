@@ -1,24 +1,99 @@
 const { randomUUID } = require('crypto');
-const BaseService = require('./baseService.cjs');
+const repo = require('./supabaseRepository.cjs');
 const ReferralNotificationService = require('./referralNotificationService.cjs');
 const portalLifecycleService = require('./portalLifecycleService.cjs');
 
-class ReferralService extends BaseService {
+class ReferralService {
   constructor() {
-    super();
     this.notificationService = new ReferralNotificationService();
   }
 
-  async _transaction(callback) {
-    await this._run("BEGIN TRANSACTION");
-    try {
-      const result = await callback();
-      await this._run("COMMIT");
-      return result;
-    } catch (err) {
-      await this._run("ROLLBACK");
-      throw err;
+  _run(sql, params = []) {
+    const trimmed = String(sql || '').trim();
+    return new Promise((resolve, reject) => {
+      try {
+        if (/INSERT\s+INTO/i.test(trimmed)) {
+          const insertMatch = trimmed.match(/INSERT\s+INTO\s+(\w+)/i);
+          const id = String(params[0] || `gen_${Date.now()}`);
+          const record = { id };
+          const colMatch = trimmed.match(/\(([^)]+)\)\s*VALUES\s*\(/i);
+          if (colMatch) {
+            const cols = colMatch[1].split(',').map(c => c.trim());
+            for (let i = 1; i < Math.min(cols.length, params.length); i++) {
+              record[cols[i]] = params[i];
+            }
+          }
+          repo.upsert(insertMatch[1], record).then(() => resolve({ lastID: id, changes: 1 })).catch(reject);
+        } else if (/UPDATE/i.test(trimmed)) {
+          const updateMatch = trimmed.match(/UPDATE\s+(\w+)\s+SET/i);
+          const id = String(params[params.length - 1]);
+          repo.getById(updateMatch[1], id).then(row => {
+            if (!row) return resolve({ changes: 0 });
+            const updates = { ...row };
+            const setMatch = trimmed.match(/SET\s+(.+?)\s+WHERE/is);
+            if (setMatch) {
+              const pairs = setMatch[1].split(',');
+              for (let i = 0; i < Math.min(pairs.length, params.length - 1); i++) {
+                const colMatch = pairs[i].match(/(\w+)\s*=\s*\?/);
+                if (colMatch) updates[colMatch[1]] = params[i];
+              }
+            }
+            return repo.upsert(updateMatch[1], updates);
+          }).then(() => resolve({ changes: 1 })).catch(reject);
+        } else if (/DELETE\s+FROM/i.test(trimmed)) {
+          const deleteMatch = trimmed.match(/DELETE\s+FROM\s+(\w+)\s+WHERE\s+id\s*=\s*\?/i);
+          if (deleteMatch) {
+            repo.softDelete(deleteMatch[1], String(params[0])).then(() => resolve({ changes: 1 })).catch(reject);
+          } else {
+            resolve({ changes: 0 });
+          }
+        } else if (/BEGIN\s+TRANSACTION/i.test(trimmed)) {
+          resolve({ changes: 0 });
+        } else if (/COMMIT/i.test(trimmed)) {
+          resolve({ changes: 0 });
+        } else if (/ROLLBACK/i.test(trimmed)) {
+          resolve({ changes: 0 });
+        } else {
+          resolve({ changes: 0 });
+        }
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  _get(sql, params = []) {
+    const trimmed = String(sql || '').trim();
+    const countMatch = trimmed.match(/SELECT\s+COUNT\s*\(\*\)\s+as\s+(\w+)\s+FROM\s+(\w+)/i);
+    if (countMatch) {
+      return repo.getAll(countMatch[2]).then(rows => ({ [countMatch[1]]: rows.length }));
     }
+    const byIdMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+.*\bid\s*=\s*\?/i);
+    if (byIdMatch && params.length > 0) {
+      return repo.getById(byIdMatch[1], String(params[0]));
+    }
+    const byFieldMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+    if (byFieldMatch && params.length > 0) {
+      return repo.getAll(byFieldMatch[1], { [`data->>${byFieldMatch[2]}`]: `eq.${params[0]}` }).then(rows => rows[0] || null);
+    }
+    const fromMatch = trimmed.match(/FROM\s+(\w+)/i);
+    if (fromMatch) {
+      return repo.getAll(fromMatch[1]).then(rows => rows[0] || null);
+    }
+    return Promise.resolve(null);
+  }
+
+  _all(sql, params = []) {
+    const trimmed = String(sql || '').trim();
+    const byFieldMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+    if (byFieldMatch && params.length > 0) {
+      return repo.getAll(byFieldMatch[1], { [`data->>${byFieldMatch[2]}`]: `eq.${params[0]}` });
+    }
+    const fromMatch = trimmed.match(/FROM\s+(\w+)/i);
+    if (fromMatch) {
+      return repo.getAll(fromMatch[1]);
+    }
+    return Promise.resolve([]);
   }
 
   getPaginationParams(params) {

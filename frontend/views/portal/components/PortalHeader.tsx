@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Bell, LogOut, User, ChevronDown } from 'lucide-react';
+import { Menu, Bell, LogOut, User, ChevronDown, Search } from 'lucide-react';
 import { useCustomerAuth } from '../../../context/CustomerAuthContext';
 import { portalLifecycle } from '../../../services/portalApiClient';
+import OfflineIndicator from './OfflineIndicator';
 
 interface Props {
   title: string;
   onMenuToggle: () => void;
+  sidebarCollapsed?: boolean;
+  onCommandToggle?: () => void;
 }
 
 interface NotificationItem {
@@ -19,7 +22,7 @@ interface NotificationItem {
   created_at: string;
 }
 
-const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
+const PortalHeader: React.FC<Props> = ({ title, onMenuToggle, sidebarCollapsed, onCommandToggle }) => {
   const navigate = useNavigate();
   const { user, logout } = useCustomerAuth();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -111,7 +114,7 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
   const hairline = '#e4ddd1';
 
   return (
-    <header className="fixed top-0 left-0 right-0 md:left-64 z-30 h-16 flex items-center justify-between px-4 md:px-6" style={{
+    <header className={`fixed top-0 left-0 right-0 z-30 h-14 md:h-16 flex items-center justify-between px-3 md:px-6 transition-all duration-200 ease-out ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`} style={{
       background: paper,
       borderBottom: `1px solid ${hairline}`,
       color: ink
@@ -136,6 +139,15 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
       </div>
 
       <div className="flex items-center gap-3">
+        <OfflineIndicator />
+        <button
+          onClick={onCommandToggle}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-400 bg-slate-50 border border-slate-200/80 hover:border-slate-300 hover:text-slate-600 transition-all"
+        >
+          <Search size={14} />
+          <span>Search</span>
+          <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-400">⌘K</kbd>
+        </button>
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => { setShowNotifDropdown((v) => !v); setShowDropdown(false); }}

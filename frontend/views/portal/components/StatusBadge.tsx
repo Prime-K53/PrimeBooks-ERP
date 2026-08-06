@@ -3,48 +3,64 @@ import React from 'react';
 interface Props {
   status: string;
   size?: 'sm' | 'md';
+  showIcon?: boolean;
 }
 
-const statusColorMap: Record<string, { bg: string; text: string; dot: string }> = {
-  active: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  paid: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  confirmed: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  complete: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  fulfilled: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  delivered: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  unpaid: { bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
-  pending: { bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
-  draft: { bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
-  overdue: { bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500' },
-  cancelled: { bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500' },
-  voided: { bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500' },
-  processing: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
-  inprogress: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
-  in_progress: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
-  submitted: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
-  under_review: { bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
-  quotation_ready: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  ready: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  accepted: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  converted: { bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
-  revision_requested: { bg: 'bg-violet-100', text: 'text-violet-700', dot: 'bg-violet-500' },
-  rejected: { bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500' },
-  expired: { bg: 'bg-slate-200', text: 'text-slate-600', dot: 'bg-slate-400' },
+const statusConfig: Record<string, { label: string; bg: string; text: string; dot: string; icon?: React.ReactNode; pulse?: boolean }> = {
+  active: { label: 'Active', bg: '#ecfdf5', text: '#059669', dot: '#059669', pulse: true },
+  paid: { label: 'Paid', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  confirmed: { label: 'Confirmed', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  complete: { label: 'Complete', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  fulfilled: { label: 'Fulfilled', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  delivered: { label: 'Delivered', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  unpaid: { label: 'Unpaid', bg: '#fef2f2', text: '#b5493f', dot: '#b5493f' },
+  pending: { label: 'Pending', bg: '#fffbeb', text: '#b45309', dot: '#d99a3f', pulse: true },
+  draft: { label: 'Draft', bg: '#f8fafc', text: '#475569', dot: '#94a3b8' },
+  overdue: { label: 'Overdue', bg: '#fef2f2', text: '#b5493f', dot: '#b5493f', pulse: true },
+  cancelled: { label: 'Cancelled', bg: '#fef2f2', text: '#b5493f', dot: '#b5493f' },
+  voided: { label: 'Voided', bg: '#fef2f2', text: '#b5493f', dot: '#b5493f' },
+  processing: { label: 'Processing', bg: '#eff6ff', text: '#2563eb', dot: '#2563eb', pulse: true },
+  inprogress: { label: 'In Progress', bg: '#eff6ff', text: '#2563eb', dot: '#2563eb', pulse: true },
+  in_progress: { label: 'In Progress', bg: '#eff6ff', text: '#2563eb', dot: '#2563eb', pulse: true },
+  submitted: { label: 'Submitted', bg: '#eff6ff', text: '#2563eb', dot: '#2563eb' },
+  under_review: { label: 'Under Review', bg: '#fffbeb', text: '#b45309', dot: '#d99a3f', pulse: true },
+  quotation_ready: { label: 'Quotation Ready', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  ready: { label: 'Ready', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  accepted: { label: 'Accepted', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  converted: { label: 'Converted', bg: '#eef7f6', text: '#1f8577', dot: '#1f8577' },
+  revision_requested: { label: 'Revision Requested', bg: '#f5f3ff', text: '#7c3aed', dot: '#7c3aed', pulse: true },
+  rejected: { label: 'Rejected', bg: '#fef2f2', text: '#b5493f', dot: '#b5493f' },
+  expired: { label: 'Expired', bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' },
+  waiting_for_customer: { label: 'Waiting for Customer', bg: '#f5f3ff', text: '#7c3aed', dot: '#7c3aed', pulse: true },
+  approved: { label: 'Approved', bg: '#ecfdf5', text: '#059669', dot: '#059669' },
+  shipped: { label: 'Shipped', bg: '#eff6ff', text: '#2563eb', dot: '#2563eb', pulse: true },
 };
 
-const StatusBadge: React.FC<Props> = ({ status, size = 'md' }) => {
+const StatusBadge: React.FC<Props> = ({ status, size = 'md', showIcon = true }) => {
   const key = status?.toLowerCase().replace(/\s+/g, '') || '';
-  const colors = statusColorMap[key] || { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' };
+  const config = statusConfig[key] || { label: status, bg: '#f8fafc', text: '#475569', dot: '#94a3b8' };
   const isSmall = size === 'sm';
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-semibold rounded-full whitespace-nowrap ${
-        colors.bg
-      } ${colors.text} ${isSmall ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'}`}
+      className="inline-flex items-center gap-1.5 font-semibold rounded-full whitespace-nowrap"
+      style={{
+        background: config.bg,
+        color: config.text,
+        fontSize: isSmall ? 10 : 12,
+        padding: isSmall ? '2px 8px' : '3px 10px',
+        lineHeight: 1.4,
+        border: `1px solid ${config.text}25`,
+        boxShadow: `0 1px 2px ${config.text}15`,
+      }}
     >
-      <span className={`rounded-full ${colors.dot} ${isSmall ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} />
-      {status}
+      <span className="relative flex h-1.5 w-1.5 shrink-0">
+        {config.pulse && (
+          <span className="absolute inset-0 rounded-full opacity-75 animate-ping" style={{ background: config.dot }} />
+        )}
+        <span className="relative rounded-full" style={{ background: config.dot, width: isSmall ? 6 : 8, height: isSmall ? 6 : 8 }} />
+      </span>
+      {config.label}
     </span>
   );
 };

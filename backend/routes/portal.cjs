@@ -970,8 +970,7 @@ router.post('/payments', async (req, res) => {
     const { customer_id } = req.portalUser;
     const { invoiceId, amount, currency = 'USD', paymentMethod = 'Card', reference, transactionId } = req.body;
 
-    const { db } = require('../db.cjs');
-    const invoice = await portalService.getInvoiceById(invoiceId, customer_id );
+    const invoice = await portalService.getInvoiceById(invoiceId, customer_id);
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
 
     const remaining = Number(invoice.total_amount) - Number(invoice.paid_amount || 0) - Number(amount);
@@ -980,23 +979,28 @@ router.post('/payments', async (req, res) => {
     else newStatus = 'partially_paid';
 
     const paymentId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
-    await new Promise((resolve, reject) => {
-      db.run(
-        `INSERT INTO customer_payments (id, customer_id, customer_name, amount, date, method, reference, allocations_json, created_by)
-         VALUES (?, ?, ?, ?, datetime('now'), ?, ?, ?, ?)`,
+    const payment = {
+      id: paymentId,
+      customerId: customer_id,
+      customerName: req.portalUser.customer_name || '',
+      amount,
+      date: new Date().toISOString(),
+      method: paymentMethod,
+      reference: reference || transactionId || '',
+      allocations: [{ invoice_id: invoiceId, allocated: amount }],
+      createdBy: req.portalUser.id,
+    };
+    await repo.upsert('customer_payments', payment);
 
-        [paymentId, customer_id, req.portalUser.customer_name || '', amount, paymentMethod, reference || transactionId || '', JSON.stringify([{ invoice_id: invoiceId, allocated: amount }]), req.portalUser.id],
-        (err) => err ? reject(err) : resolve()
-      );
-    });
-
-    await new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE invoices SET paid_amount = COALESCE(paid_amount, 0) + ?, status = ?, paid_at = datetime('now') WHERE id = ?`,
-        [Number(amount), newStatus, invoiceId],
-        (err) => err ? reject(err) : resolve()
-      );
-    });
+    const oldInvoice = await repo.getById('invoices', invoiceId);
+    if (oldInvoice) {
+      await repo.upsert('invoices', {
+        ...oldInvoice,
+        paid_amount: Number(oldInvoice.paid_amount || 0) + Number(amount),
+        status: newStatus,
+        paid_at: new Date().toISOString(),
+      });
+    }
 
     // Emit realtime event and notification
     portalLifecycleService.publishErpEvent({

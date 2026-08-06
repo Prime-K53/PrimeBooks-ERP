@@ -1,7 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
-const { db } = require('../db.cjs');
+const repo = require('../services/supabaseRepository.cjs');
 const portalAuthService = require('../services/portalAuthService.cjs');
 const portalLifecycleService = require('../services/portalLifecycleService.cjs');
 const jwt = require('jsonwebtoken');
@@ -160,27 +160,17 @@ const PORTAL_RESET_TABLES = [
 
 router.post('/company/reset', async (req, res) => {
   try {
-    const existing = await new Promise((resolve, reject) => {
-      db.all(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name IN (" +
-          PORTAL_RESET_TABLES.map(() => '?').join(',') +
-          ')',
-        PORTAL_RESET_TABLES,
-        (err, rows) => (err ? reject(err) : resolve(rows || []))
-      );
-    });
-    const present = new Set((existing || []).map((r) => r.name));
     const cleared = [];
-
     for (const table of PORTAL_RESET_TABLES) {
-      if (!present.has(table)) continue;
-      await new Promise((resolve, reject) => {
-        db.run(`DELETE FROM ${table}`, (err) => {
-          if (err) return reject(err);
-          resolve();
-        });
-      });
-      cleared.push(table);
+      try {
+        const rows = await repo.getAll(table);
+        for (const row of rows) {
+          await repo.softDelete(table, row.id);
+        }
+        cleared.push(table);
+      } catch {
+        // skip tables that don't exist or fail
+      }
     }
     console.log(`[PortalAdmin] Wiped ${cleared.length} local portal tables`);
     res.json({ ok: true, cleared });
@@ -425,19 +415,17 @@ router.post('/requests/:id/complete-order', async (req, res) => {
 // ─── Official Sales Orders (admin) ───────────────────────────────────────────
 router.get('/orders', async (req, res) => {
   try {
-    const rows = await new Promise((resolve, reject) => {
-      db.all(`
-        SELECT so.id, so.order_number, so.status, so.total, so.orderDate, so.deliveryDate,
-               so.source_request_id, so.source_request_number, so.reorder_of, so.reorder_of_number,
-               c.name AS customer_name, so.created_at
-        FROM sales_orders so
-        LEFT JOIN customers c ON c.id = so.customer_id
-        ORDER BY so.orderDate DESC
-      `, [], (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows || []);
-      });
-    });
+    const [orders, customers] = await Promise.all([
+      repo.getAll('sales_orders'),
+      repo.getAll('customers'),
+    ]);
+    const customerMap = new Map(customers.map(c => [c.id, c.name]));
+    const rows = orders
+      .sort((a, b) => String(b.orderDate || '').localeCompare(String(a.orderDate || '')))
+      .map(o => ({
+        ...o,
+        customer_name: customerMap.get(o.customerId) || '',
+      }));
     res.json(rows);
   } catch (err) {
     console.error('[PortalAdmin] List orders error:', err);
@@ -662,29 +650,29 @@ router.get('/analytics', async (req, res) => {
 
 router.get('/users', async (req, res) => {
   try {
-    const rows = await new Promise((resolve, reject) => {
-      db.all(`
-        SELECT
-          c.id AS customer_id,
-          c.name AS customer_name,
-          c.email AS customer_email,
-          c.phone AS customer_phone,
-          c.status AS customer_status,
-          pu.id AS portal_user_id,
-          pu.email AS portal_email,
-          pu.full_name,
-          pu.phone AS portal_phone,
-          pu.status AS portal_status,
-          pu.last_login_at,
-          pu.created_at AS portal_created_at
-        FROM customers c
-        LEFT JOIN portal_users pu ON pu.customer_id = c.id
-        ORDER BY c.name ASC
-      `, [], (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows || []);
-      });
+    const [portalUsers, customers] = await Promise.all([
+      repo.getAll('portal_users'),
+      repo.getAll('customers'),
+    ]);
+    const customerMap = new Map(customers.map(c => [c.id, c]));
+    const rows = portalUsers.map(pu => {
+      const c = customerMap.get(pu.customerId) || {};
+      return {
+        customer_id: c.id,
+        customer_name: c.name,
+        customer_email: c.email,
+        customer_phone: c.phone,
+        customer_status: c.status,
+        portal_user_id: pu.id,
+        portal_email: pu.email,
+        full_name: pu.full_name,
+        portal_phone: pu.phone,
+        portal_status: pu.status,
+        last_login_at: pu.lastLoginAt,
+        portal_created_at: pu.created_at,
+      };
     });
+    rows.sort((a, b) => String(a.customer_name || '').localeCompare(String(b.customer_name || '')));
     res.json(rows);
   } catch (err) {
     console.error('[PortalAdmin] List users error:', err);
@@ -732,12 +720,10 @@ router.put('/users/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
     if (status) {
-      await new Promise((resolve, reject) => {
-        db.run(`UPDATE portal_users SET status = ?, updated_at = datetime('now') WHERE id = ?`, [status, req.params.id], (err) => {
-          if (err) return reject(err);
-          resolve();
-        });
-      });
+      const old = await repo.getById('portal_users', req.params.id);
+      if (old) {
+        await repo.upsert('portal_users', { ...old, status, updated_at: new Date().toISOString() });
+      }
     }
     const updateFields = {};
     if (full_name !== undefined) updateFields.full_name = full_name;
@@ -758,12 +744,10 @@ router.delete('/users/:id', async (req, res) => {
     const user = await portalAuthService.getPortalUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'Portal user not found' });
 
-    await new Promise((resolve, reject) => {
-      db.run(`UPDATE portal_users SET status = 'disabled', updated_at = datetime('now') WHERE id = ?`, [req.params.id], (err) => {
-        if (err) return reject(err);
-        resolve();
-      });
-    });
+    const old = await repo.getById('portal_users', req.params.id);
+    if (old) {
+      await repo.upsert('portal_users', { ...old, status: 'disabled', updated_at: new Date().toISOString() });
+    }
     await portalAuthService.revokeAllSessions(req.params.id);
     res.json({ message: 'Portal user disabled' });
   } catch (err) {
@@ -804,21 +788,25 @@ router.post('/users/auto-create', async (req, res) => {
 
     // Upsert the customer into the backend customers table so the portal admin
     // user list and customer login resolution work for local-first customers.
-    await new Promise((resolve, reject) => {
-      db.run(
-        `INSERT INTO customers (id, name, email, phone)
-         VALUES (?, ?, ?, ? )
-         ON CONFLICT(id) DO UPDATE SET
-           name = COALESCE(NULLIF(EXCLUDED.name, ''), customers.name),
-           email = COALESCE(NULLIF(EXCLUDED.email, ''), customers.email),
-           phone = COALESCE(NULLIF(EXCLUDED.phone, ''), customers.phone)`,
-        [customer_id, name || '', email || '', phone || ''],
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
+    const existingCustomer = await repo.getById('customers', customer_id);
+    if (existingCustomer) {
+      await repo.upsert('customers', {
+        ...existingCustomer,
+        name: name || existingCustomer.name || '',
+        email: email || existingCustomer.email || '',
+        phone: phone || existingCustomer.phone || '',
+      });
+    } else {
+      await repo.upsert('customers', {
+        id: customer_id,
+        name: name || '',
+        email: email || '',
+        phone: phone || '',
+      });
+    }
 
     const password = crypto.randomBytes(9).toString('base64url');
-    const generatedEmail = email || await (async () => {
+    const generatedEmail = await (async () => {
       if (name) {
         const words = name.split(/\s+/).filter(Boolean);
         for (const word of words) {
@@ -944,18 +932,15 @@ router.post('/users/:id/invite', async (req, res) => {
 // Staff (sales users) available for request assignment
 router.get('/staff', async (req, res) => {
   try {
-    const rows = await new Promise((resolve, reject) => {
-      db.all(`
-        SELECT id, username, email, role, is_active
-        FROM users
-        WHERE is_active = 1
-        ORDER BY username ASC
-      `, [], (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows || []);
-      });
-    });
-    res.json(rows);
+    const rows = await repo.getAll('users', { 'data->>is_active': 'eq.1' });
+    rows.sort((a, b) => String(a.username || '').localeCompare(String(b.username || '')));
+    res.json(rows.map(u => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      role: u.role,
+      is_active: u.is_active,
+    })));
   } catch (err) {
     console.error('[PortalAdmin] List staff error:', err);
     res.status(500).json({ error: 'Failed to load staff' });

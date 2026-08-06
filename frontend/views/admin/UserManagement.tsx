@@ -8,11 +8,42 @@ import { localFileStorage } from '../../services/localFileStorage';
 import { OfflineImage } from '../../components/OfflineImage';
 import { useConfirmDialog } from '../../components/ConfirmDialog';
 
-const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39' };
-const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f' };
-const paper = '#FEFDFB'; const ink = '#23282A'; const inkSoft = '#5c6567'; const hairline = '#e4ddd1'; const danger = '#b5493f';
+const t = { 50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7', 400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c', 800: '#0b3e39', 900: '#082e2a' };
+const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
+const paper = '#FEFDFB'; const ink = '#23282A'; const inkSoft = '#5c6567'; const hairline = '#E7E3DA'; const danger = '#c0495f';
+const canvas = '#F5F4EF';
 
-const inputBase = { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, padding: '8px 12px', borderRadius: 9, border: `1.4px solid ${hairline}`, background: '#fff', color: ink, outline: 'none', lineHeight: 1.4, width: '100%', boxSizing: 'border-box' as const };
+const inputBase = {
+  fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, padding: '10px 13px', borderRadius: 10,
+  border: '1px solid #e2ded3', background: '#fff', color: ink, outline: 'none',
+  boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.03)', lineHeight: 1.4, width: '100%', boxSizing: 'border-box' as const
+};
+
+const btnPrimaryStyle = {
+  fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 10, border: 'none', cursor: 'pointer',
+  background: `linear-gradient(155deg, ${t[500]}, ${t[700]})`, color: '#fff',
+  display: 'flex', alignItems: 'center', gap: 8,
+  boxShadow: `0 8px 20px -8px rgba(15,84,76,0.6)`, lineHeight: 1.4, transition: 'all .15s ease'
+};
+
+const cardStyle: React.CSSProperties = {
+  background: '#FFFFFF', borderRadius: 14,
+  border: '1px solid rgba(16,24,40,0.07)',
+  boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18)'
+};
+
+const adminStyles = `
+  .premium-admin input:not([type=checkbox]):not([type=radio]):focus,
+  .premium-admin textarea:focus,
+  .premium-admin select:focus {
+    outline: none;
+    border-color: ${t[500]} !important;
+    box-shadow: 0 0 0 3px rgba(31,133,119,0.18) !important;
+  }
+  .premium-admin input[type=checkbox] { accent-color: ${t[500]}; }
+`;
+
 
 const UserManagement: React.FC = () => {
   const { allUsers, userGroups, manageUser, deleteUser, manageUserGroup, deleteUserGroup, passwordPolicy, updatePasswordPolicy, checkPermission, validatePasswordStrength, notify } = useAuth();
@@ -133,12 +164,12 @@ const UserManagement: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0 }}>System Users</h2>
-        <button onClick={() => { setEditUser({ id: '', active: true, mfaEnabled: false, groupIds: [], securityLevel: 'Standard' }); setPasswordError([]); setIsUserModalOpen(true); }} className="prime-btn" style={{ background: `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', lineHeight: 1.4 }}>
+         <button onClick={() => { setEditUser({ id: '', active: true, mfaEnabled: false, groupIds: [], securityLevel: 'Standard' }); setPasswordError([]); setIsUserModalOpen(true); }} className="prime-btn" style={{ ...btnPrimaryStyle, padding: '8px 16px', gap: 8 }}>
           <Plus size={18}/> Add User
         </button>
       </div>
 
-      <div className="prime-card" style={{ background: paper, borderRadius: 14, border: `1.4px solid ${hairline}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="prime-card" style={{ ...cardStyle, overflow: 'hidden' }}>
         <table style={{ width: '100%', textAlign: 'left', fontSize: 13, borderCollapse: 'collapse' }}>
           <thead style={{ background: t[50] }}>
             <tr>
@@ -211,14 +242,14 @@ const UserManagement: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: ink, margin: 0 }}>User Groups & Roles</h2>
-        <button onClick={() => { setEditGroup({ id: '', permissions: [] }); setIsGroupModalOpen(true); }} className="prime-btn" style={{ background: `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', lineHeight: 1.4 }}>
+         <button onClick={() => { setEditGroup({ id: '', permissions: [] }); setIsGroupModalOpen(true); }} className="prime-btn" style={{ ...btnPrimaryStyle, padding: '8px 16px', gap: 8 }}>
           <Plus size={18}/> New Group
         </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
         {userGroups.map(g => (
-          <div key={g.id} className="prime-card" style={{ background: paper, padding: 20, borderRadius: 14, border: `1.4px solid ${hairline}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+           <div key={g.id} className="prime-card" style={{ ...cardStyle, padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
                 <h3 style={{ fontWeight: 700, color: ink, margin: 0, fontSize: 15 }}>{g.name}</h3>
@@ -247,7 +278,7 @@ const UserManagement: React.FC = () => {
   const renderPolicies = () => (
     <div style={{ maxWidth: 560 }}>
        <h2 style={{ fontSize: 18, fontWeight: 700, color: ink, margin: '0 0 20px' }}>Global Security Policies</h2>
-       <div className="prime-card" style={{ background: paper, padding: 24, borderRadius: 14, border: `1.4px solid ${hairline}`, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="prime-card" style={{ ...cardStyle, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${hairline}`, paddingBottom: 20 }}>
              <div>
                 <h3 style={{ fontWeight: 700, color: ink, margin: 0, fontSize: 15 }}>Password Complexity</h3>
@@ -281,7 +312,7 @@ const UserManagement: React.FC = () => {
              <div>
                 <h4 style={{ fontWeight: 700, color: t[800], fontSize: 13, margin: 0 }}>MFA Enforcement</h4>
                 <p style={{ fontSize: 12, color: t[600], margin: '4px 0' }}>Multi-Factor Authentication is currently optional. Enable strict mode to force MFA for all Admin and Manager accounts.</p>
-                <button onClick={handleEnforceMfa} className="prime-btn" style={{ marginTop: 8, background: `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer', lineHeight: 1.4 }}>Enforce MFA Across System</button>
+                 <button onClick={handleEnforceMfa} className="prime-btn" style={{ ...btnPrimaryStyle, marginTop: 8, padding: '6px 14px', borderRadius: 8, fontWeight: 700, fontSize: 12 }}>Enforce MFA Across System</button>
              </div>
           </div>
        </div>
@@ -289,11 +320,12 @@ const UserManagement: React.FC = () => {
   );
 
   return (
-    <div style={{ padding: 24, maxWidth: 1600, margin: '0 auto', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink }}>
+    <div className="premium-admin" style={{ padding: 24, maxWidth: 1600, margin: '0 auto', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink, minHeight: '100%', background: 'linear-gradient(180deg, #F7F6F2 0%, #F2F1EB 100%)' }}>
+      <style>{adminStyles}</style>
       {/* User Modal */}
       {isUserModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-           <div className="prime-card" style={{ background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', width: '100%', maxWidth: 480, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="prime-card" style={{ background: '#fff', borderRadius: 14, border: '1px solid rgba(16,24,40,0.07)', boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', width: '100%', maxWidth: 480, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>{editUser.id ? 'Edit User' : 'New User'}</h2>
               <form onSubmit={handleUserSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
@@ -347,7 +379,7 @@ const UserManagement: React.FC = () => {
                  </div>
                  <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                     <button type="button" onClick={() => setIsUserModalOpen(false)} className="prime-btn-secondary" style={{ flex: 1, padding: '10px 16px', border: `1.4px solid ${hairline}`, borderRadius: 10, fontWeight: 600, color: ink, background: 'transparent', cursor: 'pointer', fontSize: 13, lineHeight: 1.4 }}>Cancel</button>
-                    <button type="submit" disabled={isSaving} className="prime-btn" style={{ flex: 1, padding: '10px 16px', borderRadius: 10, fontWeight: 600, fontSize: 13, lineHeight: 1.4, border: 'none', cursor: isSaving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: isSaving ? `linear-gradient(135deg, ${t[500]}, ${t[700]})` : `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff', opacity: isSaving ? 0.7 : 1 }}>
+                     <button type="submit" disabled={isSaving} className="prime-btn" style={{ ...btnPrimaryStyle, flex: 1, padding: '10px 16px', justifyContent: 'center', cursor: isSaving ? 'default' : 'pointer', opacity: isSaving ? 0.7 : 1 }}>
                         {isSaving ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }}/> Saving...</> : 'Save User'}
                     </button>
                  </div>
@@ -359,7 +391,7 @@ const UserManagement: React.FC = () => {
       {/* MFA SETUP MODAL */}
       {showMfaSetup && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(4px)' }}>
-              <div className="prime-card" style={{ background: paper, borderRadius: 14, width: '100%', maxWidth: 420, overflow: 'hidden', boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)' }}>
+               <div className="prime-card" style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 420, overflow: 'hidden', border: '1px solid rgba(16,24,40,0.07)', boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)' }}>
                   <div style={{ padding: 16, background: t[800], color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
                           <ShieldCheck style={{ color: t[200] }}/> Security Activation
@@ -415,7 +447,7 @@ const UserManagement: React.FC = () => {
       {/* Group Modal */}
       {isGroupModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-           <div className="prime-card" style={{ background: paper, borderRadius: 14, boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', width: '100%', maxWidth: 900, height: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="prime-card" style={{ background: '#fff', borderRadius: 14, border: '1px solid rgba(16,24,40,0.07)', boxShadow: '0 30px 70px -20px rgba(0,0,0,.55)', width: '100%', maxWidth: 900, height: '80vh', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '16px 20px', borderBottom: `1px solid ${hairline}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                  <h2 style={{ fontSize: 20, fontWeight: 700, color: ink, margin: 0 }}>{editGroup.id ? 'Edit User Group' : 'Create User Group'}</h2>
                  <button onClick={() => setIsGroupModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: inkSoft }}><X/></button>
@@ -435,7 +467,7 @@ const UserManagement: React.FC = () => {
                     <h3 style={{ fontSize: 14, fontWeight: 700, color: ink, margin: '0 0 16px' }}>Permissions Matrix</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                        {Array.from(new Set(AVAILABLE_PERMISSIONS.map(p => p.module))).map(module => (
-                          <div key={module} className="prime-card" style={{ background: paper, padding: 14, borderRadius: 10, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+                           <div key={module} className="prime-card" style={{ ...cardStyle, padding: 14, borderRadius: 10 }}>
                              <h4 style={{ fontSize: 11, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', margin: '0 0 10px', paddingBottom: 8, borderBottom: `1px solid ${hairline}` }}>{module}</h4>
                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {AVAILABLE_PERMISSIONS.filter(p => p.module === module).map(perm => (
@@ -452,29 +484,29 @@ const UserManagement: React.FC = () => {
               </div>
               <div style={{ padding: '12px 20px', borderTop: `1px solid ${hairline}`, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                  <button onClick={() => setIsGroupModalOpen(false)} className="prime-btn-secondary" style={{ padding: '8px 20px', border: `1.4px solid ${hairline}`, borderRadius: 10, fontWeight: 600, color: ink, background: 'transparent', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
-                 <button onClick={handleGroupSubmit} className="prime-btn" style={{ padding: '8px 20px', borderRadius: 10, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${t[500]}, ${t[700]})`, color: '#fff' }}>Save Group</button>
+                 <button onClick={handleGroupSubmit} className="prime-btn" style={{ ...btnPrimaryStyle, padding: '8px 20px', fontWeight: 700 }}>Save Group</button>
               </div>
            </div>
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 26 }}>
          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-               <Shield style={{ color: t[500] }}/> Security & Access Control
+            <h1 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 24, color: t[800], display: 'flex', alignItems: 'center', gap: 10, margin: 0, letterSpacing: 0.2 }}>
+               <Shield style={{ color: t[500] }}/> Security &amp; Access Control
             </h1>
             <p style={{ color: inkSoft, margin: '4px 0 0', fontSize: 13 }}>Configure user accounts, permission roles, and global security policies.</p>
          </div>
       </div>
 
-      <div className="prime-btn-secondary" style={{ display: 'flex', gap: 4, background: t[50], padding: 4, borderRadius: 12, width: 'fit-content', marginBottom: 24 }}>
-         <button onClick={() => setActiveTab('Users')} style={{ padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Users' ? paper : 'transparent', color: activeTab === 'Users' ? t[500] : inkSoft, boxShadow: activeTab === 'Users' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', lineHeight: 1.4 }}>
+      <div className="prime-btn-secondary" style={{ display: 'flex', gap: 4, background: '#FFFFFF', padding: 4, borderRadius: 12, width: 'fit-content', marginBottom: 26, border: '1px solid rgba(16,24,40,0.07)', boxShadow: '0 1px 2px rgba(16,24,40,0.04)' }}>
+         <button onClick={() => setActiveTab('Users')} style={{ padding: '8px 20px', borderRadius: 9, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Users' ? `linear-gradient(135deg, ${t[500]}, ${t[700]})` : 'transparent', color: activeTab === 'Users' ? '#fff' : inkSoft, boxShadow: activeTab === 'Users' ? `0 6px 16px -8px rgba(15,84,76,0.55)` : 'none', lineHeight: 1.4 }}>
             Users
          </button>
-         <button onClick={() => setActiveTab('Groups')} style={{ padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Groups' ? paper : 'transparent', color: activeTab === 'Groups' ? t[500] : inkSoft, boxShadow: activeTab === 'Groups' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', lineHeight: 1.4 }}>
-            Groups & Roles
+         <button onClick={() => setActiveTab('Groups')} style={{ padding: '8px 20px', borderRadius: 9, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Groups' ? `linear-gradient(135deg, ${t[500]}, ${t[700]})` : 'transparent', color: activeTab === 'Groups' ? '#fff' : inkSoft, boxShadow: activeTab === 'Groups' ? `0 6px 16px -8px rgba(15,84,76,0.55)` : 'none', lineHeight: 1.4 }}>
+            Groups &amp; Roles
          </button>
-         <button onClick={() => setActiveTab('Policies')} style={{ padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Policies' ? paper : 'transparent', color: activeTab === 'Policies' ? t[500] : inkSoft, boxShadow: activeTab === 'Policies' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', lineHeight: 1.4 }}>
+         <button onClick={() => setActiveTab('Policies')} style={{ padding: '8px 20px', borderRadius: 9, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all .15s ease', background: activeTab === 'Policies' ? `linear-gradient(135deg, ${t[500]}, ${t[700]})` : 'transparent', color: activeTab === 'Policies' ? '#fff' : inkSoft, boxShadow: activeTab === 'Policies' ? `0 6px 16px -8px rgba(15,84,76,0.55)` : 'none', lineHeight: 1.4 }}>
             Security Policies
          </button>
       </div>

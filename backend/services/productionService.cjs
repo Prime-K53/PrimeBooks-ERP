@@ -1,33 +1,36 @@
 const crypto = require('crypto');
-const BaseService = require('./baseService.cjs');
+const repo = require('./supabaseRepository.cjs');
 
-class ProductionService extends BaseService {
-
+class ProductionService {
   async _saveLedgerEntry(entry) {
     const id = crypto.randomUUID();
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        `INSERT INTO ledger_entries (id, account_id, entry_type, amount, currency, description, reference_type, reference_id, entry_date)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`,
-        [id, entry.account_id, entry.entry_type, entry.amount, entry.currency || 'USD', entry.description || null, entry.reference_type || null, entry.reference_id || null, entry.entry_date || new Date().toISOString()],
-        function(err) {
-          if (err) reject(err);
-          else resolve(id);
-        }
-      );
-    });
+    const record = {
+      id,
+      account_id: entry.account_id,
+      entry_type: entry.entry_type,
+      amount: entry.amount,
+      currency: entry.currency || 'USD',
+      description: entry.description || null,
+      reference_type: entry.reference_type || null,
+      reference_id: entry.reference_id || null,
+      entry_date: entry.entry_date || new Date().toISOString(),
+    };
+    await repo.upsert('ledger_entries', record);
+    return id;
   }
 
   async postWipLedger(workOrder, currency = 'USD') {
-    const accounts = await this._all(
-      "SELECT * FROM chart_of_accounts WHERE type = 'asset' AND (name LIKE '%wip%' OR name LIKE '%work in progress%')",
-      []
-    );
-    const wipAccount = accounts && accounts.length > 0 ? accounts[0] : null;
-    const invAccount = await this._get(
-      "SELECT * FROM chart_of_accounts WHERE type = 'asset' AND (name LIKE '%inventory%' OR name LIKE '%stock%')",
-      []
-    );
+    const accounts = await repo.accounts.getAll({ 'data->>type': 'eq.asset' });
+    const wipAccount = accounts.find((a) => {
+      const d = a.data || a;
+      const name = String(d.name || '').toLowerCase();
+      return name.includes('wip') || name.includes('work in progress');
+    });
+    const invAccount = accounts.find((a) => {
+      const d = a.data || a;
+      const name = String(d.name || '').toLowerCase();
+      return name.includes('inventory') || name.includes('stock');
+    });
     if (!wipAccount || !invAccount) return;
     const qty = workOrder.quantity_planned || 0;
     const unitCost = workOrder.unit_cost || workOrder.estimated_unit_cost || 0;
@@ -39,25 +42,28 @@ class ProductionService extends BaseService {
     await this._saveLedgerEntry({
       account_id: wipAccount.id, entry_type: 'debit', amount: totalAmount, currency,
       description: `WIP for Work Order ${workOrder.id}`,
-      reference_type: 'work_order', reference_id: workOrder.id
+      reference_type: 'work_order', reference_id: workOrder.id,
     });
     await this._saveLedgerEntry({
       account_id: invAccount.id, entry_type: 'credit', amount: totalAmount, currency,
       description: `Raw materials for Work Order ${workOrder.id}`,
-      reference_type: 'work_order', reference_id: workOrder.id
+      reference_type: 'work_order', reference_id: workOrder.id,
     });
   }
 
   async postCogsLedger(workOrder, currency = 'USD') {
-    const cogsAccount = await this._get(
-      "SELECT * FROM chart_of_accounts WHERE type = 'expense' AND (name LIKE '%cogs%' OR name LIKE '%cost of goods%' OR code = '5000')",
-      []
-    );
-    const accounts = await this._all(
-      "SELECT * FROM chart_of_accounts WHERE type = 'asset' AND (name LIKE '%wip%' OR name LIKE '%work in progress%')",
-      []
-    );
-    const wipAccount = accounts && accounts.length > 0 ? accounts[0] : null;
+    const accounts = await repo.accounts.getAll({ 'data->>type': 'eq.expense' });
+    const cogsAccount = accounts.find((a) => {
+      const d = a.data || a;
+      const name = String(d.name || '').toLowerCase();
+      return name.includes('cogs') || name.includes('cost of goods') || d.code === '5000';
+    });
+    const assetAccounts = await repo.accounts.getAll({ 'data->>type': 'eq.asset' });
+    const wipAccount = assetAccounts.find((a) => {
+      const d = a.data || a;
+      const name = String(d.name || '').toLowerCase();
+      return name.includes('wip') || name.includes('work in progress');
+    });
     if (!cogsAccount || !wipAccount) return;
     const qty = workOrder.quantity_completed || workOrder.quantity_planned || 0;
     const unitCost = workOrder.unit_cost || workOrder.actual_unit_cost || 0;
@@ -69,90 +75,108 @@ class ProductionService extends BaseService {
     await this._saveLedgerEntry({
       account_id: cogsAccount.id, entry_type: 'debit', amount: totalAmount, currency,
       description: `COGS for Work Order ${workOrder.id}`,
-      reference_type: 'work_order_cogs', reference_id: workOrder.id
+      reference_type: 'work_order_cogs', reference_id: workOrder.id,
     });
     await this._saveLedgerEntry({
       account_id: wipAccount.id, entry_type: 'credit', amount: totalAmount, currency,
       description: `WIP reversal for Work Order ${workOrder.id}`,
-      reference_type: 'work_order_cogs', reference_id: workOrder.id
+      reference_type: 'work_order_cogs', reference_id: workOrder.id,
     });
   }
 
-  // ── Work Centers ───────────────────────────────────────────────────
   async getWorkCenters() {
-    return this._all(
-      'SELECT * FROM work_centers ORDER BY name', []
-    );
+    const rows = await repo.workCenters.getAll();
+    rows.sort((a, b) => String(a.data?.name || a.name || '').localeCompare(String(b.data?.name || b.name || '')));
+    return rows.map((r) => ({ ...r, ...(r.data || {}) }));
   }
 
   async createWorkCenter(data) {
     const id = data.id || crypto.randomUUID();
-    await this._run(
-      `INSERT INTO work_centers (id, name, description, hourly_rate, capacity_per_day, status, location)
-       VALUES (?, ?, ?, ?, ?, ?, ? )`,
-      [id, data.name, data.description || null, data.hourly_rate || 0, data.capacity_per_day || 8, data.status || 'Active', data.location || null]
-    );
-    return this._get('SELECT * FROM work_centers WHERE id = ?', [id]);
+    const record = {
+      id,
+      data: {
+        name: data.name,
+        description: data.description || null,
+        hourly_rate: data.hourly_rate || 0,
+        capacity_per_day: data.capacity_per_day || 8,
+        status: data.status || 'Active',
+        location: data.location || null,
+      },
+    };
+    await repo.workCenters.upsert(record);
+    const row = await repo.workCenters.getById(id);
+    return { ...row, ...(row.data || {}) };
   }
 
-  // ── Resources ──────────────────────────────────────────────────────
   async getResources() {
-    return this._all(
-      'SELECT * FROM production_resources ORDER BY name', []
-    );
+    const rows = await repo.productionResources.getAll();
+    rows.sort((a, b) => String(a.data?.name || a.name || '').localeCompare(String(b.data?.name || b.name || '')));
+    return rows.map((r) => ({ ...r, ...(r.data || {}) }));
   }
 
   async createResource(data) {
     const id = data.id || crypto.randomUUID();
-    await this._run(
-      `INSERT INTO production_resources (id, name, work_center_id, status, resource_type, description)
-       VALUES (?, ?, ?, ?, ?, ? )`,
-      [id, data.name, data.work_center_id, data.status || 'Active', data.resource_type || null, data.description || null]
-    );
-    return this._get('SELECT * FROM production_resources WHERE id = ?', [id]);
+    const record = {
+      id,
+      data: {
+        name: data.name,
+        work_center_id: data.work_center_id,
+        status: data.status || 'Active',
+        resource_type: data.resource_type || null,
+        description: data.description || null,
+      },
+    };
+    await repo.productionResources.upsert(record);
+    const row = await repo.productionResources.getById(id);
+    return { ...row, ...(row.data || {}) };
   }
 
-  // ── Work Orders ────────────────────────────────────────────────────
   async getWorkOrders() {
-    return this._all(
-      'SELECT * FROM work_orders ORDER BY created_at DESC', []
-    );
+    const rows = await repo.workOrders.getAll();
+    rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    return rows.map((r) => ({ ...r, ...(r.data || {}) }));
   }
 
   async getWorkOrderById(id) {
-    return this._get(
-      'SELECT * FROM work_orders WHERE id = ?', [id]
-    );
+    const row = await repo.workOrders.getById(id);
+    if (!row) return null;
+    return { ...row, ...(row.data || {}) };
   }
 
   async createWorkOrder(data, userId) {
     const id = data.id || crypto.randomUUID();
-    await this._run(
-      `INSERT INTO work_orders (id, customer_name, product_name, quantity_planned, status, due_date, start_date, priority, work_center_id, linked_batch_id, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`,
-      [id, data.customer_name || '', data.product_name || '', data.quantity_planned || 0, data.status || 'Draft', data.due_date || null, data.start_date || null, data.priority || 'Medium', data.work_center_id || null, data.linked_batch_id || null, userId]
-    );
+    const record = {
+      id,
+      data: {
+        customer_name: data.customer_name || '',
+        product_name: data.product_name || '',
+        quantity_planned: data.quantity_planned || 0,
+        status: data.status || 'Draft',
+        due_date: data.due_date || null,
+        start_date: data.start_date || null,
+        priority: data.priority || 'Medium',
+        work_center_id: data.work_center_id || null,
+        linked_batch_id: data.linked_batch_id || null,
+        created_by: userId,
+      },
+    };
+    await repo.workOrders.upsert(record);
     return this.getWorkOrderById(id);
   }
 
   async updateWorkOrder(id, data, currency = 'USD') {
-    const fields = [];
-    const params = [];
-    const allowed = ['customer_name', 'product_name', 'quantity_planned', 'quantity_completed',
-      'quantity_waste', 'status', 'due_date', 'start_date', 'priority', 'work_center_id',
-      'linked_batch_id', 'bom_id'];
-    for (const field of allowed) {
-      if (data[field] !== undefined) {
-        fields.push(`${field} = ?`);
-        params.push(data[field]);
-      }
-    }
-    if (!fields.length) return this.getWorkOrderById(id);
-    params.push(id);
-    await this._run(
-      `UPDATE work_orders SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      params
-    );
+    const old = await repo.workOrders.getById(id);
+    if (!old) return null;
+    const oldData = old.data || old;
+    const updated = {
+      ...old,
+      data: {
+        ...oldData,
+        ...data,
+      },
+      updated_at: new Date().toISOString(),
+    };
+    await repo.workOrders.upsert(updated);
     const workOrder = await this.getWorkOrderById(id);
     if (data.status === 'In Progress') {
       await this.postWipLedger(workOrder, currency);
@@ -163,33 +187,40 @@ class ProductionService extends BaseService {
   }
 
   async deleteWorkOrder(id) {
-    await this._run('DELETE FROM work_orders WHERE id = ?', [id]);
+    await repo.workOrders.softDelete(id);
     return { success: true };
   }
 
-  // ── Production Batches ─────────────────────────────────────────────
   async getBatches() {
-    return this._all(
-      'SELECT * FROM production_batches ORDER BY created_at DESC', []
-    );
+    const rows = await repo.productionBatches.getAll();
+    rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    return rows.map((r) => ({ ...r, ...(r.data || {}) }));
   }
 
   async createBatch(data) {
     const id = data.id || crypto.randomUUID();
-    await this._run(
-      `INSERT INTO production_batches (id, work_order_id, customer_name, name, status, total_amount, quantity_produced, unit_cost, total_cost)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`,
-      [id, data.work_order_id || null, data.customer_name || '', data.name || '', data.status || 'Pending', data.total_amount || 0, data.quantity_produced || 0, data.unit_cost || 0, data.total_cost || 0]
-    );
-    return this._get('SELECT * FROM production_batches WHERE id = ?', [id]);
+    const record = {
+      id,
+      data: {
+        work_order_id: data.work_order_id || null,
+        customer_name: data.customer_name || '',
+        name: data.name || '',
+        status: data.status || 'Pending',
+        total_amount: data.total_amount || 0,
+        quantity_produced: data.quantity_produced || 0,
+        unit_cost: data.unit_cost || 0,
+        total_cost: data.total_cost || 0,
+      },
+    };
+    await repo.productionBatches.upsert(record);
+    const row = await repo.productionBatches.getById(id);
+    return { ...row, ...(row.data || {}) };
   }
 
-  // ── Static singleton accessor ──────────────────────────────────────
   static _instance = null;
   static getInstance() {
     if (!this._instance) {
-      const { getDatabase } = require('../db.cjs');
-      this._instance = new ProductionService(getDatabase());
+      this._instance = new ProductionService();
     }
     return this._instance;
   }

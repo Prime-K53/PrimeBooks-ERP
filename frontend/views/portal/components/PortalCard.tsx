@@ -11,7 +11,7 @@ interface Props {
 
 const PortalCard: React.FC<Props> = ({
   children,
-  padding = '18px 20px',
+  padding,
   style,
   className = '',
   onClick,
@@ -19,13 +19,14 @@ const PortalCard: React.FC<Props> = ({
 }) => {
   const baseStyle: React.CSSProperties = {
     background: '#FEFDFB',
-    borderRadius: 14,
+    borderRadius: 'var(--radius-md)',
     borderWidth: '1.4px',
     borderStyle: 'solid',
     borderColor: '#e4ddd1',
     boxShadow: '0 1px 3px rgba(0,0,0,.04)',
-    transition: 'transform .15s ease, box-shadow .15s ease, border-color .15s ease',
+    transition: 'transform var(--motion-fast) ease, box-shadow var(--motion-normal) ease, border-color var(--motion-normal) ease',
     cursor: onClick ? 'pointer' : 'default',
+    padding: padding || 'var(--card-padding, var(--space-4))',
   };
 
   const [hovered, setHovered] = React.useState(false);

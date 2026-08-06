@@ -46,7 +46,7 @@ const PortalInput: React.FC<Props> = ({
   };
 
   return (
-    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 4, ...style }}>
+    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', ...style }}>
       {label && (
         <label style={{
           fontSize: 12, fontWeight: 600, color: '#0b3e39',
@@ -66,6 +66,7 @@ const PortalInput: React.FC<Props> = ({
         disabled={disabled}
         autoFocus={autoFocus}
         required={required}
+        className="input-base"
         style={{
           width: '100%',
           fontFamily: "'Inter', sans-serif",
@@ -73,7 +74,6 @@ const PortalInput: React.FC<Props> = ({
           color: '#23282A',
           background: focused ? '#fff' : '#f8fafc',
           border: error ? '1.4px solid #dc2626' : `1.4px solid ${focused ? '#3fa294' : '#e4ddd1'}`,
-          borderRadius: 9,
           padding: '9px 12px',
           outline: 'none',
           transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease',

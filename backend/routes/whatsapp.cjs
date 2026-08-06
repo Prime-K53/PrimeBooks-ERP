@@ -1,39 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const metaWhatsApp = require('../services/metaWhatsappService.cjs');
-const { db } = require('../db.cjs');
+const repo = require('../services/supabaseRepository.cjs');
 
-function loadConfig() {
-  return new Promise((resolve) => {
-    db.get(
-      'SELECT value FROM settings WHERE key = ?',
-      ['meta_whatsapp_config'],
-      (err, row) => {
-        if (err || !row) return resolve(false);
-        try {
-          const config = JSON.parse(row.value);
-          metaWhatsApp.setConfig(config.phoneNumberId, config.accessToken);
-          resolve(true);
-        } catch {
-          resolve(false);
-        }
-      }
-    );
-  });
+async function loadConfig() {
+  const rows = await repo.getAll('settings', { 'data->>key': 'eq.meta_whatsapp_config' });
+  if (!rows || rows.length === 0) return false;
+  try {
+    const config = JSON.parse(rows[0].value);
+    metaWhatsApp.setConfig(config.phoneNumberId, config.accessToken);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-function saveConfig( phoneNumberId, accessToken) {
-  return new Promise((resolve, reject) => {
-    const value = JSON.stringify({ phoneNumberId, accessToken });
-    db.run(
-      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ? )',
-      ['meta_whatsapp_config', value],
-      (err) => {
-        if (err) reject(err);
-        else resolve();
-      }
-    );
-  });
+async function saveConfig(phoneNumberId, accessToken) {
+  const rows = await repo.getAll('settings', { 'data->>key': 'eq.meta_whatsapp_config' });
+  const value = JSON.stringify({ phoneNumberId, accessToken });
+  if (rows.length > 0) {
+    await repo.upsert('settings', { ...rows[0], value });
+  } else {
+    await repo.upsert('settings', { id: `setting-${Date.now()}`, key: 'meta_whatsapp_config', value });
+  }
 }
 
 router.get('/status', async (req, res) => {

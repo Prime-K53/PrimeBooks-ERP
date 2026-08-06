@@ -690,18 +690,8 @@ const referralSchemas = {
 const validateResourceExists = async (tableName, idField, recordId, db) => {
   if (!recordId) return null;
   try {
-    const { getDatabase } = require('../db.cjs');
-    const targetDb = db || getDatabase();
-    const row = await new Promise((resolve, reject) => {
-      targetDb.get(
-        `SELECT * FROM ${tableName} WHERE ${idField} = ?`,
-        [recordId],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    const repo = require('../services/supabaseRepository.cjs');
+    const row = await repo.getById(tableName, recordId);
     return row || null;
   } catch {
     return null;

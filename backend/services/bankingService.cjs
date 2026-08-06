@@ -1,525 +1,181 @@
-/**
- * Banking Service - Manages bank accounts and transactions
- * Provides account management, transaction recording, and reconciliation
- */
-const BaseService = require('./baseService.cjs');
+const repo = require('./supabaseRepository.cjs');
+const crypto = require('crypto');
 
-class BankingService extends BaseService {
-
-  // ==================== BANK ACCOUNTS ====================
-
+class BankingService {
   async getAccounts() {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        `SELECT * FROM bank_accounts ORDER BY account_name`,
-        [],
-        (err, rows) => {
-          if (err) return reject(err);
-          resolve(rows || []);
-        }
-      );
-    });
+    return repo.getAll('bank_accounts');
   }
 
   async getAccountById(id) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        'SELECT * FROM bank_accounts WHERE id = ?',
-        [id],
-        (err, row) => {
-          if (err) return reject(err);
-          resolve(row || null);
-        }
-      );
-    });
+    return repo.getById('bank_accounts', id);
   }
 
   async createAccount(data) {
-    return new Promise((resolve, reject) => {
-      const id = data.id || `BANK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      this.db.run(
-        `INSERT INTO bank_accounts (
-          id, account_name, account_number, bank_name, branch_code,
-          account_type, currency, opening_balance, current_balance,
-          status, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`,
-        [id, data.accountName || data.account_name, data.accountNumber || data.account_number, data.bankName || data.bank_name, data.branchCode || data.branch_code || null, data.accountType || data.account_type || 'checking', data.currency || 'USD', data.openingBalance || data.opening_balance || 0, data.openingBalance || data.opening_balance || 0, data.status || 'Active', data.createdBy || data.created_by || null],
-        function (err) {
-          if (err) return reject(err);
-          resolve({ id, ...data });
-        }
-      );
-    });
+    const id = data.id || `BANK-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+    const record = {
+      id,
+      account_name: data.accountName || data.account_name,
+      account_number: data.accountNumber || data.account_number,
+      bank_name: data.bankName || data.bank_name,
+      branch_code: data.branchCode || data.branch_code || null,
+      account_type: data.accountType || data.account_type || 'checking',
+      currency: data.currency || 'USD',
+      opening_balance: data.openingBalance || data.opening_balance || 0,
+      current_balance: data.openingBalance || data.opening_balance || 0,
+      status: data.status || 'Active',
+      created_by: data.createdBy || data.created_by || null,
+    };
+    await repo.upsert('bank_accounts', record);
+    return repo.getById('bank_accounts', id);
   }
 
   async updateAccount(id, data) {
-    return new Promise((resolve, reject) => {
-      const fields = [];
-      const params = [];
-      
-      const allowed = [
-        'accountName', 'account_name', 'accountNumber', 'account_number',
-        'bankName', 'bank_name', 'branchCode', 'branch_code',
-        'accountType', 'account_type', 'currency', 'status'
-      ];
-      
-      allowed.forEach(field => {
-        if (data[field] !== undefined) {
-          const dbField = field.replace(/([A-Z])/g, '_$1').toLowerCase();
-          fields.push(`${dbField} = ?`);
-          params.push(data[field]);
-        }
-      });
-
-      if (fields.length === 0) return reject(new Error('No fields to update'));
-
-      params.push(id);
-      this.db.run(
-        `UPDATE bank_accounts SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        params,
-        function (err) {
-          if (err) return reject(err);
-          if (this.changes === 0) return resolve(null);
-          resolve({ id, ...data });
-        }
-      );
-    });
+    const old = await repo.getById('bank_accounts', id);
+    if (!old) throw new Error('Bank account not found');
+    const updates = { ...old };
+    const fieldMap = {
+      accountName: 'account_name', accountNumber: 'account_number',
+      bankName: 'bank_name', branchCode: 'branch_code',
+      accountType: 'account_type', currency: 'currency', status: 'status',
+    };
+    for (const [key, dbField] of Object.entries(fieldMap)) {
+      if (data[key] !== undefined) updates[dbField] = data[key];
+    }
+    updates.updated_at = new Date().toISOString();
+    const updated = await repo.upsert('bank_accounts', updates);
+    return updated;
   }
 
   async deleteAccount(id) {
-    return new Promise((resolve, reject) => {
-      // Check if account has transactions
-      this.db.get(
-        'SELECT COUNT(*) as count FROM bank_transactions WHERE account_id = ?',
-        [id],
-        (err, row) => {
-          if (err) return reject(err);
-          if (row && row.count > 0) {
-            return reject(new Error('Cannot delete account with existing transactions'));
-          }
-          
-          this.db.run(
-            'DELETE FROM bank_accounts WHERE id = ?',
-            [id],
-            function (err) {
-              if (err) return reject(err);
-              resolve({ success: true });
-            }
-          );
-        }
-      );
-    });
+    const transactions = await repo.getAll('bank_transactions', { 'data->>account_id': `eq.${id}` });
+    if (transactions.length > 0) {
+      throw new Error('Cannot delete account with existing transactions');
+    }
+    await repo.softDelete('bank_accounts', id);
+    return { success: true };
   }
 
-  // ==================== BANK TRANSACTIONS ====================
-
-  async getTransactions( filters = {}) {
-    return new Promise((resolve, reject) => {
-      let sql = `SELECT * FROM bank_transactions`;
-      const params = [];
-
-      if (filters.accountId) {
-        sql += ' AND account_id = ?';
-        params.push(filters.accountId);
-      }
-      if (filters.type) {
-        sql += ' AND type = ?';
-        params.push(filters.type);
-      }
-      if (filters.status) {
-        sql += ' AND status = ?';
-        params.push(filters.status);
-      }
-      if (filters.startDate) {
-        sql += ' AND date >= ?';
-        params.push(filters.startDate);
-      }
-      if (filters.endDate) {
-        sql += ' AND date <= ?';
-        params.push(filters.endDate);
-      }
-
-      sql += ' ORDER BY date DESC, created_at DESC LIMIT 500';
-
-      this.db.all(sql, params, (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows || []);
-      });
-    });
+  async getTransactions(filters = {}) {
+    let rows = await repo.getAll('bank_transactions');
+    if (filters.accountId) rows = rows.filter(r => r.account_id === filters.accountId);
+    if (filters.type) rows = rows.filter(r => String(r.type || '').toLowerCase() === String(filters.type).toLowerCase());
+    if (filters.status) rows = rows.filter(r => String(r.status || '').toLowerCase() === String(filters.status).toLowerCase());
+    if (filters.startDate) rows = rows.filter(r => r.date >= filters.startDate);
+    if (filters.endDate) rows = rows.filter(r => r.date <= filters.endDate);
+    rows.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    return rows.slice(0, 500);
   }
 
   async getTransactionById(id) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        'SELECT * FROM bank_transactions WHERE id = ?',
-        [id],
-        (err, row) => {
-          if (err) return reject(err);
-          resolve(row || null);
-        }
-      );
-    });
+    return repo.getById('bank_transactions', id);
   }
 
   async createTransaction(data) {
-    return new Promise((resolve, reject) => {
-      const id = data.id || `BT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const currency = data.currency || 'USD';
-      
-      this.db.run('BEGIN TRANSACTION', (err) => {
-        if (err) return reject(err);
+    const id = data.id || `BT-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+    const record = {
+      id,
+      account_id: data.accountId || data.account_id,
+      date: data.date || new Date().toISOString().split('T')[0],
+      type: data.type,
+      amount: data.amount,
+      currency: data.currency || 'USD',
+      description: data.description,
+      reference_type: data.referenceType || data.reference_type || null,
+      reference_id: data.referenceId || data.reference_id || null,
+      status: data.status || 'pending',
+      reconciled: data.reconciled || 0,
+      created_by: data.createdBy || data.created_by || null,
+    };
+    await repo.upsert('bank_transactions', record);
 
-        // Insert transaction
-        this.db.run(
-          `INSERT INTO bank_transactions (
-            id, account_id, date, type, amount, currency,
-            description, reference_type, reference_id, status,
-            reconciled, created_by
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`,
-          [
-            id,
-            data.accountId || data.account_id,
-            data.date || new Date().toISOString().split('T')[0],
-            data.type, // 'deposit', 'withdrawal', 'transfer'
-            data.amount,
-            currency,
-            data.description,
-            data.referenceType || data.reference_type || null,
-            data.referenceId || data.reference_id || null,
-            data.status || 'pending',
-            data.reconciled || 0,
-            data.createdBy || data.created_by || null
-          ],
-          function (err) {
-            if (err) {
-              this.db.run('ROLLBACK');
-              return reject(err);
-            }
+    if (data.type === 'deposit' || data.type === 'transfer_in') {
+      const account = await repo.getById('bank_accounts', record.account_id);
+      if (account) {
+        await repo.upsert('bank_accounts', {
+          ...account,
+          current_balance: Number(account.current_balance || 0) + Number(data.amount || 0),
+        });
+      }
+    } else if (data.type === 'withdrawal' || data.type === 'transfer_out') {
+      const account = await repo.getById('bank_accounts', record.account_id);
+      if (account) {
+        await repo.upsert('bank_accounts', {
+          ...account,
+          current_balance: Number(account.current_balance || 0) - Number(data.amount || 0),
+        });
+      }
+    }
 
-            // Update account balance
-            const balanceChange = data.type === 'deposit' ? data.amount : -data.amount;
-            this.db.run(
-              'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ?',
-              [balanceChange, data.accountId || data.account_id],
-              (err) => {
-                if (err) {
-                  this.db.run('ROLLBACK');
-                  return reject(err);
-                }
-
-                this.db.run('COMMIT', (err) => {
-                  if (err) {
-                    this.db.run('ROLLBACK');
-                    return reject(err);
-                  }
-                  resolve({ id, ...data });
-                });
-              }
-            );
-          }
-        );
-      });
-    });
+    return repo.getById('bank_transactions', id);
   }
-
-  async updateTransaction(id, data) {
-    return new Promise((resolve, reject) => {
-      const fields = [];
-      const params = [];
-      
-      const allowed = ['description', 'status', 'reconciled', 'reference_type', 'reference_id'];
-      
-      allowed.forEach(field => {
-        if (data[field] !== undefined) {
-          const dbField = field.replace(/([A-Z])/g, '_$1').toLowerCase();
-          fields.push(`${dbField} = ?`);
-          params.push(data[field]);
-        }
-      });
-
-      if (fields.length === 0) return reject(new Error('No fields to update'));
-
-      params.push(id);
-      this.db.run(
-        `UPDATE bank_transactions SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        params,
-        function (err) {
-          if (err) return reject(err);
-          if (this.changes === 0) return resolve(null);
-          resolve({ id, ...data });
-        }
-      );
-    });
-  }
-
-  async deleteTransaction(id) {
-    return new Promise((resolve, reject) => {
-      // Get transaction details first to reverse balance
-      this.db.get(
-        'SELECT * FROM bank_transactions WHERE id = ?',
-        [id],
-        (err, row) => {
-          if (err) return reject(err);
-          if (!row) return resolve(null);
-
-          this.db.run('BEGIN TRANSACTION', (err) => {
-            if (err) return reject(err);
-
-            // Reverse balance update
-            const balanceChange = row.type === 'deposit' ? -row.amount : row.amount;
-            this.db.run(
-              'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ?',
-              [balanceChange, row.account_id],
-              (err) => {
-                if (err) {
-                  this.db.run('ROLLBACK');
-                  return reject(err);
-                }
-
-                // Delete transaction
-                this.db.run(
-                  'DELETE FROM bank_transactions WHERE id = ?',
-                  [id],
-                  function (err) {
-                    if (err) {
-                      this.db.run('ROLLBACK');
-                      return reject(err);
-                    }
-
-                    this.db.run('COMMIT', (err) => {
-                      if (err) {
-                        this.db.run('ROLLBACK');
-                        return reject(err);
-                      }
-                      resolve({ success: true });
-                    });
-                  }
-                );
-              }
-            );
-          });
-        }
-      );
-    });
-  }
-
-  // ==================== RECONCILIATION ====================
-
-  async reconcileTransaction(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        'UPDATE bank_transactions SET reconciled = 1, reconciled_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [id],
-        function (err) {
-          if (err) return reject(err);
-          if (this.changes === 0) return resolve(null);
-          resolve({ success: true });
-        }
-      );
-    });
-  }
-
-  async unreconcileTransaction(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        'UPDATE bank_transactions SET reconciled = 0, reconciled_at = NULL WHERE id = ?',
-        [id],
-        function (err) {
-          if (err) return reject(err);
-          if (this.changes === 0) return resolve(null);
-          resolve({ success: true });
-        }
-      );
-    });
-  }
-
-  async getReconciliationSummary(accountId, startDate, endDate) {
-    return new Promise((resolve, reject) => {
-      const sql = `
-        SELECT 
-          COUNT(*) as total_transactions,
-          SUM(CASE WHEN type = 'deposit' THEN amount ELSE 0 END) as total_deposits,
-          SUM(CASE WHEN type = 'withdrawal' THEN amount ELSE 0 END) as total_withdrawals,
-          SUM(CASE WHEN reconciled = 1 THEN amount ELSE 0 END) as reconciled_amount,
-          SUM(CASE WHEN reconciled = 0 THEN amount ELSE 0 END) as unreconciled_amount
-        FROM bank_transactions
-        WHERE account_id = ?date >= ? AND date <= ?
-      `;
-
-      this.db.get(sql, [accountId, startDate, endDate], (err, row) => {
-        if (err) return reject(err);
-        resolve(row || {});
-      });
-    });
-  }
-
-  // ==================== TRANSFERS ====================
 
   async transferFunds(data) {
-    return new Promise((resolve, reject) => {
-      const fromAccountId = data.fromAccountId || data.from_account_id;
-      const toAccountId = data.toAccountId || data.to_account_id;
-      const amount = data.amount;
-      const currency = data.currency || 'USD';
+    const fromId = data.fromAccountId || data.from_account_id;
+    const toId = data.toAccountId || data.to_account_id;
+    const amount = Number(data.amount || 0);
+    const date = data.date || new Date().toISOString().split('T')[0];
 
-      if (fromAccountId === toAccountId) {
-        return reject(new Error('Cannot transfer to the same account'));
-      }
+    const fromAccount = await repo.getById('bank_accounts', fromId);
+    const toAccount = await repo.getById('bank_accounts', toId);
+    if (!fromAccount || !toAccount) throw new Error('Invalid account(s)');
 
-      this.db.run('BEGIN TRANSACTION', (err) => {
-        if (err) return reject(err);
+    const outId = `BT-${Date.now()}-out-${crypto.randomBytes(4).toString('hex')}`;
+    const inId = `BT-${Date.now()}-in-${crypto.randomBytes(4).toString('hex')}`;
 
-        // Create withdrawal from source account
-        const withdrawalId = `BT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-OUT`;
-        this.db.run(
-          `INSERT INTO bank_transactions (
-            id, account_id, date, type, amount, currency,
-            description, reference_type, reference_id, status,
-            reconciled, created_by
-          ) VALUES (?, ?, ?, 'withdrawal', ?, ?, ?, 'transfer', ?, 'completed', 0, ?, ?)`,
-          [
-            withdrawalId,
-            fromAccountId,
-            data.date || new Date().toISOString().split('T')[0],
-            amount,
-            currency,
-            `Transfer to ${data.toAccountName || data.to_account_name || 'another account'}`,
-            `${Date.now()}`,
-            data.createdBy || data.created_by || null
-          ],
-          function (err) {
-            if (err) {
-              this.db.run('ROLLBACK');
-              return reject(err);
-            }
-
-            // Create deposit to destination account
-            const depositId = `BT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-IN`;
-            this.db.run(
-              `INSERT INTO bank_transactions (
-                id, account_id, date, type, amount, currency,
-                description, reference_type, reference_id, status,
-                reconciled, created_by
-              ) VALUES (?, ?, ?, 'deposit', ?, ?, ?, 'transfer', ?, 'completed', 0, ?, ?)`,
-              [
-                depositId,
-                toAccountId,
-                data.date || new Date().toISOString().split('T')[0],
-                amount,
-                currency,
-                `Transfer from ${data.fromAccountName || data.from_account_name || 'another account'}`,
-                `${Date.now()}`,
-                data.createdBy || data.created_by || null
-              ],
-              function (err) {
-                if (err) {
-                  this.db.run('ROLLBACK');
-                  return reject(err);
-                }
-
-                // Update account balances
-                this.db.run(
-                  'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) - ? WHERE id = ?',
-                  [amount, fromAccountId],
-                  (err) => {
-                    if (err) {
-                      this.db.run('ROLLBACK');
-                      return reject(err);
-                    }
-
-                    this.db.run(
-                      'UPDATE bank_accounts SET current_balance = COALESCE(current_balance, 0) + ? WHERE id = ?',
-                      [amount, toAccountId],
-                      (err) => {
-                        if (err) {
-                          this.db.run('ROLLBACK');
-                          return reject(err);
-                        }
-
-                        this.db.run('COMMIT', (err) => {
-                          if (err) {
-                            this.db.run('ROLLBACK');
-                            return reject(err);
-                          }
-                          resolve({
-                            withdrawalId,
-                            depositId,
-                            amount,
-                            fromAccountId,
-                            toAccountId
-                          });
-                        });
-                      }
-                    );
-                  }
-                );
-              }
-            );
-          }
-        );
-      });
+    await repo.upsert('bank_transactions', {
+      id: outId, account_id: fromId, date, type: 'transfer_out',
+      amount, currency: data.currency || 'USD',
+      description: `Transfer to ${toAccount.account_name || toId}`,
+      reference_type: 'transfer', reference_id: data.referenceId || null,
+      status: 'completed', reconciled: 0, created_by: data.createdBy || null,
     });
+
+    await repo.upsert('bank_transactions', {
+      id: inId, account_id: toId, date, type: 'transfer_in',
+      amount, currency: data.currency || 'USD',
+      description: `Transfer from ${fromAccount.account_name || fromId}`,
+      reference_type: 'transfer', reference_id: data.referenceId || null,
+      status: 'completed', reconciled: 0, created_by: data.createdBy || null,
+    });
+
+    await repo.upsert('bank_accounts', {
+      ...fromAccount,
+      current_balance: Number(fromAccount.current_balance || 0) - amount,
+    });
+    await repo.upsert('bank_accounts', {
+      ...toAccount,
+      current_balance: Number(toAccount.current_balance || 0) + amount,
+    });
+
+    return { outId, inId, amount, date };
   }
 
-  // ==================== REPORTING ====================
-
-  async getAccountBalance(accountId, asOfDate = null) {
-    return new Promise((resolve, reject) => {
-      let sql = `
-        SELECT 
-          COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount ELSE 0 END), 0) -
-          COALESCE(SUM(CASE WHEN type = 'withdrawal' THEN amount ELSE 0 END), 0) as balance
-        FROM bank_transactions
-        WHERE account_id = ?`;
-      const params = [accountId];
-
-      if (asOfDate) {
-        sql += ' AND date <= ?';
-        params.push(asOfDate);
-      }
-
-      this.db.get(sql, params, (err, row) => {
-        if (err) return reject(err);
-        resolve(row ? row.balance : 0);
-      });
-    });
+  async getAccountBalance(id, asOfDate) {
+    const account = await repo.getById('bank_accounts', id);
+    if (!account) return 0;
+    let transactions = await repo.getAll('bank_transactions', { 'data->>account_id': `eq.${id}`, 'data->>status': `eq.completed` });
+    if (asOfDate) {
+      transactions = transactions.filter(t => t.date <= asOfDate);
+    }
+    const txTotal = transactions.reduce((sum, t) => {
+      const amt = Number(t.amount || 0);
+      return sum + (t.type === 'deposit' || t.type === 'transfer_in' ? amt : -amt);
+    }, 0);
+    return Number(account.opening_balance || 0) + txTotal;
   }
 
-  async getCashFlowSummary( startDate, endDate) {
-    return new Promise((resolve, reject) => {
-      const sql = `
-        SELECT 
-          type,
-          COUNT(*) as count,
-          SUM(amount) as total
-        FROM bank_transactionsdate >= ?
-          AND date <= ?
-        GROUP BY type
-      `;
-
-      this.db.all(sql, [ startDate, endDate], (err, rows) => {
-        if (err) return reject(err);
-        
-        const summary = {
-          deposits: 0,
-          withdrawals: 0,
-          netCashFlow: 0,
-          transactionCount: 0
-        };
-
-        rows.forEach(row => {
-          summary.transactionCount += row.count;
-          if (row.type === 'deposit') {
-            summary.deposits = row.total;
-          } else if (row.type === 'withdrawal') {
-            summary.withdrawals = row.total;
-          }
-        });
-
-        summary.netCashFlow = summary.deposits - summary.withdrawals;
-        resolve(summary);
-      });
-    });
+  async getReconciliationSummary(id, startDate, endDate) {
+    const transactions = await repo.getAll('bank_transactions', { 'data->>account_id': `eq.${id}` });
+    const filtered = transactions.filter(t => t.date >= startDate && t.date <= endDate);
+    const deposits = filtered.filter(t => t.type === 'deposit' || t.type === 'transfer_in').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const withdrawals = filtered.filter(t => t.type === 'withdrawal' || t.type === 'transfer_out').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    return {
+      deposits,
+      withdrawals,
+      net: deposits - withdrawals,
+      transactionCount: filtered.length,
+      reconciledCount: filtered.filter(t => t.reconciled).length,
+    };
   }
 }
 

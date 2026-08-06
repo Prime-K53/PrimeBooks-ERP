@@ -30,22 +30,27 @@ const PortalButton: React.FC<Props> = ({
   const baseStyle: React.CSSProperties = {
     fontFamily: "'Inter', sans-serif",
     fontWeight: 600,
-    borderRadius: 9,
+    borderRadius: 'var(--radius-sm)',
     cursor: disabled || loading ? 'not-allowed' : 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
-    transition: 'all .15s ease',
+    transition: 'all var(--motion-fast) ease',
     opacity: disabled || loading ? 0.6 : 1,
     border: '1.4px solid transparent',
     position: 'relative',
+    height: 44,
+    minHeight: 44,
+    paddingLeft: 16,
+    paddingRight: 16,
+    fontSize: 13,
   };
 
   const sizeStyles: Record<string, React.CSSProperties> = {
-    sm: { padding: '6px 14px', fontSize: 12 },
-    md: { padding: '9px 18px', fontSize: 13 },
-    lg: { padding: '12px 24px', fontSize: 14 },
+    sm: { padding: '4px 12px', fontSize: 12, height: 36, minHeight: 36 },
+    md: { padding: '8px 18px', fontSize: 13, height: 44, minHeight: 44 },
+    lg: { padding: '12px 24px', fontSize: 14, height: 48, minHeight: 48 },
   };
 
   const variantStyles: Record<ButtonVariant, React.CSSProperties> = {

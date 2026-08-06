@@ -1,135 +1,63 @@
 const fs = require('fs');
 const path = require('path');
-const { initDb, db } = require('./db.cjs');
+const { getDbPath, backupDir, ensureRuntimeDirs } = require('./runtimePaths.cjs');
+const sq = require('./services/supabaseQuery.cjs');
+const repo = require('./services/supabaseRepository.cjs');
 const BackupService = require('./services/backupService.cjs');
 const licenseService = require('./services/licenseService.cjs');
-const {
-  storageDir,
-  backupDir,
-  tempDir,
-  secureKeysDir,
-  getDbPath,
-  licensePath,
-  ensureDir,
-} = require('./runtimePaths.cjs');
 
 async function bootstrap() {
-  console.log('--- PRIME ERP OFFLINE BOOTSTRAP START ---');
+  console.log('--- PRIME ERP BOOTSTRAP START ---');
 
-  // 1. Ensure required directories exist
-  const dirs = [
-    storageDir,
-    backupDir,
-    tempDir,
-    secureKeysDir,
-  ];
+  ensureRuntimeDirs();
 
-  dirs.forEach(dir => {
-    const existed = fs.existsSync(dir);
-    ensureDir(dir);
-    if (!existed) console.log(`Created directory: ${dir}`);
-  });
-
-  // 2. Machine Fingerprint & Licensing
   const fingerprint = licenseService.getFingerprint();
   console.log(`Machine Fingerprint: ${fingerprint}`);
   const license = licenseService.validateLicense();
   console.log(`[LICENSE STATUS] ${license.mode} ${license.valid ? '(Valid)' : '(Limited Access - Offline Trial)'}`);
 
-  if (!license.valid && !fs.existsSync(licensePath)) {
+  if (!license.valid && !fs.existsSync(licenseService.licensePath)) {
     console.log('Generating auto-trial license for first run...');
-    licenseService.generateTrialLicense(365); // 1 year trial for offline deployment
+    licenseService.generateTrialLicense(365);
   }
 
-  // 3. Database Initialization & Schema Verification
   try {
-    console.log('Initializing database...');
-    await initDb();
-    console.log('Database initialized successfully.');
-    
-    // Initialize examination module schemas to ensure they're ready
-    console.log('Initializing examination module schemas...');
-    const examinationService = require('./services/examinationService.cjs');
-    await examinationService.ensureCoreExaminationSchema();
-    await examinationService.ensureExaminationSyncSchema();
-    await examinationService.ensureExaminationPricingSchema();
-    console.log('Examination module schemas initialized.');
+    console.log('Verifying Supabase connection...');
+    const alive = await sq.getOne('SELECT 1 AS alive');
+    if (!alive) {
+      console.warn('[Bootstrap] Supabase connection check returned no data.');
+    }
+    console.log('Supabase connection verified.');
 
-     // Initialize auth schema (users table)
-     console.log('Initializing auth schema...');
-     const authService = require('./services/authService.cjs');
-     await authService.ensureAuthSchema();
-     console.log('Auth schema initialized.');
+    console.log('Initializing auth schema...');
+    const authService = require('./services/authService.cjs');
+    await authService.ensureAuthSchema();
 
-     // Initialize portal auth schema (portal_users, sessions, etc.)
-     console.log('Initializing portal auth schema...');
-     const portalAuthService = require('./services/portalAuthService.cjs');
-     await portalAuthService.ensurePortalSchema();
-     console.log('Portal auth schema initialized.');
+    console.log('Initializing portal auth schema...');
+    const portalAuthService = require('./services/portalAuthService.cjs');
+    await portalAuthService.ensurePortalSchema();
 
-     // Initialize referral tables
-     console.log('Initializing referral tables...');
-     const migrate_add_referral_tables = require('./migrations/add_referral_tables.cjs');
-     await migrate_add_referral_tables();
-     console.log('Referral tables initialized.');
-     
-     console.log('Schema verification passed.');
+    console.log('Initializing referral tables...');
+    const migrate_add_referral_tables = require('./migrations/add_referral_tables.cjs');
+    await migrate_add_referral_tables();
+
+    console.log('Schema verification passed.');
   } catch (err) {
     console.error('--- DATABASE CRITICAL ERROR ---');
     console.error(err);
-
-    if (process.env.NODE_ENV === 'test') {
-      throw err;
-    }
-
-    // Recovery Logic: Attempt to restore from latest backup
-    if (fs.existsSync(backupDir)) {
-      const backups = fs.readdirSync(backupDir)
-        .filter(f => f.endsWith('.sqlite'))
-        .map(f => ({ name: f, time: fs.statSync(path.join(backupDir, f)).mtime.getTime() }))
-        .sort((a, b) => b.time - a.time);
-
-      if (backups.length > 0) {
-        const latestBackup = path.join(backupDir, backups[0].name);
-        console.log(`EMERGENCY RECOVERY: Restoring from ${latestBackup}...`);
-        
-      try {
-        // Close DB connection if open
-        db.close();
-        
-        // Rename corrupted DB for forensics
-        const currentDbPath = getDbPath();
-        const corruptedPath = currentDbPath + '.corrupted-' + Date.now();
-        if (fs.existsSync(currentDbPath)) fs.renameSync(currentDbPath, corruptedPath);
-        
-        // Copy backup
-        fs.copyFileSync(latestBackup, currentDbPath);
-        console.log('Recovery successful. System will now exit. Please restart the application.');
-        process.exit(0); 
-      } catch (recoveryErr) {
-        console.error('RECOVERY FAILED:', recoveryErr);
-      }
-      } else {
-        console.error('No backups found for recovery.');
-      }
-    }
     process.exit(1);
   }
 
-
-
-  // 4. Data Safety - Initial Backup
   const backupService = new BackupService(backupDir);
   await backupService.createBackup().catch(err => console.warn('Initial backup failed:', err));
 
-  // 6. First-Run Seeding
   return new Promise((resolve, reject) => {
-    db.get("SELECT COUNT(*) as count FROM schools", (err, row) => {
+    sq.getOne('SELECT COUNT(*) as count FROM schools', [], (err, row) => {
       if (err) {
         console.error('Error checking schools count:', err);
-        return resolve(); // Continue anyway
+        return resolve();
       }
-      if (row.count === 0) {
+      if (row && Number(row.count) === 0) {
         console.log('First run detected. Seeding default data...');
         try {
           seedDefaultData();
@@ -137,74 +65,74 @@ async function bootstrap() {
           console.error('Failed to seed default data (non-fatal):', seedErr);
         }
       }
-      console.log('--- PRIME ERP OFFLINE BOOTSTRAP COMPLETE ---');
+      console.log('--- PRIME ERP BOOTSTRAP COMPLETE ---');
       resolve();
     });
   });
 }
 
-function seedDefaultData() {
-  db.serialize(() => {
-    // Seed Schools
-    const schools = [
-      ['Sample Academy', 'margin-based', 0.3],
-      ['City Primary', 'per-sheet', 15.0]
-    ];
-    for (const s of schools) {
-      db.run("INSERT INTO schools (name, pricing_type, pricing_value) VALUES (?, ?, ?)", s);
-    }
+async function seedDefaultData() {
+  const schools = [
+    { id: 'school-1', name: 'Sample Academy', pricing_type: 'margin-based', pricing_value: 0.3 },
+    { id: 'school-2', name: 'City Primary', pricing_type: 'per-sheet', pricing_value: 15.0 }
+  ];
+  for (const s of schools) {
+    await repo.upsert('schools', s);
+  }
 
-    // Seed Classes
-    const defaultClasses = [
-      "Standard 1", "Standard 2", "Standard 3", "Standard 4",
-      "Standard 5", "Standard 6", "Standard 7", "Standard 8"
-    ];
-    for (const c of defaultClasses) {
-      db.run("INSERT OR IGNORE INTO classes (name) VALUES (?)", [c]);
-    }
+  const defaultClasses = [
+    'Standard 1', 'Standard 2', 'Standard 3', 'Standard 4',
+    'Standard 5', 'Standard 6', 'Standard 7', 'Standard 8'
+  ];
+  for (const c of defaultClasses) {
+    await repo.upsert('classes', { id: `class-${c.replace(/\s+/g, '-').toLowerCase()}`, name: c });
+  }
 
-    // Seed Subjects
-    const defaultSubjects = [
-      ["Agriculture", "AGRI"], ["Bible knowledge", "BK"], ["Chichewa", "CHI"],
-      ["English", "ENG"], ["Expressive arts", "ARTS"], ["Life skills", "LS"],
-      ["Mathematics", "MATH"], ["P / Science", "PSCI"], ["Social studies", "SS"],
-      ["Ulimi Sayansi", "USAY"], ["Arts and Life", "ALIFE"], ["Social & BK", "SBK"]
-    ];
-    for (const s of defaultSubjects) {
-      db.run("INSERT OR IGNORE INTO subjects (name, code) VALUES (?, ?)", s);
-    }
+  const defaultSubjects = [
+    { id: 'subject-1', name: 'Agriculture', code: 'AGRI' },
+    { id: 'subject-2', name: 'Bible knowledge', code: 'BK' },
+    { id: 'subject-3', name: 'Chichewa', code: 'CHI' },
+    { id: 'subject-4', name: 'English', code: 'ENG' },
+    { id: 'subject-5', name: 'Expressive arts', code: 'ARTS' },
+    { id: 'subject-6', name: 'Life skills', code: 'LS' },
+    { id: 'subject-7', name: 'Mathematics', code: 'MATH' },
+    { id: 'subject-8', name: 'P / Science', code: 'PSCI' },
+    { id: 'subject-9', name: 'Social studies', code: 'SS' },
+    { id: 'subject-10', name: 'Ulimi Sayansi', code: 'USAY' },
+    { id: 'subject-11', name: 'Arts and Life', code: 'ALIFE' },
+    { id: 'subject-12', name: 'Social & BK', code: 'SBK' }
+  ];
+  for (const s of defaultSubjects) {
+    await repo.upsert('subjects', s);
+  }
 
-    // Seed Inventory
-    const materials = [
-      ['INV-PAPER', 'Paper', 'Paper', 5000, 35.0],
-      ['INV-TONER', 'Toner', 'Toner', 1000, 0.25]
-    ];
-    for (const m of materials) {
-      db.run("INSERT OR IGNORE INTO inventory (id, name, material, quantity, cost_per_unit) VALUES (?, ?, ?, ?, ?)", m);
-    }
+  const materials = [
+    { id: 'INV-PAPER', name: 'Paper', material: 'Paper', quantity: 5000, cost_per_unit: 35.0 },
+    { id: 'INV-TONER', name: 'Toner', material: 'Toner', quantity: 1000, cost_per_unit: 0.25 }
+  ];
+  for (const m of materials) {
+    await repo.upsert('inventory', m);
+  }
 
-    // Seed Work Centers
-    const workCenters = [
-      ['WC-PRN-01', 'Offset Printing Line 1', 'Primary printing facility', 45.00, 8, 'Active'],
-      ['WC-BND-01', 'Perfect Binding Station', 'Paper binding and finishing', 35.00, 8, 'Active'],
-      ['WC-CUT-01', 'Hydraulic Cutting Station', 'Precision paper cutting', 25.00, 8, 'Active']
-    ];
-    for (const wc of workCenters) {
-      db.run("INSERT OR IGNORE INTO work_centers (id, name, description, hourly_rate, capacity_per_day, status) VALUES (?, ?, ?, ?, ?, ?)", wc);
-    }
+  const workCenters = [
+    { id: 'WC-PRN-01', name: 'Offset Printing Line 1', description: 'Primary printing facility', hourly_rate: 45.00, capacity_per_day: 8, status: 'Active' },
+    { id: 'WC-BND-01', name: 'Perfect Binding Station', description: 'Paper binding and finishing', hourly_rate: 35.00, capacity_per_day: 8, status: 'Active' },
+    { id: 'WC-CUT-01', name: 'Hydraulic Cutting Station', description: 'Precision paper cutting', hourly_rate: 25.00, capacity_per_day: 8, status: 'Active' }
+  ];
+  for (const wc of workCenters) {
+    await repo.upsert('work_centers', wc);
+  }
 
-    // Seed Production Resources
-    const resources = [
-      ['RES-PRN-01', 'Heidelberg Speedmaster', 'WC-PRN-01', 'Active'],
-      ['RES-BND-01', 'Horizon Binder', 'WC-BND-01', 'Active'],
-      ['RES-CUT-01', 'Polar Cutter', 'WC-CUT-01', 'Active']
-    ];
-    for (const r of resources) {
-      db.run("INSERT OR IGNORE INTO production_resources (id, name, work_center_id, status) VALUES (?, ?, ?, ?)", r);
-    }
+  const resources = [
+    { id: 'RES-PRN-01', name: 'Heidelberg Speedmaster', work_center_id: 'WC-PRN-01', status: 'Active' },
+    { id: 'RES-BND-01', name: 'Horizon Binder', work_center_id: 'WC-BND-01', status: 'Active' },
+    { id: 'RES-CUT-01', name: 'Polar Cutter', work_center_id: 'WC-CUT-01', status: 'Active' }
+  ];
+  for (const r of resources) {
+    await repo.upsert('production_resources', r);
+  }
 
-    console.log('Default data seeded (schools, classes, subjects, inventory, work centers, resources).');
-  });
+  console.log('Default data seeded (schools, classes, subjects, inventory, work centers, resources).');
 }
 
 module.exports = bootstrap;

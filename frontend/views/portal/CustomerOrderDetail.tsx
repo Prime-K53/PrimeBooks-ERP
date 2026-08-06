@@ -209,7 +209,7 @@ const CustomerOrderDetail: React.FC = () => {
     setLoading(true);
     try {
       const result = await portalLifecycle.orders.reorder(order.id);
-      navigate(`/portal/requests/${result.id}`);
+      navigate(`/portal/orders?tab=requests`);
     } catch (err: any) {
       setError(err.message || 'Failed to create reorder request');
     } finally {
@@ -324,19 +324,27 @@ const CustomerOrderDetail: React.FC = () => {
         <div className="px-5 py-4 border-b border-slate-200/60">
           <h2 className="text-sm font-semibold text-slate-800">Order Items</h2>
         </div>
-        <div className="space-y-2">
-          {(order.items || []).map((item, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#23282A', margin: 0 }}>{item.name}</p>
-              </div>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: 13, color: '#5c6567' }}>Qty: {item.quantity}</span>
-                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#5c6567' }}>{formatK(item.unitPrice)}</span>
-                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#23282A' }}>{formatK(item.lineTotal)}</span>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200/60 text-slate-500">
+                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider">Item</th>
+                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Qty</th>
+                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Price</th>
+                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(order.items || []).map((item, i) => (
+                <tr key={i} className={i < (order.items || []).length - 1 ? 'border-b border-slate-200/60' : ''}>
+                  <td className="px-5 py-3 font-medium text-slate-800">{item.name}</td>
+                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums">{item.quantity}</td>
+                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.unitPrice)}</td>
+                  <td className="px-5 py-3 text-right font-semibold text-slate-900 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.lineTotal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         <div className="px-5 py-4 border-t border-slate-200/60 flex justify-between items-center">
           <span className="text-sm font-semibold text-slate-700">Total</span>

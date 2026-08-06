@@ -5,7 +5,13 @@ import { portalLifecycle } from '../../services/portalApiClient';
 import PortalSidebar from './components/PortalSidebar';
 import PortalHeader from './components/PortalHeader';
 import { ToastProvider } from './components/Toast';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import CommandPalette from './components/CommandPalette';
+import PrimeAssistant from './components/PrimeAssistant';
+import PortalQuickActions from './components/PortalQuickActions';
+import OfflineIndicator from './components/OfflineIndicator';
+import MobileBottomNav from './components/MobileBottomNav';
+import { ThemeProvider } from './context/ThemeContext';
+import { AlertTriangle, RefreshCw, Search } from 'lucide-react';
 
 // Error Boundary for catching errors in portal pages
 interface ErrorBoundaryState {
@@ -84,6 +90,23 @@ const CustomerLayout: React.FC = () => {
   const { isAuthenticated, loading } = useCustomerAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      const stored = localStorage.getItem('prime-portal-sidebar-collapsed');
+      return stored ? JSON.parse(stored) : false;
+    } catch {
+      return false;
+    }
+  });
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
+    try {
+      const stored = localStorage.getItem('prime-portal-density') as 'comfortable' | 'compact' | null;
+      return stored || 'comfortable';
+    } catch {
+      return 'comfortable';
+    }
+  });
 
   const currentTitle = pageTitles[location.pathname] || 'Customer Portal';
 
@@ -99,6 +122,17 @@ const CustomerLayout: React.FC = () => {
     return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandOpen((v) => !v);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--dashboard-bg)] flex items-center justify-center">
@@ -112,23 +146,33 @@ const CustomerLayout: React.FC = () => {
   }
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-[var(--dashboard-bg)]">
-        <a href="#main-content" className="skip-nav">Skip to main content</a>
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-40 md:hidden" onClick={closeSidebar} />
-        )}
-        <PortalSidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <PortalHeader title={currentTitle} onMenuToggle={toggleSidebar} />
-        <main id="main-content" className="fixed top-16 bottom-0 left-0 right-0 md:left-64 overflow-x-auto overflow-y-auto custom-scrollbar">
-          <div className="p-4 md:p-6 min-w-0">
-            <PortalErrorBoundary>
-              <Outlet />
-            </PortalErrorBoundary>
-          </div>
-        </main>
-      </div>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <div className={`min-h-screen bg-[var(--dashboard-bg)] density-${density}`}>
+          <a href="#main-content" className="skip-nav">Skip to main content</a>
+          {sidebarOpen && (
+            <div className="fixed inset-0 z-40 md:hidden" onClick={closeSidebar} />
+          )}
+          <PortalSidebar isOpen={sidebarOpen} onClose={closeSidebar} collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} density={density} onDensityChange={setDensity} />
+          <PortalHeader title={currentTitle} onMenuToggle={toggleSidebar} sidebarCollapsed={sidebarCollapsed} onCommandToggle={() => setCommandOpen((v) => !v)} />
+          <main
+            id="main-content"
+            className="fixed top-14 md:top-16 right-0 overflow-x-auto overflow-y-auto custom-scrollbar transition-all duration-200 ease-out md:bottom-0 bottom-16"
+            style={{ left: sidebarCollapsed ? '4rem' : '16rem' }}
+          >
+            <div className="page-shell py-4 md:py-6 min-w-0">
+              <PortalErrorBoundary>
+                <Outlet />
+              </PortalErrorBoundary>
+            </div>
+          </main>
+          <MobileBottomNav />
+          <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
+          <PrimeAssistant />
+          <PortalQuickActions />
+        </div>
+      </ToastProvider>
+    </ThemeProvider>
   );
 };
 

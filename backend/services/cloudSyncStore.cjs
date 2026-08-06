@@ -15,6 +15,16 @@
  */
 const axios = require('axios');
 
+// axios does NOT reject on 4xx/5xx by default; it only throws on network-level
+// failures. Without this, a rejected cloud write (bad column, RLS, 401 from an
+// expired key, 409/500) would surface as `res.data` being an error object that
+// we silently treat as a successful row — corrupting the client's sync state.
+// Force rejection on any non-2xx so every failure path funnels through the
+// try/catch in applyOp() and is reported as a per-op, retryable failure.
+const cloudHttp = axios.create({
+  validateStatus: (status) => status >= 200 && status < 300,
+});
+
 const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
 const SECRET_KEY = process.env.SUPABASE_SECRET_KEY || '';
 
@@ -53,7 +63,7 @@ let idempotencyTableReady = null;
 async function ensureIdempotencyTable() {
   if (idempotencyTableReady !== null) return idempotencyTableReady;
   try {
-    const res = await axios.get(`${SUPABASE_URL}/rest/v1/idempotency_keys`, {
+    const res = await cloudHttp.get(`${SUPABASE_URL}/rest/v1/idempotency_keys`, {
       headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
       params: { select: 'id', limit: 0 },
       timeout: 8000,
@@ -71,7 +81,7 @@ async function checkIdempotency(operationId) {
   }
   try {
     const uuid = stringToUuid5(operationId);
-    const res = await axios.get(`${SUPABASE_URL}/rest/v1/idempotency_keys`, {
+    const res = await cloudHttp.get(`${SUPABASE_URL}/rest/v1/idempotency_keys`, {
       headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
       params: { select: 'id,result', id: `eq.${uuid}`, limit: 1 },
       timeout: 8000,
@@ -89,7 +99,7 @@ async function recordIdempotency(operationId, result) {
   if (!operationId || !(await ensureIdempotencyTable())) return;
   try {
     const uuid = stringToUuid5(operationId);
-    await axios.post(`${SUPABASE_URL}/rest/v1/idempotency_keys`, {
+    await cloudHttp.post(`${SUPABASE_URL}/rest/v1/idempotency_keys`, {
       id: uuid,
       result: result || null,
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -104,7 +114,7 @@ async function recordIdempotency(operationId, result) {
 
 // ─── row helpers ────────────────────────────────────────────────────────────
 async function getRow(table, id) {
-  const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+  const res = await cloudHttp.get(`${SUPABASE_URL}/rest/v1/${table}`, {
     headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
     params: { select: '*', id: `eq.${id}`, limit: 1 },
     timeout: 15000,
@@ -132,7 +142,7 @@ async function listRows(table) {
   const out = [];
   let from = 0;
   for (;;) {
-    const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+    const res = await cloudHttp.get(`${SUPABASE_URL}/rest/v1/${table}`, {
       headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
       params: { select: '*', offset: from, limit: LIMIT },
       timeout: 20000,
@@ -209,7 +219,7 @@ async function upsertRow(table, id, payload, serverNow = new Date().toISOString(
       updated_at: serverNow,
       version: gate.serverVersion + 1,
     };
-    const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
+    const res = await cloudHttp.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
       headers: { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' },
       params: { on_conflict: 'id' },
       timeout: 20000,
@@ -240,7 +250,7 @@ async function upsertRow(table, id, payload, serverNow = new Date().toISOString(
 
   // Genuine create: no row exists, so stamp the initial version.
   const row = { id, data: domain, updated_at: serverNow, version: 1 };
-  const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
+  const res = await cloudHttp.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
     headers: { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' },
     params: { on_conflict: 'id' },
     timeout: 20000,
@@ -273,7 +283,7 @@ async function softDeleteRow(table, id, serverNow = new Date().toISOString()) {
   const baseVersion = existing?.version != null ? Number(existing.version) : 0;
   row.version = baseVersion + 1;
 
-  const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
+  const res = await cloudHttp.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
     headers: { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' },
     params: { on_conflict: 'id' },
     timeout: 20000,
@@ -304,7 +314,7 @@ const PURGE_PAGE_SIZE = 100;
 async function countTombstones(table) {
   if (!isConfigured()) return 0;
   try {
-    const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+    const res = await cloudHttp.get(`${SUPABASE_URL}/rest/v1/${table}`, {
       headers: { ...adminHeaders(), Prefer: 'count=exact' },
       params: { ...TOMBSTONE_FLAG, select: 'id', limit: 1 },
       timeout: 15000,
@@ -336,7 +346,7 @@ async function purgeTombstones(table, retentionDays, archiveFn = null) {
   // Phase 1 — collect candidate ids (older than retention).
   const ids = [];
   for (let offset = 0; offset < 10000; offset += PURGE_PAGE_SIZE) {
-    const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+    const res = await cloudHttp.get(`${SUPABASE_URL}/rest/v1/${table}`, {
       headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
       params: {
         ...TOMBSTONE_FLAG,
@@ -368,7 +378,7 @@ async function purgeTombstones(table, retentionDays, archiveFn = null) {
       try { await archiveFn(id, table); archived++; } catch { /* archival is best-effort */ }
     }
     try {
-      await axios.delete(`${SUPABASE_URL}/rest/v1/${table}`, {
+      await cloudHttp.delete(`${SUPABASE_URL}/rest/v1/${table}`, {
         headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
         params: { id: `eq.${id}` },
         timeout: 20000,
@@ -399,10 +409,17 @@ async function applyOp(op) {
   }
 
   // Idempotency guard — if the same operation id already succeeded, replay is a no-op.
+  // Wrapped defensively: a failure probing the idempotency table must never bubble
+  // up as a 500 — it degrades to "not seen yet" and the write proceeds (or fails
+  // safely downstream). This is the most likely source of previously-unhandled 500s.
   if (operationId) {
-    const seen = await checkIdempotency(operationId);
-    if (seen.alreadyProcessed) {
-      return { operationId, ok: true, id: seen.result || recordId, replayed: true };
+    try {
+      const seen = await checkIdempotency(operationId);
+      if (seen.alreadyProcessed) {
+        return { operationId, ok: true, id: seen.result || recordId, replayed: true };
+      }
+    } catch (idErr) {
+      console.warn(`[cloudSyncStore] idempotency probe failed for ${operationId}, continuing:`, idErr?.message || idErr);
     }
   }
 
@@ -439,7 +456,10 @@ async function applyOp(op) {
     }
 
     if (operationId && result?.id) {
-      await recordIdempotency(operationId, result.id);
+      // Best-effort only: a failure recording the idempotency key must never
+      // turn a successful write into a 500. The write already succeeded.
+      try { await recordIdempotency(operationId, result.id); }
+      catch (recErr) { console.warn(`[cloudSyncStore] idempotency record failed for ${operationId}:`, recErr?.message || recErr); }
     }
     return { operationId, ok: true, id: result.id, updatedAt: result.updatedAt, version: result.version };
   } catch (err) {

@@ -1,14 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Plus, ArrowUpRight, Search } from 'lucide-react';
+import { FileText, Plus, Search, ChevronRight } from 'lucide-react';
 import { portalLifecycle, QuotationRecord } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalInput from './components/PortalInput';
 import EmptyState from './components/EmptyState';
-import StatusBadge from './components/StatusBadge';
-import PortalCard from './components/PortalCard';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, QUOTATION_STATUS_META, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from './constants';
+import { portalTheme, DEFAULT_PAGE_SIZE, FRIENDLY_STATUS_MAP } from './constants';
 
 const CustomerQuotations: React.FC = () => {
   const navigate = useNavigate();
@@ -124,33 +122,39 @@ const CustomerQuotations: React.FC = () => {
                   const isExpired = q.status === 'expired' || (q.valid_until && new Date(q.valid_until) < new Date());
                   const isExpiringSoon = q.valid_until && !isExpired && (new Date(q.valid_until).getTime() - Date.now()) < 7 * 86400000;
                   const quotationNumber = q.quotation_number || q.id.slice(0, 8);
-                  const date = new Date(q.created_at).toLocaleDateString();
+                  const date = new Date(q.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                   const total = Number(q.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
                   return (
-                    <PortalCard hoverable key={q.id} onClick={() => navigate(`/portal/quotations/${q.id}`)}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <FileText size={15} className="text-teal-600" />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#23282A' }}>{quotationNumber}</div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <StatusBadge status={friendlyStatus} />
-                          {isExpired && (
-                            <span className="text-[10px] font-bold text-rose-500" title="Expired">⚠</span>
-                          )}
-                          {isExpiringSoon && !isExpired && (
-                            <span className="text-[10px] font-bold text-amber-500" title={`Expires ${new Date(q.valid_until!).toLocaleDateString()}`}>⚠</span>
-                          )}
+                    <div
+                      key={q.id}
+                      onClick={() => navigate(`/portal/quotations/${q.id}`)}
+                      className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                      style={{ borderLeftColor: portalTheme.teal[400], cursor: 'pointer' }}
+                    >
+                      <div style={{ width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
+                        <FileText size={16} color={portalTheme.teal[500]} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{quotationNumber}</div>
+                        <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                          {date} • {friendlyStatus}
+                          {isExpired && ' • Expired'}
+                          {isExpiringSoon && !isExpired && ' • Expiring soon'}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: '#5c6567', marginTop: 8 }}>
-                        <span>Date: <span style={{ color: '#23282A' }}>{date}</span></span>
-                        <span>Total: <span style={{ color: '#23282A' }}>K {total}</span></span>
-                        {q.valid_until && <span>Valid until: <span style={{ color: '#23282A' }}>{new Date(q.valid_until).toLocaleDateString()}</span></span>}
+                      <div style={{ textAlign: 'right', minWidth: 80 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums', lineHeight: 1.35 }}>
+                          K {total}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#5c6567', textTransform: 'uppercase', marginTop: 1, lineHeight: 1.3 }}>
+                          Total
+                        </div>
                       </div>
-                    </PortalCard>
+                      <div style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 6, background: portalTheme.teal[50], fontSize: 10, fontWeight: 600, color: portalTheme.teal[700], display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, border: `1px solid ${portalTheme.teal[100]}` }}>
+                        View
+                        <ChevronRight size={10} />
+                      </div>
+                    </div>
                   );
                 })}
               </div>

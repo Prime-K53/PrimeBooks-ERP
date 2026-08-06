@@ -11,6 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const acceptanceService = require('../services/acceptanceService.cjs');
+const repo = require('../services/supabaseRepository.cjs');
 
 const ADMIN_ROLES = new Set(['admin', 'company admin', 'owner']);
 
@@ -145,10 +146,7 @@ router.delete('/runs/:id', wrap(async (req, res) => {
   const run = await acceptanceService.getRun(req.params.id);
   if (!run) return res.status(404).json({ error: 'run not found' });
   await acceptanceService.removeEvidenceDir(req.params.id);
-  const { db } = require('../db.cjs');
-  await new Promise((resolve, reject) => {
-    db.run('DELETE FROM acceptance_runs WHERE run_id = ?', [req.params.id], (err) => (err ? reject(err) : resolve()));
-  });
+  await repo.softDelete('acceptance_runs', req.params.id);
   res.json({ ok: true });
 }));
 

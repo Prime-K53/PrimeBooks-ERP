@@ -182,7 +182,13 @@ export const Clients: React.FC = () => {
   const [expandedClientId, setExpandedClientId] = useState<string | null>(null);
 
   const filteredCustomers = useMemo(() => {
+    // Exclude locally soft-deleted clients. Deletes are local-first: the row is
+    // kept (flagged with deletedAt) until the tombstone propagates to the cloud
+    // and is re-pulled. Without this filter a deleted client stays visible in
+    // the list (and can reappear after a cloud pull), so it looks like the
+    // delete "did nothing".
     return customers.filter(c => {
+      if ((c as Customer & Record<string, unknown>).deletedAt) return false;
       const matchesSearch = (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.phone && c.phone.includes(searchQuery));

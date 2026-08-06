@@ -45,7 +45,11 @@ export default defineConfig(({ mode }) => {
         headers: { 'Content-Security-Policy': CSP },
         proxy: {
           '/api': {
-            target: 'http://localhost:3000',
+            // Use the explicit IPv4 loopback address. `localhost` can resolve to
+            // IPv6 (::1) first on some systems, but the backend binds IPv4
+            // (0.0.0.0). A IPv6-first resolution makes the proxy fail to connect
+            // and Vite answers every /api request with a 500 "Proxy error".
+            target: 'http://127.0.0.1:3000',
             changeOrigin: true,
             secure: false,
           },

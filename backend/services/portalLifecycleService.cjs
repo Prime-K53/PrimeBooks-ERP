@@ -11,7 +11,7 @@
  */
 
 const crypto = require('crypto');
-const { db } = require('../db.cjs');
+const repo = require('./supabaseRepository.cjs');
 const { auditService } = require('../auditService.cjs');
 const emailService = require('./emailService.cjs');
 const workflowEngine = require('./workflowEngine.cjs');
@@ -104,37 +104,102 @@ const NOTIFICATION_TYPES = Object.freeze({
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function getOne(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row || null);
-    });
-  });
+async function getOne(query, params = []) {
+  const trimmed = String(query || '').trim();
+  const countMatch = trimmed.match(/SELECT\s+COUNT\s*\(\*\)\s+as\s+(\w+)\s+FROM\s+(\w+)/i);
+  if (countMatch) {
+    const rows = await repo.getAll(countMatch[2]);
+    return { [countMatch[1]]: rows.length };
+  }
+  const byIdMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+.*\bid\s*=\s*\?/i);
+  if (byIdMatch && params.length > 0) {
+    return repo.getById(byIdMatch[1], String(params[0]));
+  }
+  const byFieldMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+  if (byFieldMatch && params.length > 0) {
+    const rows = await repo.getAll(byFieldMatch[1], { [`data->>${byFieldMatch[2]}`]: `eq.${params[0]}` });
+    return rows[0] || null;
+  }
+  const fromMatch = trimmed.match(/FROM\s+(\w+)/i);
+  if (fromMatch) {
+    const rows = await repo.getAll(fromMatch[1]);
+    return rows[0] || null;
+  }
+  return null;
 }
 
-function getAll(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows || []);
-    });
-  });
+async function getAll(query, params = []) {
+  const trimmed = String(query || '').trim();
+  const byFieldMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+  if (byFieldMatch && params.length > 0) {
+    return repo.getAll(byFieldMatch[1], { [`data->>${byFieldMatch[2]}`]: `eq.${params[0]}` });
+  }
+  const fromMatch = trimmed.match(/FROM\s+(\w+)/i);
+  if (fromMatch) {
+    return repo.getAll(fromMatch[1]);
+  }
+  return [];
 }
 
-function runQuery(query, params = []) {
+async function runQuery(query, params = []) {
+  const trimmed = String(query || '').trim();
   const placeholders = (query.match(/\?/g) || []).length;
   if (placeholders !== params.length) {
     return Promise.reject(
       new Error(`SQL binding mismatch: ${placeholders} placeholders vs ${params.length} params in: ${query.slice(0, 140)}`)
     );
   }
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve({ id: this.lastID, changes: this.changes });
-    });
-  });
+  try {
+    if (/DELETE\s+FROM/i.test(trimmed)) {
+      const deleteMatch = trimmed.match(/DELETE\s+FROM\s+(\w+)\s+WHERE\s+id\s*=\s*\?/i);
+      if (deleteMatch) {
+        await repo.softDelete(deleteMatch[1], String(params[0]));
+        return { id: params[0], changes: 1 };
+      }
+      return { changes: 0 };
+    }
+    if (/UPDATE/i.test(trimmed)) {
+      const updateMatch = trimmed.match(/UPDATE\s+(\w+)\s+SET/i);
+      if (updateMatch) {
+        const id = String(params[params.length - 1]);
+        const row = await repo.getById(updateMatch[1], id);
+        if (row) {
+          const updates = { ...row };
+          const setMatch = trimmed.match(/SET\s+(.+?)\s+WHERE/is);
+          if (setMatch) {
+            const pairs = setMatch[1].split(',');
+            for (let i = 0; i < Math.min(pairs.length, params.length - 1); i++) {
+              const colMatch = pairs[i].match(/(\w+)\s*=\s*\?/);
+              if (colMatch) updates[colMatch[1]] = params[i];
+            }
+          }
+          await repo.upsert(updateMatch[1], updates);
+        }
+        return { id, changes: 1 };
+      }
+      return { changes: 0 };
+    }
+    if (/INSERT\s+INTO/i.test(trimmed)) {
+      const insertMatch = trimmed.match(/INSERT\s+INTO\s+(\w+)/i);
+      if (insertMatch) {
+        const id = String(params[0] || `gen_${Date.now()}`);
+        const record = { id };
+        const colMatch = trimmed.match(/\(([^)]+)\)\s*VALUES\s*\(/i);
+        if (colMatch) {
+          const cols = colMatch[1].split(',').map(c => c.trim());
+          for (let i = 1; i < Math.min(cols.length, params.length); i++) {
+            record[cols[i]] = params[i];
+          }
+        }
+        await repo.upsert(insertMatch[1], record);
+        return { id, changes: 1 };
+      }
+      return { changes: 0 };
+    }
+    return { changes: 0 };
+  } catch (err) {
+    throw err;
+  }
 }
 
 function genId(prefix = 'plc') {

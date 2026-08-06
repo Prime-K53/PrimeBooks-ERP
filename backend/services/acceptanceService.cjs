@@ -20,7 +20,7 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const { db } = require('../db.cjs');
+const repo = require('./supabaseRepository.cjs');
 const workspaceService = require('./workspaceService.cjs');
 
 const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
@@ -44,150 +44,149 @@ function adminHeaders() {
   };
 }
 
-// ─── SQLite helpers (promise wrappers around sqlite3) ───────────────────────
-const run = (sql, params = []) => new Promise((resolve, reject) => {
-  db.run(sql, params, (err) => (err ? reject(err) : resolve()));
-});
-
-const get = (sql, params = []) => new Promise((resolve, reject) => {
-  db.get(sql, params, (err, row) => (err ? reject(err) : resolve(row)));
-});
-
-const all = (sql, params = []) => new Promise((resolve, reject) => {
-  db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-});
-
-const ensureSchema = () => run(`
-  CREATE TABLE IF NOT EXISTS acceptance_runs (
-    run_id TEXT PRIMARY KEY,
-    state TEXT NOT NULL DEFAULT 'created',
-    device_a_id TEXT,
-    device_a_label TEXT,
-    device_b_id TEXT,
-    device_b_label TEXT,
-    scenario_index INTEGER NOT NULL DEFAULT 0,
-    scenario_key TEXT,
-    step TEXT,
-    plan TEXT NOT NULL DEFAULT '[]',
-    run_data TEXT NOT NULL DEFAULT '{}',
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-  )
-`);
-
 const now = () => new Date().toISOString();
 
 function parseRun(row) {
   if (!row) return null;
+  const data = row.data || row;
   return {
-    runId: row.run_id,
-    state: row.state,
-    deviceA: { id: row.device_a_id, label: row.device_a_label },
-    deviceB: { id: row.device_b_id, label: row.device_b_label },
-    scenarioIndex: row.scenario_index,
-    scenarioKey: row.scenario_key,
-    step: row.step,
-    plan: JSON.parse(row.plan || '[]'),
-    data: JSON.parse(row.run_data || '{}'),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    runId: data.run_id || row.run_id,
+    state: data.state,
+    deviceA: { id: data.device_a_id, label: data.device_a_label },
+    deviceB: { id: data.device_b_id, label: data.device_b_label },
+    scenarioIndex: data.scenario_index,
+    scenarioKey: data.scenario_key,
+    step: data.step,
+    plan: Array.isArray(data.plan) ? data.plan : [],
+    data: typeof data.run_data === 'string' ? JSON.parse(data.run_data || '{}') : (data.run_data || {}),
+    createdAt: data.created_at || row.created_at,
+    updatedAt: data.updated_at || row.updated_at,
   };
 }
 
-async function setRun(rowPatch, whereRunId) {
-  const fields = Object.keys(rowPatch).map((k) => `${k} = ?`).join(', ');
-  const values = [...Object.values(rowPatch), whereRunId];
-  await run(`UPDATE acceptance_runs SET ${fields}, updated_at = ? WHERE run_id = ?`, [...values, now(), whereRunId]);
+async function setRun(runId, rowPatch) {
+  const old = await repo.getById('acceptance_runs', runId);
+  if (!old) throw new Error('run not found');
+  const data = old.data || old;
+  const updated = {
+    ...old,
+    data: {
+      ...data,
+      ...rowPatch,
+      updated_at: now(),
+    },
+  };
+  await repo.upsert('acceptance_runs', updated);
 }
 
-// ─── run lifecycle ──────────────────────────────────────────────────────────
+async function ensureSchema() {
+  return Promise.resolve();
+}
+
 async function createRun({ runId, deviceId, label, plan = [] }) {
   await ensureSchema();
-  const existing = await get('SELECT run_id FROM acceptance_runs WHERE run_id = ?', [runId]);
+  const existing = await repo.getById('acceptance_runs', runId);
   if (existing) throw new Error('run already exists');
-  await run(
-    `INSERT INTO acceptance_runs (run_id, device_a_id, device_a_label, scenario_index, plan, run_data, created_at, updated_at)
-     VALUES (?, ?, ?, 0, ?, '{}', ?, ?)`,
-    [runId, deviceId, label || 'Device A', JSON.stringify(plan || []), now(), now()]
-  );
+  const record = {
+    id: runId,
+    data: {
+      run_id: runId,
+      state: 'created',
+      device_a_id: deviceId,
+      device_a_label: label || 'Device A',
+      scenario_index: 0,
+      plan: plan || [],
+      run_data: {},
+      created_at: now(),
+      updated_at: now(),
+    },
+  };
+  await repo.upsert('acceptance_runs', record);
   return getRun(runId);
 }
 
 async function joinRun(runId, { deviceId, label }) {
   await ensureSchema();
-  const row = await get('SELECT * FROM acceptance_runs WHERE run_id = ?', [runId]);
+  const row = await repo.getById('acceptance_runs', runId);
   if (!row) throw new Error('run not found');
-  if (FINAL_STATES.has(row.state)) throw new Error('run already closed');
-  if (row.device_b_id && row.device_b_id !== deviceId) throw new Error('another device already joined');
-  await setRun({ device_b_id: deviceId, device_b_label: label || 'Device B' }, runId);
+  const data = row.data || row;
+  if (FINAL_STATES.has(data.state)) throw new Error('run already closed');
+  if (data.device_b_id && data.device_b_id !== deviceId) throw new Error('another device already joined');
+  await setRun(runId, { device_b_id: deviceId, device_b_label: label || 'Device B' });
   return getRun(runId);
 }
 
 async function startRun(runId, deviceId) {
   await ensureSchema();
-  const row = await get('SELECT * FROM acceptance_runs WHERE run_id = ?', [runId]);
+  const row = await repo.getById('acceptance_runs', runId);
   if (!row) throw new Error('run not found');
-  if (row.device_a_id !== deviceId) throw new Error('only the initiator can start the run');
-  const first = JSON.parse(row.plan || '[]')[0];
-  await setRun({ state: 'running', scenario_index: 0, scenario_key: first?.key || 'offline_create' }, runId);
+  const data = row.data || row;
+  if (data.device_a_id !== deviceId) throw new Error('only the initiator can start the run');
+  const first = Array.isArray(data.plan) ? data.plan[0] : null;
+  await setRun(runId, { state: 'running', scenario_index: 0, scenario_key: first?.key || 'offline_create' });
   return getRun(runId);
 }
 
 async function advanceRun(runId, deviceId, { scenarioIndex, scenarioKey, step, state }) {
   await ensureSchema();
-  const row = await get('SELECT * FROM acceptance_runs WHERE run_id = ?', [runId]);
+  const row = await repo.getById('acceptance_runs', runId);
   if (!row) throw new Error('run not found');
   if (FINAL_STATES.has(state || '')) {
-    await setRun({ state, scenario_index: scenarioIndex, scenario_key: scenarioKey, step: step || null }, runId);
+    await setRun(runId, { state, scenario_index: scenarioIndex, scenario_key: scenarioKey, step: step || null });
   } else {
-    await setRun({ scenario_index: scenarioIndex, scenario_key: scenarioKey, step: step || null }, runId);
+    await setRun(runId, { scenario_index: scenarioIndex, scenario_key: scenarioKey, step: step || null });
   }
   return getRun(runId);
 }
 
-/** Merge a small JSON patch into run_data (used for scenario hand-off signals). */
 async function patchRunData(runId, patch) {
   await ensureSchema();
-  const row = await get('SELECT run_data FROM acceptance_runs WHERE run_id = ?', [runId]);
+  const row = await repo.getById('acceptance_runs', runId);
   if (!row) throw new Error('run not found');
-  const data = JSON.parse(row.run_data || '{}');
-  await setRun({ run_data: JSON.stringify({ ...data, ...patch }) }, runId);
+  const data = row.data || row;
+  const runData = typeof data.run_data === 'string' ? JSON.parse(data.run_data || '{}') : (data.run_data || {});
+  await setRun(runId, { run_data: { ...runData, ...patch } });
   return getRun(runId);
 }
 
 async function getRun(runId) {
   await ensureSchema();
-  return parseRun(await get('SELECT * FROM acceptance_runs WHERE run_id = ?', [runId]));
+  const row = await repo.getById('acceptance_runs', runId);
+  return parseRun(row);
 }
 
 async function listRuns(limit = 10) {
   await ensureSchema();
-  const rows = await all('SELECT * FROM acceptance_runs ORDER BY created_at DESC LIMIT ?', [limit]);
-  return rows.map(parseRun);
+  const rows = await repo.getAll('acceptance_runs');
+  rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  return rows.slice(0, limit).map(parseRun);
 }
 
 async function getActiveRun() {
   await ensureSchema();
-  const row = await get(
-    "SELECT * FROM acceptance_runs WHERE state NOT IN ('complete','closed') ORDER BY created_at DESC LIMIT 1"
-  );
-  return parseRun(row);
+  const rows = await repo.getAll('acceptance_runs');
+  const active = rows.find((r) => {
+    const data = r.data || r;
+    return !FINAL_STATES.has(data.state);
+  });
+  return parseRun(active || null);
 }
 
 async function closeRun(runId) {
   await ensureSchema();
-  await setRun({ state: 'closed' }, runId);
+  await setRun(runId, { state: 'closed' });
   return getRun(runId);
 }
 
-// ─── observations & telemetry ───────────────────────────────────────────────
 async function appendToRunData(runId, key, entry) {
-  const row = await get('SELECT run_data FROM acceptance_runs WHERE run_id = ?', [runId]);
+  const row = await repo.getById('acceptance_runs', runId);
   if (!row) throw new Error('run not found');
-  const data = JSON.parse(row.run_data || '{}');
-  const list = Array.isArray(data[key]) ? data[key] : [];
+  const data = row.data || row;
+  const runData = typeof data.run_data === 'string' ? JSON.parse(data.run_data || '{}') : (data.run_data || {});
+  const list = Array.isArray(runData[key]) ? runData[key] : [];
   list.push(entry);
-  return patchRunData(runId, { [key]: list });
+  await setRun(runId, { run_data: { ...runData, [key]: list } });
+  return getRun(runId);
 }
 
 async function addObservation(runId, deviceId, observation) {
@@ -198,244 +197,135 @@ async function addTelemetry(runId, deviceId, telemetry) {
   return appendToRunData(runId, 'telemetry', { deviceId, at: now(), ...telemetry });
 }
 
-// ─── evidence storage (workspace "Acceptance Reports" folder) ──────────────
-function runEvidenceDir(runId) {
-  const config = workspaceService.getWorkspaceConfig();
-  return config?.workspacePath
-    ? path.join(config.workspacePath, 'Acceptance Reports', runId)
-    : null;
+async function storeEvidence(runId, name, payload) {
+  const run = await getRun(runId);
+  if (!run) throw new Error('run not found');
+  const workspaceConfig = workspaceService.getWorkspaceConfig();
+  if (!workspaceConfig?.workspacePath) throw new Error('Workspace not initialized');
+  const evidenceDir = path.join(workspaceConfig.workspacePath, 'Acceptance Reports', runId);
+  if (!fs.existsSync(evidenceDir)) {
+    fs.mkdirSync(evidenceDir, { recursive: true });
+  }
+  const safeName = name.replace(/[^a-zA-Z0-9_\-.]/g, '_');
+  const targetPath = path.join(evidenceDir, safeName);
+  let content = payload;
+  if (typeof payload === 'object' && payload !== null) {
+    content = JSON.stringify(payload, null, 2);
+  }
+  fs.writeFileSync(targetPath, content);
+  return { name: safeName, path: targetPath, size: fs.statSync(targetPath).size };
 }
 
-function storeEvidence(runId, name, payload) {
-  const dir = runEvidenceDir(runId);
-  if (!dir) return null;
-  fs.mkdirSync(dir, { recursive: true });
-  const safe = String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
-  const file = path.join(dir, safe.endsWith('.json') ? safe : `${safe}.json`);
-  fs.writeFileSync(file, typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2));
-  return file;
+async function verifyStorage(runId) {
+  const run = await getRun(runId);
+  if (!run) return { count: 0, rows: [] };
+  const workspaceConfig = workspaceService.getWorkspaceConfig();
+  if (!workspaceConfig?.workspacePath) return { count: 0, rows: [] };
+  const evidenceDir = path.join(workspaceConfig.workspacePath, 'Acceptance Reports', runId);
+  if (!fs.existsSync(evidenceDir)) return { count: 0, rows: [] };
+  const files = fs.readdirSync(evidenceDir).map((name) => {
+    const stats = fs.statSync(path.join(evidenceDir, name));
+    return { name, size: stats.size, modified: stats.mtime.toISOString() };
+  });
+  return { count: files.length, rows: files };
 }
 
-function listEvidence(runId) {
-  const dir = runEvidenceDir(runId);
-  if (!dir || !fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir);
+async function verifyRunFile(runId) {
+  const storage = await verifyStorage(runId);
+  return {
+    storage: { count: storage.count, rows: storage.rows },
+    storageOk: storage.count > 0,
+  };
 }
 
-function removeEvidenceDir(runId) {
-  const dir = runEvidenceDir(runId);
-  if (dir && fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
-}
-
-// ─── cloud verification & cleanup (service role) ────────────────────────────
 async function countAcceptanceRows(table, runId) {
   if (!isCloudConfigured()) return 0;
   try {
-    const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+    const { data, error } = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+      params: { acceptanceRunId: `eq.${runId}`, select: 'id' },
       headers: adminHeaders(),
-      params: {
-        select: 'id',
-        'data->>acceptanceRunId': `eq.${runId}`,
-        limit: 1,
-      },
-      timeout: 15000,
+      timeout: 10000,
     });
-    const range = String(res.headers?.['content-range'] || '0-0/0');
-    const total = Number(range.split('/')[1]);
-    return Number.isFinite(total) ? total : 0;
+    if (error) return 0;
+    return Array.isArray(data) ? data.length : 0;
   } catch {
     return 0;
   }
 }
 
-/** Fetch up to `limit` cloud rows tagged with this run id (verification). */
-async function fetchAcceptanceRows(table, runId, limit = 50) {
+async function fetchAcceptanceRows(table, runId) {
   if (!isCloudConfigured()) return [];
   try {
-    const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+    const { data } = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+      params: { acceptanceRunId: `eq.${runId}` },
       headers: adminHeaders(),
-      params: {
-        select: 'id,data,version,updated_at',
-        'data->>acceptanceRunId': `eq.${runId}`,
-        limit,
-      },
-      timeout: 15000,
+      timeout: 10000,
     });
-    return Array.isArray(res.data) ? res.data : [];
+    return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
 }
 
-/** Verify storage: list bucket objects whose name contains the run id. */
-async function verifyStorage(runId) {
-  if (!isCloudConfigured()) return { count: 0, rows: [] };
-  const all = await listStorageObjects('');
-  const rows = all
-    .filter((name) => String(name).includes(String(runId)))
-    .map((name) => ({ name }));
-  return { count: rows.length, rows };
-}
+async function cleanupRun(runId, { tables = [], filePaths = [], prefix }) {
+  const results = { tables: 0, files: 0, errors: [] };
 
-async function fetchAcceptanceRowIds(table, runId) {
-  if (!isCloudConfigured()) return [];
-  const ids = [];
-  try {
-    for (let offset = 0; offset < 10000; offset += 1000) {
-      const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
-        headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
-        params: {
-          select: 'id',
-          'data->>acceptanceRunId': `eq.${runId}`,
-          limit: 1000,
-          offset,
-        },
-        timeout: 20000,
-      });
-      const rows = Array.isArray(res.data) ? res.data : [];
-      for (const row of rows) if (row?.id != null) ids.push(row.id);
-      if (rows.length < 1000) break;
+  if (isCloudConfigured()) {
+    for (const table of tables) {
+      try {
+        await axios.delete(`${SUPABASE_URL}/rest/v1/${table}`, {
+          params: { acceptanceRunId: `eq.${runId}` },
+          headers: adminHeaders(),
+          timeout: 60000,
+        });
+        results.tables++;
+      } catch (err) {
+        results.errors.push(`${table}: ${err.message}`);
+      }
     }
-  } catch {
-    /* cleanup is best-effort */
   }
-  return ids;
-}
 
-/** Hard-delete every cloud row tagged with this run id. */
-async function hardDeleteAcceptanceRows(table, runId) {
-  const ids = await fetchAcceptanceRowIds(table, runId);
-  let deleted = 0;
-  for (let i = 0; i < ids.length; i += 100) {
-    const batch = ids.slice(i, i + 100);
+  for (const relPath of filePaths) {
     try {
-      await axios.delete(`${SUPABASE_URL}/rest/v1/${table}`, {
-        headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
-        params: { id: `in.(${batch.join(',')})` },
-        timeout: 20000,
-      });
-      deleted += batch.length;
+      const fullPath = path.join(workspaceService.getWorkspaceConfig()?.workspacePath || '', prefix || '', relPath);
+      if (fs.existsSync(fullPath)) {
+        fs.rmSync(fullPath, { recursive: true, force: true });
+        results.files++;
+      }
     } catch {
-      /* best-effort */
+      // ignore file cleanup errors
     }
   }
-  return deleted;
+
+  return results;
 }
 
-// ─── storage cleanup ────────────────────────────────────────────────────────
-async function listStorageObjects(prefix) {
-  if (!isCloudConfigured()) return [];
-  try {
-    const res = await axios.post(
-      `${SUPABASE_URL}/storage/v1/object/list/${FILE_BUCKET}`,
-      { prefix: prefix || '', limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } },
-      { headers: adminHeaders(), timeout: 20000 }
-    );
-    return Array.isArray(res.data) ? res.data.map((o) => o.name) : [];
-  } catch {
-    return [];
+async function removeEvidenceDir(runId) {
+  const workspaceConfig = workspaceService.getWorkspaceConfig();
+  if (!workspaceConfig?.workspacePath) return;
+  const evidenceDir = path.join(workspaceConfig.workspacePath, 'Acceptance Reports', runId);
+  if (fs.existsSync(evidenceDir)) {
+    fs.rmSync(evidenceDir, { recursive: true, force: true });
   }
-}
-
-/** Create a short-lived signed URL for a storage object (download verify). */
-async function createStorageSignedUrl(namePath) {
-  if (!isCloudConfigured() || !namePath) return null;
-  const encoded = String(namePath).split('/').map(encodeURIComponent).join('/');
-  try {
-    const res = await axios.post(
-      `${SUPABASE_URL}/storage/v1/object/sign/${FILE_BUCKET}/${encoded}`,
-      { expiresIn: 120 },
-      { headers: adminHeaders(), timeout: 20000 }
-    );
-    const signedPath = res.data?.signedURL || res.data?.signedUrl;
-    if (!signedPath) return null;
-    return `${SUPABASE_URL.replace(/\/+$/, '')}/storage/v1${signedPath}`;
-  } catch {
-    return null;
-  }
-}
-
-/** Verify a run's file on storage: locate the object, return a signed URL. */
-async function verifyRunFile(runId) {
-  if (!isCloudConfigured()) return { found: false, name: null, url: null };
-  const all = await listStorageObjects('');
-  const name = all.find((n) => String(n).includes(String(runId)));
-  if (!name) return { found: false, name: null, url: null };
-  const url = await createStorageSignedUrl(name);
-  return { found: true, name, url };
-}
-
-async function deleteStorageObject(namePath) {
-  if (!namePath) return false;
-  const encoded = String(namePath).split('/').map(encodeURIComponent).join('/');
-  try {
-    await axios.delete(`${SUPABASE_URL}/storage/v1/object/${FILE_BUCKET}/${encoded}`, {
-      headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
-      timeout: 20000,
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** Delete files: explicit paths if given, otherwise everything under `prefix`. */
-async function deleteAcceptanceFiles(filePaths = [], prefix) {
-  const targets = filePaths && filePaths.length > 0
-    ? filePaths.slice()
-    : prefix
-      ? await listStorageObjects(prefix)
-      : [];
-  let deleted = 0;
-  for (const name of targets) {
-    if (await deleteStorageObject(name)) deleted++;
-  }
-  return deleted;
-}
-
-/**
- * Full cleanup: hard-delete acceptance-tagged business rows, remove file
- * objects, drop the run's evidence folder, then close the run.
- */
-async function cleanupRun(runId, { tables = [], filePaths = [], prefix, close = true } = {}) {
-  const counts = {};
-  for (const table of tables) {
-    counts[table] = await hardDeleteAcceptanceRows(table, runId);
-  }
-  const filesRemoved = await deleteAcceptanceFiles(filePaths, prefix);
-  removeEvidenceDir(runId);
-  if (close) await closeRun(runId);
-  return {
-    counts,
-    filesRemoved,
-    rowsRemoved: Object.values(counts).reduce((s, n) => s + n, 0),
-  };
 }
 
 module.exports = {
-  ensureSchema,
   createRun,
+  listRuns,
+  getActiveRun,
+  getRun,
   joinRun,
   startRun,
   advanceRun,
-  patchRunData,
-  getRun,
-  listRuns,
-  getActiveRun,
   closeRun,
+  patchRunData,
   addObservation,
   addTelemetry,
   storeEvidence,
-  listEvidence,
-  removeEvidenceDir,
+  verifyStorage,
+  verifyRunFile,
   countAcceptanceRows,
   fetchAcceptanceRows,
-  verifyStorage,
-  createStorageSignedUrl,
-  verifyRunFile,
-  hardDeleteAcceptanceRows,
-  listStorageObjects,
-  deleteStorageObject,
-  deleteAcceptanceFiles,
   cleanupRun,
+  removeEvidenceDir,
 };

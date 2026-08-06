@@ -109,7 +109,7 @@ export const useSalesStore = create<SalesState>((set, get) => ({
         api.sales.getJobOrders(),
         api.sales.getCustomerPayments(),
         api.sales.getShipments(),
-        api.customers.getAll(),
+        api.customers.getAll().then(list => (list as Array<Record<string, unknown>>).filter(c => !c.deletedAt)),
         api.sales.getSalesExchanges(),
         api.sales.getReprintJobs(),
         api.sales.getSalesOrders()

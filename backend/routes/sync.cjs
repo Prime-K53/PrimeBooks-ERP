@@ -18,7 +18,6 @@
  */
 const express = require('express');
 const cloudSyncStore = require('../services/cloudSyncStore.cjs');
-const erpPortalMirror = require('./erpPortalMirror.cjs');
 
 const router = express.Router();
 
@@ -114,6 +113,13 @@ router.post('/ops', async (req, res) => {
 
     const results = [];
     for (const op of ops) {
+      // Guard against malformed queue entries (null/undefined/non-object) so a
+      // single bad op can never throw past this loop and surface as a 500.
+      if (!op || typeof op !== 'object') {
+        results.push({ operationId: undefined, ok: false, error: 'invalid operation envelope', retryable: false });
+        continue;
+      }
+
       const table = String(op?.table || '');
 
       if (!VALID_TABLE_PATTERN.test(table)) {
@@ -129,21 +135,27 @@ router.post('/ops', async (req, res) => {
         continue;
       }
 
-      const result = await cloudSyncStore.applyOp({
-        operationId: op.operationId,
-        table,
-        recordId: op.recordId || null,
-        operation: op.operation,
-        payload: op.payload,
-      });
-
-      // Portal propagation (authoritative path): once the op is COMMITTED to
-      // the cloud, mirror it into the portal SQLite layer + broadcast SSE +
-      // notifications. Skipped for replays (already propagated on first
-      // success), deletes (portal soft-deletes are managed portal-side) and
-      // NOOP tables. Best-effort — never fails the sync op.
-      if (result.ok && !result.replayed && op.operation === 'upsert') {
-        erpPortalMirror.mirrorCommittedTable(table, op.payload);
+      let result;
+      try {
+        result = await cloudSyncStore.applyOp({
+          operationId: op.operationId,
+          table,
+          recordId: op.recordId || null,
+          operation: op.operation,
+          payload: op.payload,
+        });
+      } catch (opErr) {
+        // applyOp is designed to return per-op failures, but a defensive catch
+        // here guarantees a bad op never escapes as a 500 — it becomes a
+        // retryable per-op failure so the client dead-letters it cleanly.
+        console.error('[sync] applyOp threw:', opErr?.stack || opErr?.message || opErr);
+        result = {
+          operationId: op?.operationId,
+          ok: false,
+          id: op?.recordId || null,
+          error: opErr?.message ? String(opErr.message).slice(0, 300) : 'sync gateway internal error',
+          retryable: true,
+        };
       }
 
       results.push(result);

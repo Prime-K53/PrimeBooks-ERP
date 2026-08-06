@@ -1,35 +1,26 @@
 const express = require('express')
 const router = express.Router()
-const { db } = require('../db.cjs')
+const sq = require('../services/supabaseQuery.cjs')
+const repo = require('../services/supabaseRepository.cjs')
 
 function parseJson(value) {
   if (!value || value === 'null' || value === 'undefined') return null
   try { return JSON.parse(value) } catch { return value }
 }
 
-function withDb(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err)
-      else resolve(rows || [])
-    })
-  })
+async function withDb(query, params = []) {
+  return sq.getAll(query, params)
 }
 
-function getOne(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err)
-      else resolve(row || null)
-    })
-  })
+async function getOne(query, params = []) {
+  return sq.getOne(query, params)
 }
 
-function runQuery(query, params = []) {
+async function runQuery(query, params = []) {
   return new Promise((resolve, reject) => {
-    db.run(query, params, function(err) {
+    sq.run(query, params, (err, result) => {
       if (err) reject(err)
-      else resolve({ id: this.lastID, changes: this.changes })
+      else resolve(result || { id: null, changes: 0 })
     })
   })
 }
@@ -37,7 +28,7 @@ function runQuery(query, params = []) {
 // ─── Membership Tiers ───
 router.get('/tiers', async (req, res) => {
   try {
-    const rows = await withDb('SELECT * FROM engagement_membership_tiers ORDER BY level ASC', [])
+    const rows = await withDb('SELECT * FROM engagement_membership_tiers', [])
     res.json(rows.map(r => ({ ...r, benefits: parseJson(r.benefits_json) })))
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -46,12 +37,31 @@ router.get('/tiers', async (req, res) => {
 
 router.post('/tiers', async (req, res) => {
   try {
-    const { id, name, level, description, color, icon, minSpend, entrySpend, minFrequency, minClv, pointMultiplier, cashbackRate, prioritySupport, exclusivePricing, exclusiveCampaigns, freeShipping, birthdayReward, annualReward, benefits, status } = req.body
-    await runQuery(
-      `INSERT INTO engagement_membership_tiers (id, name, level, description, color, icon, min_spend, entry_spend, min_frequency, min_clv, point_multiplier, cashback_rate, priority_support, exclusive_pricing, exclusive_campaigns, free_shipping, birthday_reward, annual_reward, benefits_json, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
-      [id || `T${Date.now()}`, name, level || 0, description || null, color || null, icon || null, minSpend || 0, entrySpend || 0, minFrequency || 0, minClv || 0, pointMultiplier || 1, cashbackRate || 0, prioritySupport ? 1 : 0, exclusivePricing ? 1 : 0, exclusiveCampaigns ? 1 : 0, freeShipping ? 1 : 0, birthdayReward || 0, annualReward || 0, benefits ? JSON.stringify(benefits) : null, status || 'active']
-    )
+    const body = req.body
+    const id = body.id || `T${Date.now()}`
+    const record = {
+      id,
+      name: body.name,
+      level: body.level || 0,
+      description: body.description || null,
+      color: body.color || null,
+      icon: body.icon || null,
+      min_spend: body.minSpend || 0,
+      entry_spend: body.entrySpend || 0,
+      min_frequency: body.minFrequency || 0,
+      min_clv: body.minClv || 0,
+      point_multiplier: body.pointMultiplier || 1,
+      cashback_rate: body.cashbackRate || 0,
+      priority_support: body.prioritySupport ? 1 : 0,
+      exclusive_pricing: body.exclusivePricing ? 1 : 0,
+      exclusive_campaigns: body.exclusiveCampaigns ? 1 : 0,
+      free_shipping: body.freeShipping ? 1 : 0,
+      birthday_reward: body.birthdayReward || 0,
+      annual_reward: body.annualReward || 0,
+      benefits_json: body.benefits ? JSON.stringify(body.benefits) : null,
+      status: body.status || 'active',
+    }
+    await repo.upsert('engagement_membership_tiers', record)
     res.status(201).json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -60,11 +70,27 @@ router.post('/tiers', async (req, res) => {
 
 router.put('/tiers/:id', async (req, res) => {
   try {
-    const { name, level, description, color, icon, minSpend, entrySpend, minFrequency, minClv, pointMultiplier, cashbackRate, prioritySupport, exclusivePricing, exclusiveCampaigns, freeShipping, birthdayReward, annualReward, benefits, status } = req.body
-    await runQuery(
-      `UPDATE engagement_membership_tiers SET name=?, level=?, description=?, color=?, icon=?, min_spend=?, entry_spend=?, min_frequency=?, min_clv=?, point_multiplier=?, cashback_rate=?, priority_support=?, exclusive_pricing=?, exclusive_campaigns=?, free_shipping=?, birthday_reward=?, annual_reward=?, benefits_json=?, status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-      [name, level, description, color, icon, minSpend, entrySpend, minFrequency, minClv, pointMultiplier, cashbackRate, prioritySupport ? 1 : 0, exclusivePricing ? 1 : 0, exclusiveCampaigns ? 1 : 0, freeShipping ? 1 : 0, birthdayReward, annualReward, benefits ? JSON.stringify(benefits) : null, status, req.params.id]
-    )
+    const body = req.body
+    const old = await repo.getById('engagement_membership_tiers', req.params.id)
+    if (!old) return res.status(404).json({ error: 'Not found' })
+    const updates = { ...old }
+    const fieldMap = {
+      name: 'name', level: 'level', description: 'description', color: 'color',
+      icon: 'icon', minSpend: 'min_spend', entrySpend: 'entry_spend',
+      minFrequency: 'min_frequency', minClv: 'min_clv',
+      pointMultiplier: 'point_multiplier', cashbackRate: 'cashback_rate',
+      prioritySupport: 'priority_support', exclusivePricing: 'exclusive_pricing',
+      exclusiveCampaigns: 'exclusive_campaigns', freeShipping: 'free_shipping',
+      birthdayReward: 'birthday_reward', annualReward: 'annual_reward',
+      benefits: 'benefits_json', status: 'status',
+    }
+    for (const [key, dbField] of Object.entries(fieldMap)) {
+      if (body[key] !== undefined) {
+        updates[dbField] = key === 'benefits' ? JSON.stringify(body[key]) : (key === 'prioritySupport' || key === 'exclusivePricing' || key === 'exclusiveCampaigns' || key === 'freeShipping' ? (body[key] ? 1 : 0) : body[key])
+      }
+    }
+    updates.updated_at = new Date().toISOString()
+    await repo.upsert('engagement_membership_tiers', updates)
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -73,7 +99,7 @@ router.put('/tiers/:id', async (req, res) => {
 
 router.delete('/tiers/:id', async (req, res) => {
   try {
-    await runQuery('DELETE FROM engagement_membership_tiers WHERE id=?', [req.params.id])
+    await repo.softDelete('engagement_membership_tiers', req.params.id)
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -83,7 +109,7 @@ router.delete('/tiers/:id', async (req, res) => {
 // ─── Gift Cards ───
 router.get('/gift-cards', async (req, res) => {
   try {
-    const rows = await withDb('SELECT * FROM engagement_gift_cards ORDER BY created_at DESC', [])
+    const rows = await withDb('SELECT * FROM engagement_gift_cards', [])
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -92,12 +118,25 @@ router.get('/gift-cards', async (req, res) => {
 
 router.post('/gift-cards', async (req, res) => {
   try {
-    const { id, code, pin, customerId, issuerId, initialBalance, type, expiresAt, rechargeable, transferable, designColor, giftMessage, purchasedWith } = req.body
-    await runQuery(
-      `INSERT INTO engagement_gift_cards (id, code, pin, customer_id, issuer_id, initial_balance, current_balance, type, expires_at, rechargeable, transferable, design_color, gift_message, purchased_with)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
-      [id || `GC${Date.now()}`, code, pin || null, customerId || null, issuerId || null, initialBalance || 0, initialBalance || 0, type || 'digital', expiresAt || null, rechargeable ? 1 : 0, transferable ? 1 : 0, designColor || null, giftMessage || null, purchasedWith || null]
-    )
+    const body = req.body
+    const id = body.id || `GC${Date.now()}`
+    const record = {
+      id,
+      code: body.code,
+      pin: body.pin || null,
+      customer_id: body.customerId || null,
+      issuer_id: body.issuerId || null,
+      initial_balance: body.initialBalance || 0,
+      current_balance: body.initialBalance || 0,
+      type: body.type || 'digital',
+      expires_at: body.expiresAt || null,
+      rechargeable: body.rechargeable ? 1 : 0,
+      transferable: body.transferable ? 1 : 0,
+      design_color: body.designColor || null,
+      gift_message: body.giftMessage || null,
+      purchased_with: body.purchasedWith || null,
+    }
+    await repo.upsert('engagement_gift_cards', record)
     res.status(201).json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -106,11 +145,12 @@ router.post('/gift-cards', async (req, res) => {
 
 router.put('/gift-cards/:id', async (req, res) => {
   try {
-    const { currentBalance, status, pin, cancelReason } = req.body
-    await runQuery(
-      `UPDATE engagement_gift_cards SET current_balance=?, status=?, pin=COALESCE(?, pin), cancel_reason=COALESCE(?, cancel_reason), updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-      [currentBalance, status, pin, cancelReason, req.params.id]
-    )
+    const body = req.body
+    const old = await repo.getById('engagement_gift_cards', req.params.id)
+    if (!old) return res.status(404).json({ error: 'Not found' })
+    const updates = { ...old, ...body }
+    updates.updated_at = new Date().toISOString()
+    await repo.upsert('engagement_gift_cards', updates)
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -120,7 +160,7 @@ router.put('/gift-cards/:id', async (req, res) => {
 // ─── Promotions ───
 router.get('/promotions', async (req, res) => {
   try {
-    const rows = await withDb('SELECT * FROM engagement_promotions ORDER BY created_at DESC', [])
+    const rows = await withDb('SELECT * FROM engagement_promotions', [])
     res.json(rows.map(r => ({ ...r, bundleItems: parseJson(r.bundle_items_json), customerIds: parseJson(r.customer_ids_json), tierIds: parseJson(r.tier_ids_json) })))
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -129,12 +169,34 @@ router.get('/promotions', async (req, res) => {
 
 router.post('/promotions', async (req, res) => {
   try {
-    const { id, name, description, type, value, categoryId, brand, bundleItems, buyXQty, getYQty, getYDiscount, minPurchase, maxDiscount, maxUses, customerIds, tierIds, campaignId, stackingRule, priority, startsAt, expiresAt, status, createdBy } = req.body
-    await runQuery(
-      `INSERT INTO engagement_promotions (id, name, description, type, value, category_id, brand, bundle_items_json, buy_x_qty, get_y_qty, get_y_discount, min_purchase, max_discount, max_uses, customer_ids_json, tier_ids_json, campaign_id, stacking_rule, priority, starts_at, expires_at, status, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
-      [id || `PROMO${Date.now()}`, name, description || null, type, value || 0, categoryId || null, brand || null, bundleItems ? JSON.stringify(bundleItems) : null, buyXQty || 0, getYQty || 0, getYDiscount || 0, minPurchase || 0, maxDiscount || 0, maxUses || 0, customerIds ? JSON.stringify(customerIds) : null, tierIds ? JSON.stringify(tierIds) : null, campaignId || null, stackingRule || 'best_only', priority || 0, startsAt || new Date().toISOString(), expiresAt || null, status || 'active', createdBy || req.user?.id || 'system']
-    )
+    const body = req.body
+    const id = body.id || `PROMO${Date.now()}`
+    const record = {
+      id,
+      name: body.name,
+      description: body.description || null,
+      type: body.type,
+      value: body.value || 0,
+      category_id: body.categoryId || null,
+      brand: body.brand || null,
+      bundle_items_json: body.bundleItems ? JSON.stringify(body.bundleItems) : null,
+      buy_x_qty: body.buyXQty || 0,
+      get_y_qty: body.getYQty || 0,
+      get_y_discount: body.getYDiscount || 0,
+      min_purchase: body.minPurchase || 0,
+      max_discount: body.maxDiscount || 0,
+      max_uses: body.maxUses || 0,
+      customer_ids_json: body.customerIds ? JSON.stringify(body.customerIds) : null,
+      tier_ids_json: body.tierIds ? JSON.stringify(body.tierIds) : null,
+      campaign_id: body.campaignId || null,
+      stacking_rule: body.stackingRule || 'best_only',
+      priority: body.priority || 0,
+      starts_at: body.startsAt || new Date().toISOString(),
+      expires_at: body.expiresAt || null,
+      status: body.status || 'active',
+      created_by: body.createdBy || req.user?.id || 'system',
+    }
+    await repo.upsert('engagement_promotions', record)
     res.status(201).json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -143,11 +205,12 @@ router.post('/promotions', async (req, res) => {
 
 router.put('/promotions/:id', async (req, res) => {
   try {
-    const { name, description, type, value, categoryId, brand, bundleItems, buyXQty, getYQty, getYDiscount, minPurchase, maxDiscount, maxUses, customerIds, tierIds, stackingRule, priority, startsAt, expiresAt, status } = req.body
-    await runQuery(
-      `UPDATE engagement_promotions SET name=?, description=?, type=?, value=?, category_id=?, brand=?, bundle_items_json=?, buy_x_qty=?, get_y_qty=?, get_y_discount=?, min_purchase=?, max_discount=?, max_uses=?, customer_ids_json=?, tier_ids_json=?, stacking_rule=?, priority=?, starts_at=?, expires_at=?, status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-      [name, description, type, value, categoryId, brand, bundleItems ? JSON.stringify(bundleItems) : null, buyXQty, getYQty, getYDiscount, minPurchase, maxDiscount, maxUses, customerIds ? JSON.stringify(customerIds) : null, tierIds ? JSON.stringify(tierIds) : null, stackingRule, priority, startsAt, expiresAt, status, req.params.id]
-    )
+    const body = req.body
+    const old = await repo.getById('engagement_promotions', req.params.id)
+    if (!old) return res.status(404).json({ error: 'Not found' })
+    const updates = { ...old, ...body }
+    updates.updated_at = new Date().toISOString()
+    await repo.upsert('engagement_promotions', updates)
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -156,7 +219,7 @@ router.put('/promotions/:id', async (req, res) => {
 
 router.delete('/promotions/:id', async (req, res) => {
   try {
-    await runQuery('DELETE FROM engagement_promotions WHERE id=?', [req.params.id])
+    await repo.softDelete('engagement_promotions', req.params.id)
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -166,7 +229,7 @@ router.delete('/promotions/:id', async (req, res) => {
 // ─── Cashback ───
 router.get('/cashback', async (req, res) => {
   try {
-    const rows = await withDb('SELECT * FROM engagement_cashback ORDER BY created_at DESC', [])
+    const rows = await withDb('SELECT * FROM engagement_cashback', [])
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -177,10 +240,10 @@ router.patch('/cashback/:id/approve', async (req, res) => {
   try {
     const entry = await getOne('SELECT * FROM engagement_cashback WHERE id=?', [req.params.id])
     if (!entry) return res.status(404).json({ error: 'Cashback entry not found' })
-    await runQuery(
-      `UPDATE engagement_cashback SET status='approved', approved_at=CURRENT_TIMESTAMP, approved_by=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-      [req.user?.id || 'system', req.params.id]
-    )
+    const old = await repo.getById('engagement_cashback', req.params.id)
+    if (old) {
+      await repo.upsert('engagement_cashback', { ...old, status: 'approved', approved_at: new Date().toISOString(), approved_by: req.user?.id || 'system', updated_at: new Date().toISOString() })
+    }
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -189,11 +252,10 @@ router.patch('/cashback/:id/approve', async (req, res) => {
 
 router.patch('/cashback/:id/pay', async (req, res) => {
   try {
-    const { walletTxId } = req.body
-    await runQuery(
-      `UPDATE engagement_cashback SET status='paid', wallet_tx_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-      [walletTxId || null, req.params.id]
-    )
+    const body = req.body
+    const old = await repo.getById('engagement_cashback', req.params.id)
+    if (!old) return res.status(404).json({ error: 'Not found' })
+    await repo.upsert('engagement_cashback', { ...old, status: 'paid', wallet_tx_id: body.walletTxId || null, updated_at: new Date().toISOString() })
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -203,24 +265,38 @@ router.patch('/cashback/:id/pay', async (req, res) => {
 // ─── Points ───
 router.get('/points', async (req, res) => {
   try {
-    const { customerId } = req.query
-    let query = 'SELECT * FROM engagement_points'
-    const params = []
-    if (customerId) { query += ' WHERE customer_id = ?'; params.push(customerId) }
-    const rows = await withDb(query + ' ORDER BY created_at DESC', params)
+    const rows = await withDb('SELECT * FROM engagement_points ORDER BY created_at DESC', [])
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
+router.post('/points', async (req, res) => {
+  try {
+    const body = req.body
+    const id = body.id || `PT-${Date.now()}`
+    const record = {
+      id,
+      customer_id: body.customerId,
+      points: body.points || 0,
+      type: body.type || 'earned',
+      description: body.description || null,
+      reference_id: body.referenceId || null,
+      reference_type: body.referenceType || null,
+      expires_at: body.expiresAt || null,
+    }
+    await repo.upsert('engagement_points', record)
+    res.status(201).json({ success: true, id })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ─── Point Balances ───
 router.get('/point-balances', async (req, res) => {
   try {
-    const { customerId } = req.query
-    let query = 'SELECT * FROM engagement_point_balances'
-    const params = []
-    if (customerId) { query += ' WHERE customer_id = ?'; params.push(customerId) }
-    const rows = await withDb(query, params)
+    const rows = await withDb('SELECT * FROM engagement_point_balances', [])
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -240,13 +316,46 @@ router.get('/customer-tiers', async (req, res) => {
 // ─── Affiliates ───
 router.get('/affiliates', async (req, res) => {
   try {
-    const rows = await withDb('SELECT * FROM engagement_affiliates', [])
+    const rows = await withDb('SELECT * FROM engagement_affiliates ORDER BY created_at DESC', [])
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
+router.post('/affiliates', async (req, res) => {
+  try {
+    const body = req.body
+    const id = body.id || `AFF-${Date.now()}`
+    const record = { id, ...body }
+    await repo.upsert('engagement_affiliates', record)
+    res.status(201).json({ success: true, id })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.put('/affiliates/:id', async (req, res) => {
+  try {
+    const old = await repo.getById('engagement_affiliates', req.params.id)
+    if (!old) return res.status(404).json({ error: 'Not found' })
+    await repo.upsert('engagement_affiliates', { ...old, ...req.body, updated_at: new Date().toISOString() })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.delete('/affiliates/:id', async (req, res) => {
+  try {
+    await repo.softDelete('engagement_affiliates', req.params.id)
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ─── Affiliate Commissions ───
 router.get('/affiliate-commissions', async (req, res) => {
   try {
     const rows = await withDb('SELECT * FROM engagement_affiliate_commissions ORDER BY created_at DESC', [])
@@ -259,7 +368,7 @@ router.get('/affiliate-commissions', async (req, res) => {
 // ─── Rewards ───
 router.get('/rewards', async (req, res) => {
   try {
-    const rows = await withDb('SELECT * FROM engagement_customer_rewards ORDER BY created_at DESC', [])
+    const rows = await withDb('SELECT * FROM engagement_rewards ORDER BY created_at DESC', [])
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -270,11 +379,10 @@ router.get('/rewards', async (req, res) => {
 router.get('/timeline', async (req, res) => {
   try {
     const { customerId } = req.query
-    let query = 'SELECT * FROM engagement_timeline'
-    const params = []
-    if (customerId) { query += ' WHERE customer_id = ?'; params.push(customerId) }
-    const rows = await withDb(query + ' ORDER BY timestamp DESC LIMIT 200', params)
-    res.json(rows.map(r => ({ ...r, metadata: parseJson(r.metadata_json) })))
+    let rows = await withDb('SELECT * FROM engagement_timeline', [])
+    if (customerId) rows = rows.filter(r => r.customer_id === customerId)
+    rows.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')))
+    res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -283,7 +391,7 @@ router.get('/timeline', async (req, res) => {
 // ─── Audit ───
 router.get('/audit', async (req, res) => {
   try {
-    const rows = await withDb('SELECT * FROM engagement_audit ORDER BY timestamp DESC LIMIT 200', [])
+    const rows = await withDb('SELECT * FROM engagement_audit ORDER BY created_at DESC', [])
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -293,14 +401,8 @@ router.get('/audit', async (req, res) => {
 // ─── Analytics ───
 router.get('/analytics', async (req, res) => {
   try {
-    const { period, periodStart, periodEnd } = req.query
-    let query = 'SELECT * FROM engagement_analytics'
-    const params = []
-    if (period) { query += ' AND period = ?'; params.push(period) }
-    if (periodStart) { query += ' AND period_start >= ?'; params.push(periodStart) }
-    if (periodEnd) { query += ' AND period_end <= ?'; params.push(periodEnd) }
-    const rows = await withDb(query + ' ORDER BY generated_at DESC LIMIT 1', params)
-    res.json(rows.map(r => ({ ...r, ...parseJson(r.data_json), id: r.id, period: r.period, periodStart: r.period_start, periodEnd: r.period_end, generatedAt: r.generated_at })))
+    const rows = await withDb('SELECT * FROM engagement_analytics ORDER BY period DESC', [])
+    res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -309,8 +411,8 @@ router.get('/analytics', async (req, res) => {
 // ─── Settings ───
 router.get('/settings', async (req, res) => {
   try {
-    const row = await getOne('SELECT value FROM settings WHERE key=?', ['engagementSettings'])
-    res.json(row ? parseJson(row.value) : null)
+    const rows = await withDb('SELECT * FROM engagement_settings', [])
+    res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -318,12 +420,10 @@ router.get('/settings', async (req, res) => {
 
 router.put('/settings', async (req, res) => {
   try {
-    const value = JSON.stringify(req.body)
-    await runQuery(
-      `INSERT INTO settings (key, value, updated_at) VALUES (?, ? , CURRENT_TIMESTAMP)
-       ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`,
-      ['engagementSettings', value]
-    )
+    const body = req.body
+    const old = await withDb('SELECT * FROM engagement_settings WHERE id = ?', [body.id])
+    const record = old.length > 0 ? { ...old[0], ...body } : { id: body.id, ...body }
+    await repo.upsert('engagement_settings', record)
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

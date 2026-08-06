@@ -322,7 +322,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
             border: `1px solid ${hairline}`,
             boxShadow: '0 30px 70px -20px rgba(0,0,0,.55), 0 8px 24px -8px rgba(0,0,0,.35)',
             overflow: 'hidden', position: 'relative'
-          }}>
+          }} onClick={(e) => e.stopPropagation()}>
             <div style={{ height: 4, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 24px 14px' }}>
               <div style={{

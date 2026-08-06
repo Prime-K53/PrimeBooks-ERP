@@ -1,40 +1,74 @@
-const { db } = require('../db.cjs');
+const repo = require('./supabaseRepository.cjs');
+const supabaseStore = require('./supabaseStore.cjs');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const portalAuthService = require('./portalAuthService.cjs');
 const portalLifecycleService = require('./portalLifecycleService.cjs');
 const ReferralService = require('./referralService.cjs');
-const supabaseStore = require('./supabaseStore.cjs');
 const referralService = new ReferralService();
 
 const TICKET_ATTACHMENTS_DIR = path.join(__dirname, '..', 'storage', 'ticket-attachments');
 
-function getOne(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row || null);
-    });
-  });
+async function getOne(query, params = []) {
+  const trimmed = String(query || '').trim();
+  const countMatch = trimmed.match(/SELECT\s+COUNT\s*\(\*\)\s+as\s+(\w+)\s+FROM\s+(\w+)/i);
+  if (countMatch) {
+    const table = countMatch[2];
+    const rows = await repo.getAll(table);
+    return { [countMatch[1]]: rows.length };
+  }
+  const byIdMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+.*\bid\s*=\s*\?/i);
+  if (byIdMatch && params.length > 0) {
+    return repo.getById(byIdMatch[1], String(params[0]));
+  }
+  const byFieldMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+  if (byFieldMatch && params.length > 0) {
+    const rows = await repo.getAll(byFieldMatch[1], { [`data->>${byFieldMatch[2]}`]: `eq.${params[0]}` });
+    return rows[0] || null;
+  }
+  const fromMatch = trimmed.match(/FROM\s+(\w+)/i);
+  if (fromMatch) {
+    const rows = await repo.getAll(fromMatch[1]);
+    return rows[0] || null;
+  }
+  return null;
 }
 
-function getAll(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows || []);
-    });
-  });
+async function getAll(query, params = []) {
+  const trimmed = String(query || '').trim();
+  const byFieldMatch = trimmed.match(/FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+  if (byFieldMatch && params.length > 0) {
+    return repo.getAll(byFieldMatch[1], { [`data->>${byFieldMatch[2]}`]: `eq.${params[0]}` });
+  }
+  const fromMatch = trimmed.match(/FROM\s+(\w+)/i);
+  if (fromMatch) {
+    return repo.getAll(fromMatch[1]);
+  }
+  return [];
 }
 
-function runQuery(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve({ id: this.lastID, changes: this.changes });
-    });
-  });
+async function runQuery(query, params = []) {
+  const trimmed = String(query || '').trim();
+  const deleteMatch = trimmed.match(/DELETE\s+FROM\s+(\w+)\s+WHERE\s+id\s*=\s*\?/i);
+  if (deleteMatch) {
+    await repo.softDelete(deleteMatch[1], String(params[0]));
+    return { changes: 1 };
+  }
+  const updateMatch = trimmed.match(/UPDATE\s+(\w+)\s+SET/i);
+  if (updateMatch) {
+    const id = String(params[params.length - 1]);
+    const row = await repo.getById(updateMatch[1], id);
+    if (row) await repo.upsert(updateMatch[1], { ...row, ...(params[0] || {}) });
+    return { changes: 1 };
+  }
+  const insertMatch = trimmed.match(/INSERT\s+INTO\s+(\w+)/i);
+  if (insertMatch) {
+    const id = String(params[0] || `gen_${Date.now()}`);
+    await repo.upsert(insertMatch[1], { id });
+    return { id, changes: 1 };
+  }
+  return { changes: 0 };
 }
 
 function genId(prefix = 'prt') {
@@ -49,190 +83,115 @@ function parseJson(value, fallback = null) {
 const portalService = {
 
   async getDashboard(portalUserId, customerId) {
-    const [customer, cloudCustomer, cloudInvoices, unpaidInvoiceCount] = await Promise.all([
-      getOne(
-        'SELECT balance, walletBalance, outstandingBalance FROM customers WHERE id = ?',
-        [customerId]
-      ),
-      supabaseStore.getCustomer(customerId).catch(() => null),
-      supabaseStore.listInvoices(customerId).catch(() => []),
-      getOne(
-        "SELECT COUNT(*) as count FROM invoices WHERE customer_id = ? AND LOWER(COALESCE(status, '')) = 'unpaid'",
-        [customerId]
-      ),
+    const [customer, invoices, orders, requests, quotations, notifications] = await Promise.all([
+      getOneById('customers', customerId),
+      getAllFrom('invoices', { 'data->>customerId': `eq.${customerId}` }),
+      getAllFrom('sales_orders', { 'data->>customerId': `eq.${customerId}` }),
+      getAllFrom('quotation_requests', { 'data->>customerId': `eq.${customerId}` }),
+      getAllFrom('quotations', { 'data->>customerId': `eq.${customerId}` }),
+      getAllFrom('portal_notifications', { 'data->>portalUserId': `eq.${portalUserId}` }),
     ]);
 
-    const cloudUnpaid = Array.isArray(cloudInvoices)
-      ? cloudInvoices.filter((i) => /unpaid|partial/i.test(String(i.status))).length
-      : 0;
-    const unpaidCount = cloudInvoices && Array.isArray(cloudInvoices)
-      ? cloudUnpaid
-      : (unpaidInvoiceCount && unpaidInvoiceCount.count) || 0;
-
-    const ordersRow = await getOne(
-      'SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ?',
-      [customerId]
-    );
-
-    const requestRow = await getOne(
-      "SELECT COUNT(*) as count FROM quotation_requests WHERE customer_id = ? AND status IN ('submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion')",
-      [customerId]
-    );
-
-    // Dashboard widgets (complete request architecture)
-    const openQuotationRow = await getOne(
-      "SELECT COUNT(*) as count FROM quotations WHERE customer_id = ? AND status IN ('ready', 'accepted', 'revision_requested')",
-      [customerId]
-    );
-
-    const productionRow = await getOne(
-      "SELECT COUNT(*) as count FROM sales_orders WHERE customer_id = ? AND LOWER(COALESCE(status, '')) IN ('confirmed', 'processing', 'pending', 'shipped')",
-      [customerId]
-    );
-
-    const unreadRow = await getOne(
-      'SELECT COUNT(*) as count FROM portal_notifications WHERE portal_user_id = ? AND is_read = 0',
-      [portalUserId]
-    );
+    const unpaidCount = invoices.filter((i) => /unpaid|partial/i.test(String(i.status || ''))).length;
+    const totalOrders = orders.length;
+    const activeRequestCount = requests.filter((r) =>
+      ['submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion'].includes(String(r.status || ''))
+    ).length;
+    const openQuotationCount = quotations.filter((q) =>
+      ['ready', 'accepted', 'revision_requested'].includes(String(q.status || ''))
+    ).length;
+    const productionOrderCount = orders.filter((o) =>
+      ['confirmed', 'processing', 'pending', 'shipped'].includes(String(o.status || '').toLowerCase())
+    ).length;
+    const unreadMessageCount = notifications.filter((n) => !n.isRead).length;
 
     const recentDocs = await this.getRecentDocuments(customerId, 5);
     const recentTransactions = await this.getRecentTransactions(customerId, 5);
 
     return {
-      balance: (cloudCustomer && cloudCustomer.balance != null)
-        ? cloudCustomer.balance
-        : (customer && customer.balance) || 0,
-      walletBalance: (cloudCustomer && cloudCustomer.walletBalance != null)
-        ? cloudCustomer.walletBalance
-        : (customer && customer.walletBalance) || 0,
-      outstandingBalance: (cloudCustomer && cloudCustomer.outstandingBalance != null)
-        ? cloudCustomer.outstandingBalance
-        : (customer && customer.outstandingBalance) || (customer && customer.balance) || 0,
+      balance: (customer && customer.balance != null) ? customer.balance : 0,
+      walletBalance: (customer && customer.walletBalance != null) ? customer.walletBalance : 0,
+      outstandingBalance: (customer && customer.outstandingBalance != null) ? customer.outstandingBalance : (customer && customer.balance) || 0,
       unpaidInvoiceCount: unpaidCount,
-      totalOrders: (ordersRow && ordersRow.count) || 0,
-      activeRequestCount: (requestRow && requestRow.count) || 0,
-      openQuotationCount: (openQuotationRow && openQuotationRow.count) || 0,
-      productionOrderCount: (productionRow && productionRow.count) || 0,
-      unreadMessageCount: (unreadRow && unreadRow.count) || 0,
+      totalOrders,
+      activeRequestCount,
+      openQuotationCount,
+      productionOrderCount,
+      unreadMessageCount,
       recentDocuments: recentDocs,
       recentTransactions,
     };
   },
 
   async getCatalog(includeDeleted = false) {
-    try {
-      const cloud = await supabaseStore.listCatalogItems();
-      if (Array.isArray(cloud) && cloud.length > 0) {
-        let catalogItems = cloud;
-        if (!includeDeleted) {
-          catalogItems = catalogItems.filter((i) => String(i.status || '').toLowerCase() !== 'deleted');
-        }
-        catalogItems.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-        return catalogItems;
-      }
-    } catch (err) {
-      console.warn('[PortalService] Cloud catalog unavailable, using local:', err.message);
-    }
-    let sql = `SELECT
-      id,
-      name,
-      sku,
-      unit,
-      selling_price as price,
-      quantity,
-      COALESCE(NULLIF(category_id, ''), material, 'General') as category,
-      status
-    FROM inventory
-    WHERE 1=1`;
-    const params = [];
+    const cloud = await getAllFrom('inventory');
+    let catalogItems = cloud;
     if (!includeDeleted) {
-      sql += ' AND (status IS NULL OR LOWER(status) != ?)';
-      params.push('deleted');
+      catalogItems = catalogItems.filter((i) => String(i.status || '').toLowerCase() !== 'deleted');
     }
-    sql += ' ORDER BY name ASC';
-    return getAll(sql, params);
+    catalogItems.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    return catalogItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      sku: item.sku,
+      unit: item.unit || '',
+      price: Number(item.sellingPrice ?? item.selling_price ?? item.price ?? 0),
+      quantity: Number(item.stock ?? item.quantity ?? 0),
+      category: item.category || item.type || 'General',
+      status: item.status || 'Active',
+    }));
   },
 
-async getRecentTransactions(customerId, limit = 5) {
+  async getRecentTransactions(customerId, limit = 5) {
     const entries = [];
 
-    // 1. Real ERP invoices (Supabase) — invoice issued/created activity
-    try {
-      const cloudInvoices = await supabaseStore.listInvoices(customerId);
-      for (const inv of cloudInvoices) {
-        entries.push({
-          date: inv.created_at,
-          description: `Invoice ${inv.invoice_number || inv.id}`,
-          amount: inv.total_amount,
-          type: 'invoice',
-          status: inv.status,
-          docType: 'invoice',
-          docId: inv.id,
-        });
-      }
-    } catch (err) {
-      console.warn('[PortalService] Cloud invoices unavailable for activity:', err.message);
+    const [cloudInvoices, cloudSales] = await Promise.all([
+      getAllFrom('invoices', { 'data->>customerId': `eq.${customerId}` }),
+      getAllFrom('sales', { 'data->>customerId': `eq.${customerId}` }),
+    ]);
+
+    for (const inv of cloudInvoices) {
+      entries.push({
+        date: inv.created_at,
+        description: `Invoice ${inv.invoice_number || inv.id}`,
+        amount: inv.total_amount,
+        type: 'invoice',
+        status: inv.status,
+        docType: 'invoice',
+        docId: inv.id,
+      });
     }
 
-    // 2. Real ERP cash sales (Supabase POS receipts for this customer)
-    try {
-      const cloudSales = await supabaseStore.listSales(customerId);
-      for (const sale of cloudSales) {
-        entries.push({
-          date: sale.date,
-          description: `Sale ${sale.id || ''}`.trim() || 'Sale',
-          amount: sale.totalAmount,
-          type: 'sale',
-          status: sale.status,
-          docType: 'sale',
-          docId: sale.id,
-        });
-      }
-    } catch (err) {
-      console.warn('[PortalService] Cloud sales unavailable for activity:', err.message);
-    }
-    const localSales = await getAll(
-      `SELECT date, total_amount as amount, customer_name as description, 'sale' as type, id as docId, status
-       FROM sales WHERE customer_id = ? AND status != 'Voided'
-       ORDER BY date DESC LIMIT ?`,
-      [customerId, limit]
-    );
-    if (Array.isArray(localSales)) {
-      for (const row of localSales) {
-        const existing = entries.find((e) => e.docType === 'sale' && e.docId === String(row.docId));
-        if (!existing) {
-          entries.push({ ...row, docType: 'sale' });
-        }
-      }
+    for (const sale of cloudSales) {
+      entries.push({
+        date: sale.date,
+        description: `Sale ${sale.id || ''}`.trim() || 'Sale',
+        amount: sale.total_amount,
+        type: 'sale',
+        status: sale.status,
+        docType: 'sale',
+        docId: sale.id,
+      });
     }
 
-    // 3. Payments received against invoices
-    const recentPayments = await getAll(
-      `SELECT id, date, amount, COALESCE(reference, 'Payment') as description, 'payment' as type
-       FROM customer_payments WHERE customer_id = ?
-       ORDER BY date DESC LIMIT ?`,
-      [customerId, limit]
-    );
+    const recentPayments = await getAllFrom('customer_payments', { 'data->>customerId': `eq.${customerId}` });
     for (const pay of recentPayments) {
       entries.push({
-        ...pay,
-        description: pay.description && String(pay.description).trim() ? String(pay.description).trim() : 'Payment received',
+        date: pay.date,
+        description: (pay.reference && String(pay.reference).trim()) ? String(pay.reference).trim() : 'Payment received',
+        amount: pay.amount,
+        type: 'payment',
+        status: pay.status,
         docType: 'payment',
         docId: pay.id,
       });
     }
 
-    // 4. Recent order confirmations / status changes (portfolio docs)
-    const recentOrders = await getAll(
-      `SELECT id, COALESCE(order_number, id) as orderNumber, status, orderDate as date
-       FROM sales_orders WHERE customer_id = ?
-       ORDER BY orderDate DESC LIMIT ?`,
-      [customerId, limit]
-    );
+    const recentOrders = await getAllFrom('sales_orders', { 'data->>customerId': `eq.${customerId}` });
     for (const ord of recentOrders) {
       entries.push({
-        date: ord.date,
-        description: `Order ${ord.orderNumber || ord.id} ${ord.status || ''}`.trim(),
+        date: ord.orderDate,
+        description: `Order ${ord.order_number || ord.id} ${ord.status || ''}`.trim(),
         amount: null,
         type: 'order',
         status: ord.status,
@@ -241,17 +200,11 @@ async getRecentTransactions(customerId, limit = 5) {
       });
     }
 
-    // 5. Customer-submitted requests (recent document chain)
-    const recentRequests = await getAll(
-      `SELECT id, COALESCE(request_number, id) as requestNumber, status, request_type, created_at as date
-       FROM quotation_requests WHERE customer_id = ?
-       ORDER BY created_at DESC LIMIT ?`,
-      [customerId, limit]
-    );
+    const recentRequests = await getAllFrom('quotation_requests', { 'data->>customerId': `eq.${customerId}` });
     for (const req of recentRequests) {
       entries.push({
-        date: req.date,
-        description: `${req.request_type || 'Request'} ${req.requestNumber || req.id}`.trim(),
+        date: req.created_at,
+        description: `${req.request_type || 'Request'} ${req.request_number || req.id}`.trim(),
         amount: null,
         type: 'request',
         status: req.status,
@@ -266,27 +219,39 @@ async getRecentTransactions(customerId, limit = 5) {
       .slice(0, limit);
   },
 
-  // Latest documents across the whole chain (requests, quotations, orders)
   async getRecentDocuments(customerId, limit = 5) {
-    const requests = await getAll(
-      `SELECT 'request' as docType, id, request_number as docNumber, status, request_type, created_at
-       FROM quotation_requests WHERE customer_id = ?
-       ORDER BY created_at DESC LIMIT ?`,
-      [customerId, limit]
-    );
-    const quotations = await getAll(
-      `SELECT 'quotation' as docType, id, quotation_number as docNumber, status, created_at
-       FROM quotations WHERE customer_id = ?
-       ORDER BY created_at DESC LIMIT ?`,
-      [customerId, limit]
-    );
-    const orders = await getAll(
-      `SELECT 'order' as docType, id, COALESCE(order_number, id) as docNumber, status, orderDate as created_at
-       FROM sales_orders WHERE customer_id = ?
-       ORDER BY orderDate DESC LIMIT ?`,
-      [customerId, limit]
-    );
-    return [...requests, ...quotations, ...orders]
+    const [requests, quotations, orders] = await Promise.all([
+      getAllFrom('quotation_requests', { 'data->>customerId': `eq.${customerId}` }),
+      getAllFrom('quotations', { 'data->>customerId': `eq.${customerId}` }),
+      getAllFrom('sales_orders', { 'data->>customerId': `eq.${customerId}` }),
+    ]);
+
+    const mappedRequests = requests.map((r) => ({
+      docType: 'request',
+      id: r.id,
+      docNumber: r.request_number || r.id,
+      status: r.status,
+      request_type: r.request_type,
+      created_at: r.created_at,
+    }));
+
+    const mappedQuotations = quotations.map((q) => ({
+      docType: 'quotation',
+      id: q.id,
+      docNumber: q.quotation_number || q.id,
+      status: q.status,
+      created_at: q.created_at,
+    }));
+
+    const mappedOrders = orders.map((o) => ({
+      docType: 'order',
+      id: o.id,
+      docNumber: o.order_number || o.id,
+      status: o.status,
+      created_at: o.orderDate,
+    }));
+
+    return [...mappedRequests, ...mappedQuotations, ...mappedOrders]
       .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
       .slice(0, limit);
   },
@@ -331,18 +296,17 @@ async getRecentTransactions(customerId, limit = 5) {
   },
 
   async getOrders(customerId) {
-    return getAll(
-      `SELECT so.id, so.order_number, so.orderDate, c.name as customerName, so.total as totalAmount, so.status,
-              so.source_request_id, so.source_request_number, so.reorder_of, so.reorder_of_number,
-              so.deliveryDate, so.approved_at, so.items as items_json,
-              so.tracking_number, so.carrier, so.driver_name, so.vehicle_no,
-              so.estimated_delivery, so.actual_arrival, so.current_location, so.proof_of_delivery, so.shipping_address
-       FROM sales_orders so
-       LEFT JOIN customers c ON so.customer_id = c.id
-       WHERE so.customer_id = ?
-       ORDER BY so.orderDate DESC`,
-      [customerId]
-    );
+    const [orders, customers] = await Promise.all([
+      getAllFrom('sales_orders', { 'data->>customerId': `eq.${customerId}` }),
+      getAllFrom('customers'),
+    ]);
+    const customerMap = new Map(customers.map((c) => [c.id, c.name]));
+    return orders.map((o) => ({
+      ...o,
+      customerName: customerMap.get(o.customerId) || '',
+      totalAmount: o.total,
+      items_json: o.items,
+    }));
   },
 
   async getOrdersPaginated(customerId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
@@ -452,32 +416,17 @@ async getRecentTransactions(customerId, limit = 5) {
   },
 
 async getInvoices(customerId) {
-    try {
-      const cloud = await supabaseStore.listInvoices(customerId);
-      if (Array.isArray(cloud) && cloud.length > 0) {
-        return cloud.map((i) => ({
-          id: i.id,
-          invoice_number: i.invoice_number,
-          customer_name: i.customer_name,
-          total_amount: i.total_amount,
-          paid_amount: i.paid_amount,
-          status: i.status,
-          due_date: i.due_date,
-          created_at: i.created_at,
-        }));
-      }
-    } catch (err) {
-      console.warn('[PortalService] Cloud invoices unavailable, using local:', err.message);
-    }
-    return getAll(
-      `SELECT id, invoice_number, customer_name, total_amount,
-        COALESCE((SELECT SUM(pal.amount) FROM payment_allocation_lines pal JOIN payment_allocations pa ON pa.id = pal.allocation_id WHERE pal.invoice_id = invoices.id AND pa.reversed = 0), 0) as paid_amount,
-        status, due_date, created_at
-       FROM invoices
-       WHERE customer_id = ?
-       ORDER BY created_at DESC`,
-      [customerId]
-    );
+    const invoices = await getAllFrom('invoices', { 'data->>customerId': `eq.${customerId}` });
+    return invoices.map((i) => ({
+      id: i.id,
+      invoice_number: i.invoice_number,
+      customer_name: i.customer_name,
+      total_amount: i.total_amount,
+      paid_amount: i.paid_amount,
+      status: i.status,
+      due_date: i.due_date,
+      created_at: i.created_at,
+    }));
   },
 
   async getInvoicesPaginated(customerId, { page = 1, pageSize = 20, status, search, dateFrom, dateTo } = {}) {
@@ -574,13 +523,14 @@ async getInvoices(customerId) {
   },
 
   async getPayments(customerId) {
-    return getAll(
-      `SELECT id, amount, method as payment_method, date, reference
-       FROM customer_payments
-       WHERE customer_id = ?
-       ORDER BY date DESC`,
-      [customerId]
-    );
+    const payments = await getAllFrom('customer_payments', { 'data->>customerId': `eq.${customerId}` });
+    return payments.map((p) => ({
+      id: p.id,
+      amount: p.amount,
+      payment_method: p.method,
+      date: p.date,
+      reference: p.reference,
+    }));
   },
 
   async getPaymentsPaginated(customerId, { page = 1, pageSize = 20, search, dateFrom, dateTo } = {}) {
@@ -720,25 +670,12 @@ async getInvoices(customerId) {
   },
 
   async getLoyalty(customerId) {
-    const points = await getOne(
-      'SELECT * FROM engagement_point_balances WHERE customer_id = ?',
-      [customerId]
-    );
-
-    const cashback = await getAll(
-      "SELECT * FROM engagement_cashback WHERE customer_id = ? AND status = 'approved'",
-      [customerId]
-    );
-
-    const pointsHistory = await getAll(
-      'SELECT * FROM engagement_points WHERE customer_id = ? ORDER BY created_at DESC LIMIT 20',
-      [customerId]
-    );
-
-    const tier = await getOne(
-      'SELECT * FROM engagement_customer_tiers WHERE customer_id = ?',
-      [customerId]
-    );
+    const [points, cashback, pointsHistory, tier] = await Promise.all([
+      repo.getById('engagement_point_balances', customerId),
+      getAllFrom('engagement_cashback', { 'data->>customerId': `eq.${customerId}`, 'data->>status': `eq.approved` }),
+      getAllFrom('engagement_points', { 'data->>customerId': `eq.${customerId}` }),
+      repo.getById('engagement_customer_tiers', customerId),
+    ]);
 
     const totalCashback = (cashback || []).reduce((sum, c) => sum + Number(c.amount || 0), 0);
 
@@ -751,101 +688,26 @@ async getInvoices(customerId) {
   },
 
   async getWallet(customerId) {
-    const [customer, cloudProfile] = await Promise.all([
-      getOne(
-        'SELECT walletBalance FROM customers WHERE id = ?',
-        [customerId]
-      ),
-      supabaseStore.getCustomer(customerId).catch(() => null),
-    ]);
-
-    const rewards = await getAll(
-      `SELECT approved_at as date, amount, 'Referral reward' as reference
-       FROM referral_rewards
-       WHERE customer_id = ? AND status = 'approved'
-       ORDER BY approved_at DESC`,
-      [customerId]
-    );
-
-    const cashback = await getAll(
-      `SELECT approved_at as date, amount, 'Cashback' as reference
-       FROM engagement_cashback
-       WHERE customer_id = ? AND status = 'approved'
-       ORDER BY approved_at DESC`,
-      [customerId]
-    );
-
-    const walletPayments = await getAll(
-      `SELECT date, amount, COALESCE(reference, 'Wallet payment') as reference
-       FROM customer_payments
-       WHERE customer_id = ? AND LOWER(method) = 'wallet' AND status != 'Voided'
-       ORDER BY date DESC`,
-      [customerId]
-    );
+    const customer = await repo.getById('customers', customerId);
+    const rewards = await getAllFrom('referral_rewards', { 'data->>customerId': `eq.${customerId}`, 'data->>status': `eq.approved` });
+    const cashback = await getAllFrom('engagement_cashback', { 'data->>customerId': `eq.${customerId}`, 'data->>status': `eq.approved` });
+    const walletPayments = await getAllFrom('customer_payments', { 'data->>customerId': `eq.${customerId}` });
 
     const transactions = [
-      ...(rewards || []).map((r) => ({ date: r.date, amount: Number(r.amount) || 0, type: 'credit', reference: r.reference })),
-      ...(cashback || []).map((c) => ({ date: c.date, amount: Number(c.amount) || 0, type: 'credit', reference: c.reference })),
-      ...(walletPayments || []).map((p) => ({ date: p.date, amount: -(Number(p.amount) || 0), type: 'debit', reference: p.reference })),
+      ...(rewards || []).map((r) => ({ date: r.approved_at, amount: Number(r.amount) || 0, type: 'credit', reference: 'Referral reward' })),
+      ...(cashback || []).map((c) => ({ date: c.approved_at, amount: Number(c.amount) || 0, type: 'credit', reference: 'Cashback' })),
+      ...(walletPayments || []).filter((p) => String(p.method || '').toLowerCase() === 'wallet' && String(p.status || '').toLowerCase() !== 'voided')
+        .map((p) => ({ date: p.date, amount: -(Number(p.amount) || 0), type: 'debit', reference: p.reference || 'Wallet payment' })),
     ].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
     return {
-      balance: (cloudProfile && cloudProfile.walletBalance != null)
-        ? cloudProfile.walletBalance
-        : (customer && customer.walletBalance) || 0,
+      balance: (customer && customer.walletBalance != null) ? customer.walletBalance : 0,
       transactions
     };
   },
 
   async getProfile(customerId) {
-    // Prefer real ERP data from Supabase (secret-key reads server-side)
-    try {
-      const cloudProfile = await supabaseStore.getCustomer(customerId);
-      if (cloudProfile) {
-        return {
-          id: cloudProfile.id,
-          full_name: cloudProfile.name || '',
-          email: cloudProfile.email || '',
-          phone: cloudProfile.phone || '',
-          address: cloudProfile.address || '',
-          city: cloudProfile.city || '',
-          state: cloudProfile.state || '',
-          zip: cloudProfile.zip || '',
-          country: cloudProfile.country || '',
-          balance: Number(cloudProfile.balance) || 0,
-          walletBalance: Number(cloudProfile.walletBalance) || 0,
-          creditLimit: Number(cloudProfile.creditLimit) || 0,
-          outstandingBalance: Number(cloudProfile.outstandingBalance) || 0,
-          status: cloudProfile.status || ''
-        };
-      }
-    } catch (err) {
-      console.warn('[PortalService] Cloud profile unavailable, using local:', err.message);
-    }
-    const local = await getOne(
-      `SELECT id, name, email, phone, address, city, balance, walletBalance, creditLimit, outstandingBalance, status
-       FROM customers WHERE id = ?`,
-      [customerId]
-    );
-    if (local) {
-      return {
-        id: local.id,
-        full_name: local.name || '',
-        email: local.email || '',
-        phone: local.phone || '',
-        address: local.address || '',
-        city: local.city || '',
-        state: '',
-        zip: '',
-        country: '',
-        balance: local.balance || 0,
-        walletBalance: local.walletBalance || 0,
-        creditLimit: local.creditLimit || 0,
-        outstandingBalance: local.outstandingBalance || 0,
-        status: local.status || ''
-      };
-    }
-    const cloud = await portalAuthService.findCustomerInSupabase(customerId);
+    const cloud = await repo.getById('customers', customerId);
     if (!cloud) return null;
     return {
       id: cloud.id,
@@ -866,73 +728,38 @@ async getInvoices(customerId) {
   },
 
   async getDocuments(customerId) {
-    const invoices = await getAll(
-      `SELECT id, invoice_number, created_at as date, status,
-              COALESCE(total_amount, 0) as amount
-       FROM invoices
-       WHERE customer_id = ?
-       ORDER BY created_at DESC`,
-      [customerId]
-    );
-
-    const mapped = (invoices || []).map((inv) => ({
+    const invoices = await getAllFrom('invoices', { 'data->>customerId': `eq.${customerId}` });
+    return invoices.map((inv) => ({
       id: inv.id,
-      type: inv.status && /paid|fulfilled/i.test(String(inv.status)) ? 'receipt' : 'invoice',
+      type: inv.status && /paid|fulfilled/i.test(String(inv.status || '')) ? 'receipt' : 'invoice',
       title: `${inv.invoice_number || inv.id} (${inv.status || 'Draft'})`,
-      date: inv.date,
+      date: inv.created_at,
       url: `#/portal/invoices/${inv.id}`,
-      amount: inv.amount
+      amount: inv.total_amount,
     }));
-
-    // Merge real ERP invoices from Supabase
-    try {
-      const cloudInvoices = await supabaseStore.listInvoices(customerId);
-      if (Array.isArray(cloudInvoices) && cloudInvoices.length > 0) {
-        const cloudMapped = cloudInvoices.map((inv) => ({
-          id: inv.id,
-          type: inv.status && /paid|fulfilled/i.test(String(inv.status)) ? 'receipt' : 'invoice',
-          title: `${inv.invoice_number || inv.id} (${inv.status || 'Draft'})`,
-          date: inv.created_at,
-          url: `#/portal/invoices/${inv.id}`,
-          amount: inv.total_amount
-        }));
-        mapped.push(...cloudMapped);
-        mapped.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-      }
-    } catch (err) {
-      console.warn('[PortalService] Cloud documents unavailable:', err.message);
-    }
-
-    return mapped;
   },
 
   async getNotifications(portalUserId) {
-    return getAll(
-      'SELECT * FROM portal_notifications WHERE portal_user_id = ? ORDER BY created_at DESC',
-      [portalUserId]
-    );
+    return getAllFrom('portal_notifications', { 'data->>portalUserId': `eq.${portalUserId}` });
   },
 
   async getUnreadNotificationCount(portalUserId) {
-    const row = await getOne(
-      'SELECT COUNT(*) as count FROM portal_notifications WHERE portal_user_id = ? AND is_read = 0',
-      [portalUserId]
-    );
-    return (row && row.count) || 0;
+    const rows = await getAllFrom('portal_notifications', { 'data->>portalUserId': `eq.${portalUserId}`, 'data->>isRead': `eq.false` });
+    return rows.length;
   },
 
   async markNotificationRead(notificationId, portalUserId) {
-    await runQuery(
-      'UPDATE portal_notifications SET is_read = 1 WHERE id = ? AND portal_user_id = ?',
-      [notificationId, portalUserId]
-    );
+    const row = await repo.getById('portal_notifications', notificationId);
+    if (row && row.portalUserId === portalUserId) {
+      await repo.upsert('portal_notifications', { ...row, isRead: true });
+    }
   },
 
   async markAllNotificationsRead(portalUserId) {
-    await runQuery(
-      'UPDATE portal_notifications SET is_read = 1 WHERE portal_user_id = ? AND is_read = 0',
-      [portalUserId]
-    );
+    const rows = await getAllFrom('portal_notifications', { 'data->>portalUserId': `eq.${portalUserId}`, 'data->>isRead': `eq.false` });
+    for (const row of rows) {
+      await repo.upsert('portal_notifications', { ...row, isRead: true });
+    }
   },
 
   // ─── Referrals ──────────────────────────────────────────────────

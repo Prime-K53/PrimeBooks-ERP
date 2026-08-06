@@ -8,8 +8,8 @@
  * - Full request context capture
  */
 
-const { getDatabase } = require('./db.cjs');
-const getDb = () => getDatabase();
+const sq = require('./services/supabaseQuery.cjs');
+const repo = require('./services/supabaseRepository.cjs');
 const { randomUUID } = require('crypto');
 
 // Enhanced audit event schema aligned with compliance requirements
@@ -22,32 +22,19 @@ class AuditEvent {
     this.userRole = data.userRole || 'unknown';
     this.sessionId = data.sessionId || null;
 
-    // Action classification
     this.action = data.action;
     this.entityType = data.entityType;
     this.entityId = data.entityId;
-
-    // Human-readable summary
     this.details = data.details || '';
-
-    // Full state snapshots for delta computation
     this.oldValue = data.oldValue || null;
     this.newValue = data.newValue || null;
-
-    // Computed delta (field-level changes)
     this.delta = this.computeDelta(this.oldValue, this.newValue);
-
-    // Security context
     this.ipAddress = data.ipAddress || null;
     this.userAgent = data.userAgent || null;
     this.httpMethod = data.httpMethod || null;
     this.httpPath = data.httpPath || null;
-
-    // Reason/justification (for sensitive operations)
     this.reason = data.reason || null;
     this.approvalChain = data.approvalChain || null;
-
-    // Integrity hash (SHA-256 of event data)
     this.integrityHash = this.computeHash();
   }
 
@@ -124,73 +111,15 @@ class AuditService {
 
   async initialize() {
     if (this.initialized) return;
-
-    await this.createAuditTable();
     this.initialized = true;
     console.log('[AuditService] Initialized with compliance-grade schema');
-  }
-
-  async createAuditTable() {
-    return new Promise((resolve, reject) => {
-      getDb().serialize(() => {
-        // Enhanced audit_logs table with compliance features
-        getDb().run(`CREATE TABLE IF NOT EXISTS audit_logs (
-          id TEXT PRIMARY KEY,
-          timestamp DATETIME NOT NULL,
-          correlation_id TEXT NOT NULL,
-          user_id TEXT NOT NULL,
-          user_role TEXT NOT NULL,
-          session_id TEXT,
-          action TEXT NOT NULL,
-          entity_type TEXT NOT NULL,
-          entity_id TEXT NOT NULL,
-          details TEXT,
-          old_value TEXT,
-          new_value TEXT,
-          delta TEXT,
-          integrity_hash TEXT NOT NULL,
-          ip_address TEXT,
-          user_agent TEXT,
-          http_method TEXT,
-          http_path TEXT,
-          reason TEXT,
-          approval_chain TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`, (err) => {
-          if (err) reject(err);
-          else {
-            getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp)`);
-            getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_correlation ON audit_logs(correlation_id)`);
-            getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id)`);
-            getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id)`);
-            getDb().run(`CREATE INDEX IF NOT EXISTS idx_audit_integrity ON audit_logs(integrity_hash)`);
-            resolve();
-          }
-        });
-      });
-    });
   }
 
   async logEvent(eventData) {
     try {
       const auditEvent = new AuditEvent(eventData);
       const dbObj = auditEvent.toDBObject();
-
-      await new Promise((resolve, reject) => {
-        getDb().run(
-          `INSERT INTO audit_logs (
-            id, timestamp, correlation_id, user_id, user_role, session_id, action, entity_type, entity_id, details, old_value,
-            new_value, delta, integrity_hash, ip_address, user_agent,
-            http_method, http_path, reason, approval_chain
-          ) VALUES (?, ?, ?, ?, ?, ? , ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [dbObj.id, dbObj.timestamp, dbObj.correlation_id, dbObj.user_id, dbObj.user_role, dbObj.session_id, dbObj.action, dbObj.entity_type, dbObj.entity_id, dbObj.details, dbObj.old_value, dbObj.new_value, dbObj.delta, dbObj.integrity_hash, dbObj.ip_address, dbObj.user_agent, dbObj.http_method, dbObj.http_path, dbObj.reason, dbObj.approval_chain],
-          (err) => {
-            if (err) reject(err);
-            else resolve(dbObj.id);
-          }
-        );
-      });
-
+      await repo.upsert('audit_logs', dbObj);
       return auditEvent;
     } catch (error) {
       console.error('[AuditService] Failed to log event:', error);
@@ -198,7 +127,6 @@ class AuditService {
     }
   }
 
-  // Convenience methods for common operations
   async logCreate(userId, userRole, entityType, entityId, newValue, details = '', context = {}) {
     return this.logEvent({
       userId,
@@ -251,7 +179,6 @@ class AuditService {
     });
   }
 
-  // Query methods
   async getEvents(options = {}) {
     const {
       limit = 100,
@@ -262,49 +189,18 @@ class AuditService {
       action,
       startDate,
       endDate,
-      correlationId} = options;
+      correlationId } = options;
 
-    let query = 'SELECT * FROM audit_logs WHERE 1=1';
-    const params = [];
-
-    if (entityType) {
-      query += ' AND entity_type = ?';
-      params.push(entityType);
-    }
-    if (entityId) {
-      query += ' AND entity_id = ?';
-      params.push(entityId);
-    }
-    if (userId) {
-      query += ' AND user_id = ?';
-      params.push(userId);
-    }
-    if (action) {
-      query += ' AND action = ?';
-      params.push(action);
-    }
-    if (correlationId) {
-      query += ' AND correlation_id = ?';
-      params.push(correlationId);
-    }
-    if (startDate) {
-      query += ' AND timestamp >= ?';
-      params.push(startDate);
-    }
-    if (endDate) {
-      query += ' AND timestamp <= ?';
-      params.push(endDate);
-    }
-
-    query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
-
-    return new Promise((resolve, reject) => {
-      getDb().all(query, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    let rows = await sq.getAll(`SELECT * FROM audit_logs`, []);
+    if (entityType) rows = rows.filter(r => r.entity_type === entityType);
+    if (entityId) rows = rows.filter(r => r.entity_id === entityId);
+    if (userId) rows = rows.filter(r => r.user_id === userId);
+    if (action) rows = rows.filter(r => r.action === action);
+    if (correlationId) rows = rows.filter(r => r.correlation_id === correlationId);
+    if (startDate) rows = rows.filter(r => r.timestamp >= startDate);
+    if (endDate) rows = rows.filter(r => r.timestamp <= endDate);
+    rows.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
+    return rows.slice(offset, offset + limit);
   }
 
   async getEntityHistory(entityType, entityId) {
@@ -315,68 +211,48 @@ class AuditService {
     return this.getEvents({ correlationId });
   }
 
-  // Integrity verification
   async verifyIntegrity(eventId) {
-    return new Promise((resolve, reject) => {
-      getDb().get('SELECT * FROM audit_logs WHERE id = ?', [eventId], async (err, row) => {
-        if (err) reject(err);
-        if (!row) resolve({ valid: false, error: 'Event not found' });
+    const row = await sq.getOne('SELECT * FROM audit_logs WHERE id = ?', [eventId]);
+    if (!row) return { valid: false, error: 'Event not found' };
 
-        const storedHash = row.integrity_hash;
-        const computedHash = new AuditEvent({
-          id: row.id,
-          timestamp: row.timestamp,
-          correlationId: row.correlation_id,
-          userId: row.user_id,
-          action: row.action,
-          entityType: row.entity_type,
-          entityId: row.entity_id,
-          oldValue: row.old_value ? JSON.parse(row.old_value) : null,
-          newValue: row.new_value ? JSON.parse(row.new_value) : null
-        }).computeHash();
+    const storedHash = row.integrity_hash;
+    const computedHash = new AuditEvent({
+      id: row.id,
+      timestamp: row.timestamp,
+      correlationId: row.correlation_id,
+      userId: row.user_id,
+      action: row.action,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      oldValue: row.old_value ? JSON.parse(row.old_value) : null,
+      newValue: row.new_value ? JSON.parse(row.new_value) : null
+    }).computeHash();
 
-        resolve({
-          valid: storedHash === computedHash,
-          stored: storedHash,
-          computed: computedHash
-        });
-      });
-    });
+    return {
+      valid: storedHash === computedHash,
+      stored: storedHash,
+      computed: computedHash
+    };
   }
 
-  // Statistics
   async getStats(startDate = null, endDate = null) {
-    let query = `
-      SELECT 
-        COUNT(*) as total_events,
-        COUNT(DISTINCT user_id) as unique_users,
-        COUNT(DISTINCT entity_type) as entity_types,
-        MIN(timestamp) as earliest_event,
-        MAX(timestamp) as latest_event
-      FROM audit_logs
-      WHERE 1=1
-    `;
-    const params = [];
-
-    if (startDate) {
-      query += ' AND timestamp >= ?';
-      params.push(startDate);
-    }
-    if (endDate) {
-      query += ' AND timestamp <= ?';
-      params.push(endDate);
-    }
-
-    return new Promise((resolve, reject) => {
-      getDb().get(query, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+    let rows = await sq.getAll(`SELECT * FROM audit_logs`, []);
+    if (startDate) rows = rows.filter(r => r.timestamp >= startDate);
+    if (endDate) rows = rows.filter(r => r.timestamp <= endDate);
+    const totalEvents = rows.length;
+    const uniqueUsers = new Set(rows.map(r => r.user_id)).size;
+    const entityTypes = new Set(rows.map(r => r.entity_type)).size;
+    const timestamps = rows.map(r => r.timestamp).filter(Boolean);
+    return {
+      total_events: totalEvents,
+      unique_users: uniqueUsers,
+      entity_types: entityTypes,
+      earliest_event: timestamps.length ? Math.min(...timestamps) : null,
+      latest_event: timestamps.length ? Math.max(...timestamps) : null
+    };
   }
 }
 
-// Singleton instance
 const auditService = new AuditService();
 
 module.exports = { auditService, AuditEvent };

@@ -16,8 +16,7 @@ const net = require('net');
 const { spawn } = require('child_process');
 const { randomUUID } = require('crypto');
 const { getFrontendDistPath } = require('./appRoot.cjs');
-console.log('Requiring db...');
-const { db } = require('./db.cjs');
+const repo = require('./services/supabaseRepository.cjs');
 console.log('Requiring bootstrap...');
 const bootstrap = require('./bootstrap.cjs');
 const portalLifecycleService = require('./services/portalLifecycleService.cjs');
@@ -55,15 +54,6 @@ const ensurePortAvailable = (candidatePort) => {
     });
     probe.listen(normalizedPort, '0.0.0.0');
   });
-};
-
-const closeDbAndExit = (code = 1) => {
-  try {
-    db.close(() => process.exit(code));
-    setTimeout(() => process.exit(code), 1000);
-  } catch {
-    process.exit(code);
-  }
 };
 
 const SQLITE_CONSTRAINT_CODES = new Set([
@@ -331,12 +321,8 @@ const CurrencyService = require('./services/currencyService.cjs');
 const currencyService = new CurrencyService();
 const currencyMiddleware = new CurrencyMiddleware(currencyService);
 app.use('/api', currencyMiddleware.injectCurrency());
-
-// ERP → Portal bridge: lets the offline-first ERP mirror created documents
-// (invoices, sales orders, quotations, payments, wallet movements) into the
-// portal SQLite layer and broadcast SSE + notifications.
-const erpPortalMirrorRoutes = require('./routes/erpPortalMirror.cjs');
-app.use('/api/erp-portal', erpPortalMirrorRoutes);
+// Supabase query adapter for inline routes migrating from SQLite
+const sq = require('./services/supabaseQuery.cjs');
 
 // ERP sync gateway: single write path for all business data from the
 // offline-first client's durable sync queue. Validates the JWT (Supabase or
@@ -344,13 +330,6 @@ app.use('/api/erp-portal', erpPortalMirrorRoutes);
 // applies idempotent upserts and tombstone deletes with the service-role key.
 const syncRoutes = require('./routes/sync.cjs');
 app.use('/api/sync', syncRoutes);
-
-// One-time startup backfill: propagate already-committed cloud rows into the
-// portal SQLite layer so documents that predate the portal bridge appear in
-// the customer portal. Non-blocking; failures are logged, never fatal.
-erpPortalMirrorRoutes.backfillPortalTables().catch((err) => {
-  console.error('[Portal] backfill failed:', err?.message || err);
-});
 
 // Live Multi-Device Acceptance Framework — admin-gated; mounted after the
 // global verifyToken so JWT auth is enforced before the router's admin check.
@@ -459,7 +438,7 @@ app.get('/health', (req, res) => {
     platform: process.platform,
   };
   try {
-    db.get('SELECT 1 AS alive', (err, row) => {
+    sq.getOne('SELECT 1 AS alive', (err, row) => {
       if (err) {
         checks.database = 'error';
         checks.status = 'degraded';
@@ -572,25 +551,18 @@ async function postSaleLedgerEntries(saleId, totalAmount, materialTotal, custome
 async function updateCustomerBalance(customerId, amount) {
   try {
     if (!customerId || customerId === 'walk-in') return;
-    
-    await new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE customers SET 
-          balance = COALESCE(balance, 0) + ?,
-          outstandingBalance = COALESCE(outstandingBalance, 0) + ?,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`,
-        [amount, amount, customerId],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
+    const customer = await sq.getOne('SELECT * FROM customers WHERE id = ?', [customerId]);
+    if (!customer) return;
+    const newBalance = (customer.balance || 0) + amount;
+    const newOutstanding = (customer.outstandingBalance || 0) + amount;
+    await repo.upsert('customers', {
+      ...customer,
+      balance: newBalance,
+      outstandingBalance: newOutstanding
     });
-    
     console.log(`[Customer] Updated balance for customer ${customerId}: +${amount}`);
   } catch (error) {
-    console.error(`[Customer] Error updating balance for ${customerId}:`, error);
+    console.error(`[Customer] Error updating balance for customer ${customerId}:`, error);
     throw error;
   }
 }
@@ -611,7 +583,7 @@ async function deductInventoryForSale(items, saleId) {
       
       // Check if inventory exists
       const inventory = await new Promise((resolve, reject) => {
-        db.get("SELECT * FROM inventory WHERE id = ?", [itemId], (err, row) => {
+        sq.getOne("SELECT * FROM inventory WHERE id = ?", [itemId], (err, row) => {
           if (err) reject(err);
           else resolve(row);
         });
@@ -628,7 +600,7 @@ async function deductInventoryForSale(items, saleId) {
       // Create transaction record
       const transactionId = `TXN-${saleId}-${itemId}`;
       await new Promise((resolve, reject) => {
-        db.run(
+        sq.run(
           `INSERT INTO inventory_transactions 
             (id, item_id, warehouse_id, type, quantity, previous_quantity, new_quantity, 
               unit_cost, total_cost, reason, reference, reference_id, performed_by, timestamp)
@@ -648,7 +620,7 @@ async function deductInventoryForSale(items, saleId) {
       
       // Update inventory quantity
       await new Promise((resolve, reject) => {
-        db.run(
+        sq.run(
           "UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?",
           [newQuantity, itemId],
           (err) => {
@@ -708,83 +680,67 @@ async function startServer() {
     const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.min(daysRaw, 120) : 30;
     const financialYearId = req.query?.financial_year_id || req.financialYearId || '';
 
-    const getOne = (query, params = []) => new Promise((resolve, reject) => {
-      db.get(query, params, (error, row) => {
-        if (error) reject(error);
-        else resolve(row || {});
-      });
-    });
-
-    const getAll = (query, params = []) => new Promise((resolve, reject) => {
-      db.all(query, params, (error, rows) => {
-        if (error) reject(error);
-        else resolve(rows || []);
-      });
-    });
-
     try {
       const offset = `-${days - 1} days`;
+      const salesRows = await sq.getAll(`SELECT * FROM sales`, []);
+      const invoiceRows = await sq.getAll(`SELECT * FROM invoices`, []);
 
-      let fyDateFilter = '';
-      let fyParams = [];
+      let filteredSales = salesRows;
+      let filteredInvoices = invoiceRows;
+      let fySales = salesRows;
+
       if (financialYearId) {
-        const fy = await new Promise((resolve) => {
-          db.get('SELECT start_date, end_date FROM financial_years WHERE id = ?',
-            [financialYearId], (err, row) => resolve(row || null));
-        });
-        if (fy) {
-          fyDateFilter = ' AND date(date) >= date(?) AND date(date) <= date(?)';
-          fyParams = [fy.start_date, fy.end_date];
+        const fyRow = await sq.getOne('SELECT start_date, end_date FROM financial_years WHERE id = ?', [financialYearId]);
+        if (fyRow && fyRow.start_date && fyRow.end_date) {
+          filteredSales = salesRows.filter(s => s.date >= fyRow.start_date && s.date <= fyRow.end_date);
+          filteredInvoices = invoiceRows.filter(i => i.created_at >= fyRow.start_date && i.created_at <= fyRow.end_date);
+          fySales = filteredSales;
         }
       }
 
-      const [revenueRow, todayRow, outstandingRow, chartRows, salesRows, invoiceRows] = await Promise.all([
-        getOne(`SELECT SUM(total_amount) as revenue FROM sales${fyDateFilter}`, fyParams),
-        getOne(`SELECT SUM(total_amount) as todaySales FROM sales WHERE date(date) = date('now')${fyDateFilter}`, fyParams),
-        getOne(`SELECT COUNT(*) as outstandingInvoices FROM invoices WHERE lower(COALESCE(status, '')) != 'paid'`),
-        getAll(
-          `SELECT date(date) as day, SUM(total_amount) as total
-           FROM sales
-           WHERE date(date) >= date('now', ?)${fyDateFilter}
-           GROUP BY date(date)
-           ORDER BY day`,
-          [offset, ...fyParams]
-        ),
-        getAll(
-          `SELECT id, customer_id as customerId, customer_name as customerName, total_amount as totalAmount, date
-           FROM sales${fyDateFilter}
-           ORDER BY date DESC
-           LIMIT 200`,
-          fyParams
-        ),
-        getAll(
-          `SELECT id, customer_id as customerId, customer_name as customerName, total_amount as totalAmount, status, created_at as createdAt
-           FROM invoices${fyDateFilter}
-           ORDER BY created_at DESC
-           LIMIT 50`,
-          fyParams
-        )
-      ]);
+      const today = new Date().toISOString().slice(0, 10);
+      const revenue = filteredSales.reduce((sum, s) => sum + Number(s.total_amount || 0), 0);
+      const todaySales = filteredSales.filter(s => s.date === today).reduce((sum, s) => sum + Number(s.total_amount || 0), 0);
+      const outstandingInvoices = filteredInvoices.filter(i => String(i.status || '').toLowerCase() !== 'paid').length;
 
-      const chartIndex = new Map(chartRows.map(row => [row.day, row.total || 0]));
+      const chartIndex = new Map();
+      const recentSales = [...fySales].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+      for (const sale of recentSales) {
+        const day = sale.date?.slice(0, 10);
+        if (!day) continue;
+        const d = new Date(day);
+        if (isNaN(d)) continue;
+        const key = d.toISOString().slice(0, 10);
+        chartIndex.set(key, (chartIndex.get(key) || 0) + Number(sale.total_amount || 0));
+      }
       const chartData = [];
       for (let i = days - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const key = date.toISOString().slice(0, 10);
-        chartData.push({
-          day: key,
-          total: chartIndex.get(key) || 0
-        });
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        chartData.push({ day: key, total: chartIndex.get(key) || 0 });
       }
 
       res.json({
-        revenue: Number(revenueRow?.revenue || 0),
-        todaySales: Number(todayRow?.todaySales || 0),
-        outstandingInvoices: Number(outstandingRow?.outstandingInvoices || 0),
+        revenue: Number(revenue || 0),
+        todaySales: Number(todaySales || 0),
+        outstandingInvoices: Number(outstandingInvoices || 0),
         chartData,
-        sales: salesRows,
-        invoices: invoiceRows
+        sales: recentSales.slice(0, 200).map(s => ({
+          id: s.id,
+          customerId: s.customer_id,
+          customerName: s.customer_name,
+          totalAmount: Number(s.total_amount || 0),
+          date: s.date,
+        })),
+        invoices: filteredInvoices.slice(0, 50).map(i => ({
+          id: i.id,
+          customerId: i.customer_id,
+          customerName: i.customer_name,
+          totalAmount: Number(i.total_amount || 0),
+          status: i.status,
+          createdAt: i.created_at,
+        }))
       });
     } catch (error) {
       console.error('[Dashboard] error:', error);
@@ -794,42 +750,30 @@ async function startServer() {
 
   app.get('/api/sales', requireRole('Admin', 'Manager', 'Cashier', 'Accountant', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      let sql = `SELECT 
-        id, date, customer_id as customerId, customer_name as customerName, sub_account_name as subAccountName,
-        total_amount as totalAmount, material_total as materialTotal, adjustment_total as adjustmentTotal,
-        profit_margin_total as profitMarginTotal, rounding_total as roundingTotal, other_charges as otherCharges,
-        adjustment_snapshots_json as adjustmentSnapshots,
-        status, payment_method as paymentMethod, source, items_json, payments_json,
-        created_by, updated_by, void_reason, voided_at
-       FROM sales
-       WHERE 1 = 1`;
-      const params = [];
-      const filtered = addFyDateFilter(sql, params, req, 'date');
-      sql = filtered.sql + ' ORDER BY date DESC';
-      const rows = await new Promise((resolve, reject) => {
-        db.all(sql, filtered.params, (error, rows) => {
-          if (error) reject(error);
-          else resolve(rows || []);
-        });
-      });
-      const sales = rows.map((row) => ({
+      const rows = await sq.getAll(`SELECT * FROM sales`, []);
+      let filtered = rows;
+      if (req.fyStartDate && req.fyEndDate) {
+        filtered = rows.filter(s => s.date >= req.fyStartDate && s.date <= req.fyEndDate);
+      }
+      filtered.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+      const sales = filtered.map((row) => ({
         id: row.id,
         date: row.date,
-        customerId: row.customerId,
-        customerName: row.customerName,
-        subAccountName: row.subAccountName,
-        totalAmount: Number(row.totalAmount || 0),
-        materialTotal: Number(row.materialTotal || 0),
-        adjustmentTotal: Number(row.adjustmentTotal || 0),
-        profitMarginTotal: Number(row.profitMarginTotal || 0),
-        roundingTotal: Number(row.roundingTotal || 0),
-        otherCharges: Number(row.otherCharges || 0),
+        customerId: row.customer_id,
+        customerName: row.customer_name,
+        subAccountName: row.sub_account_name,
+        totalAmount: Number(row.total_amount || 0),
+        materialTotal: Number(row.material_total || 0),
+        adjustmentTotal: Number(row.adjustment_total || 0),
+        profitMarginTotal: Number(row.profit_margin_total || 0),
+        roundingTotal: Number(row.rounding_total || 0),
+        otherCharges: Number(row.other_charges || 0),
         status: row.status,
-        paymentMethod: row.paymentMethod,
+        paymentMethod: row.payment_method,
         source: row.source,
-        items: parseJsonArray(row.items_json),
-        payments: parseJsonArray(row.payments_json),
-        adjustmentSnapshots: parseJsonArray(row.adjustmentSnapshots)
+        items: JSON.parse(row.items_json || '[]'),
+        payments: JSON.parse(row.payments_json || '[]'),
+        adjustmentSnapshots: JSON.parse(row.adjustment_snapshots_json || '[]')
       }));
       res.json(sales);
     } catch (error) {
@@ -843,16 +787,10 @@ async function startServer() {
     
     // Idempotency check
     if (payload.idempotencyKey) {
-      db.get(`SELECT id FROM sales WHERE idempotency_key = ?`, [payload.idempotencyKey], (err, row) => {
-        if (err) {
-          console.error('[Backend] Idempotency check error:', err);
-          return res.status(500).json({ error: 'Idempotency check failed' });
-        }
-        if (row) {
-          console.log(`[Backend] Duplicate sale prevented by idempotency key: ${payload.idempotencyKey}`);
-          return res.json({ id: row.id, message: 'Sale already processed', duplicate: true });
-        }
-      });
+      const existing = await sq.getOne('SELECT id FROM sales WHERE idempotency_key = ?', [payload.idempotencyKey]);
+      if (existing) {
+        return res.json({ id: existing.id, message: 'Sale already processed', duplicate: true });
+      }
     }
     
     try {
@@ -891,14 +829,14 @@ async function startServer() {
 
     console.log(`[BACKEND] Creating POS sale #${id} for ${customerName}. Revenue: ${totalAmount}, Margin: ${profitMarginTotal}`);
 
-    db.run("BEGIN TRANSACTION", (err) => {
+    sq.run("BEGIN TRANSACTION", (err) => {
       if (err) {
         console.error(`[BACKEND] Error beginning transaction for sale #${id}:`, err.message);
         return res.status(500).json({ error: 'Failed to begin transaction' });
       }
       
       // Insert sale
-      db.run(
+      sq.run(
         `INSERT INTO sales (
           id, date, customer_id, customer_name, sub_account_name, 
           total_amount, material_total, adjustment_total, profit_margin_total, rounding_total, other_charges,
@@ -912,7 +850,7 @@ async function startServer() {
         ],
         (error) => {
           if (error) {
-            db.run("ROLLBACK");
+            sq.run("ROLLBACK");
             console.error(`[BACKEND] Error creating sale #${id}:`, error.message);
             return res.status(500).json({ error: 'Failed to create sale' });
           }
@@ -941,9 +879,9 @@ async function startServer() {
               }
               
               // All items inserted, commit transaction
-              db.run("COMMIT", (commitErr) => {
+              sq.run("COMMIT", (commitErr) => {
                 if (commitErr) {
-                  db.run("ROLLBACK");
+                  sq.run("ROLLBACK");
                   console.error(`[BACKEND] Error committing sale #${id}:`, commitErr.message);
                   return res.status(500).json({ error: 'Failed to commit sale' });
                 }
@@ -982,7 +920,7 @@ async function startServer() {
             const taxAmount = item.taxAmount || 0;
             const itemType = item.type || 'product';
             
-            db.run(
+            sq.run(
               `INSERT INTO sale_items (
                 id, sale_id, item_id, variant_id, item_name, quantity, unit_price, unit_cost, 
                 line_total, discount, tax_rate, tax_amount, item_type
@@ -994,7 +932,7 @@ async function startServer() {
               ],
               (itemErr) => {
                 if (itemErr) {
-                  db.run("ROLLBACK");
+                  sq.run("ROLLBACK");
                   console.error(`[BACKEND] Error inserting sale item #${index} for sale #${id}:`, itemErr.message);
                   return res.status(500).json({ error: 'Failed to create sale item' });
                 }
@@ -1029,7 +967,7 @@ async function startServer() {
     const paymentsJson = JSON.stringify(payload.payments || []);
     const snapshotsJson = JSON.stringify(payload.adjustmentSnapshots || []);
 
-    db.run(
+    sq.run(
       `UPDATE sales SET
         date = ?, customer_id = ?, customer_name = ?, sub_account_name = ?,
         total_amount = ?, material_total = ?, adjustment_total = ?, profit_margin_total = ?, rounding_total = ?, other_charges = ?,
@@ -1058,7 +996,7 @@ async function startServer() {
     const { id } = req.params;
     try {
       const row = await new Promise((resolve, reject) => {
-        db.get(`SELECT id, date FROM sales WHERE id = ?`, [id], (err, row) => {
+        sq.getOne(`SELECT id, date FROM sales WHERE id = ?`, [id], (err, row) => {
           if (err) reject(err);
           else resolve(row);
         });
@@ -1066,12 +1004,10 @@ async function startServer() {
       if (!row) return res.status(404).json({ error: 'Sale not found' });
       const fySvc = new (require('./services/financialYearService.cjs'))();
       await fySvc.validateTransactionDate(row.date);
-      await new Promise((resolve, reject) => {
-        db.run(`UPDATE sales SET status = 'Voided' WHERE id = ?`, [id], (error) => {
-          if (error) reject(error);
-          else resolve(null);
-        });
-      });
+      const sale = await sq.getOne('SELECT * FROM sales WHERE id = ?', [id]);
+      if (sale) {
+        await repo.upsert('sales', { ...sale, status: 'Voided' });
+      }
       res.json({ id, success: true, status: 'Voided' });
     } catch (err) {
       console.error(`[BACKEND] Error voiding sale #${id}:`, err.message);
@@ -1202,16 +1138,15 @@ async function startServer() {
   app.get('/api/ledger', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
       const accountId = req.query.account_id;
-      let { sql, params } = addFyDateFilter('SELECT * FROM ledger_entries', [], req, 'entry_date');
-      if (accountId) {
-        sql += ' AND account_id = ?';
-        params.push(accountId);
+      let rows = await sq.getAll(`SELECT * FROM ledger_entries`, []);
+      if (req.fyStartDate && req.fyEndDate) {
+        rows = rows.filter(e => e.entry_date >= req.fyStartDate && e.entry_date <= req.fyEndDate);
       }
-      sql += ' ORDER BY entry_date DESC, created_at DESC';
-      db.all(sql, params, (err, rows) => {
-        if (err) { console.error('[Finance] getLedger error:', err); return res.status(500).json({ error: 'Failed to fetch ledger' }); }
-        res.json(rows || []);
-      });
+      if (accountId) {
+        rows = rows.filter(e => e.account_id === accountId);
+      }
+      rows.sort((a, b) => String(b.entry_date || '').localeCompare(String(a.entry_date || '')));
+      res.json(rows || []);
     } catch (err) {
       console.error('[Finance] getLedger error:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Failed to fetch ledger' });
@@ -1248,12 +1183,12 @@ async function startServer() {
   // Expenses
   app.get('/api/expenses', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      let { sql, params } = addFyDateFilter('SELECT * FROM expenses', [], req, 'expense_date');
-      sql += ' ORDER BY expense_date DESC';
-      db.all(sql, params, (err, rows) => {
-        if (err) { console.error('[Finance] getExpenses error:', err); return res.status(500).json({ error: 'Failed to fetch expenses' }); }
-        res.json(rows || []);
-      });
+      let rows = await sq.getAll(`SELECT * FROM expenses`, []);
+      if (req.fyStartDate && req.fyEndDate) {
+        rows = rows.filter(e => e.expense_date >= req.fyStartDate && e.expense_date <= req.fyEndDate);
+      }
+      rows.sort((a, b) => String(b.expense_date || '').localeCompare(String(a.expense_date || '')));
+      res.json(rows || []);
     } catch (err) {
       console.error('[Finance] getExpenses error:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Failed to fetch expenses' });
@@ -1295,12 +1230,12 @@ async function startServer() {
   // Income
   app.get('/api/income', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      let { sql, params } = addFyDateFilter('SELECT * FROM income WHERE', [], req, 'income_date');
-      sql += ' ORDER BY income_date DESC';
-      db.all(sql, params, (err, rows) => {
-        if (err) { console.error('[Finance] getIncome error:', err); return res.status(500).json({ error: 'Failed to fetch income' }); }
-        res.json(rows || []);
-      });
+      let rows = await sq.getAll(`SELECT * FROM income`, []);
+      if (req.fyStartDate && req.fyEndDate) {
+        rows = rows.filter(e => e.income_date >= req.fyStartDate && e.income_date <= req.fyEndDate);
+      }
+      rows.sort((a, b) => String(b.income_date || '').localeCompare(String(a.income_date || '')));
+      res.json(rows || []);
     } catch (err) {
       console.error('[Finance] getIncome error:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Failed to fetch income' });
@@ -1378,7 +1313,7 @@ async function startServer() {
       const userId = req.user?.id || req.headers['x-user-id'] || '';
       if (!userId) return res.status(200).json({ value: null });
       // Try the local SQLite preference store first, then fallback to no value
-      const row = await db.get(
+      const row = await sq.getOne(
         `SELECT pref_value FROM user_preferences WHERE id = ?`,
         [`${userId}:${req.params.key}`]
       );
@@ -1395,12 +1330,12 @@ async function startServer() {
       const { value } = req.body || {};
       if (!userId) return res.status(400).json({ error: 'User ID required' });
       const prefId = `${userId}:${req.params.key}`;
-      await db.run(
-        `INSERT INTO user_preferences (id, user_id, pref_key, pref_value, created_at, updated_at)
-         VALUES (?, ? , ?, ?, datetime('now'), datetime('now'))
-         ON CONFLICT(id) DO UPDATE SET pref_value = excluded.pref_value, updated_at = datetime('now')`,
-        [prefId, userId, req.params.key, value || '']
-      );
+      await repo.upsert('user_preferences', {
+        id: prefId,
+        user_id: userId,
+        pref_key: req.params.key,
+        pref_value: value || ''
+      });
       res.json({ success: true });
     } catch (err) {
       console.error('[UserPrefs] Save failed:', err);
@@ -1512,15 +1447,11 @@ async function startServer() {
   // Transfers
   app.get('/api/transfers', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
-      let sql = 'SELECT * FROM transfers';
-      const params = [];
-      const filtered = addFyDateFilter(sql, params, req, 'transfer_date');
-      const rows = await new Promise((resolve, reject) => {
-        db.all(filtered.sql, filtered.params, (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows || []);
-        });
-      });
+      let rows = await sq.getAll(`SELECT * FROM transfers`, []);
+      if (req.fyStartDate && req.fyEndDate) {
+        rows = rows.filter(t => t.transfer_date >= req.fyStartDate && t.transfer_date <= req.fyEndDate);
+      }
+      rows.sort((a, b) => String(b.transfer_date || '').localeCompare(String(a.transfer_date || '')));
       res.json(rows);
     } catch (err) {
       console.error('[Finance] getTransfers error:', err?.message || err);
@@ -1542,7 +1473,7 @@ async function startServer() {
   // --- Banking Endpoints ---
   app.get('/api/bank-accounts', requireRole('Admin', 'Accountant', 'Manager'), async (req, res) => {
     try {
-      const rows = await banking.getAccounts();
+      const rows = await sq.getAll(`SELECT * FROM bank_accounts`, []);
       res.json(rows);
     } catch (err) {
       console.error('[Banking] getAccounts error:', err?.message || err);
@@ -1590,7 +1521,13 @@ async function startServer() {
         startDate: req.fyStartDate || req.query.start_date,
         endDate: req.query.end_date
       };
-      const rows = await banking.getTransactions(filters);
+      let rows = await sq.getAll(`SELECT * FROM bank_transactions`, []);
+      if (filters.accountId) rows = rows.filter(r => r.account_id === filters.accountId);
+      if (filters.type) rows = rows.filter(r => String(r.type || '').toLowerCase() === String(filters.type).toLowerCase());
+      if (filters.status) rows = rows.filter(r => String(r.status || '').toLowerCase() === String(filters.status).toLowerCase());
+      if (filters.startDate) rows = rows.filter(r => r.date >= filters.startDate);
+      if (filters.endDate) rows = rows.filter(r => r.date <= filters.endDate);
+      rows.sort((a, b) => String(b.date || b.created_at || '').localeCompare(String(a.date || a.created_at || '')));
       res.json(rows);
     } catch (err) {
       console.error('[Banking] getTransactions error:', err?.message || err);
@@ -1758,7 +1695,7 @@ async function startServer() {
       const filtered = addFyDateFilter(sql, params, req, 'created_at');
       sql = filtered.sql + ' ORDER BY created_at DESC';
       const rows = await new Promise((resolve, reject) => {
-        db.all(sql, filtered.params, (err, rows) => {
+        sq.getAll(sql, filtered.params, (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -1909,16 +1846,16 @@ async function startServer() {
   app.get('/api/invoices', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), injectFinancialYear, async (req, res) => {
     try {
       const status = req.query.status;
-      let { sql, params } = addFyDateFilter('SELECT i.*, c.name as customer_name FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id', [], req, 'i.created_at');
-      if (status) {
-        sql += ` AND LOWER(i.status) = ?`;
-        params.push(status.toLowerCase());
+      let invoices = await sq.getAll(`SELECT * FROM invoices`, []);
+      if (req.fyStartDate && req.fyEndDate) {
+        invoices = invoices.filter(i => i.created_at >= req.fyStartDate && i.created_at <= req.fyEndDate);
       }
-      sql += ` ORDER BY i.created_at DESC LIMIT 500`;
-      db.all(sql, params, (err, rows) => {
-        if (err) { console.error('[Invoices] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve invoices' }); }
-        res.json(rows || []);
-      });
+      if (status) {
+        const lowerStatus = String(status).toLowerCase();
+        invoices = invoices.filter(i => String(i.status || '').toLowerCase() === lowerStatus);
+      }
+      invoices.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+      res.json(invoices.slice(0, 500) || []);
     } catch (err) {
       console.error('[Invoices] GET error:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Failed to fetch invoices' });
@@ -1930,20 +1867,34 @@ async function startServer() {
       await validateFyDate('invoice_date', req.body);
       const { body } = req;
       const id = body.id || randomUUID();
-      db.run(
-        `INSERT INTO invoices (id, customer_id, customer_name, subtotal, total_amount, currency, status, payment_method, due_date, invoice_number, other_charges, line_items_json, notes, document_title, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, body.customer_id || null, body.customer_name || null, body.subtotal || 0,
-         body.total_amount || 0, body.currency || 'MWK', body.status || 'unpaid',
-         body.payment_method || null, body.due_date || null, body.invoice_number || null,
-         body.other_charges || 0, JSON.stringify(body.line_items || []), body.notes || null, body.document_title || null,
-         req.user?.id || null],
-         function (err) {
-           if (err) { return handleInsertConstraintError(res, err, 'Create invoice'); }
-           res.status(201).json({ id, ...body });
-           portalLifecycleService.emitEntityChange('portal', { customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status || 'unpaid', invoiceNumber: body.invoice_number });
-         }
-      );
+      const result = await cloudSyncStore.applyOp({
+        operationId: `inv-${id}-${Date.now()}`,
+        table: 'invoices',
+        recordId: id,
+        operation: 'upsert',
+        payload: {
+          id,
+          customer_id: body.customer_id || null,
+          customer_name: body.customer_name || null,
+          subtotal: body.subtotal || 0,
+          total_amount: body.total_amount || 0,
+          currency: body.currency || 'MWK',
+          status: body.status || 'unpaid',
+          payment_method: body.payment_method || null,
+          due_date: body.due_date || null,
+          invoice_number: body.invoice_number || null,
+          other_charges: body.other_charges || 0,
+          line_items: body.line_items || [],
+          notes: body.notes || null,
+          document_title: body.document_title || null,
+          created_by: req.user?.id || null,
+        },
+      });
+      if (result && result.id) {
+        portalLifecycleService.emitEntityChange('portal', { customerId: body.customer_id, docType: 'invoice', docId: id, status: body.status || 'unpaid', invoiceNumber: body.invoice_number });
+        return res.status(201).json({ id: result.id, ...body });
+      }
+      res.status(500).json({ error: 'Failed to create invoice' });
     } catch (err) {
       console.error('[Invoices] POST error:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Failed to create invoice' });
@@ -1965,9 +1916,9 @@ async function startServer() {
       }
       if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
       params.push(id);
-db.run(`UPDATE invoices SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, params, function (err) {
+      sq.run(`UPDATE invoices SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, params, function (err, result) {
          if (err) { console.error('[Invoices] PUT error:', err); return res.status(500).json({ error: 'Failed to update invoice' }); }
-         if (this.changes === 0) return res.status(404).json({ error: 'Invoice not found' });
+         if (!result || result.changes === 0) return res.status(404).json({ error: 'Invoice not found' });
          const updatedFields = {};
          for (let i = 0; i < allowed.length; i++) {
            if (body[allowed[i]] !== undefined) updatedFields[allowed[i]] = body[allowed[i]];
@@ -1985,10 +1936,10 @@ db.run(`UPDATE invoices SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP
   app.delete('/api/invoices/:id', requireRole('Admin', 'Accountant', 'Manager'), injectFinancialYear, requireFyNotClosed, async (req, res) => {
     try {
       const { id } = req.params;
-      db.get('SELECT status, customer_id, invoice_number FROM invoices WHERE id = ?', [id], (err, row) => {
+      sq.getOne('SELECT status, customer_id, invoice_number FROM invoices WHERE id = ?', [id], (err, row) => {
         if (err) { console.error('[Invoices] DELETE error:', err); return res.status(500).json({ error: 'Failed to void invoice' }); }
         if (!row) return res.status(404).json({ error: 'Invoice not found' });
-db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['Voided', id], (err) => {
+sq.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['Voided', id], (err) => {
            if (err) { console.error('[Invoices] DELETE error:', err); return res.status(500).json({ error: 'Failed to void invoice' }); }
            portalLifecycleService.emitEntityChange('portal', { customerId: row.customer_id, docType: 'invoice', docId: id, status: 'Voided', invoiceNumber: row.invoice_number });
            portalLifecycleService.emitEntityChange('admin', { customerId: row.customer_id, docType: 'invoice', docId: id, status: 'Voided', invoiceNumber: row.invoice_number });
@@ -2012,7 +1963,7 @@ db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
     try {
       let { sql, params } = addFyDateFilter('SELECT * FROM customer_payments', [], req, 'date');
       sql += ' ORDER BY date DESC LIMIT 500';
-      db.all(sql, params, (err, rows) => {
+      sq.getAll(sql, params, (err, rows) => {
         if (err) { console.error('[CustomerPayments] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve payments' }); }
         res.json(rows || []);
       });
@@ -2027,7 +1978,7 @@ db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
       await validateFyDate('date', req.body);
       const { body } = req;
       const id = body.id || randomUUID();
-      db.run(
+      sq.run(
         `INSERT INTO customer_payments (id, date, customer_id, customer_name, amount, payment_method, account_id, reference, notes, status, created_by)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [id, body.date || new Date().toISOString(), body.customer_id || body.customerId || null,
@@ -2064,7 +2015,7 @@ db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id 
       
       // Get payment details
       const payment = await new Promise((resolve, reject) => {
-        db.get('SELECT * FROM customer_payments WHERE id = ?', [paymentId], (err, row) => {
+        sq.getOne('SELECT * FROM customer_payments WHERE id = ?', [paymentId], (err, row) => {
           if (err) reject(err);
           else resolve(row);
         });
@@ -2188,7 +2139,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
     try {
       let { sql, params } = addFyDateFilter(`SELECT po.*, s.name as supplier_name FROM purchase_orders po LEFT JOIN suppliers s ON po.supplier_id = s.id`, [], req, 'po.order_date');
       sql += ' ORDER BY po.created_at DESC';
-      db.all(sql, params, (err, rows) => {
+      sq.getAll(sql, params, (err, rows) => {
         if (err) { console.error('[Procurement] getPurchases error:', err); return res.status(500).json({ error: 'Failed to fetch purchases' }); }
         res.json(rows || []);
       });
@@ -2237,7 +2188,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
     try {
       let { sql, params } = addFyDateFilter(`SELECT gr.*, po.supplier_id, s.name as supplier_name FROM goods_receipts gr LEFT JOIN purchase_orders po ON gr.purchase_order_id = po.id LEFT JOIN suppliers s ON po.supplier_id = s.id`, [], req, 'gr.received_date');
       sql += ' ORDER BY gr.created_at DESC';
-      db.all(sql, params, (err, rows) => {
+      sq.getAll(sql, params, (err, rows) => {
         if (err) { console.error('[Procurement] getGRNs error:', err); return res.status(500).json({ error: 'Failed to fetch goods receipts' }); }
         res.json(rows || []);
       });
@@ -2258,41 +2209,17 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
     }
   });
 
-  // Helper: ensure production tables exist
-  const createProductionTables = () => new Promise((resolve, reject) => {
-    db.serialize(() => {
-      db.run(`CREATE TABLE IF NOT EXISTS work_centers (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        hourly_rate REAL DEFAULT 0,
-        capacity_per_day INTEGER DEFAULT 8,
-        status TEXT DEFAULT 'Active',
-        location TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run(`CREATE TABLE IF NOT EXISTS production_resources (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        work_center_id TEXT NOT NULL,
-        status TEXT DEFAULT 'Active',
-        resource_type TEXT,
-        description TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (work_center_id) REFERENCES work_centers(id) ON DELETE CASCADE
-      )`, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-  });
+  // Helper: production tables are managed via Supabase migrations
+  const createProductionTables = async () => {
+    console.log('[Production] Tables are managed via Supabase migrations');
+  };
 
   // Production fallback endpoint: return a basic set of work centers/resources
   // Production: fetch real work centers from database
   app.get('/api/production/work-centers', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
       const rows = await new Promise((resolve, reject) => {
-        db.all('SELECT id, name, description, hourly_rate as hourlyRate, capacity_per_day as capacityPerDay, status FROM work_centers WHERE status = ? ORDER BY name', ['Active'], (err, rows) => {
+        sq.getAll('SELECT id, name, description, hourly_rate as hourlyRate, capacity_per_day as capacityPerDay, status FROM work_centers WHERE status = ? ORDER BY name', ['Active'], (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -2312,7 +2239,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
   app.get('/api/production/resources', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), async (req, res) => {
     try {
       const rows = await new Promise((resolve, reject) => {
-        db.all('SELECT id, name, work_center_id as workCenterId, status FROM production_resources WHERE status = ? ORDER BY name', ['Active'], (err, rows) => {
+        sq.getAll('SELECT id, name, work_center_id as workCenterId, status FROM production_resources WHERE status = ? ORDER BY name', ['Active'], (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -2358,7 +2285,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'date');
       const rows = await new Promise((resolve, reject) => {
-        db.all(filtered.sql, filtered.params, (err, rows) => {
+        sq.getAll(filtered.sql, filtered.params, (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -2419,7 +2346,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'created_at');
       const rows = await new Promise((resolve, reject) => {
-        db.all(filtered.sql, filtered.params, (err, rows) => {
+        sq.getAll(filtered.sql, filtered.params, (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -2476,7 +2403,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       const row = await hr.updateEmployee(req.params.id, req.body);
       if (req.body.salary !== undefined && Number(req.body.salary) !== Number(existing.salary)) {
         const { randomUUID } = require('crypto');
-        db.run(
+        sq.run(
           `INSERT INTO audit_logs (id, timestamp, correlation_id, user_id, user_role, action, entity_type, entity_id, details, old_value, new_value, delta, integrity_hash)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
@@ -2514,7 +2441,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'period_start');
       const rows = await new Promise((resolve, reject) => {
-        db.all(filtered.sql, filtered.params, (err, rows) => {
+        sq.getAll(filtered.sql, filtered.params, (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -2543,7 +2470,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       const params = [];
       const filtered = addFyDateFilter(sql, params, req, 'created_at');
       const rows = await new Promise((resolve, reject) => {
-        db.all(filtered.sql, filtered.params, (err, rows) => {
+        sq.getAll(filtered.sql, filtered.params, (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -2851,7 +2778,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
   app.get('/api/sales-exchanges', checkPermission('view_exchanges'), injectFinancialYear, (req, res) => {
       let { sql, params } = addFyDateFilter('SELECT * FROM sales_exchanges', [], req, 'exchange_date');
     sql += ' ORDER BY exchange_date DESC';
-    db.all(sql, params, (err, rows) => {
+    sq.getAll(sql, params, (err, rows) => {
       if (err) return sendError(res, 500, err.message, 'FETCH_EXCHANGES_FAILED');
       res.json(rows);
     });
@@ -2861,7 +2788,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
     try {
       const exchangeId = req.params.id;
       const exchange = await new Promise((resolve, reject) => {
-        db.get('SELECT * FROM sales_exchanges WHERE id = ?', [exchangeId], (err, row) => {
+        sq.getOne('SELECT * FROM sales_exchanges WHERE id = ?', [exchangeId], (err, row) => {
           if (err) return reject(err);
           resolve(row);
         });
@@ -2870,19 +2797,19 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
 
       const [items, reprints, approvals] = await Promise.all([
         new Promise((resolve, reject) => {
-          db.all('SELECT * FROM sales_exchange_items WHERE exchange_id = ?', [exchangeId], (err, rows) => {
+          sq.getAll('SELECT * FROM sales_exchange_items WHERE exchange_id = ?', [exchangeId], (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
           });
         }),
         new Promise((resolve, reject) => {
-          db.all('SELECT * FROM reprint_jobs WHERE exchange_id = ?', [exchangeId], (err, rows) => {
+          sq.getAll('SELECT * FROM reprint_jobs WHERE exchange_id = ?', [exchangeId], (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
           });
         }),
         new Promise((resolve, reject) => {
-          db.all('SELECT * FROM sales_exchange_approvals WHERE exchange_id = ?', [exchangeId], (err, rows) => {
+          sq.getAll('SELECT * FROM sales_exchange_approvals WHERE exchange_id = ?', [exchangeId], (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
           });
@@ -2912,53 +2839,31 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       }
 
       const exchange_number = `SE-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
+      const exchangeId = `SE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      const exchangeId = await new Promise((resolve, reject) => {
-        db.run("BEGIN TRANSACTION", (err) => {
-          if (err) return reject(err);
-
-          db.run(
-            `INSERT INTO sales_exchanges (exchange_number, invoice_id, customer_id, customer_name, reason, remarks, created_by) 
-              VALUES (?, ?, ?, ?, ?, ?, ? )`,
-            [exchange_number, invoice_id, customer_id, customer_name, reason, remarks, req.userId],
-            function(err) {
-              if (err) {
-                db.run("ROLLBACK");
-                return reject(err);
-              }
-              const newId = this.lastID;
-              const itemStmt = db.prepare(
-                `INSERT INTO sales_exchange_items (exchange_id, product_id, product_name, qty_returned, qty_replaced, price_difference, item_condition) 
-                  VALUES (?, ?, ?, ?, ?, ?, ? )`
-              );
-
-              let itemError = null;
-              for (const item of items) {
-                itemStmt.run([
-                  newId, item.product_id, item.product_name, item.qty_returned, 
-                  item.qty_replaced, item.price_difference || 0, item.condition
-                ], (err) => {
-                  if (err) itemError = err;
-                });
-              }
-
-              itemStmt.finalize((err) => {
-                if (err || itemError) {
-                  db.run("ROLLBACK");
-                  return reject(err || itemError);
-                }
-                db.run("COMMIT", (commitErr) => {
-                  if (commitErr) {
-                    db.run("ROLLBACK");
-                    return reject(commitErr);
-                  }
-                  resolve(newId);
-                });
-              });
-            }
-          );
-        });
+      await repo.upsert('sales_exchanges', {
+        id: exchangeId,
+        exchange_number,
+        invoice_id: invoice_id,
+        customer_id: customer_id,
+        customer_name: customer_name,
+        reason,
+        remarks: remarks || '',
+        created_by: req.userId,
+        status: 'pending'
       });
+
+      for (const item of items) {
+        await repo.upsert('sales_exchange_items', {
+          exchange_id: exchangeId,
+          product_id: item.product_id,
+          product_name: item.product_name,
+          qty_returned: item.qty_returned,
+          qty_replaced: item.qty_replaced,
+          price_difference: item.price_difference || 0,
+          item_condition: item.condition
+        });
+      }
 
       await documentService.logAudit(req.userId, 'CREATE', 'sales_exchange', exchangeId, { exchange_number });
 
@@ -2971,46 +2876,25 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       const exchangeId = req.params.id;
       const { comments } = req.body;
 
-      await new Promise((resolve, reject) => {
-        db.run(
-          "UPDATE sales_exchanges SET status = 'approved' WHERE id = ?",
-          [exchangeId],
-          function(err) {
-            if (err) return reject(err);
-            resolve();
-          }
-        );
-      });
+      const exchange = await sq.getOne('SELECT * FROM sales_exchanges WHERE id = ?', [exchangeId]);
+      if (exchange) {
+        await repo.upsert('sales_exchanges', { ...exchange, status: 'approved' });
+      }
 
-      await new Promise((resolve, reject) => {
-        db.run(
-          "INSERT INTO sales_exchange_approvals (exchange_id, approved_by, comments, status) VALUES (?, ?, ?, ?)",
-          [exchangeId, req.userId, comments, 'approved'],
-          (err) => {
-            if (err) return reject(err);
-            resolve();
-          }
-        );
+      await repo.upsert('sales_exchange_approvals', {
+        exchange_id: exchangeId,
+        approved_by: req.userId,
+        comments: comments || '',
+        status: 'approved'
       });
 
       // Auto-generate reprint job
-      const exchangeRow = await new Promise((resolve, reject) => {
-        db.get("SELECT * FROM sales_exchanges WHERE id = ?", [exchangeId], (err, row) => {
-          if (err) return reject(err);
-          resolve(row);
-        });
-      });
+      const exchangeRow = await sq.getOne("SELECT * FROM sales_exchanges WHERE id = ?", [exchangeId]);
 
       if (exchangeRow) {
-        await new Promise((resolve, reject) => {
-          db.run(
-            "INSERT INTO reprint_jobs (exchange_id, job_description) VALUES (?, ?)",
-            [exchangeId, `Reprint for Exchange ${exchangeRow.exchange_number}: ${exchangeRow.reason}`],
-            (err) => {
-              if (err) return reject(err);
-              resolve();
-            }
-          );
+        await repo.upsert('reprint_jobs', {
+          exchange_id: exchangeId,
+          job_description: `Reprint for Exchange ${exchangeRow.exchange_number}: ${exchangeRow.reason}`
         });
       }
 
@@ -3026,7 +2910,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
   app.get('/api/sales-orders', checkPermission('view_sales_orders'), injectFinancialYear, (req, res) => {
       let { sql, params } = addFyDateFilter('SELECT * FROM sales_orders', [], req, 'orderDate');
     sql += ' ORDER BY orderDate DESC';
-    db.all(sql, params, (err, rows) => {
+    sq.getAll(sql, params, (err, rows) => {
       if (err) return sendError(res, 500, err.message, 'FETCH_SALES_ORDERS_FAILED');
       res.json(rows);
     });
@@ -3034,7 +2918,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
 
   app.get('/api/sales-orders/:id', checkPermission('view_sales_orders'), (req, res) => {
     const id = req.params.id;
-    db.get('SELECT * FROM sales_orders WHERE id = ?', [id], (err, row) => {
+    sq.getOne('SELECT * FROM sales_orders WHERE id = ?', [id], (err, row) => {
       if (err) return sendError(res, 500, err.message, 'FETCH_SALES_ORDER_FAILED');
       if (!row) return sendError(res, 404, 'Sales order not found', 'NOT_FOUND');
       res.json(row);
@@ -3058,7 +2942,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
 
       const now = new Date().toISOString();
       await new Promise((resolve, reject) => {
-        db.run(
+        sq.run(
           `INSERT INTO sales_orders (id, quotation_id, customer_id, orderDate, deliveryDate, status, items, subtotal, discounts, tax, other_charges, total, notes, created_by, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
           [o.id, o.quotationId || null, o.customerId || null, o.orderDate || now, o.deliveryDate || null, o.status || 'Draft', JSON.stringify(o.items), o.subtotal || 0, o.discounts || 0, o.tax || 0, o.otherCharges || 0, o.total || 0, o.notes || '', req.userId, now],
@@ -3083,7 +2967,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       const o = req.body || {};
       await validateFyDate('orderDate', o);
       await new Promise((resolve, reject) => {
-        db.run(
+        sq.run(
           `UPDATE sales_orders SET quotation_id = ?, customer_id = ?, orderDate = ?, deliveryDate = ?, status = ?, items = ?, subtotal = ?, discounts = ?, tax = ?, other_charges = ?, total = ?, notes = ?, updated_by = ?, updated_at = ? WHERE id = ?`,
           [o.quotationId || null, o.customerId || null, o.orderDate || null, o.deliveryDate || null, o.status || 'Draft', JSON.stringify(o.items || []), o.subtotal || 0, o.discounts || 0, o.tax || 0, o.otherCharges || 0, o.total || 0, o.notes || '', req.userId, new Date().toISOString(), id],
           function(err) {
@@ -3104,7 +2988,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
     try {
       const id = req.params.id;
       await new Promise((resolve, reject) => {
-        db.run('DELETE FROM sales_orders WHERE id = ?', [id], function(err) {
+        sq.run('DELETE FROM sales_orders WHERE id = ?', [id], function(err) {
           if (err) reject(err);
           else resolve();
         });
@@ -3116,7 +3000,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
   });
 
   app.get('/api/reprint-jobs', checkPermission('view_reprints'), (req, res) => {
-    db.all('SELECT * FROM reprint_jobs ORDER BY created_at DESC', [], (err, rows) => {
+    sq.getAll('SELECT * FROM reprint_jobs ORDER BY created_at DESC', [], (err, rows) => {
       if (err) return sendError(res, 500, err.message, 'FETCH_REPRINTS_FAILED');
       res.json(rows);
     });
@@ -3126,7 +3010,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
     const { status, paper_used, ink_used, finishing_cost, total_reprint_cost } = req.body;
     const completed_at = status === 'completed' ? new Date().toISOString() : null;
 
-    db.run(
+    sq.run(
       `UPDATE reprint_jobs 
        SET status = ?, paper_used = ?, ink_used = ?, finishing_cost = ?, total_reprint_cost = ?, completed_at = ?
        WHERE id = ?`,
@@ -3148,7 +3032,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
   });
 
   app.get('/api/documents/:id/audit', checkPermission('view_audit'), (req, res) => {
-    db.all("SELECT * FROM audit_logs WHERE entity_id = ? ORDER BY timestamp DESC", [req.params.id], (err, rows) => {
+    sq.getAll("SELECT * FROM audit_logs WHERE entity_id = ? ORDER BY timestamp DESC", [req.params.id], (err, rows) => {
       if (err) return sendError(res, 500, err.message, 'AUDIT_FETCH_FAILED');
       res.json(rows);
     });
@@ -3234,22 +3118,26 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
 
   // --- End of Document Engine Endpoints ---
   app.get('/api/classes', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), (req, res) => {
-    db.all("SELECT * FROM classes ORDER BY name", [], (err, rows) => {
+    sq.getAll("SELECT * FROM classes ORDER BY name", [], (err, rows) => {
       if (err) { console.error('[Classes] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve classes' }); }
       res.json(rows);
     });
   });
 
-  app.post('/api/classes', requireRole('Admin', 'Accountant', 'Manager'), validateBody(classSchemas.create), (req, res) => {
-    const { name } = req.body;
-    db.run("INSERT INTO classes (name) VALUES (?)", [name], function(err) {
-      if (err) { console.error('[Classes] POST error:', err); return res.status(500).json({ error: 'Failed to create class' }); }
-      res.json({ id: this.lastID, name });
-    });
+  app.post('/api/classes', requireRole('Admin', 'Accountant', 'Manager'), validateBody(classSchemas.create), async (req, res) => {
+    try {
+      const { name } = req.body;
+      const id = `class-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      await repo.upsert('classes', { id, name });
+      res.json({ id, name });
+    } catch (err) {
+      console.error('[Classes] POST error:', err?.message || err);
+      res.status(500).json({ error: 'Failed to create class' });
+    }
   });
 
   app.delete('/api/classes/:id', requireRole('Admin', 'Accountant', 'Manager'), (req, res) => {
-    db.run("DELETE FROM classes WHERE id = ?", [req.params.id], (err) => {
+    sq.run("DELETE FROM classes WHERE id = ?", [req.params.id], (err) => {
       if (err) { console.error('[Classes] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete class' }); }
       res.json({ success: true });
     });
@@ -3257,22 +3145,26 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
 
   // --- Subjects Endpoints ---
   app.get('/api/subjects', (req, res) => {
-    db.all("SELECT * FROM subjects ORDER BY name", [], (err, rows) => {
+    sq.getAll("SELECT * FROM subjects ORDER BY name", [], (err, rows) => {
       if (err) { console.error('[Subjects] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve subjects' }); }
       res.json(rows);
     });
   });
 
-  app.post('/api/subjects', requireRole('Admin', 'Accountant', 'Manager'), validateBody(subjectSchemas.create), (req, res) => {
-    const { name, code } = req.body;
-    db.run("INSERT INTO subjects (name, code) VALUES (?, ?)", [name, code], function(err) {
-      if (err) { console.error('[Subjects] POST error:', err); return res.status(500).json({ error: 'Failed to create subject' }); }
-      res.json({ id: this.lastID, name, code });
-    });
+  app.post('/api/subjects', requireRole('Admin', 'Accountant', 'Manager'), validateBody(subjectSchemas.create), async (req, res) => {
+    try {
+      const { name, code } = req.body;
+      const id = `subject-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      await repo.upsert('subjects', { id, name, code });
+      res.json({ id, name, code });
+    } catch (err) {
+      console.error('[Subjects] POST error:', err?.message || err);
+      res.status(500).json({ error: 'Failed to create subject' });
+    }
   });
 
   app.delete('/api/subjects/:id', requireRole('Admin', 'Accountant', 'Manager'), (req, res) => {
-    db.run("DELETE FROM subjects WHERE id = ?", [req.params.id], (err) => {
+    sq.run("DELETE FROM subjects WHERE id = ?", [req.params.id], (err) => {
       if (err) { console.error('[Subjects] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete subject' }); }
       res.json({ success: true });
     });
@@ -3280,7 +3172,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
 
   // 1. GET Schools
   app.get('/api/schools', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), checkPermission('view_schools'), (req, res) => {
-    db.all("SELECT * FROM schools", [], (err, rows) => {
+    sq.getAll("SELECT * FROM schools", [], (err, rows) => {
     if (err) { console.error('[Schools] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve schools' }); }
     res.json(rows);
   });
@@ -3292,17 +3184,12 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       const includeDeleted = ['1', 'true', 'yes'].includes(
         String(req.query?.include_deleted ?? req.query?.includeDeleted ?? '').trim().toLowerCase()
       );
-      let sql = 'SELECT * FROM inventory';
-      const params = [];
+      let rows = await sq.getAll(`SELECT * FROM inventory`, []);
       if (!includeDeleted) {
-        sql += ' AND (status IS NULL OR status != ?)';
-        params.push('Deleted');
+        rows = rows.filter(r => !r.status || String(r.status).toLowerCase() !== 'deleted');
       }
-      sql += ' ORDER BY name ASC';
-      db.all(sql, params, (err, rows) => {
-        if (err) { console.error('[Inventory] GET error:', err); return res.status(500).json({ error: 'Failed to retrieve inventory' }); }
-        res.json(rows);
-      });
+      rows.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+      res.json(rows);
     } catch (err) {
       console.error('[Inventory] GET error:', err?.message || err);
       res.status(500).json({ error: 'Failed to retrieve inventory' });
@@ -3344,7 +3231,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       // Business Uniqueness Check: SKU must be unique
       if (sku) {
         const existing = await new Promise((resolve, reject) => {
-          db.get(
+          sq.getOne(
             'SELECT id FROM inventory WHERE sku = ? LIMIT 1',
             [sku],
             (err, row) => (err ? reject(err) : resolve(row))
@@ -3360,7 +3247,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       }
 
       // Perform clean INSERT
-      db.run(
+      sq.run(
         `INSERT INTO inventory (
           id, name, sku, material, type, quantity, cost_per_unit, selling_price, 
           unit, category_id, min_stock_level, max_stock_level, reorder_point, warehouse_id, 
@@ -3433,7 +3320,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       if (body.sku) {
         const skuTrimmed = String(body.sku).trim();
         const existing = await new Promise((resolve, reject) => {
-          db.get(
+          sq.getOne(
             'SELECT id FROM inventory WHERE sku = ? AND id != ? LIMIT 1',
             [skuTrimmed, id],
             (err, row) => (err ? reject(err) : resolve(row))
@@ -3452,7 +3339,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
       fields.push('last_updated = CURRENT_TIMESTAMP');
       params.push(id);
 
-      db.run(`UPDATE inventory SET ${fields.join(', ')} WHERE id = ?`, params, function (err) {
+      sq.run(`UPDATE inventory SET ${fields.join(', ')} WHERE id = ?`, params, function (err, result) {
         if (err) { 
           if (err.message && (err.message.includes('UNIQUE constraint failed') || err.message.includes('idx_inventory_sku'))) {
             return res.status(409).json({ error: `Inventory item with SKU '${body.sku}' already exists.`, code: 'SKU_ALREADY_EXISTS' });
@@ -3460,7 +3347,7 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
           console.error('[Inventory] PUT error:', err); 
           return res.status(500).json({ error: 'Failed to update inventory item' }); 
         }
-        if (this.changes === 0) return res.status(404).json({ error: 'Inventory item not found' });
+        if (!result || result.changes === 0) return res.status(404).json({ error: 'Inventory item not found' });
         res.json({ success: true, id });
       });
     } catch (err) {
@@ -3473,16 +3360,18 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
   app.delete('/api/inventory/:id', requireRole('Admin'), async (req, res) => {
     try {
       const { id } = req.params;
-      db.get('SELECT * FROM inventory WHERE id = ?', [id], (err, row) => {
-        if (err) { console.error('[Inventory] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete inventory item' }); }
-        if (!row) return res.status(404).json({ error: 'Inventory item not found' });
-        if (row.is_protected) return res.status(403).json({ error: 'Cannot delete protected item' });
-        const voidedBy = req.user?.id || req.user?.username || 'system';
-        db.run("UPDATE inventory SET status = 'Deleted', deleted_at = CURRENT_TIMESTAMP, void_reason = 'Manually deleted', voided_by = ?, updated_at = CURRENT_TIMESTAMP, last_updated = CURRENT_TIMESTAMP WHERE id = ?", [voidedBy, id], (err) => {
-          if (err) { console.error('[Inventory] DELETE error:', err); return res.status(500).json({ error: 'Failed to delete inventory item' }); }
-          res.json({ success: true, id, status: 'Deleted' });
-        });
+      const row = await sq.getOne('SELECT * FROM inventory WHERE id = ?', [id]);
+      if (!row) return res.status(404).json({ error: 'Inventory item not found' });
+      if (row.is_protected) return res.status(403).json({ error: 'Cannot delete protected item' });
+      const voidedBy = req.user?.id || req.user?.username || 'system';
+      await repo.upsert('inventory', {
+        ...row,
+        status: 'Deleted',
+        deleted_at: new Date().toISOString(),
+        void_reason: 'Manually deleted',
+        voided_by: voidedBy
       });
+      res.json({ success: true, id, status: 'Deleted' });
     } catch (err) {
       console.error('[Inventory] DELETE error:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Failed to delete inventory item' });
@@ -3490,37 +3379,26 @@ const result = await paymentAllocation.allocatePayment(payment, allocations);
   });
 
 // 11. Delete Examination Batch
-app.delete('/api/examinations/batch/:batch_id', (req, res) => {
+app.delete('/api/examinations/batch/:batch_id', async (req, res) => {
   const { batch_id } = req.params;
-  db.serialize(() => {
-    db.run("BEGIN TRANSACTION");
-    db.run("DELETE FROM examination_bom_calculations WHERE batch_id = ?", [batch_id]);
-    db.run("DELETE FROM examination_subjects WHERE batch_id = ?", [batch_id]);
-    db.run("DELETE FROM examination_classes WHERE batch_id = ?", [batch_id]);
-    db.run("DELETE FROM examinations WHERE batch_id = ?", [batch_id], (err) => {
-      if (err) {
-        console.error('[Examination] delete batch error:', err);
-        db.run("ROLLBACK");
-        return res.status(500).json({ error: 'Failed to delete batch' });
-      }
-      db.run("DELETE FROM examination_batches WHERE id = ?", [batch_id], (err) => {
-        if (err) {
-          console.error('[Examination] delete batch error:', err);
-          db.run("ROLLBACK");
-          return res.status(500).json({ error: 'Failed to delete batch' });
-        }
-        db.run("COMMIT");
-        res.json({ success: true });
-      });
-    });
-  });
+  try {
+    await sq.run("DELETE FROM examination_bom_calculations WHERE batch_id = ?", [batch_id]);
+    await sq.run("DELETE FROM examination_subjects WHERE batch_id = ?", [batch_id]);
+    await sq.run("DELETE FROM examination_classes WHERE batch_id = ?", [batch_id]);
+    await sq.run("DELETE FROM examinations WHERE batch_id = ?", [batch_id]);
+    await sq.run("DELETE FROM examination_batches WHERE id = ?", [batch_id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Examination] delete batch error:', err);
+    res.status(500).json({ error: 'Failed to delete batch' });
+  }
 });
 
 // 13. Toggle Recurring Status
 app.post('/api/examinations/batch/:batch_id/recurring', (req, res) => {
   const { batch_id } = req.params;
   const { is_recurring } = req.body;
-  db.run("UPDATE examinations SET is_recurring = ? WHERE batch_id = ?", [is_recurring ? 1 : 0, batch_id], (err) => {
+  sq.run("UPDATE examinations SET is_recurring = ? WHERE batch_id = ?", [is_recurring ? 1 : 0, batch_id], (err) => {
     if (err) { console.error('[Examination] toggle recurring error:', err); return res.status(500).json({ error: 'Failed to update recurring status' }); }
     res.json({ success: true });
   });
@@ -3529,7 +3407,7 @@ app.post('/api/examinations/batch/:batch_id/recurring', (req, res) => {
 // 12. Get Invoice Details
 app.get('/api/invoices/:id/details', (req, res) => {
   const { id } = req.params;
-  db.all(`SELECT class, SUM(candidates) as learner_count, AVG(charge_per_learner) as charge_per_learner, SUM(selling_price) as total
+  sq.getAll(`SELECT class, SUM(candidates) as learner_count, AVG(charge_per_learner) as charge_per_learner, SUM(selling_price) as total
           FROM examinations 
           WHERE invoice_id = ?
           GROUP BY class`, [id], (err, rows) => {
@@ -3539,73 +3417,71 @@ app.get('/api/invoices/:id/details', (req, res) => {
 });
 
   // 10. Get Examination Stats
-  app.get('/api/stats/examination', checkPermission('view_stats'), injectFinancialYear, (req, res) => {
-    const fyStart = req.fyStartDate;
-    const fyEnd = req.fyEndDate;
-    const stats = {};
-    
-    db.get("SELECT COUNT(*) as count FROM examinations WHERE status = 'pending' AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
-      if (err) { console.error('[Stats] pending count error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
-      stats.pending_jobs = row?.count || 0;
+  app.get('/api/stats/examination', checkPermission('view_stats'), injectFinancialYear, async (req, res) => {
+    try {
+      const fyStart = req.fyStartDate;
+      const fyEnd = req.fyEndDate;
+      const stats = {};
       
-      db.get("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE LOWER(status) = 'paid' AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
-        if (err) { console.error('[Stats] revenue error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
-        stats.total_revenue = row?.total || 0;
-        
-        db.get("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE LOWER(status) = 'unpaid' AND date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
-          if (err) { console.error('[Stats] outstanding error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
-          stats.outstanding_amount = row?.total || 0;
-          
-          db.get("SELECT SUM(actual_waste_sheets) as waste FROM examinations WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
-            if (err) { console.error('[Stats] waste error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
-            stats.total_waste = row?.waste || 0;
-            
-            db.get("SELECT SUM(total_sheets_used) as total, SUM(internal_cost) as cost FROM examinations WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)", [fyStart, fyEnd], (err, row) => {
-              if (err) { console.error('[Stats] sheets/cost error:', err); return res.status(500).json({ error: 'Failed to load stats' }); }
-              stats.total_sheets = row?.total || 0;
-              stats.total_cost = row?.cost || 0;
-              res.json(stats);
-            });
-          });
-        });
-      });
-    });
+      const examinations = await sq.getAll(`SELECT * FROM examinations`, []);
+      const invoices = await sq.getAll(`SELECT * FROM invoices`, []);
+      
+      const pendingExams = examinations.filter(e => e.status === 'pending' && e.created_at >= fyStart && e.created_at <= fyEnd);
+      stats.pending_jobs = pendingExams.length;
+      
+      const paidInvoices = invoices.filter(i => String(i.status || '').toLowerCase() === 'paid' && i.created_at >= fyStart && i.created_at <= fyEnd);
+      stats.total_revenue = paidInvoices.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
+      
+      const unpaidInvoices = invoices.filter(i => String(i.status || '').toLowerCase() === 'unpaid' && i.created_at >= fyStart && i.created_at <= fyEnd);
+      stats.outstanding_amount = unpaidInvoices.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
+      
+      const wasteExams = examinations.filter(e => e.created_at >= fyStart && e.created_at <= fyEnd);
+      stats.total_waste = wasteExams.reduce((sum, e) => sum + (Number(e.actual_waste_sheets) || 0), 0);
+      
+      const sheetsExams = examinations.filter(e => e.created_at >= fyStart && e.created_at <= fyEnd);
+      stats.total_sheets = sheetsExams.reduce((sum, e) => sum + (Number(e.total_sheets_used) || 0), 0);
+      stats.total_cost = sheetsExams.reduce((sum, e) => sum + (Number(e.internal_cost) || 0), 0);
+      
+      res.json(stats);
+    } catch (err) {
+      console.error('[Stats] examination stats error:', err?.message || err);
+      res.status(500).json({ error: 'Failed to load stats' });
+    }
   });
 
   // 14. Get Monthly Examination Data for Dashboard
-  app.get('/api/stats/monthly-data', checkPermission('view_stats'), injectFinancialYear, (req, res) => {
-    const fyStart = req.fyStartDate;
-    const fyEnd = req.fyEndDate;
-    
-    const query = `
-      SELECT 
-        m.month,
-        COALESCE(i.revenue, 0) as revenue,
-        COALESCE(e.month_cost, 0) as cost
-      FROM (
-        SELECT '01' as month UNION SELECT '02' UNION SELECT '03' UNION SELECT '04' 
-        UNION SELECT '05' UNION SELECT '06' UNION SELECT '07' UNION SELECT '08' 
-        UNION SELECT '09' UNION SELECT '10' UNION SELECT '11' UNION SELECT '12'
-      ) m
-      LEFT JOIN (
-        SELECT strftime('%m', created_at) as month, SUM(total_amount) as revenue
-        FROM invoices 
-        WHERE date(created_at) >= date(?) AND date(created_at) <= date(?) AND status != 'cancelled'
-        GROUP BY month
-      ) i ON m.month = i.month
-      LEFT JOIN (
-        SELECT strftime('%m', created_at) as month, SUM(internal_cost) as month_cost
-        FROM examinations
-        WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)
-        GROUP BY month
-      ) e ON m.month = e.month
-      ORDER BY m.month
-    `;
-
-    db.all(query, [fyStart, fyEnd, fyStart, fyEnd], (err, rows) => {
-      if (err) { console.error('[Stats] monthly-data error:', err); return res.status(500).json({ error: 'Failed to load monthly data' }); }
-      res.json(rows);
-    });
+  app.get('/api/stats/monthly-data', checkPermission('view_stats'), injectFinancialYear, async (req, res) => {
+    try {
+      const fyStart = req.fyStartDate;
+      const fyEnd = req.fyEndDate;
+      
+      const invoices = await sq.getAll(`SELECT * FROM invoices WHERE status != 'cancelled'`, []);
+      const examinations = await sq.getAll(`SELECT * FROM examinations`, []);
+      
+      const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+      const result = months.map(m => ({ month: m, revenue: 0, cost: 0 }));
+      
+      for (const inv of invoices) {
+        if (inv.created_at >= fyStart && inv.created_at <= fyEnd) {
+          const month = String(new Date(inv.created_at).getMonth() + 1).padStart(2, '0');
+          const idx = result.findIndex(r => r.month === month);
+          if (idx >= 0) result[idx].revenue += Number(inv.total_amount) || 0;
+        }
+      }
+      
+      for (const exam of examinations) {
+        if (exam.created_at >= fyStart && exam.created_at <= fyEnd) {
+          const month = String(new Date(exam.created_at).getMonth() + 1).padStart(2, '0');
+          const idx = result.findIndex(r => r.month === month);
+          if (idx >= 0) result[idx].cost += Number(exam.internal_cost) || 0;
+        }
+      }
+      
+      res.json(result);
+    } catch (err) {
+      console.error('[Stats] monthly-data error:', err?.message || err);
+      res.status(500).json({ error: 'Failed to load monthly data' });
+    }
   });
   // --- End of Monthly Data ---
 
@@ -3627,7 +3503,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
       // Get current inventory
       const item = await new Promise((resolve, reject) => {
-        db.get("SELECT * FROM inventory WHERE id = ?", [itemId], (err, row) => {
+        sq.getOne("SELECT * FROM inventory WHERE id = ?", [itemId], (err, row) => {
           if (err) return reject(err);
           resolve(row);
         });
@@ -3655,10 +3531,10 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
       // Create transaction record and update inventory atomically
       await new Promise((resolve, reject) => {
-        db.run("BEGIN TRANSACTION", (err) => {
+        sq.run("BEGIN TRANSACTION", (err) => {
           if (err) return reject(err);
 
-          db.run(`INSERT INTO inventory_transactions 
+          sq.run(`INSERT INTO inventory_transactions 
             (id, item_id, warehouse_id, batch_id, type, quantity, previous_quantity, new_quantity, 
               unit_cost, total_cost, reason, reference, reference_id, performed_by, ip_address, user_agent, timestamp)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`, 
@@ -3667,18 +3543,18 @@ app.get('/api/invoices/:id/details', (req, res) => {
               reason, reference || null, referenceId || null, resolvedPerformer, ipAddress, userAgent, transactionDate],
             (err) => {
             if (err) {
-              db.run("ROLLBACK");
+              sq.run("ROLLBACK");
               return reject(err);
             }
 
             // Update inventory
-            db.run("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?", [newQuantity, itemId], (err) => {
+            sq.run("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?", [newQuantity, itemId], (err) => {
               if (err) {
-                db.run("ROLLBACK");
+                sq.run("ROLLBACK");
                 return reject(err);
               }
 
-              db.run("COMMIT", (err) => {
+              sq.run("COMMIT", (err) => {
                 if (err) return reject(err);
                 resolve();
               });
@@ -3713,7 +3589,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
       sql = filtered.sql + ' ORDER BY timestamp DESC LIMIT ?';
       filtered.params.push(limit);
       const rows = await new Promise((resolve, reject) => {
-        db.all(sql, filtered.params, (err, rows) => {
+        sq.getAll(sql, filtered.params, (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
         });
@@ -3729,7 +3605,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
   app.get('/api/inventory/warehouse/:warehouseId', checkPermission('view_inventory'), (req, res) => {
     const { warehouseId } = req.params;
     
-    db.all(`SELECT wi.*, i.name as item_name, i.material, i.cost_per_unit, i.unit
+    sq.getAll(`SELECT wi.*, i.name as item_name, i.material, i.cost_per_unit, i.unit
             FROM warehouse_inventory wi
             LEFT JOIN inventory i ON wi.item_id = i.id
             WHERE wi.warehouse_id = ?`, [warehouseId], (err, rows) => {
@@ -3740,7 +3616,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
 
   // Get all warehouses (distinct warehouse IDs with aggregated stock)
   app.get('/api/warehouses', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), (req, res) => {
-    db.all(`SELECT wi.warehouse_id,
+    sq.getAll(`SELECT wi.warehouse_id,
                    COALESCE(SUM(wi.quantity), 0) as total_stock,
                    COALESCE(SUM(wi.reserved), 0) as total_reserved,
                    COUNT(DISTINCT wi.item_id) as item_count,
@@ -3758,7 +3634,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
     try {
       const { id, snapshot_data, snapshot_type, notes, created_by } = req.body;
       const snapshotId = id || `SNAP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      db.run(`INSERT INTO warehouse_snapshots (id, snapshot_data, snapshot_type, notes, created_by, created_at)
+      sq.run(`INSERT INTO warehouse_snapshots (id, snapshot_data, snapshot_type, notes, created_by, created_at)
               VALUES (?, ?, ?, ?, ? , ?)`,
         [snapshotId, JSON.stringify(snapshot_data), snapshot_type || 'manual', notes || '', created_by || req.user?.id || '', new Date().toISOString()],
         (err) => {
@@ -3774,7 +3650,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
   // Fetch warehouse snapshots
   app.get('/api/warehouses/snapshot', requireRole('Admin', 'Accountant', 'Manager', 'Clerk', 'Viewer'), (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-    db.all(`SELECT * FROM warehouse_snapshots ORDER BY created_at DESC LIMIT ?`,
+    sq.getAll(`SELECT * FROM warehouse_snapshots ORDER BY created_at DESC LIMIT ?`,
       [limit], (err, rows) => {
         if (err) { console.error('[Warehouses] snapshot get error:', err); return res.status(500).json({ error: 'Failed to load snapshots' }); }
         res.json((rows || []).map(r => ({ ...r, snapshot_data: typeof r.snapshot_data === 'string' ? JSON.parse(r.snapshot_data) : r.snapshot_data })));
@@ -3788,7 +3664,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
       if (itemId) {
         // Sync single item
         const whItems = await new Promise((resolve, reject) => {
-          db.all(`SELECT item_id, SUM(quantity) as total_qty, SUM(reserved) as total_reserved
+          sq.getAll(`SELECT item_id, SUM(quantity) as total_qty, SUM(reserved) as total_reserved
                   FROM warehouse_inventory WHERE item_id = ? GROUP BY item_id`,
             [itemId], (err, rows) => {
               if (err) reject(err); else resolve(rows || []);
@@ -3796,7 +3672,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
         });
         if (whItems.length > 0) {
           const row = whItems[0];
-          db.run('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?',
+          sq.run('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?',
             [row.total_qty, row.total_reserved, itemId], (err) => {
               if (err) return res.status(500).json({ error: 'Failed to sync item' });
               res.json({ success: true, itemId, syncedQuantity: row.total_qty, syncedReserved: row.total_reserved });
@@ -3807,14 +3683,14 @@ app.get('/api/invoices/:id/details', (req, res) => {
       } else {
         // Sync all items
         const updated = await new Promise((resolve, reject) => {
-          db.all(`SELECT wi.item_id, SUM(wi.quantity) as total_qty, SUM(wi.reserved) as total_reserved
+          sq.getAll(`SELECT wi.item_id, SUM(wi.quantity) as total_qty, SUM(wi.reserved) as total_reserved
                   FROM warehouse_inventory wi GROUP BY wi.item_id`,
             [], (err, rows) => {
               if (err) reject(err); else resolve(rows || []);
             });
         });
         let count = 0;
-        const stmt = db.prepare('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?');
+        const stmt = sq.prepare('UPDATE inventory SET quantity = ?, reserved = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?');
         for (const row of updated) {
           stmt.run([row.total_qty, row.total_reserved, row.item_id]);
           count++;
@@ -3832,7 +3708,7 @@ app.get('/api/invoices/:id/details', (req, res) => {
   app.get('/api/inventory/:itemId/batches', checkPermission('view_inventory'), (req, res) => {
     const { itemId } = req.params;
     
-    db.all(`SELECT * FROM material_batches 
+    sq.getAll(`SELECT * FROM material_batches 
             WHERE item_id = ? AND status = 'active' AND remaining_quantity > 0
             ORDER BY received_date ASC`, [itemId], (err, rows) => {
       if (err) { console.error('[Inventory] item batches error:', err); return res.status(500).json({ error: 'Failed to load batches' }); }
@@ -4048,6 +3924,10 @@ app.use((err, req, res, next) => {
     try {
       console.log(`[BACKEND] Attempting to start server on port ${PORT} (Attempt ${attempts + 1}/${maxAttempts})...`);
       server = await new Promise((resolve, reject) => {
+        // Bind IPv4 loopback interface. The frontend Vite dev proxy targets
+        // http://127.0.0.1:3000 (explicit IPv4) so loopback resolution can
+        // never fall through to IPv6 (::1), which previously caused Vite to
+        // return 500 "Proxy error" for every /api request.
         const s = app.listen(PORT, '0.0.0.0', () => {
           console.log(`[BACKEND] Server successfully bound to port ${PORT}`);
           resolve(s);
@@ -4088,16 +3968,7 @@ app.use((err, req, res, next) => {
     console.log('[BACKEND] Shutdown signal received. Cleaning up...');
     clearInterval(keepAliveId);
     
-    // Close the database connection
-    try {
-      console.log('[BACKEND] Closing database connection...');
-      db.close((err) => {
-        if (err) console.error('[BACKEND] Error closing database:', err.message);
-        else console.log('[BACKEND] Database connection closed.');
-      });
-    } catch (dbErr) {
-      console.error('[BACKEND] Failed to close database:', dbErr.message);
-    }
+    console.log('[BACKEND] Shutdown complete.');
 
     server.close(() => {
       console.log('[BACKEND] Server closed.');

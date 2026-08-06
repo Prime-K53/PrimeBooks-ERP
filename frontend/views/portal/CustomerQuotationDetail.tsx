@@ -187,7 +187,7 @@ const CustomerQuotationDetail: React.FC = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <button onClick={() => navigate('/portal/quotations')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
+      <button onClick={() => navigate('/portal/orders?tab=quotations')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
         <ArrowLeft size={14} /> Back to Quotations
       </button>
 
@@ -367,35 +367,43 @@ const CustomerQuotationDetail: React.FC = () => {
         <div className="px-5 py-4 border-b border-slate-200/60">
           <h2 className="text-sm font-semibold text-slate-800">Items</h2>
         </div>
-        <div className="space-y-2">
-          {(quotation.items || []).map((item, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#23282A', margin: 0 }}>{item.name}</p>
-              </div>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: 13, color: '#5c6567' }}>Qty: {item.quantity}</span>
-                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#5c6567' }}>{formatK(item.unitPrice || 0)}</span>
-                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#23282A' }}>{formatK(item.lineTotal ?? item.quantity * item.unitPrice)}</span>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200/60 text-slate-500">
+                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider">Item</th>
+                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Qty</th>
+                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Price</th>
+                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(quotation.items || []).map((item, i) => (
+                <tr key={i} className={i < (quotation.items || []).length - 1 ? 'border-b border-slate-200/60' : ''}>
+                  <td className="px-5 py-3 font-medium text-slate-800">{item.name}</td>
+                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums">{item.quantity}</td>
+                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.unitPrice || 0)}</td>
+                  <td className="px-5 py-3 text-right font-semibold text-slate-900 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.lineTotal ?? item.quantity * item.unitPrice)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         <div className="px-5 py-4 border-t border-slate-200/60 space-y-1.5 text-sm">
           <div className="flex justify-between text-slate-600"><span>Subtotal</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.subtotal)}</span></div>
-{Number(quotation.discount) > 0 && (
-  <div className="flex justify-between text-slate-600"><span>Discount</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>- {formatK(quotation.discount)}</span></div>
-)}
-{Number(quotation.delivery_fee) > 0 && (
-  <div className="flex justify-between text-slate-600"><span>Delivery Fee</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.delivery_fee)}</span></div>
-)}
-{Number(quotation.tax_amount) > 0 && (
-  <div className="flex justify-between text-slate-600"><span>Tax ({Number(quotation.tax_rate)}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.tax_amount)}</span></div>
-)}
-<div className="flex justify-between pt-2 border-t border-slate-200/60 text-base font-bold">
-  <span className="text-slate-800">Total</span>
-  <span className="text-slate-900" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.total)}</span>
-</div>
+          {Number(quotation.discount) > 0 && (
+            <div className="flex justify-between text-slate-600"><span>Discount</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>- {formatK(quotation.discount)}</span></div>
+          )}
+          {Number(quotation.delivery_fee) > 0 && (
+            <div className="flex justify-between text-slate-600"><span>Delivery Fee</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.delivery_fee)}</span></div>
+          )}
+          {Number(quotation.tax_amount) > 0 && (
+            <div className="flex justify-between text-slate-600"><span>Tax ({Number(quotation.tax_rate)}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.tax_amount)}</span></div>
+          )}
+          <div className="flex justify-between pt-2 border-t border-slate-200/60 text-base font-bold">
+            <span className="text-slate-800">Total</span>
+            <span className="text-slate-900" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.total)}</span>
+          </div>
         </div>
       </div>
 

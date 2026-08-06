@@ -202,13 +202,23 @@ const CustomerShipmentDetail: React.FC = () => {
       {shipment.items && shipment.items.length > 0 && (
         <div className="p-5 rounded-xl" style={{ background: 'rgba(255,255,255,0.7)', border: '1.4px solid #e4ddd1', backdropFilter: 'blur(12px)' }}>
           <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: portalTheme.inkSoft }}>Items in this shipment</h3>
-          <div className="space-y-2">
-            {shipment.items.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                <span className="text-sm font-medium" style={{ color: portalTheme.ink }}>{item.name}</span>
-                <span className="text-sm" style={{ color: portalTheme.inkSoft }}>Qty: {item.quantity}</span>
-              </div>
-            ))}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e4ddd1' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10.5, fontWeight: 700, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08 }}>Item</th>
+                  <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 10.5, fontWeight: 700, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, width: 80 }}>Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shipment.items.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: idx < shipment.items.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <td style={{ padding: '10px 12px', fontSize: 13.5, fontWeight: 600, color: portalTheme.ink }}>{item.name}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 13, color: portalTheme.inkSoft, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

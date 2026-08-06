@@ -1,8 +1,4 @@
-const { db, getDatabase } = require('../db.cjs');
-
-function getDb() {
-  return getDatabase();
-}
+const repo = require('./supabaseRepository.cjs');
 
 class ReferralNotificationService {
   async sendRewardApprovedNotification(reward, referral) {
@@ -12,7 +8,8 @@ class ReferralNotificationService {
       message: `Your reward of ${reward.amount} has been approved and credited to your wallet.`,
       recipientId: reward.customer_id,
       referralId: referral.id,
-      rewardId: reward.id});
+      rewardId: reward.id,
+    });
   }
 
   async sendRewardRejectedNotification(reward, referral, reason) {
@@ -22,7 +19,8 @@ class ReferralNotificationService {
       message: `Your reward of ${reward.amount} has been rejected. Reason: ${reason}`,
       recipientId: reward.customer_id,
       referralId: referral.id,
-      rewardId: reward.id});
+      rewardId: reward.id,
+    });
   }
 
   async sendReversalProcessedNotification(reversal, reward) {
@@ -31,7 +29,8 @@ class ReferralNotificationService {
       title: 'Reversal Processed',
       message: `A reversal has been processed for reward ${reward.id}.`,
       recipientId: reward.customer_id,
-      rewardId: reward.id});
+      rewardId: reward.id,
+    });
   }
 
   async sendReferralConvertedNotification(referral) {
@@ -40,54 +39,49 @@ class ReferralNotificationService {
       title: 'Referral Converted',
       message: `A referral you made has been converted.`,
       recipientId: referral.referred_by_id,
-      referralId: referral.id});
+      referralId: referral.id,
+    });
   }
 
-  async _sendNotification({ type, title, message, recipientId, referralId, rewardId}) {
-    const db = getDb();
+  async _sendNotification({ type, title, message, recipientId, referralId, rewardId }) {
     const id = require('crypto').randomUUID();
-
-    return new Promise((resolve, reject) => {
-      db.run(
-        `INSERT INTO notifications (id, type, title, message, recipient_id, referral_id, reward_id, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ? , 'pending', CURRENT_TIMESTAMP)`,
-        [id, type, title, message, recipientId, referralId || null, rewardId || null],
-        (err) => {
-          if (err) {
-            console.error('[ReferralNotification] Failed to create notification:', err.message);
-            resolve(null);
-          } else {
-            resolve({ id, type, title, message, recipientId });
-          }
-        }
-      );
-    });
+    const record = {
+      id,
+      data: {
+        type,
+        title,
+        message,
+        recipient_id: recipientId,
+        referral_id: referralId || null,
+        reward_id: rewardId || null,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      },
+    };
+    await repo.upsert('notifications', record);
+    return { id, type, title, message, recipientId };
   }
 
   async getNotifications(recipientId, limit = 20) {
-    return new Promise((resolve, reject) => {
-      db.all(
-        `SELECT * FROM notifications WHERE recipient_id = ? ORDER BY created_at DESC LIMIT ?`,
-        [recipientId, limit],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
-      );
-    });
+    const rows = await repo.getAll('notifications', { 'data->>recipient_id': `eq.${recipientId}` });
+    rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    return rows.slice(0, limit);
   }
 
   async markAsRead(notificationId) {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE notifications SET status = 'read', read_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        [notificationId],
-        (err) => {
-          if (err) reject(err);
-          else resolve({ success: true });
-        }
-      );
+    const old = await repo.getById('notifications', notificationId);
+    if (!old) return { success: false };
+    const oldData = old.data || old;
+    await repo.upsert('notifications', {
+      ...old,
+      data: {
+        ...oldData,
+        status: 'read',
+        read_at: new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
     });
+    return { success: true };
   }
 }
 

@@ -1,9 +1,40 @@
 const express = require('express');
 const router = express.Router();
 const workspaceService = require('../services/workspaceService.cjs');
-const { resetDatabase } = require('../db.cjs');
+const repo = require('../services/supabaseRepository.cjs');
+const axios = require('axios');
 const { sendSafeError } = require('../utils/errors.cjs');
 const { validateBody, workspaceSchemas } = require('../middleware/validation.cjs');
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+async function resetDatabase() {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || SUPABASE_URL.includes('placeholder')) {
+    throw new Error('Supabase is not configured');
+  }
+  const base = SUPABASE_URL.replace(/\/+$/, '');
+  const headers = {
+    apikey: SUPABASE_SECRET_KEY,
+    Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+    'Content-Type': 'application/json',
+  };
+  const { data: spec } = await axios.get(`${base}/rest/v1/`, { headers, timeout: 10000 });
+  const paths = spec?.paths || {};
+  const tableNames = Object.keys(paths)
+    .filter((p) => /^\/([a-z_][a-z0-9_]*)$/.test(p) && !p.includes('('))
+    .map((p) => p.slice(1));
+  const wiped = [];
+  for (const table of tableNames) {
+    try {
+      await axios.delete(`${base}/rest/v1/${table}`, { headers, timeout: 60000 });
+      wiped.push(table);
+    } catch {
+      // skip internal tables
+    }
+  }
+  console.log(`[System] Wiped ${wiped.length} Supabase tables`);
+}
 
 router.post('/workspace/initialize', validateBody(workspaceSchemas.initialize), async (req, res) => {
   try {

@@ -1,108 +1,154 @@
 const crypto = require('crypto');
-const BaseService = require('./baseService.cjs');
+const repo = require('./supabaseRepository.cjs');
 
-class HRService extends BaseService {
+class HRService {
   async _saveLedgerEntry(entry) {
     const id = crypto.randomUUID();
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        `INSERT INTO ledger_entries (id, account_id, entry_type, amount, currency, description, reference_type, reference_id, entry_date)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`,
-        [id, entry.account_id, entry.entry_type, entry.amount, entry.currency || 'USD', entry.description || null, entry.reference_type || null, entry.reference_id || null, entry.entry_date || new Date().toISOString()],
-        function(err) {
-          if (err) reject(err);
-          else resolve(id);
-        }
-      );
-    });
+    const record = {
+      id,
+      data: {
+        account_id: entry.account_id,
+        entry_type: entry.entry_type,
+        amount: entry.amount,
+        currency: entry.currency || 'USD',
+        description: entry.description || null,
+        reference_type: entry.reference_type || null,
+        reference_id: entry.reference_id || null,
+        entry_date: entry.entry_date || new Date().toISOString(),
+      },
+    };
+    await repo.upsert('ledger_entries', record);
+    return id;
   }
 
   async postPayrollLedger(run, currency = 'USD') {
-    let expenseAccount = await this._get(
-      "SELECT * FROM chart_of_accounts WHERE type = 'expense' AND (name LIKE '%wage%' OR name LIKE '%salary%' OR name LIKE '%payroll%' OR code = '6300')",
-      []
-    );
-    let liabilityAccount = await this._get(
-      "SELECT * FROM chart_of_accounts WHERE type = 'liability' AND (name LIKE '%payable%' OR name LIKE '%accrued%')",
-      []
-    );
-    const totalAmount = (run.total_gross || 0);
+    const accounts = await repo.accounts.getAll({ 'data->>type': 'eq.expense' });
+    const expenseAccount = accounts.find((a) => {
+      const d = a.data || a;
+      const name = String(d.name || '').toLowerCase();
+      return name.includes('wage') || name.includes('salary') || name.includes('payroll') || d.code === '6300';
+    });
+    const liabilityAccounts = await repo.accounts.getAll({ 'data->>type': 'eq.liability' });
+    const liabilityAccount = liabilityAccounts.find((a) => {
+      const d = a.data || a;
+      const name = String(d.name || '').toLowerCase();
+      return name.includes('payable') || name.includes('accrued');
+    });
+    const totalAmount = run.total_gross || 0;
     if (totalAmount <= 0 || !expenseAccount || !liabilityAccount) return;
     await this._saveLedgerEntry({
       account_id: expenseAccount.id, entry_type: 'debit', amount: totalAmount, currency,
       description: `Payroll ${run.name || run.id}`,
-      reference_type: 'payroll', reference_id: run.id
+      reference_type: 'payroll', reference_id: run.id,
     });
     await this._saveLedgerEntry({
       account_id: liabilityAccount.id, entry_type: 'credit', amount: totalAmount, currency,
       description: `Payroll liability ${run.name || run.id}`,
-      reference_type: 'payroll', reference_id: run.id
+      reference_type: 'payroll', reference_id: run.id,
     });
   }
 
   async getEmployees() {
-    return this._all('SELECT * FROM employees ORDER BY name', []);
+    const rows = await repo.employees.getAll();
+    rows.sort((a, b) => String(a.data?.name || a.name || '').localeCompare(String(b.data?.name || b.name || '')));
+    return rows.map((r) => ({ ...r, ...(r.data || {}) }));
   }
 
   async createEmployee(data) {
     const id = data.id || crypto.randomUUID();
-    await this._run(
-      `INSERT INTO employees (id, name, email, phone, department, role, status, salary)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ? )`,
-      [id, data.name, data.email || null, data.phone || null, data.department || null, data.role || null, data.status || 'Active', data.salary || 0]
-    );
-    return this._get('SELECT * FROM employees WHERE id = ?', [id]);
+    const record = {
+      id,
+      data: {
+        name: data.name,
+        email: data.email || null,
+        phone: data.phone || null,
+        department: data.department || null,
+        role: data.role || null,
+        status: data.status || 'Active',
+        salary: data.salary || 0,
+      },
+    };
+    await repo.employees.upsert(record);
+    const row = await repo.employees.getById(id);
+    return { ...row, ...(row.data || {}) };
   }
 
   async updateEmployee(id, data) {
-    const fields = [];
-    const params = [];
+    const old = await repo.employees.getById(id);
+    if (!old) return null;
+    const oldData = old.data || old;
+    const updated = {
+      ...old,
+      data: { ...oldData },
+      updated_at: new Date().toISOString(),
+    };
     const allowed = ['name', 'email', 'phone', 'department', 'role', 'status', 'salary'];
     for (const field of allowed) {
       if (data[field] !== undefined) {
-        fields.push(`${field} = ?`);
-        params.push(data[field]);
+        updated.data[field] = data[field];
       }
     }
-    if (!fields.length) return this._get('SELECT * FROM employees WHERE id = ?', [id]);
-    params.push(id);
-    await this._run(`UPDATE employees SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, params);
-    return this._get('SELECT * FROM employees WHERE id = ?', [id]);
+    await repo.employees.upsert(updated);
+    const row = await repo.employees.getById(id);
+    return { ...row, ...(row.data || {}) };
   }
 
   async deleteEmployee(id) {
-    await this._run('DELETE FROM employees WHERE id = ?', [id]);
+    await repo.employees.softDelete(id);
     return { success: true };
   }
 
   async getPayrollRuns() {
-    return this._all('SELECT * FROM payroll_runs ORDER BY created_at DESC', []);
+    const rows = await repo.payrollRuns.getAll();
+    rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    return rows.map((r) => ({ ...r, ...(r.data || {}) }));
   }
 
   async createPayrollRun(data, currency = 'USD') {
     const id = data.id || crypto.randomUUID();
-    await this._run(
-      `INSERT INTO payroll_runs (id, name, period_start, period_end, status, total_gross, total_deductions, total_net, employee_count)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`,
-      [id, data.name, data.period_start, data.period_end, data.status || 'Draft', data.total_gross || 0, data.total_deductions || 0, data.total_net || 0, data.employee_count || 0]
-    );
-    const run = await this._get('SELECT * FROM payroll_runs WHERE id = ?', [id]);
-    await this.postPayrollLedger(run, currency);
-    return run;
+    const record = {
+      id,
+      data: {
+        name: data.name,
+        period_start: data.period_start,
+        period_end: data.period_end,
+        status: data.status || 'Draft',
+        total_gross: data.total_gross || 0,
+        total_deductions: data.total_deductions || 0,
+        total_net: data.total_net || 0,
+        employee_count: data.employee_count || 0,
+      },
+    };
+    await repo.payrollRuns.upsert(record);
+    const run = await repo.payrollRuns.getById(id);
+    const runData = run ? { ...run, ...(run.data || {}) } : record.data;
+    await this.postPayrollLedger(runData, currency);
+    return runData;
   }
 
   async getPayslips() {
-    return this._all('SELECT * FROM payslips ORDER BY created_at DESC', []);
+    const rows = await repo.payslips.getAll();
+    rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    return rows.map((r) => ({ ...r, ...(r.data || {}) }));
   }
 
   async createPayslip(data) {
     const id = data.id || crypto.randomUUID();
-    await this._run(
-      `INSERT INTO payslips (id, employee_id, payroll_run_id, gross_pay, deductions, net_pay, pay_period, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ? )`,
-      [id, data.employee_id, data.payroll_run_id, data.gross_pay || 0, data.deductions || 0, data.net_pay || 0, data.pay_period, data.status || 'Draft']
-    );
-    return this._get('SELECT * FROM payslips WHERE id = ?', [id]);
+    const record = {
+      id,
+      data: {
+        employee_id: data.employee_id,
+        payroll_run_id: data.payroll_run_id,
+        gross_pay: data.gross_pay || 0,
+        deductions: data.deductions || 0,
+        net_pay: data.net_pay || 0,
+        pay_period: data.pay_period,
+        status: data.status || 'Draft',
+      },
+    };
+    await repo.payslips.upsert(record);
+    const row = await repo.payslips.getById(id);
+    return { ...row, ...(row.data || {}) };
   }
 }
 

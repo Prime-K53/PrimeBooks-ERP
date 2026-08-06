@@ -263,7 +263,7 @@ const CustomerCreateRequest: React.FC = () => {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
             <button
-              onClick={() => navigate('/portal/requests')}
+               onClick={() => navigate('/portal/orders?tab=requests')}
               style={{
                 width: '100%', padding: '10px 0', borderRadius: 14, border: 'none', cursor: 'pointer',
                 background: `linear-gradient(135deg, ${t.teal[500]}, ${t.teal[700]})`, color: '#fff',
@@ -511,72 +511,72 @@ const CustomerCreateRequest: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {lines.map((l) => (
-                <div key={l.id} style={{
-                  background: '#fff', borderRadius: 14,
-                  border: `1.4px solid ${t.hairline}`, padding: '10px 12px',
-                  boxShadow: '0 1px 2px rgba(0,0,0,.03)', animation: 'slideUp .2s ease'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <p style={{ fontSize: 13.5, fontWeight: 600, color: t.ink, margin: 0, lineHeight: 1.4 }}>{l.name}</p>
-                      <p style={{ fontSize: 12, color: t.inkSoft, marginTop: 2, lineHeight: 1.4 }}>
-                        {l.unit ? `${l.unit} • ` : ''}{formatK(l.unitPrice)} each
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => removeLine(l.id)}
-                      aria-label={`Remove ${l.name}`}
-                      style={{
-                        width: 40, height: 40, borderRadius: 10, border: 'none', cursor: 'pointer',
-                        background: `${t.danger}12`, color: t.danger, flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <button
-                        onClick={() => updateQuantity(l.id, l.quantity - 1)}
-                        aria-label="Decrease quantity"
-                        style={{
-                          width: 40, height: 40, borderRadius: 10, border: `1.4px solid ${t.hairline}`,
-                          background: t.paper, color: t.teal[600], cursor: 'pointer', fontSize: 16, fontWeight: 600,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
-                        }}
-                      >
-                        <Minus size={16} strokeWidth={2.5} />
-                      </button>
-                      <div style={{
-                        width: 56, height: 40, borderRadius: 10, border: `1.4px solid ${t.hairline}`,
-                        background: t.paper, display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}>
-                        <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 600, color: t.ink, fontVariantNumeric: 'tabular-nums' }}>{l.quantity}</span>
-                      </div>
-                      <button
-                        onClick={() => updateQuantity(l.id, l.quantity + 1)}
-                        aria-label="Increase quantity"
-                        style={{
-                          width: 40, height: 40, borderRadius: 10, border: `1.4px solid ${t.hairline}`,
-                          background: t.paper, color: t.teal[600], cursor: 'pointer', fontSize: 16, fontWeight: 600,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
-                        }}
-                      >
-                        <Plus size={16} strokeWidth={2.5} />
-                      </button>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ margin: 0, fontSize: 10.5, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, fontWeight: 600, lineHeight: 1.4 }}>Total</p>
-                      <p style={{ margin: '1px 0 0', fontSize: 14, fontWeight: 600, color: t.ink, fontFamily: MONO, letterSpacing: 0.1, fontVariantNumeric: 'tabular-nums' }}>
-                        {formatK(l.quantity * l.unitPrice)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${t.hairline}` }}>
+                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08 }}>Item</th>
+                    <th style={{ textAlign: 'right', padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, width: 90 }}>Qty</th>
+                    <th style={{ textAlign: 'right', padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, width: 110 }}>Price</th>
+                    <th style={{ textAlign: 'right', padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, width: 110 }}>Total</th>
+                    <th style={{ width: 44 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((l) => (
+                    <tr key={l.id} style={{ borderBottom: `1px solid ${t.hairline}` }}>
+                      <td style={{ padding: '10px 14px', fontSize: 13.5, fontWeight: 600, color: t.ink, lineHeight: 1.4 }}>{l.name}</td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <button
+                            onClick={() => updateQuantity(l.id, l.quantity - 1)}
+                            aria-label="Decrease quantity"
+                            style={{
+                              width: 36, height: 36, borderRadius: 8, border: `1.4px solid ${t.hairline}`,
+                              background: t.paper, color: t.teal[600], cursor: 'pointer', fontSize: 15, fontWeight: 600,
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
+                            }}
+                          >
+                            <Minus size={14} strokeWidth={2.5} />
+                          </button>
+                          <div style={{
+                            width: 48, height: 36, borderRadius: 8, border: `1.4px solid ${t.hairline}`,
+                            background: t.paper, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                          }}>
+                            <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 600, color: t.ink, fontVariantNumeric: 'tabular-nums' }}>{l.quantity}</span>
+                          </div>
+                          <button
+                            onClick={() => updateQuantity(l.id, l.quantity + 1)}
+                            aria-label="Increase quantity"
+                            style={{
+                              width: 36, height: 36, borderRadius: 8, border: `1.4px solid ${t.hairline}`,
+                              background: t.paper, color: t.teal[600], cursor: 'pointer', fontSize: 15, fontWeight: 600,
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
+                            }}
+                          >
+                            <Plus size={14} strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      </td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: t.inkSoft, fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}>{formatK(l.unitPrice)}</td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13.5, fontWeight: 700, color: t.ink, fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}>{formatK(l.quantity * l.unitPrice)}</td>
+                      <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => removeLine(l.id)}
+                          aria-label={`Remove ${l.name}`}
+                          style={{
+                            width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer',
+                            background: `${t.danger}12`, color: t.danger,
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

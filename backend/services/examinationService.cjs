@@ -1,5 +1,4 @@
-const { getDatabase } = require('../db.cjs');
-const getDb = () => getDatabase();
+const repo = require('./supabaseRepository.cjs');
 const { randomUUID, createHash } = require('crypto');
 const pricingEngine = require('./examinationPricingEngine.cjs');
 const batchWorkflow = require('./examinationBatchWorkflow.cjs');
@@ -16,69 +15,7 @@ const DEFAULT_PAPER_UNIT_COST = 500;
 const DEFAULT_TONER_UNIT_COST = 85000;
 const DEFAULT_TONER_PAGES_PER_UNIT = TONER_PAGES_PER_KG;
 
-// Helper to run DB queries as promises
-const runQuery = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const db = getDb();
-      if (!db) return reject(new Error('Database not initialized'));
-      db.all(query, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    } catch (err) {
-      reject(err);
-    }
-  });
-};
 
-const runGet = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    getDb().get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-};
-
-const runRun = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const db = getDb();
-      if (!db) return reject(new Error('Database not initialized'));
-      db.run(query, params, function (err) {
-        if (err) reject(err);
-        else resolve(this);
-      });
-    } catch (err) {
-      reject(err);
-    }
-  });
-};
-
-const all = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const db = getDb();
-      if (!db) return reject(new Error('Database not initialized'));
-      db.all(query, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows || []);
-      });
-    } catch (err) {
-      reject(err);
-    }
-  });
-};
-
-const addColumnIfMissing = async (tableName, columnName, columnType) => {
-  const columns = await all(`PRAGMA table_info(${tableName})`);
-  const exists = columns.some((column) => column.name === columnName);
-  if (exists) {
-    return;
-  }
-  await runRun(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`);
-};
 
 const toBoolean = (value) => {
   if (typeof value === 'boolean') return value;

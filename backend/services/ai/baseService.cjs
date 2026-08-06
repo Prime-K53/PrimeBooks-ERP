@@ -1,28 +1,17 @@
-const { getDatabase } = require('../../db.cjs');
+const sq = require('./supabaseQuery.cjs');
 const LLMClient = require('./llmClient.cjs');
 
 class BaseAIService {
   constructor() {
-    this.db = getDatabase();
     this.llm = new LLMClient();
   }
 
   _get(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+    return sq.getOne(sql, params);
   }
 
   _all(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    return sq.getAll(sql, params);
   }
 
   _serializeDate(d) {

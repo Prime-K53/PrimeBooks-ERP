@@ -9,8 +9,7 @@
  */
 
 const { auditService } = require('./auditService.cjs');
-const { getDatabase } = require('./db.cjs');
-const getDb = () => getDatabase();
+const sq = require('./services/supabaseQuery.cjs');
 
 // Generate a new correlation ID
 const generateCorrelationId = () => {
@@ -65,15 +64,7 @@ const auditCrudMiddleware = (entityType) => {
         const tableName = TABLE_WHITELIST[entityType] || null;
         if (!tableName) return next();
 
-        await new Promise((resolve, reject) => {
-          getDb().get(`SELECT * FROM ${tableName} WHERE id = ? OR logical_number = ?`, [entityId, entityId], (err, row) => {
-            if (err) reject(err);
-            else {
-              oldValue = row;
-              resolve();
-            }
-          });
-        });
+        oldValue = await sq.getOne(`SELECT * FROM ${tableName} WHERE id = ? OR logical_number = ?`, [entityId, entityId]);
       } catch (error) {
         console.warn(`[AuditMiddleware] Could not fetch old state for ${entityType}:${entityId}`, error.message);
       }

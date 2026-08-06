@@ -1,30 +1,23 @@
-const BaseService = require('./baseService.cjs');
+const crypto = require('crypto');
+const repo = require('./supabaseRepository.cjs');
 
-class FinancialYearService extends BaseService {
+class FinancialYearService {
   async getFinancialYears() {
-    return this._all(
-      'SELECT * FROM financial_years ORDER BY start_date DESC',
-      []
-    );
+    const rows = await repo.financialYears.getAll();
+    rows.sort((a, b) => String(b.data?.start_date || b.start_date || '').localeCompare(String(a.data?.start_date || a.start_date || '')));
+    return rows.map((r) => ({ ...r, ...(r.data || {}) }));
   }
 
   async getFinancialYearById(id) {
-    return this._get(
-      'SELECT * FROM financial_years WHERE id = ?',
-      [id]
-    );
+    const row = await repo.financialYears.getById(id);
+    if (!row) return null;
+    return { ...row, ...(row.data || {}) };
   }
 
   async getDefaultFinancialYear() {
-    let fy = await this._get(
-      'SELECT * FROM financial_years WHERE is_default = 1 AND status = \'Active\' LIMIT 1',
-      []
-    );
+    let fy = await this._getActiveDefault();
     if (!fy) {
-      fy = await this._get(
-        'SELECT * FROM financial_years WHERE status = \'Active\' ORDER BY start_date DESC LIMIT 1',
-        []
-      );
+      fy = await this._getLatestActive();
     }
 
     if (fy) {
@@ -43,7 +36,7 @@ class FinancialYearService extends BaseService {
           end_date: nextEndDate,
           is_default: true,
           status: 'Active',
-          is_closed: false
+          is_closed: false,
         }, '');
       }
     }
@@ -51,40 +44,62 @@ class FinancialYearService extends BaseService {
     return fy || null;
   }
 
+  async _getActiveDefault() {
+    const rows = await repo.financialYears.getAll({ 'data->>is_default': 'eq.1', 'data->>status': 'eq.Active' });
+    return rows[0] ? { ...rows[0], ...(rows[0].data || {}) } : null;
+  }
+
+  async _getLatestActive() {
+    const rows = await repo.financialYears.getAll({ 'data->>status': 'eq.Active' });
+    rows.sort((a, b) => String(b.data?.start_date || b.start_date || '').localeCompare(String(a.data?.start_date || a.start_date || '')));
+    return rows[0] ? { ...rows[0], ...(rows[0].data || {}) } : null;
+  }
+
   async getFinancialYearByDate(date) {
-    const row = await this._get(
-      `SELECT * FROM financial_years WHERE date(?) >= date(start_date) AND date(?) <= date(end_date)
-       LIMIT 1`,
-      [date, date]
-    );
-    return row || null;
+    const rows = await repo.financialYears.getAll();
+    const row = rows.find((r) => {
+      const d = r.data || r;
+      return date >= d.start_date && date <= d.end_date;
+    });
+    return row ? { ...row, ...(row.data || {}) } : null;
   }
 
   async createFinancialYear(data, userId) {
-    const id = data.id || require('crypto').randomUUID();
-    const existing = await this._get(
-      'SELECT id FROM financial_years WHERE status = \'Active\' AND date(start_date) <= date(?) AND date(end_date) >= date(?)',
-      [data.end_date, data.start_date]
-    );
-    if (existing) {
+    const id = data.id || crypto.randomUUID();
+    const existing = await repo.financialYears.getAll({
+      'data->>status': 'eq.Active',
+    });
+    const overlapping = existing.find((r) => {
+      const d = r.data || r;
+      return data.end_date >= d.start_date && data.start_date <= d.end_date;
+    });
+    if (overlapping) {
       throw new Error('Overlapping financial year already exists for this period');
     }
-    const hasAny = await this._get(
-      'SELECT id FROM financial_years LIMIT 1',
-      []
-    );
+    const hasAny = existing.length > 0;
     const isDefault = data.is_default !== undefined ? (data.is_default ? 1 : 0) : (!hasAny ? 1 : 0);
     if (isDefault) {
-      await this._run(
-        'UPDATE financial_years SET is_default = 0',
-        []
-      );
+      for (const r of existing) {
+        const d = r.data || r;
+        if (d.is_default) {
+          await repo.financialYears.upsert({ ...r, data: { ...d, is_default: 0 } });
+        }
+      }
     }
-    await this._run(
-      `INSERT INTO financial_years (id, name, code, start_date, end_date, is_default, is_closed, status, created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ? , ?, datetime('now'), datetime('now'))`,
-      [id, data.name, data.code || '', data.start_date, data.end_date, isDefault, data.is_closed ? 1 : 0, data.status || 'Active', userId || '']
-    );
+    const record = {
+      id,
+      data: {
+        name: data.name,
+        code: data.code || '',
+        start_date: data.start_date,
+        end_date: data.end_date,
+        is_default: isDefault ? 1 : 0,
+        is_closed: data.is_closed ? 1 : 0,
+        status: data.status || 'Active',
+        created_by: userId || '',
+      },
+    };
+    await repo.financialYears.upsert(record);
     return this.getFinancialYearById(id);
   }
 
@@ -92,32 +107,26 @@ class FinancialYearService extends BaseService {
     const fy = await this.getFinancialYearById(id);
     if (!fy) throw new Error('Financial year not found');
 
-    const fields = [];
-    const params = [];
-
-    if (data.name !== undefined) { fields.push('name = ?'); params.push(data.name); }
-    if (data.code !== undefined) { fields.push('code = ?'); params.push(data.code); }
-    if (data.start_date !== undefined) { fields.push('start_date = ?'); params.push(data.start_date); }
-    if (data.end_date !== undefined) { fields.push('end_date = ?'); params.push(data.end_date); }
-    if (data.status !== undefined) { fields.push('status = ?'); params.push(data.status); }
-    if (data.is_closed !== undefined) { fields.push('is_closed = ?'); params.push(data.is_closed ? 1 : 0); }
+    const updated = { ...fy };
+    if (data.name !== undefined) updated.name = data.name;
+    if (data.code !== undefined) updated.code = data.code;
+    if (data.start_date !== undefined) updated.start_date = data.start_date;
+    if (data.end_date !== undefined) updated.end_date = data.end_date;
+    if (data.status !== undefined) updated.status = data.status;
+    if (data.is_closed !== undefined) updated.is_closed = data.is_closed ? 1 : 0;
     if (data.is_default !== undefined) {
       if (data.is_default) {
-        await this._run('UPDATE financial_years SET is_default = 0', []);
+        const allFy = await this.getFinancialYears();
+        for (const f of allFy) {
+          if (f.id !== id && f.is_default) {
+            await repo.financialYears.upsert({ ...f, is_default: 0, updated_at: new Date().toISOString() });
+          }
+        }
       }
-      fields.push('is_default = ?');
-      params.push(data.is_default ? 1 : 0);
+      updated.is_default = data.is_default ? 1 : 0;
     }
 
-    if (fields.length === 0) return fy;
-
-    fields.push("updated_at = datetime('now')");
-    params.push(id);
-
-    await this._run(
-      `UPDATE financial_years SET ${fields.join(', ')} WHERE id = ?`,
-      params
-    );
+    await repo.financialYears.upsert({ ...updated, updated_at: new Date().toISOString() });
     return this.getFinancialYearById(id);
   }
 
@@ -126,41 +135,52 @@ class FinancialYearService extends BaseService {
     if (!fy) throw new Error('Financial year not found');
     if (fy.is_closed) throw new Error('Financial year is already closed');
 
-    const nextFy = await this._get(
-      `SELECT * FROM financial_years WHERE date(start_date) = date(?, '+1 day') AND status = 'Active' LIMIT 1`,
-      []
-    );
+    const nextFy = await repo.financialYears.getAll({
+      'data->>status': 'eq.Active',
+    });
+    const next = nextFy.find((r) => {
+      const d = r.data || r;
+      const nextDay = new Date(fy.end_date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      return d.start_date === nextDay.toISOString().slice(0, 10);
+    });
 
     const carryForwardBalances = async () => {
-      const balanceSheetAccounts = await this._all(
-        `SELECT id, code, name, type, balance FROM chart_of_accounts WHERE type IN ('Asset', 'Liability', 'Equity') AND balance != 0`,
-        []
-      );
-
-      if (balanceSheetAccounts.length > 0 && nextFy) {
-        const entryDate = nextFy.start_date;
+      const balanceSheetAccounts = await repo.accounts.getAll({
+        'data->>type': { in: 'Asset,Liability,Equity' },
+      });
+      if (balanceSheetAccounts.length > 0 && next) {
+        const entryDate = next.data?.start_date || next.start_date;
         for (const account of balanceSheetAccounts) {
-          const isDebitNormal = account.type === 'Asset';
-          const lineId = require('crypto').randomUUID();
-          const absBalance = Math.abs(account.balance);
-          const entryType = account.balance > 0
+          const d = account.data || account;
+          const isDebitNormal = d.type === 'Asset';
+          const lineId = crypto.randomUUID();
+          const absBalance = Math.abs(d.balance || 0);
+          const entryType = d.balance > 0
             ? (isDebitNormal ? 'debit' : 'credit')
             : (isDebitNormal ? 'credit' : 'debit');
-          await this._run(
-            `INSERT INTO ledger_entries (id, account_id, entry_type, amount, entry_date, description, created_at)
-             VALUES (?, ?, ?, ?, ?, ? , datetime('now'))`,
-            [lineId, account.id, entryType, absBalance, entryDate, `Opening balance - ${account.name} (carried forward from FY ${fy.name})`]
-          );
+          await repo.upsert('ledger_entries', {
+            id: lineId,
+            data: {
+              account_id: account.id,
+              entry_type: entryType,
+              amount: absBalance,
+              entry_date: entryDate,
+              description: `Opening balance - ${d.name} (carried forward from FY ${fy.name})`,
+              created_at: new Date().toISOString(),
+            },
+          });
         }
       }
     };
 
     await carryForwardBalances();
 
-    await this._run(
-      `UPDATE financial_years SET is_closed = 1, status = 'Closed', updated_at = datetime('now') WHERE id = ?`,
-      [id]
-    );
+    await repo.financialYears.upsert({
+      ...fy,
+      data: { ...(fy.data || fy), is_closed: 1, status: 'Closed' },
+      updated_at: new Date().toISOString(),
+    });
     return this.getFinancialYearById(id);
   }
 
@@ -170,14 +190,11 @@ class FinancialYearService extends BaseService {
     if (fy.is_default) {
       throw new Error('Cannot delete the default financial year. Set another year as default first.');
     }
-    await this._run(
-      'DELETE FROM financial_years WHERE id = ?',
-      [id]
-    );
+    await repo.financialYears.softDelete(id);
     return { success: true };
   }
 
-  async getOrCreateDefaultFinancialYear( userId) {
+  async getOrCreateDefaultFinancialYear(userId) {
     let fy = await this.getDefaultFinancialYear();
     if (fy) return fy;
 
@@ -193,7 +210,7 @@ class FinancialYearService extends BaseService {
       end_date: endDate,
       is_default: true,
       status: 'Active',
-      is_closed: false
+      is_closed: false,
     }, userId);
 
     return fy;
