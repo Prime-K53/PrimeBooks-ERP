@@ -421,6 +421,8 @@ export interface CreateRequestPayload {
   notes?: string;
   requestedDeliveryDate?: string | null;
   attachments?: PortalAttachment[];
+  reorderOf?: string | null;
+  reorderOfNumber?: string | null;
 }
 
 export interface ReorderResult {

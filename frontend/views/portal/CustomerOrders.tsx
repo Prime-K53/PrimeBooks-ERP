@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Eye, Plus, MoreVertical, RotateCcw, Loader2, Search, Truck } from 'lucide-react';
+import { ShoppingCart, Eye, Plus, RotateCcw, Loader2, Search, Truck, Calendar, Package } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import { useToast } from './components/Toast';
 import PortalPageHeader from './components/PortalPageHeader';
-import PortalCard from './components/PortalCard';
 import PortalButton from './components/PortalButton';
 import PortalInput from './components/PortalInput';
 import ErrorBanner from './components/ErrorBanner';
@@ -31,7 +30,6 @@ const CustomerOrders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('All');
-  const [reorderingId, setReorderingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -81,7 +79,6 @@ const CustomerOrders: React.FC = () => {
           if (type === 'entity_changed' && payload?.docType === 'order' && !cancelled) load();
         },
       });
-
     })();
     return () => {
       cancelled = true;
@@ -97,16 +94,8 @@ const CustomerOrders: React.FC = () => {
     if (!confirmReorder.order) return;
     const order = confirmReorder.order;
     setConfirmReorder({ open: false, order: null });
-    setReorderingId(order.id);
-    try {
-      const result = await portalLifecycle.orders.reorder(order.id);
-      addToast('success', `Reorder request ${result.id} created`);
-      navigate(`/portal/requests/${result.id}`);
-    } catch (err: any) {
-      addToast('error', err.message || 'Failed to create reorder request');
-    } finally {
-      setReorderingId(null);
-    }
+    const orderNumber = order.orderNumber || order.id.slice(0, 8);
+    navigate(`/portal/new-request?type=order&ref=${encodeURIComponent(orderNumber)}&order_id=${encodeURIComponent(order.id)}`);
   };
 
   const filtered = useMemo(() => (filter === 'All' ? orders : orders.filter((o) => o.status === filter)), [orders, filter]);
@@ -114,6 +103,8 @@ const CustomerOrders: React.FC = () => {
     const set = new Set(orders.map((o) => o.status));
     return ['All', ...Array.from(set).sort()];
   }, [orders]);
+
+  const totalValue = useMemo(() => filtered.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0), [filtered]);
 
   if (loading && page === 1) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={8} /></div>;
 
@@ -155,74 +146,129 @@ const CustomerOrders: React.FC = () => {
           <EmptyState icon={<ShoppingCart size={28} />} title="No orders found" description={filter === 'All' ? 'You have no orders yet.' : `No orders with status "${filter}".`} />
         ) : (
           <>
-            <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginBottom: 8 }}>
-              Showing {orders.length} of {total} order{total !== 1 ? 's' : ''}
-            </div>
-            <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-              <div className="p-4 space-y-2">
-                {filtered.map((order) => {
-                  const statusMeta = ORDER_STATUS_META[order.status.toLowerCase()] || ORDER_STATUS_META.draft;
-                  const orderNumber = order.orderNumber || order.id.slice(0, 8);
-                  const date = order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '';
-                  const total = formatK(order.totalAmount);
-                  return (
-                    <PortalCard hoverable key={order.id} onClick={() => navigate(`/portal/orders/${order.id}`)}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <ShoppingCart size={15} className="text-teal-600" />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#23282A' }}>#{orderNumber}</div>
-                        </div>
-                        <StatusBadge status={FRIENDLY_STATUS_MAP[order.status.toLowerCase()] || order.status} />
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: '#5c6567', marginTop: 8 }}>
-                        <span>Date: <span style={{ color: '#23282A' }}>{date}</span></span>
-                        <span>Total: <span style={{ color: '#23282A' }}>{total}</span></span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-center gap-1 items-center shrink-0">
-                          <button className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View detail" aria-label="View order detail">
-                            <Eye size={14} />
-                          </button>
-                          {(order as any).tracking_number && (
-                            <button
-                              onClick={() => navigate(`/portal/shipments/${order.id}`)}
-                              className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all"
-                              title="Track shipment"
-                              aria-label={`Track shipment for order ${order.orderNumber || order.id}`}
-                            >
-                              <Truck size={14} />
-                            </button>
-                          )}
-                          {order.status !== 'Draft' && order.status !== 'Cancelled' && (
-                            <button
-                              onClick={() => handleReorderClick(order)}
-                              disabled={reorderingId === order.id}
-                              className="p-2 text-[#5c6567] hover:text-teal-600 bg-slate-50 hover:bg-white border border-transparent hover:border-teal-200 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Reorder"
-                              aria-label={`Reorder ${order.orderNumber || order.id}`}
-                            >
-                              {reorderingId === order.id ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-                            </button>
-                          )}
-                          <button className="p-2 text-[#5c6567] hover:text-slate-600 rounded" aria-label="More actions"><MoreVertical size={14} /></button>
-                        </div>
-                      </div>
-                    </PortalCard>
-                  );
-                })}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '0 2px' }}>
+              <div style={{ fontSize: 12, color: portalTheme.inkSoft, fontWeight: 400, lineHeight: 1.4 }}>
+                Showing {orders.length} of {total} order{total !== 1 ? 's' : ''}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {filter !== 'All' && (
+                  <span style={{ fontSize: 11, fontWeight: 500, color: portalTheme.teal[700], background: portalTheme.teal[50], border: `1px solid ${portalTheme.teal[100]}`, padding: '3px 10px', borderRadius: 99, lineHeight: 1.4 }}>
+                    {filter}
+                  </span>
+                )}
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, lineHeight: 1.4 }}>
+                  {formatK(totalValue)} total
+                </span>
               </div>
             </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {filtered.map((order) => {
+                const statusMeta = ORDER_STATUS_META[order.status.toLowerCase()] || ORDER_STATUS_META.draft;
+                const orderNumber = order.orderNumber || order.id.slice(0, 8);
+                const date = order.orderDate ? new Date(order.orderDate) : null;
+                const total = formatK(order.totalAmount);
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => navigate(`/portal/orders/${order.id}`)}
+                    style={{
+                      position: 'relative', background: portalTheme.paper, borderRadius: 14,
+                      border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                      overflow: 'hidden', cursor: 'pointer', transition: 'all .15s ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = portalTheme.teal[200]; e.currentTarget.style.boxShadow = '0 8px 24px -8px rgba(15,84,76,.3)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = portalTheme.hairline; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)'; }}
+                  >
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${portalTheme.teal[500]}, ${portalTheme.teal[300]} 50%, ${portalTheme.amber[300]} 100%)` }} />
+
+                    <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                      <div style={{ width: 52, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(180deg, ${portalTheme.teal[50]}, #f8fbfa)`, borderRight: `1px solid ${portalTheme.teal[100]}` }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 9, background: portalTheme.teal[50], border: `1px solid ${portalTheme.teal[200]}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Package size={15} color={portalTheme.teal[600]} />
+                        </div>
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: 0, padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums', fontWeight: 600, fontSize: 13.5, color: portalTheme.ink, lineHeight: 1.4 }}>
+                                #{orderNumber}
+                              </span>
+                              <StatusBadge status={FRIENDLY_STATUS_MAP[order.status.toLowerCase()] || order.status} />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 12, fontWeight: 400, color: portalTheme.inkSoft, lineHeight: 1.4 }}>
+                              {date && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  <Calendar size={11} />
+                                  {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontSize: 11, fontWeight: 500, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2, lineHeight: 1.4 }}>Total</div>
+                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums', fontWeight: 600, fontSize: 14.4, color: portalTheme.ink, lineHeight: 1.4 }}>
+                              {total}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, padding: '8px 14px', borderTop: `1px solid ${portalTheme.hairline}`, background: '#fafbfa' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => navigate(`/portal/orders/${order.id}`)}
+                        className="inline-flex items-center gap-1.5 text-[12px] font-medium rounded-md transition-all"
+                        style={{ color: portalTheme.teal[700], background: portalTheme.teal[50], border: `1px solid ${portalTheme.teal[100]}`, padding: '6px 12px', lineHeight: 1.4, fontWeight: 500 }}
+                        onMouseEnter={e => { e.currentTarget.style.background = portalTheme.teal[100]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = portalTheme.teal[50]; }}
+                        aria-label="View order detail"
+                      >
+                        <Eye size={12} /> View
+                      </button>
+                      {(order as any).tracking_number && (
+                        <button
+                          onClick={() => navigate(`/portal/shipments/${order.id}`)}
+                          className="inline-flex items-center gap-1.5 text-[12px] font-medium rounded-md transition-all"
+                          style={{ color: portalTheme.inkSoft, background: portalTheme.paper, border: `1px solid ${portalTheme.hairline}`, padding: '6px 12px', lineHeight: 1.4, fontWeight: 500 }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = portalTheme.teal[200]; e.currentTarget.style.color = portalTheme.teal[700]; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = portalTheme.hairline; e.currentTarget.style.color = portalTheme.inkSoft; }}
+                          aria-label={`Track shipment for order ${order.orderNumber || order.id}`}
+                        >
+                          <Truck size={12} /> Track
+                        </button>
+                      )}
+                       {order.status !== 'Draft' && order.status !== 'Cancelled' && (
+                         <button
+                           onClick={() => handleReorderClick(order)}
+                           className="inline-flex items-center gap-1.5 text-[12px] font-medium rounded-md transition-all"
+                           style={{ color: portalTheme.inkSoft, background: portalTheme.paper, border: `1px solid ${portalTheme.hairline}`, padding: '6px 12px', lineHeight: 1.4, fontWeight: 500 }}
+                           onMouseEnter={e => { e.currentTarget.style.borderColor = portalTheme.amber[300]; e.currentTarget.style.color = portalTheme.amber[600]; }}
+                           onMouseLeave={e => { e.currentTarget.style.borderColor = portalTheme.hairline; e.currentTarget.style.color = portalTheme.inkSoft; }}
+                           aria-label={`Reorder ${order.orderNumber || order.id}`}
+                         >
+                           <RotateCcw size={12} />
+                           Reorder
+                         </button>
+                       )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
             {totalPages > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 12, color: portalTheme.inkSoft }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 12, color: portalTheme.inkSoft, fontWeight: 400, lineHeight: 1.4 }}>
                 <span>Page {page} of {totalPages}</span>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{
-                    padding: '6px 12px', borderRadius: 8, border: `1.4px solid ${portalTheme.hairline}`, background: portalTheme.paper, cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.5 : 1, fontSize: 12, color: portalTheme.ink
+                    padding: '6px 12px', borderRadius: 8, border: `1.4px solid ${portalTheme.hairline}`, background: portalTheme.paper, cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.5 : 1, fontSize: 12, color: portalTheme.ink, fontWeight: 500, lineHeight: 1.4
                   }}>Previous</button>
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} style={{
-                    padding: '6px 12px', borderRadius: 8, border: `1.4px solid ${portalTheme.hairline}`, background: portalTheme.paper, cursor: page >= totalPages ? 'not-allowed' : 'pointer', opacity: page >= totalPages ? 0.5 : 1, fontSize: 12, color: portalTheme.ink
+                    padding: '6px 12px', borderRadius: 8, border: `1.4px solid ${portalTheme.hairline}`, background: portalTheme.paper, cursor: page >= totalPages ? 'not-allowed' : 'pointer', opacity: page >= totalPages ? 0.5 : 1, fontSize: 12, color: portalTheme.ink, fontWeight: 500, lineHeight: 1.4
                   }}>Next</button>
                 </div>
               </div>
@@ -236,10 +282,12 @@ const CustomerOrders: React.FC = () => {
           <div className="confirm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="reorder-title">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid #e4ddd1' }}>
               <h2 id="reorder-title" style={{ fontSize: 16, fontWeight: 700, color: portalTheme.ink, margin: 0 }}>Confirm Reorder</h2>
-              <button onClick={() => setConfirmReorder({ open: false, order: null })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8, color: portalTheme.inkSoft }} aria-label="Close dialog"><ArrowUpRight size={18} style={{ transform: 'rotate(45deg)' }} /></button>
+              <button onClick={() => setConfirmReorder({ open: false, order: null })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8, color: portalTheme.inkSoft }} aria-label="Close dialog">
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 7, border: `1.4px solid ${portalTheme.hairline}` }}>+</span>
+              </button>
             </div>
             <div style={{ padding: '18px 22px', fontSize: 14, color: portalTheme.inkSoft, lineHeight: 1.5 }}>
-              Create a new order request based on order <strong>#{confirmReorder.order?.orderNumber || confirmReorder.order?.id.slice(0, 8)}</strong>? This will be reviewed by our team.
+              Create a new order request based on order <strong style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>#{confirmReorder.order?.orderNumber || confirmReorder.order?.id.slice(0, 8)}</strong>? This will be reviewed by our team.
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 22px', borderTop: '1px solid #e4ddd1' }}>
               <button onClick={() => setConfirmReorder({ open: false, order: null })} style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid #e4ddd1', background: portalTheme.paper, color: portalTheme.inkSoft, fontSize: 13, fontWeight: 600 }}>Cancel</button>
