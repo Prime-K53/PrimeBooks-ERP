@@ -33,7 +33,8 @@ import { useKeyboard as useGlobalKeyboard } from './hooks';
 import { useDocumentStore } from './stores/documentStore.ts';
 import { PreviewModal } from './views/shared/components/PDF/PreviewModal.tsx';
 import { PdfWorker } from './views/shared/components/PDF/PdfWorker.tsx';
-import { Bell, Loader2, Coins, X, Menu, UserIcon, Search as SearchIcon, FileText, Users, LogOut, Box, Package, Settings as SettingsIcon, Wrench, ShieldCheck, Database, Calculator, MessageSquare, CalendarDays, Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { Bell, Loader2, Coins, X, Menu, UserIcon, Search as SearchIcon, FileText, Users, LogOut, Box, Package, Settings as SettingsIcon, Wrench, ShieldCheck, Database, Calculator, MessageSquare, CalendarDays, Check, 
+ChevronDown, ChevronRight, ClipboardCheck } from 'lucide-react';
 import { AICopilot } from './components/ai';
 import { NotificationCenter } from './components/ui';
 import Login from './views/auth/Login';
@@ -665,6 +666,7 @@ const AppLayout: React.FC = () => {
                     <UserMenuItem icon={UserIcon} color="#6366f1" bg="#eef7f6" label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
                     <UserMenuItem icon={ShieldCheck} color="#10b981" bg="#eef7f6" label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
                     <UserMenuItem icon={Database} color="#06b6d4" bg="#eef7f6" label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
+                    <UserMenuItem icon={ClipboardCheck} color="#0d9488" bg="#f0fdfa" label="Acceptance Run" onClick={() => { navigate('/admin/acceptance'); setShowUserMenu(false); }} />
                     <UserMenuItem icon={SettingsIcon} color="#f59e0b" bg="#fbead0" label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
                   </div>
                   <div style={{ borderTop: `1px solid #e4ddd1`, padding: 4 }}>
