@@ -96,6 +96,14 @@ const userSchemas = {
   }).refine((data) => Boolean(data.email || data.username), {
     message: 'Email or username is required'
   }),
+  // Public self-registration: role/permissions are intentionally NOT accepted.
+  // The backend always creates a non-privileged Clerk account; privileged
+  // roles are assigned only by admins through the mirror/seed paths.
+  publicRegister: z.object({
+    username: z.string().min(3).max(50),
+    email: z.string().email().optional(),
+    password: z.string().min(6)
+  }),
   createUser: z.object({
     username: z.string().min(3).max(50),
     email: z.string().email().optional(),

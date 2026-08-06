@@ -3,6 +3,8 @@
  * Validates the single-organization architecture: no company_id columns,
  * no tenant tables, passthrough tenantContext.
  */
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-tenant-isolation-tests';
+
 const { db, initDb } = require('../../db.cjs');
 const { tenantContext } = require('../../middleware/tenantContext.cjs');
 const { generateToken, verifyToken } = require('../../middleware/auth.cjs');
@@ -119,7 +121,12 @@ describe('Single-Organization Security', () => {
     expect(payload.company_id).toBeUndefined();
     expect(payload.companies).toBeUndefined();
 
-    const req = { headers: { authorization: `Bearer ${token}` } };
+    const req = {
+      path: '/api/customers',
+      method: 'GET',
+      originalUrl: '/api/customers',
+      headers: { authorization: `Bearer ${token}` },
+    };
     await verifyToken(req, { json: () => {} }, () => {});
     expect(req.user.id).toBe('usr-test-a');
   });

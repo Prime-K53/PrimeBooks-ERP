@@ -95,8 +95,7 @@ export const useVatStore = create<VatState>((set, get) => ({
             transactions: periodTransactions.map(t => t.id)
         };
 
-        const db = await dbService.initDB();
-        await db.put('vatReturns', newReturn);
+        await dbService.put('vatReturns', newReturn);
         set(state => ({ returns: [...state.returns, newReturn] }));
 
         return newReturn;
@@ -114,21 +113,18 @@ export const useVatStore = create<VatState>((set, get) => ({
             paymentDate
         };
 
-        // Mark transactions as filed
-        const db = await dbService.initDB();
-        const tx = db.transaction(['vatReturns', 'vatTransactions'], 'readwrite');
-
-        await tx.objectStore('vatReturns').put(updatedReturn);
-
-        for (const txId of vatReturn.transactions) {
-            const t = transactions.find(tr => tr.id === txId);
-            if (t) {
-                const updatedT = { ...t, isFiled: true, returnId };
-                await tx.objectStore('vatTransactions').put(updatedT);
+        // Write through the standard sync path so VAT returns and filed
+        // transactions reach the cloud like every other business record.
+        await dbService.executeAtomicOperation(['vatReturns', 'vatTransactions'], async (tx) => {
+            await tx.objectStore('vatReturns').put(updatedReturn);
+            for (const txId of vatReturn.transactions) {
+                const t = transactions.find(tr => tr.id === txId);
+                if (t) {
+                    const updatedT = { ...t, isFiled: true, returnId };
+                    await tx.objectStore('vatTransactions').put(updatedT);
+                }
             }
-        }
-
-        await tx.done;
+        });
 
         // Refresh state
         get().fetchVatData();

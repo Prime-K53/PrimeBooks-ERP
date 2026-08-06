@@ -544,6 +544,27 @@ function getCloudTable(storeName: string): string {
   return CLOUD_TABLE_MAP[storeName] || storeName;
 }
 
+// Reverse map (cloud table → local store) for writing server-stamped metadata
+// back into live records. Tables reached from more than one store are excluded
+// (ambiguous) so the stamp is never written to the wrong store.
+const REVERSE_CLOUD_TABLE: Record<string, string> = {};
+const AMBIGUOUS_CLOUD_TABLES: Record<string, boolean> = {};
+for (const [store, table] of Object.entries(CLOUD_TABLE_MAP)) {
+  if (table in REVERSE_CLOUD_TABLE) {
+    delete REVERSE_CLOUD_TABLE[table];
+    AMBIGUOUS_CLOUD_TABLES[table] = true;
+  } else if (!AMBIGUOUS_CLOUD_TABLES[table]) {
+    REVERSE_CLOUD_TABLE[table] = store;
+  }
+}
+
+function getStoreForCloudTable(table: string): string | null {
+  if (AMBIGUOUS_CLOUD_TABLES[table]) return null;
+  return REVERSE_CLOUD_TABLE[table] || table;
+}
+
+export { getStoreForCloudTable };
+
 const STORE_NAMES: (keyof NexusDB)[] = [
     'inventory', 'warehouses', 'purchases', 'sales',
     'quotations', 'jobOrders', 'customerPayments', 'boms', 'bomTemplates', 'marketAdjustments', 'marketAdjustmentTransactions', 'batches',

@@ -139,6 +139,29 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
   const settleItem = async (item: QueuedOperation, result: SyncOpResult | undefined) => {
     if (!result || result.ok) {
       await durableSyncQueue.markCompleted(item.id);
+
+      // Stamp the server-stamped version back into the live record (bulkPut:
+      // no re-enqueue) so the next edit carries a valid optimistic-concurrency
+      // base and never trips a `version_required` round-trip. Ambiguous or
+      // non-business tables are skipped and self-heal through the merge path.
+      const serverVersion = result ? Number(result.version) : NaN;
+      const stampedPayload = (item.payload ?? {}) as Record<string, unknown>;
+      if (Number.isFinite(serverVersion) && item.table !== '_files' && stampedPayload.id) {
+        try {
+          const { dbService, getStoreForCloudTable } = await import('./db');
+          const storeName = getStoreForCloudTable(item.table);
+          if (storeName) {
+            const live = await dbService.get<Record<string, unknown>>(storeName as never, String(stampedPayload.id));
+            if (live && typeof live === 'object') {
+              (live as Record<string, unknown>)._version = serverVersion;
+              (live as Record<string, unknown>).version = serverVersion;
+              await dbService.bulkPut(storeName as never, [live]);
+            }
+          }
+        } catch {
+          // best-effort version stamp
+        }
+      }
       return 'success';
     }
     // Optimistic-concurrency conflict: the gateway rejected the write because
@@ -274,12 +297,17 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
   // backend so the gateway never becomes a bandwidth bottleneck).
   const filePromises = fileItems.map(async (item) => {
     try {
-      const { openDB } = await import('idb');
-      const localDb = await openDB('nexus-db', 1);
-      const fileRecord = await localDb.get('files', item.fileRef);
-      if (fileRecord?.blob) {
-        await cloudDb.uploadFile(fileRecord.blob as File, 'documents', item.operationId);
+      // Blobs live in the canonical PrimeERP IndexedDB `files` store
+      // (written by dbService.uploadFile); never open a separate database —
+      // a mismatched DB name would silently never find the blob.
+      const { dbService } = await import('./db');
+      const blob = await dbService.getFileBlob(item.fileRef);
+      if (!blob) {
+        await durableSyncQueue.markFailed(item.id, 'File blob missing locally — upload cannot proceed');
+        deadLetter++;
+        return;
       }
+      await cloudDb.uploadFile(blob as File, 'documents', item.operationId);
       await durableSyncQueue.markCompleted(item.id);
       success++;
     } catch (err: unknown) {

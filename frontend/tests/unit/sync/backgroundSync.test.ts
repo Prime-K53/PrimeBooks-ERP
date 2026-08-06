@@ -44,6 +44,7 @@ function createDb() {
     operations: new Map(),
     meta: new Map(),
     metrics: new Map(),
+    inventory: new Map(),
   };
 
   const INDEX_FIELD: Record<string, string> = {
@@ -71,7 +72,18 @@ function createDb() {
     count: vi.fn(async (storeName: string) => stores[storeName].size),
     close: vi.fn(),
     objectStoreNames: { contains: vi.fn(() => true) },
-    transaction: vi.fn(() => ({ done: Promise.resolve(), objectStore: vi.fn() })),
+    transaction: vi.fn((storeNames: string | string[], _mode?: string) => {
+      const names = Array.isArray(storeNames) ? storeNames : [storeNames];
+      return {
+        done: Promise.resolve(),
+        objectStore: (n: string) => ({
+          put: async (value: Record<string, unknown>) => {
+            (stores[n] ||= new Map()).set(value.id as string, { ...value });
+          },
+          get: async (key: string) => stores[n]?.get(key),
+        }),
+      };
+    }),
     createObjectStore: vi.fn(),
     deleteObjectStore: vi.fn(),
   };
@@ -140,6 +152,42 @@ describe('backgroundSyncService', () => {
       const result2 = await backgroundSyncService.syncNow(false);
       expect(result2).toBeNull();
       await promise1;
+    });
+  });
+
+  describe('server version stamping', () => {
+    it('writes the server-stamped version back into the live record after a successful push', async () => {
+      // The local store for the `products` cloud table is `inventory`.
+      await freshDb.put('inventory', { id: 'p1', name: 'Widget' });
+      mockSendOps.mockImplementation(async (ops: { operationId?: string }[]) => ({
+        ok: true,
+        processed: ops.length,
+        succeeded: ops.length,
+        results: ops.map((op) => ({ operationId: op.operationId, ok: true, id: 'p1', version: 5 })),
+      }));
+
+      await durableSyncQueue.enqueue({ table: 'products', recordId: 'p1', operation: 'upsert', payload: { id: 'p1', name: 'Widget' } });
+
+      const result = await backgroundSyncService.syncNow();
+      expect(result!.success).toBe(1);
+
+      const live = await freshDb.getAll('inventory');
+      expect(live).toHaveLength(1);
+      expect(live[0]._version).toBe(5);
+      expect(live[0].version).toBe(5);
+      expect(live[0].name).toBe('Widget');
+    });
+
+    it('skips the stamp when the gateway returns no version', async () => {
+      await freshDb.put('inventory', { id: 'p1', name: 'Widget' });
+
+      await durableSyncQueue.enqueue({ table: 'products', recordId: 'p1', operation: 'upsert', payload: { id: 'p1', name: 'Widget' } });
+
+      const result = await backgroundSyncService.syncNow();
+      expect(result!.success).toBe(1);
+
+      const live = await freshDb.getAll('inventory');
+      expect(live[0]._version).toBeUndefined();
     });
   });
 

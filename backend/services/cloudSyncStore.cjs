@@ -138,28 +138,38 @@ async function checkVersion(table, id, incomingVersion) {
       conflict: true,
       conflictType: 'version_conflict',
       serverVersion,
-      server: {
-        id,
-        version: serverVersion,
-        updatedAt: existing?.updated_at || null,
-        data: (existing && existing.data && typeof existing.data === 'object') ? existing.data : {},
-      },
+      server: conflictServerPayload(id, existing, serverVersion),
     };
   }
   return { ok: true, serverVersion };
 }
 
+/** Shape of the server snapshot handed to the client for field-merging. */
+function conflictServerPayload(id, existing, serverVersion) {
+  return {
+    id,
+    version: serverVersion,
+    updatedAt: existing?.updated_at || null,
+    data: (existing && existing.data && typeof existing.data === 'object') ? existing.data : {},
+  };
+}
+
 /**
  * Upsert a row: `{ id, data: <domain fields>, updated_at }`.
- * Optional numeric `version` enables optimistic-lock protection.
+ * Numeric `version` is the optimistic-lock precondition.
  *
  * When the payload carries a base version, the gateway reads the current row
  * and rejects the write with a conflict payload if the stored version moved
  * (concurrent edit from another device). Accepted writes bump the stored
  * version monotonically (server-stamped), so a stale client can never
  * silently overwrite a newer row — it gets a mergeable conflict instead.
- * Writes without a version keep the legacy unconditional last-write-wins
- * behaviour and never touch the version column.
+ *
+ * Writes WITHOUT a version are only allowed as genuine creates (no existing
+ * row): the server stamps `version: 1` so later edits have a base. If the row
+ * already exists — including a soft-deleted tombstone — the write is rejected
+ * as a `version_required` conflict. This closes the two legacy hazards of
+ * unconditional last-write-wins: a stale client clobbering newer server state,
+ * and a bare payload re-animating a row another device soft-deleted.
  */
 async function upsertRow(table, id, payload, serverNow = new Date().toISOString()) {
   const domain = sanitizeRecord(payload);
@@ -190,8 +200,23 @@ async function upsertRow(table, id, payload, serverNow = new Date().toISOString(
     };
   }
 
-  // Legacy path (no version supplied): unconditional upsert, version untouched.
-  const row = { id, data: domain, updated_at: serverNow };
+  // No version supplied. An existing row — live or tombstoned — must not be
+  // overwritten unconditionally; return it as a `version_required` conflict
+  // so the client merges against the current snapshot and retries with a base.
+  const existing = await getRow(table, id);
+  if (existing) {
+    const serverVersion = existing.version != null ? Number(existing.version) : 0;
+    return {
+      id,
+      conflicted: true,
+      conflictType: 'version_required',
+      serverVersion,
+      server: conflictServerPayload(id, existing, serverVersion),
+    };
+  }
+
+  // Genuine create: no row exists, so stamp the initial version.
+  const row = { id, data: domain, updated_at: serverNow, version: 1 };
   const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
     headers: { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' },
     params: { on_conflict: 'id' },
@@ -202,7 +227,7 @@ async function upsertRow(table, id, payload, serverNow = new Date().toISOString(
     id: saved?.id || id,
     updatedAt: saved?.updated_at || serverNow,
     createdAt: saved?.created_at || null,
-    version: saved?.version != null ? Number(saved.version) : undefined,
+    version: saved?.version != null ? Number(saved.version) : 1,
   };
 }
 

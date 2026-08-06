@@ -10,10 +10,12 @@ const { validateBody, userSchemas } = require('../middleware/validation.cjs');
 // In production, use Redis or a database for multi-instance deployments.
 const pendingTwoFactorMap = new Map();
 
-router.post('/register', validateBody(userSchemas.createUser), async (req, res) => {
+router.post('/register', validateBody(userSchemas.publicRegister), async (req, res) => {
   try {
-    const { username, email, password, role, permissions } = req.body;
-    const user = await authService.registerUser({ username, email, password, role, permissions });
+    // Never trust client-supplied role/permissions on public registration.
+    // Self-registered accounts are always non-privileged Clerk users.
+    const { username, email, password } = req.body;
+    const user = await authService.registerUser({ username, email, password });
     const token = generateToken({ ...user });
     res.status(201).json({ message: 'User registered successfully', user, token });
   } catch (err) {
