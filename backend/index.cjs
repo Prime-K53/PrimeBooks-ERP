@@ -345,6 +345,11 @@ app.use('/api/erp-portal', erpPortalMirrorRoutes);
 const syncRoutes = require('./routes/sync.cjs');
 app.use('/api/sync', syncRoutes);
 
+// Live Multi-Device Acceptance Framework — admin-gated; mounted after the
+// global verifyToken so JWT auth is enforced before the router's admin check.
+const acceptanceRoutes = require('./routes/acceptance.cjs');
+app.use('/api/acceptance', acceptanceRoutes);
+
 // Shared helper for pricing validation
 async function validateItemsPricing(items) {
   if (!items || !Array.isArray(items)) return;

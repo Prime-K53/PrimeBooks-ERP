@@ -46,6 +46,7 @@ import CustomerLogin from './views/portal/CustomerLogin';
 import CustomerActivate from './views/portal/CustomerActivate';
 import CustomerForgotPassword from './views/portal/CustomerForgotPassword';
 import CustomerResetPassword from './views/portal/CustomerResetPassword';
+import { ToastProvider } from './views/portal/components/Toast';
 
 const CustomerDashboard = lazy(() => import('./views/portal/CustomerDashboard'));
 const CustomerOrders = lazy(() => import('./views/portal/CustomerOrders'));
@@ -190,6 +191,7 @@ const ProfileActivity = lazyWithRetry('./views/admin/ProfileActivity', () => imp
 const Profile = lazyWithRetry('./views/Profile', () => import('./views/Profile'));
 const MigrationHealth = lazyWithRetry('./views/admin/MigrationHealth', () => import('./views/admin/MigrationHealth'));
 const SyncHealth = lazyWithRetry('./views/admin/SyncHealth', () => import('./views/admin/SyncHealth'));
+const AcceptanceDashboard = lazyWithRetry('./views/admin/AcceptanceDashboard', () => import('./views/admin/AcceptanceDashboard'));
 const MembershipTiersAdmin = lazyWithRetry('./views/admin/MembershipTiersAdmin', () => import('./views/admin/MembershipTiersAdmin'));
 const PromotionsAdmin = lazyWithRetry('./views/admin/PromotionsAdmin', () => import('./views/admin/PromotionsAdmin'));
 const GiftCardsAdmin = lazyWithRetry('./views/admin/GiftCardsAdmin', () => import('./views/admin/GiftCardsAdmin'));
@@ -918,6 +920,7 @@ const AppLayout: React.FC = () => {
                 <Route path="/admin/profile" element={<ErrorBoundary name="Admin"><ProfileActivity /></ErrorBoundary>} />
                 <Route path="/admin/migration-health" element={<ErrorBoundary name="Admin"><MigrationHealth /></ErrorBoundary>} />
                 <Route path="/admin/sync-health" element={<ErrorBoundary name="Admin"><ProtectedRoute permission="admin.settings"><SyncHealth /></ProtectedRoute></ErrorBoundary>} />
+                <Route path="/admin/acceptance" element={<ErrorBoundary name="Admin"><ProtectedRoute permission="admin.settings"><AcceptanceDashboard /></ProtectedRoute></ErrorBoundary>} />
                 <Route path="/admin/membership-tiers" element={<ErrorBoundary name="Admin"><ProtectedRoute permission="admin.settings"><MembershipTiersAdmin /></ProtectedRoute></ErrorBoundary>} />
                 <Route path="/admin/promotions" element={<ErrorBoundary name="Admin"><ProtectedRoute permission="admin.settings"><PromotionsAdmin /></ProtectedRoute></ErrorBoundary>} />
                 <Route path="/admin/gift-cards" element={<ErrorBoundary name="Admin"><ProtectedRoute permission="admin.settings"><GiftCardsAdmin /></ProtectedRoute></ErrorBoundary>} />
@@ -1064,8 +1067,8 @@ const PortalRoutes = (
   <React.Fragment>
     <Route path="/portal/login" element={<CustomerLogin />} />
     <Route path="/portal/activate" element={<CustomerActivate />} />
-    <Route path="/portal/forgot-password" element={<CustomerForgotPassword />} />
-    <Route path="/portal/reset-password" element={<CustomerResetPassword />} />
+    <Route path="/portal/forgot-password" element={<ToastProvider><CustomerForgotPassword /></ToastProvider>} />
+    <Route path="/portal/reset-password" element={<ToastProvider><CustomerResetPassword /></ToastProvider>} />
     <Route path="/portal" element={<CustomerLayout />}>
       <Route index element={<Navigate to="/portal/dashboard" replace />} />
       <Route path="dashboard" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerDashboard /></Suspense>} />

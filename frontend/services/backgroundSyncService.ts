@@ -40,6 +40,11 @@ let isInitialized = false;
 let originalPushState: typeof history.pushState | null = null;
 let originalReplaceState: typeof history.replaceState | null = null;
 
+// Simulated-offline gate (used by the acceptance framework). While paused the
+// sync engine never sends batches to the gateway, but local writes continue to
+// enqueue normally — exactly the offline-first condition.
+let paused = false;
+
 function onVisibilityChange() {
   if (document.visibilityState === 'visible') {
     syncOnce(true).catch(() => {});
@@ -338,6 +343,10 @@ async function syncOnce(force: boolean = false): Promise<BatchResult | null> {
   // overlapping cloud writes.
   if (state.isSyncing) return null;
 
+  // Simulated offline: the acceptance framework (and any user who wants a
+  // true airplane mode) pauses network sync while local writes keep queuing.
+  if (paused) return null;
+
   // Cheap short-circuit: when nothing is pending there is nothing to do, so we
   // avoid the heavy getMetrics()/dequeue() scans that fired on every page
   // navigation and every background interval tick.
@@ -603,6 +612,16 @@ export const backgroundSyncService = {
     return syncOnce(true);
   },
 
+  /** True while the sync engine is in simulated-offline mode. */
+  isPaused(): boolean {
+    return paused;
+  },
+
+  /** Pause/resume network sync without touching the local queue. */
+  setPaused(value: boolean): void {
+    paused = value;
+  },
+
   /** Alias for initialize — used by syncService.ts */
   start(): void {
     this.initialize().catch(() => {});
@@ -611,6 +630,7 @@ export const backgroundSyncService = {
   /** Reset internal state for test isolation */
   reset(): void {
     state.isSyncing = false;
+    paused = false;
     state.lastSyncStart = null;
     state.lastSyncSuccess = null;
     state.lastSyncFailure = null;

@@ -336,6 +336,10 @@ const getFromLegacyStore = async <T>(storeName: keyof NexusDB, id: string): Prom
 
 const writeQueues = new Map<string, Promise<void>>();
 
+// Simulated-offline gate for the acceptance framework: while true, saveFile
+// skips the Supabase Storage attempt and uses the offline cache + queue path.
+let forceOffline = false;
+
 const putToLegacyStore = async <T>(storeName: keyof NexusDB, item: T): Promise<string> => {
     const key = String(storeName);
     const prev = writeQueues.get(key) ?? Promise.resolve();
@@ -967,6 +971,11 @@ export const dbService = {
         cb(fileHandle ? 'connected' : 'idle');
     },
 
+    /** Force simulated offline (acceptance framework): files cache + queue only. */
+    setForceOffline(value: boolean): void {
+        forceOffline = value;
+    },
+
     async executeAtomicOperation<T>(stores: (keyof NexusDB)[], operation: (tx: any) => Promise<T>): Promise<T> {
         // Cloud-authoritative: delegate to cloud-aware put/get/delete when Supabase is available
         const cloudTx = {
@@ -1275,26 +1284,30 @@ export const dbService = {
     async saveFile(file: File): Promise<string> {
         const id = `FILE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        // Cloud-authoritative: upload to Supabase Storage first
-        try {
-            const fileId = await cloudDb.uploadFile(file);
-            if (fileId) {
-                // Hydrate local cache for offline availability
-                try {
-                    await withDbRecovery(async (db) => {
-                        await db.put('files', {
-                            id: fileId,
-                            blob: file,
-                            name: file.name,
-                            type: file.type,
-                            created: new Date().toISOString()
+        // Cloud-authoritative: upload to Supabase Storage first. When the
+        // acceptance framework forces offline, skip the cloud attempt and go
+        // straight to the local cache + queue.
+        if (!forceOffline) {
+            try {
+                const fileId = await cloudDb.uploadFile(file);
+                if (fileId) {
+                    // Hydrate local cache for offline availability
+                    try {
+                        await withDbRecovery(async (db) => {
+                            await db.put('files', {
+                                id: fileId,
+                                blob: file,
+                                name: file.name,
+                                type: file.type,
+                                created: new Date().toISOString()
+                            });
                         });
-                    });
-                } catch { /* cache best-effort */ }
-                return fileId;
+                    } catch { /* cache best-effort */ }
+                    return fileId;
+                }
+            } catch (err) {
+                console.warn(`[DB] File upload failed for ${file.name}, queueing for retry:`, err);
             }
-        } catch (err) {
-            console.warn(`[DB] File upload failed for ${file.name}, queueing for retry:`, err);
         }
 
         // Offline fallback: cache locally and queue for upload

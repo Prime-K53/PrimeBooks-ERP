@@ -409,4 +409,36 @@ describe('backgroundSyncService', () => {
       expect(fullState.totalSynced).toBeGreaterThan(0);
     });
   });
+
+  describe('simulated offline gate (acceptance framework)', () => {
+    it('tracks the paused flag and resets it with reset()', () => {
+      expect(backgroundSyncService.isPaused()).toBe(false);
+      backgroundSyncService.setPaused(true);
+      expect(backgroundSyncService.isPaused()).toBe(true);
+      backgroundSyncService.reset();
+      expect(backgroundSyncService.isPaused()).toBe(false);
+    });
+
+    it('queues local writes while paused but does not send anything to the gateway', async () => {
+      backgroundSyncService.setPaused(true);
+      await durableSyncQueue.enqueue({ table: 'products', recordId: 'p1', operation: 'upsert', payload: { name: 'Offline' } });
+
+      const result = await backgroundSyncService.syncNow();
+      expect(result).toBeNull();
+      expect(mockSendOps).not.toHaveBeenCalled();
+      expect(await durableSyncQueue.countPending()).toBe(1);
+    });
+
+    it('drains the queued writes once unpaused', async () => {
+      backgroundSyncService.setPaused(true);
+      await durableSyncQueue.enqueue({ table: 'products', recordId: 'p1', operation: 'upsert', payload: { name: 'Offline' } });
+      await backgroundSyncService.syncNow();
+
+      backgroundSyncService.setPaused(false);
+      const result = await backgroundSyncService.syncNow();
+      expect(result).toBeDefined();
+      expect(result!.success).toBe(1);
+      expect(await durableSyncQueue.countPending()).toBe(0);
+    });
+  });
 });
