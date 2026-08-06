@@ -46,6 +46,9 @@ const EVENT_TYPES = Object.freeze({
   REQUEST_ASSIGNED: 'request_assigned',
   REQUEST_CLARIFICATION: 'request_clarification',
   REQUEST_REJECTED: 'request_rejected',
+   REQUEST_MARKED: 'request_marked',
+   REQUEST_UNMARKED: 'request_unmarked',
+   REQUEST_DELETED: 'request_deleted',
   QUOTATION_GENERATION_STARTED: 'quotation_generation_started',
   QUOTATION_GENERATED: 'quotation_generated',
   QUOTATION_SAVED: 'quotation_saved',
@@ -795,6 +798,64 @@ const portalLifecycleService = {
     return this.adminGetRequest(id);
   },
 
+  // ─── Admin: mark/unmark a request for follow-up ───────────────────
+  async markRequest(id, { admin, context = {} }) {
+    const request = await this.adminGetRequest(id);
+    if (!request) throw new Error('Request not found');
+    if (request.deleted_at) throw new Error('Request has been deleted');
+
+    const newMarked = request.marked ? 0 : 1;
+    await runQuery(
+      `UPDATE quotation_requests SET marked = ?, updated_at = ? WHERE id = ?`,
+      [newMarked, nowIso(), id]
+    );
+
+    await addTimeline( request.customer_id, 'request', id, newMarked ? EVENT_TYPES.REQUEST_MARKED : EVENT_TYPES.REQUEST_UNMARKED,
+      newMarked ? 'Request marked' : 'Request unmarked',
+      `${admin.name || 'Sales'} ${newMarked ? 'marked' : 'unmarked'} ${request.request_number}.`,
+      { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
+      { marked: newMarked });
+
+    await logAudit({
+      actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' }, action: newMarked ? 'PORTAL_REQUEST_MARK' : 'PORTAL_REQUEST_UNMARK', entityType: 'quotation_request', entityId: id,
+      details: `${request.request_number} ${newMarked ? 'marked' : 'unmarked'} by sales`,
+      oldValue: { marked: request.marked }, newValue: { marked: newMarked }, context,
+    });
+
+    emitEntityChange('admin', { customerId: request.customer_id, docType: 'request', docId: id, marked: newMarked });
+    return this.adminGetRequest(id);
+  },
+
+  // ─── Admin: delete (clear) a request ──────────────────────────────
+  async deleteRequest(id, { admin, context = {} }) {
+    const request = await this.adminGetRequest(id);
+    if (!request) throw new Error('Request not found');
+    if (request.deleted_at) throw new Error('Request is already deleted');
+    if (request.status === REQUEST_STATUS.CONVERTED && request.quotation_id) {
+      throw new Error('Cannot delete a request that has been converted to a quotation');
+    }
+
+    const now = nowIso();
+    await runQuery(
+      `UPDATE quotation_requests SET status = ?, deleted_at = ?, updated_at = ? WHERE id = ?`,
+      [REQUEST_STATUS.CANCELLED, now, now, id]
+    );
+
+    await addTimeline( request.customer_id, 'request', id, EVENT_TYPES.REQUEST_DELETED,
+      'Request deleted', `${admin.name || 'Sales'} deleted ${request.request_number}.`,
+      { type: 'admin', id: admin.id, name: admin.name || 'Sales' },
+      { deletedAt: now });
+
+    await logAudit({
+      actor: { id: admin.id, name: admin.name || 'Sales', role: admin.role || 'admin' }, action: 'PORTAL_REQUEST_DELETE', entityType: 'quotation_request', entityId: id,
+      details: `${request.request_number} deleted by sales`,
+      oldValue: { status: request.status, deleted_at: null }, newValue: { status: REQUEST_STATUS.CANCELLED, deleted_at: now }, context,
+    });
+
+    emitEntityChange('admin', { customerId: request.customer_id, docType: 'request', docId: id, status: REQUEST_STATUS.CANCELLED, deleted: true });
+    return { id, status: REQUEST_STATUS.CANCELLED, deleted: true };
+  },
+
   // ─── Admin: sales opened the request (audit + timeline only) ───────────────
   async markRequestOpened(id, { admin, context = {} }) {
     const request = await this.adminGetRequest(id);
@@ -845,8 +906,8 @@ const portalLifecycleService = {
 
     // Prefill payload for the ERP quotation editor. No quotation exists yet.
     const customer = await getOne(
-      `SELECT id, name, email, phone, address, billingAddress, shippingAddress, city,
-              segment, paymentTerms, currency, balance
+      `SELECT id, name, email, phone, address, city,
+              segment, balance
          FROM customers WHERE id = ?`,
       [request.customer_id]
     );
@@ -1029,8 +1090,8 @@ const portalLifecycleService = {
     emitEntityChange('admin', { customerId: request.customer_id, docType: 'request', docId: requestId, status: REQUEST_STATUS.READY_FOR_CONVERSION });
 
     const customer = await getOne(
-      `SELECT id, name, email, phone, address, billingAddress, shippingAddress, city,
-              segment, paymentTerms, currency, balance
+      `SELECT id, name, email, phone, address, city,
+              segment, balance
          FROM customers WHERE id = ?`,
       [request.customer_id]
     );

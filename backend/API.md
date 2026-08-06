@@ -153,6 +153,8 @@ Company context: `x-company-id` header.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/portal/admin/requests` | List customer requests (optional `?status=`) |
+| POST | `/portal/admin/requests/:id/mark` | Toggle the marked flag (admin follow-up) |
+| DELETE | `/portal/admin/requests/:id` | Delete (clear) a request - soft delete (cancelled + deleted_at) |
 | POST | `/portal/admin/requests/:id/generate-quotation` | Start quotation flow (no number reserved) |
 | POST | `/portal/admin/requests/:id/complete-quotation` | Link saved ERP quotation (creates version 1 snapshot) |
 | POST | `/portal/admin/requests/:id/generate-order` | Start sales-order flow (no number reserved) |

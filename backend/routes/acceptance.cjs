@@ -85,6 +85,11 @@ router.post('/runs/:id/advance', wrap(async (req, res) => {
   res.json({ ok: true, run });
 }));
 
+router.post('/runs/:id/close', wrap(async (req, res) => {
+  const run = await acceptanceService.closeRun(req.params.id);
+  res.json({ ok: true, run });
+}));
+
 router.post('/runs/:id/patch', wrap(async (req, res) => {
   const run = await acceptanceService.patchRunData(req.params.id, req.body?.patch || {});
   res.json({ ok: true, run });

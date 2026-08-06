@@ -67,6 +67,9 @@ export const adminPortalApi = {
   put<T>(path: string, body?: any): Promise<T> {
     return adminRequest<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
   },
+  delete<T>(path: string): Promise<T> {
+    return adminRequest<T>(path, { method: 'DELETE' });
+  },
 };
 
 export interface AdminNotification {
@@ -136,6 +139,8 @@ export interface AdminQuotationRequest {
   created_by: string;
   created_at: string;
   updated_at: string;
+  marked?: number;
+  deleted_at?: string | null;
 }
 
 export interface QuotationPrefillPayload {
@@ -389,6 +394,12 @@ export const adminLifecycle = {
     },
     assign(id: string, body: { assignTo?: string; assignToName?: string }): Promise<AdminQuotationRequest> {
       return adminPortalApi.post<AdminQuotationRequest>(`/requests/${id}/assign`, body);
+    },
+    mark(id: string): Promise<AdminQuotationRequest> {
+      return adminPortalApi.post<AdminQuotationRequest>(`/requests/${id}/mark`, {});
+    },
+    remove(id: string): Promise<{ id: string; status: string; deleted: boolean }> {
+      return adminPortalApi.delete<{ id: string; status: string; deleted: boolean }>(`/requests/${id}`);
     },
     /**
      * Starts quotation generation. Does NOT create a quotation and does NOT

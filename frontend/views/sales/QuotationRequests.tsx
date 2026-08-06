@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, XCircle, FileText, RefreshCw, Loader2, MessageSquare,
   PackageCheck, Inbox, History, ChevronDown, ArrowUpRight, History as HistoryIcon,
-  BadgeCheck, Send,
+  BadgeCheck, Send, Flag, Trash2,
 } from 'lucide-react';
 import {
   adminLifecycle, subscribeAdminEvents,
@@ -685,6 +685,29 @@ const RequestInbox: React.FC<PanelProps> = ({ requests, busy, onAction, cardStyl
                         onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
                       >
                         {busy === `clarify_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />} Ask Customer
+                      </button>
+                      <button
+                        onClick={() => onAction(`mark_${r.id}`, () => adminLifecycle.requests.mark(r.id))}
+                        disabled={busy === `mark_${r.id}`}
+                        title={r.marked ? 'Unmark request' : 'Mark request for follow-up'}
+                        style={{ ...btnGhost, color: r.marked ? amber[600] : inkSoft, borderColor: r.marked ? amber[300] : hairline, background: r.marked ? amber[100] : paper, opacity: busy === `mark_${r.id}` ? .5 : 1 }}
+                        onMouseEnter={e => { e.currentTarget.style.background = r.marked ? amber[100] : teal[50]; e.currentTarget.style.color = r.marked ? amber[600] : teal[800]; e.currentTarget.style.borderColor = r.marked ? amber[300] : teal[200]; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = r.marked ? amber[100] : paper; e.currentTarget.style.color = r.marked ? amber[600] : inkSoft; e.currentTarget.style.borderColor = r.marked ? amber[300] : hairline; }}
+                      >
+                        {busy === `mark_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <Flag size={14} />} {r.marked ? 'Unmark' : 'Mark'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!window.confirm(`Delete request ${r.request_number}? This will clear it from the queue.`)) return;
+                          onAction(`delete_${r.id}`, () => adminLifecycle.requests.remove(r.id));
+                        }}
+                        disabled={busy === `delete_${r.id}`}
+                        title="Delete (clear) this request"
+                        style={{ ...btnGhost, color: danger, borderColor: '#fecaca', background: '#fff7f7', opacity: busy === `delete_${r.id}` ? .5 : 1 }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#fff7f7'; e.currentTarget.style.borderColor = '#fecaca'; }}
+                      >
+                        {busy === `delete_${r.id}` ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete
                       </button>
                     </div>
                   </>

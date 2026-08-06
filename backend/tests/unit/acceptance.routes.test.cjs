@@ -130,6 +130,12 @@ describe('device coordination endpoints', () => {
     expect(mockService.patchRunData).toHaveBeenCalledWith('ACC-2026-08-06-001', { handoff: { bEditDone: true } });
   });
 
+  it('close forwards the close request', async () => {
+    const res = await request(buildApp()).post('/api/acceptance/runs/ACC-2026-08-06-001/close');
+    expect(res.status).toBe(200);
+    expect(mockService.closeRun).toHaveBeenCalledWith('ACC-2026-08-06-001');
+  });
+
   it('records observations and telemetry', async () => {
     const observation = { deviceId: 'usr_admin_1', scenarioKey: 'conflict', check: { name: 'x', status: 'pass' } };
     await request(buildApp()).post('/api/acceptance/runs/ACC-2026-08-06-001/observation').send(observation);

@@ -328,6 +328,33 @@ router.post('/requests/:id/assign', async (req, res) => {
   }
 });
 
+// Toggle the marked flag on a request (admin follow-up). Returns the updated request.
+router.post('/requests/:id/mark', async (req, res) => {
+  try {
+    const data = await portalLifecycleService.markRequest(req.params.id, {
+      admin: adminActor(req),
+      context: requestContext(req)});
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Mark request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to mark request' });
+  }
+});
+
+// Delete (clear) a request. Soft delete: sets status to cancelled and stamps
+// deleted_at so the request disappears from active queues.
+router.delete('/requests/:id', async (req, res) => {
+  try {
+    const data = await portalLifecycleService.deleteRequest(req.params.id, {
+      admin: adminActor(req),
+      context: requestContext(req)});
+    res.json(data);
+  } catch (err) {
+    console.error('[PortalAdmin] Delete request error:', err);
+    res.status(400).json({ error: err.message || 'Failed to delete request' });
+  }
+});
+
 // Start quotation generation: does NOT create a quotation and does NOT reserve
 // a number. Records the event and returns the prefill payload for the standard
 // ERP quotation editor.

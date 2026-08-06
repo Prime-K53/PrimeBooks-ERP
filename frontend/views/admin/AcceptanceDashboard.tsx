@@ -36,9 +36,23 @@ const AcceptanceDashboard: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [joinId, setJoinId] = useState('');
   const [status, setStatus] = useState<string | null>(null);
+  const [apiDown, setApiDown] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const failureRef = useRef(0);
 
   const myId = getDeviceId();
+
+  const stopPolling = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const startPolling = () => {
+    if (timerRef.current) return;
+    timerRef.current = setInterval(() => void refresh(), 2000);
+  };
 
   const refresh = async () => {
     setRun(acceptanceOrchestrator.getRun());
@@ -46,14 +60,28 @@ const AcceptanceDashboard: React.FC = () => {
     try {
       const active = await acceptanceApi.getActiveRun();
       if (active) setRun(acceptanceOrchestrator.getRun() ?? active);
-    } catch { /* offline or not configured */ }
+      failureRef.current = 0;
+    } catch {
+      failureRef.current += 1;
+      if (failureRef.current >= 3) {
+        setApiDown(true);
+        stopPolling();
+      }
+    }
+  };
+
+  const retry = () => {
+    failureRef.current = 0;
+    setApiDown(false);
+    startPolling();
+    void refresh();
   };
 
   useEffect(() => {
     void refresh();
-    timerRef.current = setInterval(() => void refresh(), 2000);
+    startPolling();
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      stopPolling();
       acceptanceOrchestrator.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,6 +211,19 @@ const AcceptanceDashboard: React.FC = () => {
         </div>
       </div>
 
+      {apiDown && (
+        <div style={{ background: '#fbeaea', color: danger, borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 16, fontWeight: 500 }}>
+          The acceptance API is not reachable — the running backend predates the acceptance routes. Restart the backend
+          (Ctrl+C then <code style={{ background: '#f4ecec', padding: '1px 5px', borderRadius: 4 }}>npm start</code> in
+          <code style={{ background: '#f4ecec', padding: '1px 5px', borderRadius: 4 }}>backend/</code>), then retry.
+          <button
+            onClick={retry}
+            style={{ marginLeft: 10, padding: '4px 10px', borderRadius: 6, border: `1px solid ${danger}`, background: '#fff', color: danger, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {status && (
         <div style={{ background: amber[100], color: '#7a4a12', borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 16, fontWeight: 500 }}>
           {status}

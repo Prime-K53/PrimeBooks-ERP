@@ -1075,6 +1075,8 @@ const initDb = () => {
         { table: 'quotation_requests', column: 'sales_order_number', type: 'TEXT' },
         { table: 'quotation_requests', column: 'reorder_of', type: 'TEXT' },
         { table: 'quotation_requests', column: 'reorder_of_number', type: 'TEXT' },
+        { table: 'quotation_requests', column: 'marked', type: 'INTEGER DEFAULT 0' },
+        { table: 'quotation_requests', column: 'deleted_at', type: 'TEXT' },
         // Customer Portal 2FA (Phase: portal security)
         { table: 'portal_users', column: 'two_factor_enabled', type: "INTEGER DEFAULT 0" },
         { table: 'portal_users', column: 'two_factor_secret', type: 'TEXT' },
@@ -2161,13 +2163,15 @@ const initDb = () => {
         quotation_number TEXT,
         sales_order_id TEXT,
         sales_order_number TEXT,
-        reorder_of TEXT,
+reorder_of TEXT,
         reorder_of_number TEXT,
+        marked INTEGER DEFAULT 0,
+        deleted_at TEXT,
         created_by TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`); 
+      db.run(`CREATE INDEX IF NOT EXISTS idx_quotation_requests_customer ON quotation_requests(customer_id)`);
       // NOTE: the legacy quotation_requests rebuild migration runs below, after
       // the column migrations — SQLite re-prepares every trigger when a table is
       // renamed, so all columns referenced by triggers must exist first.
@@ -2328,47 +2332,49 @@ const initDb = () => {
             db.serialize(() => {
               db.run(`ALTER TABLE quotation_requests RENAME TO quotation_requests_legacy`, (rErr) => {
                 if (rErr) return console.error('[DB] quotation_requests rebuild rename failed:', rErr.message);
-                db.run(`CREATE TABLE quotation_requests (
-                  id TEXT PRIMARY KEY,
-                  request_number TEXT UNIQUE NOT NULL,
-                  customer_id TEXT NOT NULL,
-                  customer_name TEXT,
-                  request_type TEXT NOT NULL DEFAULT 'quotation' CHECK(request_type IN ('quotation', 'order')),
-                  items TEXT NOT NULL,
-                  subtotal REAL DEFAULT 0,
-                  notes TEXT,
-                  status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('draft', 'submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion', 'converted', 'rejected', 'cancelled')),
-                  review_note TEXT,
-                  reviewed_by TEXT,
-                  reviewed_at TEXT,
-                  quotation_id TEXT,
-                  requested_delivery_date TEXT,
-                  attachments TEXT,
-                  assigned_to TEXT,
-                  assigned_by TEXT,
-                  assigned_at TEXT,
-                  converted_at TEXT,
-                  converted_by TEXT,
-                  quotation_number TEXT,
-                  sales_order_id TEXT,
-                  sales_order_number TEXT,
-                  reorder_of TEXT,
-                  reorder_of_number TEXT,
-                  created_by TEXT,
-                  created_at TEXT DEFAULT (datetime('now')),
-                  updated_at TEXT DEFAULT (datetime('now'))
-                )`, (cErr) => {
+db.run(`CREATE TABLE quotation_requests (
+	                   id TEXT PRIMARY KEY,
+	                   request_number TEXT UNIQUE NOT NULL,
+	                   customer_id TEXT NOT NULL,
+	                   customer_name TEXT,
+	                   request_type TEXT NOT NULL DEFAULT 'quotation' CHECK(request_type IN ('quotation', 'order')),
+	                   items TEXT NOT NULL,
+	                   subtotal REAL DEFAULT 0,
+	                   notes TEXT,
+	                   status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('draft', 'submitted', 'assigned', 'under_review', 'waiting_for_customer', 'ready_for_conversion', 'converted', 'rejected', 'cancelled')),
+	                   review_note TEXT,
+	                   reviewed_by TEXT,
+	                   reviewed_at TEXT,
+	                   quotation_id TEXT,
+	                   requested_delivery_date TEXT,
+	                   attachments TEXT,
+	                   assigned_to TEXT,
+	                   assigned_by TEXT,
+	                   assigned_at TEXT,
+	                   converted_at TEXT,
+	                   converted_by TEXT,
+	                   quotation_number TEXT,
+	                   sales_order_id TEXT,
+	                   sales_order_number TEXT,
+	                   reorder_of TEXT,
+	                   reorder_of_number TEXT,
+	                   marked INTEGER DEFAULT 0,
+	                   deleted_at TEXT,
+	                   created_by TEXT,
+	                   created_at TEXT DEFAULT (datetime('now')),
+	                   updated_at TEXT DEFAULT (datetime('now'))
+	                 )`, (cErr) => {
                   if (cErr) return console.error('[DB] quotation_requests rebuild create failed:', cErr.message);
-                  db.run(`INSERT INTO quotation_requests
-                     (id, request_number, customer_id, customer_name, request_type,
-                      items, subtotal, notes, status, review_note, reviewed_by, reviewed_at,
-                      quotation_id, created_by, created_at, updated_at)
-                   SELECT id, request_number, customer_id, customer_name, request_type,
-                          items, subtotal, notes,
-                          CASE WHEN status = 'quotation_ready' THEN 'ready_for_conversion' ELSE status END,
-                          review_note, reviewed_by, reviewed_at,
-                          quotation_id, created_by, created_at, updated_at
-                   FROM quotation_requests_legacy`, (iErr) => {
+db.run(`INSERT INTO quotation_requests
+	                      (id, request_number, customer_id, customer_name, request_type,
+	                       items, subtotal, notes, status, review_note, reviewed_by, reviewed_at,
+	                       quotation_id, created_by, created_at, updated_at, marked, deleted_at)
+	                    SELECT id, request_number, customer_id, customer_name, request_type,
+	                           items, subtotal, notes,
+	                           CASE WHEN status = 'quotation_ready' THEN 'ready_for_conversion' ELSE status END,
+	                           review_note, reviewed_by, reviewed_at,
+	                           quotation_id, created_by, created_at, updated_at, 0, NULL
+	                    FROM quotation_requests_legacy`, (iErr) => {
                     if (iErr) return console.error('[DB] quotation_requests rebuild copy failed:', iErr.message);
                     db.run(`DROP TABLE quotation_requests_legacy`, (dErr) => {
                       if (dErr) console.error('[DB] quotation_requests legacy drop failed:', dErr.message);

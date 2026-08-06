@@ -169,12 +169,6 @@ const CustomerLogin: React.FC = () => {
                   Forgot password?
                 </Link>
               </div>
-
-              <div className="mt-10 pt-6 border-t border-slate-200 text-center">
-                <Link to="/login" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
-                  Admin Login
-                </Link>
-              </div>
             </form>
           )}
         </div>

@@ -24,7 +24,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error(`${init.method || 'GET'} ${path} -> ${response.status}: ${body.slice(0, 300)}`);
   }
   const text = await response.text();
-  return text ? (JSON.parse(text) as T) : (undefined as unknown as T);
+  if (!text) return undefined as unknown as T;
+  const parsed: unknown = JSON.parse(text);
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>;
+    if ('run' in record) return record.run as T;
+    if ('runs' in record) return record.runs as T;
+  }
+  return parsed as T;
 }
 
 const json = (body: unknown) => ({ 'Content-Type': 'application/json', body: JSON.stringify(body) });
@@ -50,7 +57,7 @@ export const acceptanceApi = {
     return request(`/runs/${runId}/start`, { method: 'POST', ...json({}) });
   },
   advance(runId: string, scenarioKey: string, index: number, step: string): Promise<AcceptanceRun> {
-    return request(`/runs/${runId}/advance`, { method: 'POST', ...json({ scenarioKey, index, step }) });
+    return request(`/runs/${runId}/advance`, { method: 'POST', ...json({ scenarioIndex: index, scenarioKey, step }) });
   },
   patch(runId: string, data: Record<string, unknown>): Promise<AcceptanceRun> {
     return request(`/runs/${runId}/patch`, { method: 'POST', ...json({ patch: data }) });
