@@ -188,6 +188,167 @@ describe('backgroundSyncService', () => {
     });
   });
 
+  describe('conflict flow', () => {
+    const conflictResult = (operationId?: string, data: Record<string, unknown> = { id: 'p1', name: 'Server Name', price: 200, version: 7 }) => ({
+      operationId,
+      ok: false,
+      conflict: true,
+      version: 7,
+      server: {
+        version: 7,
+        updatedAt: '2026-06-30T00:00:00Z',
+        data,
+      },
+    });
+
+    const alwaysConflict = (data?: Record<string, unknown>) => async (ops: { operationId?: string }[]) => ({
+      ok: true,
+      processed: ops.length,
+      succeeded: 0,
+      results: ops.map((op) => conflictResult(op.operationId, data)),
+    });
+
+    it('should field-merge disjoint edits, requeue with fresh version, then complete on retry', async () => {
+      let call = 0;
+      mockSendOps.mockImplementation(async (ops: { operationId?: string }[]) => {
+        call++;
+        if (call === 1) {
+          // Server snapshot has no `name` — the local edit is a pure addition.
+          return {
+            ok: true,
+            processed: ops.length,
+            succeeded: 0,
+            results: ops.map((op) => conflictResult(op.operationId, { id: 'p1', price: 200, version: 7 })),
+          };
+        }
+        return {
+          ok: true,
+          processed: ops.length,
+          succeeded: ops.length,
+          results: ops.map((op) => ({ operationId: op.operationId, ok: true, id: 'p1' })),
+        };
+      });
+
+      await durableSyncQueue.enqueue({
+        table: 'products', recordId: 'p1', operation: 'upsert',
+        payload: { id: 'p1', name: 'Local Name' },
+      });
+
+      const result = await backgroundSyncService.syncNow();
+      expect(result!.success).toBe(1);
+      expect(result!.conflictsResolved).toBe(1);
+      expect(await durableSyncQueue.getAll('completed')).toHaveLength(1);
+
+      // The re-pushed payload carried the local-only field, the server field,
+      // and the fresh base version stamped by the resolver.
+      const repushed = mockSendOps.mock.calls[1][0] as { payload: Record<string, unknown> }[];
+      expect(repushed[0].payload.name).toBe('Local Name');
+      expect(repushed[0].payload.price).toBe(200);
+      expect(repushed[0].payload._version).toBe(7);
+
+      const conflicts = await durableSyncQueue.getConflicts(10);
+      expect(conflicts).toHaveLength(1);
+      expect((conflicts[0] as any).resolved).toBe('auto');
+    });
+
+    it('should record review resolution for same-field edits and requeue for a follow-up push', async () => {
+      let call = 0;
+      mockSendOps.mockImplementation(async (ops: { operationId?: string }[]) => {
+        call++;
+        if (call === 1) {
+          // First batch conflicts; the requeued merge then matches the server row.
+          return {
+            ok: true,
+            processed: ops.length,
+            succeeded: 0,
+            results: ops.map((op) => conflictResult(op.operationId)),
+          };
+        }
+        return {
+          ok: true,
+          processed: ops.length,
+          succeeded: ops.length,
+          results: ops.map((op) => ({ operationId: op.operationId, ok: true, id: 'p1' })),
+        };
+      });
+
+      await durableSyncQueue.enqueue({
+        table: 'products', recordId: 'p1', operation: 'upsert',
+        payload: { id: 'p1', name: 'Local Name', _updatedAt: '2026-07-01T00:00:00Z' },
+      });
+
+      const result = await backgroundSyncService.syncNow();
+      expect(result!.success).toBe(1);
+      expect(result!.conflictsResolved).toBe(1);
+
+      const conflicts = await durableSyncQueue.getConflicts(10);
+      expect((conflicts[0] as any).resolved).toBe('review');
+      expect((conflicts[0] as any).conflictedFields).toContain('name');
+    });
+
+    it('should dead-letter within one pass when a conflict never converges (merge cap)', async () => {
+      // The server row never gains the local-only `name` field, so every merge
+      // round re-pushes the same delta and the op can never converge.
+      mockSendOps.mockImplementation(alwaysConflict({ id: 'p1', price: 200, version: 7 }));
+
+      await durableSyncQueue.enqueue({
+        table: 'products', recordId: 'p1', operation: 'upsert',
+        payload: { id: 'p1', name: 'Local Name' },
+      });
+
+      // 3 merge round-trips happen inside a single pass (batches 1-3), then
+      // batch 4 exceeds MAX_CONFLICT_MERGES and dead-letters the op.
+      const result = await backgroundSyncService.syncNow();
+      expect(result!.success).toBe(0);
+      expect(result!.deadLetter).toBe(1);
+      expect(result!.conflictsResolved).toBe(3);
+
+      const dlq = await durableSyncQueue.getAll('dead_letter');
+      expect(dlq).toHaveLength(1);
+      expect(dlq[0].lastError).toContain('CONFLICT requires review');
+      expect(dlq[0].lastError).toContain('repeated versioning conflicts');
+      expect(dlq[0].errorType).toBe('permanent');
+    });
+
+    it('should complete a delete whose conflict raced an upsert (delete intent binds)', async () => {
+      mockSendOps.mockImplementation(alwaysConflict());
+
+      await durableSyncQueue.enqueue({
+        table: 'products', recordId: 'p1', operation: 'delete', payload: { id: 'p1' },
+      });
+
+      const result = await backgroundSyncService.syncNow();
+      expect(result!.success).toBe(1);
+      expect(result!.conflictsResolved).toBe(1);
+      expect(await durableSyncQueue.getAll('completed')).toHaveLength(1);
+    });
+
+    it('should mark an op completed when the merge converges with the server row', async () => {
+      mockSendOps.mockImplementation(alwaysConflict({ id: 'p1', name: 'Same', price: 100, version: 7 }));
+
+      await durableSyncQueue.enqueue({
+        table: 'products', recordId: 'p1', operation: 'upsert',
+        payload: { id: 'p1', name: 'Same', price: 100 },
+      });
+
+      const result = await backgroundSyncService.syncNow();
+      expect(result!.success).toBe(1);
+      expect(result!.conflictsResolved).toBe(1);
+      expect(await durableSyncQueue.getAll('completed')).toHaveLength(1);
+    });
+  });
+
+  describe('adaptive batch sizing', () => {
+    it('should scale batch size up for large pending queues', async () => {
+      for (let i = 0; i < 25; i++) {
+        await durableSyncQueue.enqueue({ table: 'products', recordId: `p${i}`, operation: 'upsert', payload: {} });
+      }
+      const result = await backgroundSyncService.syncNow();
+      // 25 items at batchSize 15 → 2 batches; everything succeeds
+      expect(result!.success).toBe(25);
+    });
+  });
+
   describe('state', () => {
     it('should track sync state', async () => {
       await durableSyncQueue.enqueue({ table: 'products', recordId: 'p1', operation: 'upsert', payload: {} });

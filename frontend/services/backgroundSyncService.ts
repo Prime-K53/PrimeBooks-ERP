@@ -1,8 +1,9 @@
 import { durableSyncQueue, classifyError, QueuedOperation, QueueMetrics } from './durableSyncQueue';
 import { sendSyncOps, SyncOp, SyncOpResult } from './syncApiClient';
+import { resolvePushConflict } from './syncConflictResolver';
 import { cloudDb } from './cloudDb';
 
-type SyncEventType = 'sync-start' | 'sync-complete' | 'sync-failure' | 'sync-partial' | 'queue-empty' | 'queue-full' | 'dead-letter';
+type SyncEventType = 'sync-start' | 'sync-complete' | 'sync-failure' | 'sync-partial' | 'queue-empty' | 'queue-full' | 'dead-letter' | 'sync-conflict';
 type SyncCallback = (event: SyncEventType, data?: unknown) => void;
 
 interface BatchResult {
@@ -10,6 +11,7 @@ interface BatchResult {
   failed: number;
   deadLetter: number;
   skipped: number;
+  conflictsResolved: number;
   durationMs: number;
 }
 
@@ -21,7 +23,12 @@ interface SyncState {
   consecutiveFailures: number;
   totalSynced: number;
   totalFailed: number;
+  conflictsResolved: number;
 }
+
+/** Upper bound on automatic field-merge round-trips for a single operation
+ *  before the conflict is escalated to the dead-letter queue for review. */
+const MAX_CONFLICT_MERGES = 3;
 
 const isClient = typeof window !== 'undefined';
 
@@ -61,6 +68,7 @@ const state: SyncState = {
   consecutiveFailures: 0,
   totalSynced: 0,
   totalFailed: 0,
+  conflictsResolved: 0,
 };
 
 const subscribers = new Map<string, SyncCallback>();
@@ -77,10 +85,11 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
   let failed = 0;
   let deadLetter = 0;
   let skipped = 0;
+  let conflictsResolved = 0;
 
   const items = await durableSyncQueue.dequeue(batchSize);
 
-  if (items.length === 0) return { success: 0, failed: 0, deadLetter: 0, skipped: 0, durationMs: 0 };
+  if (items.length === 0) return { success: 0, failed: 0, deadLetter: 0, skipped: 0, conflictsResolved: 0, durationMs: 0 };
 
   // Split the batch: business ops go through the backend sync gateway
   // (single write path); file uploads stay direct to Supabase Storage.
@@ -132,12 +141,98 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
       await durableSyncQueue.markCompleted(item.id);
       return 'success';
     }
+    // Optimistic-concurrency conflict: the gateway rejected the write because
+    // another device committed a newer version. Holds a current server snapshot
+    // so we can field-merge and requeue in place — no extra round-trip.
+    if (result.conflict && result.server) {
+      return resolveConflict(item, result);
+    }
     // Per-op rejection from the gateway: dead-letter permanent errors,
     // keep retrying transient ones.
     const errorMessage = result.error || 'Sync gateway rejected the operation';
     const permanent = result.retryable === false || classifyError(errorMessage) === 'permanent';
     await durableSyncQueue.markFailed(item.id, errorMessage);
     return permanent ? 'deadLetter' : 'failed';
+  };
+
+  const resolveConflict = async (item: QueuedOperation, result: SyncOpResult): Promise<'success' | 'deadLetter' | 'conflict'> => {
+    const serverVersion = Number(result.server?.version ?? 0);
+    const table = item.table;
+    const recordId = item.recordId;
+
+    const recordConflict = async (resolved: 'auto' | 'review', conflictedFields: string[]) => {
+      await durableSyncQueue.recordConflict({
+        operationId: item.operationId,
+        table,
+        recordId,
+        conflictedFields,
+        resolved,
+        serverVersion,
+      });
+      notify('sync-conflict', {
+        table,
+        recordId,
+        operation: item.operation,
+        resolved,
+        conflictedFields,
+        serverVersion,
+      });
+    };
+
+    // Deletes are tombstones that always bind; a conflict only means a
+    // concurrent upsert raced ahead of the delete — the delete intent stands.
+    if (item.operation === 'delete') {
+      await durableSyncQueue.markCompleted(item.id);
+      state.conflictsResolved++;
+      conflictsResolved++;
+      await durableSyncQueue.recordConflict({
+        operationId: item.operationId,
+        table,
+        recordId,
+        conflictedFields: [],
+        resolved: 'auto',
+        serverVersion,
+      });
+      return 'success';
+    }
+
+    const localPayload = (item.payload ?? {}) as Record<string, unknown>;
+    const resolution = resolvePushConflict(localPayload, result.server.data, {
+      version: serverVersion,
+      updatedAt: result.server?.updatedAt,
+    });
+
+    // No local delta vs the server row — the conflicting update already
+    // captured our intent (or only timestamps diverged). No re-push needed.
+    if (resolution.converged) {
+      await durableSyncQueue.markCompleted(item.id);
+      state.conflictsResolved++;
+      conflictsResolved++;
+      await recordConflict(resolution.conflictedFields.length > 0 ? 'review' : 'auto', resolution.conflictedFields);
+      return 'success';
+    }
+
+    const mergeCount = (item.conflictCount || 0) + 1;
+    if (mergeCount > MAX_CONFLICT_MERGES) {
+      // Back-and-forth on the same record with no convergence — stop looping
+      // and leave it visible for manual review/retry.
+      const reason = resolution.conflictedFields.length > 0
+        ? `CONFLICT requires review — same-field edits: ${resolution.conflictedFields.join(', ')}`
+        : 'CONFLICT requires review — repeated versioning conflicts';
+      await durableSyncQueue.deadLetter(item.id, reason);
+      state.totalFailed++;
+      await recordConflict('review', resolution.conflictedFields);
+      notify('dead-letter', { table, recordId, reason });
+      return 'deadLetter';
+    }
+
+    // Requeue the field-merged payload with the fresh base version. It is
+    // picked up by the next batch in this sync pass (or the next interval).
+    await durableSyncQueue.requeue(item.id, resolution.merged, { conflictCount: mergeCount });
+    state.conflictsResolved++;
+    conflictsResolved++;
+    await recordConflict(resolution.conflictedFields.length > 0 ? 'review' : 'auto', resolution.conflictedFields);
+    return 'conflict';
   };
 
   for (const { item } of gatewayOps) {
@@ -166,6 +261,10 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
       success++;
     } else if (outcome === 'deadLetter') {
       deadLetter++;
+    } else if (outcome === 'conflict') {
+      // Field-merged and requeued; it re-runs in the next batch of this pass.
+      // conflictsResolved was already incremented inside resolveConflict so
+      // delete/converged/requeue resolutions all count exactly once.
     } else {
       failed++;
     }
@@ -202,7 +301,7 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
   const durationMs = Date.now() - startTime;
   state.lastSyncStart = new Date().toISOString();
 
-  return { success, failed, deadLetter, skipped, durationMs };
+  return { success, failed, deadLetter, skipped, conflictsResolved, durationMs };
 }
 
 async function syncOnce(force: boolean = false): Promise<BatchResult | null> {
@@ -230,19 +329,34 @@ async function syncOnce(force: boolean = false): Promise<BatchResult | null> {
     let totalFailed = 0;
     let totalDeadLetter = 0;
     let totalSkipped = 0;
+    let totalConflicts = 0;
     let totalDuration = 0;
     let batchCount = 0;
 
     const maxBatches = 5;
 
+    // Batch size scales with what's actually queued so a burst of offline edits
+    // isn't serialized through tiny 10-item batches, while a sparse queue stays
+    // small and responsive. Capped to keep a single request well under the
+    // gateway limit.
+    let batchSize = 10;
+    try {
+      const pendingCount = await durableSyncQueue.countPending();
+      if (pendingCount > 40) batchSize = 25;
+      else if (pendingCount > 20) batchSize = 15;
+    } catch {
+      batchSize = 10;
+    }
+
     for (let i = 0; i < maxBatches; i++) {
-      const result = await processBatch(10);
-      if (result.success === 0 && result.failed === 0 && result.deadLetter === 0 && result.skipped === 0) break;
+      const result = await processBatch(batchSize);
+      if (result.success === 0 && result.failed === 0 && result.deadLetter === 0 && result.skipped === 0 && result.conflictsResolved === 0) break;
 
       totalSuccess += result.success;
       totalFailed += result.failed;
       totalDeadLetter += result.deadLetter;
       totalSkipped += result.skipped;
+      totalConflicts += result.conflictsResolved;
       totalDuration += result.durationMs;
       batchCount++;
     }
@@ -257,6 +371,7 @@ async function syncOnce(force: boolean = false): Promise<BatchResult | null> {
       success: totalSuccess,
       failed: totalFailed,
       deadLetter: totalDeadLetter,
+      conflictsResolved: totalConflicts,
       durationMs: totalDuration,
       batchCount,
       totalBefore,
@@ -279,7 +394,7 @@ async function syncOnce(force: boolean = false): Promise<BatchResult | null> {
       notify('queue-empty');
     }
 
-    return { success: totalSuccess, failed: totalFailed, deadLetter: totalDeadLetter, skipped: totalSkipped, durationMs: totalDuration };
+    return { success: totalSuccess, failed: totalFailed, deadLetter: totalDeadLetter, skipped: totalSkipped, conflictsResolved: totalConflicts, durationMs: totalDuration };
   } catch (err) {
     state.consecutiveFailures++;
     state.lastSyncFailure = new Date().toISOString();
@@ -442,6 +557,15 @@ export const backgroundSyncService = {
     return durableSyncQueue.getAll();
   },
 
+  /** Conflict records (auto-resolved + flagged-for-review) for dashboards/UI. */
+  async getConflicts(limit?: number): Promise<unknown[]> {
+    return durableSyncQueue.getConflicts(limit);
+  },
+
+  async getConflictCount(): Promise<{ auto: number; review: number }> {
+    return durableSyncQueue.getConflictCount();
+  },
+
   triggerImmediateSync(): void {
     syncOnce(true).catch(() => {});
   },
@@ -465,6 +589,7 @@ export const backgroundSyncService = {
     state.consecutiveFailures = 0;
     state.totalSynced = 0;
     state.totalFailed = 0;
+    state.conflictsResolved = 0;
     subscribers.clear();
     this.stopPeriodicSync();
     eventListenersRegistered = false;

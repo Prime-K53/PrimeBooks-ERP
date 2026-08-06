@@ -156,4 +156,68 @@ router.get('/health', (req, res) => {
   res.json({ ok: true, cloud: cloudSyncStore.isConfigured() });
 });
 
+// ─── tombstone lifecycle (admin) ────────────────────────────────────────────
+// Soft deletes keep physical rows so other devices reconcile; the retention
+// policy below gives admins the tools to purge old tombstones from the cloud
+// with a JSONL audit trail written into the workspace Sync folder first.
+
+const fs = require('fs');
+const path = require('path');
+const workspaceService = require('../services/workspaceService.cjs');
+
+const isAdmin = (req) => {
+  const role = String(req.user?.role || '').toLowerCase();
+  return role === 'admin' || role === 'company admin' || role === 'owner';
+};
+
+const syncArchiveDir = () => {
+  const config = workspaceService.getWorkspaceConfig();
+  return config?.workspacePath ? path.join(config.workspacePath, 'Sync', 'tombstone-archive') : null;
+};
+
+/** Append one tombstone row as a JSON line; never throws (best-effort archival). */
+async function archiveTombstone(id, table) {
+  const dir = syncArchiveDir();
+  if (!dir) return;
+  fs.mkdirSync(dir, { recursive: true });
+  const day = new Date().toISOString().slice(0, 10);
+  const file = path.join(dir, `${table}-${day}.jsonl`);
+  fs.appendFileSync(file, JSON.stringify({ archivedAt: new Date().toISOString(), table, id }) + '\n');
+}
+
+// Count soft-deleted rows in a table (all ages).
+router.get('/tombstones/count', async (req, res) => {
+  try {
+    const table = String(req.query.table || '');
+    if (!ALLOWED_TABLES.has(table)) {
+      return res.status(400).json({ error: `table not allowed: ${table}` });
+    }
+    const count = await cloudSyncStore.countTombstones(table);
+    res.json({ ok: true, table, count });
+  } catch (err) {
+    console.error('[sync] GET /tombstones/count error:', err?.message || err);
+    res.status(500).json({ error: 'Tombstone count failed' });
+  }
+});
+
+// Purge tombstones older than `retentionDays` for one table, archiving each row
+// to the workspace before it is hard-deleted from the cloud.
+router.post('/tombstones/purge', async (req, res) => {
+  try {
+    if (!isAdmin(req)) {
+      return res.status(403).json({ error: 'Admin role required to purge tombstones' });
+    }
+    const { table, retentionDays } = req.body || {};
+    if (!ALLOWED_TABLES.has(String(table || ''))) {
+      return res.status(400).json({ error: `table not allowed: ${table}` });
+    }
+    const days = Math.max(1, Math.min(Number(retentionDays) || 30, 365));
+    const result = await cloudSyncStore.purgeTombstones(String(table), days, archiveTombstone);
+    res.json({ ok: true, table, retentionDays: days, ...result });
+  } catch (err) {
+    console.error('[sync] POST /tombstones/purge error:', err?.message || err);
+    res.status(500).json({ error: 'Tombstone purge failed' });
+  }
+});
+
 module.exports = router;

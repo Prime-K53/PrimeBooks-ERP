@@ -12,6 +12,11 @@ const SUPABASE_ENABLED = Boolean(
 
 const PUSH_INTERVAL_MS = 60000;
 const SYNC_CONCURRENCY = 6;
+// Pull pages per table per pass. Keeps one pass bounded even for huge tables
+// (e.g. a fresh install pulling 200k products), while still advancing the
+// cursor so the NEXT pass continues instead of restarting the page.
+const PULL_PAGE_SIZE = 2000;
+const MAX_PULL_ROWS_PER_TABLE_PER_PASS = 50000;
 let pushTimer: ReturnType<typeof setInterval> | null = null;
 let realtimeSubscribed = false;
 let realtimeChannels: any[] = [];
@@ -226,61 +231,80 @@ export async function pullRemoteChanges(
         let storeCount = 0;
 
         try {
-          let query = supabase.from(table).select('*');
+          // Incremental sync: only fetch rows updated since last sync.
+          // Rows are paged so a table with more updated rows than the gateway's
+          // single-request limit still fully converges instead of truncating.
+          const pageSize = PULL_PAGE_SIZE;
+          let offset = 0;
+          let lastTimestamp: string | null = null;
+          let rowsInPass = 0;
 
-          // Incremental sync: only fetch rows updated since last sync
-          if (!forceFullSync) {
-            const lastSyncAt = await getLastSyncAt(table);
-            if (lastSyncAt) {
-              query = query.gte('updated_at', lastSyncAt);
+          while (rowsInPass < MAX_PULL_ROWS_PER_TABLE_PER_PASS) {
+            let query = supabase.from(table).select('*');
+
+            // Incremental sync: only fetch rows updated since last sync
+            if (!forceFullSync) {
+              const lastSyncAt = await getLastSyncAt(table);
+              if (lastSyncAt) {
+                query = query.gte('updated_at', lastSyncAt);
+              }
             }
-          }
 
-          const { data, error } = await query
-            .order('updated_at', { ascending: true })
-            .limit(10000);
+            const { data, error } = await query
+              .order('updated_at', { ascending: true })
+              .range(offset, offset + pageSize - 1);
 
-          if (error) { errors.push(`${storeName}: ${error.message}`); return 0; }
-          if (!data || data.length === 0) return 0;
+            if (error) { errors.push(`${storeName}: ${error.message}`); break; }
+            if (!data || data.length === 0) break;
 
-          const cloudRecords = data.map((record: any) => toCloudRecord(record));
+            const cloudRecords = data.map((record: any) => toCloudRecord(record));
 
-          // Apply field-level merge for existing records, skip for new ones
-          // All cloud records are marked _cloudSource: true so they don't trigger re-sync
-          const mergedRecords = [];
-          for (const cloudRecord of cloudRecords) {
-            // Server-side tombstone (soft delete via the sync gateway):
-            // reconcile locally as a delete, never resurrect the row.
-            if (cloudRecord.deleted === true) {
+            // Apply field-level merge for existing records, skip for new ones
+            // All cloud records are marked _cloudSource: true so they don't trigger re-sync
+            const mergedRecords = [];
+            for (const cloudRecord of cloudRecords) {
+              // Server-side tombstone (soft delete via the sync gateway):
+              // reconcile locally as a delete, never resurrect the row.
+              if (cloudRecord.deleted === true) {
+                const existing = await dbService.get(storeName, cloudRecord.id);
+                if (existing && !(existing as Record<string, unknown>).deletedAt) {
+                  await dbService.delete(storeName, cloudRecord.id, { cloudSource: true });
+                }
+                continue;
+              }
               const existing = await dbService.get(storeName, cloudRecord.id);
-              if (existing && !(existing as Record<string, unknown>).deletedAt) {
-                await dbService.delete(storeName, cloudRecord.id, { cloudSource: true });
+              if (existing) {
+                const merged = fieldLevelMerge(existing, cloudRecord);
+                if (cloudRecord.serverUpdatedAt) {
+                  merged.serverUpdatedAt = cloudRecord.serverUpdatedAt;
+                }
+                merged._cloudSource = true;
+                await dbService.put(storeName, merged, { cloudSource: true });
+              } else {
+                mergedRecords.push(cloudRecord as Record<string, unknown>);
               }
-              continue;
             }
-            const existing = await dbService.get(storeName, cloudRecord.id);
-            if (existing) {
-              const merged = fieldLevelMerge(existing, cloudRecord);
-              if (cloudRecord.serverUpdatedAt) {
-                merged.serverUpdatedAt = cloudRecord.serverUpdatedAt;
-              }
-              merged._cloudSource = true;
-              await dbService.put(storeName, merged, { cloudSource: true });
-            } else {
-              mergedRecords.push(cloudRecord as Record<string, unknown>);
+            if (mergedRecords.length > 0) {
+              await dbService.bulkPut(storeName, mergedRecords);
             }
-          }
-          if (mergedRecords.length > 0) {
-            await dbService.bulkPut(storeName, mergedRecords);
+
+            storeCount += cloudRecords.length;
+            rowsInPass += cloudRecords.length;
+            // Track the latest updated_at seen so far for incremental sync
+            lastTimestamp = data[data.length - 1]?.updated_at ?? lastTimestamp;
+
+            // Reached the last page for this table — persist the cursor and stop.
+            if (data.length < pageSize) break;
+            offset += data.length;
           }
 
-          // Track the latest updated_at for incremental sync
-          const lastTimestamp = data[data.length - 1]?.updated_at;
+          // Persist the final cursor for incremental sync. When a pass was cut
+          // short by the pass cap, the cursor still advances to where we stopped,
+          // so the next periodic pass resumes from just past the last page.
           if (lastTimestamp) {
             await setLastSyncAt(table, lastTimestamp);
           }
 
-          storeCount = cloudRecords.length;
         } catch (err) {
           errors.push(`${storeName}: ${err instanceof Error ? err.message : 'Unknown'}`);
         }

@@ -124,30 +124,79 @@ function sanitizeRecord(payload) {
 }
 
 /**
+ * Read the current server row and compare it against the version the client
+ * based its edit on. Returns either the matched row (the write can proceed)
+ * or a structured conflict payload so the client can field-merge immediately.
+ */
+async function checkVersion(table, id, incomingVersion) {
+  if (!Number.isFinite(incomingVersion)) return { ok: true, serverVersion: 0 };
+  const existing = await getRow(table, id);
+  const serverVersion = existing?.version != null ? Number(existing.version) : 0;
+  if (serverVersion !== incomingVersion) {
+    return {
+      ok: false,
+      conflict: true,
+      conflictType: 'version_conflict',
+      serverVersion,
+      server: {
+        id,
+        version: serverVersion,
+        updatedAt: existing?.updated_at || null,
+        data: (existing && existing.data && typeof existing.data === 'object') ? existing.data : {},
+      },
+    };
+  }
+  return { ok: true, serverVersion };
+}
+
+/**
  * Upsert a row: `{ id, data: <domain fields>, updated_at }`.
  * Optional numeric `version` enables optimistic-lock protection.
+ *
+ * When the payload carries a base version, the gateway reads the current row
+ * and rejects the write with a conflict payload if the stored version moved
+ * (concurrent edit from another device). Accepted writes bump the stored
+ * version monotonically (server-stamped), so a stale client can never
+ * silently overwrite a newer row — it gets a mergeable conflict instead.
+ * Writes without a version keep the legacy unconditional last-write-wins
+ * behaviour and never touch the version column.
  */
 async function upsertRow(table, id, payload, serverNow = new Date().toISOString()) {
   const domain = sanitizeRecord(payload);
-  const version = Number(payload._version ?? payload.version);
-  const row = {
-    id,
-    data: domain,
-    updated_at: serverNow,
-  };
-  if (Number.isFinite(version)) row.version = version;
+  const incomingVersion = Number(payload._version ?? payload.version);
 
-  const headers = { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' };
-  const params = { on_conflict: 'id' };
-  if (Number.isFinite(version)) {
-    // Optimistic lock: only apply if the stored version matches. Without it,
-    // a stale client could overwrite a newer row — this keeps last-write-wins
-    // deterministic for the sync engine (which retries on 409).
-    params.version = `eq.${version}`;
+  if (Number.isFinite(incomingVersion)) {
+    const gate = await checkVersion(table, id, incomingVersion);
+    if (!gate.ok) {
+      return { id, conflicted: true, conflictType: gate.conflictType, server: gate.server };
+    }
+    const row = {
+      id,
+      data: domain,
+      updated_at: serverNow,
+      version: gate.serverVersion + 1,
+    };
+    const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
+      headers: { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' },
+      params: { on_conflict: 'id' },
+      timeout: 20000,
+    });
+    const saved = Array.isArray(res.data) ? (res.data[0] || null) : res.data;
+    return {
+      id: saved?.id || id,
+      updatedAt: saved?.updated_at || serverNow,
+      createdAt: saved?.created_at || null,
+      version: saved?.version != null ? Number(saved.version) : (gate.serverVersion + 1),
+    };
   }
 
-  const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, { headers, params, timeout: 20000 });
-
+  // Legacy path (no version supplied): unconditional upsert, version untouched.
+  const row = { id, data: domain, updated_at: serverNow };
+  const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
+    headers: { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' },
+    params: { on_conflict: 'id' },
+    timeout: 20000,
+  });
   const saved = Array.isArray(res.data) ? (res.data[0] || null) : res.data;
   return {
     id: saved?.id || id,
@@ -171,7 +220,10 @@ async function softDeleteRow(table, id, serverNow = new Date().toISOString()) {
     data: { ...base, deleted: true, deletedAt: serverNow, ...(existing?.data ? {} : {}) },
     updated_at: serverNow,
   };
-  if (existing && existing.version != null) row.version = Number(existing.version);
+  // Deletes win: stamp the next version so any concurrently queued upsert on a
+  // stale base is rejected and the client re-merges (or observes the tombstone).
+  const baseVersion = existing?.version != null ? Number(existing.version) : 0;
+  row.version = baseVersion + 1;
 
   const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
     headers: { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' },
@@ -187,8 +239,103 @@ async function softDeleteRow(table, id, serverNow = new Date().toISOString()) {
   };
 }
 
+// ─── tombstone lifecycle ────────────────────────────────────────────────────
+// Soft deletes keep the physical row (`data.deleted = true` + `data.deletedAt`)
+// so realtime subscribers on other devices can reconcile. That makes a good
+// experience but means deleted rows live forever. These helpers implement the
+// retention policy side of the lifecycle: count tombstones, and GC them once
+// they pass the retention window, best-effort archiving each row to a JSONL
+// file before it is physically removed from the cloud.
+
+const TOMBSTONE_FLAG = { 'data->>deleted': 'eq.true' };
+const PURGE_PAGE_SIZE = 100;
+
 /**
- * Apply one operation. Returns a normalized result object used by the route:
+ * Count soft-deleted (tombstoned) rows across a table, all ages.
+ */
+async function countTombstones(table) {
+  if (!isConfigured()) return 0;
+  try {
+    const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+      headers: { ...adminHeaders(), Prefer: 'count=exact' },
+      params: { ...TOMBSTONE_FLAG, select: 'id', limit: 1 },
+      timeout: 15000,
+    });
+    const contentRange = String(res.headers?.['content-range'] || '0-0/0');
+    // PostgREST returns a `Content-Range: start-end/total` header with count=exact.
+    const totalMatch = contentRange.split('/')[1];
+    const total = Number(totalMatch);
+    return Number.isFinite(total) ? total : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Purge tombstones older than `retentionDays` for one table. Each purged row is
+ * first handed to `archiveFn(row, table)` so the operator keeps an audit trail
+ * (archival) before the row is hard-deleted from the cloud.
+ *
+ * The scan is done in two passes on purpose: first collect the matching ids
+ * (bounded offset pages — result set is static while we read), then delete each
+ * id. Deleting while paginating can skip rows, so we never read and write in
+ * the same loop.
+ */
+async function purgeTombstones(table, retentionDays, archiveFn = null) {
+  if (!isConfigured()) return { purged: 0, archived: 0, skipped: 0 };
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
+
+  // Phase 1 — collect candidate ids (older than retention).
+  const ids = [];
+  for (let offset = 0; offset < 10000; offset += PURGE_PAGE_SIZE) {
+    const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+      headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
+      params: {
+        ...TOMBSTONE_FLAG,
+        select: 'id,updated_at',
+        updated_at: `lt.${cutoff}`,
+        order: 'updated_at.asc',
+        limit: PURGE_PAGE_SIZE,
+        offset,
+      },
+      timeout: 20000,
+    });
+    const rows = Array.isArray(res.data) ? res.data : [];
+    if (rows.length === 0) break;
+    for (const row of rows) {
+      if (row?.id != null) ids.push(row);
+    }
+
+    // With the retention filter applied, any page shorter than the page size
+    // means we've walked the whole set — stop early.
+    if (rows.length < PURGE_PAGE_SIZE) break;
+  }
+
+  // Phase 2 — archive then hard-delete each tombstone.
+  let purged = 0;
+  let archived = 0;
+  let skipped = 0;
+  for (const { id } of ids) {
+    if (archiveFn) {
+      try { await archiveFn(id, table); archived++; } catch { /* archival is best-effort */ }
+    }
+    try {
+      await axios.delete(`${SUPABASE_URL}/rest/v1/${table}`, {
+        headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
+        params: { id: `eq.${id}` },
+        timeout: 20000,
+      });
+      purged++;
+    } catch {
+      skipped++;
+    }
+  }
+
+  return { purged, archived, skipped };
+}
+
+/**
+ * Apply an operation. Returns a normalized result object used by the route:
  *   { operationId, ok, id, updatedAt, error, retryable }
  * Errors produced by the cloud (validation, schema, RLS, uniqueness) are
  * marked `retryable:false` so the client moves the op to its dead-letter
@@ -227,10 +374,26 @@ async function applyOp(op) {
       result = await upsertRow(table, id, payload);
     }
 
+    // Optimistic-concurrency gate rejected the write: another device changed
+    // the row since this client read it. Return the current server row so the
+    // client can field-merge without an extra round-trip and retry immediately.
+    if (result?.conflicted) {
+      return {
+        operationId,
+        ok: false,
+        id: result.id,
+        conflict: true,
+        conflictType: result.conflictType || 'version_conflict',
+        retryable: true,
+        error: 'Version conflict — record was updated by another device',
+        server: result.server,
+      };
+    }
+
     if (operationId && result?.id) {
       await recordIdempotency(operationId, result.id);
     }
-    return { operationId, ok: true, id: result.id, updatedAt: result.updatedAt };
+    return { operationId, ok: true, id: result.id, updatedAt: result.updatedAt, version: result.version };
   } catch (err) {
     const status = err?.response?.status;
     const detail = err?.response?.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : '';
@@ -252,4 +415,6 @@ module.exports = {
   softDeleteRow,
   checkIdempotency,
   recordIdempotency,
+  countTombstones,
+  purgeTombstones,
 };

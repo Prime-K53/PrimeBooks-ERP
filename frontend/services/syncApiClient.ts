@@ -22,13 +22,26 @@ export interface SyncOp {
   payload: unknown;
 }
 
+export interface SyncOpResultServer {
+  id?: string | null;
+  version: number;
+  updatedAt?: string | null;
+  data?: Record<string, unknown> | null;
+}
+
 export interface SyncOpResult {
   operationId?: string;
   ok: boolean;
   id?: string | null;
   updatedAt?: string;
+  version?: number;
   replayed?: boolean;
   noop?: boolean;
+  /** True when the write was rejected by the optimistic-concurrency gate because another device changed the row since this client read it. */
+  conflict?: boolean;
+  conflictType?: 'version_conflict' | string;
+  /** Current server-row snapshot returned alongside a conflict so the client can field-merge without a follow-up fetch. */
+  server?: SyncOpResultServer;
   error?: string;
   retryable?: boolean;
 }
@@ -129,4 +142,59 @@ export async function sendSyncOps(ops: SyncOp[], options: SyncSendOptions = {}):
 
 export function isSyncGatewayConfigured(): boolean {
   return Boolean(API_BASE_URL);
+}
+
+/**
+ * Count tombstones (soft-deleted rows) in a cloud table.
+ * Requires a Supabase token; reads via the authenticated backend.
+ */
+export async function countTombstones(table: string): Promise<number> {
+  try {
+    const token = await getSyncAccessToken();
+    const headers: Record<string, string> = getJsonRequestHeaders();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const res = await fetch(`${SYNC_ENDPOINT.replace('/ops', '')}/tombstones/count?table=${encodeURIComponent(table)}`, {
+        headers,
+        signal: controller.signal,
+      });
+      if (!res.ok) return 0;
+      const body = await res.json();
+      return Number(body?.count ?? 0);
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Purge tombstones older than `retentionDays` for one table. The backend
+ * archives each purged row (JSONL in the workspace) before hard-deleting.
+ * Returns the number purged. Throws on non-2xx so the dashboard can surface it.
+ */
+export async function purgeTombstones(table: string, retentionDays: number): Promise<{ purged: number; archived: number; skipped: number }> {
+  const token = await getSyncAccessToken();
+  const headers: Record<string, string> = getJsonRequestHeaders();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  try {
+    const res = await fetch(`${SYNC_ENDPOINT.replace('/ops', '')}/tombstones/purge`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ table, retentionDays }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`Tombstone purge failed (${res.status})`);
+    }
+    const body = await res.json();
+    return { purged: Number(body?.purged ?? 0), archived: Number(body?.archived ?? 0), skipped: Number(body?.skipped ?? 0) };
+  } finally {
+    clearTimeout(timeout);
+  }
 }

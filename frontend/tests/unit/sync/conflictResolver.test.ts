@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveConflict, fieldLevelMerge } from '../../../services/syncConflictResolver';
+import { resolveConflict, fieldLevelMerge, resolvePushConflict } from '../../../services/syncConflictResolver';
 
 describe('syncConflictResolver', () => {
   describe('resolveConflict', () => {
@@ -84,6 +84,71 @@ describe('syncConflictResolver', () => {
       expect(merged.name).toBe('Test');
       expect(merged._version).toBeUndefined();
       expect(merged.updated_at).toBeUndefined();
+    });
+  });
+
+  describe('resolvePushConflict', () => {
+    it('should preserve local-only fields and take the fresh server version', () => {
+      const local = { id: 'r1', name: 'Local Name' };
+      const serverData = { id: 'r1', price: 200 };
+      const serverMeta = { version: 7, updatedAt: '2026-06-30T00:00:00Z' };
+
+      const resolution = resolvePushConflict(local, serverData, serverMeta);
+      expect(resolution.converged).toBe(false);
+      expect(resolution.merged).not.toBeNull();
+      expect(resolution.merged!.name).toBe('Local Name');
+      expect(resolution.merged!.price).toBe(200);
+      expect(resolution.merged!._version).toBe(7);
+      expect(resolution.merged!.version).toBe(7);
+      expect(resolution.merged!.serverUpdatedAt).toBe('2026-06-30T00:00:00Z');
+      expect(resolution.serverVersion).toBe(7);
+      expect(resolution.conflictedFields).toEqual([]);
+    });
+
+    it('should flag same-field edits with different values for review', () => {
+      const local = { id: 'r1', name: 'Local Name', price: 100, _updatedAt: '2026-07-01T00:00:00Z' };
+      const serverData = { id: 'r1', name: 'Server Name', price: 100 };
+      const serverMeta = { version: 9, updatedAt: '2026-06-30T00:00:00Z' };
+
+      const resolution = resolvePushConflict(local, serverData, serverMeta);
+      expect(resolution.conflictedFields).toEqual(['name']);
+      expect(resolution.converged).toBe(false);
+      // LWW by field timestamp: local edit is newer, so the local value wins
+      expect(resolution.merged!.name).toBe('Local Name');
+      expect(resolution.merged!.price).toBe(100);
+    });
+
+    it('should converge when the local payload matches the server row', () => {
+      const local = { id: 'r1', name: 'Same', price: 100 };
+      const serverData = { id: 'r1', name: 'Same', price: 100 };
+      const serverMeta = { version: 5, updatedAt: '2026-06-30T00:00:00Z' };
+
+      const resolution = resolvePushConflict(local, serverData, serverMeta);
+      expect(resolution.converged).toBe(true);
+      expect(resolution.merged).toBeNull();
+      expect(resolution.conflictedFields).toEqual([]);
+    });
+
+    it('should exclude metadata fields from conflicted fields', () => {
+      const local = { id: 'r1', name: 'X', price: 100, version: 9, _updatedAt: '2026-07-01T00:00:00Z' };
+      const serverData = { id: 'r1', name: 'Y', price: 150, version: 9, updated_at: '2026-06-02T00:00:00Z' };
+      const serverMeta = { version: 9, updatedAt: '2026-06-02T00:00:00Z' };
+
+      const resolution = resolvePushConflict(local, serverData, serverMeta);
+      expect(resolution.conflictedFields).toEqual(['name', 'price']);
+      expect(resolution.merged!._version).toBe(9);
+    });
+
+    it('should keep a local-only field as a pushable delta when no server snapshot is returned', () => {
+      const local = { id: 'r1', name: 'Local Name' };
+
+      const resolution = resolvePushConflict(local, undefined, { version: 3, updatedAt: null });
+      expect(resolution.converged).toBe(false);
+      expect(resolution.merged).not.toBeNull();
+      expect(resolution.merged!.name).toBe('Local Name');
+      expect(resolution.merged!._version).toBe(3);
+      expect(resolution.conflictedFields).toEqual([]);
+      expect(resolution.serverVersion).toBe(3);
     });
   });
 });

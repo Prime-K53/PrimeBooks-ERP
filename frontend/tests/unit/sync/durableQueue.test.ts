@@ -283,6 +283,136 @@ describe('durableSyncQueue', () => {
     });
   });
 
+  describe('deadLetter', () => {
+    it('should force an item to the dead-letter queue with permanent error type', async () => {
+      const item = await durableSyncQueue.enqueue({ table: 't', recordId: '1', operation: 'upsert', payload: {} });
+      await durableSyncQueue.deadLetter(item.id, 'CONFLICT requires review — same-field edits: name');
+
+      const dlq = await durableSyncQueue.getAll('dead_letter');
+      expect(dlq).toHaveLength(1);
+      expect(dlq[0].errorType).toBe('permanent');
+      expect(dlq[0].lastError).toContain('CONFLICT requires review');
+      expect(dlq[0].retryCount).toBeGreaterThan(0);
+    });
+  });
+
+  describe('requeue', () => {
+    it('should reset status to pending with a new merged payload', async () => {
+      const item = await durableSyncQueue.enqueue({ table: 't', recordId: '1', operation: 'upsert', payload: { name: 'old' } });
+      await durableSyncQueue.markFailed(item.id, 'timeout');
+
+      await durableSyncQueue.requeue(item.id, { name: 'merged' }, { conflictCount: 2 });
+      const pending = await durableSyncQueue.getAll('pending');
+      expect(pending).toHaveLength(1);
+      expect(pending[0].payload).toEqual({ name: 'merged' });
+      expect(pending[0].conflictCount).toBe(2);
+      expect(pending[0].lastError).toBeNull();
+      expect(pending[0].id).toBe(item.id);
+    });
+  });
+
+  describe('recordConflict / getConflicts', () => {
+    it('should store a conflict record and increment the total counter', async () => {
+      await durableSyncQueue.recordConflict({
+        operationId: 'op-1',
+        table: 'products',
+        recordId: 'p1',
+        conflictedFields: ['name'],
+        resolved: 'review',
+        serverVersion: 7,
+      });
+
+      const conflicts = await durableSyncQueue.getConflicts(10);
+      expect(conflicts).toHaveLength(1);
+      const record = conflicts[0] as Record<string, unknown>;
+      expect(record.table).toBe('products');
+      expect(record.recordId).toBe('p1');
+      expect(record.resolved).toBe('review');
+      expect(record.serverVersion).toBe(7);
+      expect(await durableSyncQueue.getMeta('conflicts_total')).toBe(1);
+    });
+
+    it('should sort newest first and respect the limit', async () => {
+      await durableSyncQueue.recordConflict({ operationId: 'a', table: 't', recordId: '1', conflictedFields: [], resolved: 'auto', serverVersion: 1 });
+      await durableSyncQueue.recordConflict({ operationId: 'b', table: 't', recordId: '2', conflictedFields: [], resolved: 'auto', serverVersion: 2 });
+      await durableSyncQueue.recordConflict({ operationId: 'c', table: 't', recordId: '3', conflictedFields: [], resolved: 'auto', serverVersion: 3 });
+      // Age records deterministically: all were written in the same ms in tests.
+      for (const rec of memoryDB.stores.metrics.values()) {
+        const opId = (rec.value as { operationId: string }).operationId;
+        rec.timestamp = `2026-06-0${1 + ['a', 'b', 'c'].indexOf(opId)}T00:00:00Z`;
+      }
+
+      const conflicts = await durableSyncQueue.getConflicts(2);
+      expect(conflicts).toHaveLength(2);
+      expect((conflicts[0] as Record<string, unknown>).recordId).toBe('3');
+      expect((conflicts[1] as Record<string, unknown>).recordId).toBe('2');
+    });
+  });
+
+  describe('cleanup retention', () => {
+    it('should remove dead-letter items older than the dead-letter retention window', async () => {
+      const item = await durableSyncQueue.enqueue({ table: 't', recordId: '1', operation: 'upsert', payload: {} });
+      await durableSyncQueue.markFailed(item.id, 'violates foreign key constraint');
+      const dlq = await durableSyncQueue.getAll('dead_letter');
+      expect(dlq).toHaveLength(1);
+      // Age the record past its retention window.
+      dlq[0].lastAttempt = '2020-01-01T00:00:00Z';
+      memoryDB.stores.operations.set(dlq[0].id, dlq[0]);
+
+      const removed = await durableSyncQueue.cleanup(86400000, 0, 90 * 86400000);
+      expect(removed).toBe(1);
+      expect(await durableSyncQueue.getAll('dead_letter')).toHaveLength(0);
+    });
+
+    it('should keep fresh dead-letter items', async () => {
+      const item = await durableSyncQueue.enqueue({ table: 't', recordId: '1', operation: 'upsert', payload: {} });
+      await durableSyncQueue.markFailed(item.id, 'violates foreign key constraint');
+
+      const removed = await durableSyncQueue.cleanup(86400000, 30 * 86400000, 90 * 86400000);
+      expect(removed).toBe(0);
+      expect(await durableSyncQueue.getAll('dead_letter')).toHaveLength(1);
+    });
+
+    it('should prune metrics records past the metrics retention window', async () => {
+      await durableSyncQueue.recordMetric('cleanup_removed', 3);
+      // Age the telemetry record past its retention window.
+      for (const rec of memoryDB.stores.metrics.values()) {
+        if (rec.metric === 'cleanup_removed') rec.timestamp = '2020-01-01T00:00:00Z';
+      }
+
+      const removed = await durableSyncQueue.cleanup(86400000, 30 * 86400000, 0);
+      expect(removed).toBe(1);
+    });
+
+    it('should not prune fresh metrics records', async () => {
+      await durableSyncQueue.recordMetric('cleanup_removed', 3);
+
+      const removed = await durableSyncQueue.cleanup(86400000, 30 * 86400000, 90 * 86400000);
+      expect(removed).toBe(0);
+    });
+  });
+
+  describe('getMetrics telemetry', () => {
+    it('should surface the most recent last_sync_success/failure records', async () => {
+      await durableSyncQueue.recordMetric('last_sync_failure', '2026-06-29T10:00:00Z');
+      await durableSyncQueue.recordMetric('last_sync_success', '2026-06-29T11:00:00Z');
+
+      const metrics = await durableSyncQueue.getMetrics();
+      expect(metrics.lastSyncSuccess).toBe('2026-06-29T11:00:00Z');
+      expect(metrics.lastSyncFailure).toBe('2026-06-29T10:00:00Z');
+    });
+
+    it('should tally conflictsAuto and conflictsReview from conflict records', async () => {
+      await durableSyncQueue.recordConflict({ operationId: 'a', table: 't', recordId: '1', conflictedFields: [], resolved: 'auto', serverVersion: 1 });
+      await durableSyncQueue.recordConflict({ operationId: 'b', table: 't', recordId: '2', conflictedFields: ['name'], resolved: 'review', serverVersion: 2 });
+
+      const metrics = await durableSyncQueue.getMetrics();
+      expect(metrics.conflictsTotal).toBe(2);
+      expect(metrics.conflictsAuto).toBe(1);
+      expect(metrics.conflictsReview).toBe(1);
+    });
+  });
+
   describe('enqueueWithCache', () => {
     it('should enqueue and then call cache write', async () => {
       const cacheWrite = vi.fn().mockResolvedValue(undefined);

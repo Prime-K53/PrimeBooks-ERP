@@ -20,6 +20,8 @@ export interface QueuedOperation {
   fileRef: string | null;
   errorType?: 'retryable' | 'permanent' | null;
   payloadSizeBytes?: number;
+  /** Number of optimistic-concurrency conflicts this op survived before convergence (auto-merge cap). */
+  conflictCount?: number;
 }
 
 export interface QueueMetrics {
@@ -35,6 +37,12 @@ export interface QueueMetrics {
   retryHistogram: Record<number, number>;
   avgRetryCount: number;
   avgSyncLatencyMs: number;
+  /** Total optimistic-concurrency conflicts detected across all time (persisted counter). */
+  conflictsTotal: number;
+  /** Conflicts that auto-merged on disjoint/one-sided fields. */
+  conflictsAuto: number;
+  /** Conflicts on the same field from both sides that were LWW-resolved and flagged for review. */
+  conflictsReview: number;
 }
 
 interface QueueDB {
@@ -242,6 +250,7 @@ export const durableSyncQueue = {
       dependsOn,
       fileRef: input.fileRef || null,
       payloadSizeBytes: payloadStr.length,
+      conflictCount: 0,
     };
     await db.put('operations', item);
     return item;
@@ -348,6 +357,25 @@ export const durableSyncQueue = {
     }
   },
 
+  /**
+   * Force an item to the dead-letter queue regardless of error classification.
+   * Used for conflicts that cannot converge automatically (same-field edits on
+   * both devices) so the background loop stops hammering the record and the
+   * item stays visible for manual review/retry.
+   */
+  async deadLetter(id: string, error: string): Promise<void> {
+    const db = await getDb();
+    const item = await db.get('operations', id);
+    if (item) {
+      item.status = 'dead_letter';
+      item.retryCount = item.retryCount + 1;
+      item.lastAttempt = new Date().toISOString();
+      item.lastError = error;
+      item.errorType = 'permanent';
+      await db.put('operations', item);
+    }
+  },
+
   async retryDeadLetter(id: string): Promise<void> {
     const db = await getDb();
     const item = await db.get('operations', id);
@@ -360,19 +388,94 @@ export const durableSyncQueue = {
     }
   },
 
+  /**
+   * Requeue an operation in place with a new payload (used after an
+   * optimistic-concurrency conflict is field-merged). The item keeps its
+   * id, order, dependencies and retry history so the merge round-trip stays a
+   * single queue entry instead of spawning a duplicate op.
+   */
+  async requeue<T>(id: string, payload: T, updates: Partial<Pick<QueuedOperation, 'conflictCount'>> = {}): Promise<void> {
+    const db = await getDb();
+    const item = await db.get('operations', id);
+    if (!item) return;
+    const payloadStr = JSON.stringify(payload);
+    item.payload = payload;
+    item.payloadSizeBytes = payloadStr.length;
+    if (updates.conflictCount !== undefined) item.conflictCount = updates.conflictCount;
+    item.status = 'pending';
+    item.lastError = null;
+    item.errorType = null;
+    item.lastAttempt = new Date().toISOString();
+    await db.put('operations', item);
+  },
+
+  async recordConflict(record: {
+    operationId: string | null;
+    table: string;
+    recordId: string | null;
+    conflictedFields: string[];
+    resolved: 'auto' | 'review';
+    serverVersion: number;
+  }): Promise<void> {
+    const db = await getDb();
+    await db.put('metrics', {
+      id: `conflict-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date().toISOString(),
+      metric: 'sync_conflicts_total',
+      value: record,
+    });
+    const counter = await this.getMeta('conflicts_total');
+    await this.setMeta('conflicts_total', Number(counter || 0) + 1);
+  },
+
+  async getConflictCount(): Promise<{ auto: number; review: number }> {
+    const all = await this.getMetrics();
+    return { auto: all.conflictsAuto, review: all.conflictsReview };
+  },
+
+  async getConflicts(limit: number = 50): Promise<unknown[]> {
+    const db = await getDb();
+    const all = await db.getAllFromIndex('metrics', 'by-metric', IDBKeyRange.only('sync_conflicts_total'));
+    return all
+      .filter((m) => (m.value as { resolved?: string })?.resolved !== undefined)
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+      .slice(0, limit)
+      .map((m) => m.value);
+  },
+
   async remove(id: string): Promise<void> {
     const db = await getDb();
     await db.delete('operations', id);
   },
 
-  async cleanup(completedRetentionMs: number = 86400000): Promise<number> {
+  async cleanup(completedRetentionMs: number = 86400000, deadLetterRetentionMs: number = 30 * 86400000, metricsRetentionMs: number = 90 * 86400000): Promise<number> {
     const db = await getDb();
     const cutoff = new Date(Date.now() - completedRetentionMs).toISOString();
+    const dlCutoff = new Date(Date.now() - deadLetterRetentionMs).toISOString();
+    const metricsCutoff = new Date(Date.now() - metricsRetentionMs).toISOString();
     const all = await db.getAll('operations');
     let removed = 0;
     for (const item of all) {
       if (item.status === 'completed' && item.lastAttempt && item.lastAttempt < cutoff) {
         await db.delete('operations', item.id);
+        removed++;
+        continue;
+      }
+      // Dead-letter ops that outlive their retention are archival — their
+      // payload is no longer actionable (they were never going to retry) and
+      // keeping them bloats the queue forever. They are removed as part of
+      // queue compaction.
+      if (item.status === 'dead_letter' && item.lastAttempt && item.lastAttempt < dlCutoff) {
+        await db.delete('operations', item.id);
+        removed++;
+      }
+    }
+    // Conflict/health telemetry records also accumulate. Prune anything older
+    // than the metrics retention window so the bounds stay small.
+    const metricsAll = await db.getAll('metrics');
+    for (const rec of metricsAll) {
+      if (rec.timestamp && rec.timestamp < metricsCutoff) {
+        await db.delete('metrics', rec.id);
         removed++;
       }
     }
@@ -437,8 +540,15 @@ export const durableSyncQueue = {
     const sortedByCreated = [...(byStatus.pending || [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     const oldestPending = sortedByCreated.length > 0 ? sortedByCreated[0].createdAt : null;
 
-    const lastSuccess = await db.get('metrics', 'last_sync_success');
-    const lastFailure = await db.get('metrics', 'last_sync_failure');
+    // recordMetric stamps ids with a timestamp suffix (e.g.
+    // `last_sync_success-1754...`), so telemetry lookups go through the
+    // by-metric index and take the most recent record instead of an exact id.
+    const lastSuccessRecs = await db.getAllFromIndex('metrics', 'by-metric', IDBKeyRange.only('last_sync_success'));
+    const lastFailureRecs = await db.getAllFromIndex('metrics', 'by-metric', IDBKeyRange.only('last_sync_failure'));
+    const latest = (recs: unknown[]) => (recs as { timestamp: string; value: unknown }[])
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0]?.value ?? null;
+    const lastSuccess = latest(lastSuccessRecs);
+    const lastFailure = latest(lastFailureRecs);
 
     const retryCounts: Record<number, number> = {};
     for (const op of all) {
@@ -449,6 +559,28 @@ export const durableSyncQueue = {
     const totalRetries = all.reduce((sum, op) => sum + (op.retryCount || 0), 0);
     const avgRetryCount = all.length > 0 ? totalRetries / all.length : 0;
 
+    // Real sync latency from the last batch record (previously hardcoded 0).
+    let avgSyncLatencyMs = 0;
+    try {
+      const lastBatch = await db.get('meta', 'last_sync_batch') as { key: string; value?: { durationMs?: number; batchCount?: number } } | undefined;
+      if (lastBatch?.value && lastBatch.value.batchCount && lastBatch.value.durationMs) {
+        avgSyncLatencyMs = Math.round(lastBatch.value.durationMs / lastBatch.value.batchCount);
+      }
+    } catch {
+      // best-effort latency
+    }
+
+    // Conflict telemetry: persisted counter + per-resolution-type tallies.
+    const conflictsTotal = Number(await this.getMeta('conflicts_total') || 0);
+    const conflictRecords = await db.getAllFromIndex('metrics', 'by-metric', IDBKeyRange.only('sync_conflicts_total'));
+    let conflictsAuto = 0;
+    let conflictsReview = 0;
+    for (const rec of conflictRecords) {
+      const r = rec.value as { resolved?: 'auto' | 'review' };
+      if (r?.resolved === 'review') conflictsReview++;
+      else conflictsAuto++;
+    }
+
     return {
       total: all.length,
       pending,
@@ -457,11 +589,14 @@ export const durableSyncQueue = {
       completed,
       deadLetter,
       oldestPending,
-      lastSyncSuccess: lastSuccess?.value as string | null,
-      lastSyncFailure: lastFailure?.value as string | null,
+      lastSyncSuccess: lastSuccess as string | null,
+      lastSyncFailure: lastFailure as string | null,
       retryHistogram: retryCounts,
       avgRetryCount,
-      avgSyncLatencyMs: 0,
+      avgSyncLatencyMs,
+      conflictsTotal,
+      conflictsAuto,
+      conflictsReview,
     };
   },
 

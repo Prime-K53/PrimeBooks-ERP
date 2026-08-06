@@ -5,7 +5,7 @@ import {
   Menu, LayoutGrid, CheckSquare, Wrench, Download, Package,
   RefreshCw, Database, CreditCard, Barcode, ChevronRight, ChevronDown, User, Upload,
   X, CheckCircle, Trash2, Clock, Plus, Zap, Filter, MessageSquare,
-  Settings, ShieldCheck, LogOut
+  Settings, ShieldCheck, LogOut, HeartPulse
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useInventory } from '../context/InventoryContext';
@@ -607,6 +607,7 @@ background: teal[100],
                         <MenuItem icon={User} color="#6366f1" bg="#eef7f6" label="User Profile" onClick={() => { navigate('/profile'); setShowUserMenu(false); }} />
                         <MenuItem icon={ShieldCheck} color="#10b981" bg="#eef7f6" label="Security Log" onClick={() => { navigate('/audit'); setShowUserMenu(false); }} />
                         <MenuItem icon={Database} color="#06b6d4" bg="#eef7f6" label="Migration" onClick={() => { navigate('/admin/migration-health'); setShowUserMenu(false); }} />
+                        <MenuItem icon={HeartPulse} color="#8b5cf6" bg="#f5f3ff" label="Sync Health" onClick={() => { navigate('/admin/sync-health'); setShowUserMenu(false); }} />
                         <MenuItem icon={Settings} color="#f59e0b" bg="#fbead0" label="Settings" onClick={() => { navigate('/settings'); setShowUserMenu(false); }} />
                     </div>
                     <div style={{ borderTop: '1px solid #e4ddd1', padding: 4 }}>
