@@ -68,49 +68,73 @@ import { ConfirmDialog, ConfirmDialogType } from '../components/ConfirmDialog';
 
 const teal={50:'#eef7f6',100:'#d3ece9',200:'#a6d9d3',300:'#72c0b7',400:'#3fa294',500:'#1f8577',600:'#146b60',700:'#0f544c',800:'#0b3e39',900:'#082e2a'};
 const amber={100:'#fbead0',300:'#eec27a',500:'#d99a3f',600:'#b97e2b'};
-const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#D4D7DC',danger='#b5493f';
+const paper='#FEFDFB',ink='#23282A',inkSoft='#5c6567',hairline='#E7E3DA',danger='#c0495f';
+const canvas='#F5F4EF';
+const surface='#FFFFFF';
+const success='#1f9d6b';
+const warn='#d99a3f';
 
 // Pricing settings validation using reusable utility
 
 // QBO Theme Styles
 const qboStyles = `
+    /* premium elevation token */
     .white-card {
-        background: white;
-        border: 1px solid #D4D7DC;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        transition: all 0.2s ease;
+        background: #FFFFFF;
+        border: 1px solid rgba(16,24,40,0.07);
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18);
+        transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
     }
     .white-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 4px rgba(16,24,40,0.05), 0 18px 40px -18px rgba(16,24,40,0.22);
     }
     .settings-label {
         display: block;
-        font-size: 13px;
+        font-size: 12.5px;
         font-weight: 600;
-        color: #393A3D;
-        margin-bottom: 6px;
+        color: #3b454c;
+        margin-bottom: 7px;
+        letter-spacing: 0.01em;
     }
     .settings-input {
         width: 100%;
-        padding: 8px 12px;
-        background: white;
-        border: 1px solid #BDBFC3;
-        border-radius: 4px;
+        padding: 10px 13px;
+        background: #FFFFFF;
+        border: 1px solid #e2ded3;
+        border-radius: 10px;
         font-size: 14px;
-        color: #393A3D;
+        color: #23282A;
         transition: all 0.2s;
+        box-shadow: inset 0 1px 2px rgba(16,24,40,0.03);
     }
     .settings-input:focus {
         outline: none;
-        border-color: #2563EB;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        border-color: #1f8577 !important;
+        box-shadow: 0 0 0 3px rgba(31,133,119,0.18);
     }
     .settings-section-header {
-        padding: 20px 32px;
-        border-bottom: 1px solid #D4D7DC;
-        background: #F9FAFB;
+        padding: 20px 28px;
+        border-bottom: 1px solid rgba(16,24,40,0.06);
+        background: linear-gradient(180deg, #fbfaf7 0%, #ffffff 100%);
+        border-top-left-radius: 14px;
+        border-top-right-radius: 14px;
     }
+
+    /* Focus rings for inline-styled controls that don't use the .settings-input class */
+    .premium-settings input:not([type=checkbox]):not([type=radio]):not([type=range]),
+    .premium-settings textarea,
+    .premium-settings select {
+        transition: border-color .15s ease, box-shadow .15s ease !important;
+    }
+    .premium-settings input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+    .premium-settings textarea:focus,
+    .premium-settings select:focus {
+        outline: none;
+        border-color: #1f8577 !important;
+        box-shadow: 0 0 0 3px rgba(31,133,119,0.18) !important;
+    }
+
     .toggle-input {
         position: absolute;
         width: 1px;
@@ -243,20 +267,21 @@ const qboStyles = `
 // ClientModal-aligned style constants
 const labelStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 6,
-  fontSize: 12, fontWeight: 600, color: teal[800],
-  marginBottom: 6, letterSpacing: 0.01
+  fontSize: 12.5, fontWeight: 600, color: '#3b454c',
+  marginBottom: 7, letterSpacing: 0.01
 };
 
 const inputStyle: React.CSSProperties = {
   width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
-  color: ink, background: paper,
-  border: `1px solid ${hairline}`, borderRadius: 9,
-  padding: '9px 12px', outline: 'none',
+  color: ink, background: '#fff',
+  border: '1px solid #e2ded3', borderRadius: 10,
+  padding: '10px 13px', outline: 'none',
+  boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.03)',
   transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
 };
 
 const textareaStyle: React.CSSProperties = {
-  ...inputStyle, resize: 'none', minHeight: 66, lineHeight: 1.5
+  ...inputStyle, resize: 'none', minHeight: 72, lineHeight: 1.5
 };
 
 const selectStyle: React.CSSProperties = {
@@ -271,22 +296,23 @@ const selectStyle: React.CSSProperties = {
 
 const sectionLabelStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 10,
-  margin: '26px 0 14px'
+  margin: '30px 0 16px', paddingLeft: 12,
+  borderLeft: `3px solid ${teal[500]}`
 };
 
 const btnGhostStyle: React.CSSProperties = {
   fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-  padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
-  background: paper, border: `1px solid ${hairline}`, color: inkSoft,
+  padding: '9px 18px', borderRadius: 10, cursor: 'pointer',
+  background: '#fff', border: `1px solid ${hairline}`, color: inkSoft,
   display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
 };
 
 const btnPrimaryStyle: React.CSSProperties = {
   fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-  padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1px solid transparent',
+  padding: '9px 18px', borderRadius: 10, cursor: 'pointer', border: '1px solid transparent',
   background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
   color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
-  boxShadow: `0 6px 16px -6px rgba(15,84,76,.55)`,
+  boxShadow: `0 8px 20px -8px rgba(15,84,76,.6)`,
   transition: 'all .15s ease'
 };
 
@@ -902,62 +928,77 @@ const Settings: React.FC = () => {
     const deferredTemplatePreviewConfig = useDeferredValue(config);
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter','DM Sans',sans-serif" }}>
+        <div className="premium-settings" style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter','DM Sans',sans-serif" }}>
             {/* Header */}
             <div style={{
+              position: 'relative',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '16px 28px',
-              borderBottom: `1px solid ${hairline}`,
-              background: paper
+              padding: '15px 28px',
+              borderBottom: '1px solid rgba(11,62,57,0.4)',
+              background: 'linear-gradient(120deg, #0b3e39 0%, #146b60 52%, #1f8577 100%)',
+              boxShadow: '0 6px 20px -10px rgba(11,62,57,0.6)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                  width: 42, height: 42, borderRadius: 12,
+                  background: 'linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))',
+                  border: '1px solid rgba(255,255,255,0.28)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)', flexShrink: 0
                 }}>
-                  <Settings2 size={19} color="#fff" />
+                  <Settings2 size={20} color="#fff" />
                 </div>
                 <div>
                   <h1 style={{
                     fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
-                    fontSize: 20, margin: 0, color: teal[800], letterSpacing: 0.2
+                    fontSize: 19, margin: 0, color: '#ffffff', letterSpacing: 0.3
                   }}>
                     {activeItemLabel}
                   </h1>
-                  <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
+                  <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'rgba(255,255,255,0.78)', letterSpacing: 0.02 }}>
                     {activeGroupTitle} &mdash; Configure your workspace
                   </p>
                 </div>
               </div>
-              <button onClick={handleSave} style={btnPrimaryStyle}>
+              <button onClick={handleSave} style={{
+                display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                padding: '9px 18px', borderRadius: 10, border: 'none',
+                background: '#ffffff', color: teal[700],
+                boxShadow: '0 8px 18px -8px rgba(0,0,0,0.45)',
+                transition: 'all .15s ease'
+              }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 24px -10px rgba(0,0,0,0.5)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 18px -8px rgba(0,0,0,0.45)'; }}
+              >
                 <CheckCircle2 size={16} /> Save Settings
               </button>
             </div>
 
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                {/* Modal-style Sidebar */}
+                {/* Premium Sidebar */}
                 <div style={{
-                  width: 280, flexShrink: 0,
-                  background: '#FEFDFB',
-                  borderRight: '1.4px solid #e4ddd1',
+                  width: 286, flexShrink: 0,
+                  background: '#FFFFFF',
+                  borderRight: '1px solid rgba(16,24,40,0.07)',
                   display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto'
                 }}>
                     <div style={{
-                      color: '#5c6567', fontSize: 11, letterSpacing: '0.8px',
-                      textTransform: 'uppercase', fontWeight: 700, padding: '18px 16px 10px'
+                      color: '#8b938f', fontSize: 11, letterSpacing: '1px',
+                      textTransform: 'uppercase', fontWeight: 700, padding: '20px 18px 10px'
                     }}>
                         Settings
                     </div>
-                    <div style={{ padding: '0 12px', flex: 1 }}>
+                    <div style={{ padding: '0 12px 16px', flex: 1 }}>
                         {filteredGroups.map(group => (
-                            <div key={group.title} style={{ marginBottom: 16 }}>
+                            <div key={group.title} style={{ marginBottom: 18 }}>
                                 <div style={{
-                                  color: '#5c6567', fontSize: 10, letterSpacing: '0.8px',
-                                  textTransform: 'uppercase', fontWeight: 700, padding: '4px 4px 8px'
+                                  color: '#9aa19c', fontSize: 10, letterSpacing: '0.9px',
+                                  textTransform: 'uppercase', fontWeight: 700, padding: '4px 6px 9px'
                                 }}>{group.title}</div>
-                                {group.items.map(item => (
+                                {group.items.map(item => {
+                                  const isActive = activeTab === item.id;
+                                  return (
                                     <button
                                         key={item.id}
                                         onClick={() => {
@@ -968,40 +1009,37 @@ const Settings: React.FC = () => {
                                         }}
                                         style={{
                                           display: 'flex', alignItems: 'center', gap: 12,
-                                          padding: '12px 14px', borderRadius: 10, width: '100%',
-                                          background: '#FEFDFB',
-                                          border: '1.4px solid #e4ddd1',
-                                          borderLeft: activeTab === item.id ? '4px solid #1f8577' : '1.4px solid #e4ddd1',
-                                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                                          padding: '11px 13px', borderRadius: 11, width: '100%',
+                                          background: isActive ? `linear-gradient(135deg, ${teal[500]}, ${teal[700]})` : '#FFFFFF',
+                                          border: isActive ? '1px solid transparent' : '1px solid rgba(16,24,40,0.06)',
+                                          boxShadow: isActive ? `0 10px 22px -10px rgba(15,84,76,0.55)` : '0 1px 2px rgba(16,24,40,0.04)',
                                           cursor: 'pointer', marginBottom: 8,
                                           transition: 'all .15s ease', position: 'relative',
                                           textAlign: 'left',
                                         }}
                                         onMouseEnter={e => {
-                                          e.currentTarget.style.transform = 'translateY(-1px)';
-                                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                                          if (!isActive) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px -8px rgba(16,24,40,0.18)'; }
                                         }}
                                         onMouseLeave={e => {
-                                          e.currentTarget.style.transform = 'translateY(0)';
-                                          e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+                                          if (!isActive) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)'; }
                                         }}
                                     >
                                         <div style={{
-                                          width: 34, height: 34, borderRadius: 8,
-                                          background: activeTab === item.id ? '#1f8577' : '#eef7f6',
-                                          color: activeTab === item.id ? '#fff' : '#1f8577',
+                                          width: 34, height: 34, borderRadius: 9,
+                                          background: isActive ? 'rgba(255,255,255,0.18)' : '#eef7f6',
+                                          color: isActive ? '#fff' : teal[600],
                                           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                                         }}>
                                           <item.icon size={16} />
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{item.label}</div>
-                                            <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>{item.desc}</div>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? '#fff' : '#23282A' }}>{item.label}</div>
+                                            <div style={{ fontSize: 10, color: isActive ? 'rgba(255,255,255,0.82)' : '#5c6567', marginTop: 1, lineHeight: 1.3 }}>{item.desc}</div>
                                         </div>
                                         <div style={{
-                                          marginLeft: 'auto', padding: '4px 10px', borderRadius: 6,
-                                          background: activeTab === item.id ? '#1f8577' : '#eef7f6',
-                                          color: activeTab === item.id ? '#fff' : '#1f8577',
+                                          marginLeft: 'auto', padding: '4px 9px', borderRadius: 6,
+                                          background: isActive ? 'rgba(255,255,255,0.2)' : '#eef7f6',
+                                          color: isActive ? '#fff' : teal[600],
                                           fontSize: 10, fontWeight: 600,
                                           display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0
                                         }}>
@@ -1009,15 +1047,16 @@ const Settings: React.FC = () => {
                                           <ChevronRight size={10} />
                                         </div>
                                     </button>
-                                ))}
+                                  );
+                                })}
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '24px 30px', background: paper }}>
-                    <div style={{ maxWidth: '896px' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px', background: 'linear-gradient(180deg, #F7F6F2 0%, #F2F1EB 100%)' }}>
+                    <div style={{ maxWidth: '920px' }}>
 
                         {activeTab === 'General' && (
                             <div>

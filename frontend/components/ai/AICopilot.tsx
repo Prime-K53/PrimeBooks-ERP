@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2 } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, Mic, MicOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateAIResponse } from '../../services/geminiService';
 import { useAuth } from '../../context/AuthContext';
@@ -112,8 +112,12 @@ export default function AICopilot() {
     { role: 'assistant', content: `Hi! I'm your AI Copilot. Ask me about your business data in plain English.` },
   ]);
   const [typing, setTyping] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const typingRef = useRef(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -133,9 +137,10 @@ export default function AICopilot() {
 
   const allData = { sales: sales || [], invoices: invoices || [], expenses: expenses || [], customers: customers || [], inventory: inventory || [], purchases: purchases || [] };
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
-    if (!text || typing) return;
+  const handleSend = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
+    if (!text || typingRef.current) return;
+    typingRef.current = true;
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setTyping(true);
@@ -182,9 +187,63 @@ export default function AICopilot() {
         setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error processing your request. Please try again.' }]);
       }
     } finally {
+      typingRef.current = false;
       setTyping(false);
     }
   }, [input, typing, sales, inventory, customers, invoices, accounts, expenses, income, purchases, companyConfig, user, allData]);
+
+  const handleSendRef = useRef(handleSend);
+  handleSendRef.current = handleSend;
+
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setVoiceSupported(false);
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+    rec.onresult = (e: any) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      setInput(transcript);
+      const hasFinal = Array.from(e.results).some((r: any) => r.isFinal);
+      if (hasFinal && transcript.trim()) {
+        setTimeout(() => handleSendRef.current(transcript.trim()), 60);
+      }
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    return () => {
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open && listening) recognitionRef.current?.stop();
+  }, [open, listening]);
+
+  const toggleVoice = () => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    if (listening) {
+      rec.stop();
+      setListening(false);
+      return;
+    }
+    setInput('');
+    setListening(true);
+    try {
+      rec.start();
+    } catch {
+      setListening(false);
+    }
+  };
 
   return (
     <>
@@ -258,9 +317,19 @@ export default function AICopilot() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSend()}
-                placeholder="Ask about your business..."
+                placeholder={listening ? 'Listening… speak now' : 'Ask about your business...'}
                 style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 14px', fontSize: 13, outline: 'none', color: '#0f172a' }}
               />
+              {voiceSupported && (
+                <button onClick={toggleVoice} style={{
+                  border: 'none', background: listening ? '#ef4444' : '#f1f5f9', color: listening ? '#fff' : '#475569',
+                  cursor: 'pointer', width: 38, height: 38, borderRadius: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: listening ? '0 0 0 4px rgba(239,68,68,0.2)' : 'none',
+                }} aria-label={listening ? 'Stop voice input' : 'Start voice input'} title={listening ? 'Stop voice input' : 'Voice command'}>
+                  {listening ? <MicOff size={16} /> : <Mic size={16} />}
+                </button>
+              )}
               <button onClick={handleSend} disabled={typing || !input.trim()} style={{
                 border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer', width: 38, height: 38, borderRadius: 12,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
