@@ -138,9 +138,10 @@ const CustomerDashboard: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
     (async () => {
       const ERP_DOC_TYPES = ['invoice', 'order', 'sale', 'payment', 'quotation', 'request', 'shipment'];
-      const sub = await portalLifecycle.subscribe({
+      unsubscribe = await portalLifecycle.subscribe({
         onEvent: (type, payload) => {
           const docType = payload?.docType;
           const activity = (payload?.event === 'payment_allocated')
@@ -153,9 +154,12 @@ const CustomerDashboard: React.FC = () => {
           }
         },
       });
-      if (!cancelled) return sub;
+
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
   const handleShareWhatsApp = useCallback(() => {

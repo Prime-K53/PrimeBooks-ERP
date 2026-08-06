@@ -68,15 +68,20 @@ const CustomerPayments: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
     (async () => {
-      const sub = await portalLifecycle.subscribe({
+      unsubscribe = await portalLifecycle.subscribe({
         onEvent: (type, payload) => {
-          if (type === 'entity_changed' && payload?.event === 'payment_allocated' && !cancelled) load();
+          if (type !== 'entity_changed' || cancelled) return;
+          const event = payload?.event;
+          if (event === 'payment_allocated' || event === 'payment_recorded' || event === 'payment_made' || event === 'balance_changed') load();
         },
       });
-      if (!cancelled) return sub;
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [load]);
 
   if (loading && page === 1) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;

@@ -22,7 +22,6 @@ import {
     CustomerReceiptInvoiceInput
 } from './receiptCalculationService';
 import { logger } from './logger';
-import { portalBridge } from './portalBridge';
 
 import {
     getCompanyConfig, getGLConfig, generateId, calculateBankBalance,
@@ -1468,25 +1467,6 @@ export const transactionService = {
                 return { success: true };
             }
         );
-        portalBridge.mirrorQuotation({
-            id: quotation.id,
-            quotationNumber: quotation.quotationNumber,
-            requestId: quotation.requestId,
-            customerId: quotation.customerId,
-            customerName: quotation.customerName,
-            items: quotation.items,
-            subtotal: quotation.subtotal,
-            discount: quotation.discount,
-            taxRate: quotation.taxRate,
-            taxAmount: quotation.taxAmount,
-            deliveryFee: quotation.deliveryFee,
-            total: quotation.total,
-            currency: quotation.currency,
-            status: quotation.status,
-            version: quotation.version,
-            notes: quotation.notes,
-            createdBy: quotation.createdBy,
-        });
         return result;
     },
 
@@ -1860,7 +1840,6 @@ export const transactionService = {
     },
 
     async processInvoice(invoice: Invoice, performedBy?: string) {
-        let mirroredCustPayment: CustomerPayment | null = null;
         const _processInvoiceResult = await dbService.executeAtomicOperation(
             ['invoices', 'inventory', 'ledger', 'customers', 'bomTemplates', 'marketAdjustments', 'marketAdjustmentTransactions', 'customerPayments', 'bankAccounts', 'bankTransactions', 'inventoryTransactions', 'idempotencyKeys'],
             async (tx) => {
@@ -2068,7 +2047,6 @@ export const transactionService = {
                         calculationVersion: snapshot.calculationVersion
                     };
                     await customerPaymentsStore.put(custPayment);
-                    mirroredCustPayment = custPayment;
 
                     let targetDebitAccount = gl.cashDrawerAccount;
                     if (paymentMethod === 'Wallet') {
@@ -2196,64 +2174,6 @@ export const transactionService = {
                     logger.error('Referral reward processing from invoice failed:', err)
                 )
             );
-        }
-        portalBridge.mirrorInvoice({
-            id: invoice.id,
-            customerId: invoice.customerId,
-            customerName: invoice.customerName,
-            subtotal: invoice.subtotal,
-            totalAmount: invoice.totalAmount,
-            paidAmount: invoice.paidAmount,
-            currency: invoice.currency,
-            status: invoice.status,
-            paymentMethod: invoice.paymentMethod,
-            paidAt: invoice.paidAt ?? (invoice.status === 'Paid' || invoice.status === 'Partial' ? invoice.date : null),
-            dueDate: invoice.dueDate,
-            invoiceNumber: invoice.invoiceNumber,
-            items: invoice.items,
-            otherCharges: invoice.otherCharges,
-            notes: invoice.notes,
-            documentTitle: invoice.documentTitle,
-            createdBy: performedBy || 'System',
-        });
-        if (mirroredCustPayment) {
-            const walletDeposit = toMoney(mirroredCustPayment.walletDeposit ?? mirroredCustPayment.overpaymentAmount ?? 0);
-            const walletUsed = mirroredCustPayment.paymentMethod === 'Wallet' ? toMoney(mirroredCustPayment.amountRetained ?? 0) : 0;
-            portalBridge.mirrorCustomerPayment({
-                id: mirroredCustPayment.id,
-                customerId: mirroredCustPayment.customerId,
-                customerName: mirroredCustPayment.customerName,
-                amount: mirroredCustPayment.amount,
-                date: mirroredCustPayment.date,
-                method: mirroredCustPayment.paymentMethod,
-                accountId: mirroredCustPayment.accountId,
-                reference: mirroredCustPayment.reference,
-                allocations: mirroredCustPayment.allocations,
-                excessAmount: walletDeposit,
-                excessHandling: mirroredCustPayment.excessHandling,
-                notes: mirroredCustPayment.notes,
-                status: mirroredCustPayment.status,
-                reconciled: mirroredCustPayment.reconciled,
-                createdBy: performedBy || 'System',
-            });
-            if (walletDeposit > 0) {
-                portalBridge.mirrorWallet({
-                    customerId: mirroredCustPayment.customerId,
-                    customerName: mirroredCustPayment.customerName,
-                    delta: walletDeposit,
-                    reason: 'Overpayment credited to wallet',
-                    reference: mirroredCustPayment.id,
-                });
-            }
-            if (walletUsed > 0) {
-                portalBridge.mirrorWallet({
-                    customerId: mirroredCustPayment.customerId,
-                    customerName: mirroredCustPayment.customerName,
-                    delta: -walletUsed,
-                    reason: 'Wallet payment applied to invoice',
-                    reference: mirroredCustPayment.id,
-                });
-            }
         }
         return _processInvoiceResult;
     },
@@ -2568,8 +2488,6 @@ export const transactionService = {
 
     async addCustomerPayment(payment: CustomerPayment) {
         const paidInvoices: any[] = [];
-        const mirroredInvoices: Invoice[] = [];
-        let mirroredPayment: CustomerPayment | null = null;
         const payResult = await dbService.executeAtomicOperation(
             ['customerPayments', 'invoices', 'customers', 'ledger', 'walletTransactions', 'bankAccounts', 'bankTransactions', 'idempotencyKeys'],
             async (tx) => {
@@ -2676,7 +2594,6 @@ export const transactionService = {
                         invoice.status = 'Partial';
                     }
                     await invoiceStore.put(invoice);
-                    mirroredInvoices.push(invoice);
                 }
 
                 // 5. Update Customer Balance
@@ -2827,64 +2744,9 @@ export const transactionService = {
                     }
                 }
 
-                mirroredPayment = auditedPayment;
                 return { success: true };
             }
         );
-        for (const inv of mirroredInvoices) {
-            portalBridge.mirrorInvoice({
-                id: inv.id,
-                customerId: inv.customerId,
-                customerName: inv.customerName,
-                subtotal: inv.subtotal,
-                totalAmount: inv.totalAmount,
-                paidAmount: inv.paidAmount,
-                currency: inv.currency,
-                status: inv.status,
-                invoiceNumber: inv.invoiceNumber,
-                dueDate: inv.dueDate,
-                items: inv.items,
-                notes: inv.notes,
-            });
-        }
-        if (mirroredPayment) {
-            const walletDeposit = toMoney(mirroredPayment.walletDeposit ?? mirroredPayment.overpaymentAmount ?? 0);
-            const walletUsed = mirroredPayment.paymentMethod === 'Wallet' ? toMoney(mirroredPayment.amountRetained ?? 0) : 0;
-            portalBridge.mirrorCustomerPayment({
-                id: mirroredPayment.id,
-                customerId: mirroredPayment.customerId,
-                customerName: mirroredPayment.customerName,
-                amount: mirroredPayment.amount,
-                date: mirroredPayment.date,
-                method: mirroredPayment.paymentMethod,
-                accountId: mirroredPayment.accountId,
-                reference: mirroredPayment.reference,
-                allocations: mirroredPayment.allocations,
-                excessAmount: walletDeposit,
-                excessHandling: mirroredPayment.excessHandling,
-                notes: mirroredPayment.notes,
-                status: mirroredPayment.status,
-                reconciled: mirroredPayment.reconciled,
-            });
-            if (walletDeposit > 0) {
-                portalBridge.mirrorWallet({
-                    customerId: mirroredPayment.customerId,
-                    customerName: mirroredPayment.customerName,
-                    delta: walletDeposit,
-                    reason: 'Overpayment credited to wallet',
-                    reference: mirroredPayment.id,
-                });
-            }
-            if (walletUsed > 0) {
-                portalBridge.mirrorWallet({
-                    customerId: mirroredPayment.customerId,
-                    customerName: mirroredPayment.customerName,
-                    delta: -walletUsed,
-                    reason: 'Wallet payment applied to invoices',
-                    reference: mirroredPayment.id,
-                });
-            }
-        }
         console.log('[REFERRAL-PAYMENT] paidInvoices:', paidInvoices.length, paidInvoices.map((pi: any) => ({ id: pi.id, referredBy: pi.referredBy, paidAmount: pi.paidAmount })));
         for (const pi of paidInvoices) {
             import('./referralService').then(({ referralService }) =>
@@ -3125,28 +2987,10 @@ export const transactionService = {
                 return { success: true };
             }
         );
-        portalBridge.mirrorInvoice({
-            id: invoice.id,
-            customerId: invoice.customerId,
-            customerName: invoice.customerName,
-            subtotal: invoice.subtotal,
-            totalAmount: invoice.totalAmount,
-            paidAmount: invoice.paidAmount,
-            currency: invoice.currency,
-            status: invoice.status,
-            paymentMethod: invoice.paymentMethod,
-            dueDate: invoice.dueDate,
-            invoiceNumber: invoice.invoiceNumber,
-            items: invoice.items,
-            otherCharges: invoice.otherCharges,
-            notes: invoice.notes,
-            documentTitle: invoice.documentTitle,
-        });
         return result;
     },
 
     async voidInvoice(id: string, reason: string) {
-        let voidedInvoice: Invoice | null = null;
         const result = await dbService.executeAtomicOperation(
             ['invoices', 'inventory', 'ledger', 'customers', 'customerPayments', 'bankAccounts', 'bankTransactions', 'walletTransactions'],
             async (tx) => {
@@ -3164,7 +3008,6 @@ export const transactionService = {
                 if (invoice.status === 'Cancelled' || invoice.status === 'Voided') {
                     throw new Error('Invoice is already voided/cancelled');
                 }
-                voidedInvoice = invoice;
 
                 // 1. Reverse Inventory
                 for (const item of invoice.items) {
@@ -3331,21 +3174,6 @@ export const transactionService = {
                 return { success: true };
             }
         );
-        portalBridge.mirrorInvoice({
-            id: voidedInvoice.id,
-            customerId: voidedInvoice.customerId,
-            customerName: voidedInvoice.customerName,
-            subtotal: voidedInvoice.subtotal,
-            totalAmount: voidedInvoice.totalAmount,
-            paidAmount: 0,
-            currency: voidedInvoice.currency,
-            status: 'voided',
-            dueDate: voidedInvoice.dueDate,
-            invoiceNumber: voidedInvoice.invoiceNumber,
-            items: voidedInvoice.items,
-            notes: voidedInvoice.notes,
-            reason,
-        });
         return result;
     },
 
@@ -4776,35 +4604,10 @@ export const transactionService = {
                 return { success: true, id: order.id };
             }
         );
-        portalBridge.mirrorSalesOrder({
-            id: order.id,
-            quotationId: order.quotationId,
-            orderNumber: order.orderNumber,
-            sourceRequestId: order.sourceRequestId,
-            sourceRequestNumber: order.sourceRequestNumber,
-            reorderOf: order.reorderOf,
-            reorderOfNumber: order.reorderOfNumber,
-            approvedBy: order.approvedBy,
-            erpOrderId: order.erpOrderId,
-            customerId: order.customerId,
-            customerName: order.customerName,
-            orderDate: order.orderDate,
-            deliveryDate: order.deliveryDate,
-            status: order.status,
-            items: order.items,
-            subtotal: order.subtotal,
-            discounts: order.discounts,
-            tax: order.tax,
-            otherCharges: order.otherCharges,
-            total: order.total,
-            notes: order.notes,
-            createdBy: order.createdBy || 'System',
-        });
         return result;
     },
 
     async recordOrderPayment(orderId: string, payment: OrderPayment) {
-        let mirroredOrder: Order | null = null;
         const result = await dbService.executeAtomicOperation(
             ['orders', 'ledger', 'customers', 'walletTransactions', 'bankAccounts', 'bankTransactions', 'idempotencyKeys'],
             async (tx) => {
@@ -4898,44 +4701,13 @@ export const transactionService = {
                     });
                 }
 
-                mirroredOrder = order;
                 return { success: true };
             }
         );
-        if (mirroredOrder && result.success !== false) {
-            portalBridge.mirrorCustomerPayment({
-                id: `ORD-PAY:${orderId}:${payment.id || payment.date || payment.paymentDate}`,
-                customerId: mirroredOrder.customerId,
-                customerName: mirroredOrder.customerName || '',
-                amount: payment.amountPaid ?? payment.amount,
-                date: payment.paymentDate ?? payment.date ?? new Date().toISOString(),
-                method: payment.paymentMethod ?? payment.method ?? 'Cash',
-                reference: `Payment for Order #${mirroredOrder.orderNumber || orderId}`,
-                status: 'Cleared',
-                reconciled: false,
-            });
-            portalBridge.mirrorSalesOrder({
-                id: orderId,
-                customerId: mirroredOrder.customerId,
-                customerName: mirroredOrder.customerName,
-                orderNumber: mirroredOrder.orderNumber,
-                status: mirroredOrder.status,
-                items: mirroredOrder.items,
-                subtotal: mirroredOrder.subtotal,
-                discounts: mirroredOrder.discounts,
-                tax: mirroredOrder.tax,
-                otherCharges: mirroredOrder.otherCharges,
-                total: mirroredOrder.totalAmount ?? mirroredOrder.total,
-                orderDate: mirroredOrder.orderDate ?? mirroredOrder.date,
-                deliveryDate: mirroredOrder.deliveryDate,
-                notes: mirroredOrder.notes,
-            });
-        }
         return result;
     },
 
     async updateOrderStatus(orderId: string, status: Order['status']) {
-        let mirroredOrder: Order | null = null;
         const result = await dbService.executeAtomicOperation(
             ['orders', 'inventory', 'ledger', 'bomTemplates', 'marketAdjustments', 'marketAdjustmentTransactions'],
             async (tx) => {
@@ -5065,34 +4837,13 @@ export const transactionService = {
                 }
 
                 await orderStore.put(order);
-                mirroredOrder = order;
                 return { success: true };
             }
         );
-        if (mirroredOrder && result.success !== false) {
-            portalBridge.mirrorSalesOrder({
-                id: orderId,
-                customerId: mirroredOrder.customerId,
-                customerName: mirroredOrder.customerName,
-                orderNumber: mirroredOrder.orderNumber,
-                status: mirroredOrder.status,
-                items: mirroredOrder.items,
-                subtotal: mirroredOrder.subtotal,
-                discounts: mirroredOrder.discounts,
-                tax: mirroredOrder.tax,
-                otherCharges: mirroredOrder.otherCharges,
-                total: mirroredOrder.totalAmount ?? mirroredOrder.total,
-                orderDate: mirroredOrder.orderDate ?? mirroredOrder.date,
-                deliveryDate: mirroredOrder.deliveryDate,
-                notes: mirroredOrder.notes,
-            });
-        }
         return result;
     },
 
     async cancelOrder(orderId: string, reason: string) {
-        let mirroredOrder: Order | null = null;
-        let refundAmount = 0;
         const result = await dbService.executeAtomicOperation(
             ['orders', 'inventory', 'ledger', 'customers', 'walletTransactions'],
             async (tx) => {
@@ -5160,39 +4911,10 @@ export const transactionService = {
                 order.status = 'Cancelled';
                 order.cancelReason = reason;
                 await orderStore.put(order);
-                mirroredOrder = order;
-                refundAmount = order.paidAmount;
 
                 return { success: true };
             }
         );
-        if (mirroredOrder && result.success !== false) {
-            portalBridge.mirrorSalesOrder({
-                id: orderId,
-                customerId: mirroredOrder.customerId,
-                customerName: mirroredOrder.customerName,
-                orderNumber: mirroredOrder.orderNumber,
-                status: mirroredOrder.status,
-                items: mirroredOrder.items,
-                subtotal: mirroredOrder.subtotal,
-                discounts: mirroredOrder.discounts,
-                tax: mirroredOrder.tax,
-                otherCharges: mirroredOrder.otherCharges,
-                total: mirroredOrder.totalAmount ?? mirroredOrder.total,
-                orderDate: mirroredOrder.orderDate ?? mirroredOrder.date,
-                deliveryDate: mirroredOrder.deliveryDate,
-                notes: mirroredOrder.notes,
-            });
-            if (refundAmount > 0 && mirroredOrder.customerId) {
-                portalBridge.mirrorWallet({
-                    customerId: mirroredOrder.customerId,
-                    customerName: mirroredOrder.customerName || '',
-                    delta: refundAmount,
-                    reason: `Refund from cancelled Order #${mirroredOrder.orderNumber || orderId}`,
-                    reference: `ORD-CAN:${orderId}`,
-                });
-            }
-        }
         return result;
     },
 

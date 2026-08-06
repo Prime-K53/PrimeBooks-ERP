@@ -48,15 +48,19 @@ const CustomerQuotations: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
     (async () => {
-      const sub = await portalLifecycle.subscribe({
+      unsubscribe = await portalLifecycle.subscribe({
         onEvent: (type, payload) => {
           if (type === 'entity_changed' && payload.docType === 'quotation' && !cancelled) load();
         },
       });
-      if (!cancelled) return sub;
+
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [load]);
 
   const sorted = useMemo(

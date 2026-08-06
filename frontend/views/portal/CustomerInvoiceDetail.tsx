@@ -62,8 +62,9 @@ const CustomerInvoiceDetail: React.FC = () => {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
     (async () => {
-      const sub = await portalLifecycle.subscribe({
+      unsubscribe = await portalLifecycle.subscribe({
         onEvent: (type, payload) => {
           if (type === 'entity_changed' && payload?.docType === 'invoice' && payload?.docId === id && !cancelled) {
             portalLifecycle.invoices.get(id)
@@ -73,9 +74,12 @@ const CustomerInvoiceDetail: React.FC = () => {
           }
         },
       });
-      if (!cancelled) return sub;
+
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [id]);
 
   const handleDownloadPdf = async () => {

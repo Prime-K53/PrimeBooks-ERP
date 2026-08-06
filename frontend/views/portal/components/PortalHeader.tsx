@@ -61,17 +61,21 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle }) => {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
     (async () => {
-      const sub = await portalLifecycle.subscribe({
+      unsubscribe = await portalLifecycle.subscribe({
         onEvent: (type, payload) => {
           if (type === 'notification') {
             loadNotifications();
           }
         },
       });
-      if (!cancelled) return sub;
+
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
   const handleLogout = () => {

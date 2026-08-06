@@ -18,6 +18,7 @@
  */
 const express = require('express');
 const cloudSyncStore = require('../services/cloudSyncStore.cjs');
+const erpPortalMirror = require('./erpPortalMirror.cjs');
 
 const router = express.Router();
 
@@ -135,6 +136,16 @@ router.post('/ops', async (req, res) => {
         operation: op.operation,
         payload: op.payload,
       });
+
+      // Portal propagation (authoritative path): once the op is COMMITTED to
+      // the cloud, mirror it into the portal SQLite layer + broadcast SSE +
+      // notifications. Skipped for replays (already propagated on first
+      // success), deletes (portal soft-deletes are managed portal-side) and
+      // NOOP tables. Best-effort — never fails the sync op.
+      if (result.ok && !result.replayed && op.operation === 'upsert') {
+        erpPortalMirror.mirrorCommittedTable(table, op.payload);
+      }
+
       results.push(result);
     }
 

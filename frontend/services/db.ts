@@ -373,42 +373,6 @@ const LOCAL_ONLY_STORES = new Set([
   'users',
 ]);
 
-const PORTAL_MIRROR_STORES = new Set([
-  'customers',
-  'deliveries',
-  'deliveryNotes',
-  'shipments',
-  'customerPayments',
-  'invoices',
-  'quotations',
-  'salesOrders',
-  'walletTransactions',
-  'jobTickets',
-  'workOrders',
-  'batches',
-  'productionBatches',
-  'inventoryTransactions',
-  'ledger',
-  'engagementPoints',
-  'engagementCashback',
-  'engagementCustomerRewards',
-  'referralRewards',
-]);
-
-const triggerPortalMirror = async (storeName: string, record: Record<string, unknown>, operation: 'upsert' | 'delete') => {
-  if (typeof window === 'undefined') return;
-  if (!PORTAL_MIRROR_STORES.has(storeName)) return;
-  try {
-    const { portalBridge } = await import('./portalBridge');
-    if (operation === 'delete') {
-      return;
-    }
-    portalBridge.mirror(storeName, record);
-  } catch {
-    /* portal mirroring is best-effort – never break the core write path */
-  }
-};
-
 interface PutOptions {
     cloudSource?: boolean;
 }
@@ -1101,11 +1065,6 @@ export const dbService = {
         // Local-first: always write to IndexedDB, return immediately
         const localResultId = await putToLegacyStore(storeName, raw as T);
 
-        // Portal mirror: fire-and-forget for ERP-originated (non-cloud-source) writes
-        if (!isCloudSource) {
-            void triggerPortalMirror(String(storeName), raw as Record<string, unknown>, 'upsert');
-        }
-
         // Background sync: fire-and-forget queue to cloud
         const isLocalOnly = LOCAL_ONLY_STORES.has(String(storeName));
         if (!isLocalOnly && itemId && !isCloudSource) {
@@ -1247,12 +1206,6 @@ export const dbService = {
             existing._updatedAt = new Date().toISOString();
             existing.deletedAt = existing.deletedAt || new Date().toISOString();
             await putToLegacyStore(storeName, existing);
-
-            // Portal mirror: soft-delete updates (status changes etc.) should propagate
-            const isCloudSource = options.cloudSource === true;
-            if (!isCloudSource) {
-                void triggerPortalMirror(String(storeName), existing, 'upsert');
-            }
         } else {
             await deleteFromLegacyStore(storeName, id);
         }

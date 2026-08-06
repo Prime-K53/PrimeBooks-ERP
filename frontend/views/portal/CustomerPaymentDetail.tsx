@@ -58,8 +58,9 @@ const CustomerPaymentDetail: React.FC = () => {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
     (async () => {
-      const sub = await portalLifecycle.subscribe({
+      unsubscribe = await portalLifecycle.subscribe({
         onEvent: (type, payload) => {
           if (type === 'entity_changed' && payload?.event === 'payment_allocated' && !cancelled) {
             portalApi.get<PaymentDetail>(`/payments/${id}`)
@@ -69,9 +70,12 @@ const CustomerPaymentDetail: React.FC = () => {
           }
         },
       });
-      if (!cancelled) return sub;
+
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [id]);
 
   const handleDownloadReceipt = useCallback(async () => {

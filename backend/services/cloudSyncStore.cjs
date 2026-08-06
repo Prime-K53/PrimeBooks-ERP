@@ -124,6 +124,29 @@ function sanitizeRecord(payload) {
 }
 
 /**
+ * Fetch every row of a cloud table (id + data envelope) with pagination.
+ * Used by the portal backfill to propagate pre-existing committed rows.
+ */
+async function listRows(table) {
+  const LIMIT = 200;
+  const out = [];
+  let from = 0;
+  for (;;) {
+    const res = await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+      headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
+      params: { select: '*', offset: from, limit: LIMIT },
+      timeout: 20000,
+    });
+    const page = Array.isArray(res.data) ? res.data : [];
+    out.push(...page);
+    if (page.length < LIMIT) break;
+    from += page.length;
+    if (from > 5000) break; // safety valve for pathological tables
+  }
+  return out;
+}
+
+/**
  * Read the current server row and compare it against the version the client
  * based its edit on. Returns either the matched row (the write can proceed)
  * or a structured conflict payload so the client can field-merge immediately.
@@ -436,6 +459,7 @@ module.exports = {
   stringToUuid5,
   applyOp,
   getRow,
+  listRows,
   upsertRow,
   softDeleteRow,
   checkIdempotency,

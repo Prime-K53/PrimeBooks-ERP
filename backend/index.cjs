@@ -345,6 +345,13 @@ app.use('/api/erp-portal', erpPortalMirrorRoutes);
 const syncRoutes = require('./routes/sync.cjs');
 app.use('/api/sync', syncRoutes);
 
+// One-time startup backfill: propagate already-committed cloud rows into the
+// portal SQLite layer so documents that predate the portal bridge appear in
+// the customer portal. Non-blocking; failures are logged, never fatal.
+erpPortalMirrorRoutes.backfillPortalTables().catch((err) => {
+  console.error('[Portal] backfill failed:', err?.message || err);
+});
+
 // Live Multi-Device Acceptance Framework — admin-gated; mounted after the
 // global verifyToken so JWT auth is enforced before the router's admin check.
 const acceptanceRoutes = require('./routes/acceptance.cjs');

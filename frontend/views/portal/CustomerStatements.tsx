@@ -68,8 +68,9 @@ const CustomerStatements: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
     (async () => {
-      const sub = await portalLifecycle.subscribe({
+      unsubscribe = await portalLifecycle.subscribe({
         onEvent: (type, payload) => {
           if (type === 'entity_changed' && (
             payload?.docType === 'statement' || payload?.docType === 'invoice'
@@ -80,9 +81,12 @@ const CustomerStatements: React.FC = () => {
           }
         },
       });
-      if (!cancelled) return sub;
+
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [fetchStatement, startDate, endDate]);
 
   const handleDownloadPdf = useCallback(async () => {

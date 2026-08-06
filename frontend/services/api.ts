@@ -20,7 +20,7 @@ import { generateNextId } from '../utils/helpers';
 import { generateNextSalesInvoiceNumber } from './documentNumberService';
 import { normalizeInventoryItemPricing } from '../utils/pricing';
 import { examinationJobService } from './examinationJobService.ts';
-import { portalBridge } from './portalBridge';
+
 
 /**
  * Authorization Middleware Simulation
@@ -1140,15 +1140,6 @@ export const api = {
         await tx.objectStore('walletTransactions').put(t);
         return { success: true, id: t.id };
       });
-      if (!result.duplicate && result.success !== false) {
-        const delta = t.type === 'Credit' ? Math.abs(Number(t.amount)) : -Math.abs(Number(t.amount));
-        portalBridge.mirrorWallet({
-          customerId: t.customerId,
-          delta,
-          reason: t.type === 'Credit' ? 'Wallet credited' : 'Wallet debited',
-          reference: t.id,
-        });
-      }
       return result;
     }, 'Finance.SaveWalletTransaction'),
 

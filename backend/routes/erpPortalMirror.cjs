@@ -1194,4 +1194,97 @@ router.post('/mirror', requireRole('Admin', 'Accountant', 'Manager'), async (req
   }
 });
 
+// ─── post-commit propagation (authoritative path) ───────────────────────────
+// Cloud table name → portal mirror function. Used by the sync gateway after a
+// successful cloud commit so the portal only ever observes COMMITTED records,
+// and by the startup backfill so pre-existing cloud rows appear in the portal.
+const TABLE_TO_MIRROR = {
+  invoices: mirrorInvoice,
+  sales_orders: mirrorSalesOrder,
+  quotations: mirrorQuotation,
+  customer_payments: mirrorCustomerPayment,
+  customers: mirrorCustomer,
+  delivery_notes: mirrorDeliveryNote,
+  shipments: mirrorShipment,
+  receipts: mirrorReceipt,
+  credit_notes: mirrorCreditNote,
+  debit_notes: mirrorDebitNote,
+  wallet_transactions: mirrorWalletTransaction,
+  job_tickets: mirrorJobTicket,
+  work_orders: mirrorWorkOrder,
+  production_batches: mirrorProductionBatch,
+  inventory_transactions: mirrorInventoryTransaction,
+  ledger_entries: mirrorLedgerEntry,
+  support_tickets: mirrorSupportTicket,
+  engagement_points: mirrorEngagement,
+  engagement_cashback: mirrorEngagement,
+  engagement_customer_rewards: mirrorEngagement,
+  engagement_gift_cards: mirrorEngagement,
+  engagement_membership_tiers: mirrorEngagement,
+  referral_rewards: mirrorEngagement,
+};
+
+/**
+ * Mirror a record that has ALREADY been committed to the cloud by the sync
+ * gateway. Best-effort: a failure here must never fail the sync op itself.
+ * @returns {Promise<boolean>} true when the table has a portal counterpart.
+ */
+async function mirrorCommittedTable(table, payload) {
+  const mirrorFn = TABLE_TO_MIRROR[table];
+  if (!mirrorFn) return false;
+  if (!payload || typeof payload !== 'object') return false;
+  try {
+    await mirrorFn(payload);
+  } catch (err) {
+    console.error(`[ERP Mirror] post-commit mirror ${table} failed (best-effort):`, err?.message || err);
+  }
+  return true;
+}
+
+/**
+ * Backfill the portal SQLite layer from committed cloud rows. Runs once at
+ * startup so documents that predate the portal bridge become visible.
+ * Cloud rows are stored as { id, data, updated_at, version } — the payload
+ * lives inside `data`. Only tables that have a real portal SQLite mirror are
+ * backfilled (pure-SSE entities like ledger entries are skipped).
+ */
+async function backfillPortalTables() {
+  const { listRows } = require('../services/cloudSyncStore.cjs');
+  const TABLES = [
+    'customers', 'invoices', 'sales_orders', 'quotations', 'customer_payments',
+    'delivery_notes', 'shipments', 'receipts', 'credit_notes', 'debit_notes',
+    'wallet_transactions', 'job_tickets', 'support_tickets',
+  ];
+  let total = 0;
+  for (const table of TABLES) {
+    let rows = [];
+    try {
+      rows = await listRows(table);
+    } catch (err) {
+      // Tables absent from the cloud (404) simply have nothing to backfill.
+      const status = err?.response?.status;
+      if (status !== 404) {
+        console.error(`[ERP Mirror] backfill list ${table} failed (skipping):`, err?.message || err);
+      }
+      continue;
+    }
+    for (const row of rows) {
+      const record = row?.data ?? row;
+      if (!record || typeof record !== 'object') continue;
+      if (record.deleted) continue; // tombstones stay invisible
+      try {
+        await mirrorCommittedTable(table, record);
+        total += 1;
+      } catch {
+        // mirrorCommittedTable already logs; keep the loop going
+      }
+    }
+  }
+  if (total > 0) {
+    console.log(`[ERP Mirror] backfill complete — ${total} committed rows propagated to portal`);
+  }
+}
+
 module.exports = router;
+module.exports.mirrorCommittedTable = mirrorCommittedTable;
+module.exports.backfillPortalTables = backfillPortalTables;
