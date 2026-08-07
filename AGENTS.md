@@ -29,6 +29,11 @@
   5. `supabase-add-updated-at-triggers.sql` (NEW — adds BEFORE UPDATE triggers)
   6. `supabase-fix-realtime-publication.sql` (NEW — completes realtime publication)
   7. `supabase-portal-tables.sql` (NEW — creates portal_users/portal_sessions/portal_password_resets/portal_login_history; required for customer portal auth & password regeneration)
+  8. `supabase-add-version-columns.sql` (NEW — adds `version` column to every business table with a `data` JSONB; REQUIRED for cloud sync. Without it POST /api/sync/ops fails with PGRST204 "Could not find the 'version' column")
+
+## Notes
+- `npx vitest` / `npx tsc` require .NET Framework v4.0.30319 on Windows PowerShell 5.1
+- If .NET is unavailable, use PowerShell 7+ or `cmd /c` to run Node.js commands
 
 ## Notes
 - `npx vitest` / `npx tsc` require .NET Framework v4.0.30319 on Windows PowerShell 5.1
