@@ -651,14 +651,14 @@ router.get('/analytics', async (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const [portalUsers, customers] = await Promise.all([
-      repo.getAll('portal_users'),
+      repo.getAllFlat('portal_users'),
       repo.getAll('customers'),
     ]);
     const customerMap = new Map(customers.map(c => [c.id, c]));
-    const rows = portalUsers.map(pu => {
-      const c = customerMap.get(pu.customerId) || {};
+    const rows = (portalUsers || []).map(pu => {
+      const c = customerMap.get(pu.customer_id) || {};
       return {
-        customer_id: c.id,
+        customer_id: c.id || pu.customer_id,
         customer_name: c.name,
         customer_email: c.email,
         customer_phone: c.phone,
@@ -668,7 +668,7 @@ router.get('/users', async (req, res) => {
         full_name: pu.full_name,
         portal_phone: pu.phone,
         portal_status: pu.status,
-        last_login_at: pu.lastLoginAt,
+        last_login_at: pu.last_login_at,
         portal_created_at: pu.created_at,
       };
     });
