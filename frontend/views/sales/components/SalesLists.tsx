@@ -1097,10 +1097,10 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                         </div>
                     )}
                     <div className="flex-1 overflow-auto custom-scrollbar">
-                        <table className="w-full min-w-[640px] text-left text-[13px] table-fixed">
+                        <table className="w-full min-w-0 md:min-w-[640px] text-left text-[11px] md:text-[13px] table-fixed">
                             <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <th className="table-header text-center w-[3%]">
+                                    <th className="table-header text-center w-[3%] hidden md:table-cell">
                                         <input
                                             type="checkbox"
                                             className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
@@ -1118,13 +1118,13 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                             }}
                                         />
                                     </th>
-                                    <SortableTh field="id" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[13.85%]">Invoice No.</SortableTh>
-                                    <SortableTh field="date" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[13.85%]">Date</SortableTh>
-                                    <SortableTh field="customerName" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[13.85%]">Customer</SortableTh>
-                                    <SortableTh field="totalAmount" sortConfig={props.sortConfig} onSort={props.onSort} className="text-right w-[13.85%]">Total</SortableTh>
-                                    <SortableTh field="paidAmount" sortConfig={props.sortConfig} onSort={props.onSort} className="text-right w-[13.85%]">Balance</SortableTh>
-                                    <SortableTh field="status" sortConfig={props.sortConfig} onSort={props.onSort} className="text-center w-[13.85%]">Status</SortableTh>
-                                    <th className="table-header text-center w-[13.85%]">Actions</th>
+                                    <SortableTh field="id" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[28%] md:w-[13.85%]">Invoice No.</SortableTh>
+                                    <SortableTh field="date" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[18%] md:w-[13.85%] hidden sm:table-cell">Date</SortableTh>
+                                    <SortableTh field="customerName" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[32%] md:w-[13.85%]">Customer</SortableTh>
+                                    <SortableTh field="totalAmount" sortConfig={props.sortConfig} onSort={props.onSort} className="text-right w-[22%] md:w-[13.85%] hidden sm:table-cell">Total</SortableTh>
+                                    <SortableTh field="paidAmount" sortConfig={props.sortConfig} onSort={props.onSort} className="text-right w-[22%] md:w-[13.85%] hidden lg:table-cell">Balance</SortableTh>
+                                    <SortableTh field="status" sortConfig={props.sortConfig} onSort={props.onSort} className="text-center w-[14%] md:w-[13.85%]">Status</SortableTh>
+                                    <th className="table-header text-center w-[14%] md:w-[13.85%]">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100/50">
@@ -1150,7 +1150,7 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                             onMouseMove={onMouseMove}
                                             onMouseLeave={onMouseLeave}
                                         >
-                                            <td className="table-body-cell text-center" onClick={(e) => e.stopPropagation()}>
+                                            <td className="table-body-cell text-center hidden md:table-cell" onClick={(e) => e.stopPropagation()}>
                                                 <input
                                                     type="checkbox"
                                                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
@@ -1166,10 +1166,10 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                                     currentPage={location.pathname}
                                                 />
                                             </td>
-                                            <td className="table-body-cell text-left font-normal truncate">{new Date(inv.date).toLocaleDateString()}</td>
+                                            <td className="table-body-cell text-left font-normal truncate hidden sm:table-cell">{new Date(inv.date).toLocaleDateString()}</td>
                                             <td className="table-body-cell text-left font-medium text-slate-900 truncate">{inv.customerName}</td>
-                                            <td className="table-body-cell text-right font-medium finance-nums truncate">{companyConfig.currencySymbol} {totalAmount.toLocaleString()}</td>
-                                            <td className="table-body-cell text-right text-red-600 font-medium finance-nums truncate">{companyConfig.currencySymbol} {balanceDue.toLocaleString()}</td>
+                                            <td className="table-body-cell text-right font-medium finance-nums truncate hidden sm:table-cell">{companyConfig.currencySymbol} {totalAmount.toLocaleString()}</td>
+                                            <td className="table-body-cell text-right text-red-600 font-medium finance-nums truncate hidden lg:table-cell">{companyConfig.currencySymbol} {balanceDue.toLocaleString()}</td>
                                             <td className="table-body-cell text-center">
                                                 <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                                                     inv.status === 'Partial' ? 'bg-amber-100 text-amber-700 border-amber-200' :
@@ -1179,31 +1179,31 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                                     }`}>{inv.status}</span>
                                             </td>
                                             <td className="table-body-cell text-center" onClick={e => e.stopPropagation()}>
-                                                <div className="flex justify-center gap-1 items-center shrink-0">
-                                                    <button onClick={(e) => { e.stopPropagation(); props.onView(inv); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View full detail">
-                                                        <ChevronRight size={14} />
+                                                <div className="flex justify-center gap-0.5 md:gap-1 items-center shrink-0">
+                                                    <button onClick={(e) => { e.stopPropagation(); props.onView(inv); }} className="p-1 md:p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="View full detail">
+                                                        <ChevronRight size={12} className="md:w-[14px] md:h-[14px]" />
                                                     </button>
-                                                    <button onClick={(e) => { e.stopPropagation(); handlePreview('INVOICE', inv); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Preview PDF">
-                                                        <Eye size={14} />
+                                                    <button onClick={(e) => { e.stopPropagation(); handlePreview('INVOICE', inv); }} className="p-1 md:p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all hidden sm:flex" title="Preview PDF">
+                                                        <Eye size={12} className="md:w-[14px] md:h-[14px]" />
                                                     </button>
-                                                    <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(inv, 'download_pdf'); }} className="p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Download PDF">
-                                                        <Download size={14} />
+                                                    <button onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(inv, 'download_pdf'); }} className="p-1 md:p-1.5 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all hidden sm:flex" title="Download PDF">
+                                                        <Download size={12} className="md:w-[14px] md:h-[14px]" />
                                                     </button>
                                                     {!isPaid && !isPartial && (
-                                                        <button onClick={(e) => { e.stopPropagation(); props.onEdit(inv); }} className="p-1.5 text-[#5c6567] hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all" title="Edit">
-                                                            <Edit2 size={14} />
+                                                        <button onClick={(e) => { e.stopPropagation(); props.onEdit(inv); }} className="p-1 md:p-1.5 text-[#5c6567] hover:text-amber-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all hidden sm:flex" title="Edit">
+                                                            <Edit2 size={12} className="md:w-[14px] md:h-[14px]" />
                                                         </button>
                                                     )}
                                                     {!isPaid && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); props.onAction && props.onAction(inv, 'create_payment'); }}
-                                                            className="p-1.5 text-blue-600 hover:text-blue-700 transition-all flex items-center justify-center group/btn"
+                                                            className="p-1 md:p-1.5 text-blue-600 hover:text-blue-700 transition-all flex items-center justify-center group/btn hidden sm:flex"
                                                             title="Receive Payment"
                                                         >
-                                                            <DollarSign size={16} className="group-hover/btn:scale-110 transition-transform" />
+                                                            <DollarSign size={14} className="group-hover/btn:scale-110 transition-transform md:w-[16px] md:h-[16px]" />
                                                         </button>
                                                     )}
-                                                    <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, inv.id); }} className="p-1.5 text-[#5c6567] hover:text-slate-600 rounded"><MoreVertical size={14} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); handleRowClick(e, inv.id); }} className="p-1 md:p-1.5 text-[#5c6567] hover:text-slate-600 rounded"><MoreVertical size={12} className="md:w-[14px] md:h-[14px]" /></button>
                                                 </div>
                                             </td>
                                         </tr>
