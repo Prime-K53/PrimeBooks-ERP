@@ -416,10 +416,7 @@ export function startPeriodicSync(
   if (!SUPABASE_ENABLED) return;
   if (pushTimer) clearInterval(pushTimer);
 
-  audit('sync', 'startPeriodicSync', {
-    intervalMs,
-    hasSession: Boolean(supabase.auth.getSession() !== null),
-  });
+  audit('sync', 'startPeriodicSync', { intervalMs });
 
   subscribeToRemoteChanges();
 
