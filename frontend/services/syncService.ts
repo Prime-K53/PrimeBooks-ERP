@@ -3,6 +3,7 @@ import { dbService } from './db';
 import { mergeRecords, fieldLevelMerge } from './syncConflictResolver';
 import { durableSyncQueue } from './durableSyncQueue';
 import { logger } from './logger';
+import { initAudit, audit } from './syncAudit';
 
 const SUPABASE_ENABLED = Boolean(
   import.meta.env.VITE_SUPABASE_URL &&
@@ -290,6 +291,7 @@ export async function pullRemoteChanges(
 
             storeCount += cloudRecords.length;
             rowsInPass += cloudRecords.length;
+            audit('pull', 'table page processed', { table, pageRows: cloudRecords.length, offset });
             // Track the latest updated_at seen so far for incremental sync
             lastTimestamp = data[data.length - 1]?.updated_at ?? lastTimestamp;
 
@@ -304,6 +306,7 @@ export async function pullRemoteChanges(
           if (lastTimestamp) {
             await setLastSyncAt(table, lastTimestamp);
           }
+          audit('pull', 'table complete', { table, storeCount, errors: errors.filter(e => e.startsWith(`${storeName}:`)) });
 
         } catch (err) {
           errors.push(`${storeName}: ${err instanceof Error ? err.message : 'Unknown'}`);
@@ -413,6 +416,11 @@ export function startPeriodicSync(
   if (!SUPABASE_ENABLED) return;
   if (pushTimer) clearInterval(pushTimer);
 
+  audit('sync', 'startPeriodicSync', {
+    intervalMs,
+    hasSession: Boolean(supabase.auth.getSession() !== null),
+  });
+
   subscribeToRemoteChanges();
 
   // Start the durable background sync engine (processes the durable queue,
@@ -431,10 +439,13 @@ export function startPeriodicSync(
   // Initial sync on start - full pull on first sync, then incremental
   if (navigator.onLine) {
     const isFirstSync = !localStorage.getItem('nexus_last_sync_pull');
+    audit('sync', 'initial pull starting', { isFirstSync });
     pullRemoteChanges(undefined, isFirstSync).then(result => {
+      audit('sync', 'initial pull complete', { pulled: result.pulled, errors: result.errors });
       onSyncComplete?.({ pulled: result.pulled, pushed: 0, errors: result.errors });
     }).catch(err => console.warn('[Sync] Initial pull failed:', err));
   } else {
+    audit('sync', 'initial pull skipped offline', {});
     onSyncComplete?.({ pulled: 0, pushed: 0, errors: ['offline'] });
   }
 }

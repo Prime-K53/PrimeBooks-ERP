@@ -2,6 +2,7 @@ import { durableSyncQueue, classifyError, QueuedOperation, QueueMetrics } from '
 import { sendSyncOps, SyncOp, SyncOpResult } from './syncApiClient';
 import { resolvePushConflict } from './syncConflictResolver';
 import { cloudDb } from './cloudDb';
+import { audit } from './syncAudit';
 
 type SyncEventType = 'sync-start' | 'sync-complete' | 'sync-failure' | 'sync-partial' | 'queue-empty' | 'queue-full' | 'dead-letter' | 'sync-conflict';
 type SyncCallback = (event: SyncEventType, data?: unknown) => void;
@@ -508,9 +509,13 @@ export const backgroundSyncService = {
   startPeriodicSync(intervalMs?: number): void {
     if (intervalId) clearInterval(intervalId);
 
+    audit('push', 'backgroundSyncService startPeriodicSync', { intervalMs });
+
     const doSync = async () => {
       try {
+        audit('push', 'syncOnce begin', {});
         await syncOnce();
+        audit('push', 'syncOnce end', {});
       } catch {
         // background sync errors are handled internally
       }

@@ -13,6 +13,7 @@ import { supabase } from '../services/supabaseClient';
 import type { AuthResult } from '../services/supabaseAuthService';
 import { cloudDb } from '../services/cloudDb';
 import { logger } from '../services/logger';
+import { initAudit, audit } from '../services/syncAudit';
 
 const SUPABASE_ENABLED = Boolean(
   import.meta.env.VITE_SUPABASE_URL &&
@@ -421,6 +422,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const loadInitData = async () => {
+      initAudit();
+      audit('boot', 'loadInitData start', { SUPABASE_ENABLED });
       const failsafe = setTimeout(() => {
         if (!isInitialized) {
           setIsInitialized(true);
@@ -478,7 +481,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setAuditLogs(logs.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
           setAlerts(storedAlerts.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
           setReminders(storedReminders.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-          setRequiresSetup(Boolean(session?.user && !restoredSession));
+          const requiresSupabaseSetup = Boolean(session?.user && !restoredSession);
+          audit('auth', 'loadInitData supabase branch', {
+            hasSession: Boolean(session?.user),
+            restoredSessionFound: Boolean(restoredSession),
+            requiresSetup: requiresSupabaseSetup,
+          });
+          setRequiresSetup(requiresSupabaseSetup);
           setDbSyncStatus('connected');
           setLastSyncTime(new Date().toISOString());
           return;
@@ -658,6 +667,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!SUPABASE_ENABLED) return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      audit('auth', 'onAuthStateChange', { event, requiresSetup });
       if (event === 'SIGNED_OUT') {
         import('../services/syncService').then(({ stopPeriodicSync }) => {
           stopPeriodicSync();
@@ -669,6 +679,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && !requiresSetup) {
+        audit('auth', 'starting periodic sync from auth event', { event, requiresSetup });
         import('../services/syncService').then(({ startPeriodicSync }) => {
           startPeriodicSync();
         }).catch(() => {});
@@ -857,6 +868,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const profile = await syncSupabaseUserToLocal(signInData.user);
 
+          audit('auth', 'supabase login resolved', {
+            profileFound: Boolean(profile),
+            userId: profile?.id,
+            role: profile?.role,
+            email: signInData.user.email,
+          });
           setRequiresSetup(false);
           const supabaseUser = {
             ...profile,

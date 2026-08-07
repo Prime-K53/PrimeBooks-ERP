@@ -29,6 +29,8 @@ import { durableSyncQueue } from './durableSyncQueue';
 import { backgroundSyncService } from './backgroundSyncService';
 import { newId } from '../utils/ulid';
 
+import { audit } from './syncAudit';
+
 interface NexusDB extends DBSchema {
     inventory: { key: string; value: Item; };
     warehouses: { key: string; value: Warehouse; };
@@ -1028,10 +1030,19 @@ export const dbService = {
         // Local-first: read from IndexedDB immediately
         try {
             const localValues = await getAllFromLegacyStore<T>(storeName);
-            if (localValues.length > 0) return localValues;
+            if (localValues.length > 0) {
+                if (storeName === 'customers') {
+                    audit('read', 'dbservice.getAll customers', { count: localValues.length });
+                }
+                return localValues;
+            }
         } catch { /* fall through */ }
 
-        return getAllFromLegacyStore<T>(storeName);
+        const all = await getAllFromLegacyStore<T>(storeName);
+        if (storeName === 'customers') {
+            audit('read', 'dbservice.getAll customers (fallback)', { count: all.length });
+        }
+        return all;
     },
 
     async get<T>(storeName: keyof NexusDB, id: string): Promise<T | undefined> {
