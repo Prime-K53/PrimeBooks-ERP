@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { DollarSign, FileText, ShoppingCart, TrendingUp, Activity, ClipboardList, FileCheck2, ChevronRight, UserPlus, CreditCard, Wallet, Share2 } from 'lucide-react';
+import { DollarSign, FileText, ShoppingCart, TrendingUp, Activity, ClipboardList, FileCheck2, ChevronRight, UserPlus, CreditCard, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { portalApi, portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
@@ -165,12 +165,6 @@ const CustomerDashboard: React.FC = () => {
     };
   }, []);
 
-  const handleShareWhatsApp = useCallback(() => {
-    const message = `I highly recommend *Prime Printing* for quality, affordable, and reliable printing services.\n\nSimply *mention that you were referred by an existing customer*, and you'll receive a *discount on your first order*.\n\nGive them a try—you won't be disappointed!`;
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-  }, []);
-
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -264,29 +258,24 @@ const CustomerDashboard: React.FC = () => {
               <p className="mt-1 text-xs text-slate-500" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>
                 {todayLabel}
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  K {formatK(data.outstandingBalance || 0)} outstanding
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-                  {data.unpaidInvoiceCount ?? 0} unpaid
-                </span>
-                <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  {data.totalOrders ?? 0} orders
-                </span>
-              </div>
+               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                 <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
+                   <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                   {data.unpaidInvoiceCount ?? 0} unpaid
+                 </span>
+                 <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
+                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                   {data.totalOrders ?? 0} orders
+                 </span>
+                 {recentTransactions.length > 0 && (
+                   <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
+                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                     Last transaction: {new Date(recentTransactions[0].date).toLocaleDateString()}
+                   </span>
+                 )}
+               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <PortalButton variant="secondary" size="sm" onClick={() => navigate('/portal/invoices?status=Unpaid')} icon={FileText}>
-              Pay Invoice
-            </PortalButton>
-            <PortalButton variant="primary" size="sm" onClick={() => navigate('/portal/new-request?type=order')} icon={ShoppingCart}>
-              Create Request
-            </PortalButton>
+            </div>
           </div>
         </div>
       </div>
@@ -499,37 +488,10 @@ const CustomerDashboard: React.FC = () => {
               orderFrequency: 78,
               rewards: 85,
             }}
-          />
+            />
         </div>
       </div>
       </div>
-      <button
-        onClick={handleShareWhatsApp}
-        style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          width: 56,
-          height: 56,
-          borderRadius: '50%',
-          background: '#25D366',
-          color: '#fff',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 6px 16px rgba(37, 211, 102, 0.4)',
-          zIndex: 50,
-          transition: 'all .15s ease',
-        }}
-        title="Share via WhatsApp"
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-      >
-        <Share2 size={24} />
-      </button>
-    </div>
   );
 };
 
