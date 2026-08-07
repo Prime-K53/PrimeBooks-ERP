@@ -222,6 +222,18 @@ async function processBatch(batchSize: number = 10): Promise<BatchResult> {
         resolved: 'auto',
         serverVersion,
       });
+      // Hard-delete the tombstoned record from IndexedDB now that the
+      // cloud has confirmed the delete.  This prevents tombstones from
+      // accumulating locally forever.
+      try {
+        const { dbService, getStoreForCloudTable } = await import('./db');
+        const localStore = getStoreForCloudTable(table);
+        if (localStore && recordId) {
+          await dbService.hardDelete(localStore as any, recordId);
+        }
+      } catch {
+        // best-effort cleanup — the tombstone is harmless if left behind
+      }
       return 'success';
     }
 

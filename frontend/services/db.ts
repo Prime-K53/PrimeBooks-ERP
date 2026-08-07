@@ -1028,8 +1028,12 @@ export const dbService = {
 
     async getAll<T>(storeName: keyof NexusDB): Promise<T[]> {
         // Local-first: read from IndexedDB immediately
+        // Filter out soft-deleted (tombstoned) records so callers never see
+        // records that have been deleted locally or via the sync gateway.
         try {
-            const localValues = await getAllFromLegacyStore<T>(storeName);
+            const localValues = (await getAllFromLegacyStore<T>(storeName)).filter(
+                (item: any) => !item?.deletedAt
+            );
             if (localValues.length > 0) {
                 if (storeName === 'customers') {
                     audit('read', 'dbservice.getAll customers', { count: localValues.length });
@@ -1038,7 +1042,9 @@ export const dbService = {
             }
         } catch { /* fall through */ }
 
-        const all = await getAllFromLegacyStore<T>(storeName);
+        const all = (await getAllFromLegacyStore<T>(storeName)).filter(
+            (item: any) => !item?.deletedAt
+        );
         if (storeName === 'customers') {
             audit('read', 'dbservice.getAll customers (fallback)', { count: all.length });
         }
@@ -1242,6 +1248,16 @@ export const dbService = {
         }
 
         this.triggerSync();
+        emitDataChange([String(storeName)]);
+    },
+
+    /**
+     * Permanently remove a record from IndexedDB (hard delete).
+     * Used by the background sync engine to clean up tombstoned records
+     * after the delete has been confirmed by the cloud.
+     */
+    async hardDelete(storeName: keyof NexusDB, id: string): Promise<void> {
+        await deleteFromLegacyStore(storeName, id);
         emitDataChange([String(storeName)]);
     },
 
