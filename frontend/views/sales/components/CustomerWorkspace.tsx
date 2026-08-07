@@ -9,7 +9,7 @@ import {
   ExternalLink, Calendar, MessageSquare, History,
   PieChart, Settings, FileSearch, Paperclip,
   Briefcase, ShieldAlert, BadgeCheck, FileDown,
-  ChevronDown,
+  ChevronDown, ChevronRight,
   RefreshCw,
   FileBarChart,
   Eye
@@ -50,6 +50,57 @@ const inkSoft = '#5c6567';
 const hairline = '#e4ddd1';
 const danger = '#b5493f';
 
+const labelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  fontSize: 12.5, fontWeight: 600, color: '#3b454c',
+  marginBottom: 7, letterSpacing: 0.01
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+  color: ink, background: '#fff',
+  border: '1px solid #e2ded3', borderRadius: 10,
+  padding: '10px 13px', outline: 'none',
+  boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.03)',
+  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
+};
+
+const textareaStyle: React.CSSProperties = {
+  ...inputStyle, resize: 'none', minHeight: 72, lineHeight: 1.5
+};
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  paddingRight: 30,
+  cursor: 'pointer'
+};
+
+const sectionLabelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 10,
+  margin: '30px 0 16px', paddingLeft: 12,
+  borderLeft: `3px solid ${teal[500]}`
+};
+
+const btnGhostStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 10, cursor: 'pointer',
+  background: '#fff', border: `1px solid ${hairline}`, color: inkSoft,
+  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
+};
+
+const btnPrimaryStyle: React.CSSProperties = {
+  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+  padding: '9px 18px', borderRadius: 10, cursor: 'pointer', border: '1px solid transparent',
+  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+  color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+  boxShadow: `0 8px 20px -8px rgba(15,84,76,.6)`,
+  transition: 'all .15s ease'
+};
+
 interface CustomerWorkspaceProps {
   customer: Customer;
   onBack: () => void;
@@ -74,12 +125,90 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
   const [referralRewards, setReferralRewards] = useState<ReferralReward[]>([]);
   const [referralTimeline, setReferralTimeline] = useState<ReferralTimelineEntry[]>([]);
   const [referralAuditEntries, setReferralAuditEntries] = useState<ReferralAuditEntry[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .white-card {
+        background: #FFFFFF;
+        border: 1px solid rgba(16,24,40,0.07);
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18);
+        transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+      }
+      .white-card:hover {
+        box-shadow: 0 2px 4px rgba(16,24,40,0.05), 0 18px 40px -18px rgba(16,24,40,0.22);
+      }
+      .settings-section-header {
+        padding: 20px 28px;
+        border-bottom: 1px solid rgba(16,24,40,0.06);
+        background: linear-gradient(180deg, #fbfaf7 0%, #ffffff 100%);
+        border-top-left-radius: 14px;
+        border-top-right-radius: 14px;
+      }
+      .customer-workspace input:not([type=checkbox]):not([type=radio]):not([type=range]),
+      .customer-workspace textarea,
+      .customer-workspace select {
+        transition: border-color .15s ease, box-shadow .15s ease !important;
+      }
+      .customer-workspace input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+      .customer-workspace textarea:focus,
+      .customer-workspace select:focus {
+        outline: none;
+        border-color: #1f8577 !important;
+        box-shadow: 0 0 0 3px rgba(31,133,119,0.18) !important;
+      }
+      .toggle-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+      }
+      .toggle-track {
+        width: 44px;
+        height: 24px;
+        background: #d3ece9;
+        border-radius: 9999px;
+        position: relative;
+        transition: background 0.2s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background: #ffffff;
+        border-radius: 50%;
+        border: 1px solid #D4D7DC;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+      .toggle-input:checked + .toggle-track {
+        background: #1f8577;
+      }
+      .toggle-input:checked + .toggle-track::after {
+        transform: translateX(20px);
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
 
   useEffect(() => {
     if (!customer?.id) return
     referralService.getReferralsByReferrer(customer.id).then(setReferrals).catch(() => {})
     referralService.getRewardsByCustomer(customer.id).then(setReferralRewards).catch(() => {})
-    Promise.all(
+    Promise.all([
       (async () => {
         const timeline = await referralTimelineService.getAllTimeline(50)
         setReferralTimeline(timeline.filter(t => {
@@ -87,7 +216,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           return ref?.referredById === customer.id
         }))
       })()
-    ).catch(() => {})
+    ]).catch(() => {})
     referralAuditService.getAll(50).then(all => setReferralAuditEntries(all)).catch(() => {})
   }, [customer?.id])
 
@@ -141,6 +270,57 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
   const customerWalletTransactions = useMemo(() =>
     (walletTransactions || []).filter(tx => tx.customerId === customer.id),
     [walletTransactions, customer]);
+
+  const menuGroups = [
+    {
+      title: 'Overview',
+      items: [
+        { id: 'Overview', icon: User, label: 'Overview', desc: 'KPI summary & client profile overview' },
+      ]
+    },
+    {
+      title: 'Financials',
+      items: [
+        { id: 'Invoices', icon: FileText, label: 'Invoices', desc: 'All invoices & outstanding balances' },
+        { id: 'Payments', icon: DollarSign, label: 'Payments', desc: 'Payment history & transaction records' },
+        { id: 'Ledger', icon: FileBarChart, label: 'Ledger', desc: 'Running balance & date-filtered entries' },
+        { id: 'Accounting', icon: Briefcase, label: 'Accounting', desc: 'Double-entry GL postings & account views' },
+        { id: 'Wallet', icon: CreditCard, label: 'Wallet', desc: 'Prepaid wallet deposits & deductions' },
+      ]
+    },
+    {
+      title: 'Growth',
+      items: [
+        { id: 'Referrals', icon: TrendingUp, label: 'Referrals', desc: 'Referral program & reward earnings' },
+        { id: 'Engagement', icon: MessageSquare, label: 'Engagement', desc: 'Interaction metrics & activity timeline' },
+      ]
+    },
+    {
+      title: 'Documents',
+      items: [
+        { id: 'Documents', icon: Paperclip, label: 'Documents', desc: 'Uploaded files & generated reports' },
+      ]
+    },
+    {
+      title: 'Management',
+      items: [
+        { id: 'Segmentation', icon: PieChart, label: 'Segmentation', desc: 'CRM segment rules & classification' },
+        { id: 'Settings', icon: Settings, label: 'Settings', desc: 'Billing terms, shipping & preferences' },
+        { id: 'Security Audit', icon: ShieldAlert, label: 'Security Audit', desc: 'Immutable client modification trail' },
+      ]
+    }
+  ];
+
+  const filteredGroups = menuGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item =>
+      item.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.desc.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  })).filter(group => group.items.length > 0);
+
+  const activeGroupTitle = menuGroups.find(g => g.items.some(i => i.id === activeTab))?.title || 'Customer Profile';
+  const activeItemLabel = menuGroups.flatMap(g => g.items).find(i => i.id === activeTab)?.label || activeTab;
 
   // KPIs
   const kpis = useMemo(() => {
@@ -315,75 +495,77 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: paper, overflow: 'hidden', position: 'relative', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink }}>
-      {/* Accent stripe */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, zIndex: 10, background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 13.5, color: ink }}>
 
       {/* Header */}
-      <div style={{ background: paper, borderBottom: `1px solid ${hairline}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{
+        position: 'relative',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '15px 28px',
+        borderBottom: '1px solid rgba(11,62,57,0.4)',
+        background: 'linear-gradient(120deg, #0b3e39 0%, #146b60 52%, #1f8577 100%)',
+        boxShadow: '0 6px 20px -10px rgba(11,62,57,0.6)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <button
             onClick={onBack}
-            style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease', fontSize: 16 }}
-            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
-            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+            style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))', border: '1px solid rgba(255,255,255,0.28)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)', flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(155deg, rgba(255,255,255,0.32), rgba(255,255,255,0.12))'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))'; }}
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={18} />
           </button>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 10px -3px rgba(15,84,76,.6)`, flexShrink: 0 }}>
-            <User size={19} color="#fff" />
+          <div style={{
+            width: 42, height: 42, borderRadius: 12,
+            background: 'linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))',
+            border: '1px solid rgba(255,255,255,0.28)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)', flexShrink: 0
+          }}>
+            <User size={20} color="#fff" />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h1 style={{ fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400, fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2 }}>
-                {customer.name}
-              </h1>
-              <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, border: '1px solid', display: 'inline-flex', lineHeight: 1.3, ...(customer.status === 'Active' ? { background: teal[50], color: teal[700], borderColor: teal[100] } : customer.status === 'Suspended' ? { background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' } : customer.status === 'VIP' ? { background: amber[100], color: amber[600], borderColor: amber[300] } : customer.status === 'Prospect' ? { background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' } : { background: '#f1f5f9', color: '#475569', borderColor: '#e2e8f0' }) }}>
-                {customer.status}
-              </span>
-            </div>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: inkSoft, letterSpacing: 0.02, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: teal[500], display: 'inline-block' }}></span>
-              Customer ID: {customer.id} &middot; {customer.category || 'Standard Client'}
+            <h1 style={{
+              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+              fontSize: 19, margin: 0, color: '#ffffff', letterSpacing: 0.3
+            }}>
+              {customer.name}
+            </h1>
+            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'rgba(255,255,255,0.78)', letterSpacing: 0.02 }}>
+              {activeGroupTitle} &mdash; Customer ID: {customer.id}
             </p>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => onEdit(customer)}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 9, background: paper, border: `1.4px solid ${hairline}`, color: inkSoft, fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease' }}
-            onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
-            onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 10, background: '#ffffff', color: '#0f544c', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease', border: 'none', boxShadow: '0 8px 18px -8px rgba(0,0,0,0.45)' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 24px -10px rgba(0,0,0,0.5)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 18px -8px rgba(0,0,0,0.45)'; }}
           >
-            <Edit2 size={15} />
-            Edit Profile
+            <Edit2 size={16} /> Edit Profile
           </button>
-          <AICustomerInsights
-            customer={customer}
-            invoices={(invoices || []).filter((i: any) => i.customerId === customer.id || i.customerName === customer.name)}
-            payments={(customerPayments || []).filter((p: any) => p.customerName === customer.name)}
-            currency={currency}
-          />
           <button
             onClick={toggleCreditHold}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease', border: 'none', ...(customer.creditHold ? { background: danger, color: '#fff' } : { background: paper, border: `1.4px solid ${hairline}`, color: inkSoft }) }}
-            onMouseEnter={e => { if (!customer.creditHold) { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; } }}
-            onMouseLeave={e => { if (!customer.creditHold) { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; } }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease', border: 'none', ...(customer.creditHold ? { background: '#c0495f', color: '#fff' } : { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.28)' }) }}
+            onMouseEnter={e => { if (!customer.creditHold) { e.currentTarget.style.background = 'rgba(255,255,255,0.22)'; } }}
+            onMouseLeave={e => { if (!customer.creditHold) { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; } }}
           >
-            <ShieldAlert size={15} />
+            <ShieldAlert size={16} />
             {customer.creditHold ? 'Release Hold' : 'Place on Hold'}
           </button>
-          <div style={{ width: 1, height: 24, background: hairline, margin: '0 4px' }} />
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setIsTransactionMenuOpen(!isTransactionMenuOpen)}
-              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 9, background: `linear-gradient(135deg, ${teal[500]}, ${teal[700]})`, color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease', border: 'none', boxShadow: `0 4px 12px -4px ${teal[400]}` }}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 10, background: '#ffffff', color: '#0f544c', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all .15s ease', border: 'none', boxShadow: '0 8px 18px -8px rgba(0,0,0,0.45)' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 24px -10px rgba(0,0,0,0.5)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 18px -8px rgba(0,0,0,0.45)'; }}
             >
-              <Plus size={15} />
+              <Plus size={16} />
               New Transaction
             </button>
             {isTransactionMenuOpen && (
-              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, width: 192, background: paper, borderRadius: 12, boxShadow: '0 20px 50px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.04)', padding: '6px 0', zIndex: 30 }}>
+              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, width: 192, background: '#FEFDFB', borderRadius: 12, boxShadow: '0 20px 50px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.04)', padding: '6px 0', zIndex: 30 }}>
                 <button
                   onClick={() => {
                     navigate('/sales-flow/invoices', {
@@ -395,11 +577,11 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                     });
                     setIsTransactionMenuOpen(false);
                   }}
-                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: '#5c6567', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <FileText size={15} style={{ color: inkSoft, flexShrink: 0 }} />
+                  <FileText size={15} style={{ color: '#5c6567', flexShrink: 0 }} />
                   New Invoice
                 </button>
                 <button
@@ -413,11 +595,11 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                     });
                     setIsTransactionMenuOpen(false);
                   }}
-                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: '#5c6567', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <DollarSign size={15} style={{ color: inkSoft, flexShrink: 0 }} />
+                  <DollarSign size={15} style={{ color: '#5c6567', flexShrink: 0 }} />
                   New Payment
                 </button>
                 <button
@@ -432,149 +614,109 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                     });
                     setIsTransactionMenuOpen(false);
                   }}
-                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = teal[50]}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: '#5c6567', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#eef7f6'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <FileSearch size={15} style={{ color: inkSoft, flexShrink: 0 }} />
+                  <FileSearch size={15} style={{ color: '#5c6567', flexShrink: 0 }} />
                   New Quotation
                 </button>
               </div>
             )}
           </div>
-          <div style={{ position: 'relative' }}>
-            <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${hairline}`, background: paper, color: inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s ease', fontSize: 16 }}
-              onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.color = teal[700]; e.currentTarget.style.borderColor = teal[200]; }}
-              onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.color = inkSoft; e.currentTarget.style.borderColor = hairline; }}
-            >
-              <MoreHorizontal size={18} />
-            </button>
-            <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, width: 192, background: paper, borderRadius: 12, boxShadow: '0 20px 50px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.04)', padding: '6px 0', zIndex: 30, opacity: 0, visibility: 'hidden', transition: 'all .15s ease' }}
-              className="group-hover:opacity-100 group-hover:visible"
-            >
-              <button
-                onClick={() => alert('Generating Price List...')}
-                style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                onMouseEnter={e => e.currentTarget.style.background = teal[50]}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <TrendingUp size={15} style={{ color: inkSoft, flexShrink: 0 }} />
-                Customer Price List
-              </button>
-              <div style={{ height: 1, background: hairline, margin: '4px 0' }} />
-              <button
-                onClick={() => {
-                  setIsReminderSent(true);
-                  setTimeout(() => setIsReminderSent(false), 3000);
-                }}
-                style={{ width: '100%', textAlign: 'left', padding: '9px 16px', fontSize: 13, fontWeight: 600, color: inkSoft, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                onMouseEnter={e => e.currentTarget.style.background = teal[50]}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <Clock size={15} style={{ color: isReminderSent ? teal[500] : inkSoft, flexShrink: 0 }} />
-                {isReminderSent ? "Reminder Sent!" : "Send Reminder"}
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Sidebar Tabs */}
-        <div style={{ width: 240, flexShrink: 0, background: paper, borderRight: `1px solid ${hairline}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: inkSoft, textTransform: 'uppercase', letterSpacing: '0.8px', padding: '16px 14px 10px' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Premium Sidebar */}
+        <div style={{
+          width: 286, flexShrink: 0,
+          background: '#FFFFFF',
+          borderRight: '1px solid rgba(16,24,40,0.07)',
+          display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto'
+        }}>
+          <div style={{
+            color: '#8b938f', fontSize: 11, letterSpacing: '1px',
+            textTransform: 'uppercase', fontWeight: 700, padding: '20px 18px 10px'
+          }}>
             Customer Sections
           </div>
-          <div style={{ flex: 1, overflow: 'auto', padding: '0 10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {([
-              { tab: 'Overview', icon: <User size={16} />, color: teal[500], desc: 'KPI summary & client profile overview' },
-              { tab: 'Timeline', icon: <History size={16} />, color: teal[500], desc: 'Unified chronological activity feed' },
-              { tab: 'Invoices', icon: <FileText size={16} />, color: teal[500], desc: 'All invoices & outstanding balances' },
-              { tab: 'Payments', icon: <DollarSign size={16} />, color: teal[500], desc: 'Payment history & transaction records' },
-              { tab: 'Ledger', icon: <FileBarChart size={16} />, color: teal[500], desc: 'Running balance & date-filtered entries' },
-              { tab: 'Accounting', icon: <Briefcase size={16} />, color: teal[500], desc: 'Double-entry GL postings & account views' },
-              { tab: 'Wallet', icon: <CreditCard size={16} />, color: teal[500], desc: 'Prepaid wallet deposits & deductions' },
-              { tab: 'Referrals', icon: <TrendingUp size={16} />, color: amber[500], desc: 'Referral program & reward earnings' },
-              { tab: 'Engagement', icon: <MessageSquare size={16} />, color: teal[500], desc: 'Interaction metrics & activity timeline' },
-              { tab: 'Documents', icon: <Paperclip size={16} />, color: teal[500], desc: 'Uploaded files & generated reports' },
-              { tab: 'Segmentation', icon: <PieChart size={16} />, color: teal[500], desc: 'CRM segment rules & classification' },
-              { tab: 'Settings', icon: <Settings size={16} />, color: teal[500], desc: 'Billing terms, shipping & preferences' },
-              { tab: 'Security Audit', icon: <ShieldAlert size={16} />, color: teal[500], desc: 'Immutable client modification trail' },
-            ] as const).map(({ tab, icon, color, desc }) => {
-              const counts: Record<string, number> = {
-                Invoices: customerInvoices.length,
-                Accounting: customerLedger.length,
-                Wallet: customerWalletTransactions.length,
-                Referrals: referrals.length,
-              };
-              const isActive = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 12px', borderRadius: 10,
-                    background: paper,
-                    border: `1.4px solid ${isActive ? teal[200] : hairline}`,
-                    borderLeft: `4px solid ${isActive ? color : 'transparent'}`,
-                    cursor: 'pointer', textAlign: 'left', width: '100%',
-                    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.06)' : '0 1px 2px rgba(0,0,0,0.03)',
-                    transition: 'all .15s ease',
-                    position: 'relative',
-                  }}
-                  onMouseEnter={e => {
-                    if (!isActive) {
-                      e.currentTarget.style.borderColor = teal[200];
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!isActive) {
-                      e.currentTarget.style.borderColor = hairline;
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)';
-                    }
-                  }}
-                >
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 8,
-                    background: isActive ? `${color}15` : teal[50],
-                    color: isActive ? color : inkSoft,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, transition: 'all .15s ease'
-                  }}>
-                    {icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600, color: isActive ? ink : inkSoft, transition: 'color .15s ease' }}>{tab}</div>
-                    <div style={{ fontSize: 9.5, color: inkSoft, marginTop: 1, lineHeight: 1.3, opacity: 0.7 }}>{desc}</div>
-                  </div>
-                  {counts[tab] > 0 && (
-                    <span style={{
-                      padding: '1px 7px', borderRadius: 20,
-                      fontSize: 10, fontWeight: 700, lineHeight: 1.4,
-                      background: isActive ? `${color}15` : teal[50],
-                      color: isActive ? color : inkSoft,
-                      flexShrink: 0
-                    }}>
-                      {counts[tab]}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <div style={{ padding: '0 12px 16px' }}>
+            <div style={{ padding: '0 6px 12px' }}>
+              <input
+                type="text"
+                placeholder="Search sections..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', background: '#F7F6F2', border: '1px solid rgba(16,24,40,0.07)', borderRadius: 8, fontSize: 12, color: '#23282A', outline: 'none', fontFamily: "'Inter','DM Sans',sans-serif" }}
+              />
+            </div>
+            {filteredGroups.map(group => (
+              <div key={group.title} style={{ marginBottom: 18 }}>
+                <div style={{
+                  color: '#9aa19c', fontSize: 10, letterSpacing: '0.9px',
+                  textTransform: 'uppercase', fontWeight: 700, padding: '4px 6px 9px'
+                }}>{group.title}</div>
+                {group.items.map(item => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '11px 13px', borderRadius: 11, width: '100%',
+                        background: isActive ? `linear-gradient(135deg, ${teal[500]}, ${teal[700]})` : '#FFFFFF',
+                        border: isActive ? '1px solid transparent' : '1px solid rgba(16,24,40,0.06)',
+                        boxShadow: isActive ? `0 10px 22px -10px rgba(15,84,76,0.55)` : '0 1px 2px rgba(16,24,40,0.04)',
+                        cursor: 'pointer', marginBottom: 8,
+                        transition: 'all .15s ease', position: 'relative',
+                        textAlign: 'left',
+                      }}
+                      onMouseEnter={e => {
+                        if (!isActive) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px -8px rgba(16,24,40,0.18)'; }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActive) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)'; }
+                      }}
+                    >
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 9,
+                        background: isActive ? 'rgba(255,255,255,0.18)' : '#eef7f6',
+                        color: isActive ? '#fff' : teal[600],
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                      }}>
+                        <item.icon size={16} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? '#fff' : '#23282A' }}>{item.label}</div>
+                        <div style={{ fontSize: 10, color: isActive ? 'rgba(255,255,255,0.82)' : '#5c6567', marginTop: 1, lineHeight: 1.3 }}>{item.desc}</div>
+                      </div>
+                      <div style={{
+                        marginLeft: 'auto', padding: '4px 9px', borderRadius: 6,
+                        background: isActive ? 'rgba(255,255,255,0.2)' : '#eef7f6',
+                        color: isActive ? '#fff' : teal[600],
+                        fontSize: 10, fontWeight: 600,
+                        display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0
+                      }}>
+                        Open
+                        <ChevronRight size={10} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Content Area */}
-        <div style={{ flex: 1, overflow: 'auto', background: paper }}>
+        <div style={{ flex: 1, overflowY: 'auto', background: 'linear-gradient(180deg, #F7F6F2 0%, #F2F1EB 100%)' }}>
+          <div style={{ maxWidth: '920px', padding: '28px 36px' }}>
           {activeTab === 'Overview' && (
-            <div style={{ display: 'flex', gap: 24, padding: 24 }}>
+            <div style={{ display: 'flex', gap: 24 }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
-                {/* KPI Dashboard Row */}
+                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Financial Overview</span></div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                   {[
                     { icon: DollarSign, label: 'Total Balance', value: kpis.balance, color: teal[500], accent: teal[500], sub: 'Good Standing' },
@@ -584,7 +726,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                   ].map((kpi, i) => {
                     const Icon = kpi.icon;
                     return (
-                      <div key={i} style={{ background: paper, padding: '14px 16px', borderRadius: 12, border: `1px solid ${hairline}`, borderLeft: `4px solid ${kpi.accent}`, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                      <div key={i} className="white-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                         <div style={{ padding: 8, background: `${kpi.color}15`, borderRadius: 8, color: kpi.color, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Icon size={20} />
                         </div>
@@ -598,7 +740,8 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                   })}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Contact Information</span></div>
+                <div className="white-card" style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {[
                       { icon: Mail, label: 'Email Address', value: customer.email || 'N/A' },
@@ -640,82 +783,61 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                   </div>
                 </div>
 
-                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
-                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <MessageSquare size={18} style={{ color: teal[600] }} />
-                      Client Notes
-                    </h3>
-                  </div>
-                  <div style={{ padding: 20 }}>
-                    <p style={{ margin: 0, color: inkSoft, lineHeight: 1.6, whiteSpace: 'pre-line' }}>
-                      {customer.notes || 'No notes available for this client.'}
-                    </p>
-                  </div>
+                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Client Notes</span></div>
+                <div className="white-card" style={{ padding: '24px' }}>
+                  <p style={{ margin: 0, color: inkSoft, lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                    {customer.notes || 'No notes available for this client.'}
+                  </p>
                 </div>
               </div>
 
               <div style={{ width: 300, display: 'flex', flexDirection: 'column', gap: 24, flexShrink: 0 }}>
-                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
-                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <PieChart size={18} style={{ color: teal[600] }} />
-                      Financial Health
-                    </h3>
-                  </div>
-                  <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {[
-                      { label: 'Avg. Payment Days', value: `${customer.avgPaymentDays || 12} Days` },
-                      { label: 'Profitability Score', value: `${customer.profitabilityScore || 85}%`, bar: customer.profitabilityScore || 85 },
-                      { label: 'Risk Profile', value: 'Low Risk', badge: true },
-                    ].map((item, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: inkSoft }}>{item.label}</span>
-                        {'bar' in item ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ width: 80, background: teal[100], height: 6, borderRadius: 4, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', background: teal[500], borderRadius: 4, width: `${item.bar}%` }} />
-                            </div>
-                            <span style={{ fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{item.value}</span>
+                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Financial Health</span></div>
+                <div className="white-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {[
+                    { label: 'Avg. Payment Days', value: `${customer.avgPaymentDays || 12} Days` },
+                    { label: 'Profitability Score', value: `${customer.profitabilityScore || 85}%`, bar: customer.profitabilityScore || 85 },
+                    { label: 'Risk Profile', value: 'Low Risk', badge: true },
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: inkSoft }}>{item.label}</span>
+                      {'bar' in item ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 80, background: teal[100], height: 6, borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', background: teal[500], borderRadius: 4, width: `${item.bar}%` }} />
                           </div>
-                        ) : 'badge' in item && item.badge ? (
-                          <span style={{ padding: '2px 10px', background: teal[50], color: teal[700], borderRadius: 20, fontSize: 10, fontWeight: 700, border: `1px solid ${teal[100]}`, textTransform: 'uppercase' }}>{item.value}</span>
-                        ) : (
-                          <span style={{ fontWeight: 700, color: ink }}>{item.value}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                          <span style={{ fontWeight: 700, color: ink, fontFamily: "'JetBrains Mono', monospace" }}>{item.value}</span>
+                        </div>
+                      ) : 'badge' in item && item.badge ? (
+                        <span style={{ padding: '2px 10px', background: teal[50], color: teal[700], borderRadius: 20, fontSize: 10, fontWeight: 700, border: `1px solid ${teal[100]}`, textTransform: 'uppercase' }}>{item.value}</span>
+                      ) : (
+                        <span style={{ fontWeight: 700, color: ink }}>{item.value}</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
-                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
-                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <History size={18} style={{ color: teal[600] }} />
-                      Recent Activity
-                    </h3>
-                  </div>
-                  <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {customerLogs.slice(0, 5).map(log => (
-                      <div key={log.id} style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ marginTop: 4, width: 8, height: 8, borderRadius: '50%', background: teal[500], flexShrink: 0 }} />
-                        <div>
-                          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: ink }}>{log.details}</p>
-                          <p style={{ margin: 0, fontSize: 11, color: inkSoft }}>{format(parseISO(log.date), 'MMM dd, yyyy HH:mm')}</p>
-                        </div>
+                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Recent Activity</span></div>
+                <div className="white-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {customerLogs.slice(0, 5).map(log => (
+                    <div key={log.id} style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ marginTop: 4, width: 8, height: 8, borderRadius: '50%', background: teal[500], flexShrink: 0 }} />
+                      <div>
+                        <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: ink }}>{log.details}</p>
+                        <p style={{ margin: 0, fontSize: 11, color: inkSoft }}>{format(parseISO(log.date), 'MMM dd, yyyy HH:mm')}</p>
                       </div>
-                    ))}
-                    {customerLogs.length === 0 && (
-                      <p style={{ margin: 0, textAlign: 'center', padding: '12px 0', color: inkSoft, fontStyle: 'italic' }}>No recent activity logs.</p>
-                    )}
-                  </div>
+                    </div>
+                  ))}
+                  {customerLogs.length === 0 && (
+                    <p style={{ margin: 0, textAlign: 'center', padding: '12px 0', color: inkSoft, fontStyle: 'italic' }}>No recent activity logs.</p>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'Timeline' && (
-            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 4px rgba(0,0,0,.03)', padding: 24, maxWidth: 960, margin: '24px auto' }}>
+            <div className="white-card" style={{ padding: '24px', maxWidth: 960, margin: '0 auto' }}>
               <h3 style={{ margin: 0, fontWeight: 700, color: ink, fontSize: 18, marginBottom: 24 }}>Unified History Feed</h3>
               <div style={{ position: 'relative' }} className="space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
                 {[...customerInvoices, ...customerPaymentsList, ...customerSales, ...customerQuotes]
@@ -756,87 +878,97 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Invoices' && (
-            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', margin: 24 }}>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Date</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Invoice #</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Status</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-right">Total</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-right">Balance</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {customerInvoices.map(inv => (
-                    <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-700">{format(parseISO(inv.date), 'MMM dd, yyyy')}</td>
-                      <td className="px-6 py-4 font-bold text-slate-900">{inv.id}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${inv.status === 'Paid' ? 'bg-emerald-50 text-emerald-700' :
-                          inv.status === 'Overdue' ? 'bg-rose-50 text-rose-700' :
-                            'bg-amber-50 text-amber-700'
-                          }`}>
-                          {inv.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right font-bold text-slate-900 finance-nums">
-                        {currency}{inv.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4 text-right font-bold text-rose-600 finance-nums">
-                        {currency}{(inv.totalAmount - (inv.paidAmount || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
-                            <Download size={16} />
-                          </button>
-                          <button className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
-                            <ExternalLink size={16} />
-                          </button>
-                        </div>
-                      </td>
+            <div className="white-card" style={{ overflow: 'hidden' }}>
+              <div className="settings-section-header">
+                <h3 style={{ margin: 0, fontWeight: 700, color: ink, fontSize: 14 }}>Customer Invoices</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Date</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Invoice #</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Status</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-right">Total</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-right">Balance</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-center">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {customerInvoices.map(inv => (
+                      <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-slate-700">{format(parseISO(inv.date), 'MMM dd, yyyy')}</td>
+                        <td className="px-6 py-4 font-bold text-slate-900">{inv.id}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${inv.status === 'Paid' ? 'bg-emerald-50 text-emerald-700' :
+                            inv.status === 'Overdue' ? 'bg-rose-50 text-rose-700' :
+                              'bg-amber-50 text-amber-700'
+                            }`}>
+                            {inv.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right font-bold text-slate-900 finance-nums">
+                          {currency}{inv.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-6 py-4 text-right font-bold text-rose-600 finance-nums">
+                          {currency}{(inv.totalAmount - (inv.paidAmount || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
+                              <Download size={16} />
+                            </button>
+                            <button className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
+                              <ExternalLink size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {activeTab === 'Payments' && (
-            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden', margin: 24 }}>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Date</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Payment #</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Method</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Reference</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-right">Amount</th>
-                    <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {customerPaymentsList.map(p => (
-                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-700">{format(parseISO(p.date), 'MMM dd, yyyy')}</td>
-                      <td className="px-6 py-4 font-bold text-slate-900">{p.id}</td>
-                      <td className="px-6 py-4 font-semibold text-slate-600">{p.paymentMethod}</td>
-                      <td className="px-6 py-4 font-medium text-slate-500">{p.reference || 'N/A'}</td>
-                      <td className="px-6 py-4 text-right font-bold text-emerald-600 finance-nums">
-                        {currency}{p.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${p.status === 'Cleared' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                          }`}>
-                          {p.status}
-                        </span>
-                      </td>
+            <div className="white-card" style={{ overflow: 'hidden' }}>
+              <div className="settings-section-header">
+                <h3 style={{ margin: 0, fontWeight: 700, color: ink, fontSize: 14 }}>Payment History</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr style={{ background: teal[50], borderBottom: `1px solid ${hairline}` }}>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Date</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Payment #</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Method</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider">Reference</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-right">Amount</th>
+                      <th className="px-6 py-3 font-bold text-slate-500 uppercase text-[11px] tracking-wider text-center">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {customerPaymentsList.map(p => (
+                      <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-slate-700">{format(parseISO(p.date), 'MMM dd, yyyy')}</td>
+                        <td className="px-6 py-4 font-bold text-slate-900">{p.id}</td>
+                        <td className="px-6 py-4 font-semibold text-slate-600">{p.paymentMethod}</td>
+                        <td className="px-6 py-4 font-medium text-slate-500">{p.reference || 'N/A'}</td>
+                        <td className="px-6 py-4 text-right font-bold text-emerald-600 finance-nums">
+                          {currency}{p.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${p.status === 'Cleared' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                            }`}>
+                            {p.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -844,15 +976,10 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
             <CRMSegmentation />
           )}
           {activeTab === 'Settings' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ padding: 24 }}>
-              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
-                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Settings size={18} style={{ color: teal[600] }} />
-                    Billing Settings
-                  </h3>
-                </div>
-                <div className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Billing Settings</span></div>
+              <div className="white-card" style={{ padding: '24px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div className="flex items-center justify-between py-2 border-b border-slate-50">
                     <span className="text-slate-600 font-medium">Payment Terms</span>
                     <span className="font-bold text-slate-900">{customer.paymentTerms || 'Net 30'}</span>
@@ -864,14 +991,9 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                 </div>
               </div>
 
-              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
-                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Truck size={18} style={{ color: teal[600] }} />
-                    Shipping & Logistics
-                  </h3>
-                </div>
-                <div className="p-6 space-y-4">
+              <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Shipping & Logistics</span></div>
+              <div className="white-card" style={{ padding: '24px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
                       <MapPin size={16} />
@@ -891,18 +1013,22 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Security Audit' && (
-            <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: 24, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 600, margin: 24 }}>
-              <AuditTimeline 
-                logs={customerLogs} 
-                title={`Security Audit: ${customer.name}`}
-                subtitle="Immutable trail of all modifications to this client profile."
-              />
-            </div>
+            <>
+              <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Security Audit Trail</span></div>
+              <div className="white-card" style={{ padding: '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 600 }}>
+                <AuditTimeline 
+                  logs={customerLogs} 
+                  title={`Security Audit: ${customer.name}`}
+                  subtitle="Immutable trail of all modifications to this client profile."
+                />
+              </div>
+            </>
           )}
 
           {activeTab === 'Documents' && (
-            <div className="space-y-6" style={{ padding: 24 }}>
-              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, padding: '32px 24px', textAlign: 'center' }}>
+            <div className="space-y-6">
+              <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Uploaded Documents</span></div>
+              <div className="white-card" style={{ padding: '32px 24px', textAlign: 'center' }}>
                 <div style={{ width: 64, height: 64, background: teal[50], color: inkSoft, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                   <Paperclip size={32} />
                 </div>
@@ -937,61 +1063,49 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
-                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <FileText size={18} style={{ color: teal[600] }} />
-                      Generated Reports
-                    </h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group hover:border-teal-200 transition-all">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-white rounded shadow-sm" style={{ color: teal[600] }}>
-                            <FileText size={16} />
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900">Account Statement Template</p>
-                            <p className="text-[11px] text-slate-500 font-medium">Standard financial summary format</p>
-                          </div>
+                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Generated Reports</span></div>
+                <div className="white-card" style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group hover:border-teal-200 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white rounded shadow-sm" style={{ color: teal[600] }}>
+                          <FileText size={16} />
                         </div>
-                        <button
-                          onClick={handlePreviewStatement}
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-[11px] opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                          Generate
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group hover:border-blue-200 transition-all">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
-                            <TrendingUp size={16} />
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900">Sales Performance Report</p>
-                            <p className="text-[11px] text-slate-500 font-medium">Customer purchase history & trends</p>
-                          </div>
+                        <div>
+                          <p className="font-bold text-slate-900">Account Statement Template</p>
+                          <p className="text-[11px] text-slate-500 font-medium">Standard financial summary format</p>
                         </div>
-                        <button
-                          onClick={() => alert('Generating Sales Report...')}
-                          className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-[11px] opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                          Generate
-                        </button>
                       </div>
+                      <button
+                        onClick={handlePreviewStatement}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-[11px] opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        Generate
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group hover:border-blue-200 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
+                          <TrendingUp size={16} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">Sales Performance Report</p>
+                          <p className="text-[11px] text-slate-500 font-medium">Customer purchase history & trends</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => alert('Generating Sales Report...')}
+                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-[11px] opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        Generate
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50] }}>
-                    <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Settings size={18} style={{ color: teal[600] }} />
-                      Document Settings
-                    </h3>
-                  </div>
-                  <div className="p-6 space-y-4">
+                <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Document Settings</span></div>
+                <div className="white-card" style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <label className="flex items-center justify-between p-2 hover:bg-teal-50 rounded transition-colors cursor-pointer">
                       <span className="font-medium text-slate-700">Auto-attach Invoices to Statement</span>
                       <input type="checkbox" name="autoAttachInvoices" className="rounded border-slate-300 focus:ring-teal-500" style={{ accentColor: teal[600] }} defaultChecked />
@@ -1011,12 +1125,12 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Ledger' && (
-            <div className="space-y-4" style={{ padding: 24 }}>
-              <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', flexDirection: 'column', gap: 16 }} className="md:flex-row md:items-center md:justify-between">
-                  <h3 style={{ margin: 0, fontWeight: 700, color: ink }}>Transaction Ledger</h3>
+            <div className="space-y-4">
+              <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>Transaction Ledger</span></div>
+              <div className="white-card" style={{ overflow: 'hidden' }}>
+                <div className="settings-section-header" style={{ display: 'flex', flexDirection: 'column', gap: 16 }} >
                   <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: paper, border: `1px solid ${hairline}`, borderRadius: 8, padding: '4px 8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: `1px solid ${hairline}`, borderRadius: 8, padding: '4px 8px' }}>
                       <Calendar size={14} style={{ color: inkSoft }} />
                       <input
                         type="date"
@@ -1039,7 +1153,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                       name="ledgerTypeFilter"
                       value={ledgerTypeFilter}
                       onChange={(e) => setLedgerTypeFilter(e.target.value as 'All' | 'Invoice' | 'Payment')}
-                      style={{ padding: '4px 10px', background: paper, border: `1px solid ${hairline}`, borderRadius: 8, fontSize: 11, fontWeight: 700, color: ink, outline: 'none', cursor: 'pointer' }}
+                      style={{ padding: '4px 10px', background: '#fff', border: `1px solid ${hairline}`, borderRadius: 8, fontSize: 11, fontWeight: 700, color: ink, outline: 'none', cursor: 'pointer' }}
                     >
                       <option value="All">All Types</option>
                       <option value="Invoice">Invoices</option>
@@ -1051,7 +1165,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                         name="ledgerSubAccountFilter"
                         value={ledgerSubAccountFilter}
                         onChange={(e) => setLedgerSubAccountFilter(e.target.value)}
-                        style={{ padding: '4px 10px', background: paper, border: `1px solid ${hairline}`, borderRadius: 8, fontSize: 11, fontWeight: 700, color: ink, outline: 'none', cursor: 'pointer' }}
+                        style={{ padding: '4px 10px', background: '#fff', border: `1px solid ${hairline}`, borderRadius: 8, fontSize: 11, fontWeight: 700, color: ink, outline: 'none', cursor: 'pointer' }}
                       >
                         <option value="All">All Accounts</option>
                         <option value="Main">Main Account</option>
@@ -1074,9 +1188,9 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
 
                     <button
                       onClick={handlePreviewStatement}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: paper, border: `1.4px solid ${hairline}`, borderRadius: 8, color: teal[600], fontWeight: 700, cursor: 'pointer', transition: 'all .15s ease', fontSize: 11 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: '#fff', border: `1.4px solid ${hairline}`, borderRadius: 8, color: teal[600], fontWeight: 700, cursor: 'pointer', transition: 'all .15s ease', fontSize: 11 }}
                       onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = hairline; }}
                       title="Download PDF Statement"
                     >
                       <FileDown size={14} />
@@ -1121,11 +1235,11 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
           )}
 
           {activeTab === 'Accounting' && (
-            <div className="space-y-4 animate-in fade-in duration-300" style={{ padding: 24 }}>
+            <div className="space-y-4 animate-in fade-in duration-300">
               {/* Account Actions Menu (Floating) */}
               {accountMenu && (
                 <div
-                  style={{ position: 'fixed', zIndex: 200, background: paper, borderRadius: 12, boxShadow: '0 20px 50px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.04)', top: accountMenu.y + 8, left: accountMenu.x, padding: '6px 0', width: 224 }}
+                  style={{ position: 'fixed', zIndex: 200, background: '#FEFDFB', borderRadius: 12, boxShadow: '0 20px 50px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.04)', top: accountMenu.y + 8, left: accountMenu.x, padding: '6px 0', width: 224 }}
                   onMouseLeave={() => setAccountMenu(null)}
                 >
                   <div style={{ padding: '8px 16px', borderBottom: `1px solid ${hairline}`, marginBottom: 4 }}>
@@ -1194,6 +1308,15 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                   </button>
                 </div>
               )}
+              <div style={sectionLabelStyle}><span style={{fontSize: 13, fontWeight: 700, color: teal[800]}}>General Ledger Postings</span></div>
+              <div className="white-card" style={{ overflow: 'hidden' }}>
+                <div className="settings-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <History size={18} style={{ color: teal[600] }} />
+                    General Ledger Postings
+                  </h3>
+                  <span style={{ fontSize: 10, fontWeight: 800, background: teal[100], color: teal[700], padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.1 }}>Double Entry View</span>
+                </div>
               <div style={{ background: paper, borderRadius: 12, border: `1px solid ${hairline}`, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 20px', borderBottom: `1px solid ${hairline}`, background: teal[50], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <h3 style={{ margin: 0, fontWeight: 700, color: ink, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1274,13 +1397,14 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
                         </tr>
                       )}
                     </tbody>
-                  </table>
+</table>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'Referrals' && (
+        {activeTab === 'Referrals' && (
             <div className="space-y-6 animate-in fade-in duration-300" style={{ padding: 24 }}>
               {/* Timeline Section */}
               {referralTimeline.length > 0 && (
@@ -1506,6 +1630,7 @@ export const CustomerWorkspace: React.FC<CustomerWorkspaceProps> = ({ customer, 
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 
