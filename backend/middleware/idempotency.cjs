@@ -1,5 +1,5 @@
 const { randomUUID } = require('crypto');
-const repo = require('./supabaseRepository.cjs');
+const repo = require('../services/supabaseRepository.cjs');
 
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 

@@ -834,11 +834,12 @@ router.post('/users/auto-create', async (req, res) => {
     }
     res.status(201).json({ user, generated_password: password });
   } catch (err) {
-    if (err.message === 'Email already registered') {
-      return res.status(409).json({ error: err.message });
+    const message = err && typeof err === 'object' && typeof err.message === 'string' ? err.message : String(err);
+    if (message === 'Email already registered') {
+      return res.status(409).json({ error: message });
     }
     console.error('[PortalAdmin] Auto-create user error:', err);
-    res.status(500).json({ error: 'Failed to create portal user', detail: err.message });
+    return res.status(500).json({ error: 'Failed to create portal user', detail: message });
   }
 });
 

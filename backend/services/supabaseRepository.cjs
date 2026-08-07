@@ -942,7 +942,7 @@ async function getByIdFlat(table, id) {
 async function upsertFlat(table, record) {
   if (!isConfigured()) return null;
   const { id, ...data } = record;
-  const row = { ...data, updated_at: new Date().toISOString() };
+  const row = { id, ...data, updated_at: new Date().toISOString() };
   try {
     const res = await axios.post(`${SUPABASE_URL}/rest/v1/${table}`, row, {
       headers: { ...adminHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' },

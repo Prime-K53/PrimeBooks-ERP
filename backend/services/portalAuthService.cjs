@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { totp, authenticator } = require('otplib');
+const axios = require('axios');
 const repo = require('./supabaseRepository.cjs');
 
 const SALT_ROUNDS = 10;
@@ -39,8 +40,39 @@ function generateEventTicket(userOrCustomerId, purpose = 'portal') {
   );
 }
 
+const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
+const SECRET_KEY = process.env.SUPABASE_SECRET_KEY || '';
+
 const ensurePortalSchema = async () => {
-  return;
+  if (!SUPABASE_URL || !SECRET_KEY || SUPABASE_URL.includes('placeholder')) {
+    console.warn('[PortalAuth] Supabase not configured — skipping portal schema verification.');
+    return;
+  }
+
+  const headers = {
+    apikey: SECRET_KEY,
+    Authorization: `Bearer ${SECRET_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation',
+  };
+
+  const tables = ['portal_users', 'portal_sessions', 'portal_password_resets', 'portal_login_history'];
+  for (const table of tables) {
+    try {
+      await axios.get(`${SUPABASE_URL}/rest/v1/${table}`, {
+        headers,
+        params: { limit: 1 },
+        timeout: 5000,
+      });
+    } catch (err) {
+      const status = err.response && err.response.status;
+      if (status === 404 || status === 400) {
+        console.warn(`[PortalAuth] Portal table "${table}" is missing in Supabase. Run the portal tables SQL migration in the Supabase SQL Editor.`);
+      } else {
+        console.warn(`[PortalAuth] Could not verify portal table "${table}":`, err.message);
+      }
+    }
+  }
 };
 
 async function syncCustomerPortalData(customerId, updates) {

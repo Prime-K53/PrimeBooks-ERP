@@ -1,4 +1,4 @@
-const sq = require('./supabaseQuery.cjs');
+const sq = require('../supabaseQuery.cjs');
 const LLMClient = require('./llmClient.cjs');
 
 class BaseAIService {

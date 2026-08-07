@@ -51,24 +51,24 @@ async function bootstrap() {
   const backupService = new BackupService(backupDir);
   await backupService.createBackup().catch(err => console.warn('Initial backup failed:', err));
 
-  return new Promise((resolve, reject) => {
-    sq.getOne('SELECT COUNT(*) as count FROM schools', [], (err, row) => {
-      if (err) {
-        console.error('Error checking schools count:', err);
-        return resolve();
+  // supabaseQuery.getOne() is promise-based — it does not take a callback. The
+  // previous version passed (err, row) => {} and awaited nothing, so the Promise
+  // never resolved and the server never finished booting (every /api request
+  // then surfaced as a 500 from the dev proxy).
+  try {
+    const row = await sq.getOne('SELECT COUNT(*) as count FROM schools');
+    if (row && Number(row.count) === 0) {
+      console.log('First run detected. Seeding default data...');
+      try {
+        await seedDefaultData();
+      } catch (seedErr) {
+        console.error('Failed to seed default data (non-fatal):', seedErr);
       }
-      if (row && Number(row.count) === 0) {
-        console.log('First run detected. Seeding default data...');
-        try {
-          seedDefaultData();
-        } catch (seedErr) {
-          console.error('Failed to seed default data (non-fatal):', seedErr);
-        }
-      }
-      console.log('--- PRIME ERP BOOTSTRAP COMPLETE ---');
-      resolve();
-    });
-  });
+    }
+  } catch (err) {
+    console.error('Error checking schools count:', err);
+  }
+  console.log('--- PRIME ERP BOOTSTRAP COMPLETE ---');
 }
 
 async function seedDefaultData() {
