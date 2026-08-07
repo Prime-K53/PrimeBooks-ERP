@@ -490,6 +490,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setRequiresSetup(requiresSupabaseSetup);
           setDbSyncStatus('connected');
           setLastSyncTime(new Date().toISOString());
+          // Cold-boot race fix: supabase-js emits SIGNED_IN during client creation,
+          // BEFORE the onAuthStateChange effect (below) has registered its listener.
+          // AuthContext ignores INITIAL_SESSION, and loadInitData returns here, so a
+          // page reload with a persisted session would never start the sync engine.
+          // Start it explicitly whenever a valid Supabase session is restored.
+          if (session?.user && !requiresSupabaseSetup) {
+            audit('auth', 'cold boot: starting sync engine from loadInitData', { hasSession: true });
+            import('../services/syncService').then(({ startPeriodicSync }) => {
+              startPeriodicSync();
+            }).catch(() => {});
+          }
           return;
         }
 
