@@ -1097,10 +1097,10 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                         </div>
                     )}
                     <div className="flex-1 overflow-auto custom-scrollbar">
-                        <table className="w-full min-w-0 md:min-w-[640px] text-left text-[11px] md:text-[13px] table-fixed">
+                        <table className="w-full text-left text-[11px] md:text-[13px] table-auto md:table-fixed">
                             <thead className="bg-slate-50/80 backdrop-blur text-slate-500 sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <th className="table-header text-center w-[3%] hidden md:table-cell">
+                                    <th className="table-header text-center hidden md:table-cell md:w-[3%]">
                                         <input
                                             type="checkbox"
                                             className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
@@ -1118,13 +1118,13 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                             }}
                                         />
                                     </th>
-                                    <SortableTh field="id" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[28%] md:w-[13.85%]">Invoice No.</SortableTh>
-                                    <SortableTh field="date" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[18%] md:w-[13.85%] hidden sm:table-cell">Date</SortableTh>
-                                    <SortableTh field="customerName" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left w-[32%] md:w-[13.85%]">Customer</SortableTh>
-                                    <SortableTh field="totalAmount" sortConfig={props.sortConfig} onSort={props.onSort} className="text-right w-[22%] md:w-[13.85%] hidden sm:table-cell">Total</SortableTh>
-                                    <SortableTh field="paidAmount" sortConfig={props.sortConfig} onSort={props.onSort} className="text-right w-[22%] md:w-[13.85%] hidden lg:table-cell">Balance</SortableTh>
-                                    <SortableTh field="status" sortConfig={props.sortConfig} onSort={props.onSort} className="text-center w-[14%] md:w-[13.85%]">Status</SortableTh>
-                                    <th className="table-header text-center w-[14%] md:w-[13.85%]">Actions</th>
+                                    <SortableTh field="id" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left md:w-[13.85%]">Invoice No.</SortableTh>
+                                    <SortableTh field="date" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left md:w-[13.85%] hidden sm:table-cell">Date</SortableTh>
+                                    <SortableTh field="customerName" sortConfig={props.sortConfig} onSort={props.onSort} className="text-left md:w-[13.85%]">Customer</SortableTh>
+                                    <SortableTh field="totalAmount" sortConfig={props.sortConfig} onSort={props.onSort} className="text-right md:w-[13.85%] hidden sm:table-cell">Total</SortableTh>
+                                    <SortableTh field="paidAmount" sortConfig={props.sortConfig} onSort={props.onSort} className="text-right md:w-[13.85%] hidden lg:table-cell">Balance</SortableTh>
+                                    <SortableTh field="status" sortConfig={props.sortConfig} onSort={props.onSort} className="text-center md:w-[13.85%]">Status</SortableTh>
+                                    <th className="table-header text-center md:w-[13.85%]">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100/50">
@@ -1167,7 +1167,12 @@ export const InvoiceList: React.FC<ListProps<Invoice>> = (props) => {
                                                 />
                                             </td>
                                             <td className="table-body-cell text-left font-normal truncate hidden sm:table-cell">{new Date(inv.date).toLocaleDateString()}</td>
-                                            <td className="table-body-cell text-left font-medium text-slate-900 truncate">{inv.customerName}</td>
+                                            <td className="table-body-cell text-left font-medium text-slate-900 truncate">
+                                                {inv.customerName}
+                                                <span className="block text-[10px] font-normal text-slate-400 md:hidden mt-0.5 truncate">
+                                                    {companyConfig.currencySymbol}{totalAmount.toLocaleString()} · {new Date(inv.date).toLocaleDateString()}
+                                                </span>
+                                            </td>
                                             <td className="table-body-cell text-right font-medium finance-nums truncate hidden sm:table-cell">{companyConfig.currencySymbol} {totalAmount.toLocaleString()}</td>
                                             <td className="table-body-cell text-right text-red-600 font-medium finance-nums truncate hidden lg:table-cell">{companyConfig.currencySymbol} {balanceDue.toLocaleString()}</td>
                                             <td className="table-body-cell text-center">
