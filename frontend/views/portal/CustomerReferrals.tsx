@@ -201,7 +201,7 @@ const CustomerReferrals: React.FC = () => {
             width: 40, height: 40, borderRadius: 10,
             background: `linear-gradient(155deg, ${portalTheme.teal[500]}, ${portalTheme.teal[700]})`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0: 0
+            boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
           }}>
             <Users size={19} color="#fff" />
           </div>
@@ -400,7 +400,7 @@ const CustomerReferrals: React.FC = () => {
                   <p style={{ fontWeight: 600, color: portalTheme.ink, margin: 0, fontSize: 13 }}>{r.referredCustomerName}</p>
                   {r.referredCustomerEmail && <p style={{ fontSize: 11, color: portalTheme.inkSoft, margin: '2px 0 0' }}>{r.referredCustomerEmail}</p>}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
                   <StatusBadge status={r.status} size="sm" />
                   <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: r.pendingInvoiceAmount > 0 ? portalTheme.ink : portalTheme.inkSoft }}>
                     {r.pendingInvoiceAmount > 0 ? r.pendingInvoiceAmount.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
@@ -451,7 +451,7 @@ const CustomerReferrals: React.FC = () => {
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <p style={{ fontWeight: 600, color: portalTheme.ink, margin: 0, fontSize: 13 }}>{r.referredCustomerName}</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0: 0, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0, flexWrap: 'wrap' }}>
                   <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: portalTheme.inkSoft }}>
                     {r.invoiceAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
@@ -519,7 +519,7 @@ const CustomerReferrals: React.FC = () => {
                         <button key={c.id} onClick={() => setReferSelected(c)} style={{
                           width: '100%', textAlign: 'left', padding: '10px 12px', border: 'none', borderBottom: `1px solid ${portalTheme.border}`, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: portalTheme.ink
                         }} onMouseEnter={e => { e.currentTarget.style.background = portalTheme.teal[50]; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                          <div style={{ width: 32, height: 32, borderRadius: 8, background: portalTheme.teal[50], color: portalTheme.teal[600], display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0: 0 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: 8, background: portalTheme.teal[50], color: portalTheme.teal[600], display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
                             {c.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -534,7 +534,7 @@ const CustomerReferrals: React.FC = () => {
               ) : (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: portalTheme.teal[50], color: portalTheme.teal[600], display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: portalTheme.teal[50], color: portalTheme.teal[600], display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
                       {referSelected.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -616,7 +616,7 @@ const CustomerReferrals: React.FC = () => {
                     {timeline.map((entry, idx) => (
                       <div key={entry.id} style={{ display: 'flex', gap: 12, position: 'relative' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <div style={{ width: 10, height: 10, borderRadius: '50%', background: portalTheme.teal[400], border: `2px solid ${portalTheme.paper}`, boxShadow: '0 0 0 2px ' + portalTheme.teal[200], flexShrink: 0: 0, marginTop: 4 }} />
+                          <div style={{ width: 10, height: 10, borderRadius: '50%', background: portalTheme.teal[400], border: `2px solid ${portalTheme.paper}`, boxShadow: '0 0 0 2px ' + portalTheme.teal[200], flexShrink: 0, marginTop: 4 }} />
                           {idx < timeline.length - 1 && <div style={{ width: 2, flex: 1, background: portalTheme.border, marginTop: 4 }} />}
                         </div>
                         <div style={{ paddingBottom: idx < timeline.length - 1 ? 16 : 0, flex: 1 }}>
