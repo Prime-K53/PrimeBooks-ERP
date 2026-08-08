@@ -15,7 +15,8 @@ import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import DocumentChain from './components/DocumentChain';
 import DocumentDiscussion from './components/DocumentDiscussion';
 import VersionHistoryModal from './components/VersionHistoryModal';
-import { portalTheme, formatK } from './constants';
+import { F } from './portalStyles';
+import { formatK } from './constants';
 
 const stageDefinitions = [
   { key: 'submitted', label: 'Requested', description: 'Your request was received' },
@@ -35,6 +36,19 @@ function stageIndex(status: string): number {
     default: return 0;
   }
 }
+
+const root: React.CSSProperties = { fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748', padding: 24, maxWidth: 800, margin: '0 auto' };
+const card: React.CSSProperties = { background: '#fff', borderRadius: 12, padding: '12px 14px', marginBottom: 10, border: '1px solid #E9EDF3' };
+const cardNoPad: React.CSSProperties = { background: '#fff', borderRadius: 12, marginBottom: 10, border: '1px solid #E9EDF3', overflow: 'hidden' };
+const sectionTitle: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: '#1A202C', margin: 0 };
+const label: React.CSSProperties = { fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.03em' };
+const body: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: '#4A5568' };
+const muted: React.CSSProperties = { fontSize: 10.5, color: '#8A94A6' };
+const th: React.CSSProperties = { padding: '8px 14px', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.03em', borderTop: '1px solid #F3F4F6' };
+const thR: React.CSSProperties = { ...th, textAlign: 'right' };
+const td: React.CSSProperties = { padding: '8px 14px', fontSize: 13, fontWeight: 500, color: '#4A5568', borderTop: '1px solid #F3F4F6' };
+const tdR: React.CSSProperties = { ...td, textAlign: 'right' };
+const tdB: React.CSSProperties = { ...td, textAlign: 'right', fontWeight: 600, color: '#1A202C', fontFamily: "'JetBrains Mono', monospace" };
 
 const CustomerQuotationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -176,8 +190,8 @@ const CustomerQuotationDetail: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
+  if (loading) return <div style={root}><PortalLoadingSkeleton type="detail" /></div>;
+  if (error) return <div style={root}><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!quotation) return null;
 
   const status = quotation.status;
@@ -186,56 +200,56 @@ const CustomerQuotationDetail: React.FC = () => {
   const canDownload = status === 'ready' || status === 'accepted' || status === 'revision_requested' || status === 'converted';
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <button onClick={() => navigate('/portal/orders?tab=quotations')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
+    <div style={root}>
+      <button onClick={() => navigate('/portal/orders?tab=quotations')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 500, color: '#059669', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 24, padding: 0, fontFamily: F }}>
         <ArrowLeft size={14} /> Back to Quotations
       </button>
 
-{downloadError && <ErrorBanner message={downloadError} onDismiss={() => setDownloadError(null)} />}
-       {actionError && <ErrorBanner message={actionError} onDismiss={() => setActionError(null)} />}
+      {downloadError && <ErrorBanner message={downloadError} onDismiss={() => setDownloadError(null)} />}
+      {actionError && <ErrorBanner message={actionError} onDismiss={() => setActionError(null)} />}
 
       <DocumentChain docType="quotation" docId={quotation.id} />
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div style={{ ...card, padding: '16px 18px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Quotation {quotation.quotation_number}</h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: '#1A202C', margin: 0 }}>Quotation {quotation.quotation_number}</h1>
+            <p style={{ fontSize: 13, fontWeight: 500, color: '#8A94A6', marginTop: 4 }}>
               Issued: {new Date(quotation.created_at).toLocaleDateString()}
               {quotation.valid_until ? ` • Valid until ${new Date(quotation.valid_until).toLocaleDateString()}` : ''}
               {quotation.payment_terms ? ` • ${quotation.payment_terms}` : ''}
               {quotation.source_request_number ? ` • From request ${quotation.source_request_number}` : ''}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {Number(quotation.version || 1) > 1 && (
               <button
                 onClick={openVersions}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', background: '#1A202C', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: F }}
               >
-                <History size={14} /> V{quotation.version} <span className="text-slate-300 font-normal">• history</span>
+                <History size={14} /> V{quotation.version} <span style={{ color: '#CBD5E0', fontWeight: 400 }}>• history</span>
               </button>
             )}
-            {Number(quotation.version || 1) > 1 && <span className="hidden sm:inline text-[10px] text-slate-400">Revision {quotation.version}</span>}
+            {Number(quotation.version || 1) > 1 && <span style={{ display: 'none', fontSize: 10, color: '#8A94A6' }}>Revision {quotation.version}</span>}
             <StatusBadge status={status} />
             {canDownload && (
               <button
                 onClick={handleDownloadPdf}
                 disabled={downloading}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 text-xs font-semibold rounded-lg transition-colors"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', background: '#F1F5F9', color: '#1A202C', fontSize: 12, fontWeight: 600, cursor: downloading ? 'not-allowed' : 'pointer', opacity: downloading ? 0.5 : 1, fontFamily: F }}
               >
-                {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {downloading ? 'Generating...' : 'PDF'}
+                {downloading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={14} />} {downloading ? 'Generating...' : 'PDF'}
               </button>
             )}
           </div>
         </div>
 
         {status === 'expired' && (
-          <div className="mb-5 bg-slate-100 border border-slate-200 rounded-xl p-4 flex items-start gap-3">
-            <Clock size={16} className="text-slate-500 mt-0.5 shrink-0" />
+          <div style={{ marginBottom: 16, background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 10, padding: 14, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <Clock size={16} style={{ color: '#8A94A6', marginTop: 2, flexShrink: 0 }} />
             <div>
-              <p className="text-sm font-semibold text-slate-700">This quotation has expired</p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#4A5568', margin: 0 }}>This quotation has expired</p>
+              <p style={{ fontSize: 10.5, fontWeight: 500, color: '#8A94A6', marginTop: 2 }}>
                 It was valid until {quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString() : 'its expiry date'} and can no longer be
                 accepted. Please submit a new request or contact our team to prepare a fresh quotation.
               </p>
@@ -244,12 +258,12 @@ const CustomerQuotationDetail: React.FC = () => {
         )}
 
         {status === 'accepted' && quotation.accepted_by && (
-          <div className="mb-5 bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
-            <BadgeCheck size={16} className="text-emerald-600 mt-0.5 shrink-0" />
+          <div style={{ marginBottom: 16, background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 10, padding: 14, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <BadgeCheck size={16} style={{ color: '#059669', marginTop: 2, flexShrink: 0 }} />
             <div>
-              <p className="text-sm font-semibold text-emerald-700">Accepted and digitally recorded</p>
-              <p className="text-xs text-emerald-600 mt-0.5">
-                Accepted by <span className="font-semibold">{quotation.accepted_by}</span>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#059669', margin: 0 }}>Accepted and digitally recorded</p>
+              <p style={{ fontSize: 10.5, fontWeight: 500, color: '#059669', marginTop: 2 }}>
+                Accepted by <span style={{ fontWeight: 600 }}>{quotation.accepted_by}</span>
                 {quotation.accepted_by_email ? ` (${quotation.accepted_by_email})` : ''} on{' '}
                 {quotation.accepted_at ? new Date(quotation.accepted_at).toLocaleString() : 'an unknown date'}.
                 {signatures.length > 1 && ` ${signatures.length - 1} earlier decision${signatures.length > 2 ? 's' : ''} recorded on this document.`}
@@ -258,87 +272,85 @@ const CustomerQuotationDetail: React.FC = () => {
           </div>
         )}
 
-        {/* Progress tracker */}
-        <div className="flex items-center gap-2 mb-6">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
           {stageDefinitions.map((stage, i) => {
             const done = currentStage > i + 1 || (currentStage === i + 1);
             const active = currentStage === i + 1;
             const isLast = i === stageDefinitions.length - 1;
             return (
               <React.Fragment key={stage.key}>
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                      done ? 'bg-emerald-500 text-white' : active ? 'bg-amber-400 text-white' : 'bg-slate-200 text-slate-400'
-                    }`}
-                  >
-                    {done && currentStage > i + 1 ? <CheckCircle2 size={15} /> : <span className="text-xs font-bold">{i + 1}</span>}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    background: done ? '#059669' : active ? '#F59E0B' : '#E2E8F0',
+                    color: done || active ? '#fff' : '#8A94A6',
+                  }}>
+                    {done && currentStage > i + 1 ? <CheckCircle2 size={15} /> : <span style={{ fontSize: 10, fontWeight: 700 }}>{i + 1}</span>}
                   </div>
-                  <span className={`mt-1.5 text-[10px] font-semibold text-center ${done || active ? 'text-slate-800' : 'text-slate-400'}`}>
+                  <span style={{ marginTop: 6, fontSize: 10, fontWeight: 600, textAlign: 'center', color: done || active ? '#1A202C' : '#8A94A6' }}>
                     {stage.label}
                   </span>
-                  <span className="text-[9px] text-slate-400 text-center hidden sm:block">{stage.description}</span>
+                  <span style={{ fontSize: 9, color: '#8A94A6', textAlign: 'center' }}>{stage.description}</span>
                 </div>
-                {!isLast && <div className={`h-0.5 flex-1 -mt-5 ${done ? 'bg-emerald-400' : 'bg-slate-200'}`} />}
+                {!isLast && <div style={{ height: 2, flex: 1, marginTop: -20, background: done ? '#059669' : '#E2E8F0', borderRadius: 1 }} />}
               </React.Fragment>
             );
           })}
         </div>
 
-        <div className="text-sm text-slate-700">
-          <span className="text-slate-500">Customer:</span> {quotation.customer_name}
+        <div style={{ fontSize: 13, fontWeight: 500, color: '#4A5568' }}>
+          <span style={{ color: '#8A94A6' }}>Customer:</span> {quotation.customer_name}
         </div>
       </div>
 
-      {/* Decision panel */}
       {canDecide && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5 mb-6">
-          <h2 className="text-sm font-semibold text-slate-800 mb-4">Review Quotation</h2>
-          <div className="flex flex-wrap items-center gap-3">
+        <div style={{ ...card, padding: '14px 18px', marginBottom: 16 }}>
+          <h2 style={{ ...sectionTitle, marginBottom: 16 }}>Review Quotation</h2>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
             <button
               onClick={() => runAction('accept')}
               disabled={action !== null}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: 'none', background: '#059669', color: '#fff', fontSize: 12, fontWeight: 600, cursor: action !== null ? 'not-allowed' : 'pointer', opacity: action !== null ? 0.5 : 1, fontFamily: F }}
             >
-              {action === 'accept' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={15} />} Accept &amp; Convert to Order
+              {action === 'accept' ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={15} />} Accept &amp; Convert to Order
             </button>
             <button
               onClick={() => runAction('reject')}
               disabled={action !== null}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed text-rose-600 text-sm font-semibold rounded-xl transition-all"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#B91C1C', fontSize: 12, fontWeight: 600, cursor: action !== null ? 'not-allowed' : 'pointer', opacity: action !== null ? 0.5 : 1, fontFamily: F }}
             >
-              {action === 'reject' ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={15} />} Reject
+              {action === 'reject' ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <XCircle size={15} />} Reject
             </button>
             <button
               onClick={() => runAction('revision')}
               disabled={action !== null}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 text-sm font-semibold rounded-xl transition-all"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: '1px solid #E9EDF3', background: '#F1F5F9', color: '#1A202C', fontSize: 12, fontWeight: 600, cursor: action !== null ? 'not-allowed' : 'pointer', opacity: action !== null ? 0.5 : 1, fontFamily: F }}
             >
-              {action === 'revision' ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={15} />} Request Changes
+              {action === 'revision' ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCcw size={15} />} Request Changes
             </button>
           </div>
           {status === 'revision_requested' && (
-            <p className="mt-3 text-xs text-violet-600 font-medium">Revision requested — our team will regenerate the quotation.</p>
+            <p style={{ marginTop: 8, fontSize: 10.5, fontWeight: 500, color: '#7C3AED' }}>Revision requested — our team will regenerate the quotation.</p>
           )}
-          <div className="grid sm:grid-cols-2 gap-4 mt-4">
+          <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Change Request</label>
+              <label style={{ display: 'block', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 6 }}>Change Request</label>
               <textarea
                 value={revisionNote}
                 onChange={(e) => setRevisionNote(e.target.value)}
                 rows={2}
                 placeholder="Describe the changes you need (prices, quantities, terms)..."
-                className="w-full px-3 py-2.5 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
+                style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E9EDF3', borderRadius: 10, background: '#fff', color: '#1A202C', outline: 'none', resize: 'none', fontFamily: F, lineHeight: 1.4 }}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Rejection Reason</label>
+              <label style={{ display: 'block', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 6 }}>Rejection Reason</label>
               <textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={2}
                 placeholder="Why are you rejecting this quotation?"
-                className="w-full px-3 py-2.5 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40 resize-none"
+                style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E9EDF3', borderRadius: 10, background: '#fff', color: '#1A202C', outline: 'none', resize: 'none', fontFamily: F, lineHeight: 1.4 }}
               />
             </div>
           </div>
@@ -346,90 +358,89 @@ const CustomerQuotationDetail: React.FC = () => {
       )}
 
       {status === 'rejected' && quotation.rejection_reason && (
-        <div className="mb-6 bg-rose-50 border border-rose-200 rounded-xl p-4">
-          <p className="text-xs font-semibold text-rose-600 uppercase tracking-wider mb-1">Rejected</p>
-          <p className="text-sm text-rose-700">{quotation.rejection_reason}</p>
+        <div style={{ marginBottom: 16, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: 14 }}>
+          <p style={{ ...label, marginBottom: 4, color: '#B91C1C' }}>Rejected</p>
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#B91C1C' }}>{quotation.rejection_reason}</p>
         </div>
       )}
       {status === 'converted' && (
-        <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between gap-3">
-          <p className="text-sm text-emerald-700 font-medium">This quotation was accepted and converted into an order.</p>
+        <div style={{ marginBottom: 16, background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 10, padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#059669' }}>This quotation was accepted and converted into an order.</p>
           <button
             onClick={() => quotation.order_id && navigate(`/portal/orders/${quotation.order_id}`)}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors shrink-0"
+            style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#059669', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: F }}
           >
             View Order
           </button>
         </div>
       )}
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden mb-6">
-        <div className="px-5 py-4 border-b border-slate-200/60">
-          <h2 className="text-sm font-semibold text-slate-800">Items</h2>
+      <div style={cardNoPad}>
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid #E9EDF3' }}>
+          <h2 style={sectionTitle}>Items</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr className="border-b border-slate-200/60 text-slate-500">
-                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider">Item</th>
-                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Qty</th>
-                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Price</th>
-                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Total</th>
+              <tr>
+                <th style={{ ...th, textAlign: 'left' }}>Item</th>
+                <th style={thR}>Qty</th>
+                <th style={thR}>Price</th>
+                <th style={thR}>Total</th>
               </tr>
             </thead>
             <tbody>
               {(quotation.items || []).map((item, i) => (
-                <tr key={i} className={i < (quotation.items || []).length - 1 ? 'border-b border-slate-200/60' : ''}>
-                  <td className="px-5 py-3 font-medium text-slate-800">{item.name}</td>
-                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums">{item.quantity}</td>
-                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.unitPrice || 0)}</td>
-                  <td className="px-5 py-3 text-right font-semibold text-slate-900 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.lineTotal ?? item.quantity * item.unitPrice)}</td>
+                <tr key={i}>
+                  <td style={{ ...td, fontWeight: 600, color: '#1A202C' }}>{item.name}</td>
+                  <td style={{ ...tdR, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</td>
+                  <td style={{ ...tdR, fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.unitPrice || 0)}</td>
+                  <td style={{ ...tdB }}>{formatK(item.lineTotal ?? item.quantity * item.unitPrice)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-4 border-t border-slate-200/60 space-y-1.5 text-sm">
-          <div className="flex justify-between text-slate-600"><span>Subtotal</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.subtotal)}</span></div>
+        <div style={{ padding: '12px 14px', borderTop: '1px solid #E9EDF3', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#4A5568' }}>Subtotal</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.subtotal)}</span></div>
           {Number(quotation.discount) > 0 && (
-            <div className="flex justify-between text-slate-600"><span>Discount</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>- {formatK(quotation.discount)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#4A5568' }}>Discount</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>- {formatK(quotation.discount)}</span></div>
           )}
           {Number(quotation.delivery_fee) > 0 && (
-            <div className="flex justify-between text-slate-600"><span>Delivery Fee</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.delivery_fee)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#4A5568' }}>Delivery Fee</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.delivery_fee)}</span></div>
           )}
           {Number(quotation.tax_amount) > 0 && (
-            <div className="flex justify-between text-slate-600"><span>Tax ({Number(quotation.tax_rate)}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.tax_amount)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#4A5568' }}>Tax ({Number(quotation.tax_rate)}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.tax_amount)}</span></div>
           )}
-          <div className="flex justify-between pt-2 border-t border-slate-200/60 text-base font-bold">
-            <span className="text-slate-800">Total</span>
-            <span className="text-slate-900" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.total)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #E9EDF3', fontSize: 15, fontWeight: 700 }}>
+            <span style={{ color: '#1A202C' }}>Total</span>
+            <span style={{ color: '#1A202C', fontFamily: "'JetBrains Mono', monospace" }}>{formatK(quotation.total)}</span>
           </div>
         </div>
       </div>
 
       {quotation.revision_note && (
-        <div className="mb-6 bg-violet-50 border border-violet-200 rounded-xl p-4">
-          <p className="text-xs font-semibold text-violet-600 uppercase tracking-wider mb-1">Your change request</p>
-          <p className="text-sm text-violet-700">{quotation.revision_note}</p>
+        <div style={{ marginBottom: 16, background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: 10, padding: 14 }}>
+          <p style={{ ...label, marginBottom: 4, color: '#7C3AED' }}>Your change request</p>
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#7C3AED' }}>{quotation.revision_note}</p>
         </div>
       )}
 
-      {/* Timeline */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5 mb-6">
-        <h2 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
-          <MessageSquare size={15} className="text-slate-400" /> Activity Timeline
+      <div style={{ ...card, padding: '14px 18px', marginBottom: 16 }}>
+        <h2 style={{ ...sectionTitle, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <MessageSquare size={15} style={{ color: '#8A94A6' }} /> Activity Timeline
         </h2>
         {timeline.length === 0 ? (
-          <p className="text-sm text-slate-400">No activity yet.</p>
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#8A94A6' }}>No activity yet.</p>
         ) : (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {timeline.map((event) => (
-              <div key={event.id} className="flex gap-3">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-800">{event.title}</p>
-                  {event.description && <p className="text-xs text-slate-500">{event.description}</p>}
-                  <p className="text-[10px] text-slate-400 mt-0.5">
+              <div key={event.id} style={{ display: 'flex', gap: 12 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 4, background: '#059669', marginTop: 5, flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: '#1A202C', margin: 0 }}>{event.title}</p>
+                  {event.description && <p style={{ fontSize: 10.5, fontWeight: 500, color: '#8A94A6', margin: '2px 0 0' }}>{event.description}</p>}
+                  <p style={{ fontSize: 10, color: '#8A94A6', marginTop: 2 }}>
                     {new Date(event.created_at).toLocaleString()} • {event.actor_name || 'System'}
                   </p>
                 </div>
@@ -439,23 +450,25 @@ const CustomerQuotationDetail: React.FC = () => {
         )}
       </div>
 
-      {/* Decision Records / Signatures */}
       {signatures.length > 0 && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden mb-6">
-          <div className="px-5 py-4 border-b border-slate-200/60">
-            <h2 className="text-sm font-semibold text-slate-800">Decision Records</h2>
+        <div style={cardNoPad}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid #E9EDF3' }}>
+            <h2 style={sectionTitle}>Decision Records</h2>
           </div>
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {signatures.map((sig) => (
-              <div key={sig.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FEFDFB', borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+              <div key={sig.id} style={{ padding: '10px 14px', borderTop: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ${
-                    sig.decision === 'accepted' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                    sig.decision === 'rejected' ? 'bg-rose-100 text-rose-700 border-rose-200' :
-                    'bg-violet-100 text-violet-700 border-violet-200'
-                  }`}>{sig.decision}</span>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: '#23282A', marginTop: 4 }}>{sig.signer_name || '—'}</p>
-                  <p style={{ fontSize: 11, color: '#5c6567', marginTop: 2 }}>{sig.signer_email || '—'} • {sig.signed_at ? new Date(sig.signed_at).toLocaleString() : '—'}</p>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '3px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, border: '1px solid',
+                    background: sig.decision === 'accepted' ? '#ECFDF5' : sig.decision === 'rejected' ? '#FEF2F2' : '#F5F3FF',
+                    color: sig.decision === 'accepted' ? '#059669' : sig.decision === 'rejected' ? '#B91C1C' : '#7C3AED',
+                    borderColor: sig.decision === 'accepted' ? '#A7F3D0' : sig.decision === 'rejected' ? '#FECACA' : '#DDD6FE',
+                    whiteSpace: 'nowrap'
+                  }}>{sig.decision}</span>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#1A202C', marginTop: 4 }}>{sig.signer_name || '—'}</p>
+                  <p style={{ fontSize: 10.5, fontWeight: 500, color: '#8A94A6', marginTop: 2 }}>{sig.signer_email || '—'} • {sig.signed_at ? new Date(sig.signed_at).toLocaleString() : '—'}</p>
                 </div>
               </div>
             ))}

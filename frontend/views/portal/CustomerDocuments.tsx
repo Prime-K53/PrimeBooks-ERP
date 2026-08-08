@@ -10,14 +10,12 @@ import { initializePrimePdfFonts } from '../shared/components/PDF/templateSettin
 import { PrimeDocument } from '../shared/components/PDF/PrimeDocument';
 import { useAuth } from '../../context/AuthContext';
 import PortalPageHeader from './components/PortalPageHeader';
-import PortalInput from './components/PortalInput';
-import PortalButton from './components/PortalButton';
-import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import { useToast } from './components/Toast';
-import { portalTheme, formatK } from './constants';
+import { formatK } from './constants';
+import { F } from './portalStyles';
 
 interface Document {
   id: string;
@@ -78,14 +76,12 @@ const CustomerDocuments: React.FC = () => {
     doc.type?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Extract invoice ID from document URL (format: #/portal/invoices/{id})
   const extractInvoiceId = (url?: string): string | null => {
     if (!url) return null;
     const match = url.match(/#\/portal\/invoices\/(.+)/);
     return match ? match[1] : null;
   };
 
-  // Toggle a single document selection
   const toggleSelect = useCallback((docId: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -95,7 +91,6 @@ const CustomerDocuments: React.FC = () => {
     });
   }, []);
 
-  // Toggle select all
   const toggleSelectAll = useCallback(() => {
     if (selected.size === filtered.length) {
       setSelected(new Set());
@@ -104,7 +99,6 @@ const CustomerDocuments: React.FC = () => {
     }
   }, [selected.size, filtered]);
 
-  // Bulk download selected documents as individual PDFs
   const handleBulkDownload = useCallback(async () => {
     if (selected.size === 0) return;
     setDownloading(true);
@@ -141,7 +135,6 @@ const CustomerDocuments: React.FC = () => {
             createElement(PrimeDocument, { type: 'INVOICE', data: secured })
           ).toBlob();
 
-          // Trigger download
           const url = URL.createObjectURL(blob);
           const a = window.document.createElement('a');
           a.href = url;
@@ -176,29 +169,61 @@ const CustomerDocuments: React.FC = () => {
   });
   const typeKeys = Object.keys(grouped);
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
+  if (loading) {
+    return (
+      <div style={{ padding: 32, maxWidth: 896, margin: '0 auto' }}>
+        <PortalLoadingSkeleton type="table" count={6} />
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}>
       <PortalPageHeader title="Documents" subtitle="Access your invoices, receipts, statements and more" icon={FileText} />
 
       <div style={{ padding: '20px 28px 8px' }}>
         {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', maxWidth: 360, flex: 1 }}>
-            <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: portalTheme.inkSoft }} />
-            <PortalInput label="" placeholder="Search documents..." value={search} onChange={(v) => setSearch(v)} onFocus={() => {}} onBlur={() => {}} style={{ paddingLeft: 32 }} />
+            <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+            <input
+              type="text"
+              placeholder="Search documents..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                fontFamily: F,
+                fontSize: 13,
+                padding: '8px 12px 8px 32px',
+                border: '1px solid #E9EDF3',
+                borderRadius: 10,
+                background: '#fff',
+                color: '#1A202C',
+                outline: 'none',
+                width: '100%',
+                lineHeight: 1.4,
+                boxSizing: 'border-box',
+              }}
+            />
           </div>
           {filtered.length > 0 && (
-            <div className="flex items-center gap-2">
-              {/* Select All */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
                 onClick={toggleSelectAll}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
                 style={{
-                  color: selected.size > 0 ? portalTheme.teal[700] : portalTheme.inkSoft,
-                  background: selected.size > 0 ? portalTheme.teal[50] : 'transparent',
-                  border: `1px solid ${selected.size > 0 ? portalTheme.teal[200] : '#e2e8f0'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 14px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  border: `1px solid ${selected.size > 0 ? '#a6d9d3' : '#e2e8f0'}`,
+                  background: selected.size > 0 ? '#eef7f6' : 'transparent',
+                  color: selected.size > 0 ? '#0f544c' : '#6b7280',
+                  cursor: 'pointer',
+                  lineHeight: 1.4,
+                  fontFamily: F,
                 }}
               >
                 {selected.size === filtered.length && filtered.length > 0 ? (
@@ -209,17 +234,30 @@ const CustomerDocuments: React.FC = () => {
                 {selected.size > 0 ? `${selected.size} selected` : 'Select all'}
               </button>
 
-              {/* Download Selected */}
               {selected.size > 0 && (
-                <PortalButton
-                  variant="primary"
+                <button
                   onClick={handleBulkDownload}
                   disabled={downloading}
-                  loading={downloading}
-                  icon={Download}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: downloading ? 'not-allowed' : 'pointer',
+                    background: '#008A4C',
+                    color: '#fff',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    lineHeight: 1.4,
+                    fontFamily: F,
+                    opacity: downloading ? 0.7 : 1,
+                  }}
                 >
+                  <Download size={14} />
                   {downloading ? 'Downloading…' : `Download (${selected.size})`}
-                </PortalButton>
+                </button>
               )}
             </div>
           )}
@@ -230,35 +268,71 @@ const CustomerDocuments: React.FC = () => {
         {filtered.length === 0 ? (
           <EmptyState icon={<FileText size={28} />} title="No documents available" description={search ? 'No documents match your search.' : 'Your documents will appear here once generated.'} />
         ) : (
-          <div className="space-y-8">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
             {typeKeys.map((type) => (
               <div key={type}>
-                <h2 className="text-sm font-semibold uppercase tracking-wider mb-3 capitalize" style={{ color: portalTheme.inkSoft }}>{type}s</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <h2 style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 12, marginTop: 0 }}>{type}s</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
                   {grouped[type].map((doc) => {
                     const isSelected = selected.has(doc.id);
                     return (
-                      <PortalCard
+                      <div
                         key={doc.id}
-                        hoverable
-                        className={`flex items-center gap-3 p-4 transition-all ${isSelected ? 'ring-2' : ''}`}
-                        style={isSelected ? { borderColor: portalTheme.teal[400], background: portalTheme.teal[50] } : undefined}
+                        style={{
+                          background: isSelected ? '#eef7f6' : '#fff',
+                          borderRadius: 12,
+                          padding: '12px 14px',
+                          marginBottom: 10,
+                          border: isSelected ? '2px solid #4ed3c7' : '1px solid #E9EDF3',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          transition: 'all 0.15s ease',
+                          cursor: 'default',
+                        }}
                       >
-                        {/* Selection checkbox */}
                         <button
                           onClick={() => toggleSelect(doc.id)}
-                          className="shrink-0 p-0.5 rounded transition-colors"
+                          style={{
+                            flexShrink: 0,
+                            padding: 2,
+                            borderRadius: 6,
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            color: isSelected ? '#146b60' : '#6b7280',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
                           title={isSelected ? 'Deselect' : 'Select for download'}
-                          style={{ color: isSelected ? portalTheme.teal[600] : portalTheme.inkSoft }}
                         >
                           {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
                         </button>
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: portalTheme.teal[50], color: portalTheme.teal[600] }}>
+                        <div style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: '#eef7f6',
+                          color: '#146b60',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}>
                           {typeIcons[doc.type?.toLowerCase()] || <File size={20} />}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: portalTheme.ink }}>{doc.title}</p>
-                          <p className="text-xs mt-1" style={{ color: portalTheme.inkSoft }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: '#0b3e39',
+                            margin: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>{doc.title}</p>
+                          <p style={{ fontSize: 10.5, color: '#8A94A6', marginTop: 4, marginBottom: 0 }}>
                             {doc.date ? new Date(doc.date).toLocaleDateString() : ''}
                             {doc.amount !== undefined ? ` • ${formatK(doc.amount)}` : ''}
                           </p>
@@ -266,8 +340,16 @@ const CustomerDocuments: React.FC = () => {
                         {doc.url?.startsWith('#/') ? (
                           <Link
                             to={doc.url.slice(2)}
-                            className="p-2 rounded-lg shrink-0 transition-colors hover:text-[#146b60] hover:bg-[#eef7f6]"
-                            style={{ color: portalTheme.inkSoft }}
+                            style={{
+                              padding: 8,
+                              borderRadius: 10,
+                              flexShrink: 0,
+                              color: '#6b7280',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              textDecoration: 'none',
+                            }}
                             title="Open document"
                           >
                             <ArrowUpRight size={16} />
@@ -276,14 +358,22 @@ const CustomerDocuments: React.FC = () => {
                           <a
                             href={doc.url}
                             download
-                            className="p-2 rounded-lg shrink-0 transition-colors hover:text-[#146b60] hover:bg-[#eef7f6]"
-                            style={{ color: portalTheme.inkSoft }}
+                            style={{
+                              padding: 8,
+                              borderRadius: 10,
+                              flexShrink: 0,
+                              color: '#6b7280',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              textDecoration: 'none',
+                            }}
                             title="Download"
                           >
                             <Download size={16} />
                           </a>
                         )}
-                      </PortalCard>
+                      </div>
                     );
                   })}
                 </div>

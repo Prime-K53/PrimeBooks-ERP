@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Gift, Star, Wallet } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
-import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, formatK } from './constants';
+import { formatK } from './constants';
+import { F } from './portalStyles';
 
 interface PointsHistory {
   date: string;
@@ -55,10 +55,10 @@ const CustomerLoyalty: React.FC = () => {
     };
   }, []);
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={3} /></div>;
+  if (loading) return <div style={{ padding: 16, maxWidth: 560, marginInline: 'auto' }}><PortalLoadingSkeleton type="card" count={3} /></div>;
 
   return (
-    <div>
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}>
       <PortalPageHeader title="Loyalty Program" subtitle="Your rewards and membership benefits" icon={Gift} />
 
       <div style={{ padding: '20px 28px 8px' }}>
@@ -66,71 +66,71 @@ const CustomerLoyalty: React.FC = () => {
 
         {data && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 18 }}>
-            <PortalCard style={{ padding: '20px 24px' }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: '20px 24px', marginBottom: 10, border: '1px solid #E9EDF3' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: portalTheme.teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: portalTheme.teal[600] }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#146b60' }}>
                   <Gift size={18} />
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Points Balance</span>
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: 0.06 }}>Points Balance</span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#0b3e39', fontFamily: "'JetBrains Mono', monospace" }}>
                 {data.points?.toLocaleString() || 0}
               </div>
-            </PortalCard>
+            </div>
 
-            <PortalCard style={{ padding: '20px 24px' }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: '20px 24px', marginBottom: 10, border: '1px solid #E9EDF3' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: portalTheme.teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: portalTheme.teal[600] }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#146b60' }}>
                   <Wallet size={18} />
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Cashback Available</span>
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: 0.06 }}>Cashback Available</span>
               </div>
-<div style={{ fontSize: 22, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-  {formatK(data.cashback || 0)}
-</div>
-            </PortalCard>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#0b3e39', fontFamily: "'JetBrains Mono', monospace" }}>
+                {formatK(data.cashback || 0)}
+              </div>
+            </div>
 
-            <PortalCard style={{ padding: '20px 24px' }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: '20px 24px', marginBottom: 10, border: '1px solid #E9EDF3' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: portalTheme.teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: portalTheme.teal[600] }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#146b60' }}>
                   <Star size={18} />
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Membership Tier</span>
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: 0.06 }}>Membership Tier</span>
               </div>
               <div style={{
                 display: 'inline-block', padding: '6px 14px', borderRadius: 20,
-                fontSize: 13, fontWeight: 700, border: `1.4px solid ${portalTheme.teal[200]}`, background: portalTheme.teal[50], color: portalTheme.teal[700]
+                fontSize: 13, fontWeight: 700, border: '1.4px solid #a6d9d3', background: '#eef7f6', color: '#0f544c'
               }}>
                 {data.tier || 'Bronze'}
               </div>
-            </PortalCard>
+            </div>
           </div>
         )}
       </div>
 
       <div style={{ padding: '0 28px 28px' }}>
         {!data ? null : (
-          <div style={{ background: portalTheme.paper, borderRadius: 16, border: `1px solid ${portalTheme.border}`, boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18)', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 16px', borderBottom: `1px solid ${portalTheme.border}` }}>
-              <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3', overflow: 'hidden' }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid #F3F4F6' }}>
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1A202C', textTransform: 'uppercase', letterSpacing: 0.06 }}>
                 Points History
               </h2>
             </div>
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(data.pointsHistory || []).length === 0 ? (
-                <p style={{ textAlign: 'center', color: portalTheme.inkSoft, padding: '24px 0' }}>No points history yet</p>
+                <p style={{ textAlign: 'center', color: '#8A94A6', padding: '24px 0' }}>No points history yet</p>
               ) : (
                 (data.pointsHistory || []).map((h, i) => (
-                  <div key={`${h.date}-${h.description}-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: portalTheme.paper, borderRadius: 12, border: `1px solid ${portalTheme.border}`, boxShadow: '0 1px 2px rgba(16,24,40,0.04)', flexWrap: 'wrap' }}>
+                  <div key={`${h.date}-${h.description}-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 14px', borderTop: '1px solid #F3F4F6', flexWrap: 'wrap' }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink, margin: 0 }}>{h.description}</p>
-                      <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 2 }}>{new Date(h.date).toLocaleDateString()}</p>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#0b3e39', margin: 0 }}>{h.description}</p>
+                      <p style={{ fontSize: 10.5, color: '#8A94A6', marginTop: 2 }}>{new Date(h.date).toLocaleDateString()}</p>
                     </div>
                     <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: Number(h.points) >= 0 ? portalTheme.teal[600] : portalTheme.danger }}>
+                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: Number(h.points) >= 0 ? '#146b60' : '#b5493f' }}>
                         {Number(h.points) >= 0 ? '+' : ''}{h.points} pts
                       </span>
-                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: portalTheme.ink }}>
+                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#0b3e39' }}>
                         Balance: {h.balance?.toLocaleString() || 0}
                       </span>
                     </div>

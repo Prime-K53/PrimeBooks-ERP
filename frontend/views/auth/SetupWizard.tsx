@@ -121,6 +121,13 @@ const SetupWizard: React.FC = () => {
 
       await (await import('../../services/db')).dbService.importDatabase(fileContent);
       localStorage.setItem('nexus_company_config', companyConfigJson);
+      try {
+        // Publish the restored config through the settings sync pipeline so
+        // subsequent relogins on any device reconstruct it from the cloud.
+        await (await import('../../services/db')).dbService.saveSetting('companyConfig', restoredConfig);
+      } catch (restoreErr) {
+        console.warn('[SetupWizard] Failed to persist restored config to sync store:', restoreErr);
+      }
       localStorage.setItem('nexus_initialized', backupData.settings?.['nexus_initialized'] || 'true');
       localStorage.setItem('prime_erp_backup_restored', JSON.stringify({
         restoredAt: new Date().toISOString(),

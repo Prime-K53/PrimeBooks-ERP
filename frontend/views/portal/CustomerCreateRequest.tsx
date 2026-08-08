@@ -7,7 +7,8 @@ import {
 import { api } from '../../services/api';
 import { portalLifecycle } from '../../services/portalApiClient';
 import ErrorBanner from './components/ErrorBanner';
-import { portalTheme as t, formatK } from './constants';
+import { formatK } from './constants';
+import { F } from './portalStyles';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 
 type RequestType = 'order' | 'quotation';
@@ -21,33 +22,31 @@ interface LineItem {
   unitPrice: number;
 }
 
-const SERIF = "'DM Serif Display', 'Georgia', serif";
-const MONO = "'JetBrains Mono', monospace";
-
 const fieldBase: React.CSSProperties = {
   width: '100%',
-  fontFamily: "'Inter', sans-serif",
-  fontSize: 13.5,
-  color: t.ink,
+  fontFamily: F,
+  fontSize: 13,
+  color: '#2D3748',
   background: '#fff',
-  border: `1.4px solid ${t.hairline}`,
-  borderRadius: 14,
-  minHeight: 46,
-  padding: '10px 14px',
+  border: '1px solid #E9EDF3',
+  borderRadius: 10,
+  padding: '8px 12px',
   outline: 'none',
-  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease',
-  lineHeight: 1.45,
+  transition: 'border-color .15s ease, box-shadow .15s ease',
+  lineHeight: 1.4,
 };
 
 const focusIn = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  e.currentTarget.style.borderColor = t.teal[400];
-  e.currentTarget.style.boxShadow = `0 0 0 3px ${t.teal[50]}`;
+  e.currentTarget.style.borderColor = '#4ed3c7';
+  e.currentTarget.style.boxShadow = '0 0 0 3px #eef7f6';
 };
 
 const focusOut = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  e.currentTarget.style.borderColor = t.hairline;
+  e.currentTarget.style.borderColor = '#E9EDF3';
   e.currentTarget.style.boxShadow = 'none';
 };
+
+const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg); } }`;
 
 const CustomerCreateRequest: React.FC = () => {
   const navigate = useNavigate();
@@ -68,7 +67,6 @@ const CustomerCreateRequest: React.FC = () => {
   const [reorderRef, setReorderRef] = useState<string | null>(searchParams.get('ref'));
   const [reorderOf, setReorderOf] = useState<string | null>(searchParams.get('order_id'));
 
-  // Fetch source order details for pre-fill when reordering
   useEffect(() => {
     if (!reorderOf) return;
 
@@ -77,7 +75,6 @@ const CustomerCreateRequest: React.FC = () => {
       try {
         const orderDetail = await portalLifecycle.orders.get(reorderOf);
         if (orderDetail && orderDetail.items && Array.isArray(orderDetail.items)) {
-          // Map order items to line items format
           const lineItems: LineItem[] = orderDetail.items.map((item: any) => ({
             id: item.id || Math.random().toString(36).substr(2, 9),
             productId: item.productId || null,
@@ -89,7 +86,6 @@ const CustomerCreateRequest: React.FC = () => {
         }
       } catch (err) {
         console.warn('Failed to load source order for reorder:', err);
-        // Continue with empty lines - user can still manually add items
       }
     };
 
@@ -220,13 +216,14 @@ const CustomerCreateRequest: React.FC = () => {
   if (loading) {
     return (
       <div style={{ maxWidth: 720, margin: '0 auto', minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <style>{spinKeyframes}</style>
         <div style={{
           width: 48, height: 48, borderRadius: 16,
-          background: `linear-gradient(135deg, ${t.teal[500]}, ${t.teal[700]})`,
+          background: 'linear-gradient(135deg, #1f8577, #0f544c)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 14px -4px rgba(15,84,76,.6)', animation: 'pulse 1.5s ease-in-out infinite'
         }}>
-          <Loader2 size={24} color="#fff" className="animate-spin" />
+          <Loader2 size={24} color="#fff" style={{ animation: 'spin 1s linear infinite' }} />
         </div>
       </div>
     );
@@ -236,38 +233,38 @@ const CustomerCreateRequest: React.FC = () => {
     return (
       <div style={{ maxWidth: 460, margin: '0 auto', padding: '16px 16px 40px', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{
-          background: t.paper, borderRadius: 24, padding: '32px 24px 28px', textAlign: 'center', position: 'relative',
-          border: `1.4px solid ${t.hairline}`, boxShadow: '0 20px 40px -16px rgba(0,0,0,.2)', width: '100%',
+          background: '#fff', borderRadius: 12, padding: '32px 24px 28px', textAlign: 'center', position: 'relative',
+          border: '1px solid #E9EDF3', boxShadow: '0 20px 40px -16px rgba(0,0,0,.2)', width: '100%',
           animation: 'scaleIn .3s cubic-bezier(.4,0,.2,1)'
         }}>
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-            background: `linear-gradient(90deg, ${t.teal[600]}, ${t.teal[400]} 40%, ${t.amber[500]} 100%)`, borderRadius: '24px 24px 0 0'
+            background: 'linear-gradient(90deg, #146b60, #4ed3c7 40%, #d99a3f 100%)', borderRadius: '12px 12px 0 0'
           }} />
           <div style={{
-            width: 72, height: 72, borderRadius: 20,
-            background: `linear-gradient(135deg, ${t.teal[500]}18, ${t.teal[400]}10)`,
+            width: 72, height: 72, borderRadius: 12,
+            background: 'linear-gradient(135deg, #1f857718, #4ed3c710)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 16px', animation: 'scaleIn .4s cubic-bezier(.4,0,.2,1) .1s both'
           }}>
-            <CheckCircle2 size={36} color={t.teal[600]} strokeWidth={2.5} />
+            <CheckCircle2 size={36} color="#146b60" strokeWidth={2.5} />
           </div>
           <h2 style={{
-            fontFamily: SERIF, fontSize: 22, margin: 0, color: t.teal[800], letterSpacing: 0.2, lineHeight: 1.35
+            fontFamily: F, fontSize: 22, margin: 0, color: '#0b3e39', letterSpacing: 0.2, lineHeight: 1.35
           }}>
             {type === 'order' ? 'Order Requested' : 'Quotation Requested'}
           </h2>
-          <p style={{ margin: '8px 0 0', fontSize: 13.5, color: t.inkSoft, lineHeight: 1.5 }}>
-            Reference <span style={{ fontFamily: MONO, fontWeight: 600, color: t.ink, letterSpacing: 0.15, fontVariantNumeric: 'tabular-nums' }}>#{successId}</span><br />
+          <p style={{ margin: '8px 0 0', fontSize: 13, fontWeight: 500, color: '#4A5568', lineHeight: 1.5 }}>
+            Reference <span style={{ fontFamily: F, fontWeight: 600, color: '#2D3748', letterSpacing: 0.15, fontVariantNumeric: 'tabular-nums' }}>#{successId}</span><br />
             Our team will review your request shortly.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
             <button
                onClick={() => navigate('/portal/orders?tab=requests')}
               style={{
-                width: '100%', padding: '10px 0', borderRadius: 14, border: 'none', cursor: 'pointer',
-                background: `linear-gradient(135deg, ${t.teal[500]}, ${t.teal[700]})`, color: '#fff',
-                fontSize: 13.5, fontWeight: 600, lineHeight: 1.4, boxShadow: '0 6px 16px -6px rgba(15,84,76,.5)',
+                width: '100%', padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, #1f8577, #0f544c)', color: '#fff',
+                fontSize: 12, fontWeight: 600, lineHeight: 1.4, boxShadow: '0 6px 16px -6px rgba(15,84,76,.5)',
                 transition: 'all .15s ease'
               }}
             >
@@ -276,9 +273,9 @@ const CustomerCreateRequest: React.FC = () => {
             <button
               onClick={() => navigate('/portal/new-request')}
               style={{
-                width: '100%', padding: '10px 0', borderRadius: 14, cursor: 'pointer',
-                background: t.paper, border: `1.4px solid ${t.hairline}`, color: t.inkSoft,
-                fontSize: 13.5, fontWeight: 600, lineHeight: 1.4, transition: 'all .15s ease'
+                width: '100%', padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
+                background: '#fff', border: '1px solid #E9EDF3', color: '#4A5568',
+                fontSize: 12, fontWeight: 600, lineHeight: 1.4, transition: 'all .15s ease'
               }}
             >
               Create Another
@@ -290,19 +287,19 @@ const CustomerCreateRequest: React.FC = () => {
   }
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', paddingBottom: 120 }}>
-      {/* Sticky Header */}
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748', maxWidth: 720, margin: '0 auto', paddingBottom: 120 }}>
+      <style>{spinKeyframes}</style>
       <div style={{
-        position: 'sticky', top: 0, zIndex: 20, background: 'rgba(254,253,251,.92)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: `1px solid ${t.hairline}`
+        position: 'sticky', top: 0, zIndex: 20, background: 'rgba(255,253,250,.92)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid #E9EDF3'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px' }}>
           <button
             onClick={() => navigate('/portal/requests')}
             aria-label="Back to requests"
             style={{
-              width: 40, height: 40, borderRadius: 12, border: 'none', cursor: 'pointer',
-              background: t.teal[50], color: t.teal[700], flexShrink: 0,
+              width: 40, height: 40, borderRadius: 10, border: 'none', cursor: 'pointer',
+              background: '#eef7f6', color: '#0f544c', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
             }}
           >
@@ -310,22 +307,22 @@ const CustomerCreateRequest: React.FC = () => {
           </button>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 style={{
-              fontFamily: SERIF, fontWeight: 400, fontSize: 22, margin: 0,
-              color: type === 'order' ? t.teal[800] : t.amber[700], letterSpacing: 0.2,
+              fontFamily: F, fontWeight: 600, fontSize: 14, margin: 0,
+              color: '#1A202C',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               lineHeight: 1.35
             }}>
               New {type === 'order' ? 'Order' : 'Quotation'} Request
             </h1>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: t.inkSoft, fontWeight: 500, lineHeight: 1.4 }}>
+            <p style={{ margin: '2px 0 0', fontSize: 12, fontWeight: 500, color: '#4A5568', lineHeight: 1.4 }}>
               {type === 'order' ? 'Place a new order with our team' : 'Request a quotation for your needs'}
             </p>
           </div>
           <div style={{
-            width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
             background: type === 'order'
-              ? `linear-gradient(135deg, ${t.teal[500]}, ${t.teal[700]})`
-              : `linear-gradient(135deg, ${t.amber[500]}, ${t.amber[600]})`,
+              ? 'linear-gradient(135deg, #1f8577, #0f544c)'
+              : 'linear-gradient(135deg, #d99a3f, #b97e2b)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 12px -4px rgba(15,84,76,.5)'
           }}>
@@ -334,23 +331,22 @@ const CustomerCreateRequest: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
-        {/* Type Toggle - Pill Style */}
         <div style={{
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, padding: 6,
-          background: t.paper, border: `1.4px solid ${t.hairline}`, borderRadius: 18
+          background: '#fff', border: '1px solid #E9EDF3', borderRadius: 12
         }}>
           <button
             aria-pressed={type === 'order'}
             onClick={() => setType('order')}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              height: 46, borderRadius: 14, border: 'none', cursor: 'pointer',
-              fontFamily: "'Inter', sans-serif", fontSize: 13.5, fontWeight: 600,
-              background: type === 'order' ? `linear-gradient(135deg, ${t.teal[500]}, ${t.teal[700]})` : 'transparent',
-              color: type === 'order' ? '#fff' : t.inkSoft,
+              height: 46, borderRadius: 8, border: 'none', cursor: 'pointer',
+              fontFamily: F, fontSize: 12, fontWeight: 600,
+              background: type === 'order' ? 'linear-gradient(135deg, #1f8577, #0f544c)' : 'transparent',
+              color: type === 'order' ? '#fff' : '#4A5568',
               boxShadow: type === 'order' ? '0 4px 14px -4px rgba(15,84,76,.5)' : 'none',
               transition: 'all .2s cubic-bezier(.4,0,.2,1)', position: 'relative', overflow: 'hidden'
             }}
@@ -358,7 +354,7 @@ const CustomerCreateRequest: React.FC = () => {
             {type === 'order' && (
               <div style={{
                 position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,.15), transparent)',
-                borderRadius: 14
+                borderRadius: 8
               }} />
             )}
             <ShoppingCart size={16} strokeWidth={2.2} />
@@ -369,10 +365,10 @@ const CustomerCreateRequest: React.FC = () => {
             onClick={() => setType('quotation')}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              height: 46, borderRadius: 14, border: 'none', cursor: 'pointer',
-              fontFamily: "'Inter', sans-serif", fontSize: 13.5, fontWeight: 600,
-              background: type === 'quotation' ? `linear-gradient(135deg, ${t.teal[500]}, ${t.teal[700]})` : 'transparent',
-              color: type === 'quotation' ? '#fff' : t.inkSoft,
+              height: 46, borderRadius: 8, border: 'none', cursor: 'pointer',
+              fontFamily: F, fontSize: 12, fontWeight: 600,
+              background: type === 'quotation' ? 'linear-gradient(135deg, #1f8577, #0f544c)' : 'transparent',
+              color: type === 'quotation' ? '#fff' : '#4A5568',
               boxShadow: type === 'quotation' ? '0 4px 14px -4px rgba(15,84,76,.5)' : 'none',
               transition: 'all .2s cubic-bezier(.4,0,.2,1)', position: 'relative', overflow: 'hidden'
             }}
@@ -380,7 +376,7 @@ const CustomerCreateRequest: React.FC = () => {
             {type === 'quotation' && (
               <div style={{
                 position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,.15), transparent)',
-                borderRadius: 14
+                borderRadius: 8
               }} />
             )}
             <FileText size={16} strokeWidth={2.2} />
@@ -388,16 +384,15 @@ const CustomerCreateRequest: React.FC = () => {
           </button>
         </div>
 
-        {/* Reference (reorder) */}
         {reorderRef && (
           <div style={{
-            background: t.paper, borderRadius: 18, border: `1.4px solid ${t.hairline}`,
-            overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)'
+            background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3',
+            overflow: 'hidden', marginBottom: 10
           }}>
-            <div style={{ padding: '10px 14px' }}>
+            <div style={{ padding: '12px 14px' }}>
               <label style={{
-                display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: t.teal[800],
-                marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.06
+                display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#4A5568',
+                marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.06
               }}>
                 <Link2 size={14} /> Reference
               </label>
@@ -405,8 +400,8 @@ const CustomerCreateRequest: React.FC = () => {
                 readOnly
                 value={`From ${reorderRef}`}
                 style={{
-                  ...fieldBase, fontSize: 13.5, minHeight: 44, padding: '10px 14px',
-                  background: t.teal[50], borderColor: t.teal[200], color: t.teal[800], fontWeight: 600,
+                  ...fieldBase, fontSize: 13, padding: '8px 12px',
+                  background: '#eef7f6', border: '1px solid #a6d9d3', color: '#0b3e39', fontWeight: 600,
                 }}
                 onFocus={(e) => { e.target.select(); }}
               />
@@ -414,25 +409,24 @@ const CustomerCreateRequest: React.FC = () => {
           </div>
         )}
 
-        {/* Search Products */}
         <div style={{
-          background: t.paper, borderRadius: 18, border: `1.4px solid ${t.hairline}`,
-          overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)'
+          background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3',
+          overflow: 'hidden', marginBottom: 10
         }}>
-          <div style={{ padding: '10px 14px 12px' }}>
+          <div style={{ padding: '12px 14px' }}>
             <label style={{
-              display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: t.teal[800],
-              marginBottom: 8, letterSpacing: 0.02
+              display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#4A5568',
+              marginBottom: 4, letterSpacing: 0.02
             }}>
               <Search size={13} /> Search Products
             </label>
             <div style={{ position: 'relative' }}>
-              <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: t.inkSoft, pointerEvents: 'none' }} />
+              <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#8A94A6', pointerEvents: 'none' }} />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search products by name, SKU..."
-                style={{ ...fieldBase, paddingLeft: 42, fontSize: 13.5, height: 44 }}
+                style={{ ...fieldBase, paddingLeft: 42, fontSize: 13, height: 42 }}
                 onFocus={focusIn}
                 onBlur={focusOut}
               />
@@ -440,14 +434,14 @@ const CustomerCreateRequest: React.FC = () => {
 
             {search.trim() && (
               <div style={{
-                marginTop: 10, maxHeight: 260, overflowY: 'auto', borderRadius: 14,
-                border: `1.4px solid ${t.hairline}`, background: '#fff',
+                marginTop: 10, maxHeight: 260, overflowY: 'auto', borderRadius: 10,
+                border: '1px solid #E9EDF3', background: '#fff',
                 boxShadow: '0 4px 12px -4px rgba(0,0,0,.08)'
               }}>
                 {filteredCatalog.length === 0 ? (
                   <div style={{ padding: '20px 14px', textAlign: 'center' }}>
-                    <Package size={28} color={t.teal[300]} style={{ margin: '0 auto 8px' }} />
-                    <p style={{ margin: 0, fontSize: 13, color: t.inkSoft, lineHeight: 1.45 }}>No products match your search</p>
+                    <Package size={28} color="#72c0b7" style={{ margin: '0 auto 8px' }} />
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: '#4A5568', lineHeight: 1.45 }}>No products match your search</p>
                   </div>
                 ) : (
                   filteredCatalog.slice(0, 20).map((item: any) => (
@@ -456,21 +450,21 @@ const CustomerCreateRequest: React.FC = () => {
                       onClick={() => addLine(item)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 54, padding: '10px 14px',
-                        textAlign: 'left', border: 'none', borderBottom: `1px solid ${t.hairline}`,
-                        background: 'transparent', cursor: 'pointer', fontSize: 13.5, transition: 'all .15s ease'
+                        textAlign: 'left', border: 'none', borderBottom: '1px solid #E9EDF3',
+                        background: 'transparent', cursor: 'pointer', fontSize: 13, transition: 'all .15s ease'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = t.teal[50]; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#eef7f6'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{ minWidth: 0, flex: 1, textAlign: 'left' }}>
-                        <p style={{ fontWeight: 600, color: t.ink, margin: 0, lineHeight: 1.4, fontSize: 13.5 }}>{item.name}</p>
-                        <p style={{ fontSize: 12, color: t.inkSoft, marginTop: 2, lineHeight: 1.4 }}>
+                        <p style={{ fontWeight: 600, color: '#2D3748', margin: 0, lineHeight: 1.4, fontSize: 13 }}>{item.name}</p>
+                        <p style={{ fontSize: 12, color: '#4A5568', marginTop: 2, lineHeight: 1.4 }}>
                           {item.sku || ''}{item.unit ? ` • ${item.unit}` : ''} • {formatK(item.price)}
                         </p>
                       </div>
                       <div style={{
-                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                        background: `linear-gradient(135deg, ${t.teal[500]}, ${t.teal[600]})`, color: '#fff',
+                        width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                        background: 'linear-gradient(135deg, #1f8577, #146b60)', color: '#fff',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: '0 2px 6px -2px rgba(15,84,76,.4)'
                       }}>
@@ -484,29 +478,28 @@ const CustomerCreateRequest: React.FC = () => {
           </div>
         </div>
 
-        {/* Selected Items */}
         <div style={{
-          background: t.paper, borderRadius: 18, border: `1.4px solid ${t.hairline}`,
-          overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)'
+          background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3',
+          overflow: 'hidden', marginBottom: 10
         }}>
           <div style={{
-            padding: '8px 14px', borderBottom: `1px solid ${t.hairline}`,
+            padding: '10px 14px', borderBottom: '1px solid #E9EDF3',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8
           }}>
-            <h2 style={{ fontSize: 13, fontWeight: 600, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06, margin: 0 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, color: '#1A202C', margin: 0 }}>
               Selected Items ({lines.length})
             </h2>
-            <span style={{ fontSize: 12, color: t.inkSoft, fontWeight: 500 }}>{customerName}</span>
+            <span style={{ fontSize: 10.5, color: '#8A94A6', fontWeight: 600 }}>{customerName}</span>
           </div>
           {lines.length === 0 ? (
             <div style={{ padding: '36px 14px', textAlign: 'center' }}>
               <div style={{
-                width: 52, height: 52, borderRadius: 16, background: `${t.teal[500]}12`,
+                width: 48, height: 48, borderRadius: 12, background: '#ECFDF5',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px'
               }}>
-                <Package size={26} color={t.teal[400]} />
+                <Package size={26} color="#008A4C" />
               </div>
-              <p style={{ margin: 0, fontSize: 13.5, color: t.inkSoft, lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: '#4A5568', lineHeight: 1.5 }}>
                 No items selected yet.<br />Search and add products above.
               </p>
             </div>
@@ -514,43 +507,43 @@ const CustomerCreateRequest: React.FC = () => {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: `1px solid ${t.hairline}` }}>
-                    <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08 }}>Item</th>
-                    <th style={{ textAlign: 'right', padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, width: 90 }}>Qty</th>
-                    <th style={{ textAlign: 'right', padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, width: 110 }}>Price</th>
-                    <th style={{ textAlign: 'right', padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, width: 110 }}>Total</th>
+                  <tr style={{ borderBottom: '1px solid #E9EDF3' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 14px', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: 0.08 }}>Item</th>
+                    <th style={{ textAlign: 'right', padding: '8px 14px', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: 0.08, width: 90 }}>Qty</th>
+                    <th style={{ textAlign: 'right', padding: '8px 14px', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: 0.08, width: 110 }}>Price</th>
+                    <th style={{ textAlign: 'right', padding: '8px 14px', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: 0.08, width: 110 }}>Total</th>
                     <th style={{ width: 44 }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.map((l) => (
-                    <tr key={l.id} style={{ borderBottom: `1px solid ${t.hairline}` }}>
-                      <td style={{ padding: '10px 14px', fontSize: 13.5, fontWeight: 600, color: t.ink, lineHeight: 1.4 }}>{l.name}</td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                    <tr key={l.id} style={{ borderBottom: '1px solid #E9EDF3' }}>
+                      <td style={{ padding: '8px 14px', fontSize: 13, fontWeight: 600, color: '#2D3748', lineHeight: 1.4 }}>{l.name}</td>
+                      <td style={{ padding: '8px 14px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                           <button
                             onClick={() => updateQuantity(l.id, l.quantity - 1)}
                             aria-label="Decrease quantity"
                             style={{
-                              width: 36, height: 36, borderRadius: 8, border: `1.4px solid ${t.hairline}`,
-                              background: t.paper, color: t.teal[600], cursor: 'pointer', fontSize: 15, fontWeight: 600,
+                              width: 32, height: 32, borderRadius: 8, border: '1px solid #E9EDF3',
+                              background: '#fff', color: '#146b60', cursor: 'pointer', fontSize: 14, fontWeight: 600,
                               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
                             }}
                           >
                             <Minus size={14} strokeWidth={2.5} />
                           </button>
                           <div style={{
-                            width: 48, height: 36, borderRadius: 8, border: `1.4px solid ${t.hairline}`,
-                            background: t.paper, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                            width: 44, height: 32, borderRadius: 8, border: '1px solid #E9EDF3',
+                            background: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
                           }}>
-                            <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 600, color: t.ink, fontVariantNumeric: 'tabular-nums' }}>{l.quantity}</span>
+                            <span style={{ fontFamily: F, fontSize: 13, fontWeight: 600, color: '#2D3748', fontVariantNumeric: 'tabular-nums' }}>{l.quantity}</span>
                           </div>
                           <button
                             onClick={() => updateQuantity(l.id, l.quantity + 1)}
                             aria-label="Increase quantity"
                             style={{
-                              width: 36, height: 36, borderRadius: 8, border: `1.4px solid ${t.hairline}`,
-                              background: t.paper, color: t.teal[600], cursor: 'pointer', fontSize: 15, fontWeight: 600,
+                              width: 32, height: 32, borderRadius: 8, border: '1px solid #E9EDF3',
+                              background: '#fff', color: '#146b60', cursor: 'pointer', fontSize: 14, fontWeight: 600,
                               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
                             }}
                           >
@@ -558,15 +551,15 @@ const CustomerCreateRequest: React.FC = () => {
                           </button>
                         </div>
                       </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: t.inkSoft, fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}>{formatK(l.unitPrice)}</td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13.5, fontWeight: 700, color: t.ink, fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}>{formatK(l.quantity * l.unitPrice)}</td>
-                      <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                      <td style={{ padding: '8px 14px', textAlign: 'right', fontSize: 13, color: '#4A5568', fontFamily: F, fontVariantNumeric: 'tabular-nums' }}>{formatK(l.unitPrice)}</td>
+                      <td style={{ padding: '8px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#2D3748', fontFamily: F, fontVariantNumeric: 'tabular-nums' }}>{formatK(l.quantity * l.unitPrice)}</td>
+                      <td style={{ padding: '8px 14px', textAlign: 'center' }}>
                         <button
                           onClick={() => removeLine(l.id)}
                           aria-label={`Remove ${l.name}`}
                           style={{
-                            width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer',
-                            background: `${t.danger}12`, color: t.danger,
+                            width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer',
+                            background: 'rgba(181,73,63,0.07)', color: '#b5493f',
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s ease'
                           }}
                         >
@@ -581,17 +574,16 @@ const CustomerCreateRequest: React.FC = () => {
           )}
         </div>
 
-        {/* Delivery & Notes */}
         <div style={{
-          background: t.paper, borderRadius: 18, border: `1.4px solid ${t.hairline}`,
-          padding: '14px 14px', boxShadow: '0 1px 3px rgba(0,0,0,.04)'
+          background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3',
+          padding: '12px 14px', marginBottom: 10
         }}>
-          <h2 style={{ fontSize: 12, fontWeight: 600, color: t.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 10px', lineHeight: 1.4 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: '#1A202C', margin: '0 0 10px', lineHeight: 1.4 }}>
             Delivery & Notes
           </h2>
           <div style={{ marginBottom: 12 }}>
             <label style={{
-              display: 'block', fontSize: 12, fontWeight: 600, color: t.teal[800], marginBottom: 6, letterSpacing: 0.01, lineHeight: 1.4
+              display: 'block', fontSize: 12, fontWeight: 600, color: '#4A5568', marginBottom: 4, lineHeight: 1.4
             }}>
               Delivery Date
             </label>
@@ -599,14 +591,14 @@ const CustomerCreateRequest: React.FC = () => {
               type="date"
               value={deliveryDate}
               onChange={(e) => setDeliveryDate(e.target.value)}
-              style={{ ...fieldBase, fontSize: 13.5, height: 42 }}
+              style={{ ...fieldBase, fontSize: 13, padding: '8px 12px' }}
               onFocus={focusIn}
               onBlur={focusOut}
             />
           </div>
           <div>
             <label style={{
-              display: 'block', fontSize: 12, fontWeight: 600, color: t.teal[800], marginBottom: 6, letterSpacing: 0.01, lineHeight: 1.4
+              display: 'block', fontSize: 12, fontWeight: 600, color: '#4A5568', marginBottom: 4, lineHeight: 1.4
             }}>
               Notes
             </label>
@@ -615,28 +607,27 @@ const CustomerCreateRequest: React.FC = () => {
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder={type === 'order' ? 'Order instructions, special requirements...' : 'Tell us what you need...'}
-              style={{ ...fieldBase, minHeight: 88, lineHeight: 1.5, resize: 'vertical', fontSize: 13.5 }}
+              style={{ ...fieldBase, minHeight: 88, lineHeight: 1.5, resize: 'vertical', fontSize: 13, padding: '8px 12px', borderRadius: 10, border: '1px solid #E9EDF3' }}
               onFocus={focusIn}
               onBlur={focusOut}
             />
           </div>
         </div>
 
-        {/* Summary */}
         <div style={{
-          background: `linear-gradient(135deg, ${t.teal[500]}08, ${t.teal[400]}05)`,
-          borderRadius: 18, border: `1.4px solid ${t.teal[200]}`,
-          padding: '14px 16px', boxShadow: '0 2px 8px -4px rgba(15,84,76,.12)'
+          background: '#fff',
+          borderRadius: 12, border: '1px solid #E9EDF3',
+          padding: '12px 14px', marginBottom: 10
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div>
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: t.teal[700], textTransform: 'uppercase', letterSpacing: 0.06, lineHeight: 1.4 }}>Estimated Total</p>
-              <p style={{ margin: '3px 0 0', fontSize: 12, color: t.inkSoft, lineHeight: 1.4 }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#4A5568', lineHeight: 1.4 }}>Estimated Total</p>
+              <p style={{ margin: '3px 0 0', fontSize: 10.5, color: '#8A94A6', lineHeight: 1.4 }}>
                 {lines.length} item{lines.length === 1 ? '' : 's'}
               </p>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ margin: 0, fontSize: 22, fontWeight: 600, color: t.ink, fontFamily: MONO, letterSpacing: 0.15, fontVariantNumeric: 'tabular-nums', lineHeight: 1.35 }}>
+              <p style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#2D3748', fontFamily: F, letterSpacing: 0.15, fontVariantNumeric: 'tabular-nums', lineHeight: 1.35 }}>
                 {formatK(subtotal)}
               </p>
             </div>
@@ -644,21 +635,20 @@ const CustomerCreateRequest: React.FC = () => {
         </div>
       </div>
 
-      {/* Sticky Bottom Action Bar */}
       <div
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
-          background: 'rgba(254,253,251,.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          borderTop: `1px solid ${t.hairline}`, boxShadow: '0 -8px 24px -12px rgba(0,0,0,.15)'
+          background: 'rgba(255,253,250,.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+          borderTop: '1px solid #E9EDF3', boxShadow: '0 -8px 24px -12px rgba(0,0,0,.15)'
         }}
       >
         <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', alignItems: 'stretch', gap: 10, padding: '10px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
           <button
             onClick={() => navigate('/portal/requests')}
             style={{
-              height: 46, padding: '0 14px', borderRadius: 14, cursor: 'pointer',
-              border: `1.4px solid ${t.hairline}`, background: t.paper, color: t.ink,
-              fontFamily: "'Inter', sans-serif", fontSize: 13.5, fontWeight: 600,
+              height: 46, padding: '0 14px', borderRadius: 8, cursor: 'pointer',
+              border: '1px solid #E9EDF3', background: '#fff', color: '#4A5568',
+              fontFamily: F, fontSize: 12, fontWeight: 600,
               display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all .15s ease', lineHeight: 1.4
             }}
           >
@@ -668,18 +658,18 @@ const CustomerCreateRequest: React.FC = () => {
             onClick={handleSubmit}
             disabled={saving || lines.length === 0}
             style={{
-              flex: 1, height: 46, borderRadius: 14, border: 'none', cursor: saving || lines.length === 0 ? 'not-allowed' : 'pointer',
+              flex: 1, height: 46, borderRadius: 8, border: 'none', cursor: saving || lines.length === 0 ? 'not-allowed' : 'pointer',
               background: saving || lines.length === 0
-                ? t.hairline
-                : `linear-gradient(135deg, ${t.teal[500]}, ${t.teal[700]})`,
-              color: saving || lines.length === 0 ? t.inkSoft : '#fff', fontSize: 13.5, fontWeight: 600,
-              fontFamily: "'Inter', sans-serif", lineHeight: 1.4,
+                ? '#E9EDF3'
+                : 'linear-gradient(135deg, #1f8577, #0f544c)',
+              color: saving || lines.length === 0 ? '#8A94A6' : '#fff', fontSize: 12, fontWeight: 600,
+              fontFamily: F, lineHeight: 1.4,
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: saving || lines.length === 0 ? 'none' : '0 8px 20px -8px rgba(15,84,76,.6)',
               transition: 'all .2s cubic-bezier(.4,0,.2,1)'
             }}
           >
-            {saving ? <Loader2 size={18} className="animate-spin" /> : (
+            {saving ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : (
               type === 'order' ? 'Submit Order' : 'Request Quotation'
             )}
           </button>

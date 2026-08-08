@@ -49,41 +49,6 @@ import CustomerForgotPassword from './views/portal/CustomerForgotPassword';
 import CustomerResetPassword from './views/portal/CustomerResetPassword';
 import { ToastProvider } from './views/portal/components/Toast';
 
-const CustomerDashboard = lazy(() => import('./views/portal/CustomerDashboard'));
-const CustomerOrders = lazy(() => import('./views/portal/CustomerOrders'));
-const CustomerOrderDetail = lazy(() => import('./views/portal/CustomerOrderDetail'));
-const CustomerShipments = lazy(() => import('./views/portal/CustomerShipments'));
-const CustomerShipmentDetail = lazy(() => import('./views/portal/CustomerShipmentDetail'));
-const CustomerQuotations = lazy(() => import('./views/portal/CustomerQuotations'));
-const CustomerInvoices = lazy(() => import('./views/portal/CustomerInvoices'));
-const CustomerInvoiceDetail = lazy(() => import('./views/portal/CustomerInvoiceDetail'));
-const CustomerPayments = lazy(() => import('./views/portal/CustomerPayments'));
-const CustomerPaymentDetail = lazy(() => import('./views/portal/CustomerPaymentDetail'));
-const CustomerStatements = lazy(() => import('./views/portal/CustomerStatements'));
-const CustomerWallet = lazy(() => import('./views/portal/CustomerWallet'));
-const CustomerLoyalty = lazy(() => import('./views/portal/CustomerLoyalty'));
-const CustomerDocuments = lazy(() => import('./views/portal/CustomerDocuments'));
-const CustomerNotifications = lazy(() => import('./views/portal/CustomerNotifications'));
-const CustomerReferrals = lazy(() => import('./views/portal/CustomerReferrals'));
-const CustomerProfile = lazy(() => import('./views/portal/CustomerProfile'));
-const CustomerSupport = lazy(() => import('./views/portal/CustomerSupport'));
-const CustomerCreateRequest = lazy(() => import('./views/portal/CustomerCreateRequest'));
-const CustomerRequests = lazy(() => import('./views/portal/CustomerRequests'));
-const CustomerRequestDetail = lazy(() => import('./views/portal/CustomerRequestDetail'));
-const CustomerQuotationDetail = lazy(() => import('./views/portal/CustomerQuotationDetail'));
-const CustomerPaymentOptions = lazy(() => import('./views/portal/CustomerPaymentOptions'));
-const PortalUserManagement = lazy(() => import('./views/portal/PortalUserManagement'));
-
-import { isResponsiveDebugEnabled } from './utils/debugFlags';
-
-function fyDisplayName(fy: { start_date: string; end_date: string; name: string }): string {
-  const startYear = fy.start_date?.slice(0, 4);
-  const endYear = fy.end_date?.slice(0, 4);
-  if (!startYear) return fy.name || 'Unknown FY';
-  return startYear !== endYear ? `FY ${startYear}/${endYear?.slice(2)}` : `FY ${startYear}`;
-}
-
-
 // Helper for lazy loading with retry logic to handle "Failed to fetch dynamically imported module" errors
 const lazyWithRetry = (name: string, componentImport: () => Promise<any>) =>
   lazy(async () => {
@@ -123,6 +88,41 @@ const lazyWithRetry = (name: string, componentImport: () => Promise<any>) =>
       </div>
     )};
   });
+
+const CustomerDashboard = lazyWithRetry('./views/portal/CustomerDashboard', () => import('./views/portal/CustomerDashboard'));
+const CustomerOrders = lazyWithRetry('./views/portal/CustomerOrders', () => import('./views/portal/CustomerOrders'));
+const CustomerOrderDetail = lazyWithRetry('./views/portal/CustomerOrderDetail', () => import('./views/portal/CustomerOrderDetail'));
+const CustomerShipments = lazyWithRetry('./views/portal/CustomerShipments', () => import('./views/portal/CustomerShipments'));
+const CustomerShipmentDetail = lazyWithRetry('./views/portal/CustomerShipmentDetail', () => import('./views/portal/CustomerShipmentDetail'));
+const CustomerQuotations = lazyWithRetry('./views/portal/CustomerQuotations', () => import('./views/portal/CustomerQuotations'));
+const CustomerInvoices = lazyWithRetry('./views/portal/CustomerInvoices', () => import('./views/portal/CustomerInvoices'));
+const CustomerInvoiceDetail = lazyWithRetry('./views/portal/CustomerInvoiceDetail', () => import('./views/portal/CustomerInvoiceDetail'));
+const CustomerPayments = lazyWithRetry('./views/portal/CustomerPayments', () => import('./views/portal/CustomerPayments'));
+const CustomerPaymentDetail = lazyWithRetry('./views/portal/CustomerPaymentDetail', () => import('./views/portal/CustomerPaymentDetail'));
+const CustomerStatements = lazyWithRetry('./views/portal/CustomerStatements', () => import('./views/portal/CustomerStatements'));
+const CustomerWallet = lazyWithRetry('./views/portal/CustomerWallet', () => import('./views/portal/CustomerWallet'));
+const CustomerLoyalty = lazyWithRetry('./views/portal/CustomerLoyalty', () => import('./views/portal/CustomerLoyalty'));
+const CustomerDocuments = lazyWithRetry('./views/portal/CustomerDocuments', () => import('./views/portal/CustomerDocuments'));
+const CustomerNotifications = lazyWithRetry('./views/portal/CustomerNotifications', () => import('./views/portal/CustomerNotifications'));
+const CustomerReferrals = lazyWithRetry('./views/portal/CustomerReferrals', () => import('./views/portal/CustomerReferrals'));
+const CustomerProfile = lazyWithRetry('./views/portal/CustomerProfile', () => import('./views/portal/CustomerProfile'));
+const CustomerSupport = lazyWithRetry('./views/portal/CustomerSupport', () => import('./views/portal/CustomerSupport'));
+const CustomerCreateRequest = lazyWithRetry('./views/portal/CustomerCreateRequest', () => import('./views/portal/CustomerCreateRequest'));
+const CustomerRequests = lazyWithRetry('./views/portal/CustomerRequests', () => import('./views/portal/CustomerRequests'));
+const CustomerRequestDetail = lazyWithRetry('./views/portal/CustomerRequestDetail', () => import('./views/portal/CustomerRequestDetail'));
+const CustomerQuotationDetail = lazyWithRetry('./views/portal/CustomerQuotationDetail', () => import('./views/portal/CustomerQuotationDetail'));
+const CustomerPaymentOptions = lazyWithRetry('./views/portal/CustomerPaymentOptions', () => import('./views/portal/CustomerPaymentOptions'));
+const PortalUserManagement = lazyWithRetry('./views/portal/PortalUserManagement', () => import('./views/portal/PortalUserManagement'));
+
+import { isResponsiveDebugEnabled } from './utils/debugFlags';
+
+function fyDisplayName(fy: { start_date: string; end_date: string; name: string }): string {
+  const startYear = fy.start_date?.slice(0, 4);
+  const endYear = fy.end_date?.slice(0, 4);
+  if (!startYear) return fy.name || 'Unknown FY';
+  return startYear !== endYear ? `FY ${startYear}/${endYear?.slice(2)}` : `FY ${startYear}`;
+}
+
 
 // Lazy loaded views
 const Dashboard = lazyWithRetry('./views/Dashboard', () => import('./views/Dashboard'));

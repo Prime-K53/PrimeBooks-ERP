@@ -5,7 +5,7 @@ import { portalLifecycle, portalApi } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import ErrorBanner from './components/ErrorBanner';
 import { useToast } from './components/Toast';
-import { portalTheme } from './constants';
+
 import ConfirmDialog from './components/ConfirmDialog';
 
 const teal = {
@@ -381,7 +381,7 @@ const CustomerProfile: React.FC = () => {
       {/* Mobile tab bar */}
       <div className="md:hidden" style={{
         position: 'sticky', top: 62, zIndex: 29,
-        background: '#fff', borderBottom: `1px solid ${portalTheme.border}`,
+        background: '#fff', borderBottom: '1px solid #E9EDF3',
         overflowX: 'auto', WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
       }}>

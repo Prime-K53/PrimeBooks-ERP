@@ -1,6 +1,8 @@
 import { EngagementSettings, DEFAULT_ENGAGEMENT_SETTINGS } from '../types/engagement'
 import { logger } from './logger'
 import { dbService } from './db'
+import { patchStoredCompanyConfig, loadStoredCompanyConfig } from '../utils/companyConfigSync'
+import { CompanyConfig } from '../types'
 
 const SETTINGS_KEY = 'engagementSettings'
 
@@ -44,6 +46,13 @@ export const engagementSettingsService = {
   },
 
   async getSettingsAsync(): Promise<EngagementSettings> {
+    // Prefer the authoritative company-config store (cloud-wins), then the
+    // legacy dedicated row, then the local cache.
+    try {
+      const companyConfig = await loadStoredCompanyConfig({} as CompanyConfig)
+      const authoritative = companyConfig?.engagementSettings
+      if (authoritative) return { ...DEFAULT_ENGAGEMENT_SETTINGS, ...authoritative }
+    } catch { /* ignore */ }
     const dbSettings = await loadSettingsFromDb()
     if (dbSettings) return { ...DEFAULT_ENGAGEMENT_SETTINGS, ...dbSettings }
     return this.getSettings()
@@ -56,6 +65,9 @@ export const engagementSettingsService = {
     config.engagementSettings = merged
     saveCompanyConfig(config)
     await persistSettingsToDb(merged)
+    // Sync through the authoritative company-config store so every device of
+    // the company receives the change (patch-only; no defaults upload).
+    await patchStoredCompanyConfig({ engagementSettings: merged })
     return merged
   },
 
@@ -83,6 +95,7 @@ export const engagementSettingsService = {
     config.engagementSettings = { ...DEFAULT_ENGAGEMENT_SETTINGS }
     saveCompanyConfig(config)
     await persistSettingsToDb(DEFAULT_ENGAGEMENT_SETTINGS)
+    await patchStoredCompanyConfig({ engagementSettings: { ...DEFAULT_ENGAGEMENT_SETTINGS } })
     return config.engagementSettings
   },
 }

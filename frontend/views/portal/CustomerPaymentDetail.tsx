@@ -10,13 +10,8 @@ import { PrimeDocument } from '../shared/components/PDF/PrimeDocument';
 import { useAuth } from '../../context/AuthContext';
 import ErrorBanner from './components/ErrorBanner';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, formatK } from './constants';
-
-const teal = { 50:'#eef7f6', 400:'#3fa294', 600:'#146b60', 700:'#0f544c' };
-const paper = '#FEFDFB';
-const ink = '#23282A';
-const inkSoft = '#5c6567';
-const hairline = '#e4ddd1';
+import { F } from './portalStyles';
+import { formatK } from './constants';
 
 interface Allocation {
   id: string;
@@ -37,6 +32,13 @@ interface PaymentDetail {
   status?: string;
   allocations: Allocation[];
 }
+
+const root: React.CSSProperties = { fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748', padding: 24, maxWidth: 800, margin: '0 auto' };
+const card: React.CSSProperties = { background: '#fff', borderRadius: 12, padding: '12px 14px', marginBottom: 10, border: '1px solid #E9EDF3' };
+const cardNoPad: React.CSSProperties = { background: '#fff', borderRadius: 12, marginBottom: 10, border: '1px solid #E9EDF3', overflow: 'hidden' };
+const sectionTitle: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: '#1A202C', margin: 0 };
+const body: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: '#4A5568' };
+const muted: React.CSSProperties = { fontSize: 10.5, color: '#8A94A6' };
 
 const CustomerPaymentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -134,66 +136,69 @@ const CustomerPaymentDetail: React.FC = () => {
     }
   }, [payment, companyConfig]);
 
-  if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
+  if (loading) return <div style={root}><PortalLoadingSkeleton type="detail" /></div>;
+  if (error) return <div style={root}><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!payment) return null;
 
   const allocations = payment.allocations || [];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <button onClick={() => navigate('/portal/payments')} className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-600 mb-6 transition-colors">
+    <div style={root}>
+      <button onClick={() => navigate('/portal/payments')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 500, color: '#059669', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 24, padding: 0, fontFamily: F }}>
         <ArrowLeft size={14} /> Back to Payments
       </button>
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+      <div style={{ ...card, padding: '16px 18px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Payment #{payment.reference || payment.id.slice(0, 8)}</h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: '#1A202C', margin: 0 }}>Payment #{payment.reference || payment.id.slice(0, 8)}</h1>
+            <p style={{ fontSize: 13, fontWeight: 500, color: '#8A94A6', marginTop: 4 }}>
               {payment.date ? new Date(payment.date).toLocaleDateString() : ''} • {payment.payment_method}
               {payment.status ? ` • ${payment.status}` : ''}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={18} className="text-emerald-600" />
-              <span className="text-2xl font-bold text-emerald-600" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(payment.amount)}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CheckCircle2 size={18} style={{ color: '#059669' }} />
+              <span style={{ fontSize: 22, fontWeight: 700, color: '#059669', fontFamily: "'JetBrains Mono', monospace" }}>{formatK(payment.amount)}</span>
             </div>
             <button
               onClick={handleDownloadReceipt}
               disabled={downloading}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
               style={{
-                background: 'linear-gradient(155deg, #1f8577, #0f544c)',
-                color: '#fff',
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '6px 14px',
+                borderRadius: 8,
+                fontSize: 12, fontWeight: 600,
+                border: 'none', cursor: downloading ? 'not-allowed' : 'pointer',
+                background: '#008A4C', color: '#fff',
                 opacity: downloading ? 0.6 : 1,
-                cursor: downloading ? 'not-allowed' : 'pointer',
+                fontFamily: F,
               }}
             >
-              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {downloading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={14} />}
               {downloading ? 'Generating…' : 'Download Receipt'}
             </button>
           </div>
         </div>
-        {payment.notes && <div className="text-sm text-slate-500">{payment.notes}</div>}
+        {payment.notes && <div style={{ fontSize: 13, fontWeight: 500, color: '#8A94A6' }}>{payment.notes}</div>}
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200/60">
-          <h2 className="text-sm font-semibold text-slate-800">Applied To Invoices</h2>
+      <div style={cardNoPad}>
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid #E9EDF3' }}>
+          <h2 style={sectionTitle}>Applied To Invoices</h2>
         </div>
         {allocations.length === 0 ? (
-          <div className="px-5 py-8 text-center text-slate-400 text-sm">No invoice allocations for this payment.</div>
+          <div style={{ padding: '32px 14px', textAlign: 'center', ...muted }}>No invoice allocations for this payment.</div>
         ) : (
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {allocations.map((a) => (
-              <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: paper, borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+              <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 14px', borderTop: '1px solid #F3F4F6', flexWrap: 'wrap' }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>Invoice {a.invoice_number || a.invoice_id}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#1A202C', margin: 0 }}>Invoice {a.invoice_number || a.invoice_id}</p>
                 </div>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: inkSoft }}>Total: {formatK(a.invoice_total)}</span>
+                  <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#4A5568' }}>Total: {formatK(a.invoice_total)}</span>
                   <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#059669' }}>Allocated: {formatK(a.amount)}</span>
                 </div>
               </div>
@@ -202,7 +207,7 @@ const CustomerPaymentDetail: React.FC = () => {
         )}
       </div>
 
-      <div className="mt-6 flex items-center justify-center text-slate-400 text-xs gap-2">
+      <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8A94A6', fontSize: 10.5, gap: 8 }}>
         <CreditCard size={14} />
         Need help with this payment? Visit Support.
       </div>

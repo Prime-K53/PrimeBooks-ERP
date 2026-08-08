@@ -50,15 +50,10 @@ export const useVatStore = create<VatState>((set, get) => ({
 
     updateConfig: async (config: VATConfig) => {
         set({ config });
-        const storedConfig = localStorage.getItem('nexus_company_config');
-        let newCompanyConfig: Record<string, unknown> = {};
-        if (storedConfig) {
-            try {
-                newCompanyConfig = JSON.parse(storedConfig);
-            } catch {}
-        }
-        (newCompanyConfig as Record<string, unknown>).vat = config;
-        await dbService.saveSetting('companyConfig', newCompanyConfig);
+        // Route through the authoritative company-config sync store instead of
+        // rebasing on device-local localStorage (patch-only, no defaults).
+        const { patchStoredCompanyConfig } = await import('../utils/companyConfigSync');
+        await patchStoredCompanyConfig({ vat: config });
     },
 
     addTransaction: async (transaction: VatTransaction) => {

@@ -1,4 +1,5 @@
 import { logger } from '@/services/logger';
+import { patchStoredCompanyConfig } from '@/utils/companyConfigSync';
 
 export interface AIConfig {
   provider: 'openai' | 'anthropic' | 'ollama' | 'openrouter';
@@ -74,6 +75,11 @@ class AIService {
         existing.aiConfig = { ...(existing.aiConfig || {}), ...config, enabled: true };
         localStorage.setItem('nexus_company_config', JSON.stringify(existing));
       }
+      // Sync through the authoritative company-config store so the change
+      // propagates to every device of the company.
+      void patchStoredCompanyConfig({ aiConfig: { ...this.config, enabled: true } } as unknown as Partial<import('../types').CompanyConfig>).catch((e) => {
+        logger.error('Failed to sync AI config to company store', e instanceof Error ? e : new Error('Unknown'));
+      });
     } catch (e) { logger.error("Operation failed", e as Error); }
   }
 

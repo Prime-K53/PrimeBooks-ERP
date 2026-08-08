@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalCard from './components/PortalCard';
-import { portalTheme } from './constants';
+import { F } from './portalStyles';
 
 const CustomerSupport: React.FC = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const CustomerSupport: React.FC = () => {
   ];
 
   return (
-    <div>
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}>
       <PortalPageHeader title="Support" subtitle="Get help with your account" icon={MessageCircle} />
 
       <div style={{ padding: '28px 20px' }}>
@@ -26,24 +26,24 @@ const CustomerSupport: React.FC = () => {
           <div style={{
             background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
             borderRadius: 16,
-            border: `1px solid ${portalTheme.border}`,
+            border: '1px solid #E9EDF3',
             padding: '28px 30px',
             maxWidth: 720
           }}>
             <h2 style={{
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: F,
               fontSize: 22,
               fontWeight: 600,
-              color: portalTheme.ink,
+              color: '#1A202C',
               margin: '0 0 6px',
               lineHeight: 1.4
             }}>
               THANK YOU!!
             </h2>
             <p style={{
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: F,
               fontSize: 13.5,
-              color: portalTheme.inkSoft,
+              color: '#4A5568',
               margin: '0 0 28px',
               lineHeight: 1.5
             }}>
@@ -60,23 +60,23 @@ const CustomerSupport: React.FC = () => {
                   padding: '12px 14px',
                   background: '#FFFFFF',
                   borderRadius: 12,
-                  border: `1px solid ${portalTheme.border}`,
+                  border: '1px solid #E9EDF3',
                 }}>
                   <div style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: portalTheme.teal[50],
+                    width: 34, height: 34, borderRadius: 10,
+                    background: '#ECFDF5',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
-                    color: portalTheme.teal[600]
+                    color: '#008A4C'
                   }}>
                     <item.icon size={16} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: 11.5,
+                      fontFamily: F,
+                      fontSize: 10.5,
                       fontWeight: 600,
-                      color: portalTheme.inkMuted,
+                      color: '#8A94A6',
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
                       marginBottom: 2,
@@ -85,10 +85,10 @@ const CustomerSupport: React.FC = () => {
                       {item.label}
                     </div>
                     <div style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: F,
                       fontSize: 13.5,
                       fontWeight: 600,
-                      color: portalTheme.ink,
+                      color: '#1A202C',
                       lineHeight: 1.45,
                       wordBreak: 'break-word'
                     }}>
@@ -104,13 +104,13 @@ const CustomerSupport: React.FC = () => {
               padding: '14px 16px',
               background: '#FFFFFF',
               borderRadius: 12,
-              border: `1px solid ${portalTheme.border}`,
+              border: '1px solid #E9EDF3',
             }}>
               <div style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 11.5,
+                fontFamily: F,
+                fontSize: 10.5,
                 fontWeight: 600,
-                color: portalTheme.inkMuted,
+                color: '#8A94A6',
                 textTransform: 'uppercase',
                 letterSpacing: '0.04em',
                 marginBottom: 6,
@@ -119,10 +119,10 @@ const CustomerSupport: React.FC = () => {
                 Google Map
               </div>
               <div style={{
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: F,
                 fontSize: 13,
                 fontWeight: 500,
-                color: portalTheme.inkSoft,
+                color: '#4A5568',
                 marginBottom: 6,
                 lineHeight: 1.45
               }}>
@@ -133,10 +133,10 @@ const CustomerSupport: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: F,
                   fontSize: 13,
                   fontWeight: 600,
-                  color: portalTheme.teal[600],
+                  color: '#008A4C',
                   textDecoration: 'none',
                   lineHeight: 1.45,
                   wordBreak: 'break-all'

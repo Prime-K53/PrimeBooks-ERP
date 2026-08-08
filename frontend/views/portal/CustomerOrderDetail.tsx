@@ -16,7 +16,8 @@ import DocumentDiscussion from './components/DocumentDiscussion';
 import ConfirmDialog from './components/ConfirmDialog';
 import ErrorBanner from './components/ErrorBanner';
 import PortalButton from './components/PortalButton';
-import { portalTheme, formatK } from './constants';
+import { F } from './portalStyles';
+import { formatK } from './constants';
 
 interface OrderItem {
   name: string;
@@ -63,6 +64,25 @@ function stageIndex(status: string): number {
   if (normalized === 'confirmed') return 2;
   return 1;
 }
+
+const s = {
+  root: { fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748', padding: 24, maxWidth: 800, margin: '0 auto' } as React.CSSProperties,
+  card: { background: '#fff', borderRadius: 12, padding: '12px 14px', marginBottom: 10, border: '1px solid #E9EDF3' } as React.CSSProperties,
+  cardNoPad: { background: '#fff', borderRadius: 12, marginBottom: 10, border: '1px solid #E9EDF3', overflow: 'hidden' as const } as React.CSSProperties,
+  cardHeader: { padding: '10px 14px', borderBottom: '1px solid #E9EDF3' } as React.CSSProperties,
+  sectionTitle: { fontSize: 14, fontWeight: 600, color: '#1A202C', margin: 0 } as React.CSSProperties,
+  label: { fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase' as const, letterSpacing: '0.03em' } as React.CSSProperties,
+  body: { fontSize: 13, fontWeight: 500, color: '#4A5568' } as React.CSSProperties,
+  muted: { fontSize: 10.5, color: '#8A94A6' } as React.CSSProperties,
+  value: { fontSize: 13, fontWeight: 600, color: '#1A202C' } as React.CSSProperties,
+  row: { padding: '8px 14px', borderTop: '1px solid #F3F4F6', display: 'flex', alignItems: 'center' } as React.CSSProperties,
+  th: { padding: '8px 14px', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase' as const, letterSpacing: '0.03em', borderTop: '1px solid #F3F4F6' } as React.CSSProperties,
+  thRight: { padding: '8px 14px', fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase' as const, letterSpacing: '0.03em', textAlign: 'right' as const, borderTop: '1px solid #F3F4F6' } as React.CSSProperties,
+  td: { padding: '8px 14px', fontSize: 13, fontWeight: 500, color: '#4A5568', borderTop: '1px solid #F3F4F6' } as React.CSSProperties,
+  tdRight: { padding: '8px 14px', fontSize: 13, fontWeight: 500, color: '#4A5568', textAlign: 'right' as const, borderTop: '1px solid #F3F4F6' } as React.CSSProperties,
+  tdBold: { padding: '8px 14px', fontSize: 13, fontWeight: 600, color: '#1A202C', textAlign: 'right' as const, borderTop: '1px solid #F3F4F6', fontFamily: "'JetBrains Mono', monospace" } as React.CSSProperties,
+  totalBar: { padding: '10px 14px', borderTop: '1px solid #E9EDF3', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } as React.CSSProperties,
+};
 
 const CustomerOrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -143,7 +163,6 @@ const CustomerOrderDetail: React.FC = () => {
     };
   }, [id, load]);
 
-  // Delivery countdown timer - updates every hour
   useEffect(() => {
     if (!order?.estimated_delivery) return;
     const calcCountdown = () => {
@@ -158,7 +177,7 @@ const CustomerOrderDetail: React.FC = () => {
     setDeliveryCountdown(calcCountdown());
     const interval = setInterval(() => {
       setDeliveryCountdown(calcCountdown());
-    }, 60 * 60 * 1000); // Update every hour
+    }, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [order?.estimated_delivery]);
 
@@ -217,14 +236,14 @@ const CustomerOrderDetail: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
+  if (loading) return <div style={s.root}><PortalLoadingSkeleton type="detail" /></div>;
+  if (error) return <div style={s.root}><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!order) return null;
 
   const currentStage = stageIndex(order.status);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div style={s.root}>
       <PortalButton variant="ghost" onClick={() => navigate('/portal/orders')} icon={ArrowLeft}>Back to Orders</PortalButton>
 
       <DocumentChain docType="order" docId={order.id} />
@@ -241,39 +260,39 @@ const CustomerOrderDetail: React.FC = () => {
         onCancel={() => setConfirmReorder({ open: false, order: null })}
       />
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div style={{ ...s.card, padding: '16px 18px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, marginBottom: 20 }}>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Order #{order.orderNumber || order.id.slice(0, 8)}</h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: '#1A202C', margin: 0 }}>Order #{order.orderNumber || order.id.slice(0, 8)}</h1>
+            <p style={{ fontSize: 13, fontWeight: 500, color: '#8A94A6', marginTop: 4 }}>
               {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : ''}
               {order.notes ? ` • ${order.notes}` : ''}
             </p>
             {order.estimated_delivery && (
-              <div className="mt-2 flex items-center gap-2 text-sm">
-                <Truck size={14} className="text-slate-400" />
-                <span className="text-slate-500">Estimated Delivery:</span>
-                <span className="font-medium text-slate-700">
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Truck size={14} style={{ color: '#8A94A6' }} />
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#8A94A6' }}>Estimated Delivery:</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1A202C' }}>
                   {new Date(order.estimated_delivery).toLocaleDateString()}
                 </span>
                 {deliveryCountdown && (
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    deliveryCountdown === 'Delivered or overdue'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-emerald-100 text-emerald-700'
-                  }`}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, borderRadius: 6, padding: '3px 8px',
+                    background: deliveryCountdown === 'Delivered or overdue' ? '#FEF2F2' : '#ECFDF5',
+                    color: deliveryCountdown === 'Delivered or overdue' ? '#B91C1C' : '#059669',
+                  }}>
                     {deliveryCountdown}
                   </span>
                 )}
               </div>
             )}
             {order.shipping_address && (
-              <p className="text-xs text-slate-400 mt-1 truncate max-w-md" title={order.shipping_address}>
+              <p style={{ fontSize: 10.5, color: '#8A94A6', marginTop: 4, maxWidth: 512, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={order.shipping_address}>
                 📍 {order.shipping_address}
               </p>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' as const }}>
             <StatusBadge status={order.status} />
             {(order as any).tracking_number && (
               <PortalButton variant="primary" onClick={() => navigate(`/portal/shipments/${order.id}`)} icon={Truck}>Track Shipment</PortalButton>
@@ -288,92 +307,90 @@ const CustomerOrderDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Order lifecycle tracker */}
-        <div className="flex items-center gap-2 mb-6">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
           {stageDefinitions.map((stage, i) => {
             const done = currentStage > i + 1;
             const active = currentStage === i + 1;
             const isLast = i === stageDefinitions.length - 1;
             return (
               <React.Fragment key={stage.key}>
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                      done ? 'bg-emerald-500 text-white' : active ? 'bg-amber-400 text-white' : 'bg-slate-200 text-slate-400'
-                    }`}
-                  >
-                    {done ? <CheckCircle2 size={15} /> : active ? <ShoppingCart size={14} /> : <span className="text-xs font-bold">{i + 1}</span>}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    background: done ? '#059669' : active ? '#F59E0B' : '#E2E8F0',
+                    color: done || active ? '#fff' : '#8A94A6',
+                  }}>
+                    {done ? <CheckCircle2 size={15} /> : active ? <ShoppingCart size={14} /> : <span style={{ fontSize: 10, fontWeight: 700 }}>{i + 1}</span>}
                   </div>
-                  <span className={`mt-1.5 text-[10px] font-semibold text-center ${done || active ? 'text-slate-800' : 'text-slate-400'}`}>
+                  <span style={{ marginTop: 6, fontSize: 10, fontWeight: 600, textAlign: 'center' as const, color: done || active ? '#1A202C' : '#8A94A6' }}>
                     {stage.label}
                   </span>
-                  <span className="text-[9px] text-slate-400 text-center hidden sm:block">{stage.description}</span>
+                  <span style={{ fontSize: 9, color: '#8A94A6', textAlign: 'center' as const }}>{stage.description}</span>
                 </div>
-                {!isLast && <div className={`h-0.5 flex-1 -mt-5 ${done ? 'bg-emerald-400' : 'bg-slate-200'}`} />}
+                {!isLast && <div style={{ height: 2, flex: 1, marginTop: -20, background: done ? '#059669' : '#E2E8F0', borderRadius: 1 }} />}
               </React.Fragment>
             );
           })}
         </div>
 
-        <div className="text-sm text-slate-700">
-          <span className="text-slate-500">Customer:</span> {order.customerName}
+        <div style={{ fontSize: 13, fontWeight: 500, color: '#4A5568' }}>
+          <span style={{ color: '#8A94A6' }}>Customer:</span> {order.customerName}
         </div>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200/60">
-          <h2 className="text-sm font-semibold text-slate-800">Order Items</h2>
+      <div style={s.cardNoPad}>
+        <div style={s.cardHeader}>
+          <h2 style={s.sectionTitle}>Order Items</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr className="border-b border-slate-200/60 text-slate-500">
-                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider">Item</th>
-                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Qty</th>
-                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Price</th>
-                <th className="px-5 py-2.5 font-semibold text-xs uppercase tracking-wider text-right">Total</th>
+              <tr>
+                <th style={{ ...s.th, textAlign: 'left' }}>Item</th>
+                <th style={s.thRight}>Qty</th>
+                <th style={s.thRight}>Price</th>
+                <th style={s.thRight}>Total</th>
               </tr>
             </thead>
             <tbody>
               {(order.items || []).map((item, i) => (
-                <tr key={i} className={i < (order.items || []).length - 1 ? 'border-b border-slate-200/60' : ''}>
-                  <td className="px-5 py-3 font-medium text-slate-800">{item.name}</td>
-                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums">{item.quantity}</td>
-                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.unitPrice)}</td>
-                  <td className="px-5 py-3 text-right font-semibold text-slate-900 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.lineTotal)}</td>
+                <tr key={i}>
+                  <td style={{ ...s.td, fontWeight: 600, color: '#1A202C' }}>{item.name}</td>
+                  <td style={{ ...s.tdRight, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</td>
+                  <td style={{ ...s.tdRight, fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.unitPrice)}</td>
+                  <td style={{ ...s.tdBold }}>{formatK(item.lineTotal)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-4 border-t border-slate-200/60 flex justify-between items-center">
-          <span className="text-sm font-semibold text-slate-700">Total</span>
-          <span className="text-lg font-bold text-slate-900" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{formatK(order.totalAmount)}</span>
+        <div style={s.totalBar}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#1A202C' }}>Total</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#1A202C', fontFamily: "'JetBrains Mono', monospace" }}>{formatK(order.totalAmount)}</span>
         </div>
       </div>
       {order.notes && (
-        <div className="mt-4 bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Notes</p>
-          <p className="text-sm text-slate-700">{order.notes}</p>
+        <div style={{ ...s.card, marginTop: 12 }}>
+          <p style={{ ...s.label, marginBottom: 4 }}>Notes</p>
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#4A5568' }}>{order.notes}</p>
         </div>
       )}
 
-      {/* Timeline */}
-      <div className="mt-4 bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5">
-        <h2 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
-          <MessageSquare size={15} className="text-slate-400" /> Activity Timeline
+      <div style={{ ...s.card, padding: '14px 18px', marginTop: 12 }}>
+        <h2 style={{ ...s.sectionTitle, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <MessageSquare size={15} style={{ color: '#8A94A6' }} /> Activity Timeline
         </h2>
         {timeline.length === 0 ? (
-          <p className="text-sm text-slate-400">No activity yet.</p>
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#8A94A6' }}>No activity yet.</p>
         ) : (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
             {timeline.map((event) => (
-              <div key={event.id} className="flex gap-3">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-800">{event.title}</p>
-                  {event.description && <p className="text-xs text-slate-500">{event.description}</p>}
-                  <p className="text-[10px] text-slate-400 mt-0.5">
+              <div key={event.id} style={{ display: 'flex', gap: 12 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 4, background: '#059669', marginTop: 5, flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: '#1A202C', margin: 0 }}>{event.title}</p>
+                  {event.description && <p style={{ fontSize: 10.5, color: '#8A94A6', margin: '2px 0 0' }}>{event.description}</p>}
+                  <p style={{ fontSize: 10, color: '#8A94A6', marginTop: 2 }}>
                     {new Date(event.created_at).toLocaleString()} • {event.actor_name || 'System'}
                   </p>
                 </div>
@@ -383,7 +400,7 @@ const CustomerOrderDetail: React.FC = () => {
         )}
       </div>
 
-      <div className="mt-4">
+      <div style={{ marginTop: 12 }}>
         <DocumentDiscussion docType="order" docId={order.id} />
       </div>
     </div>

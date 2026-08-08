@@ -6,12 +6,10 @@ import PortalSidebar from './components/PortalSidebar';
 import PortalHeader from './components/PortalHeader';
 import { ToastProvider } from './components/Toast';
 import CommandPalette from './components/CommandPalette';
-import PortalQuickActions from './components/PortalQuickActions';
-import OfflineIndicator from './components/OfflineIndicator';
+import MobileBottomNav from './components/MobileBottomNav';
 import { ThemeProvider } from './context/ThemeContext';
-import { AlertTriangle, RefreshCw, Search } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-// Error Boundary for catching errors in portal pages
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
@@ -35,27 +33,23 @@ class PortalErrorBoundary extends Component<{ children: ReactNode }, ErrorBounda
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-6 max-w-7xl mx-auto">
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-50 flex items-center justify-center">
-              <AlertTriangle size={32} className="text-rose-500" />
+        <div style={{ padding: 12 }}>
+          <div style={{ background: '#fff', border: '1px solid #E9EDF3', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+            <div style={{ width: 48, height: 48, margin: '0 auto 10px', borderRadius: '50%', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <AlertTriangle size={24} style={{ color: '#E53E3E' }} />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Something went wrong</h2>
-            <p className="text-slate-600 mb-6">
-              An unexpected error occurred while loading this page. Please try again or contact support if the problem persists.
-            </p>
-            <button
-              onClick={this.handleRetry}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(90deg, #146b60, #3fa294)' }}
-            >
-              <RefreshCw size={16} />
-              Try Again
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1A202C', margin: '0 0 6px' }}>Something went wrong</h2>
+            <p style={{ fontSize: 12.5, color: '#4A5568', margin: '0 0 16px', lineHeight: 1.4 }}>An unexpected error occurred.</p>
+            <button onClick={this.handleRetry} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#fff', background: '#008A4C', border: 'none', cursor: 'pointer' }}>
+              <RefreshCw size={12} /> Try Again
             </button>
             {this.state.error && (
-              <details className="mt-6 text-left">
-                <summary className="text-xs text-slate-400 cursor-pointer">Error details</summary>
-                <pre className="mt-2 p-3 bg-slate-50 rounded text-xs text-slate-500 overflow-auto max-h-48">
+              <details style={{ marginTop: 20, textAlign: 'left' }}>
+                <summary style={{ fontSize: 11, color: '#8A94A6', cursor: 'pointer' }}>Error details</summary>
+                <pre style={{
+                  marginTop: 8, padding: 12, background: '#FAFBFD', borderRadius: 10,
+                  fontSize: 11, color: '#8A94A6', overflow: 'auto', maxHeight: 180,
+                }}>
                   {this.state.error.message}
                   {this.state.error.stack && `\n\n${this.state.error.stack}`}
                 </pre>
@@ -65,7 +59,6 @@ class PortalErrorBoundary extends Component<{ children: ReactNode }, ErrorBounda
         </div>
       );
     }
-
     return this.props.children;
   }
 }
@@ -75,15 +68,17 @@ const pageTitles: Record<string, string> = {
   '/portal/requests': 'Requests',
   '/portal/orders': 'Orders',
   '/portal/quotations': 'Quotations',
-   '/portal/invoices': 'Invoices',
-   '/portal/payments': 'Payments',
-   '/portal/payment-options': 'Payment Options',
-   '/portal/statements': 'Statements',
-   '/portal/referrals': 'Referrals',
-   '/portal/wallet': 'Wallet',
-   '/portal/support': 'Support',
-   '/portal/profile': 'Profile',
+  '/portal/invoices': 'Invoices',
+  '/portal/payments': 'Payments',
+  '/portal/payment-options': 'Payment Options',
+  '/portal/statements': 'Statements',
+  '/portal/referrals': 'Referrals',
+  '/portal/wallet': 'Wallet',
+  '/portal/support': 'Support',
+  '/portal/profile': 'Profile',
 };
+
+const SF = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 const CustomerLayout: React.FC = () => {
   const { isAuthenticated, loading } = useCustomerAuth();
@@ -98,14 +93,6 @@ const CustomerLayout: React.FC = () => {
     }
   });
   const [commandOpen, setCommandOpen] = useState(false);
-  const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
-    try {
-      const stored = localStorage.getItem('prime-portal-density') as 'comfortable' | 'compact' | null;
-      return stored || 'comfortable';
-    } catch {
-      return 'comfortable';
-    }
-  });
 
   const currentTitle = pageTitles[location.pathname] || 'Customer Portal';
 
@@ -113,11 +100,7 @@ const CustomerLayout: React.FC = () => {
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
   useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen]);
 
@@ -134,8 +117,8 @@ const CustomerLayout: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--dashboard-bg)] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" />
+      <div style={{ minHeight: '100vh', background: '#FAFBFD', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 28, height: 28, border: '2.5px solid #E9EDF3', borderTopColor: '#008A4C', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
@@ -147,35 +130,38 @@ const CustomerLayout: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <div className={`min-h-screen bg-slate-50 density-${density} relative overflow-hidden font-sans text-slate-900`}>
-          {/* Ambient Decorative Backdrops */}
-          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-            <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-teal-500/5 via-emerald-400/3 to-transparent rounded-full blur-[140px]" />
-            <div className="absolute bottom-10 left-1/3 w-[500px] h-[500px] bg-gradient-to-tr from-amber-500/5 via-teal-500/4 to-transparent rounded-full blur-[120px]" />
-          </div>
-
-          <a href="#main-content" className="skip-nav">Skip to main content</a>
+        <div style={{
+          minHeight: '100vh', background: '#FAFBFD',
+          fontFamily: SF, color: '#101B3D',
+          position: 'relative', overflow: 'hidden',
+        }}>
           {sidebarOpen && (
-            <div className="fixed inset-0 z-40 md:hidden bg-slate-900/40 backdrop-blur-xs" onClick={closeSidebar} />
+            <div
+              onClick={closeSidebar}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 40,
+                background: 'rgba(16,27,61,0.4)',
+              }}
+            />
           )}
           <PortalSidebar isOpen={sidebarOpen} onClose={closeSidebar} collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
           <PortalHeader title={currentTitle} onMenuToggle={toggleSidebar} sidebarCollapsed={sidebarCollapsed} onCommandToggle={() => setCommandOpen((v) => !v)} />
           <main
             id="main-content"
-            className={`fixed top-14 md:top-16 right-0 overflow-x-auto overflow-y-auto custom-scrollbar transition-all duration-200 ease-out md:bottom-0 bottom-16 z-10 ${sidebarCollapsed ? 'md:left-16 left-0' : 'md:left-[286px] left-0'}`}
+            style={{
+              position: 'fixed', top: 52, left: 0, right: 0, bottom: 56,
+              overflowX: 'auto', overflowY: 'auto',
+              zIndex: 10,
+            }}
           >
-            <div className="page-shell py-4 md:py-6 min-w-0">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-20">
-                <div className="page-content min-h-[calc(100vh-56px-48px)]">
-                  <PortalErrorBoundary>
-                    <Outlet />
-                  </PortalErrorBoundary>
-                </div>
-              </div>
+            <div style={{ padding: '10px 12px 16px' }}>
+              <PortalErrorBoundary>
+                <Outlet />
+              </PortalErrorBoundary>
             </div>
           </main>
           <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
-          <PortalQuickActions />
+          <MobileBottomNav />
         </div>
       </ToastProvider>
     </ThemeProvider>

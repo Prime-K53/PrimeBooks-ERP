@@ -3,12 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Clock, User, Car, Package, FileText } from 'lucide-react';
 import { portalLifecycle, PortalShipmentRecord } from '../../services/portalApiClient';
 import { useAuth } from '../../context/AuthContext';
-import PortalPageHeader from './components/PortalPageHeader';
 import PortalButton from './components/PortalButton';
 import ErrorBanner from './components/ErrorBanner';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, SHIPMENT_STATUS_META } from './constants';
+import { F } from './portalStyles';
+import { SHIPMENT_STATUS_META } from './constants';
+
+const root: React.CSSProperties = { fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748', padding: 24, maxWidth: 800, margin: '0 auto' };
+const card: React.CSSProperties = { background: '#fff', borderRadius: 12, padding: '12px 14px', marginBottom: 10, border: '1px solid #E9EDF3' };
+const label: React.CSSProperties = { fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.03em' };
+const body: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: '#4A5568' };
+const muted: React.CSSProperties = { fontSize: 10.5, color: '#8A94A6' };
+const value: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#1A202C' };
 
 const CustomerShipmentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -77,8 +84,8 @@ const CustomerShipmentDetail: React.FC = () => {
     return null;
   };
 
-  if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
+  if (loading) return <div style={root}><PortalLoadingSkeleton type="detail" /></div>;
+  if (error) return <div style={root}><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!shipment) return null;
 
   const statusKey = shipment.status.toLowerCase();
@@ -102,44 +109,44 @@ const CustomerShipmentDetail: React.FC = () => {
   })();
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div style={root}>
       <PortalButton variant="ghost" onClick={() => navigate('/portal/shipments')} icon={ArrowLeft}>Back to Shipments</PortalButton>
 
-      <div className="mt-6 mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "'DM Serif Display', Georgia, serif", color: portalTheme.ink }}>
+      <div style={{ marginTop: 24, marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A202C', margin: 0 }}>
             Order #{shipment.order_number || shipment.id.slice(0, 8)}
           </h1>
           <StatusBadge status={shipment.status} type="order" />
         </div>
-        <p className="text-sm" style={{ color: portalTheme.inkSoft }}>
+        <p style={{ fontSize: 13, fontWeight: 500, color: '#8A94A6', margin: 0 }}>
           {shipment.customerName} • {shipment.orderDate ? new Date(shipment.orderDate).toLocaleDateString() : ''}
         </p>
       </div>
 
       {shipment.proof_of_delivery && (
-        <div className="mb-6 p-5 rounded-xl" style={{ background: '#f0fdfa', border: '1px solid #99f6e4' }}>
-          <div className="flex items-center gap-2 mb-3">
+        <div style={{ marginBottom: 16, padding: 16, borderRadius: 10, background: '#F0FDF4', border: '1px solid #86EFAC' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <Package size={16} style={{ color: '#0f766e' }} />
-            <h2 className="font-bold text-sm" style={{ color: '#0f766e' }}>Proof of Delivery</h2>
+            <h2 style={{ fontSize: 14, fontWeight: 600, color: '#0f766e', margin: 0 }}>Proof of Delivery</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm" style={{ color: portalTheme.ink }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, fontSize: 13 }}>
             {proof.receivedBy && (
-              <div><span style={{ color: portalTheme.inkSoft }}>Received by:</span> <b>{proof.receivedBy}</b></div>
+              <div><span style={{ color: '#8A94A6' }}>Received by:</span> <b style={{ color: '#1A202C' }}>{proof.receivedBy}</b></div>
             )}
             {proof.timestamp && (
-              <div><span style={{ color: portalTheme.inkSoft }}>Delivered at:</span> <b>{formatDate(proof.timestamp)}</b></div>
+              <div><span style={{ color: '#8A94A6' }}>Delivered at:</span> <b style={{ color: '#1A202C' }}>{formatDate(proof.timestamp)}</b></div>
             )}
             {proof.recipientPhone && (
-              <div><span style={{ color: portalTheme.inkSoft }}>Phone:</span> <b>{proof.recipientPhone}</b></div>
+              <div><span style={{ color: '#8A94A6' }}>Phone:</span> <b style={{ color: '#1A202C' }}>{proof.recipientPhone}</b></div>
             )}
             {proof.remarks && (
-              <div className="sm:col-span-2"><span style={{ color: portalTheme.inkSoft }}>Remarks:</span> {proof.remarks}</div>
+              <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#8A94A6' }}>Remarks:</span> <span style={{ color: '#4A5568' }}>{proof.remarks}</span></div>
             )}
             {proof.signatureDataUrl && (
-              <div className="sm:col-span-2">
-                <span style={{ color: portalTheme.inkSoft }}>Signature:</span>
-                <div className="mt-2 p-2 bg-white rounded-lg border border-slate-200 inline-block">
+              <div style={{ gridColumn: 'span 2' }}>
+                <span style={{ color: '#8A94A6' }}>Signature:</span>
+                <div style={{ marginTop: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #E9EDF3', display: 'inline-block' }}>
                   <img src={proof.signatureDataUrl} alt="Delivery signature" style={{ maxHeight: 80, maxWidth: 280 }} />
                 </div>
               </div>
@@ -148,10 +155,10 @@ const CustomerShipmentDetail: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div className="p-5 rounded-xl" style={{ background: 'rgba(255,255,255,0.7)', border: '1.4px solid #e4ddd1', backdropFilter: 'blur(12px)' }}>
-          <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: portalTheme.inkSoft }}>Shipment Details</h3>
-          <div className="space-y-2 text-sm">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 16 }}>
+        <div style={{ ...card, padding: 16 }}>
+          <h3 style={{ ...label, marginBottom: 12 }}>Shipment Details</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <DetailRow icon={<Car size={14} />} label="Carrier" value={shipment.carrier || '—'} />
             <DetailRow icon={<User size={14} />} label="Driver" value={shipment.driver_name || '—'} />
             <DetailRow icon={<FileText size={14} />} label="Vehicle" value={shipment.vehicle_no || '—'} />
@@ -159,9 +166,9 @@ const CustomerShipmentDetail: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-5 rounded-xl" style={{ background: 'rgba(255,255,255,0.7)', border: '1.4px solid #e4ddd1', backdropFilter: 'blur(12px)' }}>
-          <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: portalTheme.inkSoft }}>Schedule</h3>
-          <div className="space-y-2 text-sm">
+        <div style={{ ...card, padding: 16 }}>
+          <h3 style={{ ...label, marginBottom: 12 }}>Schedule</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <DetailRow icon={<Clock size={14} />} label="Estimated Delivery" value={formatDate(shipment.estimated_delivery)} />
             <DetailRow icon={<Clock size={14} />} label="Actual Arrival" value={formatDate(shipment.actual_arrival)} />
             <DetailRow icon={<MapPin size={14} />} label="Last Location" value={location ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : '—'} />
@@ -169,30 +176,32 @@ const CustomerShipmentDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-5 rounded-xl mb-6" style={{ background: 'rgba(255,255,255,0.7)', border: '1.4px solid #e4ddd1', backdropFilter: 'blur(12px)' }}>
-        <h3 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: portalTheme.inkSoft }}>Tracking Timeline</h3>
-        <div className="flex items-center justify-between">
+      <div style={{ ...card, padding: 16, marginBottom: 16 }}>
+        <h3 style={{ ...label, marginBottom: 16 }}>Tracking Timeline</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {stageDefinitions.map((stage, idx) => {
             const isCompleted = idx < currentStage;
             const isCurrent = idx === currentStage - 1 && currentStage > 0;
             return (
-              <div key={stage.key} className="flex-1 flex flex-col items-center relative">
+              <div key={stage.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
                 {idx > 0 && (
-                  <div className="absolute top-3 left-0 w-full h-0.5" style={{
-                    background: isCompleted ? portalTheme.teal[500] : '#e4ddd1',
+                  <div style={{
+                    position: 'absolute', top: 12, left: 0, width: '100%', height: 2,
+                    background: isCompleted ? '#14b8a6' : '#E9EDF3',
                     left: '-50%',
                     width: '100%',
                     zIndex: 0,
                   }} />
                 )}
-                <div className="w-6 h-6 rounded-full flex items-center justify-center z-10" style={{
-                  background: isCurrent ? portalTheme.teal[500] : isCompleted ? portalTheme.teal[500] : '#fff',
-                  border: `2px solid ${isCompleted || isCurrent ? portalTheme.teal[500] : '#e4ddd1'}`,
-                  color: isCompleted || isCurrent ? '#fff' : portalTheme.inkSoft,
+                <div style={{
+                  width: 28, height: 28, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10,
+                  background: isCurrent || isCompleted ? '#146b60' : '#fff',
+                  border: `2px solid ${isCompleted || isCurrent ? '#146b60' : '#E9EDF3'}`,
+                  color: isCompleted || isCurrent ? '#fff' : '#8A94A6',
                 }}>
-                  {isCompleted ? <Package size={12} /> : <span className="text-[10px] font-bold">{idx + 1}</span>}
+                  {isCompleted ? <Package size={12} /> : <span style={{ fontSize: 10, fontWeight: 700 }}>{idx + 1}</span>}
                 </div>
-                <span className="text-[11px] font-semibold mt-1 text-center" style={{ color: isCurrent ? portalTheme.teal[700] : portalTheme.inkSoft }}>{stage.label}</span>
+                <span style={{ fontSize: 10.5, fontWeight: 600, marginTop: 4, textAlign: 'center', color: isCurrent ? '#0f544c' : '#8A94A6' }}>{stage.label}</span>
               </div>
             );
           })}
@@ -200,21 +209,21 @@ const CustomerShipmentDetail: React.FC = () => {
       </div>
 
       {shipment.items && shipment.items.length > 0 && (
-        <div className="p-5 rounded-xl" style={{ background: 'rgba(255,255,255,0.7)', border: '1.4px solid #e4ddd1', backdropFilter: 'blur(12px)' }}>
-          <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: portalTheme.inkSoft }}>Items in this shipment</h3>
+        <div style={{ ...card, padding: 16 }}>
+          <h3 style={{ ...label, marginBottom: 12 }}>Items in this shipment</h3>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #e4ddd1' }}>
-                  <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10.5, fontWeight: 700, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08 }}>Item</th>
-                  <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 10.5, fontWeight: 700, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.08, width: 80 }}>Qty</th>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '8px 14px', ...label }}>Item</th>
+                  <th style={{ textAlign: 'right', padding: '8px 14px', ...label, width: 80 }}>Qty</th>
                 </tr>
               </thead>
               <tbody>
                 {shipment.items.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: idx < shipment.items.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                    <td style={{ padding: '10px 12px', fontSize: 13.5, fontWeight: 600, color: portalTheme.ink }}>{item.name}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 13, color: portalTheme.inkSoft, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</td>
+                  <tr key={idx} style={{ borderTop: idx < shipment.items.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                    <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: '#1A202C' }}>{item.name}</td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#8A94A6', fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</td>
                   </tr>
                 ))}
               </tbody>
@@ -227,11 +236,11 @@ const CustomerShipmentDetail: React.FC = () => {
 };
 
 const DetailRow: React.FC<{ icon: React.ReactNode; label: string; value: string; mono?: boolean }> = ({ icon, label, value, mono }) => (
-  <div className="flex items-start gap-2">
-    <span className="mt-0.5 shrink-0" style={{ color: portalTheme.inkSoft }}>{icon}</span>
+  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+    <span style={{ marginTop: 2, flexShrink: 0, color: '#8A94A6' }}>{icon}</span>
     <div>
-      <div className="text-[11px]" style={{ color: portalTheme.inkSoft }}>{label}</div>
-      <div className={`text-sm font-medium ${mono ? 'font-mono text-xs' : ''}`} style={{ color: portalTheme.ink }}>{value}</div>
+      <div style={{ fontSize: 10.5, color: '#8A94A6' }}>{label}</div>
+      <div style={{ fontSize: mono ? 12 : 13, fontWeight: 500, color: '#1A202C', fontFamily: mono ? "'JetBrains Mono', monospace" : undefined }}>{value}</div>
     </div>
   </div>
 );

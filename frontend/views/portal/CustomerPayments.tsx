@@ -8,7 +8,8 @@ import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, DEFAULT_PAGE_SIZE, formatK } from './constants';
+import { DEFAULT_PAGE_SIZE, formatK } from './constants';
+import { F } from './portalStyles';
 
 interface Payment {
   id: string;
@@ -84,7 +85,7 @@ const CustomerPayments: React.FC = () => {
     };
   }, [load]);
 
-  if (loading && page === 1) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
+  if (loading && page === 1) return <div style={{ padding: 32, maxWidth: '56rem', marginLeft: 'auto', marginRight: 'auto' }}><PortalLoadingSkeleton type="table" count={6} /></div>;
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -101,88 +102,86 @@ const CustomerPayments: React.FC = () => {
     <div>
       <PortalPageHeader title="Payments" subtitle="Your complete payment history" icon={CreditCard} />
 
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
-        {/* Summary Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="glass-panel-premium rounded-2xl p-4 border border-slate-200/80 shadow-xs">
-            <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">Total Paid</span>
-            <span className="text-xl font-extrabold text-slate-900" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatK(totalPaid)}</span>
+        <div className="cp-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: 16 }}>
+          <style>{`@media (min-width: 640px) { .cp-grid-3 { grid-template-columns: repeat(3, 1fr) !important; } }`}</style>
+          <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', border: '1px solid #E9EDF3', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8A94A6', display: 'block', marginBottom: 4 }}>Total Paid</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: '#1A202C', fontFamily: F, fontVariantNumeric: 'tabular-nums' }}>{formatK(totalPaid)}</span>
           </div>
-          <div className="glass-panel-premium rounded-2xl p-4 border border-slate-200/80 shadow-xs">
-            <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">This Month</span>
-            <span className="text-xl font-extrabold text-teal-700" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatK(paidThisMonth)}</span>
+          <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', border: '1px solid #E9EDF3', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8A94A6', display: 'block', marginBottom: 4 }}>This Month</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: '#0D5047', fontFamily: F, fontVariantNumeric: 'tabular-nums' }}>{formatK(paidThisMonth)}</span>
           </div>
-          <div className="glass-panel-premium rounded-2xl p-4 border border-slate-200/80 shadow-xs">
-            <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">This Year</span>
-            <span className="text-xl font-extrabold text-slate-900" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatK(paidThisYear)}</span>
+          <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', border: '1px solid #E9EDF3', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+            <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8A94A6', display: 'block', marginBottom: 4 }}>This Year</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: '#1A202C', fontFamily: F, fontVariantNumeric: 'tabular-nums' }}>{formatK(paidThisYear)}</span>
           </div>
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="glass-panel-premium rounded-2xl p-4 flex flex-col md:flex-row gap-3 border border-slate-200/80 shadow-xs items-center">
-          <div className="relative flex-1 w-full">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12, border: '1px solid #E9EDF3', boxShadow: '0 1px 3px rgba(0,0,0,.04)', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1, width: '100%' }}>
+            <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#8A94A6' }} />
             <input
               type="text"
               placeholder="Search reference or method..."
               value={search}
               onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:bg-white focus:border-teal-500/60 focus:ring-4 focus:ring-teal-500/10 transition-all shadow-2xs"
+              style={{ width: '100%', paddingLeft: 40, paddingRight: 16, paddingTop: 8, paddingBottom: 8, borderRadius: 10, background: '#F7FAFC', border: '1px solid #E9EDF3', fontSize: 13, color: '#1A202C', fontFamily: F, outline: 'none', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}
             />
           </div>
-          <div className="flex items-center gap-2.5 w-full md:w-auto">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', flexShrink: 0 }}>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 outline-none focus:border-teal-500/60"
+              style={{ padding: '8px 12px', borderRadius: 10, background: '#fff', border: '1px solid #E9EDF3', fontSize: 13, color: '#1A202C', fontFamily: F, outline: 'none' }}
             />
-            <span className="text-xs text-slate-400 font-bold">to</span>
+            <span style={{ fontSize: 13, color: '#8A94A6', fontWeight: 600 }}>to</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 outline-none focus:border-teal-500/60"
+              style={{ padding: '8px 12px', borderRadius: 10, background: '#fff', border: '1px solid #E9EDF3', fontSize: 13, color: '#1A202C', fontFamily: F, outline: 'none' }}
             />
           </div>
         </div>
 
-        {/* Payment History List */}
         {filteredPayments.length === 0 ? (
           <EmptyState icon={<CreditCard size={32} />} title="No payments found" description="You have no payment history matching your filter." />
         ) : (
-          <div className="space-y-3">
-            <div className="text-xs font-semibold text-slate-500 px-1">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#8A94A6', paddingLeft: 4, paddingRight: 4 }}>
               Showing {filteredPayments.length} of {total} payment{total !== 1 ? 's' : ''}
             </div>
-            <div className="space-y-2.5">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {filteredPayments.map((p) => (
                 <div
                   key={p.id}
                   onClick={() => navigate(`/portal/payments/${p.id}`)}
-                  className="glass-panel-interactive rounded-2xl p-4 flex items-center justify-between gap-4 border border-slate-200/80 cursor-pointer"
+                  style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, border: '1px solid #E9EDF3', cursor: 'pointer' }}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100/60 shadow-2xs">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: '#ECFDF5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #D1FAE5', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
                       <CreditCard size={18} />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-extrabold text-slate-900 font-mono truncate">{p.reference || p.id.slice(0, 8)}</div>
-                      <div className="text-[11px] font-medium text-slate-500 mt-0.5">
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#1A202C', fontFamily: "'JetBrains Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.reference || p.id.slice(0, 8)}</div>
+                      <div style={{ fontSize: 11, fontWeight: 500, color: '#8A94A6', marginTop: 2 }}>
                         {new Date(p.date).toLocaleDateString()} • {p.payment_method || 'Standard Method'}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-right">
-                      <div className="text-sm font-extrabold text-emerald-600" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', fontFamily: F, fontVariantNumeric: 'tabular-nums' }}>
                         {formatK(p.amount)}
                       </div>
-                      <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Amount Paid</div>
+                      <div style={{ fontSize: 10, color: '#8A94A6', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>Amount Paid</div>
                     </div>
-                    <div className="p-1.5 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors">
+                    <div style={{ padding: 6, borderRadius: 8, background: '#ECFDF5', color: '#0D5047' }}>
                       <ChevronRight size={16} />
                     </div>
                   </div>
@@ -191,11 +190,11 @@ const CustomerPayments: React.FC = () => {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-2 px-1 text-xs text-slate-500 font-semibold">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, paddingLeft: 4, paddingRight: 4, fontSize: 12, color: '#8A94A6', fontWeight: 600 }}>
                 <span>Page {page} of {totalPages}</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">Previous</button>
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">Next</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ padding: '8px 14px', borderRadius: 8, background: '#fff', border: '1px solid #E9EDF3', color: '#1A202C', fontSize: 12, fontWeight: 600, fontFamily: F, cursor: 'pointer', opacity: page <= 1 ? 0.4 : 1, lineHeight: 1.4 }}>Previous</button>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} style={{ padding: '8px 14px', borderRadius: 8, background: '#fff', border: '1px solid #E9EDF3', color: '#1A202C', fontSize: 12, fontWeight: 600, fontFamily: F, cursor: 'pointer', opacity: page >= totalPages ? 0.4 : 1, lineHeight: 1.4 }}>Next</button>
                 </div>
               </div>
             )}

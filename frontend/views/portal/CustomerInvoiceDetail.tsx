@@ -16,7 +16,8 @@ import ErrorBanner from './components/ErrorBanner';
 import DocumentPreviewModal from './components/DocumentPreviewModal';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, DEFAULT_PAGE_SIZE, formatK } from './constants';
+import { F } from './portalStyles';
+import { formatK } from './constants';
 
 interface LineItem {
   item_name: string;
@@ -121,15 +122,23 @@ const CustomerInvoiceDetail: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6 max-w-4xl mx-auto"><PortalLoadingSkeleton type="detail" /></div>;
-  if (error) return <div className="p-6 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
+  if (loading) return <div style={{ padding: 24, maxWidth: 800, margin: '0 auto', fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}><PortalLoadingSkeleton type="detail" /></div>;
+  if (error) return <div style={{ padding: 24, maxWidth: 800, margin: '0 auto', fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!invoice) return null;
 
   const remaining = Number(invoice.total_amount) - Number(invoice.paid_amount || 0);
   const subtotal = (invoice.line_items || []).reduce((sum, item) => sum + Number(item.line_total), 0);
 
+  const rootStyle: React.CSSProperties = { fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' };
+  const cardStyle: React.CSSProperties = { background: '#fff', borderRadius: 12, padding: '12px 14px', marginBottom: 10, border: '1px solid #E9EDF3' };
+  const cardNoPadStyle: React.CSSProperties = { background: '#fff', borderRadius: 12, marginBottom: 10, border: '1px solid #E9EDF3', overflow: 'hidden' };
+  const sectionTitleStyle: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: '#1A202C', margin: 0 };
+  const labelStyle: React.CSSProperties = { fontSize: 10.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.03em' };
+  const bodyStyle: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: '#4A5568' };
+  const mutedStyle: React.CSSProperties = { fontSize: 10.5, color: '#8A94A6' };
+
   return (
-    <div>
+    <div style={rootStyle}>
       <PortalPageHeader
         title={`Invoice ${invoice.invoice_number}`}
         subtitle={`Issued: ${new Date(invoice.created_at).toLocaleDateString()} | Due: ${new Date(invoice.due_date).toLocaleDateString()}`}
@@ -144,11 +153,11 @@ const CustomerInvoiceDetail: React.FC = () => {
       {downloadError && <div style={{ padding: '0 28px 0' }}><ErrorBanner message={downloadError} onDismiss={() => setDownloadError(null)} /></div>}
 
       <div style={{ padding: '0 28px 28px' }}>
-        <PortalCard style={{ padding: '20px 24px', marginBottom: 18 }}>
+        <PortalCard style={{ ...cardStyle, padding: '16px 18px', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <p style={{ fontSize: 14, color: portalTheme.inkSoft }}>Customer: <strong style={{ color: portalTheme.ink }}>{invoice.customer_name}</strong></p>
-              <p style={{ fontSize: 13, color: portalTheme.inkSoft, marginTop: 4 }}>
+              <p style={{ ...bodyStyle, margin: 0 }}>Customer: <strong style={{ color: '#1A202C' }}>{invoice.customer_name}</strong></p>
+              <p style={{ ...bodyStyle, marginTop: 4 }}>
                 Status: <StatusBadge status={invoice.status} />
               </p>
             </div>
@@ -156,83 +165,83 @@ const CustomerInvoiceDetail: React.FC = () => {
           </div>
         </PortalCard>
 
-        <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e4ddd1' }}>
-            <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Line Items</h2>
+        <div style={{ ...cardNoPadStyle }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid #E9EDF3' }}>
+            <h2 style={sectionTitleStyle}>Line Items</h2>
           </div>
           <div style={{ padding: '4px 18px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '10px 0', borderBottom: '1px solid #e4ddd1' }}>
-              <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Item</span>
-              <span style={{ width: 48, textAlign: 'right', fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Qty</span>
-              <span style={{ width: 96, textAlign: 'right', fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Price</span>
-              <span style={{ width: 110, textAlign: 'right', fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Total</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '10px 0', borderBottom: '1px solid #E9EDF3' }}>
+              <span style={{ flex: 1, ...labelStyle }}>Item</span>
+              <span style={{ width: 48, textAlign: 'right', ...labelStyle }}>Qty</span>
+              <span style={{ width: 96, textAlign: 'right', ...labelStyle }}>Price</span>
+              <span style={{ width: 110, textAlign: 'right', ...labelStyle }}>Total</span>
             </div>
             {(invoice.line_items || []).map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '14px 0', borderBottom: i < (invoice.line_items || []).length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '14px 0', borderBottom: i < (invoice.line_items || []).length - 1 ? '1px solid #F3F4F6' : 'none' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{item.item_name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1A202C' }}>{item.item_name}</span>
                 </div>
-                <span style={{ width: 48, textAlign: 'right', fontSize: 13, color: '#5c6567' }}>{item.quantity}</span>
-                <span style={{ width: 96, textAlign: 'right', fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#5c6567' }}>{formatK(item.unit_price)}</span>
-                <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#23282A' }}>{formatK(item.line_total)}</span>
+                <span style={{ width: 48, textAlign: 'right', fontSize: 13, color: '#4A5568' }}>{item.quantity}</span>
+                <span style={{ width: 96, textAlign: 'right', fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: '#4A5568' }}>{formatK(item.unit_price)}</span>
+                <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#1A202C' }}>{formatK(item.line_total)}</span>
               </div>
             ))}
           </div>
-          <div style={{ padding: '14px 16px', borderTop: '1px solid #e4ddd1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-  <span style={{ color: portalTheme.inkSoft }}>Subtotal</span>
-  <span style={{ fontFamily: "'JetBrains Mono', monospace", color: portalTheme.ink }}>{formatK(subtotal)}</span>
-</div>
-{Number(invoice.paid_amount) > 0 && (
-  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-    <span style={{ color: portalTheme.teal[600] }}>Paid</span>
-    <span style={{ fontFamily: "'JetBrains Mono', monospace", color: portalTheme.teal[600] }}>{formatK(invoice.paid_amount)}</span>
-  </div>
-)}
-{remaining > 0 && (
-  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-    <span style={{ color: portalTheme.amber[600] }}>Remaining</span>
-    <span style={{ fontFamily: "'JetBrains Mono', monospace", color: portalTheme.amber[600] }}>{formatK(remaining)}</span>
-  </div>
-)}
-<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, borderTop: '1px solid #e4ddd1', paddingTop: 8, marginTop: 4 }}>
-  <span style={{ color: portalTheme.ink }}>Total</span>
-  <span style={{ fontFamily: "'JetBrains Mono', monospace", color: portalTheme.ink }}>{formatK(invoice.total_amount)}</span>
-</div>
+          <div style={{ padding: '12px 14px', borderTop: '1px solid #E9EDF3', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ color: '#4A5568' }}>Subtotal</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#1A202C' }}>{formatK(subtotal)}</span>
+            </div>
+            {Number(invoice.paid_amount) > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: '#059669' }}>Paid</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#059669' }}>{formatK(invoice.paid_amount)}</span>
+              </div>
+            )}
+            {remaining > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: '#D97706' }}>Remaining</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#D97706' }}>{formatK(remaining)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, borderTop: '1px solid #E9EDF3', paddingTop: 8, marginTop: 4 }}>
+              <span style={{ color: '#1A202C' }}>Total</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#1A202C' }}>{formatK(invoice.total_amount)}</span>
+            </div>
           </div>
         </div>
 
         {remaining > 0 && (
-          <div style={{ marginTop: 20 }}>
+          <div style={{ marginTop: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <div style={{
-                width: 28, height: 28, borderRadius: 8,
+                width: 28, height: 28, borderRadius: 7,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: '#eef7f6', color: '#146b60',
+                background: '#ECFDF5', color: '#059669',
               }}>
                 <Banknote size={16} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                 How to Pay
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
                 { type: 'mobile', icon: <Smartphone size={14} />, name: 'Airtel Money', number: '0992 528 222', accountName: 'Prime Media', color: '#059669' },
                 { type: 'mobile', icon: <Smartphone size={14} />, name: 'TNM Mpamba', number: '0992 528 222', accountName: 'Prime Media', color: '#059669' },
-                { type: 'bank', icon: <Building2 size={14} />, name: 'Bank Transfer', bank: 'National Bank', account: '1010182286', accountName: 'Prime Media', color: '#2563eb' },
-                { type: 'bank', icon: <Building2 size={14} />, name: 'Bank Transfer', bank: 'First Capital Bank', account: '1036047166312', accountName: 'Prime Media', color: '#2563eb' },
+                { type: 'bank', icon: <Building2 size={14} />, name: 'Bank Transfer', bank: 'National Bank', account: '1010182286', accountName: 'Prime Media', color: '#2563EB' },
+                { type: 'bank', icon: <Building2 size={14} />, name: 'Bank Transfer', bank: 'First Capital Bank', account: '1036047166312', accountName: 'Prime Media', color: '#2563EB' },
               ].map((method, i) => (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 14px',
                   borderRadius: 10,
                   background: '#fff',
-                  border: `1px solid ${portalTheme.border}`,
+                  border: '1px solid #E9EDF3',
                 }}>
                   <div style={{
-                    width: 30, height: 30, borderRadius: 8,
+                    width: 28, height: 28, borderRadius: 7,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: `${method.color}10`, color: method.color,
                     flexShrink: 0,
@@ -240,12 +249,12 @@ const CustomerInvoiceDetail: React.FC = () => {
                     {method.icon}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: portalTheme.ink }}>{method.name}</div>
-                    <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1A202C' }}>{method.name}</div>
+                    <div style={{ fontSize: 10.5, color: '#8A94A6', marginTop: 1 }}>
                       {'bank' in method ? `${method.bank} — ${method.account}` : `Number: ${method.number}`}
                     </div>
                   </div>
-                  <div style={{ fontSize: 10, color: portalTheme.inkMuted, textAlign: 'right' }}>
+                  <div style={{ fontSize: 10, color: '#8A94A6', textAlign: 'right' }}>
                     {method.accountName}
                   </div>
                 </div>
@@ -256,10 +265,10 @@ const CustomerInvoiceDetail: React.FC = () => {
               marginTop: 12,
               padding: '10px 14px',
               borderRadius: 8,
-              background: '#fffbeb',
-              border: '1px solid #fde68a',
+              background: '#FFFBEB',
+              border: '1px solid #FDE68A',
               fontSize: 11,
-              color: '#92400e',
+              color: '#92400E',
               lineHeight: 1.5,
             }}>
               After transferring, please send proof of payment via WhatsApp or email so we can allocate it to your account promptly.
@@ -278,25 +287,25 @@ const CustomerInvoiceDetail: React.FC = () => {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-            <span style={{ color: portalTheme.inkSoft }}>Invoice Number:</span>
-            <span style={{ color: portalTheme.ink, fontWeight: 600 }}>{invoice.invoice_number}</span>
+            <span style={{ color: '#4A5568' }}>Invoice Number:</span>
+            <span style={{ color: '#1A202C', fontWeight: 600 }}>{invoice.invoice_number}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-            <span style={{ color: portalTheme.inkSoft }}>Customer:</span>
-            <span style={{ color: portalTheme.ink }}>{invoice.customer_name}</span>
+            <span style={{ color: '#4A5568' }}>Customer:</span>
+            <span style={{ color: '#1A202C' }}>{invoice.customer_name}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-            <span style={{ color: portalTheme.inkSoft }}>Status:</span>
+            <span style={{ color: '#4A5568' }}>Status:</span>
             <StatusBadge status={invoice.status} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-            <span style={{ color: portalTheme.inkSoft }}>Total:</span>
-            <span style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>{formatK(invoice.total_amount)}</span>
+            <span style={{ color: '#4A5568' }}>Total:</span>
+            <span style={{ color: '#1A202C', fontFamily: "'JetBrains Mono', monospace" }}>{formatK(invoice.total_amount)}</span>
           </div>
           {(invoice.line_items || []).map((item, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-              <span style={{ color: portalTheme.ink }}>{item.item_name} × {item.quantity}</span>
-              <span style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.line_total)}</span>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
+              <span style={{ color: '#1A202C' }}>{item.item_name} × {item.quantity}</span>
+              <span style={{ color: '#1A202C', fontFamily: "'JetBrains Mono', monospace" }}>{formatK(item.line_total)}</span>
             </div>
           ))}
         </div>

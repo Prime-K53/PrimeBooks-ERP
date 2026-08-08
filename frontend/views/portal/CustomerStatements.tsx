@@ -14,7 +14,8 @@ import PortalCard from './components/PortalCard';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, formatK } from './constants';
+import { formatK } from './constants';
+import { F } from './portalStyles';
 
 interface Transaction {
   date: string;
@@ -132,90 +133,203 @@ const CustomerStatements: React.FC = () => {
     } finally {
       setDownloading(false);
     }
-}, [data, startDate, endDate, companyConfig]);
+  }, [data, startDate, endDate, companyConfig]);
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
     fetchStatement(startDate, endDate);
   };
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
+  if (loading) {
+    return (
+      <div style={{ padding: 32, maxWidth: 896, margin: '0 auto' }}>
+        <PortalLoadingSkeleton type="table" count={6} />
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <PortalPageHeader title="Account Statement" subtitle="View and download account statements for any period" icon={FileText} />
 
-      <div className="space-y-5">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
-        {/* Date Filter Bar */}
-        <form onSubmit={handleFilter} className="glass-panel-premium rounded-2xl p-4 flex flex-col sm:flex-row flex-wrap items-end gap-3 border border-slate-200/80 shadow-xs">
-          <div className="flex gap-3 flex-1 flex-wrap min-w-0">
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 outline-none focus:border-teal-500/60 transition-all" />
+        <form
+          onSubmit={handleFilter}
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            gap: 12,
+            background: '#fff',
+            borderRadius: 12,
+            padding: '16px',
+            border: '1px solid #E9EDF3',
+            boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 12, flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{
+                  width: '100%',
+                  fontFamily: F,
+                  fontSize: 13,
+                  padding: '8px 12px',
+                  border: '1px solid #E9EDF3',
+                  borderRadius: 10,
+                  background: '#fff',
+                  color: '#1A202C',
+                  outline: 'none',
+                  lineHeight: 1.4,
+                  boxSizing: 'border-box',
+                }}
+              />
             </div>
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 outline-none focus:border-teal-500/60 transition-all" />
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>End Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{
+                  width: '100%',
+                  fontFamily: F,
+                  fontSize: 13,
+                  padding: '8px 12px',
+                  border: '1px solid #E9EDF3',
+                  borderRadius: 10,
+                  background: '#fff',
+                  color: '#1A202C',
+                  outline: 'none',
+                  lineHeight: 1.4,
+                  boxSizing: 'border-box',
+                }}
+              />
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <button type="submit" className="btn-press px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center gap-2 transition-all">
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              type="submit"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 700,
+                background: '#F7FAFC',
+                color: '#4A5568',
+                border: '1px solid #E9EDF3',
+                cursor: 'pointer',
+                fontFamily: F,
+                lineHeight: 1.4,
+              }}
+            >
               <RefreshCw size={14} /> Filter
             </button>
             {data && data.transactions.length > 0 && (
-              <button type="button" onClick={handleDownloadPdf} disabled={downloading} className="btn-press px-4 py-2.5 rounded-xl text-xs font-bold text-white flex items-center gap-2 transition-all shadow-md shadow-teal-900/25 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #146b60 0%, #0f544c 100%)' }}>
-                {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                {downloading ? 'Generating…' : 'Download PDF'}
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloading}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '10px 16px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#fff',
+                  background: 'linear-gradient(135deg, #146b60 0%, #0f544c 100%)',
+                  border: 'none',
+                  cursor: downloading ? 'not-allowed' : 'pointer',
+                  opacity: downloading ? 0.5 : 1,
+                  boxShadow: '0 4px 6px rgba(15,84,76,.25)',
+                  fontFamily: F,
+                  lineHeight: 1.4,
+                }}
+              >
+                {downloading ? (
+                  <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
+                ) : (
+                  <Download size={14} />
+                )}
+                {downloading ? 'Generating\u2026' : 'Download PDF'}
               </button>
             )}
           </div>
         </form>
 
-        {/* Balance Summary Cards */}
         {data && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="glass-panel-premium rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-              <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 block mb-2">Opening Balance</span>
-              <span className="text-2xl font-extrabold text-slate-900" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatK(data.opening_balance || 0)}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: '20px', border: '1px solid #E9EDF3', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8A94A6', display: 'block', marginBottom: 8 }}>Opening Balance</span>
+              <span style={{ fontSize: 20, fontWeight: 700, color: '#1A202C', fontVariantNumeric: 'tabular-nums' }}>{formatK(data.opening_balance || 0)}</span>
             </div>
-            <div className={`glass-panel-premium rounded-2xl p-5 border shadow-xs ${Number(data.closing_balance) < 0 ? 'border-red-200/80' : 'border-emerald-200/80'}`}>
-              <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 block mb-2">Closing Balance</span>
-              <span className={`text-2xl font-extrabold ${Number(data.closing_balance) < 0 ? 'text-red-600' : 'text-emerald-600'}`} style={{ fontVariantNumeric: 'tabular-nums' }}>{formatK(data.closing_balance || 0)}</span>
+            <div style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: '20px',
+              border: Number(data.closing_balance) < 0 ? '1px solid #FED7D7' : '1px solid #C6F6D5',
+              boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+            }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8A94A6', display: 'block', marginBottom: 8 }}>Closing Balance</span>
+              <span style={{ fontSize: 20, fontWeight: 700, color: Number(data.closing_balance) < 0 ? '#E53E3E' : '#059669', fontVariantNumeric: 'tabular-nums' }}>{formatK(data.closing_balance || 0)}</span>
             </div>
           </div>
         )}
 
-        {/* Transaction Rows */}
         {!data ? null : data.transactions.length === 0 ? (
           <EmptyState icon={<FileText size={32} />} title="No transactions" description="No transactions found for the selected period." />
         ) : (
-          <div className="space-y-3">
-            <div className="text-xs font-semibold text-slate-500 px-1">{data.transactions.length} transactions</div>
-            <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#8A94A6', paddingLeft: 4, paddingRight: 4 }}>{data.transactions.length} transactions</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {data.transactions.map((t, i) => (
-                <div key={`${t.date}-${t.description}-${i}`} className="glass-panel-interactive rounded-2xl p-4 flex items-center justify-between gap-4 border border-slate-200/80 flex-wrap">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-900 leading-tight">{t.description}</p>
-                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">{new Date(t.date).toLocaleDateString()}</p>
+                <div
+                  key={`${t.date}-${t.description}-${i}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    background: '#fff',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    border: '1px solid #E9EDF3',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: '#1A202C', lineHeight: 1.3, margin: 0 }}>{t.description}</p>
+                    <p style={{ fontSize: 11, fontWeight: 500, color: '#8A94A6', marginTop: 2, marginBottom: 0 }}>{new Date(t.date).toLocaleDateString()}</p>
                   </div>
-                  <div className="flex items-center gap-4 shrink-0">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
                     {t.debit ? (
-                      <div className="text-right">
-                        <span className="text-[11px] font-bold text-red-500 uppercase tracking-wider block">Debit</span>
-                        <span className="text-xs font-extrabold text-red-600" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatK(t.debit)}</span>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#E53E3E', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>Debit</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#E53E3E', fontVariantNumeric: 'tabular-nums' }}>{formatK(t.debit)}</span>
                       </div>
                     ) : null}
                     {t.credit ? (
-                      <div className="text-right">
-                        <span className="text-[11px] font-bold text-emerald-500 uppercase tracking-wider block">Credit</span>
-                        <span className="text-xs font-extrabold text-emerald-600" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatK(t.credit)}</span>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>Credit</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#059669', fontVariantNumeric: 'tabular-nums' }}>{formatK(t.credit)}</span>
                       </div>
                     ) : null}
-                    <div className="text-right min-w-[80px] pl-3 border-l border-slate-200">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Balance</span>
-                      <span className="text-xs font-extrabold text-slate-900" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatK(t.balance)}</span>
+                    <div style={{ textAlign: 'right', minWidth: 80, paddingLeft: 12, borderLeft: '1px solid #E9EDF3' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>Balance</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1A202C', fontVariantNumeric: 'tabular-nums' }}>{formatK(t.balance)}</span>
                     </div>
                   </div>
                 </div>

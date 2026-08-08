@@ -1,13 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { DollarSign, FileText, ShoppingCart, TrendingUp, Activity, ClipboardList, FileCheck2, ChevronRight, UserPlus, Wallet } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { portalApi, portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import ErrorBanner from './components/ErrorBanner';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import PortalButton from './components/PortalButton';
-import CustomerHealthScore from './components/CustomerHealthScore';
-import { portalTheme, formatK } from './constants';
+import { formatK } from './constants';
 
 interface Transaction {
   date: string;
@@ -19,18 +16,6 @@ interface Transaction {
   docId?: string;
 }
 
-interface HealthData {
-  score: number;
-  factors?: {
-    paymentHistory?: number;
-    overdueInvoices?: number;
-    orderFrequency?: number;
-    rewards?: number;
-    responseTime?: number;
-  };
-  summary?: Record<string, number>;
-}
-
 interface DashboardData {
   balance: number;
   outstandingBalance: number;
@@ -39,57 +24,32 @@ interface DashboardData {
   totalOrders: number;
   unreadMessageCount: number;
   recentTransactions: Transaction[];
-  health?: HealthData;
 }
 
-const ACTIVITY_ICON: Record<string, { icon: React.ReactNode; bg: string; border: string; credit: boolean }> = {
-  invoice: { icon: <FileText size={16} color="#1f8577" />, bg: '#eef7f6', border: '#1f8577', credit: false },
-  sale: { icon: <DollarSign size={16} color="#059669" />, bg: '#ecfdf5', border: '#059669', credit: true },
-  payment: { icon: <TrendingUp size={16} color="#059669" />, bg: '#ecfdf5', border: '#059669', credit: true },
-  order: { icon: <ShoppingCart size={16} color="#2563eb" />, bg: '#eff6ff', border: '#2563eb', credit: false },
-  quotation: { icon: <FileCheck2 size={16} color="#7c3aed" />, bg: '#f5f3ff', border: '#7c3aed', credit: false },
-  request: { icon: <ClipboardList size={16} color="#b45309" />, bg: '#fffbeb', border: '#b45309', credit: false },
-};
-const ACTIVITY_DEFAULT: { icon: React.ReactNode; bg: string; border: string; credit: boolean } = {
-  icon: <Activity size={16} color="#5c6567" />,
-  bg: '#f8fafc',
-  border: '#94a3b8',
-  credit: false,
-};
-
-const getTransactionIconMeta = (t: Transaction): { icon: React.ReactNode; bg: string; border: string; credit: boolean } => {
-  const byDoc = t.docType ? ACTIVITY_ICON[t.docType] : undefined;
-  const byType = t.type ? ACTIVITY_ICON[t.type] : undefined;
-  return byDoc || byType || ACTIVITY_DEFAULT;
-};
-
-const getTransactionIcon = (t: Transaction) => {
-  const meta = getTransactionIconMeta(t);
-  if (t.type === 'credit' || t.docType === 'payment' || t.type === 'sale') {
-    return <TrendingUp size={16} color="#059669" />;
-  }
-  return meta.icon;
-};
-
-const getTransactionIconBg = (t: Transaction) => {
-  if (t.type === 'credit') return '#ecfdf5';
-  return getTransactionIconMeta(t).bg;
-};
-
-const getTransactionBorderColor = (t: Transaction) => {
-  if (t.type === 'credit') return '#059669';
-  return getTransactionIconMeta(t).border;
-};
-
-const isCreditActivity = (t: Transaction) =>
-  t.type === 'credit' || t.docType === 'payment' || t.type === 'sale';
-
 const getGreeting = (): string => {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
   return 'Good evening';
 };
+
+const F = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+
+const Sparkline: React.FC<{ v: number[]; c: string; w?: number; h?: number }> = ({ v, c, w = 56, h = 22 }) => {
+  if (v.length < 2) return null;
+  const mx = Math.max(...v), mn = Math.min(...v), r = mx - mn || 1;
+  const pts = v.map((val, i) => `${2 + (i / (v.length - 1)) * (w - 4)},${2 + (1 - (val - mn) / r) * (h - 4)}`).join(' ');
+  const gid = `g${c.replace('#', '')}`;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+      <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={c} stopOpacity="0.1" /><stop offset="100%" stopColor={c} stopOpacity="0" /></linearGradient></defs>
+      <polygon points={`0,${h} ${pts} ${w},${h}`} fill={`url(#${gid})`} />
+      <polyline points={pts} fill="none" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+const rT = () => Array.from({ length: 7 }, () => 20 + Math.random() * 80);
 
 const CustomerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -97,326 +57,131 @@ const CustomerDashboard: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [referralSettings, setReferralSettings] = useState<any>(null);
-  const [referralFunnel, setReferralFunnel] = useState<any>(null);
-  const [referralLoading, setReferralLoading] = useState(true);
 
   useEffect(() => {
-    portalApi.get<DashboardData>('/dashboard')
-      .then(setData)
-      .catch((err) => setError(err.message || 'Failed to load dashboard'))
-      .finally(() => setLoading(false));
+    portalApi.get<DashboardData>('/dashboard').then(setData).catch((e) => setError(e.message)).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    let off = false;
+    let unsub: (() => void) | undefined;
     (async () => {
-      try {
-        const [settings, funnel] = await Promise.all([
-          portalLifecycle.referrals.settings().catch(() => null),
-          portalLifecycle.referrals.stats().catch(() => null),
-        ]);
-        if (!cancelled) {
-          setReferralSettings(settings);
-          setReferralFunnel(funnel);
-        }
-      } finally {
-        if (!cancelled) setReferralLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    let unsubscribe: (() => void) | undefined;
-    (async () => {
-      const ERP_DOC_TYPES = ['invoice', 'order', 'sale', 'payment', 'quotation', 'request', 'shipment'];
-      unsubscribe = await portalLifecycle.subscribe({
-        onEvent: (type, payload) => {
-          const docType = payload?.docType;
-          const activity = (payload?.event === 'payment_allocated')
-            || (docType && ERP_DOC_TYPES.includes(docType))
-            || type === 'activity';
-          if (activity && !cancelled) {
-            portalApi.get<DashboardData>('/dashboard')
-              .then(setData)
-              .catch(() => {});
-          }
+      const T = ['invoice', 'order', 'sale', 'payment', 'quotation', 'request', 'shipment'];
+      unsub = await portalLifecycle.subscribe({
+        onEvent: (type, p) => {
+          const dt = p?.docType;
+          if ((p?.event === 'payment_allocated' || (dt && T.includes(dt)) || type === 'activity') && !off)
+            portalApi.get<DashboardData>('/dashboard').then(setData).catch(() => {});
         },
       });
-
     })();
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-    };
+    return () => { off = true; unsub?.(); };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        <PortalLoadingSkeleton type="card" />
-        <PortalLoadingSkeleton type="table" count={5} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <ErrorBanner message={error} onDismiss={() => setError(null)} />
-      </div>
-    );
-  }
-
+  if (loading) return <div style={{ padding: 12 }}><PortalLoadingSkeleton type="card" /><PortalLoadingSkeleton type="table" count={5} /></div>;
+  if (error) return <div style={{ padding: 12 }}><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
   if (!data) return null;
 
-  const recentTransactions = (data.recentTransactions || [])
-    .slice()
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 3);
+  const txns = (data.recentTransactions || []).slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
+  const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  const todayLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-  const Sparkline: React.FC<{ data: number[]; color: string; width?: number; height?: number }> = ({ data, color, width = 80, height = 32 }) => {
-    const max = Math.max(...data);
-    const min = Math.min(...data);
-    const range = max - min || 1;
-    const points = data.map((v, i) => {
-      const x = (i / (data.length - 1)) * width;
-      const y = height - ((v - min) / range) * height;
-      return `${x},${y}`;
-    }).join(' ');
-    const area = `0,${height} ${points} ${width},${height}`;
-    const id = `grad-${color.replace('#','')}`;
-    return (
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
-        <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polygon points={area} fill={`url(#${id})`} />
-        <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  };
-
-  const generateTrend = (value: number): number[] => {
-    const base = value || 100;
-    return Array.from({ length: 7 }, (_, i) => base * (0.85 + Math.random() * 0.3));
-  };
-
-  const getTrendDirection = (data: number[]): 'up' | 'down' | 'flat' => {
-    if (data.length < 2) return 'flat';
-    const first = data[0];
-    const last = data[data.length - 1];
-    if (last > first * 1.05) return 'up';
-    if (last < first * 0.95) return 'down';
-    return 'flat';
-  };
+  const icon = (d: string, s: number = 14, sw: number = 2) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: d }} />
+  );
 
   return (
-    <div className="max-w-7xl mx-auto page-shell">
-      <div className="section-gap py-4 md:py-6">
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}>
 
-      {/* ── Hero Section ───────────────────────────────────────────── */}
-      <div className="glass-panel rounded-[var(--radius-md)] card-pad relative overflow-hidden" style={{ minHeight: 140 }}>
-        <div className="absolute inset-0 opacity-40 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 10% 20%, rgba(31,133,119,.08), transparent 50%), radial-gradient(circle at 90% 80%, rgba(217,154,63,.06), transparent 50%)'
-          }}
-        />
-        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="hidden md:flex w-10 h-10 rounded-xl items-center justify-center text-xl shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, #1f8577, #0f544c)',
-                boxShadow: '0 4px 14px -4px rgba(15,84,76,.5)'
-              }}
-            >
-              👋
-            </div>
-            <div>
-              <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.2 }}>
-                {getGreeting()}, <span style={{ color: '#1f8577' }}>{user?.full_name || 'Guest'}</span>
-              </h1>
-              <p className="mt-1 text-xs text-slate-500" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>
-                {todayLabel}
-              </p>
-               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                 <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
-                   <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-                   {data.unpaidInvoiceCount ?? 0} unpaid
-                 </span>
-                 <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
-                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                   {data.totalOrders ?? 0} orders
-                 </span>
-                 {recentTransactions.length > 0 && (
-                   <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/60 border border-slate-200/60">
-                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                     Last transaction: {new Date(recentTransactions[0].date).toLocaleDateString()}
-                   </span>
-                 )}
-               </div>
-            </div>
-            </div>
+      {/* Welcome */}
+      <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #E9EDF3' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,#0D5047,#08352F)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>👋</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#1A202C', lineHeight: 1.3 }}>{getGreeting()},<br />{user?.full_name || 'Guest'}</div>
+            <div style={{ fontSize: 11.5, color: '#8A94A6', marginTop: 1, lineHeight: 1.35 }}>{dateStr}</div>
           </div>
         </div>
+        <button onClick={() => navigate('/portal/new-request')} aria-label="New request" style={{ width: 44, height: 44, borderRadius: '50%', background: '#008A4C', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 3px 10px rgba(0,138,76,0.25)', flexShrink: 0 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {[
-          { label: 'Outstanding Balance', value: formatK(data.outstandingBalance || 0), icon: DollarSign, color: '#b5493f', bg: '#fef2f2', onClick: () => navigate('/portal/statements') },
-          { label: 'Unpaid Invoices', value: data.unpaidInvoiceCount ?? 0, icon: FileText, color: '#d99a3f', bg: '#fbead0', onClick: () => navigate('/portal/invoices?status=Unpaid') },
-          { label: 'Total Orders', value: data.totalOrders ?? 0, icon: ShoppingCart, color: '#475569', bg: '#f1f5f9', onClick: () => navigate('/portal/orders') },
-          { label: 'Wallet Balance', value: formatK(data.walletBalance || 0), icon: Wallet, color: '#3b82f6', bg: '#eff6ff', onClick: () => navigate('/portal/wallet') },
-        ].map((kpi, idx) => {
-          const trend = generateTrend(typeof kpi.value === 'number' ? kpi.value : 100);
-          const trendDir = getTrendDirection(trend);
-          const trendColor = trendDir === 'up' ? '#059669' : trendDir === 'down' ? '#dc2626' : '#5c6567';
-          const trendLabel = trendDir === 'up' ? '▲' : trendDir === 'down' ? '▼' : '─';
-          return (
-            <div
-              key={idx}
-              onClick={kpi.onClick}
-              className="glass-panel-interactive rounded-[var(--radius-md)] card-pad relative overflow-hidden group"
-              style={{ borderLeft: `4px solid ${kpi.color}`, cursor: kpi.onClick ? 'pointer' : 'default' }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: kpi.bg, color: kpi.color }}
-                >
-                  <kpi.icon size={18} strokeWidth={2} />
-                </div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: 0.08, lineHeight: 1.4 }}>{kpi.label}</div>
-              </div>
-              <div className="flex items-end justify-between gap-2">
-                <div className="text-base md:text-lg font-bold text-slate-900" style={{ fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
-                  {kpi.value}
-                </div>
-                <div className="opacity-60 group-hover:opacity-100 transition-opacity shrink-0">
-                  <Sparkline data={trend} color={kpi.color} width={64} height={28} />
-                </div>
-              </div>
+      {/* KPI Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+        {([
+          { l: 'OUTSTANDING BALANCE', v: formatK(data.outstandingBalance || 0), s: 'No change from last month', c: '#E53E3E', bg: '#FFF5F5', ic: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>', to: '/portal/statements' },
+          { l: 'UNPAID INVOICES', v: String(data.unpaidInvoiceCount ?? 0), s: 'No unpaid invoices', c: '#DD6B20', bg: '#FFFAF0', ic: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>', to: '/portal/invoices?status=Unpaid' },
+          { l: 'TOTAL ORDERS', v: String(data.totalOrders ?? 0), s: 'No orders this month', c: '#805AD5', bg: '#FAF5FF', ic: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>', to: '/portal/orders' },
+          { l: 'WALLET BALANCE', v: formatK(data.walletBalance || 0), s: 'No change from last month', c: '#3182CE', bg: '#EBF8FF', ic: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/>', to: '/portal/wallet' },
+        ] as const).map((k, i) => (
+          <div key={i} onClick={() => navigate(k.to)} style={{ background: '#fff', borderRadius: 10, padding: '10px 10px 8px', border: '1px solid #E9EDF3', cursor: 'pointer', display: 'flex', flexDirection: 'column' as const }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <div style={{ width: 26, height: 26, borderRadius: 7, background: k.bg, color: k.c, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon(k.ic, 13)}</div>
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase' as const, letterSpacing: '0.03em', lineHeight: 1.2 }}>{k.l}</span>
             </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200/60">
-              <h2 className="text-sm font-semibold text-slate-800">Recent Activity</h2>
-            </div>
-            <div className="p-2">
-              {recentTransactions.length === 0 ? (
-                <div className="p-6 text-center text-slate-400">
-                  <Activity size={28} className="mx-auto mb-2" />
-                  <p>No recent transactions</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {recentTransactions.map((t, i) => {
-                    const isCredit = isCreditActivity(t);
-                    const target = t.docId && t.docType
-                      ? t.docType === 'invoice'
-                        ? `/portal/invoices/${t.docId}`
-                        : t.docType === 'order'
-                          ? `/portal/orders/${t.docId}`
-                          : t.docType === 'quotation'
-                            ? `/portal/quotations/${t.docId}`
-                            : t.docType === 'request'
-                              ? `/portal/requests/${t.docId}`
-                              : null
-                      : null;
-                    const hasAmount = typeof t.amount === 'number' && Number.isFinite(t.amount);
-                    return (
-                      <div
-                        key={`${t.description}-${t.date}-${t.amount}-${i}`}
-                        onClick={() => target && navigate(target)}
-                        className="glass-panel-interactive rounded-[var(--radius-md)] card-pad flex items-center gap-3 text-left w-full"
-                        style={{ borderLeft: `4px solid ${getTransactionBorderColor(t)}`, cursor: target ? 'pointer' : 'default', minHeight: 'var(--list-row-height, 60px)' }}
-                      >
-                        <div style={{
-                          width: 32, height: 32, borderRadius: 8,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: getTransactionIconBg(t),
-                          flexShrink: 0,
-                        }}>
-                          {getTransactionIcon(t)}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }} className="truncate">{t.description}</div>
-                          <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
-                            {new Date(t.date).toLocaleDateString()}
-                            {t.status ? ` • ${t.status}` : ''}
-                          </div>
-                        </div>
-                        {hasAmount ? (
-                          <div style={{ textAlign: 'right', minWidth: 80 }}>
-                            <div style={{
-                              fontSize: 14, fontWeight: 600,
-                              color: isCredit ? '#059669' : '#dc2626',
-                              fontFamily: "'Inter', sans-serif",
-                              fontVariantNumeric: 'tabular-nums',
-                            }}>
-                              {formatK(t.amount)}
-                            </div>
-                            <div style={{ fontSize: 10, color: '#5c6567', textTransform: 'uppercase', marginTop: 1 }}>
-                              {(t.docType || t.type) && String(t.docType || t.type).replace(/_/g, ' ')}
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 10, color: '#5c6567', textTransform: 'uppercase' }}>
-                              {(t.docType || t.type) && String(t.docType || t.type).replace(/_/g, ' ')}
-                            </div>
-                          </div>
-                        )}
-                        {target && (
-                          <div style={{
-                            marginLeft: 'auto',
-                            padding: '4px 10px',
-                            borderRadius: 6,
-                            background: '#eef7f6',
-                            fontSize: 10,
-                            fontWeight: 600,
-                            color: '#1f8577',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 3,
-                            flexShrink: 0,
-                          }}>
-                            View
-                            <ChevronRight size={10} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 600, color: '#1A202C', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>{k.v}</div>
+                <div style={{ fontSize: 10.5, color: '#8A94A6', marginTop: 3 }}>{k.s}</div>
+              </div>
+              <div style={{ opacity: 0.5, flexShrink: 0 }}><Sparkline v={rT()} c={k.c} /></div>
             </div>
           </div>
-        </div>
+        ))}
+      </div>
 
-        <div>
-          <CustomerHealthScore
-            score={data.health?.score ?? 0}
-            factors={{
-              paymentHistory: data.health?.factors?.paymentHistory,
-              orderFrequency: data.health?.factors?.orderFrequency,
-              rewards: data.health?.factors?.rewards,
-            }}
-          />
+      {/* Transaction Overview */}
+      <div style={{ background: '#fff', borderRadius: 12, marginBottom: 10, border: '1px solid #E9EDF3', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 6px' }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#1A202C' }}>Transaction Overview</h2>
+          <button onClick={() => navigate('/portal/payments')} style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#008A4C', padding: '4px 0' }}>
+            View all <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+          </button>
         </div>
+        {([
+          { ic: '<polyline points="7 17 17 7"/><polyline points="7 7 17 7 17 17"/>', bg: '#ECFDF5', c: '#008A4C', l: 'Total Transactions', v: String(txns.length) },
+          { ic: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>', bg: '#FFFAF0', c: '#DD6B20', l: 'Last Transaction', v: '—' },
+          { ic: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>', bg: '#EBF8FF', c: '#3182CE', l: 'Last Transaction Date', v: '—' },
+        ] as const).map((r, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 14px', borderTop: '1px solid #F3F4F6' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: r.bg, color: r.c, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 10 }}>{icon(r.ic, 13)}</div>
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#4A5568' }}>{r.l}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#718096', marginRight: 6, fontVariantNumeric: 'tabular-nums', textAlign: 'right' as const }}>{r.v}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+          </div>
+        ))}
       </div>
+
+      {/* Recent Activity */}
+      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 6px' }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#1A202C' }}>Recent Activity</h2>
+          <button onClick={() => navigate('/portal/payments')} style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#008A4C', padding: '4px 0' }}>
+            View all <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+          </button>
+        </div>
+        {(txns.length > 0
+          ? txns.map((t) => ({ icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', title: t.description || 'Activity', sub: undefined as string | undefined, date: new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), onClick: t.docId && t.docType ? () => navigate(`/portal/${t.docType}s/${t.docId}`) : undefined }))
+          : [
+              { icon: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', title: 'Welcome to PrimePORTAL', sub: 'Your account has been created successfully.', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), onClick: undefined },
+              { icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', title: 'Profile Updated', sub: 'Your profile information was updated.', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), onClick: () => navigate('/portal/profile') },
+              { icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>', title: 'Account Activated', sub: 'Your account is now active.', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), onClick: undefined },
+            ]
+        ).map((item, i) => (
+          <div key={i} onClick={item.onClick} style={{ display: 'flex', alignItems: 'center', padding: '8px 14px', borderTop: '1px solid #F3F4F6', cursor: item.onClick ? 'pointer' : 'default' }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#ECFDF5', color: '#008A4C', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 10 }}>{icon(item.icon, 14)}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1A202C', lineHeight: 1.3 }}>{item.title}</div>
+              {item.sub && <div style={{ fontSize: 11.5, color: '#8A94A6', marginTop: 1 }}>{item.sub}</div>}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 6 }}>
+              <span style={{ fontSize: 11, color: '#8A94A6', whiteSpace: 'nowrap' as const }}>{item.date}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </div>
+          </div>
+        ))}
       </div>
+    </div>
   );
 };
 

@@ -11,7 +11,8 @@ import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import StatusBadge from './components/StatusBadge';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, SHIPMENT_STATUS_META, DEFAULT_PAGE_SIZE } from './constants';
+import { SHIPMENT_STATUS_META, DEFAULT_PAGE_SIZE } from './constants';
+import { F } from './portalStyles';
 
 const CustomerShipments: React.FC = () => {
   const navigate = useNavigate();
@@ -76,10 +77,10 @@ const CustomerShipments: React.FC = () => {
     return ['All', ...Array.from(set).sort()];
   }, [shipments]);
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={6} /></div>;
+  if (loading) return <div style={{ padding: 32, maxWidth: 56, margin: '0 auto' }}><PortalLoadingSkeleton type="table" count={6} /></div>;
 
   return (
-    <div>
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}>
       <PortalPageHeader
         title="Shipments & Tracking"
         subtitle="Track your orders in transit"
@@ -91,7 +92,7 @@ const CustomerShipments: React.FC = () => {
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: '1 1 240px' }}>
-            <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: portalTheme.inkSoft }} />
+            <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#8A94A6' }} />
             <PortalInput label="" placeholder="Search by order #, tracking #..." value={search} onChange={(v) => setSearch(v)} onFocus={() => {}} onBlur={() => {}} style={{ paddingLeft: 32 }} />
           </div>
           <select
@@ -99,10 +100,19 @@ const CustomerShipments: React.FC = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
             style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 13, padding: '10px 32px 10px 12px',
-              border: '1.4px solid #e4ddd1', borderRadius: 9, background: portalTheme.paper, color: portalTheme.ink,
-              appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', cursor: 'pointer',
+              fontFamily: F,
+              fontSize: 13,
+              padding: '8px 32px 8px 12px',
+              border: '1px solid #E9EDF3',
+              borderRadius: 10,
+              background: '#fff',
+              color: '#1A202C',
+              appearance: 'none',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 12px center',
+              cursor: 'pointer',
+              outline: 'none',
             }}
           >
             {availableStatuses.map((s) => <option key={s} value={s}>{s === 'All' ? 'All Statuses' : s}</option>)}
@@ -114,8 +124,8 @@ const CustomerShipments: React.FC = () => {
         {shipments.length === 0 ? (
           <EmptyState icon={<Truck size={28} />} title="No shipments yet" description={search || statusFilter !== 'All' ? 'No shipments match your filters.' : 'When your orders are shipped, tracking information will appear here.'} />
         ) : (
-          <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-            <div className="p-4 space-y-2">
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3', overflow: 'hidden' }}>
+            <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {shipments.map((shipment) => {
                 const statusKey = shipment.status.toLowerCase();
                 const statusMeta = SHIPMENT_STATUS_META[statusKey] || SHIPMENT_STATUS_META.draft;
@@ -127,25 +137,36 @@ const CustomerShipments: React.FC = () => {
                 return (
                   <PortalCard hoverable key={shipment.id}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Truck size={15} className="text-teal-600" />
+                      <div style={{ width: 34, height: 34, borderRadius: 10, background: '#eef7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Truck size={15} style={{ color: '#146b60' }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#23282A' }}>#{orderNumber}</div>
+                        <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#1A202C' }}>#{orderNumber}</div>
                       </div>
                       <StatusBadge status={shipment.status} type="order" />
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: '#5c6567', marginTop: 8 }}>
-                      <span>Date: <span style={{ color: '#23282A' }}>{date}</span></span>
-                      <span>Carrier: <span style={{ color: '#23282A' }}>{carrier}</span></span>
-                      <span>Tracking: <span style={{ color: '#23282A' }}>{tracking}</span></span>
-                      <span>Est. Delivery: <span style={{ color: '#23282A' }}>{estDelivery}</span></span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 13, fontWeight: 500, color: '#4A5568', marginTop: 8 }}>
+                      <span style={{ color: '#8A94A6', fontSize: 10.5 }}>Date: <span style={{ color: '#4A5568' }}>{date}</span></span>
+                      <span style={{ color: '#8A94A6', fontSize: 10.5 }}>Carrier: <span style={{ color: '#4A5568' }}>{carrier}</span></span>
+                      <span style={{ color: '#8A94A6', fontSize: 10.5 }}>Tracking: <span style={{ color: '#4A5568' }}>{tracking}</span></span>
+                      <span style={{ color: '#8A94A6', fontSize: 10.5 }}>Est. Delivery: <span style={{ color: '#4A5568' }}>{estDelivery}</span></span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-center gap-1 items-center shrink-0">
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 4, alignItems: 'center', flexShrink: 0 }}>
                         <button
                           onClick={() => navigate(`/portal/shipments/${shipment.id}`)}
-                          className="p-2 text-[#5c6567] hover:text-blue-600 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded transition-all"
+                          style={{
+                            padding: 8,
+                            color: '#4A5568',
+                            background: '#F7FAFC',
+                            border: '1px solid transparent',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all .15s ease',
+                          }}
                           title="Track shipment"
                           aria-label={`Track shipment for order ${shipment.order_number || shipment.id}`}
                         >

@@ -3,6 +3,7 @@ import { logger } from '@/services/logger';
 import { localProvider, parseJSON } from './providers/local';
 import { openrouterProvider } from './providers/openrouter';
 import * as P from './prompts';
+import { patchStoredCompanyConfig } from '@/utils/companyConfigSync';
 
 function getProvider(name: ProviderName): AIProvider {
   switch (name) {
@@ -97,6 +98,19 @@ class AIService {
       if (config.model) this.currentModel = config.model;
       if (config.baseUrl) this.currentBaseUrl = config.baseUrl;
       if (config.apiKey) this.currentApiKey = config.apiKey;
+      // Sync the AI slice through the authoritative company-config store so
+      // every device of the company receives it.
+      const aiConfig = {
+        provider: this.providerName,
+        model: this.currentModel,
+        baseUrl: this.currentBaseUrl,
+        apiKey: this.currentApiKey,
+        ...(existing.aiConfig || {}),
+        enabled: true,
+      };
+      void patchStoredCompanyConfig({ aiConfig }).catch((e) => {
+        logger.error('Failed to sync AI config to company store', e instanceof Error ? e : new Error('Unknown'));
+      });
     } catch (e) { logger.error('Failed to save AI config', e as Error); }
   }
 

@@ -5,6 +5,13 @@ import { generateNextId } from '../utils/helpers';
 import { dbService } from '../services/db';
 import { DEFAULT_PRICING_SETTINGS } from '../services/pricingRoundingService';
 import { syncDocumentNumberSeriesConfig } from '../services/documentNumberService';
+import {
+  isIdenticalToDefaults,
+  loadStoredCompanyConfig,
+  normalizeStoredCompanyConfig,
+  persistCompanyConfig,
+  registerCompanyConfigContextProvider,
+} from '../utils/companyConfigSync';
 import { publishSystemAlert } from '../services/systemAlertService';
 import { isPasswordProtectionEnabled, normalizeSecuritySettings, withNormalizedSecurityConfig } from '../utils/securitySettings';
 import { DEFAULT_SHARED_NUMBERING_RULE, normalizeCompanyNumberingConfig } from '../utils/numbering';
@@ -334,6 +341,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [companyConfig, setCompanyConfig] = useState<CompanyConfig>(() => withNormalizedSecurityConfig(defaultCompanyConfig as CompanyConfig));
 
+  useEffect(() => {
+    const unregister = registerCompanyConfigContextProvider({
+      getDefaults: () => defaultCompanyConfig as CompanyConfig,
+      getCurrentConfig: () => companyConfigRef.current,
+    });
+    return unregister;
+  }, []);
+
   const [notification, setNotification] = useState<Notification | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
@@ -501,28 +516,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               startPeriodicSync();
             }).catch(() => {});
           }
+          // Cloud settings are authoritative: hydrate the company config from
+          // the sync store (populated by the initial pull), then migrate any
+          // genuine legacy device-local cache only when no cloud config exists.
+          await hydrateStoredCompanyConfig();
+          await migrateLegacyCompanyConfig();
           return;
         }
 
-        const savedConfig = localStorage.getItem('nexus_company_config');
-        let parsedConfig: CompanyConfig | null = null;
-        if (savedConfig) {
-          try {
-            const rawConfig = JSON.parse(savedConfig);
-            parsedConfig = withNormalizedSecurityConfig(normalizeCompanyNumberingConfig({
-              ...defaultCompanyConfig,
-              ...rawConfig,
-              pricingSettings: {
-                ...DEFAULT_PRICING_SETTINGS,
-                ...(rawConfig?.pricingSettings || {})
-              }
-            }));
-            parsedConfig = await hydrateCompanyPdfAssets(parsedConfig);
-            setCompanyConfig(parsedConfig);
-            localStorage.setItem('nexus_company_config', JSON.stringify(parsedConfig));
-          } catch (err) {
-            logger.error("[Auth] Failed to parse company config:", err);
-          }
+        // Authoritative cloud/sync-store config wins; legacy device-local
+        // cache is hydrated only when the store is empty, and pure defaults
+        // are never uploaded.
+        let parsedConfig: CompanyConfig | null = await hydrateStoredCompanyConfig();
+        if (!parsedConfig) {
+          parsedConfig = await migrateLegacyCompanyConfig();
         }
 
         let restoredSession: User | null = null;
@@ -672,6 +679,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     loadInitData();
+  }, []);
+
+  /**
+   * Realtime hydration: when the settings sync store changes — device A
+   * saving the Settings page, realtime push from another device, or a
+   * periodic pull completing — re-hydrate the active company config from the
+   * authoritative store. Cloud always wins over the local cache.
+   */
+  useEffect(() => {
+    const handleDataChanged = (event: Event) => {
+      const detail = (event as CustomEvent).detail as
+        | { stores?: string[]; table?: string }
+        | undefined;
+      if (!detail) return;
+      const stores = Array.isArray(detail.stores) ? detail.stores : [];
+      if (detail.table === 'settings' || stores.includes('settings')) {
+        void (async () => {
+          await hydrateStoredCompanyConfig();
+          await migrateLegacyCompanyConfig();
+        })();
+      }
+    };
+    window.addEventListener('primeerp:data-changed', handleDataChanged);
+    return () => window.removeEventListener('primeerp:data-changed', handleDataChanged);
   }, []);
 
   useEffect(() => {
@@ -1137,6 +1168,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     notify('Security policy updated', 'success');
   };
 
+  const cacheCompanyConfig = (config: CompanyConfig) => {
+    try {
+      localStorage.setItem('nexus_company_config', JSON.stringify(config));
+    } catch {
+      // Sync store remains authoritative; ignore cache quota errors.
+    }
+  };
+
+  /**
+   * Hydrate the active company configuration from the authoritative sync
+   * store (cloud `public.settings` row mirrored in IndexedDB) when it exists.
+   * The cloud configuration takes precedence over the device's local cache.
+   */
+  const hydrateStoredCompanyConfig = async (): Promise<CompanyConfig | null> => {
+    try {
+      const stored = await loadStoredCompanyConfig(defaultCompanyConfig as CompanyConfig);
+      if (!stored) return null;
+      const hydrated = await hydrateCompanyPdfAssets(stored);
+      setCompanyConfig(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(hydrated)) return prev;
+        cacheCompanyConfig(hydrated);
+        return hydrated;
+      });
+      return hydrated;
+    } catch (err) {
+      logger.error('[Auth] Failed to hydrate company config from sync store:', err);
+      return null;
+    }
+  };
+
+  /**
+   * One-time migration: only when no authoritative cloud config exists yet,
+   * publish a genuine legacy `nexus_company_config` device cache to the sync
+   * store so other devices can inherit it. Never uploads untouched defaults —
+   * a device with an empty/degenerated local cache must not replace cloud
+   * settings with defaults.
+   */
+  const migrateLegacyCompanyConfig = async (): Promise<CompanyConfig | null> => {
+    try {
+      const stored = await loadStoredCompanyConfig(defaultCompanyConfig as CompanyConfig);
+      if (stored) return null;
+      const raw = localStorage.getItem('nexus_company_config');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as Partial<CompanyConfig>;
+      const legacy = normalizeStoredCompanyConfig(parsed, defaultCompanyConfig as CompanyConfig);
+      if (!legacy) return null;
+      if (isIdenticalToDefaults(legacy, defaultCompanyConfig as CompanyConfig)) return null;
+      await persistCompanyConfig(legacy);
+      const hydrated = await hydrateCompanyPdfAssets(legacy);
+      setCompanyConfig(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(hydrated)) return prev;
+        cacheCompanyConfig(hydrated);
+        return hydrated;
+      });
+      return hydrated;
+    } catch (err) {
+      logger.error('[Auth] Failed to migrate legacy company config:', err);
+      return null;
+    }
+  };
+
   const updateCompanyConfig = (config: CompanyConfig) => {
     const normalizedConfig: CompanyConfig = withNormalizedSecurityConfig(normalizeCompanyNumberingConfig({
       ...config,
@@ -1146,7 +1238,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }));
     setCompanyConfig(normalizedConfig);
-    localStorage.setItem('nexus_company_config', JSON.stringify(normalizedConfig));
+    cacheCompanyConfig(normalizedConfig);
+    void persistCompanyConfig(normalizedConfig).catch((error) => {
+      logger.error('Failed to persist company config to sync store', error);
+    });
     void syncDocumentNumberSeriesConfig(normalizedConfig).catch((error) => {
       logger.error('Failed to sync document numbering configuration', error);
     });
@@ -1272,7 +1367,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
 
       setCompanyConfig(normalizedConfig);
-      localStorage.setItem('nexus_company_config', JSON.stringify(normalizedConfig));
+      cacheCompanyConfig(normalizedConfig);
+      await persistCompanyConfig(normalizedConfig);
 
       await cloudDb.upsertProfile({
         ...adminUser,
@@ -1335,7 +1431,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setCompanyConfig(normalizedConfig);
-    localStorage.setItem('nexus_company_config', JSON.stringify(normalizedConfig));
+    cacheCompanyConfig(normalizedConfig);
+    await persistCompanyConfig(normalizedConfig);
 
     await manageUser({
       ...adminUser,

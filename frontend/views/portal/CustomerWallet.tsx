@@ -2,13 +2,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Wallet, Filter, TrendingUp, TrendingDown } from 'lucide-react';
 import { portalLifecycle } from '../../services/portalApiClient';
 import PortalPageHeader from './components/PortalPageHeader';
-import PortalCard from './components/PortalCard';
-import PortalInput from './components/PortalInput';
 import PortalButton from './components/PortalButton';
 import ErrorBanner from './components/ErrorBanner';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
-import { portalTheme, formatK } from './constants';
+import { formatK } from './constants';
+import { F } from './portalStyles';
 
 interface WalletTransaction {
   date: string;
@@ -68,7 +67,7 @@ const CustomerWallet: React.FC = () => {
     });
   }, [data, typeFilter, dateFrom, dateTo]);
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="table" count={5} /></div>;
+  if (loading) return <div style={{ padding: 32, maxWidth: 896, margin: '0 auto' }}><PortalLoadingSkeleton type="table" count={5} /></div>;
 
   return (
     <div>
@@ -78,24 +77,24 @@ const CustomerWallet: React.FC = () => {
         {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
         {data && (
-          <PortalCard style={{ padding: '20px 24px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: portalTheme.teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: portalTheme.teal[600], flexShrink: 0 }}>
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3', padding: '20px 24px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0D5047', flexShrink: 0 }}>
               <Wallet size={22} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>Wallet Balance</span>
-<div style={{ fontSize: 22, fontWeight: 700, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>
-  {formatK(data.balance || 0)}
-</div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#8A94A6', textTransform: 'uppercase', letterSpacing: 0.06 }}>Wallet Balance</span>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#2D3748', fontFamily: "'JetBrains Mono', monospace" }}>
+                {formatK(data.balance || 0)}
+              </div>
             </div>
-          </PortalCard>
+          </div>
         )}
       </div>
 
       <div style={{ padding: '0 28px 28px' }}>
-        <div style={{ background: portalTheme.paper, borderRadius: 16, border: `1px solid ${portalTheme.border}`, boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18)', overflow: 'hidden' }}>
-          <div style={{ padding: '14px 16px', borderBottom: `1px solid ${portalTheme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9EDF3', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #E9EDF3', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1A202C' }}>
               Transaction History
             </h2>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -103,10 +102,10 @@ const CustomerWallet: React.FC = () => {
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 style={{
-                  fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500,
-                  color: portalTheme.ink, background: portalTheme.paper,
-                  border: `1px solid ${portalTheme.border}`, borderRadius: 8,
-                  padding: '5px 8px', outline: 'none', cursor: 'pointer',
+                  fontFamily: F, fontSize: 13, fontWeight: 500,
+                  color: '#1A202C', background: '#fff',
+                  border: '1px solid #E9EDF3', borderRadius: 10,
+                  padding: '8px 32px 8px 12px', outline: 'none', cursor: 'pointer',
                   minWidth: 110
                 }}
               >
@@ -114,26 +113,26 @@ const CustomerWallet: React.FC = () => {
                 <option value="credit">Credits</option>
                 <option value="debit">Debits</option>
               </select>
-              <PortalInput label="" type="date" value={dateFrom} onChange={setDateFrom} placeholder="From" style={{ width: 130, padding: '4px 8px', fontSize: 12 }} />
-              <PortalInput label="" type="date" value={dateTo} onChange={setDateTo} placeholder="To" style={{ width: 130, padding: '4px 8px', fontSize: 12 }} />
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" style={{ fontFamily: F, fontSize: 13, padding: '8px 12px', border: '1px solid #E9EDF3', borderRadius: 10, background: '#fff', color: '#1A202C', outline: 'none', width: 130 }} />
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" style={{ fontFamily: F, fontSize: 13, padding: '8px 12px', border: '1px solid #E9EDF3', borderRadius: 10, background: '#fff', color: '#1A202C', outline: 'none', width: 130 }} />
             </div>
           </div>
           {!data ? null : filteredTransactions.length === 0 ? (
             <EmptyState icon={<Wallet size={28} />} title="No transactions" description={typeFilter !== 'all' || dateFrom || dateTo ? 'No transactions match your filters.' : 'Your wallet transactions will appear here.'} />
           ) : (
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {filteredTransactions.map((t, i) => {
                 const isCredit = Number(t.amount) >= 0;
                 return (
-                  <PortalCard key={`${t.date}-${t.reference}-${i}`} hoverable style={{ padding: '14px 18px' }}>
+                  <div key={`${t.date}-${t.reference}-${i}`} style={{ background: '#fff', borderRadius: 12, padding: '14px 18px', border: '1px solid #E9EDF3', marginBottom: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 8, background: isCredit ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isCredit ? '#059669' : '#dc2626', flexShrink: 0 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 10, background: isCredit ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isCredit ? '#059669' : '#dc2626', flexShrink: 0 }}>
                           {isCredit ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                         </div>
                         <div>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink, margin: 0 }}>{t.type}</p>
-                          <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 1 }}>{new Date(t.date).toLocaleDateString()}</p>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: '#1A202C', margin: 0 }}>{t.type}</p>
+                          <p style={{ fontSize: 10.5, color: '#8A94A6', marginTop: 1 }}>{new Date(t.date).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
@@ -142,10 +141,10 @@ const CustomerWallet: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 4 }}>
-                      Reference: <span style={{ color: portalTheme.ink, fontWeight: 500 }}>{t.reference || '—'}</span>
+                    <div style={{ fontSize: 10.5, color: '#8A94A6', marginTop: 4 }}>
+                      Reference: <span style={{ color: '#2D3748', fontWeight: 500 }}>{t.reference || '—'}</span>
                     </div>
-                  </PortalCard>
+                  </div>
                 );
               })}
             </div>

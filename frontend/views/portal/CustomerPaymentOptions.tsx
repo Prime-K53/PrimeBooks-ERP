@@ -1,8 +1,8 @@
 import React from 'react';
-import { CreditCard, Building2, Smartphone, Banknote, ChevronRight, ExternalLink } from 'lucide-react';
+import { CreditCard, Building2, Smartphone, Banknote } from 'lucide-react';
 import PortalPageHeader from './components/PortalPageHeader';
 import PortalCard from './components/PortalCard';
-import { portalTheme } from './constants';
+import { F } from './portalStyles';
 
 interface PaymentMethod {
   id: string;
@@ -102,7 +102,7 @@ const CustomerPaymentOptions: React.FC = () => {
   }, {});
 
   return (
-    <div>
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}>
       <PortalPageHeader
         title="Payment Options"
         subtitle="How to pay your invoices"
@@ -111,7 +111,7 @@ const CustomerPaymentOptions: React.FC = () => {
 
       <div style={{ padding: '0 28px 28px' }}>
         <div style={{ marginBottom: 20 }}>
-          <p style={{ fontSize: 13, color: portalTheme.inkSoft, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, margin: 0 }}>
             Use the details below to make payments. After transferring, please send proof of payment via WhatsApp or email so we can allocate it to your account.
           </p>
         </div>
@@ -123,13 +123,13 @@ const CustomerPaymentOptions: React.FC = () => {
               <div key={type}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <div style={{
-                    width: 28, height: 28, borderRadius: 8,
+                    width: 28, height: 28, borderRadius: 7,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: config.bg, color: config.color,
                   }}>
                     {config.icon}
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.06 }}>
                     {config.label}
                   </span>
                 </div>
@@ -149,28 +149,28 @@ const CustomerPaymentOptions: React.FC = () => {
                             {config.icon}
                           </div>
                           <div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: portalTheme.ink }}>{method.name}</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#0b3e39' }}>{method.name}</div>
                           </div>
                         </div>
 
                         {method.details.length > 0 && (
                           <div style={{
-                            background: portalTheme.background,
+                            background: '#f8fafc',
                             borderRadius: 8,
-                            border: `1px solid ${portalTheme.border}`,
+                            border: '1px solid rgba(16,24,40,0.06)',
                             overflow: 'hidden',
                           }}>
                             {method.details.map((detail, i) => (
                               <div key={i} style={{
                                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                 padding: '9px 14px',
-                                borderBottom: i < method.details.length - 1 ? `1px solid ${portalTheme.border}` : 'none',
+                                borderBottom: i < method.details.length - 1 ? '1px solid rgba(16,24,40,0.06)' : 'none',
                               }}>
-                                <span style={{ fontSize: 11, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.04 }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.04 }}>
                                   {detail.label}
                                 </span>
                                 <span style={{
-                                  fontSize: 13, fontWeight: 700, color: portalTheme.ink,
+                                  fontSize: 13, fontWeight: 700, color: '#0b3e39',
                                   fontFamily: "'JetBrains Mono', monospace",
                                 }}>
                                   {detail.value}
@@ -210,7 +210,7 @@ const CustomerPaymentOptions: React.FC = () => {
           background: '#eef7f6',
           border: '1px solid #d3ece9',
         }}>
-          <p style={{ fontSize: 12, fontWeight: 600, color: portalTheme.teal[700], margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: '#0f544c', margin: 0, lineHeight: 1.5 }}>
             After making a payment, please send the proof (screenshot or receipt) via WhatsApp or email to ensure timely allocation to your account.
           </p>
         </div>

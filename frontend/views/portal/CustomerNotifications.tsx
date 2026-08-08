@@ -8,7 +8,7 @@ import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import { useToast } from './components/Toast';
 import { useNavigate } from 'react-router-dom';
-import { portalTheme } from './constants';
+import { F } from './portalStyles';
 
 const typeIcons: Record<string, React.ReactNode> = {
   info: <Info size={18} />,
@@ -88,13 +88,13 @@ const CustomerNotifications: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><PortalLoadingSkeleton type="card" count={6} /></div>;
-  if (error) return <div className="p-8 max-w-4xl mx-auto"><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
+  if (loading) return <div style={{ padding: 32, maxWidth: 640, margin: '0 auto' }}><PortalLoadingSkeleton type="card" count={6} /></div>;
+  if (error) return <div style={{ padding: 32, maxWidth: 640, margin: '0 auto' }}><ErrorBanner message={error} onDismiss={() => setError(null)} /></div>;
 
   const unread = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div>
+    <div style={{ fontFamily: F, fontSize: 13, lineHeight: 1.4, color: '#2D3748' }}>
       <PortalPageHeader title="Notifications" subtitle={unread > 0 ? `You have ${unread} unread notification${unread > 1 ? 's' : ''}` : 'You\'re all caught up'} icon={Bell} />
 
       <div style={{ padding: '20px 28px 8px' }}>
@@ -103,10 +103,10 @@ const CustomerNotifications: React.FC = () => {
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 500,
-              color: portalTheme.ink, background: portalTheme.paper,
-              border: `1px solid ${portalTheme.border}`, borderRadius: 9,
-              padding: '6px 10px', outline: 'none', cursor: 'pointer',
+              fontFamily: F, fontSize: 13, fontWeight: 500,
+              color: '#1A202C', background: '#fff',
+              border: '1px solid #E9EDF3', borderRadius: 10,
+              padding: '8px 32px 8px 12px', outline: 'none', cursor: 'pointer',
               minWidth: 130
             }}
           >
@@ -126,8 +126,8 @@ const CustomerNotifications: React.FC = () => {
         {notifications.length === 0 ? (
           <EmptyState icon={<Bell size={28} />} title="No notifications" description="You're all caught up! Notifications will appear here." />
         ) : (
-          <PortalCard>
-            <div className="space-y-2">
+          <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', marginBottom: 10, border: '1px solid #E9EDF3' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {notifications.filter((n) => typeFilter === 'all' || n.type === typeFilter).map((n) => {
               const icon = typeIcons[n.type] || typeIcons.info;
 
@@ -138,29 +138,29 @@ const CustomerNotifications: React.FC = () => {
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 14,
                     width: '100%', padding: '14px 20px', textAlign: 'left',
-                    background: portalTheme.paper, borderRadius: 14,
-                    border: `1px solid ${portalTheme.border}`,
+                    background: '#fff', borderRadius: 12,
+                    border: '1px solid #E9EDF3',
                     boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
                     cursor: 'pointer', transition: 'all .15s ease',
                     opacity: n.is_read ? 0.7 : 1
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = portalTheme.teal[50]; e.currentTarget.style.borderColor = portalTheme.teal[200]; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = portalTheme.paper; e.currentTarget.style.borderColor = portalTheme.border; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#ECFDF5'; e.currentTarget.style.borderColor = '#A7F3D0'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#E9EDF3'; }}
                 >
                   <div style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: portalTheme.teal[50], color: portalTheme.teal[600],
+                    width: 34, height: 34, borderRadius: 10,
+                    background: '#ECFDF5', color: '#0D5047',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                   }}>
                     {icon}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: n.is_read ? portalTheme.inkSoft : portalTheme.ink }}>{n.title}</p>
-                      {!n.is_read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: portalTheme.teal[400], flexShrink: 0 }} />}
+                      <p style={{ fontSize: 13, fontWeight: 500, color: n.is_read ? '#4A5568' : '#1A202C' }}>{n.title}</p>
+                      {!n.is_read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#008A4C', flexShrink: 0 }} />}
                     </div>
-                    {n.body && <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 1, lineHeight: 1.4 }}>{n.body}</p>}
-                    <p style={{ fontSize: 10, color: portalTheme.inkSoft, marginTop: 2 }}>
+                    {n.body && <p style={{ fontSize: 11, color: '#4A5568', marginTop: 1, lineHeight: 1.4 }}>{n.body}</p>}
+                    <p style={{ fontSize: 10.5, color: '#8A94A6', marginTop: 2 }}>
                       {new Date(n.created_at).toLocaleDateString()} {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
@@ -168,7 +168,7 @@ const CustomerNotifications: React.FC = () => {
               );
               })}
             </div>
-          </PortalCard>
+          </div>
         )}
       </div>
     </div>
