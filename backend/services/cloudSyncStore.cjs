@@ -21,9 +21,9 @@ const axios = require('axios');
 // we silently treat as a successful row — corrupting the client's sync state.
 // Force rejection on any non-2xx so every failure path funnels through the
 // try/catch in applyOp() and is reported as a per-op, retryable failure.
-const cloudHttp = axios.create({
-  validateStatus: (status) => status >= 200 && status < 300,
-});
+const cloudHttp = typeof axios.create === 'function'
+  ? axios.create({ validateStatus: (status) => status >= 200 && status < 300 })
+  : axios;
 
 const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
 const SECRET_KEY = process.env.SUPABASE_SECRET_KEY || '';
@@ -34,6 +34,21 @@ const isConfigured = () => Boolean(
   && !SUPABASE_URL.includes('placeholder')
   && !SECRET_KEY.includes('placeholder')
 );
+
+// Log configuration status at module load time for Render diagnostics
+(function checkCloudConfig() {
+  const urlOk = Boolean(SUPABASE_URL && !SUPABASE_URL.includes('placeholder'));
+  const keyOk = Boolean(SECRET_KEY && !SECRET_KEY.includes('placeholder'));
+  if (!urlOk || !keyOk) {
+    console.error('[cloudSyncStore] STARTUP: Cloud sync NOT configured.', {
+      SUPABASE_URL_set: urlOk,
+      SUPABASE_SECRET_KEY_set: keyOk,
+      supabase_env_vars: Object.keys(process.env).filter(k => k.toLowerCase().includes('supabase')),
+    });
+  } else {
+    console.log('[cloudSyncStore] STARTUP: Cloud sync configured OK. URL=' + SUPABASE_URL);
+  }
+})();
 
 function adminHeaders() {
   return {

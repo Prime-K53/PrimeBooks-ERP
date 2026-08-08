@@ -8,7 +8,7 @@
       "destination": "https://primebooks-erp.onrender.com/api/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!manifest\\.json|sw\\.js|favicon\\.ico|pwa-icon|offline\\.html|assets|fonts|screenshot).+)",
       "destination": "/index.html"
     }
   ],
@@ -27,6 +27,23 @@
         {
           "key": "Content-Type",
           "value": "application/manifest+json"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
         }
       ]
     },

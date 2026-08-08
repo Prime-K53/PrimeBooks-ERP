@@ -40,20 +40,48 @@ export const ensureSessionAuthState = () => {
   );
 
   if (SUPABASE_ENABLED) {
-    const session = sessionStorage.getItem('sb-session');
-    if (session) {
+    // The app stores the active session in nexus_user (set by AuthContext after signIn)
+    // and Supabase JS persists it under storageKey 'prime-erp-supabase-auth'.
+    // Check nexus_user first as it contains the processed access token.
+    const nexusRaw = sessionStorage.getItem('nexus_user');
+    if (nexusRaw) {
       try {
-        const parsed = JSON.parse(session);
-        return {
-          userId: parsed?.user?.id || null,
-          role: parsed?.user?.user_metadata?.role || null,
-          isSuperAdmin: parsed?.user?.user_metadata?.is_super_admin === true,
-          accessToken: parsed?.access_token || null,
-          refreshToken: parsed?.refresh_token || null,
-          expiresAt: parsed?.expires_at ? new Date(parsed.expires_at * 1000).toISOString() : null,
-          authMode: 'supabase' as const,
-          isAuthenticated: Boolean(parsed?.access_token)
-        };
+        const parsed = JSON.parse(nexusRaw);
+        if (parsed?.accessToken) {
+          return {
+            userId: parsed?.id || null,
+            role: parsed?.role || null,
+            isSuperAdmin: parsed?.isSuperAdmin === true,
+            accessToken: parsed.accessToken,
+            refreshToken: parsed?.refreshToken || null,
+            expiresAt: parsed?.tokenExpiry || null,
+            authMode: 'supabase' as const,
+            isAuthenticated: !isSessionExpired(parsed)
+          };
+        }
+      } catch {
+        // fall through to supabase-js storage
+      }
+    }
+    // Fallback: read directly from supabase-js localStorage (key = prime-erp-supabase-auth)
+    const supabaseKey = 'prime-erp-supabase-auth';
+    const sbRaw = localStorage.getItem(supabaseKey);
+    if (sbRaw) {
+      try {
+        const parsed = JSON.parse(sbRaw);
+        const session = parsed?.currentSession || parsed;
+        if (session?.access_token) {
+          return {
+            userId: session?.user?.id || null,
+            role: session?.user?.user_metadata?.role || null,
+            isSuperAdmin: session?.user?.user_metadata?.is_super_admin === true,
+            accessToken: session.access_token,
+            refreshToken: session?.refresh_token || null,
+            expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+            authMode: 'supabase' as const,
+            isAuthenticated: Boolean(session?.access_token)
+          };
+        }
       } catch {
         // fall through
       }

@@ -46,10 +46,7 @@ const verifyAdminAuth = async (req, res, next) => {
       req.user = decoded;
       return next();
     } catch (err) {
-      if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({ error: 'Token expired', message: 'Please login again' });
-      }
-      // Try Supabase fallback
+      // Try Supabase fallback first
       if (SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_URL.includes('placeholder')) {
         try {
           const sbRes = await axios.get(`${SUPABASE_URL}/auth/v1/user`, {
@@ -69,7 +66,16 @@ const verifyAdminAuth = async (req, res, next) => {
             req.authMode = 'supabase';
             return next();
           }
-        } catch { /* Supabase fallback failed */ }
+        } catch (sbErr) { 
+          console.warn('[PortalAdmin] Supabase token verification failed:', sbErr?.response?.status, sbErr?.message);
+          if (sbErr?.response?.status === 401) {
+            return res.status(401).json({ error: 'Token expired', message: 'Please login again' });
+          }
+        }
+      }
+
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired', message: 'Please login again' });
       }
     }
   }

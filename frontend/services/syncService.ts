@@ -60,6 +60,7 @@ const MAX_PULL_ROWS_PER_TABLE_PER_PASS = 50000;
 let pushTimer: ReturnType<typeof setInterval> | null = null;
 let realtimeSubscribed = false;
 let realtimeChannels: any[] = [];
+let subscriptionGeneration = 0; // incremented on each unsubscribe to cancel stale async inits
 
 export interface SyncProgress {
   totalStores: number;
@@ -392,6 +393,7 @@ export async function pullRemoteChanges(
 async function subscribeToRemoteChanges() {
   if (!SUPABASE_ENABLED || realtimeSubscribed) return;
   realtimeSubscribed = true;
+  const myGeneration = ++subscriptionGeneration;
 
   // Retrieve the company_id once for use in per-channel column filters.
   // Falls back gracefully — if company_id is unavailable we subscribe without
@@ -412,7 +414,7 @@ async function subscribeToRemoteChanges() {
   }
 
   for (const storeName of TABLES_TO_SYNC) {
-    if (!realtimeSubscribed) break; // Race guard: abort if unsubscribed while session was being fetched
+    if (!realtimeSubscribed || subscriptionGeneration !== myGeneration) break; // Race guard: abort if unsubscribed or superseded
     const table = getTable(storeName);
 
     try {
@@ -438,7 +440,9 @@ async function subscribeToRemoteChanges() {
 
               if (eventType === 'DELETE') {
                 const deleteId = payload.old?.id;
-                if (deleteId) {
+                if (!deleteId) {
+                  logger.warn(`[Sync] realtime DELETE ${table}: payload.old.id missing — skipping`, payload.old);
+                } else {
                   try {
                     await dbService.delete(storeName, deleteId, { cloudSource: true });
                     logger.info(`[Sync] realtime DELETE ${table} id=${deleteId} → dispatching data-changed`);
@@ -500,6 +504,7 @@ async function subscribeToRemoteChanges() {
 }
 
 function unsubscribeFromRemoteChanges() {
+  subscriptionGeneration++; // invalidate any in-flight subscribeToRemoteChanges call
   for (const channel of realtimeChannels) {
     try { supabase.removeChannel(channel); } catch { /* skip */ }
   }

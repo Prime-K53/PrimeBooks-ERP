@@ -128,12 +128,6 @@ const verifyToken = async (req, res, next) => {
     req.authMode = 'api';
     return next();
   } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        error: 'Token expired',
-        message: 'Your session has expired. Please login again.' 
-      });
-    }
     // Fall back to Supabase JWT verification if configured
     if (SUPABASE_ENABLED) {
       try {
@@ -157,7 +151,22 @@ const verifyToken = async (req, res, next) => {
           req.authMode = 'supabase';
           return next();
         }
-      } catch { /* Supabase verification also failed — fall through to 403 */ }
+      } catch (sbErr) { 
+        console.warn('[verifyToken] Supabase JWT verification failed:', sbErr?.response?.status, sbErr?.response?.data?.message || sbErr?.message);
+        if (sbErr?.response?.status === 401) {
+          return res.status(401).json({
+            error: 'Token expired',
+            message: 'Your Supabase session has expired. Please login again.'
+          });
+        }
+      }
+    }
+
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        error: 'Token expired',
+        message: 'Your session has expired. Please login again.' 
+      });
     }
     console.warn('[verifyToken] 403 path=%s method=%s url=%s hasBearer=%s', req.path, req.method, req.originalUrl, Boolean(authHeader));
     return res.status(403).json({ 

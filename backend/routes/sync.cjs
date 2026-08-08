@@ -108,7 +108,16 @@ router.post('/ops', async (req, res) => {
       return res.status(400).json({ error: `batch too large (max ${MAX_BATCH_SIZE})` });
     }
     if (!cloudSyncStore.isConfigured()) {
-      return res.status(503).json({ error: 'Cloud database is not configured on this server' });
+      const missingVars = [
+        !process.env.SUPABASE_URL && !process.env.VITE_SUPABASE_URL ? 'SUPABASE_URL' : null,
+        !process.env.SUPABASE_SECRET_KEY ? 'SUPABASE_SECRET_KEY' : null,
+      ].filter(Boolean);
+      console.error('[sync] 503: cloud not configured. Missing env vars:', missingVars);
+      return res.status(503).json({ 
+        error: 'Cloud database is not configured on this server',
+        missing: missingVars,
+        hint: 'Set SUPABASE_URL and SUPABASE_SECRET_KEY on the Render server environment'
+      });
     }
 
     const results = [];
