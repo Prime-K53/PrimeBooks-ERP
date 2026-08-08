@@ -18,15 +18,15 @@ const PortalCard: React.FC<Props> = ({
   hoverable = false,
 }) => {
   const baseStyle: React.CSSProperties = {
-    background: '#FEFDFB',
-    borderRadius: 'var(--radius-md)',
-    borderWidth: '1.4px',
+    background: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: '#e4ddd1',
-    boxShadow: '0 1px 3px rgba(0,0,0,.04)',
-    transition: 'transform var(--motion-fast) ease, box-shadow var(--motion-normal) ease, border-color var(--motion-normal) ease',
+    borderColor: 'rgba(16,24,40,0.07)',
+    boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18)',
+    transition: 'box-shadow .2s ease, transform .2s ease, border-color .2s ease',
     cursor: onClick ? 'pointer' : 'default',
-    padding: padding || 'var(--card-padding, var(--space-4))',
+    padding: padding || '20px',
   };
 
   const [hovered, setHovered] = React.useState(false);
@@ -35,7 +35,7 @@ const PortalCard: React.FC<Props> = ({
     ...baseStyle,
     ...style,
     ...(hoverable && hovered
-      ? { transform: 'translateY(-1px)', boxShadow: '0 4px 12px rgba(0,0,0,.08)', borderColor: '#a6d9d3' }
+      ? { transform: 'translateY(-1px)', boxShadow: '0 2px 4px rgba(16,24,40,0.05), 0 18px 40px -18px rgba(16,24,40,0.22)' }
       : {}),
   };
 

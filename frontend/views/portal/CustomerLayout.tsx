@@ -6,10 +6,8 @@ import PortalSidebar from './components/PortalSidebar';
 import PortalHeader from './components/PortalHeader';
 import { ToastProvider } from './components/Toast';
 import CommandPalette from './components/CommandPalette';
-import PrimeAssistant from './components/PrimeAssistant';
 import PortalQuickActions from './components/PortalQuickActions';
 import OfflineIndicator from './components/OfflineIndicator';
-import MobileBottomNav from './components/MobileBottomNav';
 import { ThemeProvider } from './context/ThemeContext';
 import { AlertTriangle, RefreshCw, Search } from 'lucide-react';
 
@@ -148,27 +146,28 @@ const CustomerLayout: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <div className={`min-h-screen bg-[var(--dashboard-bg)] density-${density}`}>
+        <div className={`min-h-screen bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] density-${density}`}>
           <a href="#main-content" className="skip-nav">Skip to main content</a>
           {sidebarOpen && (
             <div className="fixed inset-0 z-40 md:hidden" onClick={closeSidebar} />
           )}
-          <PortalSidebar isOpen={sidebarOpen} onClose={closeSidebar} collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} density={density} onDensityChange={setDensity} />
+          <PortalSidebar isOpen={sidebarOpen} onClose={closeSidebar} collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
           <PortalHeader title={currentTitle} onMenuToggle={toggleSidebar} sidebarCollapsed={sidebarCollapsed} onCommandToggle={() => setCommandOpen((v) => !v)} />
-          <main
+           <main
             id="main-content"
-            className="fixed top-14 md:top-16 right-0 overflow-x-auto overflow-y-auto custom-scrollbar transition-all duration-200 ease-out md:bottom-0 bottom-16"
-            style={{ left: sidebarCollapsed ? '4rem' : '16rem' }}
+            className={`fixed top-14 md:top-16 right-0 overflow-x-auto overflow-y-auto custom-scrollbar transition-all duration-200 ease-out md:bottom-0 bottom-16 ${sidebarCollapsed ? 'md:left-16 left-0' : 'md:left-[286px] left-0'}`}
           >
             <div className="page-shell py-4 md:py-6 min-w-0">
-              <PortalErrorBoundary>
-                <Outlet />
-              </PortalErrorBoundary>
+              <div className="mx-auto w-full" style={{ maxWidth: '920px', padding: '28px 20px 64px' }}>
+                <div className="page-content min-h-[calc(100vh-56px-48px)] bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] px-0">
+                  <PortalErrorBoundary>
+                    <Outlet />
+                  </PortalErrorBoundary>
+                </div>
+              </div>
             </div>
           </main>
-          <MobileBottomNav />
           <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
-          <PrimeAssistant />
           <PortalQuickActions />
         </div>
       </ToastProvider>

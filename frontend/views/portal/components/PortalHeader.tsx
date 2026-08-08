@@ -106,19 +106,15 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle, sidebarCollapsed, 
     setUnreadCount(0);
   };
 
-  const teal = { 50: '#eef7f6', 400: '#3fa294', 600: '#146b60' };
+  const teal = { 400: '#4ed3c7', 600: '#146b60' };
   const amber = { 500: '#d99a3f' };
-  const paper = '#FEFDFB';
-  const ink = '#23282A';
-  const inkSoft = '#5c6567';
-  const hairline = '#e4ddd1';
+  const paper = '#FFFFFF';
+  const ink = '#0b3e39';
+  const inkSoft = '#6b7280';
+  const hairline = 'rgba(16,24,40,0.05)';
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-30 h-14 md:h-16 flex items-center justify-between px-3 md:px-6 transition-all duration-200 ease-out ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`} style={{
-      background: paper,
-      borderBottom: `1px solid ${hairline}`,
-      color: ink
-    }}>
+    <header className={`fixed top-0 left-0 right-0 z-30 h-14 md:h-16 flex items-center justify-between px-4 md:px-6 transition-all duration-200 ease-out bg-white border-b shadow-sm ${sidebarCollapsed ? 'md:left-16' : 'md:left-[286px]'}`}>
       <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${teal[600]}, ${teal[400]} 40%, ${amber[500]} 100%)` }} />
       <div className="flex items-center gap-3">
           <button
@@ -133,9 +129,9 @@ const PortalHeader: React.FC<Props> = ({ title, onMenuToggle, sidebarCollapsed, 
             Prime<span style={{ color: '#d99a3f' }}>PORTAL</span>
           </h1>
         ) : (
-          <h1 className="md:hidden text-lg font-bold text-slate-900 tracking-tight">{title}</h1>
+          <h1 className="md:hidden text-lg font-medium text-slate-900 tracking-tight" style={{ color: ink }}>{title}</h1>
         )}
-        <h1 className="hidden md:block text-lg font-bold text-slate-900 tracking-tight">{title}</h1>
+        <h1 className="hidden md:block text-lg font-medium text-slate-900 tracking-tight" style={{ color: ink }}>{title}</h1>
       </div>
 
       <div className="flex items-center gap-3">

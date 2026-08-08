@@ -8,12 +8,6 @@ import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import { portalTheme, formatK } from './constants';
 
-const teal = { 50:'#eef7f6', 400:'#3fa294', 600:'#146b60', 700:'#0f544c' };
-const paper = '#FEFDFB';
-const ink = '#23282A';
-const inkSoft = '#5c6567';
-const hairline = '#e4ddd1';
-
 interface PointsHistory {
   date: string;
   description: string;
@@ -116,27 +110,27 @@ const CustomerLoyalty: React.FC = () => {
 
       <div style={{ padding: '0 28px 28px' }}>
         {!data ? null : (
-          <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid #e4ddd1' }}>
+          <div style={{ background: portalTheme.paper, borderRadius: 16, border: `1px solid ${portalTheme.border}`, boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18)', overflow: 'hidden' }}>
+            <div style={{ padding: '14px 16px', borderBottom: `1px solid ${portalTheme.border}` }}>
               <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
                 Points History
               </h2>
             </div>
             <div className="space-y-2">
               {(data.pointsHistory || []).length === 0 ? (
-                <p style={{ textAlign: 'center', color: inkSoft, padding: '24px 0' }}>No points history yet</p>
+                <p style={{ textAlign: 'center', color: portalTheme.inkSoft, padding: '24px 0' }}>No points history yet</p>
               ) : (
                 (data.pointsHistory || []).map((h, i) => (
-                  <div key={`${h.date}-${h.description}-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: paper, borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                  <div key={`${h.date}-${h.description}-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: portalTheme.paper, borderRadius: 12, border: `1px solid ${portalTheme.border}`, boxShadow: '0 1px 2px rgba(16,24,40,0.04)', flexWrap: 'wrap' }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>{h.description}</p>
-                      <p style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>{new Date(h.date).toLocaleDateString()}</p>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink, margin: 0 }}>{h.description}</p>
+                      <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 2 }}>{new Date(h.date).toLocaleDateString()}</p>
                     </div>
                     <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: Number(h.points) >= 0 ? teal[600] : portalTheme.danger }}>
+                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: Number(h.points) >= 0 ? portalTheme.teal[600] : portalTheme.danger }}>
                         {Number(h.points) >= 0 ? '+' : ''}{h.points} pts
                       </span>
-                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: ink }}>
+                      <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: portalTheme.ink }}>
                         Balance: {h.balance?.toLocaleString() || 0}
                       </span>
                     </div>

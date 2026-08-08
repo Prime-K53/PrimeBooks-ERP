@@ -1,7 +1,21 @@
-DO \$\$
-BEGIN
 -- Customer Engagement Platform (CEP) Tables
 -- Run after supabase-referral-tables-v2.sql
+
+-- Helper function for reading current company ID with fallback to get_user_company_id()
+CREATE OR REPLACE FUNCTION public.get_current_company_id()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    NULLIF(current_setting('app.company_id', TRUE), '')::TEXT,
+    public.get_user_company_id()
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_current_company_id() TO authenticated, anon, service_role;
 
 -- 1. Engagement Timeline (Unified)
 CREATE TABLE IF NOT EXISTS engagement_timeline (
@@ -19,7 +33,7 @@ CREATE TABLE IF NOT EXISTS engagement_timeline (
     actor_id TEXT,
     actor_name TEXT,
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -48,7 +62,7 @@ CREATE TABLE IF NOT EXISTS engagement_audit (
     actor_name TEXT,
     ip_address TEXT,
     user_agent TEXT,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -75,7 +89,7 @@ CREATE TABLE IF NOT EXISTS engagement_points (
     reference_type TEXT,
     reference_id TEXT,
     expires_at TIMESTAMPTZ,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -97,7 +111,7 @@ CREATE TABLE IF NOT EXISTS engagement_point_balances (
     lifetime_redeemed NUMERIC(15,2) NOT NULL DEFAULT 0,
     lifetime_expired NUMERIC(15,2) NOT NULL DEFAULT 0,
     last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -121,7 +135,7 @@ CREATE TABLE IF NOT EXISTS engagement_cashback (
     source_transaction_type TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     paid_at TIMESTAMPTZ,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -139,7 +153,7 @@ CREATE POLICY engagement_cashback_company_insert ON engagement_cashback
 -- 5. Membership Tiers & Customer Tiers
 CREATE TABLE IF NOT EXISTS engagement_membership_tiers (
     id TEXT PRIMARY KEY,
-    company_id TEXT NOT NULL REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT NOT NULL,
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
     level INTEGER NOT NULL DEFAULT 0,
@@ -174,7 +188,7 @@ CREATE TABLE IF NOT EXISTS engagement_customer_tiers (
     assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ,
     is_current BOOLEAN NOT NULL DEFAULT true,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -203,7 +217,7 @@ CREATE TABLE IF NOT EXISTS engagement_gift_cards (
     message TEXT,
     status TEXT NOT NULL DEFAULT 'active',
     expires_at TIMESTAMPTZ,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -230,7 +244,7 @@ CREATE TABLE IF NOT EXISTS engagement_gift_card_transactions (
     balance_after NUMERIC(15,2) NOT NULL,
     reference_type TEXT,
     reference_id TEXT,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -258,7 +272,7 @@ CREATE TABLE IF NOT EXISTS engagement_affiliates (
     conversion_count INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'active',
     commission_rate NUMERIC(5,4) DEFAULT 0.0500,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -286,7 +300,7 @@ CREATE TABLE IF NOT EXISTS engagement_affiliate_commissions (
     source_transaction_type TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     paid_at TIMESTAMPTZ,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -304,7 +318,7 @@ CREATE POLICY engagement_aff_comm_company_insert ON engagement_affiliate_commiss
 -- 8. Promotions
 CREATE TABLE IF NOT EXISTS engagement_promotions (
     id TEXT PRIMARY KEY,
-    company_id TEXT NOT NULL REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
     type TEXT NOT NULL,
@@ -353,7 +367,7 @@ CREATE TABLE IF NOT EXISTS engagement_customer_rewards (
     source_reference_id TEXT,
     expires_at TIMESTAMPTZ,
     redeemed_at TIMESTAMPTZ,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -387,7 +401,7 @@ CREATE TABLE IF NOT EXISTS engagement_analytics (
     visit_count INTEGER NOT NULL DEFAULT 0,
     purchase_count INTEGER NOT NULL DEFAULT 0,
     purchase_total NUMERIC(15,2) NOT NULL DEFAULT 0,
-    company_id TEXT REFERENCES company_config(id) ON DELETE CASCADE,
+    company_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(customer_id, period)
@@ -573,7 +587,3 @@ BEGIN
   RETURN v_customer_tier;
 END;
 $$;
-
-EXCEPTION WHEN duplicate_object THEN NULL;
-END;
-\$\$;

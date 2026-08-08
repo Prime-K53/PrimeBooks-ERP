@@ -172,8 +172,8 @@ const CustomerPayments: React.FC = () => {
                     border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                     cursor: 'pointer', transition: 'all .15s ease', flexWrap: 'wrap'
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#a6d9d3'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,.08)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e4ddd1'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#a6d9d3'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,24,40,0.08)'; }}
+                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(16,24,40,0.06)'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)'; }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 9, background: portalTheme.teal[50], display: 'flex', alignItems: 'center', justifyContent: 'center', color: portalTheme.teal[600], flexShrink: 0 }}>

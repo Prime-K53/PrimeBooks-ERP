@@ -10,7 +10,7 @@ const SkeletonBlock: React.FC<{ className?: string }> = ({ className = '' }) => 
 );
 
 const CardSkeleton: React.FC = () => (
-  <div style={{ padding: '14px 16px', borderRadius: 14, background: '#FEFDFB', border: '1.4px solid #e4ddd1', borderLeft: '4px solid #e4ddd1' }}>
+      <div style={{ padding: '14px 16px', borderRadius: 14, background: '#FFFFFF', border: '1px solid rgba(16,24,40,0.05)', borderLeft: '4px solid rgba(16,24,40,0.05)' }}>
     <div className="flex items-center gap-3">
       <SkeletonBlock className="h-10 w-10 rounded-[10px]" />
       <div className="flex-1 space-y-2">

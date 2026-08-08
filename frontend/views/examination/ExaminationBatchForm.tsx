@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { logger } from '@/services/logger';
 import { useNavigate } from 'react-router-dom';
 import { useExamination } from '../../context/ExaminationContext';

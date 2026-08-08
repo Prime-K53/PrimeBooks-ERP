@@ -271,15 +271,15 @@ const CustomerRequests: React.FC = () => {
                       style={{ transform: isSwiped ? 'translateX(-88px)' : 'translateX(0)', transition: 'transform .25s cubic-bezier(.4,0,.2,1)', position: 'relative', padding: 0, overflow: 'visible' }}
                     >
                       <div
-                        className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                        style={{ borderLeftColor: portalTheme.amber[500], cursor: 'pointer' }}
+                        className="rounded-[14px] p-[14px_16px] bg-[#FFFFFF] border-[1px] border-[rgba(16,24,40,0.05)] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
+                        style={{ borderLeftColor: portalTheme.amber[500], cursor: 'pointer', borderColor: portalTheme.border }}
                       >
-                        <div style={{ width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.amber[50], flexShrink: 0 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.amber[50], flexShrink: 0 }}>
                           <ClipboardList size={16} color={portalTheme.amber[600]} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{r.request_number}</div>
-                          <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink }}>{r.request_number}</div>
+                          <div style={{ fontSize: 10, color: portalTheme.inkSoft, marginTop: 1, lineHeight: 1.3 }}>
                             {new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} • {itemCount} item{itemCount === 1 ? '' : 's'} • K {Number(r.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                         </div>

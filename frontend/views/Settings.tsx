@@ -324,7 +324,7 @@ const Settings: React.FC = () => {
         return () => { document.head.removeChild(style); };
     }, []);
 
-    const { companyConfig, updateCompanyConfig, validatePasswordStrength, manageUser, notify, resetSystem, manualDownloadBackup, auditLogs, allUsers } = useAuth();
+    const { companyConfig, updateCompanyConfig, validatePasswordStrength, manageUser, notify, resetSystem, manualDownloadBackup, auditLogs, allUsers, user: currentUser } = useAuth();
     const { ledger } = useFinance();
     const { inventory } = useInventory();
     const { setCustomizeOpen } = useDashboardStore();
@@ -498,8 +498,9 @@ const Settings: React.FC = () => {
 
     const [backupStatus, setBackupStatus] = useState(readBackupStatus);
     const primaryAdminUser = React.useMemo(
-        () => allUsers.find((candidate: any) => candidate?.isSuperAdmin || candidate?.role === 'Admin') || null,
-        [allUsers]
+        () => allUsers.find((candidate: any) => candidate?.isSuperAdmin || candidate?.role === 'Admin')
+            || ((currentUser as any)?.isSuperAdmin || (currentUser as any)?.role === 'Admin' ? currentUser : null),
+        [allUsers, currentUser]
     );
     const normalizedSecuritySettings = React.useMemo(
         () => normalizeSecuritySettings(config),

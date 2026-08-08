@@ -16,12 +16,6 @@ import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import { portalTheme, formatK } from './constants';
 
-const teal = { 50:'#eef7f6', 400:'#3fa294', 600:'#146b60', 700:'#0f544c' };
-const paper = '#FEFDFB';
-const ink = '#23282A';
-const inkSoft = '#5c6567';
-const hairline = '#e4ddd1';
-
 interface Transaction {
   date: string;
   description: string;
@@ -189,18 +183,18 @@ const CustomerStatements: React.FC = () => {
         {!data ? null : data.transactions.length === 0 ? (
           <EmptyState icon={<FileText size={28} />} title="No transactions" description="No transactions found for the selected period." />
         ) : (
-          <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+          <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1px solid rgba(16,24,40,0.05)', boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18)', overflow: 'hidden' }}>
             <div className="space-y-2">
               {data.transactions.map((t, i) => (
-                <div key={`${t.date}-${t.description}-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: paper, borderRadius: 12, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                <div key={`${t.date}-${t.description}-${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: portalTheme.paper, borderRadius: 12, border: '1px solid rgba(16,24,40,0.05)', boxShadow: '0 1px 2px rgba(16,24,40,0.04)', flexWrap: 'wrap' }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>{t.description}</p>
-                    <p style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>{new Date(t.date).toLocaleDateString()}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink, margin: 0 }}>{t.description}</p>
+                    <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 2 }}>{new Date(t.date).toLocaleDateString()}</p>
                   </div>
                   <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
                     {t.debit ? <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: portalTheme.danger }}>Debit: {formatK(t.debit)}</span> : null}
-                    {t.credit ? <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: teal[600] }}>Credit: {formatK(t.credit)}</span> : null}
-                    <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: ink }}>{formatK(t.balance)}</span>
+                    {t.credit ? <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: portalTheme.teal[600] }}>Credit: {formatK(t.credit)}</span> : null}
+                    <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: portalTheme.ink }}>{formatK(t.balance)}</span>
                   </div>
                 </div>
               ))}

@@ -10,17 +10,6 @@ import { useToast } from './components/Toast';
 import { useNavigate } from 'react-router-dom';
 import { portalTheme } from './constants';
 
-const teal = {
-  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
-  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
-  800: '#0b3e39', 900: '#082e2a'
-};
-const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
-const paper = '#FEFDFB';
-const ink = '#23282A';
-const inkSoft = '#5c6567';
-const hairline = '#e4ddd1';
-
 const typeIcons: Record<string, React.ReactNode> = {
   info: <Info size={18} />,
   alert: <AlertCircle size={18} />,
@@ -105,86 +94,39 @@ const CustomerNotifications: React.FC = () => {
   const unread = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div style={{
-      background: paper,
-      borderRadius: 14,
-      overflow: 'hidden'
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '22px 28px 18px',
-        borderBottom: `1px solid ${hairline}`,
-        background: paper
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 10,
-            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
-          }}>
-            <Bell size={19} color="#fff" />
-          </div>
-          <div>
-            <h1 style={{
-              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
-              fontSize: 22, margin: 0, color: teal[800], letterSpacing: 0.2
-            }}>
-              Notifications
-            </h1>
-            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: inkSoft, letterSpacing: 0.02 }}>
-              {unread > 0 ? `You have ${unread} unread notification${unread > 1 ? 's' : ''}` : 'No unread notifications'}
-            </p>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {unread > 0 && (
-            <button onClick={markAllAsRead} style={{ fontSize: 11.5, fontWeight: 700, color: teal[600], background: 'none', border: 'none', cursor: 'pointer', padding: '6px 10px', borderRadius: 8, transition: 'all .15s' }} onMouseEnter={e => { e.currentTarget.style.background = teal[50]; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-              Mark all read
-            </button>
-          )}
-          <div style={{ position: 'relative' }}>
-            <Bell size={24} style={{ color: inkSoft }} />
-            {unread > 0 && (
-              <span style={{
-                position: 'absolute', top: -4, right: -4, width: 16, height: 16,
-                borderRadius: '50%', background: teal[500], color: '#fff',
-                fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                {unread}
-              </span>
-            )}
-          </div>
+    <div>
+      <PortalPageHeader title="Notifications" subtitle={unread > 0 ? `You have ${unread} unread notification${unread > 1 ? 's' : ''}` : 'You\'re all caught up'} icon={Bell} />
+
+      <div style={{ padding: '20px 28px 8px' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 500,
+              color: portalTheme.ink, background: portalTheme.paper,
+              border: `1px solid ${portalTheme.border}`, borderRadius: 9,
+              padding: '6px 10px', outline: 'none', cursor: 'pointer',
+              minWidth: 130
+            }}
+          >
+            <option value="all">All Types</option>
+            <option value="info">Info</option>
+            <option value="alert">Alerts</option>
+            <option value="success">Success</option>
+            <option value="payment">Payments</option>
+            <option value="order">Orders</option>
+            <option value="invoice">Invoices</option>
+            <option value="message">Messages</option>
+          </select>
         </div>
       </div>
 
-      <div style={{ padding: '24px 30px 8px' }}>
+      <div style={{ padding: '0 28px 28px' }}>
         {notifications.length === 0 ? (
           <EmptyState icon={<Bell size={28} />} title="No notifications" description="You're all caught up! Notifications will appear here." />
         ) : (
-          <>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                style={{
-                  fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 500,
-                  color: ink, background: paper,
-                  border: `1.4px solid ${hairline}`, borderRadius: 8,
-                  padding: '6px 10px', outline: 'none', cursor: 'pointer',
-                  minWidth: 130
-                }}
-              >
-                <option value="all">All Types</option>
-                <option value="info">Info</option>
-                <option value="alert">Alerts</option>
-                <option value="success">Success</option>
-                <option value="payment">Payments</option>
-                <option value="order">Orders</option>
-                <option value="invoice">Invoices</option>
-                <option value="message">Messages</option>
-              </select>
-            </div>
+          <PortalCard>
             <div className="space-y-2">
               {notifications.filter((n) => typeFilter === 'all' || n.type === typeFilter).map((n) => {
               const icon = typeIcons[n.type] || typeIcons.info;
@@ -196,37 +138,37 @@ const CustomerNotifications: React.FC = () => {
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 14,
                     width: '100%', padding: '14px 20px', textAlign: 'left',
-                    background: paper, borderRadius: 14,
-                    border: `1.4px solid ${hairline}`,
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,.04)',
+                    background: portalTheme.paper, borderRadius: 14,
+                    border: `1px solid ${portalTheme.border}`,
+                    boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
                     cursor: 'pointer', transition: 'all .15s ease',
                     opacity: n.is_read ? 0.7 : 1
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = teal[50]; e.currentTarget.style.borderColor = teal[200]; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = paper; e.currentTarget.style.borderColor = hairline; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = portalTheme.teal[50]; e.currentTarget.style.borderColor = portalTheme.teal[200]; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = portalTheme.paper; e.currentTarget.style.borderColor = portalTheme.border; }}
                 >
                   <div style={{
-                    width: 36, height: 36, borderRadius: 9,
-                    background: teal[50], color: teal[600],
+                    width: 36, height: 36, borderRadius: 10,
+                    background: portalTheme.teal[50], color: portalTheme.teal[600],
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                   }}>
                     {icon}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: n.is_read ? inkSoft : ink }}>{n.title}</p>
-                      {!n.is_read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal[400], flexShrink: 0 }} />}
+                      <p style={{ fontSize: 13, fontWeight: 500, color: n.is_read ? portalTheme.inkSoft : portalTheme.ink }}>{n.title}</p>
+                      {!n.is_read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: portalTheme.teal[400], flexShrink: 0 }} />}
                     </div>
-                    {n.body && <p style={{ fontSize: 11, color: inkSoft, marginTop: 1, lineHeight: 1.4 }}>{n.body}</p>}
-                    <p style={{ fontSize: 10, color: inkSoft, marginTop: 2 }}>
+                    {n.body && <p style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 1, lineHeight: 1.4 }}>{n.body}</p>}
+                    <p style={{ fontSize: 10, color: portalTheme.inkSoft, marginTop: 2 }}>
                       {new Date(n.created_at).toLocaleDateString()} {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </button>
               );
-            })}
-          </div>
-          </>
+              })}
+            </div>
+          </PortalCard>
         )}
       </div>
     </div>

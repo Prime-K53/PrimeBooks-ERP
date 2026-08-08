@@ -31,12 +31,13 @@ const PortalPageHeader: React.FC<Props> = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '22px 28px 18px',
-      borderBottom: `1px solid #e4ddd1`,
-      background: '#FEFDFB',
+      padding: '20px 24px',
+      borderBottom: `1px solid rgba(16,24,40,0.05)`,
+      background: '#FFFFFF',
+      boxShadow: '0 1px 2px rgba(16,24,40,0.03)',
       flexWrap: 'wrap',
       gap: 12,
-      ...style,
+      ...(style as any),
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
         {Icon && (
@@ -44,21 +45,21 @@ const PortalPageHeader: React.FC<Props> = ({
             width: 40, height: 40, borderRadius: 10,
             background: iconBg,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 10px -3px rgba(15,84,76,.6)', flexShrink: 0
+            boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', flexShrink: 0
           }}>
             <Icon size={19} color={iconColor} />
           </div>
         )}
         <div style={{ minWidth: 0 }}>
           <h1 style={{
-            fontFamily: "'DM Serif Display', 'Georgia', serif",
-            fontWeight: 400, fontSize: 22, margin: 0,
-            color: '#0b3e39', letterSpacing: 0.2
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 600, fontSize: 20, margin: 0,
+            color: '#0b3e39', letterSpacing: -0.2
           }}>
             {title}
           </h1>
           {subtitle && (
-            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: '#5c6567', letterSpacing: 0.02 }}>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280', letterSpacing: -0.01 }}>
               {subtitle}
             </p>
           )}
@@ -73,13 +74,16 @@ const PortalPageHeader: React.FC<Props> = ({
             style={{
               fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
               padding: '9px 18px', borderRadius: 9, cursor: action.disabled ? 'not-allowed' : 'pointer',
-              border: '1.4px solid transparent',
+              border: 'none',
               background: `linear-gradient(155deg, #1f8577, #0f544c)`,
               color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 7,
               boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
-              transition: 'all .15s ease',
               opacity: action.disabled ? 0.6 : 1,
+              transition: 'transform .15s ease, box-shadow .15s ease',
             }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(.96)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           >
             {action.icon && <action.icon size={16} />}
             {action.label}

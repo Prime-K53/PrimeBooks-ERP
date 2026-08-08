@@ -9,17 +9,6 @@ import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import { portalTheme, DEFAULT_PAGE_SIZE, formatK } from './constants';
 
-const teal = {
-  50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
-  400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
-  800: '#0b3e39', 900: '#082e2a'
-};
-const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
-const paper = '#FEFDFB';
-const ink = '#23282A';
-const inkSoft = '#5c6567';
-const hairline = '#e4ddd1';
-
 interface Invoice {
   id: string;
   invoice_number: string;
@@ -123,8 +112,8 @@ const CustomerInvoices: React.FC = () => {
             aria-label="Filter by status"
             style={{
               fontFamily: "'Inter', sans-serif", fontSize: 13, padding: '10px 32px 10px 12px',
-              border: '1.4px solid #e4ddd1', borderRadius: 9, background: portalTheme.paper, color: portalTheme.ink,
-              appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
+              border: `1px solid ${portalTheme.border}`, borderRadius: 9, background: portalTheme.paper, color: portalTheme.ink,
+              appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', cursor: 'pointer',
             }}
           >
@@ -145,7 +134,7 @@ const CustomerInvoices: React.FC = () => {
             <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginBottom: 8 }}>
               Showing {invoices.length} of {total} invoice{total !== 1 ? 's' : ''}
             </div>
-            <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+            <div style={{ background: portalTheme.paper, borderRadius: 16, border: `1px solid ${portalTheme.border}`, boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18)', overflow: 'hidden' }}>
               <div className="p-4 space-y-2">
                 {filtered.map((inv) => {
                   const date = new Date(inv.created_at).toLocaleDateString();
@@ -153,28 +142,28 @@ const CustomerInvoices: React.FC = () => {
                     <div
                       key={inv.id}
                       onClick={() => navigate(`/portal/invoices/${inv.id}`)}
-                      className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                      style={{ borderLeftColor: portalTheme.teal[500], cursor: 'pointer' }}
+                      className="rounded-[12px] p-[14px_16px] bg-[#FFFFFF] border-[1px] border-[rgba(16,24,40,0.05)] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
+                      style={{ borderLeftColor: portalTheme.teal[500], cursor: 'pointer', borderColor: portalTheme.border }}
                     >
-                      <div style={{ width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
                         <FileText size={16} color={portalTheme.teal[500]} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{inv.invoice_number}</div>
-                        <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink }}>{inv.invoice_number}</div>
+                        <div style={{ fontSize: 10, color: portalTheme.inkSoft, marginTop: 1, lineHeight: 1.3 }}>
                           {date}
                           {inv.status ? ` • ${inv.status}` : ''}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', minWidth: 80 }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#dc2626', fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#dc2626', fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums' }}>
                           {formatK(inv.total_amount)}
                         </div>
-                        <div style={{ fontSize: 10, color: '#5c6567', textTransform: 'uppercase', marginTop: 1 }}>
+                        <div style={{ fontSize: 10, color: portalTheme.inkSoft, textTransform: 'uppercase', marginTop: 1 }}>
                           Invoice
                         </div>
                       </div>
-                      <div style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 6, background: '#eef7f6', fontSize: 10, fontWeight: 600, color: '#1f8577', display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+                      <div style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 6, background: portalTheme.teal[50], fontSize: 10, fontWeight: 600, color: portalTheme.teal[700], display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, border: `1px solid ${portalTheme.teal[100]}` }}>
                         View
                         <ChevronRight size={10} />
                       </div>

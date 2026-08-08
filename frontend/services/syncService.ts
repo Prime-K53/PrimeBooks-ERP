@@ -5,6 +5,45 @@ import { durableSyncQueue } from './durableSyncQueue';
 import { logger } from './logger';
 import { initAudit, audit } from './syncAudit';
 
+// ---------------------------------------------------------------------------
+// Cross-device sync notification helpers
+// After writing a realtime payload to IndexedDB, we must tell the React layer
+// (DataContext / Zustand stores) to re-read. Two channels are used so that
+// both same-tab contexts and other tabs in the same browser are notified.
+// ---------------------------------------------------------------------------
+
+let _broadcastChannel: BroadcastChannel | null = null;
+
+function getBroadcastChannel(): BroadcastChannel | null {
+  if (typeof BroadcastChannel === 'undefined') return null;
+  if (!_broadcastChannel) {
+    try {
+      _broadcastChannel = new BroadcastChannel('primeerp-data-sync');
+    } catch {
+      return null;
+    }
+  }
+  return _broadcastChannel;
+}
+
+/**
+ * Emit a data-changed notification so that DataContext.queueRefresh() picks
+ * it up and the React layer re-renders with the newly written IndexedDB data.
+ */
+function emitDataChanged(table: string, eventType: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(
+      new CustomEvent('primeerp:data-changed', {
+        detail: { source: 'realtime-sync', table, eventType }
+      })
+    );
+  } catch { /* best-effort */ }
+  try {
+    getBroadcastChannel()?.postMessage({ type: 'data-changed', source: 'realtime-sync', table, eventType });
+  } catch { /* best-effort */ }
+}
+
 const SUPABASE_ENABLED = Boolean(
   import.meta.env.VITE_SUPABASE_URL &&
   import.meta.env.VITE_SUPABASE_ANON_KEY &&
@@ -341,33 +380,85 @@ export async function pullRemoteChanges(
 /**
  * Subscribe to real-time changes from Supabase.
  * When another device makes a change, it's pushed to all connected clients.
+ *
+ * FIX (Bug #1): After each IndexedDB write we now dispatch `primeerp:data-changed`
+ * and a BroadcastChannel message so that DataContext.queueRefresh() fires and
+ * the React/Zustand stores pick up the new data immediately.
+ *
+ * FIX (Bug #6): Each channel now includes a `company_id` column filter so that
+ * only this tenant's events are delivered — prevents cross-tenant leakage when
+ * RLS is temporarily misconfigured and reduces unnecessary traffic.
  */
-function subscribeToRemoteChanges() {
+async function subscribeToRemoteChanges() {
   if (!SUPABASE_ENABLED || realtimeSubscribed) return;
   realtimeSubscribed = true;
 
+  // Retrieve the company_id once for use in per-channel column filters.
+  // Falls back gracefully — if company_id is unavailable we subscribe without
+  // the filter and rely on RLS to enforce tenant isolation.
+  let companyId: string | null = null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      // Prefer app_metadata.tenant_id (server-stamped, cannot be spoofed)
+      companyId =
+        (session.user.app_metadata as Record<string, string>)?.tenant_id ||
+        (session.user.app_metadata as Record<string, string>)?.company_id ||
+        (session.user.user_metadata as Record<string, string>)?.company_id ||
+        null;
+    }
+  } catch {
+    // Could not retrieve session — continue without column filter
+  }
+
   for (const storeName of TABLES_TO_SYNC) {
+    if (!realtimeSubscribed) break; // Race guard: abort if unsubscribed while session was being fetched
     const table = getTable(storeName);
 
     try {
-      const filter: Record<string, string> = { event: '*', schema: 'public', table };
+      // Build the postgres_changes filter. When company_id is known we scope
+      // the subscription to only this tenant's rows for efficiency and security.
+      const changeFilter: Record<string, string> = { event: '*', schema: 'public', table };
+      if (companyId) {
+        changeFilter.filter = `company_id=eq.${companyId}`;
+      }
+
+      const channelName = companyId
+        ? `primeerp:${companyId}:${table}`
+        : `primeerp:${table}`;
+
       const channel = supabase
-        .channel(`public:${table}`)
+        .channel(channelName)
         .on(
           'postgres_changes' as const,
-          filter,
+          changeFilter,
           async (payload: any) => {
             try {
-              if (payload.eventType === 'DELETE') {
-                try { await dbService.delete(storeName, payload.old.id, { cloudSource: true }); } catch (e) { logger.error("Operation failed", e as Error); }
+              const eventType: string = payload.eventType || 'UNKNOWN';
+
+              if (eventType === 'DELETE') {
+                const deleteId = payload.old?.id;
+                if (deleteId) {
+                  try {
+                    await dbService.delete(storeName, deleteId, { cloudSource: true });
+                    logger.info(`[Sync] realtime DELETE ${table} id=${deleteId} → dispatching data-changed`);
+                    emitDataChanged(table, 'DELETE');
+                  } catch (e) { logger.error('Realtime DELETE failed', e as Error); }
+                }
+
               } else if (payload.new) {
                 const cloudRecord = toCloudRecord(payload.new);
+
                 // Server-side tombstone arrives as an UPDATE (soft delete):
                 // delete locally and skip the merge so the row isn't resurrected.
                 if (cloudRecord.deleted === true) {
-                  try { await dbService.delete(storeName, payload.new.id, { cloudSource: true }); } catch (e) { logger.error("Operation failed", e as Error); }
+                  try {
+                    await dbService.delete(storeName, payload.new.id, { cloudSource: true });
+                    emitDataChanged(table, 'SOFT_DELETE');
+                  } catch (e) { logger.error('Realtime soft-delete failed', e as Error); }
                   return;
                 }
+
                 const local = await dbService.get(storeName, payload.new.id);
                 if (local) {
                   const merged = fieldLevelMerge(local, cloudRecord);
@@ -379,6 +470,14 @@ function subscribeToRemoteChanges() {
                 } else {
                   await dbService.put(storeName, cloudRecord as Record<string, unknown>, { cloudSource: true });
                 }
+
+                // ── FIX Bug #1 ───────────────────────────────────────────────
+                // Notify the React layer that IndexedDB has been updated.
+                // DataContext listens to both signals and calls queueRefresh(),
+                // which triggers refreshAllData() → Zustand stores re-read IDB
+                // and re-render. Without this, Device B's UI never updates.
+                logger.info(`[Sync] realtime ${eventType} ${table} → dispatching data-changed`);
+                emitDataChanged(table, eventType);
               }
             } catch {
               // best-effort realtime sync
@@ -386,12 +485,11 @@ function subscribeToRemoteChanges() {
           }
         )
         .subscribe((status: string) => {
-          // Deliberately no on-subscribe action beyond acknowledging the
-          // subscription. Previously each channel fired backgroundSyncService
-          // on SUBSCRIBED — with 130+ tables that meant a full push sync per
-          // channel during connection setup, which made startup/networking
-          // crawl. Realtime replays missed events on subscribe, and the
-          // periodic incremental pull (30s) covers any gaps.
+          if (status === 'SUBSCRIBED') {
+            audit('realtime', 'channel subscribed', { table, companyId: companyId || 'unknown' });
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            logger.warn(`[Sync] realtime channel ${channelName} status=${status} — will rely on polling`);
+          }
         });
 
       realtimeChannels.push(channel);
@@ -407,6 +505,10 @@ function unsubscribeFromRemoteChanges() {
   }
   realtimeChannels = [];
   realtimeSubscribed = false;
+  if (_broadcastChannel) {
+    try { _broadcastChannel.close(); } catch { /* skip */ }
+    _broadcastChannel = null;
+  }
 }
 
 export function startPeriodicSync(
@@ -418,7 +520,10 @@ export function startPeriodicSync(
 
   audit('sync', 'startPeriodicSync', { intervalMs });
 
-  subscribeToRemoteChanges();
+  // subscribeToRemoteChanges is now async (fetches session for company_id filter)
+  subscribeToRemoteChanges().catch((err) => {
+    logger.warn('[Sync] subscribeToRemoteChanges failed, falling back to polling:', err);
+  });
 
   // Start the durable background sync engine (processes the durable queue,
   // handles realtime recovery, incremental pulls, and retries forever)

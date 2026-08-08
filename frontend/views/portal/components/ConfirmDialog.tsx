@@ -55,13 +55,15 @@ const ConfirmDialog: React.FC<Props> = ({
           borderRadius: 16,
           width: '100%', maxWidth: 420,
           boxShadow: '0 20px 60px rgba(0,0,0,.2)',
-          border: '1px solid #e4ddd1',
+           border: '1px solid rgba(16,24,40,0.05)',
+
+
           animation: 'modalIn .15s ease',
         }}
       >
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '18px 22px', borderBottom: '1px solid #e4ddd1',
+          padding: '18px 22px', borderBottom: '1px solid rgba(16,24,40,0.05)',
         }}>
           <h2 id="confirm-dialog-title" style={{ fontSize: 16, fontWeight: 700, color: '#23282A', margin: 0 }}>
             {title}
@@ -77,13 +79,13 @@ const ConfirmDialog: React.FC<Props> = ({
         <div style={{ padding: '18px 22px', fontSize: 14, color: '#5c6567', lineHeight: 1.5 }}>
           {message}
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 22px', borderTop: '1px solid #e4ddd1' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 22px', borderTop: '1px solid rgba(16,24,40,0.05)' }}>
           <button
             ref={cancelRef}
             onClick={onCancel}
             style={{
               padding: '9px 18px', borderRadius: 9, cursor: 'pointer',
-              border: '1.4px solid #e4ddd1', background: '#FEFDFB', color: '#5c6567',
+              border: '1.4px solid rgba(16,24,40,0.05)', background: '#FFFFFF', color: '#6b7280',
               fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif",
             }}
           >

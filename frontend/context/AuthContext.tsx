@@ -471,7 +471,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               role,
               status: profile.status || 'Active',
               active: profile.status !== 'Inactive',
-              isSuperAdmin: Boolean(profileData.is_super_admin || role === 'Super Admin' || role === 'Company Admin' || role === 'Admin'),
+              isSuperAdmin: Boolean(profile.is_super_admin || profileData.is_super_admin || role === 'Super Admin' || role === 'Company Admin' || role === 'Admin'),
               securityLevel: profileData.securityLevel || 'Standard',
               groupIds: profileData.group_ids || profileData.groupIds || roleToGroupIds(role, profileData.is_super_admin),
               authMode: 'supabase',

@@ -1,6 +1,22 @@
 -- Customer Engagement Platform (CEP) Tables
 -- Run after supabase-referral-tables-v2.sql
 
+-- Helper function for reading current company ID with fallback to get_user_company_id()
+CREATE OR REPLACE FUNCTION public.get_current_company_id()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    NULLIF(current_setting('app.company_id', TRUE), '')::TEXT,
+    public.get_user_company_id()
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_current_company_id() TO authenticated, anon, service_role;
+
 -- 1. Engagement Timeline (Unified)
 DROP TABLE IF EXISTS engagement_timeline CASCADE;
 CREATE TABLE engagement_timeline (

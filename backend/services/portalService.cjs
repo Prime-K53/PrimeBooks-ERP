@@ -80,6 +80,14 @@ function parseJson(value, fallback = null) {
   try { return JSON.parse(value); } catch { return fallback; }
 }
 
+async function getAllFrom(table, filters = {}) {
+  return repo.getAll(table, filters);
+}
+
+async function getOneById(table, id) {
+  return repo.getById(table, id);
+}
+
 const portalService = {
 
   async getDashboard(portalUserId, customerId) {

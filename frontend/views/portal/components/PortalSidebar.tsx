@@ -1,13 +1,11 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, FileText, Receipt, CreditCard,
   FileBarChart, Wallet, MessageSquare, ChevronLeft, ChevronRight,
-  User, LogOut, Globe, X, ClipboardList, Users, Truck
+  User, LogOut, Globe, X, Users, Truck, Bell
 } from 'lucide-react';
 import { useCustomerAuth } from '../../../context/CustomerAuthContext';
-import ThemeSwitcher from './ThemeSwitcher';
-import DensityToggle from './DensityToggle';
 
 interface NavItem {
   label: string;
@@ -22,7 +20,7 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
-    title: 'Main',
+    title: 'Overview',
     items: [
       { label: 'Dashboard', path: '/portal/dashboard', icon: LayoutDashboard },
     ],
@@ -31,6 +29,7 @@ const navSections: NavSection[] = [
     title: 'Commerce',
     items: [
       { label: 'Orders', path: '/portal/orders', icon: ShoppingCart },
+      { label: 'Referrals', path: '/portal/referrals', icon: Users },
     ],
   },
   {
@@ -50,19 +49,15 @@ const navSections: NavSection[] = [
   {
     title: 'Logistics',
     items: [
-      { label: 'Shipments & Tracking', path: '/portal/shipments', icon: Truck },
-    ],
-  },
-  {
-    title: 'Rewards',
-    items: [
-      { label: 'Referrals', path: '/portal/referrals', icon: Users },
+      { label: 'Shipments', path: '/portal/shipments', icon: Truck },
     ],
   },
   {
     title: 'Account',
     items: [
       { label: 'Support', path: '/portal/support', icon: MessageSquare },
+      { label: 'Notifications', path: '/portal/notifications', icon: Bell },
+      { label: 'Documents', path: '/portal/documents', icon: FileText },
       { label: 'Profile', path: '/portal/profile', icon: User },
     ],
   },
@@ -73,14 +68,11 @@ interface Props {
   onClose: () => void;
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
-  density?: 'comfortable' | 'compact';
-  onDensityChange?: (density: 'comfortable' | 'compact') => void;
 }
 
 const SIDEBAR_COLLAPSED_KEY = 'prime-portal-sidebar-collapsed';
-const DENSITY_KEY = 'prime-portal-density';
 
-const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedExternal, onCollapsedChange, density: densityExternal, onDensityChange }) => {
+const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedExternal, onCollapsedChange }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useCustomerAuth();
@@ -92,28 +84,12 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
       return false;
     }
   });
-  const [internalDensity, setInternalDensity] = useState<'comfortable' | 'compact'>(() => {
-    try {
-      const stored = localStorage.getItem(DENSITY_KEY) as 'comfortable' | 'compact' | null;
-      return stored || 'comfortable';
-    } catch {
-      return 'comfortable';
-    }
-  });
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const collapsed = collapsedExternal ?? internalCollapsed;
   const setCollapsed = (value: boolean) => {
     setInternalCollapsed(value);
     onCollapsedChange?.(value);
-  };
-  const density = densityExternal ?? internalDensity;
-  const setDensity = (value: 'comfortable' | 'compact') => {
-    setInternalDensity(value);
-    onDensityChange?.(value);
-    try {
-      localStorage.setItem(DENSITY_KEY, value);
-    } catch { /* noop */ }
   };
   const navRef = useRef<HTMLElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
@@ -159,19 +135,19 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
           relative w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-sm group
           ${isActive
             ? 'text-white bg-white/[0.08]'
-            : 'text-white/70 hover:text-white hover:bg-white/[0.04]'
+            : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
           }
           ${collapsed ? 'justify-center px-2' : ''}
         `}
-        style={isActive ? { boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' } : undefined}
+        style={isActive ? { boxShadow: 'inset 0 0 0 1px rgba(217,154,63,0.15)' } : undefined}
       >
         {isActive && !collapsed && (
           <span
             className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full"
-            style={{ background: 'linear-gradient(180deg, #f0b35c, #d99a3f)', boxShadow: '0 0 8px rgba(217,154,63,0.4)' }}
+            style={{ background: 'linear-gradient(180deg, #d99a3f, #b97e2b)', boxShadow: '0 0 8px rgba(217,154,63,0.4)' }}
           />
         )}
-        <Icon size={18} className="shrink-0" style={{ color: isActive ? '#f0b35c' : undefined }} />
+        <Icon size={18} className="shrink-0" style={{ color: isActive ? '#d99a3f' : undefined }} />
         {!collapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
         {collapsed && hoveredItem === item.path && (
           <div
@@ -191,7 +167,7 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className="h-16 flex items-center gap-3 px-5 shrink-0 border-b border-white/5">
+      <div className="h-16 flex items-center gap-3 px-5 shrink-0 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'linear-gradient(180deg, #0b3e39, #082e2a)' }}>
         <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-white" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
           <Globe size={18} />
         </div>
@@ -200,17 +176,24 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
             <span className="font-bold text-[16px] tracking-tight text-white truncate">
               Prime<span style={{ color: '#d99a3f' }}>PORTAL</span>
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-wider -mt-0.5 truncate" style={{ color: 'rgba(255,255,255,.4)' }}>
+            <span className="text-[10px] font-semibold uppercase tracking-wider -mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>
               Customer Portal
             </span>
           </div>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden md:flex ml-auto w-6 h-6 items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          className="hidden md:flex ml-auto w-6 h-6 items-center justify-center rounded-md text-white/30 hover:text-white hover:bg-white/5 transition-all"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+        <button
+          onClick={onClose}
+          className="md:hidden ml-auto w-6 h-6 flex items-center justify-center rounded-md text-white/30 hover:text-white hover:bg-white/5 transition-all"
+          aria-label="Close sidebar"
+        >
+          <X size={14} />
         </button>
       </div>
 
@@ -221,9 +204,9 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
             style={{
               top: indicator.top,
               height: indicator.height,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: '0 0 12px rgba(15,84,76,0.2)',
+              background: 'rgba(217,154,63,0.08)',
+              border: '1px solid rgba(217,154,63,0.15)',
+              boxShadow: '0 0 12px rgba(217,154,63,0.25)',
               transition: 'all var(--motion-normal) ease',
             }}
           />
@@ -231,11 +214,11 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
         {navSections.map((section) => (
           <div key={section.title}>
             {!collapsed && (
-              <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/40">{section.title}</p>
+              <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30">{section.title}</p>
             )}
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const isActive = location.pathname.startsWith(item.path);
+                const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
                 return renderNavItem(item, isActive);
               })}
             </div>
@@ -243,7 +226,7 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
         ))}
       </nav>
 
-      <div className="border-t border-white/5 p-4 space-y-3">
+      <div className="border-t p-4 space-y-3" style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'linear-gradient(180deg, #0b3e39, #082e2a)' }}>
         <div className={`flex items-center gap-3 px-2 ${collapsed ? 'justify-center' : ''}`}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
             {(user?.full_name || user?.email || 'C').charAt(0).toUpperCase()}
@@ -251,20 +234,14 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white truncate">{user?.full_name || 'Customer'}</p>
-              <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,.4)' }}>{user?.email || ''}</p>
+              <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{user?.email || ''}</p>
             </div>
           )}
         </div>
-        {!collapsed && (
-          <div className="px-1 space-y-2">
-            <ThemeSwitcher />
-            <DensityToggle value={density} onChange={setDensity} />
-          </div>
-        )}
         <button
           onClick={handleLogout}
           className={`
-            w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/70 hover:text-rose-300 hover:bg-rose-500/10 transition-all duration-200
+            w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/60 hover:text-rose-300 hover:bg-rose-500/10 transition-all duration-200
             ${collapsed ? 'justify-center' : ''}
           `}
         >
@@ -280,11 +257,13 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
       {/* Desktop Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 z-40 h-full flex flex-col text-white/70 border-r border-white/5
-          hidden md:flex transition-all duration-200 ease-out
-          ${collapsed ? 'w-16' : 'w-64'}
+          fixed top-0 left-0 z-40 h-full flex flex-col text-white/70 border-r transition-all duration-200 ease-out
+          hidden md:flex
+          ${collapsed ? 'w-16' : 'w-[286px]'}
         `}
-        style={{ background: 'linear-gradient(180deg, #0b3e39, #082e2a)' }}
+        style={{
+          background: 'linear-gradient(180deg, #0b3e39, #082e2a)',
+        }}
       >
         {sidebarContent}
       </aside>
@@ -294,27 +273,11 @@ const PortalSidebar: React.FC<Props> = ({ isOpen, onClose, collapsed: collapsedE
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
           <aside
-            className="absolute top-0 left-0 h-full w-64 flex flex-col text-white/70 border-r border-white/5"
-            style={{ background: 'linear-gradient(180deg, #0b3e39, #082e2a)' }}
+            className="absolute top-0 left-0 h-full w-[286px] flex flex-col text-white/70 border-r transition-all duration-200 ease-out"
+            style={{
+              background: 'linear-gradient(180deg, #0b3e39, #082e2a)',
+            }}
           >
-            <div className="flex items-center justify-between h-16 px-5 border-b border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-white" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
-                  <Globe size={18} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-bold text-[16px] tracking-tight text-white truncate">
-                    Prime<span style={{ color: '#d99a3f' }}>PORTAL</span>
-                  </span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider -mt-0.5 truncate" style={{ color: 'rgba(255,255,255,.4)' }}>
-                    Customer Portal
-                  </span>
-                </div>
-              </div>
-              <button onClick={onClose} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors" aria-label="Close sidebar">
-                <X size={18} />
-              </button>
-            </div>
             {sidebarContent}
           </aside>
         </div>

@@ -60,9 +60,9 @@ const PortalButton: React.FC<Props> = ({
       boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
     },
     secondary: {
-      background: '#FEFDFB',
-      color: '#23282A',
-      border: '1.4px solid #e4ddd1',
+      background: '#FFFFFF',
+      color: '#0b3e39',
+      border: `1px solid ${portalTheme.border}`,
       boxShadow: 'none',
     },
     ghost: {

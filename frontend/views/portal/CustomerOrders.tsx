@@ -338,15 +338,15 @@ const CustomerOrders: React.FC = () => {
                       <div
                         key={order.id}
                         onClick={() => navigate(`/portal/orders/${order.id}`)}
-                        className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                        style={{ borderLeftColor: portalTheme.teal[500], cursor: 'pointer' }}
-                      >
-                        <div style={{ width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
-                          <ShoppingCart size={16} color={portalTheme.teal[500]} />
+className="rounded-[14px] p-[14px_16px] bg-[#FFFFFF] border-[1px] border-[rgba(16,24,40,0.05)] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
+                      style={{ borderLeftColor: portalTheme.teal[500], cursor: 'pointer', borderColor: portalTheme.border }}
+                    >
+                      <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
+                        <ShoppingCart size={16} color={portalTheme.teal[500]} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>#{orderNumber}</div>
-                          <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink }}>#{orderNumber}</div>
+                          <div style={{ fontSize: 10, color: portalTheme.inkSoft, marginTop: 1, lineHeight: 1.3 }}>
                             {date ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                             {itemsCount > 0 ? ` • ${itemsCount} item${itemsCount === 1 ? '' : 's'}` : ''}
                           </div>
@@ -355,7 +355,7 @@ const CustomerOrders: React.FC = () => {
                           <div style={{ fontSize: 14, fontWeight: 600, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums', lineHeight: 1.35 }}>
                             {total}
                           </div>
-                          <div style={{ fontSize: 10, color: '#5c6567', textTransform: 'uppercase', marginTop: 1, lineHeight: 1.3 }}>
+                          <div style={{ fontSize: 10, color: portalTheme.inkSoft, textTransform: 'uppercase', marginTop: 1, lineHeight: 1.3 }}>
                             Order
                           </div>
                         </div>
@@ -455,15 +455,15 @@ const CustomerOrders: React.FC = () => {
                       <div
                         key={r.id}
                         onClick={() => navigate(`/portal/requests/${r.id}`)}
-                        className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                        className="rounded-[14px] p-[14px_16px] bg-[#FFFFFF] border-[1px] border-[rgba(16,24,40,0.05)] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
                         style={{ borderLeftColor: portalTheme.amber[500], cursor: 'pointer' }}
                       >
                         <div style={{ width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.amber[50], flexShrink: 0 }}>
                           <ClipboardList size={16} color={portalTheme.amber[600]} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{requestNumber}</div>
-                          <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink }}>{requestNumber}</div>
+                          <div style={{ fontSize: 10, color: portalTheme.inkSoft, marginTop: 1, lineHeight: 1.3 }}>
                             {date} • {itemCount} item{itemCount === 1 ? '' : 's'} • K {Number(r.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                         </div>
@@ -542,15 +542,15 @@ const CustomerOrders: React.FC = () => {
                       <div
                         key={q.id}
                         onClick={() => navigate(`/portal/quotations/${q.id}`)}
-                        className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                        className="rounded-[14px] p-[14px_16px] bg-[#FFFFFF] border-[1px] border-[rgba(16,24,40,0.05)] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
                         style={{ borderLeftColor: portalTheme.teal[400], cursor: 'pointer' }}
                       >
                         <div style={{ width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
                           <FileText size={16} color={portalTheme.teal[500]} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{quotationNumber}</div>
-                          <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink }}>{quotationNumber}</div>
+                          <div style={{ fontSize: 10, color: portalTheme.inkSoft, marginTop: 1, lineHeight: 1.3 }}>
                             {date} • {friendlyStatus}
                             {isExpired && ' • Expired'}
                             {isExpiringSoon && !isExpired && ' • Expiring soon'}
@@ -560,7 +560,7 @@ const CustomerOrders: React.FC = () => {
                           <div style={{ fontSize: 14, fontWeight: 600, color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums', lineHeight: 1.35 }}>
                             K {total}
                           </div>
-                          <div style={{ fontSize: 10, color: '#5c6567', textTransform: 'uppercase', marginTop: 1, lineHeight: 1.3 }}>
+                          <div style={{ fontSize: 10, color: portalTheme.inkSoft, textTransform: 'uppercase', marginTop: 1, lineHeight: 1.3 }}>
                             Total
                           </div>
                         </div>
@@ -590,7 +590,7 @@ const CustomerOrders: React.FC = () => {
       {confirmReorder.open && (
         <div className="confirm-dialog-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmReorder({ open: false, order: null }); }}>
           <div className="confirm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="reorder-title">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid #e4ddd1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid rgba(16,24,40,0.05)' }}>
               <h2 id="reorder-title" style={{ fontSize: 16, fontWeight: 700, color: portalTheme.ink, margin: 0 }}>Confirm Reorder</h2>
               <button onClick={() => setConfirmReorder({ open: false, order: null })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8, color: portalTheme.inkSoft }} aria-label="Close dialog">
                 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 7, border: `1.4px solid ${portalTheme.hairline}` }}>+</span>
@@ -599,8 +599,8 @@ const CustomerOrders: React.FC = () => {
             <div style={{ padding: '18px 22px', fontSize: 14, color: portalTheme.inkSoft, lineHeight: 1.5 }}>
               Create a new order request based on order <strong style={{ color: portalTheme.ink, fontFamily: "'JetBrains Mono', monospace" }}>#{confirmReorder.order?.orderNumber || confirmReorder.order?.id.slice(0, 8)}</strong>? This will be reviewed by our team.
             </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 22px', borderTop: '1px solid #e4ddd1' }}>
-              <button onClick={() => setConfirmReorder({ open: false, order: null })} style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid #e4ddd1', background: portalTheme.paper, color: portalTheme.inkSoft, fontSize: 13, fontWeight: 600 }}>Cancel</button>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 22px', borderTop: '1px solid rgba(16,24,40,0.05)' }}>
+              <button onClick={() => setConfirmReorder({ open: false, order: null })} style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid rgba(16,24,40,0.05)', background: portalTheme.paper, color: portalTheme.inkSoft, fontSize: 13, fontWeight: 600 }}>Cancel</button>
               <button onClick={handleReorderConfirm} style={{ padding: '9px 18px', borderRadius: 9, cursor: 'pointer', border: '1.4px solid transparent', background: 'linear-gradient(155deg, #1f8577, #0f544c)', color: '#fff', fontSize: 13, fontWeight: 600, boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)' }}>Create Reorder</button>
             </div>
           </div>

@@ -115,7 +115,7 @@ const CustomerQuotations: React.FC = () => {
             <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginBottom: 8 }}>
               Showing {quotations.length} of {total} quotation{total !== 1 ? 's' : ''}
             </div>
-            <div style={{ background: portalTheme.paper, borderRadius: 14, border: '1.4px solid #e4ddd1', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+            <div style={{ background: portalTheme.paper, borderRadius: 16, border: `1px solid ${portalTheme.border}`, boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18)', overflow: 'hidden' }}>
               <div className="p-4 space-y-2">
                 {sorted.map((q) => {
                   const friendlyStatus = FRIENDLY_STATUS_MAP[q.status] || q.status;
@@ -124,19 +124,19 @@ const CustomerQuotations: React.FC = () => {
                   const quotationNumber = q.quotation_number || q.id.slice(0, 8);
                   const date = new Date(q.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                   const total = Number(q.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
-                  return (
-                    <div
-                      key={q.id}
-                      onClick={() => navigate(`/portal/quotations/${q.id}`)}
-                      className="rounded-[10px] p-[12px_14px] bg-[#FEFDFB] border-[1.4px] border-[#e4ddd1] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                      style={{ borderLeftColor: portalTheme.teal[400], cursor: 'pointer' }}
-                    >
-                      <div style={{ width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
-                        <FileText size={16} color={portalTheme.teal[500]} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#23282A' }}>{quotationNumber}</div>
-                        <div style={{ fontSize: 10, color: '#5c6567', marginTop: 1, lineHeight: 1.3 }}>
+                return (
+                  <div
+                    key={q.id}
+                    onClick={() => navigate(`/portal/quotations/${q.id}`)}
+                    className="rounded-[14px] p-[14px_16px] bg-[#FFFFFF] border-[1px] border-[rgba(16,24,40,0.05)] border-l-[4px] flex items-center gap-3 text-left w-full shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
+                    style={{ borderLeftColor: portalTheme.teal[400], cursor: 'pointer', borderColor: portalTheme.border }}
+                  >
+                    <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: portalTheme.teal[50], flexShrink: 0 }}>
+                      <FileText size={16} color={portalTheme.teal[500]} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: portalTheme.ink }}>{quotationNumber}</div>
+                      <div style={{ fontSize: 10, color: portalTheme.inkSoft, marginTop: 1, lineHeight: 1.3 }}>
                           {date} • {friendlyStatus}
                           {isExpired && ' • Expired'}
                           {isExpiringSoon && !isExpired && ' • Expiring soon'}

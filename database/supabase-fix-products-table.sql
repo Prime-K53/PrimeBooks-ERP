@@ -8,14 +8,17 @@
 ALTER TABLE products ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE products ALTER COLUMN id TYPE TEXT USING id::TEXT;
 
--- 2. Update FK column in product_variants if that table exists
-ALTER TABLE IF EXISTS product_variants
-  DROP CONSTRAINT IF EXISTS product_variants_product_id_fkey;
-ALTER TABLE IF EXISTS product_variants
-  ALTER COLUMN product_id TYPE TEXT USING product_id::TEXT;
-ALTER TABLE IF EXISTS product_variants
-  ADD CONSTRAINT product_variants_product_id_fkey
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+-- 2. Update FK column in product_variants if that table and column exist
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'product_variants' AND column_name = 'product_id') THEN
+    ALTER TABLE product_variants DROP CONSTRAINT IF EXISTS product_variants_product_id_fkey;
+    ALTER TABLE product_variants ALTER COLUMN product_id TYPE TEXT USING product_id::TEXT;
+    ALTER TABLE product_variants ADD CONSTRAINT product_variants_product_id_fkey
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+  END IF;
+END;
+$$;
 
 -- 5. Add data JSONB column (cloudDb.put stores the entire item payload here)
 ALTER TABLE products ADD COLUMN IF NOT EXISTS data JSONB DEFAULT '{}'::jsonb;

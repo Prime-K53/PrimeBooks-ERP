@@ -13,9 +13,6 @@ import { dbService } from '../services/db';
 import { generateNextId } from '../utils/helpers';
 import { runLegacyRefreshTasks } from './legacyDataContext';
 import { generateOpaqueId } from '../utils/idGeneration';
-import { supabase } from '../services/supabaseClient';
-import { cloudDb } from '../services/cloudDb';
-import { isCloudOnlyMode } from '../services/cloudMode';
 
 export const REFRESH_INTERVAL = 300_000;
 const FRESH_THRESHOLD_MS = 30_000;
@@ -115,12 +112,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [finance, sales, inventory, procurement, production, orders, examination]);
 
-    const queueRefresh = useCallback((delayMs = REFRESH_DEBOUNCE_MS) => {
+    const queueRefresh = useCallback((delayMs = REFRESH_DEBOUNCE_MS, options: { force?: boolean } = { force: true }) => {
         if (refreshTimerRef.current) {
             window.clearTimeout(refreshTimerRef.current);
         }
         refreshTimerRef.current = window.setTimeout(() => {
-            refreshAllData().catch((err) => logger.error('[DataContext] refresh failed:', err));
+            refreshAllData(options).catch((err) => logger.error('[DataContext] refresh failed:', err));
         }, delayMs);
     }, [refreshAllData]);
 
@@ -185,29 +182,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
     }, [queueRefresh, refreshAllData, startPolling, stopPolling]);
 
-    useEffect(() => {
-        if (!isCloudOnlyMode() || !auth.user) return;
+    // NOTE: The Supabase realtime subscription was removed from this component.
+    // syncService.ts::subscribeToRemoteChanges() handles all realtime events for
+    // all tables and now correctly dispatches 'primeerp:data-changed' + BroadcastChannel
+    // messages after each IndexedDB write, which the listeners above pick up via
+    // queueRefresh(). Having a second subscription here caused a query storm
+    // (refreshAllData() on every event across 160+ tables simultaneously).
 
-        const channel = supabase.channel(`primeerp-data`);
-
-        cloudDb.getRealtimeTables().forEach((table) => {
-            channel.on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table },
-                () => queueRefresh(80)
-            );
-        });
-
-        channel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                queueRefresh(0);
-            }
-        });
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [auth.user, queueRefresh]);
 
     const addTask = useCallback(async (task: any) => {
         const newTask = { ...task, id: task.id || generateNextId('TASK', tasks, auth.companyConfig) };

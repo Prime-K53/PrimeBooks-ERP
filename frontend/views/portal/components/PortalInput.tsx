@@ -71,18 +71,18 @@ const PortalInput: React.FC<Props> = ({
           width: '100%',
           fontFamily: "'Inter', sans-serif",
           fontSize: 13.5,
-          color: '#23282A',
+          color: '#0b3e39',
           background: focused ? '#fff' : '#f8fafc',
-          border: error ? '1.4px solid #dc2626' : `1.4px solid ${focused ? '#3fa294' : '#e4ddd1'}`,
+          border: error ? '1.4px solid #dc2626' : `1px solid ${focused ? '#4ed3c7' : 'rgba(16,24,40,0.06)'}`,
           padding: '9px 12px',
           outline: 'none',
           transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease',
-          boxShadow: focused ? '0 0 0 3px rgba(63,162,148,.15)' : 'none',
+          boxShadow: focused ? '0 0 0 3px rgba(78,211,199,.15)' : 'none',
           opacity: disabled ? 0.6 : 1,
         }}
       />
       {error && <p style={{ fontSize: 11, color: '#dc2626', margin: 0 }}>{error}</p>}
-      {hint && !error && <p style={{ fontSize: 11, color: '#5c6567', margin: 0 }}>{hint}</p>}
+      {hint && !error && <p style={{ fontSize: 11, color: '#6b7280', margin: 0 }}>{hint}</p>}
     </div>
   );
 };

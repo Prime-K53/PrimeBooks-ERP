@@ -81,11 +81,8 @@ const OfflineIndicator: React.FC = () => {
         {status === 'online' && <span className="absolute inset-0 rounded-full opacity-75 animate-ping" style={{ background: config.dot }} />}
         <span className="relative rounded-full" style={{ background: config.dot, width: 8, height: 8 }} />
       </span>
-      {config.icon}
+       {config.icon}
       <span>{config.label}</span>
-      {status === 'online' && (
-        <span className="text-[10px] opacity-75">• {timeLabel}</span>
-      )}
     </div>
   );
 };

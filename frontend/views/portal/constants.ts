@@ -3,16 +3,21 @@ import React from 'react';
 export const portalTheme = {
   teal: {
     50: '#eef7f6', 100: '#d3ece9', 200: '#a6d9d3', 300: '#72c0b7',
-    400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
+    400: '#4ed3c7', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
     800: '#0b3e39', 900: '#082e2a'
   },
   amber: {
     100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b'
   },
-  paper: '#FEFDFB',
-  ink: '#23282A',
-  inkSoft: '#5c6567',
-  hairline: '#e4ddd1',
+  paper: '#FFFFFF',
+  surface: '#FFFFFF',
+  ink: '#0b3e39',
+  inkSoft: '#6b7280',
+  inkMuted: '#94a3b8',
+  hairline: 'rgba(16,24,40,0.05)',
+  border: 'rgba(16,24,40,0.06)',
+  background: '#f8fafc',
+  backgroundGradient: 'linear-gradient(180deg, #f8fafc, #f1f5f9)',
   danger: '#b5493f',
   success: '#059669',
   info: '#2563eb',
