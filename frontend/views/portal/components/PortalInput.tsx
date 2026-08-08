@@ -46,14 +46,11 @@ const PortalInput: React.FC<Props> = ({
   };
 
   return (
-    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', ...style }}>
+    <div className={`flex flex-col gap-1.5 ${className}`} style={style}>
       {label && (
-        <label style={{
-          fontSize: 12, fontWeight: 600, color: '#0b3e39',
-          letterSpacing: 0.01
-        }}>
+        <label className="text-xs font-semibold text-slate-700 tracking-wide">
           {label}
-          {required && <span style={{ color: '#dc2626', marginLeft: 2 }}>*</span>}
+          {required && <span className="text-rose-500 ml-0.5">*</span>}
         </label>
       )}
       <input
@@ -66,23 +63,21 @@ const PortalInput: React.FC<Props> = ({
         disabled={disabled}
         autoFocus={autoFocus}
         required={required}
-        className="input-base"
+        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50/80 border text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200"
         style={{
-          width: '100%',
           fontFamily: "'Inter', sans-serif",
-          fontSize: 13.5,
-          color: '#0b3e39',
-          background: focused ? '#fff' : '#f8fafc',
-          border: error ? '1.4px solid #dc2626' : `1px solid ${focused ? '#4ed3c7' : 'rgba(16,24,40,0.06)'}`,
-          padding: '9px 12px',
-          outline: 'none',
-          transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease',
-          boxShadow: focused ? '0 0 0 3px rgba(78,211,199,.15)' : 'none',
+          borderColor: error ? '#ef4444' : focused ? 'rgba(20, 107, 96, 0.6)' : 'rgba(226, 232, 240, 0.9)',
+          boxShadow: error
+            ? '0 0 0 3px rgba(239, 68, 68, 0.15)'
+            : focused
+              ? '0 0 0 4px rgba(20, 107, 96, 0.12)'
+              : '0 1px 2px rgba(15, 23, 42, 0.03)',
+          background: focused ? '#ffffff' : undefined,
           opacity: disabled ? 0.6 : 1,
         }}
       />
-      {error && <p style={{ fontSize: 11, color: '#dc2626', margin: 0 }}>{error}</p>}
-      {hint && !error && <p style={{ fontSize: 11, color: '#6b7280', margin: 0 }}>{hint}</p>}
+      {error && <p className="text-[11px] font-medium text-rose-500 mt-0.5">{error}</p>}
+      {hint && !error && <p className="text-[11px] text-slate-400 mt-0.5">{hint}</p>}
     </div>
   );
 };

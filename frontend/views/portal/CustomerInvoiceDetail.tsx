@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createElement } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Eye } from 'lucide-react';
+import { ArrowLeft, Download, Eye, Building2, Smartphone, Banknote } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { portalLifecycle } from '../../services/portalApiClient';
 import { mapToInvoiceData } from '../../utils/pdfMapper';
@@ -201,6 +201,71 @@ const CustomerInvoiceDetail: React.FC = () => {
 </div>
           </div>
         </div>
+
+        {remaining > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: '#eef7f6', color: '#146b60',
+              }}>
+                <Banknote size={16} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: portalTheme.inkSoft, textTransform: 'uppercase', letterSpacing: 0.06 }}>
+                How to Pay
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { type: 'mobile', icon: <Smartphone size={14} />, name: 'Airtel Money', number: '0992 528 222', accountName: 'Prime Media', color: '#059669' },
+                { type: 'mobile', icon: <Smartphone size={14} />, name: 'TNM Mpamba', number: '0992 528 222', accountName: 'Prime Media', color: '#059669' },
+                { type: 'bank', icon: <Building2 size={14} />, name: 'Bank Transfer', bank: 'National Bank', account: '1010182286', accountName: 'Prime Media', color: '#2563eb' },
+                { type: 'bank', icon: <Building2 size={14} />, name: 'Bank Transfer', bank: 'First Capital Bank', account: '1036047166312', accountName: 'Prime Media', color: '#2563eb' },
+              ].map((method, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  background: '#fff',
+                  border: `1px solid ${portalTheme.border}`,
+                }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: `${method.color}10`, color: method.color,
+                    flexShrink: 0,
+                  }}>
+                    {method.icon}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: portalTheme.ink }}>{method.name}</div>
+                    <div style={{ fontSize: 11, color: portalTheme.inkSoft, marginTop: 1 }}>
+                      {'bank' in method ? `${method.bank} — ${method.account}` : `Number: ${method.number}`}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 10, color: portalTheme.inkMuted, textAlign: 'right' }}>
+                    {method.accountName}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              marginTop: 12,
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: '#fffbeb',
+              border: '1px solid #fde68a',
+              fontSize: 11,
+              color: '#92400e',
+              lineHeight: 1.5,
+            }}>
+              After transferring, please send proof of payment via WhatsApp or email so we can allocate it to your account promptly.
+            </div>
+          </div>
+        )}
 
       </div>
 

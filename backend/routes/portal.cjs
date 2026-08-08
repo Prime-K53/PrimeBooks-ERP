@@ -905,6 +905,19 @@ router.delete('/support/tickets/:id/attachments/:attachmentId', async (req, res)
 });
 
 // ─── Shipments / Tracking (customer-facing, read-only) ─────────────────────────
+// Today's in-flight deliveries (feeds the "Pending delivery today" banner).
+// Lightweight enough for the portal to poll while the dashboard stays cached.
+router.get('/deliveries/today', async (req, res) => {
+  try {
+    const { customer_id } = req.portalUser;
+    const rows = await portalService.getTodayPendingDeliveries(customer_id);
+    res.json(rows);
+  } catch (err) {
+    console.error('[Portal] Today deliveries error:', err);
+    res.status(500).json({ error: 'Failed to load today deliveries' });
+  }
+});
+
 router.get('/shipments', async (req, res) => {
   try {
     const { customer_id } = req.portalUser;

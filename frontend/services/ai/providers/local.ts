@@ -75,14 +75,21 @@ function extractContent(choice: any): string {
 
 export const localProvider: AIProvider = {
   async generateChat(messages, config) {
-    const body = buildRequestBody(messages, config);
-    const res = await localFetch(body, config);
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`Local AI error ${res.status}: ${err}`);
+    try {
+      const body = buildRequestBody(messages, config);
+      const res = await localFetch(body, config);
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Local AI error ${res.status}: ${err}`);
+      }
+      const data = await res.json();
+      return extractContent(data.choices?.[0]) || '';
+    } catch (err: any) {
+      if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+        throw new Error('Local AI server (Ollama) is not reachable on http://localhost:11434. Ensure Ollama is running locally or select a cloud AI provider in Settings.');
+      }
+      throw err;
     }
-    const data = await res.json();
-    return extractContent(data.choices?.[0]) || '';
   },
 
   async *generateChatStream(messages, config) {

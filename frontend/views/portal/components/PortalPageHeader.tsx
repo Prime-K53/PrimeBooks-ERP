@@ -20,73 +20,48 @@ const PortalPageHeader: React.FC<Props> = ({
   title,
   subtitle,
   icon: Icon,
-  iconBg = 'linear-gradient(155deg, #1f8577, #0f544c)',
+  iconBg = 'linear-gradient(135deg, #146b60 0%, #0f544c 100%)',
   iconColor = '#fff',
   action,
   children,
   style,
 }) => {
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '20px 24px',
-      borderBottom: `1px solid rgba(16,24,40,0.05)`,
-      background: '#FFFFFF',
-      boxShadow: '0 1px 2px rgba(16,24,40,0.03)',
-      flexWrap: 'wrap',
-      gap: 12,
-      ...(style as any),
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+    <div
+      className="glass-panel-premium rounded-2xl p-5 md:p-6 flex items-center justify-between flex-wrap gap-4 border border-slate-200/80 shadow-xs mb-6"
+      style={style}
+    >
+      <div className="flex items-center gap-3.5 min-w-0">
         {Icon && (
-          <div style={{
-            width: 40, height: 40, borderRadius: 10,
-            background: iconBg,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)', flexShrink: 0
-          }}>
-            <Icon size={19} color={iconColor} />
+          <div
+            className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md shadow-teal-900/20"
+            style={{ background: iconBg }}
+          >
+            <Icon size={20} color={iconColor} />
           </div>
         )}
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 600, fontSize: 20, margin: 0,
-            color: '#0b3e39', letterSpacing: -0.2
-          }}>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
             {title}
           </h1>
           {subtitle && (
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280', letterSpacing: -0.01 }}>
+            <p className="text-xs font-medium text-slate-500 mt-0.5 leading-relaxed">
               {subtitle}
             </p>
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+      <div className="flex items-center gap-3 shrink-0">
         {children}
         {action && (
           <button
             onClick={action.onClick}
             disabled={action.disabled}
-            style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-              padding: '9px 18px', borderRadius: 9, cursor: action.disabled ? 'not-allowed' : 'pointer',
-              border: 'none',
-              background: `linear-gradient(155deg, #1f8577, #0f544c)`,
-              color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 7,
-              boxShadow: '0 6px 16px -6px rgba(15,84,76,.55)',
-              opacity: action.disabled ? 0.6 : 1,
-              transition: 'transform .15s ease, box-shadow .15s ease',
-            }}
-            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(.96)')}
-            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            className="btn-press px-4 py-2.5 rounded-xl text-xs font-bold text-white inline-flex items-center gap-2 transition-all shadow-md shadow-teal-900/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: 'linear-gradient(135deg, #146b60 0%, #0f544c 100%)' }}
           >
             {action.icon && <action.icon size={16} />}
-            {action.label}
+            <span>{action.label}</span>
           </button>
         )}
       </div>

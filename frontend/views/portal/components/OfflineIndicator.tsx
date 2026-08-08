@@ -73,15 +73,14 @@ const OfflineIndicator: React.FC = () => {
 
   const config = getStatusConfig();
   const timeAgo = Math.floor((Date.now() - lastSync.getTime()) / 1000);
-  const timeLabel = timeAgo < 60 ? 'Just now' : timeAgo < 3600 ? `${Math.floor(timeAgo / 60)}m ago` : `${Math.floor(timeAgo / 3600)}h ago`;
 
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${config.bg} ${config.text} ${config.border}`}>
       <span className="relative flex h-2 w-2">
         {status === 'online' && <span className="absolute inset-0 rounded-full opacity-75 animate-ping" style={{ background: config.dot }} />}
-        <span className="relative rounded-full" style={{ background: config.dot, width: 8, height: 8 }} />
+      <span className="relative rounded-full" style={{ background: config.dot, width: 8, height: 8 }} />
       </span>
-       {config.icon}
+      {config.icon}
       <span>{config.label}</span>
     </div>
   );

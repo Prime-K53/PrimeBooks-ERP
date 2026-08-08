@@ -108,6 +108,7 @@ async function request<T>(
 
 let cachedTicket: string | null = null;
 let cachedTicketExpiry: number = 0;
+let pendingTicketRequest: Promise<{ ticket: string; expiresIn: number }> | null = null;
 
 export const portalApi = {
   get<T>(endpoint: string): Promise<T> {
@@ -763,7 +764,7 @@ export const portalLifecycle = {
       return portalApi.put('/profile', payload);
     },
     changePassword(payload: { currentPassword: string; newPassword: string }): Promise<any> {
-      return portalApi.post('/profile/password', payload);
+      return portalApi.put('/profile/password', payload);
     },
     listSessions(): Promise<any[]> {
       return portalApi.get('/auth/sessions');
@@ -791,11 +792,15 @@ export const portalLifecycle = {
     try {
       const now = Date.now();
       if (!cachedTicket || cachedTicketExpiry <= now) {
-        const { ticket, expiresIn } = await portalApi.post<{ ticket: string; expiresIn: number }>('/events-ticket', { purpose: 'portal-realtime' });
+        if (!pendingTicketRequest) {
+          pendingTicketRequest = portalApi.post<{ ticket: string; expiresIn: number }>('/events-ticket', { purpose: 'portal-realtime' })
+            .finally(() => { pendingTicketRequest = null; });
+        }
+        const { ticket, expiresIn } = await pendingTicketRequest;
         cachedTicket = ticket;
-        cachedTicketExpiry = now + expiresIn * 1000;
+        cachedTicketExpiry = Date.now() + expiresIn * 1000;
       }
-      source = new EventSource(`${API_BASE_URL}/portal/events?token=${encodeURIComponent(cachedTicket)}`);
+      source = new EventSource(`${API_BASE_URL}/portal/events?token=${encodeURIComponent(cachedTicket!)}`);
       source.addEventListener('entity_changed', (e: MessageEvent) => {
         try {
           callbacks.onEvent?.('entity_changed', JSON.parse(e.data));

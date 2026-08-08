@@ -398,6 +398,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         // Use transactionService for atomic Invoice + Inventory + Ledger
         await transactionService.processInvoice(finalizedInvoice);
+
+        // Keep the Order -> Invoice chain intact for admin-created invoices:
+        // materialise a sales order (same customerId) so the customer portal
+        // shows it under Orders / recent activity. No-op when the invoice
+        // already came from an order, is POS, or has no customer.
+        await transactionService.ensureOrderFromInvoice(finalizedInvoice).catch(() => {});
         
         // Refresh finance data to reflect changes
         await financeStore.fetchFinanceData();

@@ -77,6 +77,7 @@ const pageTitles: Record<string, string> = {
   '/portal/quotations': 'Quotations',
    '/portal/invoices': 'Invoices',
    '/portal/payments': 'Payments',
+   '/portal/payment-options': 'Payment Options',
    '/portal/statements': 'Statements',
    '/portal/referrals': 'Referrals',
    '/portal/wallet': 'Wallet',
@@ -146,20 +147,26 @@ const CustomerLayout: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <div className={`min-h-screen bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] density-${density}`}>
+        <div className={`min-h-screen bg-slate-50 density-${density} relative overflow-hidden font-sans text-slate-900`}>
+          {/* Ambient Decorative Backdrops */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-teal-500/5 via-emerald-400/3 to-transparent rounded-full blur-[140px]" />
+            <div className="absolute bottom-10 left-1/3 w-[500px] h-[500px] bg-gradient-to-tr from-amber-500/5 via-teal-500/4 to-transparent rounded-full blur-[120px]" />
+          </div>
+
           <a href="#main-content" className="skip-nav">Skip to main content</a>
           {sidebarOpen && (
-            <div className="fixed inset-0 z-40 md:hidden" onClick={closeSidebar} />
+            <div className="fixed inset-0 z-40 md:hidden bg-slate-900/40 backdrop-blur-xs" onClick={closeSidebar} />
           )}
           <PortalSidebar isOpen={sidebarOpen} onClose={closeSidebar} collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
           <PortalHeader title={currentTitle} onMenuToggle={toggleSidebar} sidebarCollapsed={sidebarCollapsed} onCommandToggle={() => setCommandOpen((v) => !v)} />
-           <main
+          <main
             id="main-content"
-            className={`fixed top-14 md:top-16 right-0 overflow-x-auto overflow-y-auto custom-scrollbar transition-all duration-200 ease-out md:bottom-0 bottom-16 ${sidebarCollapsed ? 'md:left-16 left-0' : 'md:left-[286px] left-0'}`}
+            className={`fixed top-14 md:top-16 right-0 overflow-x-auto overflow-y-auto custom-scrollbar transition-all duration-200 ease-out md:bottom-0 bottom-16 z-10 ${sidebarCollapsed ? 'md:left-16 left-0' : 'md:left-[286px] left-0'}`}
           >
             <div className="page-shell py-4 md:py-6 min-w-0">
-              <div className="mx-auto w-full" style={{ maxWidth: '920px', padding: '28px 20px 64px' }}>
-                <div className="page-content min-h-[calc(100vh-56px-48px)] bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] px-0">
+              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-20">
+                <div className="page-content min-h-[calc(100vh-56px-48px)]">
                   <PortalErrorBoundary>
                     <Outlet />
                   </PortalErrorBoundary>

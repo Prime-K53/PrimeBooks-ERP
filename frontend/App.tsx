@@ -71,6 +71,7 @@ const CustomerCreateRequest = lazy(() => import('./views/portal/CustomerCreateRe
 const CustomerRequests = lazy(() => import('./views/portal/CustomerRequests'));
 const CustomerRequestDetail = lazy(() => import('./views/portal/CustomerRequestDetail'));
 const CustomerQuotationDetail = lazy(() => import('./views/portal/CustomerQuotationDetail'));
+const CustomerPaymentOptions = lazy(() => import('./views/portal/CustomerPaymentOptions'));
 const PortalUserManagement = lazy(() => import('./views/portal/PortalUserManagement'));
 
 import { isResponsiveDebugEnabled } from './utils/debugFlags';
@@ -1087,6 +1088,7 @@ const PortalRoutes = (
       <Route path="invoices/:id" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerInvoiceDetail /></Suspense>} />
       <Route path="payments" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerPayments /></Suspense>} />
       <Route path="payments/:id" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerPaymentDetail /></Suspense>} />
+      <Route path="payment-options" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerPaymentOptions /></Suspense>} />
       <Route path="statements" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerStatements /></Suspense>} />
       <Route path="wallet" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerWallet /></Suspense>} />
       <Route path="loyalty" element={<Suspense fallback={<div className="p-8 flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div>}><CustomerLoyalty /></Suspense>} />

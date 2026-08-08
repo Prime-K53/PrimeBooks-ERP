@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Mail, KeyRound, Lock, ArrowLeft, Loader2 } from 'lucide-react';
+import { Mail, KeyRound, Lock, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { useToast } from './components/Toast';
 import ErrorBanner from './components/ErrorBanner';
 import { portalApi } from '../../services/portalApiClient';
@@ -42,124 +42,103 @@ const CustomerResetPassword: React.FC = () => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 overflow-y-auto bg-[var(--dashboard-bg)] font-sans">
-      <div className="min-h-full flex items-center justify-center p-6">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-gradient-to-br from-teal-500/10 to-emerald-400/5 rounded-full blur-[120px]" />
-      </div>
+  const inputClass = "w-full h-11 pl-10 pr-4 bg-slate-50/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500/60 transition-all shadow-2xs";
 
-      <div className="w-full max-w-[420px] relative z-10 bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
-            <KeyRound size={20} />
-          </div>
-          <div>
-            <div className="font-bold text-lg tracking-tight" style={{ color: '#23282A' }}>
-              Prime<span style={{ color: '#b97e2b' }}>PORTAL</span>
-            </div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: '#5c6567' }}>Reset Password</div>
-          </div>
+  return (
+    <div className="fixed inset-0 overflow-y-auto bg-slate-900 font-sans">
+      <div className="min-h-full flex items-center justify-center p-6 relative">
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-32 -right-32 w-[650px] h-[650px] bg-gradient-to-br from-teal-500/20 via-emerald-500/10 to-transparent rounded-full blur-[140px]" />
+          <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-gradient-to-tr from-teal-600/10 to-transparent rounded-full blur-[120px]" />
         </div>
 
-        {done ? (
-          <div>
-            <h1 className="text-[1.65rem] font-bold tracking-tight leading-snug" style={{ color: '#23282A' }}>Password reset</h1>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: '#5c6567' }}>
-              Your password has been reset successfully. You can now sign in with your new password.
-            </p>
-            <Link
-              to="/portal/login"
-              className="mt-6 inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 transition-colors"
-            >
-              <ArrowLeft size={14} />
-              Back to login
-            </Link>
-          </div>
-        ) : (
-          <>
-            <div className="mb-8">
-              <h1 className="text-[1.65rem] font-bold tracking-tight leading-snug" style={{ color: '#23282A' }}>Set a new password</h1>
-              <p className="mt-2 text-sm leading-relaxed" style={{ color: '#5c6567' }}>Enter the code from your email along with your new password.</p>
+        <div className="w-full max-w-[440px] relative z-10 bg-white/95 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 md:p-10 shadow-2xl shadow-slate-950/50">
+          <div className="flex items-center gap-3.5 mb-8">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-teal-900/30" style={{ background: 'linear-gradient(135deg, #3fa294, #0f544c)' }}>
+              <KeyRound size={22} />
             </div>
-
-            {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Email Address</label>
-                <div className="relative">
-                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
-                  />
-                </div>
+            <div>
+              <div className="font-extrabold text-xl tracking-tight text-slate-900">
+                Prime<span style={{ color: '#f59e0b' }}>PORTAL</span>
               </div>
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400">Set New Password</div>
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Reset Code</label>
-                <div className="relative">
-                  <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="6-digit code"
-                    className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
-                  />
-                </div>
+          {done ? (
+            <div className="text-center py-4">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-5">
+                <CheckCircle size={32} className="text-emerald-500" />
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">New Password</label>
-                <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 6 characters"
-                    className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Confirm New Password</label>
-                <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat your password"
-                    className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting || !email.trim() || !code.trim() || !password || !confirmPassword}
-                className="w-full h-11 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(90deg, #146b60, #3fa294)', boxShadow: '0 8px 20px rgba(20,107,96,.25)' }}
-              >
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Reset Password'}
-              </button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <Link to="/portal/login" className="text-xs text-slate-400 hover:text-slate-700 transition-colors inline-flex items-center gap-1">
-                <ArrowLeft size={12} />
-                Back to login
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-2">Password reset!</h1>
+              <p className="text-xs font-medium text-slate-500 leading-relaxed mb-6">
+                Your password has been reset successfully. You can now sign in with your new password.
+              </p>
+              <Link to="/portal/login" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-md btn-press" style={{ background: 'linear-gradient(135deg, #146b60 0%, #0f544c 100%)' }}>
+                Sign In Now
               </Link>
             </div>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <div className="mb-8">
+                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Set a new password</h1>
+                <p className="mt-2 text-xs font-medium text-slate-500 leading-relaxed">Enter the reset code from your email and choose a new password.</p>
+              </div>
+
+              {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Email Address</label>
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" className={inputClass} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Reset Code</label>
+                  <div className="relative">
+                    <KeyRound size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="6-digit code from email" className={inputClass} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">New Password</label>
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className={inputClass} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Confirm New Password</label>
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repeat your password" className={inputClass} />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting || !email.trim() || !code.trim() || !password || !confirmPassword}
+                  className="w-full h-11 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed btn-press mt-2"
+                  style={{ background: 'linear-gradient(135deg, #146b60 0%, #0f544c 100%)', boxShadow: '0 6px 20px rgba(15, 84, 76, 0.35)' }}
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Reset My Password'}
+                </button>
+              </form>
+
+              <div className="mt-5 pt-3 border-t border-slate-100 text-center">
+                <Link to="/portal/login" className="text-xs font-semibold text-slate-500 hover:text-teal-600 transition-colors inline-flex items-center gap-1.5">
+                  <ArrowLeft size={13} />
+                  Back to Sign In
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

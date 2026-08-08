@@ -43,22 +43,21 @@ const StatusBadge: React.FC<Props> = ({ status, size = 'md', showIcon = true }) 
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 font-semibold rounded-full whitespace-nowrap"
+      className="inline-flex items-center gap-1.5 font-bold rounded-full whitespace-nowrap shadow-2xs transition-all duration-150"
       style={{
         background: config.bg,
         color: config.text,
-        fontSize: isSmall ? 10 : 12,
-        padding: isSmall ? '2px 8px' : '3px 10px',
+        fontSize: isSmall ? 10 : 11,
+        padding: isSmall ? '2px 8px' : '3.5px 11px',
         lineHeight: 1.4,
-        border: `1px solid ${config.text}25`,
-        boxShadow: `0 1px 2px ${config.text}15`,
+        border: `1px solid ${config.text}30`,
       }}
     >
-      <span className="relative flex h-1.5 w-1.5 shrink-0">
+      <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
         {config.pulse && (
           <span className="absolute inset-0 rounded-full opacity-75 animate-ping" style={{ background: config.dot }} />
         )}
-        <span className="relative rounded-full" style={{ background: config.dot, width: isSmall ? 6 : 8, height: isSmall ? 6 : 8 }} />
+        <span className="relative rounded-full" style={{ background: config.dot, width: isSmall ? 5 : 6, height: isSmall ? 5 : 6 }} />
       </span>
       {config.label}
     </span>

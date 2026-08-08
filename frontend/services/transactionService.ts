@@ -8,7 +8,8 @@ import {
     Income, Transfer, Item, Purchase, GoodsReceipt, ProductionBatch, WorkOrder,
     Order, OrderPayment, CustomerPayment, SupplierPayment, PurchaseAllocation, Supplier, VatTransaction, VATConfig,
     ConsumptionSnapshot, BOMTemplate, MarketAdjustment, MarketAdjustmentTransaction, TransactionAdjustmentSnapshot,
-    Shipment, DeliveryNote, ProofOfDeliveryRecord, TransactionPricingSnapshot
+    Shipment, DeliveryNote, ProofOfDeliveryRecord, TransactionPricingSnapshot,
+    SalesOrder, SalesOrderItem
 } from '../types';
 import { BankAccount, BankTransaction } from '../types/banking';
 import { MultiCurrencyJournalEntry, MultiCurrencyTransactionLine, CurrencyGainLoss } from '../types/currency';
@@ -1769,6 +1770,87 @@ export const transactionService = {
         );
     },
 
+    /**
+     * Keeps the Quotation -> Order -> Invoice chain intact for invoices the
+     * admin creates directly (no portal request involved). When such an
+     * invoice is saved we also materialise a real sales order for the SAME
+     * customerId so the customer portal sees it under "Orders" and in recent
+     * activity as an order made, with a cross-reference back to the invoice.
+     *
+     * Skipped entirely when the invoice already descends from an order
+     * (Converted-from / sourceOrderId), is POS/walk-in, or has no customer.
+     */
+    async ensureOrderFromInvoice(invoice: Invoice) {
+        try {
+            if (!invoice?.customerId) return null;
+            const customerId = invoice.customerId;
+
+            const isPos = /pos|walk[ -]?in/i.test(
+                `${invoice.notes || ''} ${invoice.reference || ''} ${invoice.documentTitle || ''}`
+            );
+            const alreadyHasOrder = Boolean(invoice.sourceOrderId)
+                || /converted from \[(order|sales order|so)\]/i.test(String(invoice.notes || ''))
+                || Boolean((invoice as any).orderNumber);
+            if (isPos || alreadyHasOrder) return null;
+
+            const existing = (await dbService.getAll<SalesOrder>('salesOrders')) || [];
+            const dup = existing.find(
+                (o) => (o as any).invoiceId === invoice.id || o.id === invoice.id
+            );
+            if (dup) return null;
+
+            const orderId = generateNextId('SO', existing, getCompanyConfig());
+
+            const items: SalesOrderItem[] = (invoice.items || []).map((it: CartItem, idx: number) => {
+                const quantity = Number(it.quantity ?? it.qty ?? 1);
+                const unitPrice = Number(it.price ?? it.unitPrice ?? it.unit_price ?? 0);
+                const discount = Number(it.discount ?? 0);
+                const lineTotal = Number(it.lineTotal ?? (it.line_total ?? (quantity * unitPrice - discount)));
+                return {
+                    id: it.id || `item-${orderId}-${idx}`,
+                    productId: it.parentId || it.id || it.productId || `item-${orderId}-${idx}`,
+                    description: it.name || it.productName || it.description || 'Product',
+                    quantity,
+                    unitPrice,
+                    discount,
+                    lineTotal,
+                };
+            });
+
+            const subtotal = items.reduce((sum, it) => sum + Number(it.lineTotal ?? it.quantity * it.unitPrice), 0);
+            const discounts = Number(invoice.adjustmentTotal ?? 0);
+            const total = Number(invoice.totalAmount ?? invoice.total ?? (subtotal - discounts));
+            const tax = Number(invoice.tax ?? invoice.taxRate ?? 0);
+
+            const order: SalesOrder & { orderNumber?: string; customerName?: string; invoiceId?: string; invoiceNumber?: string; source?: string } = {
+                id: orderId,
+                orderNumber: orderId,
+                quotationId: null,
+                customerId,
+                customerName: invoice.customerName,
+                orderDate: invoice.date || new Date().toISOString(),
+                deliveryDate: invoice.dueDate ?? null,
+                status: String(invoice.status || '').toLowerCase() === 'draft' ? 'Draft' : 'Confirmed',
+                items,
+                subtotal,
+                discounts,
+                tax,
+                total,
+                notes: invoice.notes,
+                invoiceId: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                source: 'invoice',
+            };
+
+            await dbService.put('salesOrders', order);
+            logger.info(`[transactionService] Created SalesOrder ${orderId} from invoice ${invoice.id} for customer ${customerId}`);
+            return order;
+        } catch (err: any) {
+            logger.error('Failed to create order from invoice:', err);
+            return null;
+        }
+    },
+
     async updateSale(sale: Sale) {
         return dbService.executeAtomicOperation(
             ['sales'],
@@ -1830,7 +1912,8 @@ export const transactionService = {
                         ...entry,
                         id: generateId('LG'),
                         date,
-                        reconciled: entry.reconciled || false
+                        reconciled: entry.reconciled || false,
+                        amount: entry.amount || 0
                     };
                     await store.put(newEntry);
                 }
@@ -4186,13 +4269,16 @@ export const transactionService = {
                     date: new Date().toISOString(),
                     supplierId: item.preferredSupplierId || 'SUPP-001',
                     items: [{
+                        id: item.id,
                         itemId: item.id,
                         name: item.name,
                         quantity: (item.maxStockLevel || 100) - (item.stock || 0),
                         cost: item.cost || 0,
+                        price: item.cost || 0,
                         receivedQty: 0
                     }],
                     total: ((item.maxStockLevel || 100) - (item.stock || 0)) * (item.cost || 0),
+                    totalAmount: ((item.maxStockLevel || 100) - (item.stock || 0)) * (item.cost || 0),
                     status: 'Draft'
                 };
 
@@ -5229,7 +5315,7 @@ export const transactionService = {
             date: new Date().toISOString()
         };
         await dbService.put('walletTransactions', walletTx);
-        const customer = await dbService.get('customers', walletTx.customerId);
+        const customer = await dbService.get<Customer>('customers', walletTx.customerId);
         if (customer) {
             customer.walletBalance = (customer.walletBalance || 0) + overpaymentAmount;
             await dbService.put('customers', customer);

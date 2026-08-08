@@ -17,6 +17,7 @@ const COMMANDS: CommandItem[] = [
   { id: 'invoices', label: 'Invoices', path: '/portal/invoices', icon: Receipt, keywords: ['billing', 'payments'], category: 'billing' },
   { id: 'statements', label: 'Statements', path: '/portal/statements', icon: FileBarChart, keywords: ['history', 'transactions'], category: 'billing' },
   { id: 'payments', label: 'Payments', path: '/portal/payments', icon: CreditCard, keywords: ['pay', 'method'], category: 'finance' },
+  { id: 'payment-options', label: 'Payment Options', path: '/portal/payment-options', icon: CreditCard, keywords: ['how to pay', 'bank', 'mobile money'], category: 'billing' },
   { id: 'wallet', label: 'Wallet', path: '/portal/wallet', icon: Wallet, keywords: ['balance', 'funds'], category: 'finance' },
   { id: 'shipments', label: 'Shipments & Tracking', path: '/portal/shipments', icon: Truck, keywords: ['delivery', 'tracking'], category: 'logistics' },
   { id: 'referrals', label: 'Referrals', path: '/portal/referrals', icon: Users, keywords: ['rewards', 'earn'], category: 'rewards' },

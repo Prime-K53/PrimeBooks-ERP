@@ -91,13 +91,15 @@ async function getOneById(table, id) {
 const portalService = {
 
   async getDashboard(portalUserId, customerId) {
-    const [customer, invoices, orders, requests, quotations, notifications] = await Promise.all([
+    const [customer, invoices, orders, requests, quotations, notifications, pointBalance, walletRows] = await Promise.all([
       getOneById('customers', customerId),
       getAllFrom('invoices', { 'data->>customerId': `eq.${customerId}` }),
       getAllFrom('sales_orders', { 'data->>customerId': `eq.${customerId}` }),
       getAllFrom('quotation_requests', { 'data->>customerId': `eq.${customerId}` }),
       getAllFrom('quotations', { 'data->>customerId': `eq.${customerId}` }),
       getAllFrom('portal_notifications', { 'data->>portalUserId': `eq.${portalUserId}` }),
+      repo.getById('engagement_point_balances', customerId).catch(() => null),
+      getAllFrom('wallet_transactions', { 'data->>customerId': `eq.${customerId}` }).catch(() => []),
     ]);
 
     const unpaidCount = invoices.filter((i) => /unpaid|partial/i.test(String(i.status || ''))).length;
@@ -115,6 +117,17 @@ const portalService = {
 
     const recentDocs = await this.getRecentDocuments(customerId, 5);
     const recentTransactions = await this.getRecentTransactions(customerId, 5);
+    const pendingDeliveries = await this.getTodayPendingDeliveries(customerId);
+
+    const health = this.computeHealthScore({
+      customer,
+      invoices,
+      orders,
+      requests,
+      quotations,
+      pointBalance,
+      walletRows: walletRows || [],
+    });
 
     return {
       balance: (customer && customer.balance != null) ? customer.balance : 0,
@@ -128,6 +141,99 @@ const portalService = {
       unreadMessageCount,
       recentDocuments: recentDocs,
       recentTransactions,
+      pendingDeliveries,
+      health,
+    };
+  },
+
+  // ── Customer Health Score — computed from real ERP data ──────────────────
+  computeHealthScore({ customer, invoices = [], orders = [], requests = [], quotations = [], pointBalance = null, walletRows = [] }) {
+    const toNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    const paidStatus = (s) => /paid|fulfilled|settled/i.test(String(s || ''));
+    const openStatus = (s) => /unpaid|partial|overdue|pending/i.test(String(s || ''));
+
+    // ── Payment History ──
+    let paidAmount = 0;
+    let totalAmount = 0;
+    for (const inv of invoices) {
+      const total = toNum(inv.total_amount ?? inv.total ?? inv.amount);
+      if (total <= 0) continue;
+      totalAmount += total;
+      if (paidStatus(inv.status)) paidAmount += total;
+      else paidAmount += Math.min(total, toNum(inv.paid_amount ?? inv.paidAmount ?? 0));
+    }
+    const paymentHistory = totalAmount > 0
+      ? Math.round((paidAmount / totalAmount) * 100)
+      : 100;
+
+    // ── Overdue Invoices ──
+    const openWithDueDate = invoices.filter((i) => {
+      if (!openStatus(i.status)) return false;
+      const due = i.due_date || i.dueDate || i.created_at;
+      if (!due) return true; // open invoice with no due date counts as risk
+      return new Date(due).getTime() < now;
+    }).length;
+    const totalOpen = invoices.filter((i) => openStatus(i.status)).length;
+    const overdueInvoices = totalOpen > 0
+      ? Math.max(0, Math.round(100 - (openWithDueDate / totalOpen) * 100))
+      : 100;
+
+    // ── Order Frequency (last 90 days vs total history) ──
+    const recentOrders = orders.filter((o) => {
+      const d = new Date(o.orderDate || o.created_at || o.date || 0).getTime();
+      return Number.isFinite(d) && d >= now - 90 * DAY;
+    }).length;
+    const orderFrequency = orders.length > 0
+      ? Math.min(100, Math.round((recentOrders / orders.length) * 70 + 30))
+      : 0;
+
+    // ── Rewards / Loyalty Activity ──
+    const points = toNum(pointBalance?.balance ?? pointBalance?.points ?? 0);
+    const walletCredits = (walletRows || [])
+      .filter((w) => String(w.type || '').toLowerCase() === 'credit')
+      .reduce((sum, w) => sum + toNum(w.amount), 0);
+    const rewards = Math.min(100, Math.round(
+      Math.min(points, 100) * 0.6 + Math.min(walletCredits * 0.5, 100) * 0.4
+    ));
+
+    // ── Engagement / Response Time (requests + quotations activity) ──
+    const recentActivity = [...requests, ...quotations].filter((r) => {
+      const d = new Date(r.created_at || r.date || 0).getTime();
+      return Number.isFinite(d) && d >= now - 30 * DAY;
+    }).length;
+    const responseTime = Math.min(100, Math.round((recentActivity / 4) * 100));
+
+    const factors = {
+      paymentHistory,
+      overdueInvoices,
+      orderFrequency,
+      rewards,
+      responseTime,
+    };
+
+    const score = Math.round(
+      paymentHistory * 0.30
+      + overdueInvoices * 0.25
+      + orderFrequency * 0.20
+      + rewards * 0.15
+      + responseTime * 0.10
+    );
+
+    return {
+      score: Math.max(0, Math.min(100, score)),
+      factors,
+      summary: {
+        paidValue: paidAmount,
+        totalValue: totalAmount,
+        openInvoices: totalOpen,
+        overdueInvoices: openWithDueDate,
+        recentOrders,
+        totalOrders: orders.length,
+        points,
+        walletCredits,
+      },
     };
   },
 
@@ -1217,6 +1323,84 @@ async getInvoices(customerId) {
        WHERE dn.id = ? AND dn.customer_id = ? AND dn.tracking_number IS NOT NULL AND TRIM(dn.tracking_number) != ''`,
       [shipmentId, customerId]
     );
+  },
+
+  // Today's in-flight deliveries for the customer. Fronts the Logistics Command
+  // "Active" tab: shipments that are dispatched (not Delivered/Cancelled) and
+  // scheduled to arrive today. Each entry includes its line items and the
+  // linked invoice so the portal banner can offer "Seal Proof of Delivery"-
+  // aware detail. As soon as POD is sealed (status -> Delivered) the shipment
+  // drops out of the list and the banner disappears.
+  async getTodayPendingDeliveries(customerId) {
+    try {
+      const [shipments, notes, invoices] = await Promise.all([
+        getAllFrom('shipments', { 'data->>customerId': `eq.${customerId}` }),
+        getAllFrom('delivery_notes'),
+        getAllFrom('invoices', { 'data->>customerId': `eq.${customerId}` }),
+      ]);
+
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      const isToday = (value) => {
+        if (!value) return false;
+        const d = new Date(value);
+        return !Number.isNaN(d.getTime()) && d >= start && d < end;
+      };
+
+      const notesById = new Map((notes || []).map((n) => [n.id, n]));
+      const invoiceById = new Map((invoices || []).map((i) => [i.id, i]));
+      const parseItems = (value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') return parseJson(value, []);
+        return [];
+      };
+
+      const result = [];
+      for (const shp of shipments || []) {
+        if (/delivered|cancelled/i.test(String(shp.status || ''))) continue;
+
+        const note = shp.orderId ? notesById.get(String(shp.orderId)) : null;
+        const deliveryDate =
+          shp.estimated_delivery ||
+          shp.estimatedDelivery ||
+          (note && (note.estimated_delivery || note.estimatedDelivery || note.delivery_date || note.deliveryDate)) ||
+          shp.date ||
+          null;
+        if (!isToday(deliveryDate)) continue;
+
+        const invoiceId = note && (note.invoiceId || note.invoice_id)
+          ? String(note.invoiceId || note.invoice_id)
+          : (shp.invoiceId || shp.invoice_id || null);
+        const invoice = invoiceId ? invoiceById.get(invoiceId) : null;
+
+        result.push({
+          shipmentId: shp.id,
+          orderId: shp.orderId || null,
+          status: shp.status,
+          deliveryDate: deliveryDate || null,
+          trackingNumber:
+            shp.tracking_number || shp.trackingNumber || (note && (note.tracking_number || note.trackingNumber)) || null,
+          carrier: shp.carrier || (note && note.carrier) || null,
+          driverName: shp.driver_name || shp.driverName || (note && (note.driver_name || note.driverName)) || null,
+          vehicleNo: shp.vehicle_no || shp.vehicleNo || (note && (note.vehicle_no || note.vehicleNo)) || null,
+          items: shp.items && shp.items.length
+            ? shp.items
+            : parseItems(note && (note.items || note.items_json)),
+          notes: (note && note.notes) || shp.notes || null,
+          invoiceId,
+          invoiceNumber: (invoice && (invoice.invoice_number || invoice.invoiceNumber)) || null,
+          invoiceStatus: (invoice && invoice.status) || null,
+          invoiceAmount: Number((invoice && (invoice.total_amount ?? invoice.totalAmount)) || 0),
+        });
+      }
+
+      return result;
+    } catch (err) {
+      console.warn('[PortalService] getTodayPendingDeliveries failed:', err?.message || err);
+      return [];
+    }
   },
 
 };

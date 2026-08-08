@@ -805,12 +805,17 @@ export interface ExaminationBatch {
 export interface LedgerEntry {
   id: string;
   date: string;
-  account: string;
-  description: string;
-  debit: number;
-  credit: number;
+  description?: string;
+  debitAccountId?: string;
+  creditAccountId?: string;
+  amount: number;
+  type?: string;
+  entryType?: string;
   referenceType?: string;
   referenceId?: string;
+  reconciled?: boolean;
+  customerId?: string;
+  customerName?: string;
   [key: string]: any;
 }
 
@@ -845,6 +850,8 @@ export interface Invoice {
   tax?: number;
   taxRate?: number;
   paymentTerms?: string;
+  customerPhone?: string;
+  total?: number;
   [key: string]: any;
 }
 
@@ -887,7 +894,7 @@ export interface WalletTransaction {
   id: string;
   customerId: string;
   amount: number;
-  type: 'Credit' | 'Debit';
+  type: string;
   reference?: string;
   date: string;
   [key: string]: any;
@@ -995,9 +1002,11 @@ export interface CustomerPayment {
   customerName: string;
   amount: number;
   date: string;
-  method: string;
+  method?: string;
+  paymentMethod?: string;
+  accountId?: string;
   reference?: string;
-  allocations: Array<{ invoiceId: string; amount: number }>;
+  allocations: Array<{ invoiceId: string; amount: number; saleId?: string }>;
   excessAmount?: number;
   excessHandling?: string;
   notes?: string;
@@ -1305,6 +1314,7 @@ export interface SalePayment {
   id: string;
   amount: number;
   method: string;
+  accountId?: string;
   reference?: string;
   date?: string;
   notes?: string;
@@ -1378,11 +1388,14 @@ export interface SalesExchangeItem {
 
 export interface SalesExchangeApproval {
   id: string;
-  exchangeId: string;
-  approvedBy: string;
-  approvalDate: string;
+  exchangeId?: string;
+  approvedBy?: string;
+  approvalDate?: string;
   comments?: string;
   status: string;
+  exchange_id?: string;
+  approved_by?: string;
+  approval_date?: string;
 }
 
 export interface SalesExchange {
@@ -1404,15 +1417,21 @@ export interface SalesExchange {
 
 export interface ReprintJob {
   id: string;
-  exchangeId: string;
+  exchangeId?: string;
   jobDescription?: string;
   paperUsed?: number;
   inkUsed?: number;
   finishingCost?: number;
   totalReprintCost?: number;
   status: string;
-  createdAt: string;
+  createdAt?: string;
   completedAt?: string;
+  exchange_id?: string;
+  job_description?: string;
+  paper_used?: string;
+  ink_used?: string;
+  finishing_cost?: number;
+  total_reprint_cost?: number;
   [key: string]: any;
 }
 export interface SMSCampaign {
@@ -1511,8 +1530,14 @@ export interface VatTransaction {
   type: string;
   amount: number;
   rate: number;
-  vatAmount: number;
-  reference: string;
+  vatAmount?: number;
+  taxableAmount?: number;
+  reference?: string;
+  referenceId?: string;
+  referenceType?: string;
+  description?: string;
+  isFiled?: boolean;
+  customerName?: string;
   [key: string]: any;
 }
 
@@ -1621,11 +1646,21 @@ export interface ExaminationInventoryDeduction {
 }
 
 export interface CustomerReceiptSnapshot {
-  id: string;
-  customerId: string;
-  invoiceId: string;
-  amount: number;
-  date: string;
+  generatedAt: string;
+  paymentPurpose?: string;
+  amountTendered: number;
+  amountApplied: number;
+  changeGiven: number;
+  walletDeposit: number;
+  amountRetained: number;
+  invoiceTotalAtPosting: number;
+  balanceDueAfterPayment: number;
+  appliedInvoices: string[];
+  paymentStatus: string;
+  confidence?: string;
+  calculationVersion?: number;
+  narrative?: string;
+  backfilled?: boolean;
   [key: string]: any;
 }
 
@@ -1791,14 +1826,14 @@ export interface ConsumptionSnapshot {
 }
 
 export interface TransactionAdjustmentSnapshot {
-  id: string;
+  id?: string;
   saleId?: string;
   itemId?: string;
   itemName?: string;
   variantId?: string;
   adjustmentId?: string;
   name: string;
-  amount: number;
+  amount?: number;
   type: string;
   value?: number;
   baseCost?: number;

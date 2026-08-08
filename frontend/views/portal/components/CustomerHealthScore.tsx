@@ -84,6 +84,17 @@ const CustomerHealthScore: React.FC<CustomerHealthScoreProps> = ({ score, factor
                   </div>
                 </div>
               )}
+              {factors.overdueInvoices !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-600">On-time Payments</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${factors.overdueInvoices}%`, background: scoreColor }} />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-700 w-8 text-right">{factors.overdueInvoices}%</span>
+                  </div>
+                </div>
+              )}
               {factors.orderFrequency !== undefined && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-600">Order Frequency</span>
@@ -103,6 +114,17 @@ const CustomerHealthScore: React.FC<CustomerHealthScoreProps> = ({ score, factor
                       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${factors.rewards}%`, background: scoreColor }} />
                     </div>
                     <span className="text-xs font-semibold text-slate-700 w-8 text-right">{factors.rewards}%</span>
+                  </div>
+                </div>
+              )}
+              {factors.responseTime !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-600">Engagement</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${factors.responseTime}%`, background: scoreColor }} />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-700 w-8 text-right">{factors.responseTime}%</span>
                   </div>
                 </div>
               )}

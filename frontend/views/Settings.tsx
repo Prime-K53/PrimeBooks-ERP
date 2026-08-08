@@ -929,15 +929,91 @@ const Settings: React.FC = () => {
     const deferredTemplatePreviewConfig = useDeferredValue(config);
 
     return (
-        <div className="premium-settings" style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter','DM Sans',sans-serif" }}>
-            {/* Header */}
-            <div style={{
-              position: 'relative',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        <div className="premium-settings" style={{ fontFamily: "'Inter','DM Sans',sans-serif" }}>
+            {/* Mobile Header */}
+            <div className="md:hidden" style={{
+              position: 'sticky', top: 0, zIndex: 30,
+              padding: '14px 16px',
+              background: 'linear-gradient(120deg, #0b3e39 0%, #146b60 52%, #1f8577 100%)',
+              boxShadow: '0 4px 16px -6px rgba(11,62,57,0.5)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: 'linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))',
+                  border: '1px solid rgba(255,255,255,0.28)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <Settings2 size={18} color="#fff" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h1 style={{
+                    fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+                    fontSize: 17, margin: 0, color: '#ffffff', letterSpacing: 0.3,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {activeItemLabel}
+                  </h1>
+                  <p style={{ margin: '1px 0 0', fontSize: 10.5, color: 'rgba(255,255,255,0.78)' }}>
+                    {activeGroupTitle}
+                  </p>
+                </div>
+                <button onClick={handleSave} style={{
+                  display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+                  fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, border: 'none',
+                  background: '#ffffff', color: teal[700],
+                }}>
+                  <CheckCircle2 size={14} /> Save
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Tab Bar */}
+            <div className="md:hidden" style={{
+              position: 'sticky', top: 62, zIndex: 29,
+              background: '#fff', borderBottom: '1px solid rgba(16,24,40,0.07)',
+              overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+            }}>
+              <style>{`.mobile-settings-tabs::-webkit-scrollbar { display: none; }`}</style>
+              <div className="mobile-settings-tabs" style={{ display: 'flex', gap: 0, padding: '0 8px', minWidth: 'max-content' }}>
+                {filteredGroups.flatMap(g => g.items).map(tab => {
+                  const isActive = activeTab === tab.id;
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        if (tab.id === 'MembershipTiers') return navigate('/admin/membership-tiers');
+                        if (tab.id === 'Promotions') return navigate('/admin/promotions');
+                        if (tab.id === 'GiftCards') return navigate('/admin/gift-cards');
+                        setActiveTab(tab.id);
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        padding: '10px 10px', border: 'none', background: 'none',
+                        borderBottom: isActive ? `2px solid ${teal[500]}` : '2px solid transparent',
+                        cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                        transition: 'border-color .15s ease',
+                      }}
+                    >
+                      <Icon size={13} style={{ color: isActive ? teal[500] : inkSoft }} />
+                      <span style={{ fontSize: 11, fontWeight: isActive ? 700 : 500, color: isActive ? teal[700] : inkSoft }}>
+                        {tab.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop Header */}
+            <div className="hidden md:flex" style={{
+              alignItems: 'center', justifyContent: 'space-between',
               padding: '15px 28px',
               borderBottom: '1px solid rgba(11,62,57,0.4)',
               background: 'linear-gradient(120deg, #0b3e39 0%, #146b60 52%, #1f8577 100%)',
-              boxShadow: '0 6px 20px -10px rgba(11,62,57,0.6)'
+              boxShadow: '0 6px 20px -10px rgba(11,62,57,0.6)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
@@ -976,13 +1052,13 @@ const Settings: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                {/* Premium Sidebar */}
-                <div style={{
+            <div className="flex flex-1 overflow-hidden" style={{ minHeight: 'calc(100vh - 120px)' }}>
+                {/* Premium Sidebar — hidden on mobile */}
+                <div className="hidden md:flex" style={{
                   width: 286, flexShrink: 0,
                   background: '#FFFFFF',
                   borderRight: '1px solid rgba(16,24,40,0.07)',
-                  display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto'
+                  flexDirection: 'column', position: 'relative', overflowY: 'auto'
                 }}>
                     <div style={{
                       color: '#8b938f', fontSize: 11, letterSpacing: '1px',
@@ -1056,8 +1132,8 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Content Area */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px', background: 'linear-gradient(180deg, #F7F6F2 0%, #F2F1EB 100%)' }}>
-                    <div style={{ maxWidth: '920px' }}>
+                <div className="flex-1 overflow-y-auto p-4 md:p-7" style={{ background: 'linear-gradient(180deg, #F7F6F2 0%, #F2F1EB 100%)' }}>
+                    <div style={{ maxWidth: '920px', margin: '0 auto' }}>
 
                         {activeTab === 'General' && (
                             <div>

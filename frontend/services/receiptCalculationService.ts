@@ -33,7 +33,7 @@ export interface CustomerReceiptInvoiceInput {
 export interface CalculateCustomerPaymentSnapshotInput {
   amountTendered: number;
   appliedInvoices: CustomerReceiptInvoiceInput[];
-  excessHandling?: 'Change' | 'Wallet';
+  excessHandling?: string;
   paymentPurpose?: CustomerReceiptSnapshot['paymentPurpose'];
   paymentDate?: string;
   customerName?: string;

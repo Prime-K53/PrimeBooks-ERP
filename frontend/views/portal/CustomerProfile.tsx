@@ -13,29 +13,17 @@ const teal = {
   400: '#3fa294', 500: '#1f8577', 600: '#146b60', 700: '#0f544c',
   800: '#0b3e39', 900: '#082e2a'
 };
-const amber = { 100: '#fbead0', 300: '#eec27a', 500: '#d99a3f', 600: '#b97e2b' };
-const paper = '#FEFDFB';
+const danger = '#c0495f';
 const ink = '#23282A';
 const inkSoft = '#5c6567';
 const hairline = '#E7E3DA';
-const danger = '#c0495f';
-const canvas = '#F5F4EF';
-const surface = '#FFFFFF';
-const success = '#1f9d6b';
-const warn = '#d99a3f';
 
-// QBO Theme Styles (exact copy from Settings)
 const qboStyles = `
-    /* premium elevation token */
     .white-card {
         background: #FFFFFF;
         border: 1px solid rgba(16,24,40,0.07);
         border-radius: 14px;
         box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 12px 30px -16px rgba(16,24,40,0.18);
-        transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
-    }
-    .white-card:hover {
-        box-shadow: 0 2px 4px rgba(16,24,40,0.05), 0 18px 40px -18px rgba(16,24,40,0.22);
     }
     .settings-label {
         display: block;
@@ -61,161 +49,31 @@ const qboStyles = `
         border-color: #1f8577 !important;
         box-shadow: 0 0 0 3px rgba(31,133,119,0.18);
     }
-    .settings-section-header {
-        padding: 20px 28px;
-        border-bottom: 1px solid rgba(16,24,40,0.06);
-        background: linear-gradient(180deg, #fbfaf7 0%, #ffffff 100%);
-        border-top-left-radius: 14px;
-        border-top-right-radius: 14px;
+    .toggle-input {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0;
     }
-
-    /* Focus rings for inline-styled controls that don't use the .settings-input class */
-    .premium-settings input:not([type=checkbox]):not([type=radio]):not([type=range]),
-    .premium-settings textarea,
-    .premium-settings select {
-        transition: border-color .15s ease, box-shadow .15s ease !important;
+    .toggle-track {
+        width: 44px; height: 24px; background: #d3ece9; border-radius: 9999px;
+        position: relative; transition: background 0.2s ease; cursor: pointer; flex-shrink: 0;
     }
+    .toggle-track::after {
+        content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+        background: #ffffff; border-radius: 50%; border: 1px solid #D4D7DC;
+        transition: transform 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .toggle-input:checked + .toggle-track { background: #1f8577; }
+    .toggle-input:checked + .toggle-track::after { transform: translateX(20px); }
     .premium-settings input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
     .premium-settings textarea:focus,
     .premium-settings select:focus {
-        outline: none;
-        border-color: #1f8577 !important;
+        outline: none; border-color: #1f8577 !important;
         box-shadow: 0 0 0 3px rgba(31,133,119,0.18) !important;
-    }
-
-    .toggle-input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border-width: 0;
-    }
-    .toggle-track {
-        width: 44px;
-        height: 24px;
-        background: #d3ece9;
-        border-radius: 9999px;
-        position: relative;
-        transition: background 0.2s ease;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-    .toggle-track::after {
-        content: '';
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 20px;
-        height: 20px;
-        background: #ffffff;
-        border-radius: 50%;
-        border: 1px solid #D4D7DC;
-        transition: transform 0.2s ease;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .toggle-input:checked + .toggle-track {
-        background: #1f8577;
-    }
-    .toggle-input:checked + .toggle-track::after {
-        transform: translateX(20px);
-    }
-    .toggle-track-sm {
-        width: 40px;
-        height: 20px;
-        background: #d3ece9;
-        border-radius: 9999px;
-        position: relative;
-        transition: background 0.2s ease;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-    .toggle-track-sm::after {
-        content: '';
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 16px;
-        height: 16px;
-        background: #ffffff;
-        border-radius: 50%;
-        border: 1px solid #D4D7DC;
-        transition: transform 0.2s ease;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .toggle-input:checked + .toggle-track-sm {
-        background: #1f8577;
-    }
-    .toggle-input:checked + .toggle-track-sm::after {
-        transform: translateX(16px);
-    }
-    .toggle-track-lg {
-        width: 48px;
-        height: 24px;
-        background: #d3ece9;
-        border-radius: 9999px;
-        position: relative;
-        transition: background 0.2s ease;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-    .toggle-track-lg::after {
-        content: '';
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 20px;
-        height: 20px;
-        background: #ffffff;
-        border-radius: 50%;
-        border: 1px solid #D4D7DC;
-        transition: transform 0.2s ease;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .toggle-input:checked + .toggle-track-lg {
-        background: #1f8577;
-    }
-    .toggle-input:checked + .toggle-track-lg::after {
-        transform: translateX(24px);
-    }
-    .toggle-track-xl {
-        width: 56px;
-        height: 28px;
-        background: #d3ece9;
-        border-radius: 9999px;
-        position: relative;
-        transition: background 0.2s ease;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-    .toggle-track-xl::after {
-        content: '';
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 24px;
-        height: 24px;
-        background: #ffffff;
-        border-radius: 50%;
-        border: 1px solid #D4D7DC;
-        transition: transform 0.2s ease;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .toggle-input:checked + .toggle-track-xl {
-        background: #1f8577;
-    }
-    .toggle-input:checked + .toggle-track-xl::after {
-        transform: translateX(24px);
     }
 `;
 
-// ClientModal-aligned style constants (exact copy from Settings)
 const labelStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 6,
-  fontSize: 12.5, fontWeight: 600, color: '#3b454c',
+  display: 'block', fontSize: 12.5, fontWeight: 600, color: '#3b454c',
   marginBottom: 7, letterSpacing: 0.01
 };
 
@@ -225,43 +83,7 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid #e2ded3', borderRadius: 10,
   padding: '10px 13px', outline: 'none',
   boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.03)',
-  transition: 'border-color .15s ease, box-shadow .15s ease, background .15s ease'
-};
-
-const textareaStyle: React.CSSProperties = {
-  ...inputStyle, resize: 'none', minHeight: 72, lineHeight: 1.5
-};
-
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  appearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6567'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 12px center',
-  paddingRight: 30,
-  cursor: 'pointer'
-};
-
-const sectionLabelStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 10,
-  margin: '30px 0 16px', paddingLeft: 12,
-  borderLeft: `3px solid ${teal[500]}`
-};
-
-const btnGhostStyle: React.CSSProperties = {
-  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-  padding: '9px 18px', borderRadius: 10, cursor: 'pointer',
-  background: '#fff', border: `1px solid ${hairline}`, color: inkSoft,
-  display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s ease'
-};
-
-const btnPrimaryStyle: React.CSSProperties = {
-  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-  padding: '9px 18px', borderRadius: 10, cursor: 'pointer', border: '1px solid transparent',
-  background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
-  color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
-  boxShadow: `0 8px 20px -8px rgba(15,84,76,.6)`,
-  transition: 'all .15s ease'
+  transition: 'border-color .15s ease, box-shadow .15s ease'
 };
 
 interface ProfileData {
@@ -275,6 +97,33 @@ interface ProfileData {
   country?: string;
 }
 
+interface TabItem {
+  id: string;
+  icon: React.ElementType;
+  label: string;
+  desc: string;
+}
+
+const menuGroups = [
+  {
+    title: 'Account',
+    items: [
+      { id: 'Personal', icon: Building2, label: 'Personal Info', desc: 'Contact details and address' },
+      { id: 'Notifications', icon: Bell, label: 'Notifications', desc: 'Email and browser alerts' }
+    ] as TabItem[]
+  },
+  {
+    title: 'Security',
+    items: [
+      { id: 'Password', icon: Key, label: 'Password', desc: 'Update your password' },
+      { id: 'TwoFactor', icon: Shield, label: '2FA', desc: 'Two-factor authentication' },
+      { id: 'Sessions', icon: Monitor, label: 'Sessions', desc: 'Manage signed-in devices' }
+    ] as TabItem[]
+  }
+];
+
+const allTabs = menuGroups.flatMap(g => g.items);
+
 const CustomerProfile: React.FC = () => {
   const { user } = useCustomerAuth();
   const { addToast } = useToast();
@@ -283,7 +132,6 @@ const CustomerProfile: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
-
   const [form, setForm] = useState<ProfileData>({});
 
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -297,7 +145,6 @@ const CustomerProfile: React.FC = () => {
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
   const [browserNotifs, setBrowserNotifs] = useState(() => localStorage.getItem('portal_browser_notifications') !== 'false');
 
-  // 2FA state
   const [twoFactorStatus, setTwoFactorStatus] = useState<{ enabled: boolean; confirmed: boolean } | null>(null);
   const [twoFactorSetup, setTwoFactorSetup] = useState<{ secret: string; otpauth_uri: string } | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState('');
@@ -307,7 +154,6 @@ const CustomerProfile: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState('Personal');
 
-  // Inject qboStyles (exact copy from Settings)
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = qboStyles;
@@ -324,7 +170,6 @@ const CustomerProfile: React.FC = () => {
 
   useEffect(() => { loadSessions(); }, []);
 
-  // 2FA setup
   useEffect(() => {
     portalLifecycle.twoFactor.status()
       .then(setTwoFactorStatus)
@@ -336,7 +181,7 @@ const CustomerProfile: React.FC = () => {
     try {
       await portalApi.delete(`/auth/sessions/${sessionId}`);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-      addToast('success', 'Session revoked successfully');
+      addToast('success', 'Session revoked');
     } catch {
       addToast('error', 'Failed to revoke session');
     } finally {
@@ -417,9 +262,7 @@ const CustomerProfile: React.FC = () => {
     }
   }, [user?.email]);
 
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+  useEffect(() => { loadProfile(); }, [loadProfile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -432,12 +275,8 @@ const CustomerProfile: React.FC = () => {
           }
         },
       });
-
     })();
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-    };
+    return () => { cancelled = true; unsubscribe?.(); };
   }, [loadProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -451,7 +290,7 @@ const CustomerProfile: React.FC = () => {
     try {
       await portalLifecycle.profile.update(form);
       setSaveMsg('Profile updated successfully.');
-      addToast('success', 'Profile updated successfully');
+      addToast('success', 'Profile updated');
     } catch (err: any) {
       setSaveMsg(err.message || 'Failed to update profile.');
       addToast('error', err.message || 'Failed to update profile');
@@ -464,7 +303,6 @@ const CustomerProfile: React.FC = () => {
     e.preventDefault();
     setPasswordMsg(null);
     setPasswordError(null);
-
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setPasswordError('Passwords do not match.');
       return;
@@ -473,7 +311,6 @@ const CustomerProfile: React.FC = () => {
       setPasswordError('Password must be at least 6 characters.');
       return;
     }
-
     setChangingPassword(true);
     try {
       await portalLifecycle.profile.changePassword({
@@ -482,7 +319,7 @@ const CustomerProfile: React.FC = () => {
       });
       setPasswordMsg('Password changed successfully.');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      addToast('success', 'Password changed successfully');
+      addToast('success', 'Password changed');
     } catch (err: any) {
       setPasswordError(err.message || 'Failed to change password.');
     } finally {
@@ -490,100 +327,146 @@ const CustomerProfile: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-8 max-w-4xl mx-auto"><div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" /></div></div>;
-  if (error) return <div className="p-8 max-w-4xl mx-auto"><ErrorBanner message={error} /></div>;
-
-  // Menu groups (exact Settings structure)
-  const menuGroups = [
-    {
-      title: 'Account & Organization',
-      items: [
-        { id: 'Personal', icon: Building2, label: 'Personal Information', desc: 'Your contact details and address' },
-        { id: 'Notifications', icon: Bell, label: 'Notification Preferences', desc: 'Email and browser alerts' }
-      ]
-    },
-    {
-      title: 'Security',
-      items: [
-        { id: 'Password', icon: Key, label: 'Change Password', desc: 'Update your account password' },
-        { id: 'TwoFactor', icon: Shield, label: 'Two-Factor Authentication', desc: 'Add an extra layer of security' },
-        { id: 'Sessions', icon: Monitor, label: 'Active Sessions', desc: 'Manage devices signed in to your account' }
-      ]
-    }
-  ];
-
-  const activeGroupTitle = menuGroups.find(g => g.items.some(i => i.id === activeTab))?.title || 'Profile';
-  const activeItemLabel = menuGroups.flatMap(g => g.items).find(i => i.id === activeTab)?.label || activeTab;
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center" style={{ minHeight: '50vh' }}>
+        <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (error) return <div className="p-6"><ErrorBanner message={error} /></div>;
 
   return (
-    <div className="premium-settings" style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter','DM Sans',sans-serif" }}>
-      {/* Header (exact Settings style) */}
-      <div style={{
-        position: 'relative',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    <div className="premium-settings" style={{ fontFamily: "'Inter','DM Sans',sans-serif" }}>
+      <style>{qboStyles}</style>
+
+      {/* Mobile header */}
+      <div className="md:hidden" style={{
+        position: 'sticky', top: 0, zIndex: 30,
+        padding: '14px 16px',
+        background: 'linear-gradient(120deg, #0b3e39 0%, #146b60 52%, #1f8577 100%)',
+        boxShadow: '0 4px 16px -6px rgba(11,62,57,0.5)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))',
+            border: '1px solid rgba(255,255,255,0.28)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Settings2 size={18} color="#fff" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{
+              fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
+              fontSize: 17, margin: 0, color: '#ffffff', letterSpacing: 0.3,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {allTabs.find(t => t.id === activeTab)?.label || 'Profile'}
+            </h1>
+            <p style={{ margin: '1px 0 0', fontSize: 10.5, color: 'rgba(255,255,255,0.78)' }}>
+              Manage your account
+            </p>
+          </div>
+          <button onClick={handleSave} style={{
+            display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+            fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, border: 'none',
+            background: '#ffffff', color: teal[700],
+          }}>
+            <CheckCircle2 size={14} /> Save
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile tab bar */}
+      <div className="md:hidden" style={{
+        position: 'sticky', top: 62, zIndex: 29,
+        background: '#fff', borderBottom: `1px solid ${portalTheme.border}`,
+        overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+      }}>
+        <div style={{ display: 'flex', gap: 0, padding: '0 8px', minWidth: 'max-content' }}>
+          {allTabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '10px 12px', border: 'none', background: 'none',
+                  borderBottom: isActive ? `2px solid ${teal[500]}` : '2px solid transparent',
+                  cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                  transition: 'border-color .15s ease',
+                }}
+              >
+                <Icon size={14} style={{ color: isActive ? teal[500] : inkSoft }} />
+                <span style={{ fontSize: 12, fontWeight: isActive ? 700 : 500, color: isActive ? teal[700] : inkSoft }}>
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop header */}
+      <div className="hidden md:flex" style={{
+        alignItems: 'center', justifyContent: 'space-between',
         padding: '15px 28px',
         borderBottom: '1px solid rgba(11,62,57,0.4)',
         background: 'linear-gradient(120deg, #0b3e39 0%, #146b60 52%, #1f8577 100%)',
-        boxShadow: '0 6px 20px -10px rgba(11,62,57,0.6)'
+        boxShadow: '0 6px 20px -10px rgba(11,62,57,0.6)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{
             width: 42, height: 42, borderRadius: 12,
             background: 'linear-gradient(155deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))',
             border: '1px solid rgba(255,255,255,0.28)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)', flexShrink: 0
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <Settings2 size={20} color="#fff" />
           </div>
           <div>
             <h1 style={{
               fontFamily: "'DM Serif Display', 'Georgia', serif", fontWeight: 400,
-              fontSize: 19, margin: 0, color: '#ffffff', letterSpacing: 0.3
+              fontSize: 19, margin: 0, color: '#ffffff', letterSpacing: 0.3,
             }}>
-              {activeItemLabel}
+              {allTabs.find(t => t.id === activeTab)?.label || 'Profile'}
             </h1>
-            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'rgba(255,255,255,0.78)', letterSpacing: 0.02 }}>
-              {activeGroupTitle} &mdash; Manage your account
+            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'rgba(255,255,255,0.78)' }}>
+              {menuGroups.find(g => g.items.some(i => i.id === activeTab))?.title || 'Profile'} &mdash; Manage your account
             </p>
           </div>
         </div>
         <button onClick={handleSave} style={{
           display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer',
-          fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
-          padding: '9px 18px', borderRadius: 10, border: 'none',
+          fontSize: 13, fontWeight: 600, padding: '9px 18px', borderRadius: 10, border: 'none',
           background: '#ffffff', color: teal[700],
           boxShadow: '0 8px 18px -8px rgba(0,0,0,0.45)',
-          transition: 'all .15s ease'
-        }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 24px -10px rgba(0,0,0,0.5)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 18px -8px rgba(0,0,0,0.45)'; }}
-        >
+        }}>
           <CheckCircle2 size={16} /> Save Profile
         </button>
       </div>
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Premium Sidebar (exact Settings style) */}
-        <div style={{
-          width: 286, flexShrink: 0,
+      <div className="flex" style={{ minHeight: 'calc(100vh - 140px)' }}>
+        {/* Desktop sidebar — hidden on mobile */}
+        <div className="hidden md:flex" style={{
+          width: 260, flexShrink: 0,
           background: '#FFFFFF',
           borderRight: '1px solid rgba(16,24,40,0.07)',
-          display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto'
+          flexDirection: 'column', overflowY: 'auto',
         }}>
-          <div style={{
-            color: '#8b938f', fontSize: 11, letterSpacing: '1px',
-            textTransform: 'uppercase', fontWeight: 700, padding: '20px 18px 10px'
-          }}>
+          <div style={{ color: '#8b938f', fontSize: 11, letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 700, padding: '20px 18px 10px' }}>
             Profile
           </div>
           <div style={{ padding: '0 12px 16px', flex: 1 }}>
             {menuGroups.map(group => (
               <div key={group.title} style={{ marginBottom: 18 }}>
-                <div style={{
-                  color: '#9aa19c', fontSize: 10, letterSpacing: '0.9px',
-                  textTransform: 'uppercase', fontWeight: 700, padding: '4px 6px 9px'
-                }}>{group.title}</div>
+                <div style={{ color: '#9aa19c', fontSize: 10, letterSpacing: '0.9px', textTransform: 'uppercase', fontWeight: 700, padding: '4px 6px 9px' }}>
+                  {group.title}
+                </div>
                 {group.items.map(item => {
                   const isActive = activeTab === item.id;
                   return (
@@ -597,38 +480,22 @@ const CustomerProfile: React.FC = () => {
                         border: isActive ? '1px solid transparent' : '1px solid rgba(16,24,40,0.06)',
                         boxShadow: isActive ? `0 10px 22px -10px rgba(15,84,76,0.55)` : '0 1px 2px rgba(16,24,40,0.04)',
                         cursor: 'pointer', marginBottom: 8,
-                        transition: 'all .15s ease', position: 'relative',
-                        textAlign: 'left',
-                      }}
-                      onMouseEnter={e => {
-                        if (!isActive) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px -8px rgba(16,24,40,0.18)'; }
-                      }}
-                      onMouseLeave={e => {
-                        if (!isActive) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)'; }
+                        transition: 'all .15s ease', textAlign: 'left',
                       }}
                     >
                       <div style={{
                         width: 34, height: 34, borderRadius: 9,
                         background: isActive ? 'rgba(255,255,255,0.18)' : '#eef7f6',
                         color: isActive ? '#fff' : teal[600],
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       }}>
                         <item.icon size={16} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? '#fff' : '#23282A' }}>{item.label}</div>
-                        <div style={{ fontSize: 10, color: isActive ? 'rgba(255,255,255,0.82)' : '#5c6567', marginTop: 1, lineHeight: 1.3 }}>{item.desc}</div>
+                        <div style={{ fontSize: 10, color: isActive ? 'rgba(255,255,255,0.82)' : '#5c6567', marginTop: 1 }}>{item.desc}</div>
                       </div>
-                      <div style={{
-                        marginLeft: 'auto', padding: '4px 9px', borderRadius: 6,
-                        background: isActive ? 'rgba(255,255,255,0.2)' : '#eef7f6',
-                        color: isActive ? '#fff' : teal[600],
-                        fontSize: 10, fontWeight: 600,
-                        display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0
-                      }}>
-                        Open
-                        <ChevronRight size={10} />
-                      </div>
+                      <ChevronRight size={12} style={{ color: isActive ? 'rgba(255,255,255,0.7)' : '#94a3b8' }} />
                     </button>
                   );
                 })}
@@ -637,12 +504,12 @@ const CustomerProfile: React.FC = () => {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px', background: 'linear-gradient(180deg, #F7F6F2 0%, #F2F1EB 100%)' }}>
-          <div style={{ maxWidth: '920px' }}>
+        {/* Content area */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-7" style={{ background: 'linear-gradient(180deg, #F7F6F2 0%, #F2F1EB 100%)' }}>
+          <div className="max-w-[920px] mx-auto">
             {saveMsg && (
               <div style={{
-                marginBottom: 18, padding: '12px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                marginBottom: 16, padding: '10px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
                 border: `1px solid ${saveMsg.includes('successfully') ? '#a6d9d3' : '#f0c4cd'}`,
                 background: saveMsg.includes('successfully') ? '#e9f7f4' : '#fdeef0',
                 color: saveMsg.includes('successfully') ? teal[700] : danger,
@@ -651,18 +518,21 @@ const CustomerProfile: React.FC = () => {
               </div>
             )}
 
+            {/* Personal Info */}
             {activeTab === 'Personal' && (
               <form onSubmit={handleSave}>
-                <div style={sectionLabelStyle}><span style={{ fontSize: 13, fontWeight: 700, color: teal[800] }}>Personal Information</span></div>
-                <div className="white-card" style={{ padding: '24px 28px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', columnGap: 16, rowGap: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 10, paddingLeft: 10, borderLeft: `3px solid ${teal[500]}` }}>
+                  Personal Information
+                </div>
+                <div className="white-card p-4 md:p-7">
+                  <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 md:gap-4">
                     <div>
                       <label style={labelStyle}>Full Name</label>
                       <input style={inputStyle} name="full_name" value={form.full_name || ''} onChange={handleChange} placeholder="Your full name" />
                     </div>
                     <div>
                       <label style={labelStyle}>Email</label>
-                      <input style={{ ...inputStyle, background: '#f5f4f0', color: inkSoft }} name="email" value={form.email || ''} onChange={handleChange} disabled />
+                      <input style={{ ...inputStyle, background: '#f5f4f0', color: inkSoft }} name="email" value={form.email || ''} disabled />
                     </div>
                     <div>
                       <label style={labelStyle}>Phone</label>
@@ -689,8 +559,14 @@ const CustomerProfile: React.FC = () => {
                       <input style={inputStyle} name="country" value={form.country || ''} onChange={handleChange} placeholder="Country" />
                     </div>
                   </div>
-                  <div style={{ marginTop: 22, display: 'flex', justifyContent: 'flex-end' }}>
-                    <button type="submit" style={{ ...btnPrimaryStyle, justifyContent: 'center', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                  <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end' }}>
+                    <button type="submit" style={{
+                      fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                      padding: '9px 18px', borderRadius: 10, cursor: saving ? 'default' : 'pointer', border: 'none',
+                      background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                      color: '#fff', display: 'flex', alignItems: 'center', gap: 7, opacity: saving ? 0.7 : 1,
+                      boxShadow: `0 8px 20px -8px rgba(15,84,76,.6)`,
+                    }}>
                       {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
                       {saving ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -699,15 +575,18 @@ const CustomerProfile: React.FC = () => {
               </form>
             )}
 
+            {/* Notifications */}
             {activeTab === 'Notifications' && (
               <div>
-                <div style={sectionLabelStyle}><span style={{ fontSize: 13, fontWeight: 700, color: teal[800] }}>Notification Preferences</span></div>
-                <div className="white-card" style={{ padding: '24px 28px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                    <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 10, paddingLeft: 10, borderLeft: `3px solid ${teal[500]}` }}>
+                  Notification Preferences
+                </div>
+                <div className="white-card p-4 md:p-7">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: ink }}>Browser notifications</div>
                       <p style={{ margin: '4px 0 0', fontSize: 11.5, color: inkSoft, lineHeight: 1.5 }}>
-                        Receive native browser notifications for important portal events (quotation ready, order shipped, etc.).
+                        Receive native browser notifications for important portal events.
                       </p>
                     </div>
                     <label style={{ position: 'relative', display: 'inline-flex', flexShrink: 0, cursor: 'pointer' }}>
@@ -728,18 +607,21 @@ const CustomerProfile: React.FC = () => {
               </div>
             )}
 
+            {/* Password */}
             {activeTab === 'Password' && (
               <form onSubmit={handlePasswordChange}>
-                <div style={sectionLabelStyle}><span style={{ fontSize: 13, fontWeight: 700, color: teal[800] }}>Change Password</span></div>
-                <div className="white-card" style={{ padding: '24px 28px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 10, paddingLeft: 10, borderLeft: `3px solid ${teal[500]}` }}>
+                  Change Password
+                </div>
+                <div className="white-card p-4 md:p-7">
                   {passwordMsg && (
                     <div style={{
-                      marginBottom: 16, padding: '12px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                      marginBottom: 14, padding: '10px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
                       border: '1px solid #A6D9D3', background: '#e9f7f4', color: teal[700],
                     }}>{passwordMsg}</div>
                   )}
                   {passwordError && <ErrorBanner message={passwordError} onDismiss={() => setPasswordError(null)} />}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                  <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 md:gap-4">
                     <div>
                       <label style={labelStyle}>Current Password</label>
                       <input style={inputStyle} type="password" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))} />
@@ -748,16 +630,22 @@ const CustomerProfile: React.FC = () => {
                       <label style={labelStyle}>New Password</label>
                       <input style={inputStyle} type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))} />
                     </div>
-                    <div>
+                    <div className="md:col-span-2">
                       <label style={labelStyle}>Confirm Password</label>
                       <input style={inputStyle} type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))} />
                     </div>
                   </div>
-                  <p style={{ fontSize: 11, color: inkSoft, marginTop: 12 }}>Password must be at least 6 characters long.</p>
-                  <div style={{ marginTop: 22, display: 'flex', justifyContent: 'flex-end' }}>
+                  <p style={{ fontSize: 11, color: inkSoft, marginTop: 10 }}>Password must be at least 6 characters long.</p>
+                  <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end' }}>
                     <button
                       type="submit"
-                      style={{ ...btnPrimaryStyle, justifyContent: 'center', cursor: changingPassword ? 'default' : 'pointer', opacity: changingPassword ? 0.7 : 1 }}
+                      style={{
+                        fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                        padding: '9px 18px', borderRadius: 10, cursor: changingPassword ? 'default' : 'pointer', border: 'none',
+                        background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                        color: '#fff', display: 'flex', alignItems: 'center', gap: 7,
+                        boxShadow: `0 8px 20px -8px rgba(15,84,76,.6)`, opacity: changingPassword ? 0.7 : 1,
+                      }}
                       disabled={changingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
                     >
                       {changingPassword ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
@@ -768,23 +656,31 @@ const CustomerProfile: React.FC = () => {
               </form>
             )}
 
+            {/* 2FA */}
             {activeTab === 'TwoFactor' && (
               <div>
-                <div style={sectionLabelStyle}><span style={{ fontSize: 13, fontWeight: 700, color: teal[800] }}>Two-Factor Authentication</span></div>
-                <div className="white-card" style={{ padding: '24px 28px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 10, paddingLeft: 10, borderLeft: `3px solid ${teal[500]}` }}>
+                  Two-Factor Authentication
+                </div>
+                <div className="white-card p-4 md:p-7">
                   {twoFactorError && <ErrorBanner message={twoFactorError} onDismiss={() => setTwoFactorError(null)} />}
 
                   {twoFactorStatus?.enabled ? (
                     <>
-                      <p style={{ fontSize: 13, color: inkSoft, marginBottom: 16 }}>
+                      <p style={{ fontSize: 13, color: inkSoft, marginBottom: 14 }}>
                         Two-factor authentication is <span style={{ color: ink, fontWeight: 600 }}>enabled</span>.
                       </p>
-                      <form onSubmit={handle2FADisable} style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-                        <div>
+                      <form onSubmit={handle2FADisable} className="flex flex-col gap-3 md:flex-row md:items-end">
+                        <div style={{ flex: 1 }}>
                           <label style={labelStyle}>Current 2FA Code</label>
                           <input style={{ ...inputStyle, maxWidth: 200 }} value={twoFactorCode} onChange={(e) => setTwoFactorCode(e.target.value)} disabled={twoFactorLoading} placeholder="000000" maxLength={6} />
                         </div>
-                        <button type="submit" disabled={twoFactorLoading || !twoFactorCode} style={{ ...btnGhostStyle, justifyContent: 'center', color: danger, borderColor: '#f0c4cd', background: '#fdf1f3', cursor: twoFactorLoading ? 'default' : 'pointer' }}>
+                        <button type="submit" disabled={twoFactorLoading || !twoFactorCode} style={{
+                          fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                          padding: '9px 18px', borderRadius: 10, cursor: twoFactorLoading ? 'default' : 'pointer',
+                          background: '#fdf1f3', border: `1px solid #f0c4cd`, color: danger,
+                          display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center',
+                        }}>
                           {twoFactorLoading ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
                           {twoFactorLoading ? 'Disabling...' : 'Disable 2FA'}
                         </button>
@@ -793,24 +689,30 @@ const CustomerProfile: React.FC = () => {
                   ) : twoFactorSetup ? (
                     <>
                       <p style={{ fontSize: 13, color: inkSoft, marginBottom: 12 }}>
-                        Scan this QR code with your authenticator app, then enter the verification code below.
+                        Scan this QR code with your authenticator app, then enter the verification code.
                       </p>
-                      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                        <div style={{ flex: '0 0 auto', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: '#fff', border: `1px solid ${hairline}`, borderRadius: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                      <div className="flex flex-col gap-4 items-center md:flex-row md:items-start">
+                        <div style={{ flexShrink: 0, textAlign: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, background: '#fff', border: `1px solid ${hairline}`, borderRadius: 10 }}>
                             {qrCodeDataUrl ? (
-                              <img src={qrCodeDataUrl} alt="Scan with your authenticator app" style={{ width: 160, height: 160, objectFit: 'contain' }} />
+                              <img src={qrCodeDataUrl} alt="QR code" style={{ width: 160, height: 160, objectFit: 'contain' }} />
                             ) : (
-                              <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: inkSoft }}>Generating QR code...</div>
+                              <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: inkSoft }}>Generating...</div>
                             )}
                           </div>
                         </div>
-                        <form onSubmit={handle2FAEnable} style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <form onSubmit={handle2FAEnable} style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 14 }}>
                           <div>
                             <label style={labelStyle}>Verification Code</label>
                             <input style={inputStyle} value={twoFactorCode} onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" maxLength={6} disabled={twoFactorLoading} />
                           </div>
-                          <button type="submit" disabled={twoFactorLoading || twoFactorCode.length < 6} style={{ ...btnPrimaryStyle, justifyContent: 'center', cursor: twoFactorLoading ? 'default' : 'pointer', opacity: twoFactorLoading || twoFactorCode.length < 6 ? 0.7 : 1 }}>
+                          <button type="submit" disabled={twoFactorLoading || twoFactorCode.length < 6} style={{
+                            fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                            padding: '9px 18px', borderRadius: 10, cursor: twoFactorLoading ? 'default' : 'pointer', border: 'none',
+                            background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                            color: '#fff', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center',
+                            boxShadow: `0 8px 20px -8px rgba(15,84,76,.6)`, opacity: twoFactorLoading || twoFactorCode.length < 6 ? 0.7 : 1,
+                          }}>
                             {twoFactorLoading ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
                             {twoFactorLoading ? 'Enabling...' : 'Enable 2FA'}
                           </button>
@@ -822,10 +724,16 @@ const CustomerProfile: React.FC = () => {
                     </>
                   ) : (
                     <div>
-                      <p style={{ fontSize: 13, color: inkSoft, marginBottom: 16 }}>
-                        Add an extra layer of security to your account with time-based one-time passwords (TOTP).
+                      <p style={{ fontSize: 13, color: inkSoft, marginBottom: 14 }}>
+                        Add an extra layer of security with time-based one-time passwords (TOTP).
                       </p>
-                      <button onClick={handle2FASetup} disabled={twoFactorLoading} style={{ ...btnPrimaryStyle, justifyContent: 'center', cursor: twoFactorLoading ? 'default' : 'pointer', opacity: twoFactorLoading ? 0.7 : 1 }}>
+                      <button onClick={handle2FASetup} disabled={twoFactorLoading} style={{
+                        fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                        padding: '9px 18px', borderRadius: 10, cursor: twoFactorLoading ? 'default' : 'pointer', border: 'none',
+                        background: `linear-gradient(155deg, ${teal[500]}, ${teal[700]})`,
+                        color: '#fff', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center',
+                        boxShadow: `0 8px 20px -8px rgba(15,84,76,.6)`, opacity: twoFactorLoading ? 0.7 : 1,
+                      }}>
                         {twoFactorLoading ? <Loader2 size={15} className="animate-spin" /> : <Shield size={15} />}
                         {twoFactorLoading ? 'Setting up...' : 'Set Up 2FA'}
                       </button>
@@ -835,10 +743,13 @@ const CustomerProfile: React.FC = () => {
               </div>
             )}
 
+            {/* Sessions */}
             {activeTab === 'Sessions' && (
               <div>
-                <div style={sectionLabelStyle}><span style={{ fontSize: 13, fontWeight: 700, color: teal[800] }}>Active Sessions</span></div>
-                <div className="white-card" style={{ padding: '24px 28px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: teal[800], textTransform: 'uppercase', letterSpacing: 0.06, marginBottom: 10, paddingLeft: 10, borderLeft: `3px solid ${teal[500]}` }}>
+                  Active Sessions
+                </div>
+                <div className="white-card p-4 md:p-7">
                   {sessionsLoading ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 0' }}>
                       <div className="w-6 h-6 border-2 border-teal-500/30 border-t-teal-600 rounded-full animate-spin" />
@@ -851,20 +762,28 @@ const CustomerProfile: React.FC = () => {
                         const created = s.created_at ? new Date(s.created_at).toLocaleDateString() : '—';
                         const expires = s.expires_at ? new Date(s.expires_at).toLocaleDateString() : '—';
                         return (
-                          <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', background: '#FFFFFF', borderRadius: 12, border: `1px solid ${hairline}`, boxShadow: '0 1px 2px rgba(16,24,40,0.04)', flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-                              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#eef7f6', color: teal[600], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Smartphone size={16} />
+                          <div key={s.id} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                            padding: '12px 14px', background: '#fff', borderRadius: 12,
+                            border: `1px solid ${hairline}`, flexWrap: 'wrap',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                              <div style={{ width: 34, height: 34, borderRadius: 10, background: '#eef7f6', color: teal[600], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Smartphone size={15} />
                               </div>
-                              <div>
-                                <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0 }}>{s.user_agent || 'Unknown device'}</p>
-                                <p style={{ fontSize: 11, color: inkSoft, marginTop: 2 }}>Created: {created} &bull; Expires: {expires}</p>
+                              <div style={{ minWidth: 0 }}>
+                                <p style={{ fontSize: 13, fontWeight: 600, color: ink, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.user_agent || 'Unknown device'}</p>
+                                <p style={{ fontSize: 10.5, color: inkSoft, marginTop: 2 }}>Created: {created} &bull; Expires: {expires}</p>
                               </div>
                             </div>
                             <button
                               onClick={() => setRevokeConfirmSessionId(s.id)}
                               disabled={revokingSessionId === s.id}
-                              style={{ ...btnGhostStyle, color: danger, borderColor: '#f0c4c4', background: '#fdf1f3', cursor: revokingSessionId === s.id ? 'default' : 'pointer' }}
+                              style={{
+                                fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600,
+                                padding: '6px 12px', borderRadius: 8, cursor: revokingSessionId === s.id ? 'default' : 'pointer',
+                                background: '#fdf1f3', border: '1px solid #f0c4c4', color: danger,
+                              }}
                             >
                               {revokingSessionId === s.id ? 'Revoking...' : 'Revoke'}
                             </button>
@@ -887,9 +806,7 @@ const CustomerProfile: React.FC = () => {
         confirmLabel="Revoke Session"
         variant="danger"
         onCancel={() => setRevokeConfirmSessionId(null)}
-        onConfirm={() => {
-          if (revokeConfirmSessionId) handleRevokeSession(revokeConfirmSessionId);
-        }}
+        onConfirm={() => { if (revokeConfirmSessionId) handleRevokeSession(revokeConfirmSessionId); }}
       />
     </div>
   );

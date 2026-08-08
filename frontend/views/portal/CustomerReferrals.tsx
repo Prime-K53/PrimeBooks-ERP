@@ -7,6 +7,7 @@ import { useToast } from './components/Toast';
 import EmptyState from './components/EmptyState';
 import PortalLoadingSkeleton from './components/PortalLoadingSkeleton';
 import StatusBadge from './components/StatusBadge';
+import { portalTheme } from './constants';
 
 type Tab = 'referrals' | 'rewards';
 type ReferralStatus = 'all' | 'active' | 'converted' | 'expired' | 'cancelled';

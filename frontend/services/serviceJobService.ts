@@ -22,7 +22,7 @@ let _reservationService: any = null;
 async function getReservationService(): Promise<any> {
   if (!_reservationService) {
     const mod = await import('./inventoryTransactionService');
-    _reservationService = new mod.InventoryReservationService();
+    _reservationService = mod.inventoryReservationService;
   }
   return _reservationService;
 }

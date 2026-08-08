@@ -27,29 +27,30 @@ const PortalKPICard: React.FC<Props> = ({ label, value, icon: Icon, trend, color
   return (
     <div
       onClick={onClick}
+      className="glass-panel-interactive rounded-2xl p-4 relative overflow-hidden group flex items-start gap-3.5"
       style={{
         cursor: onClick ? 'pointer' : 'default',
-        padding: '14px 16px',
-        borderRadius: 14,
-        background: colors.bg,
-        border: '1px solid rgba(16,24,40,0.06)',
         borderLeft: `4px solid ${colors.border}`,
-        boxShadow: selected ? '0 8px 20px -8px rgba(16,24,40,.12)' : '0 1px 3px rgba(16,24,40,.04)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 14,
-        transition: 'transform .15s ease, box-shadow .15s ease',
-        transform: selected ? 'scale(1.01)' : 'scale(1)',
+        borderColor: selected ? colors.border : undefined,
+        boxShadow: selected ? '0 12px 28px -6px rgba(15, 23, 42, 0.12)' : undefined,
       }}
     >
-      <div style={{ padding: 10, borderRadius: 10, background: colors.iconBg, color: colors.iconColor, display: 'inline-flex' }}>
+      <div className="p-2.5 rounded-xl shrink-0 transition-transform duration-200 group-hover:scale-105" style={{ background: colors.iconBg, color: colors.iconColor }}>
         <Icon size={20} />
       </div>
-      <div style={{ minWidth: 0 }}>
-        <p style={{ fontSize: 10, fontWeight: 700, color: '#5c6567', textTransform: 'uppercase', letterSpacing: 0.08, margin: '0 0 6px' }}>{label}</p>
-        <p style={{ fontSize: 18, fontWeight: 700, color: '#23282A', margin: 0, fontFamily: "'Inter', sans-serif", fontVariantNumeric: 'tabular-nums', textAlign: 'right', letterSpacing: -0.2 }}>
-          {value}
-        </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">{label}</p>
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="text-xl font-bold text-slate-900 font-sans tracking-tight" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {value}
+          </p>
+          {trend && (
+            <div className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${trend.positive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+              {trend.positive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              <span>{trend.value}%</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

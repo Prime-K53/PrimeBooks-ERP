@@ -37,6 +37,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Invoices', path: '/portal/invoices', icon: Receipt },
       { label: 'Statements', path: '/portal/statements', icon: FileBarChart },
+      { label: 'Payment Options', path: '/portal/payment-options', icon: CreditCard },
     ],
   },
   {

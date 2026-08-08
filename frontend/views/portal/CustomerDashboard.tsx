@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { DollarSign, FileText, ShoppingCart, TrendingUp, Activity, ClipboardList, FileCheck2, ChevronRight, UserPlus, CreditCard, Wallet } from 'lucide-react';
+import { DollarSign, FileText, ShoppingCart, TrendingUp, Activity, ClipboardList, FileCheck2, ChevronRight, UserPlus, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { portalApi, portalLifecycle } from '../../services/portalApiClient';
 import { useCustomerAuth } from '../../context/CustomerAuthContext';
@@ -19,6 +19,18 @@ interface Transaction {
   docId?: string;
 }
 
+interface HealthData {
+  score: number;
+  factors?: {
+    paymentHistory?: number;
+    overdueInvoices?: number;
+    orderFrequency?: number;
+    rewards?: number;
+    responseTime?: number;
+  };
+  summary?: Record<string, number>;
+}
+
 interface DashboardData {
   balance: number;
   outstandingBalance: number;
@@ -27,6 +39,7 @@ interface DashboardData {
   totalOrders: number;
   unreadMessageCount: number;
   recentTransactions: Transaction[];
+  health?: HealthData;
 }
 
 const ACTIVITY_ICON: Record<string, { icon: React.ReactNode; bg: string; border: string; credit: boolean }> = {
@@ -87,31 +100,6 @@ const CustomerDashboard: React.FC = () => {
   const [referralSettings, setReferralSettings] = useState<any>(null);
   const [referralFunnel, setReferralFunnel] = useState<any>(null);
   const [referralLoading, setReferralLoading] = useState(true);
-  const [selectedMethod, setSelectedMethod] = useState<number | null>(null);
-
-  const paymentMethods = [
-    {
-      title: 'National Bank',
-      details: [
-        { label: 'Account Name', value: 'Rhonald Chiwatu' },
-        { label: 'Account Number', value: '1010182286' },
-      ],
-    },
-    {
-      title: 'First Capital Bank',
-      details: [
-        { label: 'Account Name', value: 'Rhonald Chiwatu' },
-        { label: 'Account Number', value: '1036047166312' },
-      ],
-    },
-    {
-      title: 'Airtel Agent Transfer',
-      details: [
-        { label: 'Dealer Number', value: '0982482425' },
-        { label: 'Agent Name', value: 'Rhonald Chiwatu' },
-      ],
-    },
-  ];
 
   useEffect(() => {
     portalApi.get<DashboardData>('/dashboard')
@@ -319,7 +307,7 @@ const CustomerDashboard: React.FC = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-200/60">
@@ -417,78 +405,15 @@ const CustomerDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-200/60">
-            <h2 className="text-lg font-semibold text-slate-900" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.4 }}>Payment Methods</h2>
-            <p className="text-xs text-slate-500 mt-0.5" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.45 }}>Select a method to view details</p>
-          </div>
-          <div className="p-3">
-            <div className="flex flex-col gap-2">
-              {paymentMethods.map((method, index) => {
-                const isSelected = selectedMethod === index;
-                return (
-                  <div
-                    key={index}
-                    onClick={() => setSelectedMethod(isSelected ? null : index)}
-                    className="rounded-xl border cursor-pointer transition-all duration-200"
-                    style={{
-                      background: isSelected ? '#f8fafc' : '#fff',
-                      border: isSelected ? '1.4px solid #3fa294' : '1.4px solid #e4ddd1',
-                      boxShadow: isSelected ? '0 2px 8px rgba(15, 84, 76, 0.08)' : '0 1px 2px rgba(0,0,0,0.04)',
-                    }}
-                  >
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                        style={{
-                          background: 'linear-gradient(135deg, #3fa294 0%, #0f544c 100%)',
-                          boxShadow: '0 1px 3px rgba(15, 84, 76, 0.15)',
-                        }}
-                      >
-                        <CreditCard size={16} className="text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-slate-900 truncate" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.4 }}>
-                          {method.title}
-                        </h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.4 }}>
-                          {method.details.length} detail{method.details.length === 1 ? '' : 's'}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-slate-400">
-                        {isSelected ? '−' : '+'}
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <div className="px-4 pb-3">
-                        <div className="rounded-lg border border-slate-200/60 bg-white/60 divide-y divide-slate-200/60">
-                          {method.details.map((detail, i) => (
-                            <div key={i} className="flex items-center justify-between gap-3 px-3 py-2">
-                              <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.45, fontWeight: 500 }}>
-                                {detail.label}
-                              </span>
-                              <span className="text-xs font-semibold text-slate-800 text-right" style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.45, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                                {detail.value}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-        <div className="lg:col-span-1">
+        <div>
           <CustomerHealthScore
-            score={87}
+            score={data.health?.score ?? 0}
             factors={{
-              paymentHistory: 92,
-              orderFrequency: 78,
-              rewards: 85,
+              paymentHistory: data.health?.factors?.paymentHistory,
+              orderFrequency: data.health?.factors?.orderFrequency,
+              rewards: data.health?.factors?.rewards,
             }}
-            />
+          />
         </div>
       </div>
       </div>

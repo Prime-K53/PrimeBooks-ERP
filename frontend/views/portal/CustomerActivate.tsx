@@ -37,69 +37,69 @@ const CustomerActivate: React.FC = () => {
     setSubmitting(false);
   };
 
-  const inputClass = "w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/60 transition-all";
+  const inputClass = "w-full h-11 pl-10 pr-4 bg-slate-50/80 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/60 transition-all shadow-2xs";
 
   return (
-    <div className="fixed inset-0 overflow-y-auto bg-[var(--dashboard-bg)] font-sans">
-      <div className="min-h-full flex items-center justify-center p-6">
+    <div className="fixed inset-0 overflow-y-auto bg-slate-900 font-sans">
+      <div className="min-h-full flex items-center justify-center p-6 relative">
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-gradient-to-br from-teal-500/10 to-emerald-400/5 rounded-full blur-[120px]" />
-          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-gradient-to-tr from-amber-500/10 to-teal-500/10 rounded-full blur-[100px]" />
+          <div className="absolute -top-32 -right-32 w-[650px] h-[650px] bg-gradient-to-br from-amber-500/20 via-teal-500/10 to-transparent rounded-full blur-[140px]" />
+          <div className="absolute -bottom-32 -left-32 w-[600px] h-[600px] bg-gradient-to-tr from-teal-500/15 via-amber-600/10 to-transparent rounded-full blur-[120px]" />
         </div>
 
-        <div className="w-full max-w-[420px] relative z-10 bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(160deg, #3fa294, #0f544c)' }}>
-              <KeyRound size={20} />
+        <div className="w-full max-w-[440px] relative z-10 bg-white/95 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 md:p-10 shadow-2xl shadow-slate-950/50">
+          <div className="flex items-center gap-3.5 mb-8">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-900/20" style={{ background: 'linear-gradient(135deg, #f59e0b, #d99a3f)' }}>
+              <KeyRound size={22} />
             </div>
             <div>
-              <div className="font-bold text-lg tracking-tight" style={{ color: '#23282A' }}>
-                Prime<span style={{ color: '#b97e2b' }}>PORTAL</span>
+              <div className="font-extrabold text-xl tracking-tight text-slate-900">
+                Prime<span style={{ color: '#f59e0b' }}>PORTAL</span>
               </div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: '#5c6567' }}>Customer Portal</div>
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400">Account Activation</div>
             </div>
           </div>
 
           <div className="mb-8">
-            <h1 className="text-[1.65rem] font-bold tracking-tight leading-snug" style={{ color: '#23282A' }}>Activate Account</h1>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: '#5c6567' }}>Use the invite code from your email to set your password.</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Activate Your Account</h1>
+            <p className="mt-2 text-xs font-medium text-slate-500 leading-relaxed">Enter your Customer ID and 6-digit invite code to establish your password.</p>
           </div>
 
           {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Customer ID</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Customer ID</label>
               <div className="relative">
-                <Fingerprint size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Fingerprint size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={customerId}
                   onChange={(e) => setCustomerId(e.target.value)}
-                  placeholder="Enter your customer ID"
+                  placeholder="e.g. CUST-10492"
                   className={inputClass}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Invite Code</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Invite Code</label>
               <div className="relative">
-                <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <KeyRound size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder="6-digit code from your invite"
+                  placeholder="6-digit code"
                   className={inputClass}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">New Password</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">New Password</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="password"
                   value={newPassword}
@@ -111,9 +111,9 @@ const CustomerActivate: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Confirm Password</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Confirm Password</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="password"
                   value={confirmPassword}
@@ -127,19 +127,20 @@ const CustomerActivate: React.FC = () => {
             <button
               type="submit"
               disabled={submitting || !customerId.trim() || !inviteCode.trim() || !newPassword || !confirmPassword}
-              className="w-full h-11 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(90deg, #b97e2b, #d99a3f)', boxShadow: '0 8px 20px rgba(185,126,43,.25)' }}
+              className="w-full h-11 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed btn-press"
+              style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d99a3f 100%)', boxShadow: '0 6px 20px rgba(245, 158, 11, 0.35)' }}
             >
               {submitting ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
-                'Activate & Sign In'
+                'Activate & Complete Setup'
               )}
             </button>
           </form>
 
-          <div className="mt-10 pt-6 border-t border-slate-200 text-center">
-            <Link to="/portal/login" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
-              Back to Sign In
+          <div className="mt-8 pt-5 border-t border-slate-100 text-center">
+            <Link to="/portal/login" className="text-xs font-semibold text-slate-500 hover:text-amber-600 transition-colors">
+              Return to Sign In
             </Link>
           </div>
         </div>
