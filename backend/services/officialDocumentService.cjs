@@ -84,7 +84,7 @@ function normalizeRecordForRenderer(raw) {
     const price = Number(it?.price ?? it?.unitPrice ?? it?.unit_price ?? 0) || 0;
     return {
       ...it,
-      description: String(it?.description || it?.name || it?.productName || it?.product_name || 'Item'),
+      description: String(it?.description || it?.item_name || it?.name || it?.productName || it?.product_name || it?.itemName || it?.desc || 'Item'),
       quantity,
       price,
       total: Number(it?.total ?? it?.lineTotal ?? it?.line_total ?? quantity * price) || 0,
