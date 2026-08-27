@@ -82,9 +82,24 @@ function normalizeRecordForRenderer(raw) {
   record.items = items.map((it) => {
     const quantity = Number(it?.quantity ?? it?.qty ?? 0) || 0;
     const price = Number(it?.price ?? it?.unitPrice ?? it?.unit_price ?? 0) || 0;
+    // Authoritative item name resolution — same field order as the Portal
+    // invoice mapper. The legacy "Item" fallback is kept as a last-resort
+    // sentinel so the PDF never renders a blank cell; if a real name exists
+    // in ANY of the recognised fields, it wins.
+    const candidate = [
+      it?.item_name,
+      it?.description,
+      it?.name,
+      it?.productName,
+      it?.product_name,
+      it?.itemName,
+      it?.desc,
+      it?.title,
+      it?.label,
+    ].find((v) => typeof v === 'string' && v.trim().length > 0);
     return {
       ...it,
-      description: String(it?.description || it?.item_name || it?.name || it?.productName || it?.product_name || it?.itemName || it?.desc || 'Item'),
+      description: String(candidate ?? 'Item'),
       quantity,
       price,
       total: Number(it?.total ?? it?.lineTotal ?? it?.line_total ?? quantity * price) || 0,

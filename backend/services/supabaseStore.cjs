@@ -120,8 +120,20 @@ function mapInvoiceLineItems(items) {
   if (!Array.isArray(items)) return [];
   return items.map((it) => {
     const x = it || {};
+    // Authoritative item name resolution — same field order as the Portal
+    // mapper and the PDF normalize. Empty strings fall through so a legacy
+    // "" never wins over a real name in another field.
+    const candidate = [
+      x.productName,
+      x.itemName,
+      x.name,
+      x.desc,
+      x.description,
+      x.title,
+      x.label,
+    ].find((v) => typeof v === 'string' && v.trim().length > 0);
     return {
-      item_name: x.productName || x.itemName || x.name || x.desc || x.description || '',
+      item_name: String(candidate ?? ''),
       quantity: num(x.quantity),
       unit_price: num(x.unitPrice ?? x.unit_price ?? x.price ?? x.selling_price),
       line_total: num(x.subtotal ?? x.lineTotalNet ?? x.line_total ?? x.subTotal ?? x.price * x.quantity),
